@@ -56,7 +56,7 @@ ALLOWED_OLD_KEY_FILES = {
     "docs/releases/delivery_readiness_execution_evidence_2026-03-19.md",
     "docs/releases/delivery_readiness_execution_evidence_2026-03-19.en.md",
     "docs/ops/verify/README.md",
-    "docs/ops/releases/current/phase_12_stage4_payment_handoff_actor_match.md",
+    "docs/releases/current/phase_12_stage4_payment_handoff_actor_match.md",
 }
 
 

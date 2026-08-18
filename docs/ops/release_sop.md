@@ -14,7 +14,7 @@
 - If a legacy tag exists, document it as legacy and do not use it for release.
 
 ## 4) Release Index
-- Update `docs/ops/releases/README.md` with:
+- Update `docs/releases/README.md` with:
   - tag, type, status, docs, verify commands.
 - Commit the index update separately if required by SOP.
 

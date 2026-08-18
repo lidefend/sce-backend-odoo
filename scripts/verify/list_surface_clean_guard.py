@@ -12,7 +12,7 @@ ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 ACTION_PRESENTATION_RUNTIME = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts"
 FILTER_COMPUTED_RUNTIME = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts"
 REPORT_JSON = ROOT / "artifacts/backend/list_surface_clean_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/list_surface_clean_report.md"
+REPORT_MD = ROOT / "docs/audit/list_surface_clean_report.md"
 
 
 def _read(path: Path) -> str:

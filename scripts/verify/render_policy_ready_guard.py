@@ -15,7 +15,7 @@ FORM = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
 FORM_MODULES = ROOT / "frontend/apps/web/src/pages/contractForm"
 POLICY = ROOT / "frontend/apps/web/src/app/contractPolicies.ts"
 REPORT_JSON = ROOT / "artifacts/backend/render_policy_ready_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/render_policy_ready_report.md"
+REPORT_MD = ROOT / "docs/audit/render_policy_ready_report.md"
 
 
 def _read(path: Path) -> str:

@@ -237,8 +237,8 @@ python3 scripts/verify/backend_contract_boundary_guard.py
 每次生产升级必须生成部署记录，来源模板：
 
 ```bash
-cp docs/ops/releases/templates/production_deployment_record_TEMPLATE.zh.md \
-  docs/ops/releases/current/production_deployment_<YYYYMMDD>_<release_id>.md
+cp docs/releases/templates/production_deployment_record_TEMPLATE.zh.md \
+  docs/releases/current/production_deployment_<YYYYMMDD>_<release_id>.md
 ```
 
 记录必须包含：

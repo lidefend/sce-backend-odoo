@@ -30,8 +30,8 @@ README_TOKENS = (
     "- Planned final tag: `v2.0.0`",
     "- Module: versioning, release index, release checklist, release notes, release evidence manifest, verify catalog",
     "- Versioning: `docs/ops/versioning.md`",
-    "- Release index: `docs/ops/releases/README.md`",
-    "- Release index (zh): `docs/ops/releases/README.zh.md`",
+    "- Release index: `docs/releases/README.md`",
+    "- Release index (zh): `docs/releases/README.zh.md`",
     "- Verify catalog: `docs/ops/verify/README.md`",
     "make verify.release.v2_0_0.preflight",
     "make verify.release.v2_0_0.product_hardening",
@@ -46,8 +46,8 @@ README_TOKENS = (
     "remove `verify.release.v2_0_0.governance.guard` from `Makefile`",
     "remove `verify.release.v2_0_0.formal_evidence.schema.guard` from `Makefile`",
     "restore `docs/ops/versioning.md` edits",
-    "restore `docs/ops/releases/README.md` edits",
-    "restore `docs/ops/releases/README.zh.md` edits",
+    "restore `docs/releases/README.md` edits",
+    "restore `docs/releases/README.zh.md` edits",
     "restore `docs/ops/verify/README.md` edits",
     "Runtime rollback is outside this governance batch",
 )
@@ -94,8 +94,8 @@ RELEASE_INDEX_EN_TOKENS = (
     "- v2.0.0 (planned tag: `v2.0.0`)",
     "Notes: `docs/ops/release_notes_v2.0.0.md`",
     "Checklist: `docs/ops/release_checklist_v2.0.0.md`",
-    "Production deployment record template (zh): `docs/ops/releases/templates/production_deployment_record_TEMPLATE.zh.md`",
-    "Evidence: `docs/ops/releases/v2.0.0/evidence_manifest.md`",
+    "Production deployment record template (zh): `docs/releases/templates/production_deployment_record_TEMPLATE.zh.md`",
+    "Evidence: `docs/releases/v2.0.0/evidence_manifest.md`",
     "Verify Catalog: `docs/ops/verify/README.md`",
     "Verify: `make verify.release.v2_0_0.preflight`",
     "Governance Verify: `make verify.release.v2_0_0.governance.guard`",
@@ -110,8 +110,8 @@ RELEASE_INDEX_ZH_TOKENS = (
     "- v2.0.0（计划 tag：`v2.0.0`）",
     "Release Notes：`docs/ops/release_notes_v2.0.0.md`",
     "Release Checklist：`docs/ops/release_checklist_v2.0.0.md`",
-    "Evidence：`docs/ops/releases/v2.0.0/evidence_manifest.md`",
-    "生产部署记录模板（zh）：`docs/ops/releases/templates/production_deployment_record_TEMPLATE.zh.md`",
+    "Evidence：`docs/releases/v2.0.0/evidence_manifest.md`",
+    "生产部署记录模板（zh）：`docs/releases/templates/production_deployment_record_TEMPLATE.zh.md`",
     "Verify Catalog：`docs/ops/verify/README.md`",
     "Verify：`make verify.release.v2_0_0.preflight`",
     "Governance Verify：`make verify.release.v2_0_0.governance.guard`",
@@ -194,12 +194,12 @@ README_LAYER_TARGET_ITEMS = (
 
 README_RELEASE_DOCUMENTS = (
     "Versioning: `docs/ops/versioning.md`",
-    "Release index: `docs/ops/releases/README.md`",
-    "Release index (zh): `docs/ops/releases/README.zh.md`",
+    "Release index: `docs/releases/README.md`",
+    "Release index (zh): `docs/releases/README.zh.md`",
     "Verify catalog: `docs/ops/verify/README.md`",
     "Release notes: `docs/ops/release_notes_v2.0.0.md`",
     "Release checklist: `docs/ops/release_checklist_v2.0.0.md`",
-    "Evidence manifest: `docs/ops/releases/v2.0.0/evidence_manifest.md`",
+    "Evidence manifest: `docs/releases/v2.0.0/evidence_manifest.md`",
 )
 
 README_BOUNDARY_EXCLUSIONS = (
@@ -211,7 +211,7 @@ README_BOUNDARY_EXCLUSIONS = (
 )
 
 README_ROLLBACK_ITEMS = (
-    "remove `docs/ops/releases/v2.0.0/`",
+    "remove `docs/releases/v2.0.0/`",
     "remove `docs/ops/release_notes_v2.0.0.md`",
     "remove `docs/ops/release_checklist_v2.0.0.md`",
     "remove `verify.release.v2_0_0.preflight` from `Makefile`",
@@ -219,8 +219,8 @@ README_ROLLBACK_ITEMS = (
     "remove `verify.release.v2_0_0.governance.guard` from `Makefile`",
     "remove `verify.release.v2_0_0.formal_evidence.schema.guard` from `Makefile`",
     "restore `docs/ops/versioning.md` edits",
-    "restore `docs/ops/releases/README.md` edits",
-    "restore `docs/ops/releases/README.zh.md` edits",
+    "restore `docs/releases/README.md` edits",
+    "restore `docs/releases/README.zh.md` edits",
     "restore `docs/ops/verify/README.md` edits",
 )
 
@@ -296,7 +296,7 @@ VERSIONING_TAG_PRECHECK_ITEMS = (
     "Anchored on main",
     "Requires GitHub Release? (gate/release required)",
     "Validation commands PASS",
-    "Release index updated (docs/ops/releases/README.md)",
+    "Release index updated (docs/releases/README.md)",
 )
 
 VERSIONING_PROMOTION_ORDER = (
@@ -389,7 +389,7 @@ RELEASE_INDEX_EN_PLANNED_ITEMS = (
     "Status: planned",
     "Notes: `docs/ops/release_notes_v2.0.0.md`",
     "Checklist: `docs/ops/release_checklist_v2.0.0.md`",
-    "Evidence: `docs/ops/releases/v2.0.0/evidence_manifest.md`",
+    "Evidence: `docs/releases/v2.0.0/evidence_manifest.md`",
     "Verify Catalog: `docs/ops/verify/README.md`",
     "Verify: `make verify.release.v2_0_0.preflight`",
     "Governance Verify: `make verify.release.v2_0_0.governance.guard`",
@@ -412,7 +412,7 @@ RELEASE_INDEX_ZH_PLANNED_ITEMS = (
     "状态：planned",
     "Release Notes：`docs/ops/release_notes_v2.0.0.md`",
     "Release Checklist：`docs/ops/release_checklist_v2.0.0.md`",
-    "Evidence：`docs/ops/releases/v2.0.0/evidence_manifest.md`",
+    "Evidence：`docs/releases/v2.0.0/evidence_manifest.md`",
     "Verify Catalog：`docs/ops/verify/README.md`",
     "Verify：`make verify.release.v2_0_0.preflight`",
     "Governance Verify：`make verify.release.v2_0_0.governance.guard`",

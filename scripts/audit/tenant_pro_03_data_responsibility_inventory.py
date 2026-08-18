@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTPUT = ROOT / "docs/ops/audit/tenant_pro_03_data_responsibility_inventory.csv"
+OUTPUT = ROOT / "docs/audit/tenant_pro_03_data_responsibility_inventory.csv"
 
 RESOURCE_SUFFIXES = {
     ".csv",

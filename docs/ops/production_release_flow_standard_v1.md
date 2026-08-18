@@ -87,7 +87,7 @@ where name in (...);
    - 验证矩阵
    - 当前生产状态摘要
 6. 每次生产部署必须基于
-   `docs/ops/releases/templates/production_deployment_record_TEMPLATE.zh.md`
+   `docs/releases/templates/production_deployment_record_TEMPLATE.zh.md`
    留存一份部署记录。
 7. 生产写入前必须完成数据库和 filestore 备份，并记录备份路径。
 8. 生产升级后必须跑完验证矩阵；只完成模块升级不算发布完成。
@@ -292,8 +292,8 @@ where name in (...);
 生产部署记录必须从模板复制生成：
 
 ```bash
-cp docs/ops/releases/templates/production_deployment_record_TEMPLATE.zh.md \
-  docs/ops/releases/current/production_deployment_<YYYYMMDD>_<id>.md
+cp docs/releases/templates/production_deployment_record_TEMPLATE.zh.md \
+  docs/releases/current/production_deployment_<YYYYMMDD>_<id>.md
 ```
 
 部署记录完成后必须通过机器检查：

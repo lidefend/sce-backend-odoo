@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Block TEMP_* docs under docs/ops/releases/current/."""
+"""Block TEMP_* docs under docs/releases/current/."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CURRENT_DIR = ROOT / "docs/ops/releases/current"
+CURRENT_DIR = ROOT / "docs/releases/current"
 
 
 def main() -> int:

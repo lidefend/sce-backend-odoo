@@ -4,7 +4,7 @@ This directory hosts release, verification, and operational governance documenta
 
 ## Primary Entry Points
 - prod-sim isolation runbook: `docs/ops/runbook_prod_sim_isolation.en.md`
-- Release evidence directory: `docs/ops/releases/`
+- Release evidence directory: `docs/releases/`
 - Verification entry (including strict/compat modes): `docs/ops/verify/README.md`
 - Production release flow standard: `docs/ops/production_release_flow_standard_v1.md`
 - Production deployment runbook: `docs/ops/production_deployment_runbook_v1.md`
@@ -27,9 +27,9 @@ This directory hosts release, verification, and operational governance documenta
 - Role navigation diff audit:
   - `make audit.nav.role_diff DB_NAME=sc_demo`
   - outputs: `artifacts/audit/role_nav_diff.latest.json`, `artifacts/audit/role_nav_diff.latest.md`
-- Phase 11 Backend Closure: `docs/ops/releases/current/phase_11_backend_closure.md`
-- Phase 11.1 Contract Visibility: `docs/ops/releases/current/phase_11_1_contract_visibility.md`
-- Temporary archive (non-official, traceability only): `docs/ops/releases/archive/temp/`
+- Phase 11 Backend Closure: `docs/releases/current/phase_11_backend_closure.md`
+- Phase 11.1 Contract Visibility: `docs/releases/current/phase_11_1_contract_visibility.md`
+- Temporary archive (non-official, traceability only): `docs/releases/archive/temp/`
 
 ## Relation to Contract/Audit
 - Contract hub: `docs/contract/README.md`

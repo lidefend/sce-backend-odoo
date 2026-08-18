@@ -114,7 +114,7 @@ def _changed_files_since(commit_ref: str) -> list[str]:
 def _is_allowed_post_snapshot_evidence_path(path: str) -> bool:
     allowed_exact = {
         "docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md",
-        "docs/ops/audit/product_delivery_governance_truth_guard_report.md",
+        "docs/audit/product_delivery_governance_truth_guard_report.md",
         "artifacts/backend/delivery_ci_profile_status.json",
         "artifacts/backend/delivery_readiness_ci_summary.json",
         "artifacts/backend/delivery_readiness_ci_summary.md",

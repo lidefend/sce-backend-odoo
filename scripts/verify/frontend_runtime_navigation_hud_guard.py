@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 APP_SHELL = ROOT / "frontend/apps/web/src/layouts/AppShell.vue"
 NAV_REGISTRY = ROOT / "frontend/apps/web/src/app/navigationRegistry.ts"
 REPORT_JSON = ROOT / "artifacts/backend/frontend_runtime_navigation_hud_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/frontend_runtime_navigation_hud_report.md"
+REPORT_MD = ROOT / "docs/audit/frontend_runtime_navigation_hud_report.md"
 
 
 def _read(path: Path) -> str:

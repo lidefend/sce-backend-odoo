@@ -16,18 +16,18 @@ Data source: `artifacts/docs/docs_audit_20260210_090905.json`
 - Missing critical links: 4
 
 ### 1.2 Key Issues (docs-first perspective)
-1. Many `TEMP_*` files under `docs/ops/releases/` are mixed with formal release evidence.
-2. Boundary between `docs/ops/releases/archive/temp/` and current release docs is unclear, increasing search noise.
+1. Many `TEMP_*` files under `docs/releases/` are mixed with formal release evidence.
+2. Boundary between `docs/releases/archive/temp/` and current release docs is unclear, increasing search noise.
 3. Core `docs/contract/*` docs do not consistently backlink to `docs/contract/README.md` (`reason_codes.md`, `suggested_action_contract.md`, etc.).
 4. Historical frontend version notes (`frontend_v0_3_notes.md` ~ `v0_7`) are mixed at the same level as current-phase docs.
 
 ### 1.3 Suspected Outdated/Temporary Files (sample)
-- `docs/ops/releases/archive/temp/temp/TEMP_phase_10_batch_contract_pr_body.md`
-- `docs/ops/releases/archive/temp/temp/TEMP_phase_10_pr_a_body.md`
-- `docs/ops/releases/archive/temp/temp/TEMP_phase_9_8_progress.md`
-- `docs/ops/releases/archive/temp/TEMP_repo_audit_summary.md`
-- `docs/ops/releases/archive/temp/frontend_history/frontend_v0_3_notes.md`
-- `docs/ops/releases/archive/frontend_history/frontend_v0_7_ui_notes.md`
+- `docs/releases/archive/temp/temp/TEMP_phase_10_batch_contract_pr_body.md`
+- `docs/releases/archive/temp/temp/TEMP_phase_10_pr_a_body.md`
+- `docs/releases/archive/temp/temp/TEMP_phase_9_8_progress.md`
+- `docs/releases/archive/temp/TEMP_repo_audit_summary.md`
+- `docs/releases/archive/temp/frontend_history/frontend_v0_3_notes.md`
+- `docs/releases/archive/frontend_history/frontend_v0_7_ui_notes.md`
 
 ## 2. Capability Matrix -> Document Locations
 
@@ -36,7 +36,7 @@ Data source: `artifacts/docs/docs_audit_20260210_090905.json`
 | Contract | `docs/contract/README.md` `docs/contract/contract_v1.md` `docs/contract/exports/intent_catalog.json` `docs/contract/exports/scene_catalog.json` | Mostly complete | Cross-linking is weak |
 | Reason Codes | `docs/contract/reason_codes.md` + `addons/smart_core/utils/reason_codes.py` | Semantics consolidated | Missing README backlink |
 | Suggested Action Contract | `docs/contract/suggested_action_contract.md` + `frontend/apps/web/src/app/suggested_action/*` | Rules/guards are complete | Weak integration in top-level docs navigation |
-| Release / Ops | `docs/ops/releases/*` | Rich evidence | TEMP and formal docs are mixed |
+| Release / Ops | `docs/releases/*` | Rich evidence | TEMP and formal docs are mixed |
 | Gate / Verify | `Makefile` (`verify.*` / `gate.*`) + `scripts/verify/*` | Execution chain is complete | Entry points are scattered across docs |
 | Scene / Intent Catalogs | `docs/contract/exports/*.json` `artifacts/docs/intent_surface_report.json` | Machine-readable | No single index page |
 
@@ -66,22 +66,22 @@ docs/
 
 ## 4. Directory Responsibility Boundaries
 - `docs/contract/`: platform-facing contract commitments (shape, reason codes, FE/BE contract behavior).
-- `docs/ops/releases/current/`: current-phase release evidence for reviewers.
-- `docs/ops/releases/archive/temp/`: historical documents, not default reading path.
+- `docs/releases/current/`: current-phase release evidence for reviewers.
+- `docs/releases/archive/temp/`: historical documents, not default reading path.
 - `docs/audit/`: audit method/rules/latest index; machine-generated payload stays in `artifacts/`.
 - `artifacts/docs/`: machine-readable outputs and one-shot audits, not long-term narrative docs.
 
 ## 5. Merge / Move / Deprecate List
 
 ### 5.1 Move (recommended)
-1. `docs/ops/releases/current/phase_11_backend_closure.md` -> `docs/ops/releases/current/phase_11_backend_closure.md`
-2. `docs/ops/releases/current/phase_11_1_contract_visibility.md` -> `docs/ops/releases/current/phase_11_1_contract_visibility.md`
-3. `docs/ops/releases/current/phase_10_my_work_v1_evidence.md` -> `docs/ops/releases/current/phase_10_my_work_v1_evidence.md`
-4. `docs/ops/releases/_templates/*` -> `docs/ops/releases/templates/*`
+1. `docs/releases/current/phase_11_backend_closure.md` -> `docs/releases/current/phase_11_backend_closure.md`
+2. `docs/releases/current/phase_11_1_contract_visibility.md` -> `docs/releases/current/phase_11_1_contract_visibility.md`
+3. `docs/releases/current/phase_10_my_work_v1_evidence.md` -> `docs/releases/current/phase_10_my_work_v1_evidence.md`
+4. `docs/releases/_templates/*` -> `docs/releases/templates/*`
 
 ### 5.2 Deprecate/Archive (recommended)
-1. `docs/ops/releases/TEMP_*.md`: move to `archive/temp/` or delete after reference check.
-2. `docs/ops/releases/archive/temp/frontend_history/frontend_v0_3_notes.md` ~ `frontend_v0_7*.md`: move to `archive/frontend_history/`.
+1. `docs/releases/TEMP_*.md`: move to `archive/temp/` or delete after reference check.
+2. `docs/releases/archive/temp/frontend_history/frontend_v0_3_notes.md` ~ `frontend_v0_7*.md`: move to `archive/frontend_history/`.
 3. `docs/audit/node_missing_notes.md`: archive if superseded by current verification flow.
 
 ### 5.3 Link Fixes (recommended)
@@ -102,7 +102,7 @@ docs/
 - Validate heading structure and section consistency for contract/ops/audit docs.
 
 4. `verify.docs.temp_guard`
-- Block new `TEMP_*.md` from entering `docs/ops/releases/current/`.
+- Block new `TEMP_*.md` from entering `docs/releases/current/`.
 
 5. `verify.docs.contract_sync`
 - Verify version-anchor consistency between `docs/contract/*.md` and `docs/contract/exports/*.json`.

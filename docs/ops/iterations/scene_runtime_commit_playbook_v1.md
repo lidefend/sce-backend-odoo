@@ -12,7 +12,7 @@
 - `docs/architecture/ui_base_vs_scene_ready_contract_v1.md`
 - `docs/architecture/app_shell_vs_page_scene_contract_v1.md`
 - `docs/contracts/ui_base_contract_schema_v1.md`
-- `docs/ops/audits/current_response_contract_gap_audit_v1.md`
+- `docs/audit/current_response_contract_gap_audit_v1.md`
 
 ### 验收
 
@@ -20,7 +20,7 @@
 test -f docs/architecture/ui_base_vs_scene_ready_contract_v1.md
 test -f docs/architecture/app_shell_vs_page_scene_contract_v1.md
 test -f docs/contracts/ui_base_contract_schema_v1.md
-test -f docs/ops/audits/current_response_contract_gap_audit_v1.md
+test -f docs/audit/current_response_contract_gap_audit_v1.md
 ```
 
 ### 提交
@@ -29,7 +29,7 @@ test -f docs/ops/audits/current_response_contract_gap_audit_v1.md
 git add docs/architecture/ui_base_vs_scene_ready_contract_v1.md \
   docs/architecture/app_shell_vs_page_scene_contract_v1.md \
   docs/contracts/ui_base_contract_schema_v1.md \
-  docs/ops/audits/current_response_contract_gap_audit_v1.md
+  docs/audit/current_response_contract_gap_audit_v1.md
 git commit -m "docs(scene): freeze base/scene/app-shell boundaries"
 ```
 
@@ -70,7 +70,7 @@ git commit -m "feat(scene): adapt ui base contract into orchestrator input"
 - `frontend/apps/web/src/app/resolvers/sceneRegistry.ts`
 - `frontend/apps/web/src/views/ActionView.vue`
 - `frontend/apps/web/src/pages/ContractFormPage.vue`
-- `docs/ops/audits/frontend_direct_base_contract_usage_audit_v1.md`
+- `docs/audit/frontend_direct_base_contract_usage_audit_v1.md`
 
 ### 验收
 
@@ -89,7 +89,7 @@ git add frontend/apps/web/src/app/resolvers/sceneReadyResolver.ts \
   frontend/apps/web/src/app/resolvers/sceneRegistry.ts \
   frontend/apps/web/src/views/ActionView.vue \
   frontend/apps/web/src/pages/ContractFormPage.vue \
-  docs/ops/audits/frontend_direct_base_contract_usage_audit_v1.md
+  docs/audit/frontend_direct_base_contract_usage_audit_v1.md
 git commit -m "feat(frontend): consume scene-ready surfaces for list and intake"
 ```
 

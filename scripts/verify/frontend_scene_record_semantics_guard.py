@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 SCENE_VIEW = ROOT / "frontend/apps/web/src/views/SceneView.vue"
 REPORT_JSON = ROOT / "artifacts/backend/frontend_scene_record_semantics_report.json"
-REPORT_MD = ROOT / "docs/ops/audit/frontend_scene_record_semantics_report.md"
+REPORT_MD = ROOT / "docs/audit/frontend_scene_record_semantics_report.md"
 
 SCENE_TOKENS = [
     "status === 'forbidden'",

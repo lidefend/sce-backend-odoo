@@ -84,7 +84,7 @@ frontend/apps/web/dist-clean/
 frontend/apps/web/dist-release/
 frontend/apps/web/dist-release-rehearsal/
 frontend/apps/web/dist-production-candidate/
-.runtime/
+.runtime
 config/odoo.conf
 
 config/odoo.conf
@@ -102,7 +102,7 @@ cat
 /make
 !/make/
 !/make/*.mk
-artifacts/
+artifacts
 docs/tmp/
 # audit artifacts (generated)
 docs/audit/*.csv

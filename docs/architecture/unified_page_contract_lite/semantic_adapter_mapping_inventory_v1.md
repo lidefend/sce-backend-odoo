@@ -10,7 +10,7 @@ Layer Target: Contract Governance / Semantic Adapter Mapping
 Module:
 
 - `docs/architecture/unified_page_contract_lite`
-- `docs/ops/audits`
+- `docs/audit`
 - `scripts/verify`
 - `Makefile`
 

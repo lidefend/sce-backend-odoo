@@ -76,7 +76,7 @@ Before creating a new tag, confirm:
 - Anchored on main
 - Requires GitHub Release? (gate/release required)
 - Validation commands PASS
-- Release index updated (docs/ops/releases/README.md)
+- Release index updated (docs/releases/README.md)
 
 ## 8) v2.0.0 Formal Release Line
 

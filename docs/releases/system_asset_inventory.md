@@ -28,7 +28,7 @@
 
 ## 4. 关键文档资产
 - 总发布蓝图：`docs/releases/construction_system_v1_release_plan.md`
-- 运行与发布：`docs/ops/releases/README.md`
+- 运行与发布：`docs/releases/README.md`
 - 演示文档目录：`docs/demo`
 
 ## 5. 验证资产（当前关键）

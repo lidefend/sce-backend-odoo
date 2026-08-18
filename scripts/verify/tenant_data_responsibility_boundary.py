@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "config/tenant/module_sets.v1.json"
-INVENTORY = ROOT / "docs/ops/audit/tenant_pro_03_data_responsibility_inventory.csv"
+INVENTORY = ROOT / "docs/audit/tenant_pro_03_data_responsibility_inventory.csv"
 
 
 def main() -> int:

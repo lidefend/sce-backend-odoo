@@ -28,7 +28,7 @@
 
 ## 4. Key Documentation Assets
 - Master release blueprint: `docs/releases/construction_system_v1_release_plan.en.md`
-- Ops/release index: `docs/ops/releases/README.md`
+- Ops/release index: `docs/releases/README.md`
 - Demo docs directory: `docs/demo`
 
 ## 5. Verification Assets (Current Key)

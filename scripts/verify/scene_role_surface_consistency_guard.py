@@ -235,7 +235,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate consistency between role_surface_overrides and R3 role_variants.")
     parser.add_argument("--inventory", default="docs/ops/scene_inventory_matrix_latest.md")
     parser.add_argument("--role-overrides-file", default="addons/smart_construction_core/core_extension.py")
-    parser.add_argument("--output", default="docs/ops/audit/scene_role_surface_consistency_report.md")
+    parser.add_argument("--output", default="docs/audit/scene_role_surface_consistency_report.md")
     parser.add_argument(
         "--scene-files",
         nargs="*",

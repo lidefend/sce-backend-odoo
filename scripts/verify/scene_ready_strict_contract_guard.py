@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BUILDER = ROOT / "addons/smart_core/core/scene_ready_contract_builder.py"
 RUNTIME_CHAIN_TEST = ROOT / "addons/smart_core/tests/test_scene_runtime_contract_chain.py"
 REPORT_JSON = ROOT / "artifacts/backend/scene_ready_strict_contract_guard_report.json"
-REPORT_MD = ROOT / "docs/ops/audits/scene_ready_strict_contract_guard_report.md"
+REPORT_MD = ROOT / "docs/audit/scene_ready_strict_contract_guard_report.md"
 
 
 def _read(path: Path) -> str:
