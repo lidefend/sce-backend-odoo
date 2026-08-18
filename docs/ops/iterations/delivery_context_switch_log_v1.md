@@ -4896,3 +4896,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `/home/lidefend/workspace/.codex-evidence/workspace-archives/20260817/`.
 - No remote branch was deleted, no business database was changed, and the
   active product worktree's 11-file candidate was not modified.
+## PR #264 contract-spec-v0.1 full merge closure (2026-08-18)
+
+- feature/contract-spec-v0.1 was merged into main via PR #264 (merge commit
+  31d6e6e5) with all five required checks green, including the first full-mode
+  frontend_release_gate run in repository history (14m30s, journeys J01-J11).
+- Pre-merge history governance: the RH001 root-commit guard had failed with 18
+  roots because 17 orphan roots were reachable from pushed stash-backup
+  branches (origin/backup/stash-20260816-*). All 22 backup refs were first
+  preserved as a self-contained git bundle at
+  ~/workspace/private-ops/git-bundles/backup-refs-20260818.bundle (sha256
+  358dfc09), then the 20 remote stash branches were deleted with user
+  approval. Stale local tracking refs outside the main-only fetch refspec were
+  removed manually via git update-ref -d.
+- CI convergence fixes on the merge path: J10 approval-dialog aligned with the
+  canonical action bar (nav.canonical-form-action-bar); X2ManyRelationRenderer
+  select gained aria-label for axe select-name; test_inventory.csv,
+  complexity_budget_report.md and split_plan_queue.md regenerated; the
+  web_contract_v2_frontend_architecture_guard stale fallback token was retired
+  while its selector boundary was extended to cover
+  useContractV2ShadowDiagnostics.ts, keeping the empty statusbar fallback stub
+  required by frontend_scene_component_bridge_guard.
+- Run registration: .agent/runs/OPS-MERGE-264 (goal/events/evidence/checkpoint).

@@ -1,0 +1,13 @@
+run:
+
+  id:
+    OPS-MERGE-264
+
+  title:
+    contract_spec_v0.1_branch_merge_to_main
+
+  goal_reference:
+    - PR-264
+
+  status:
+    completed

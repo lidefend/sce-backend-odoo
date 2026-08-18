@@ -1,0 +1,61 @@
+events:
+
+  - type:
+      goal.started
+
+    description:
+      User approved full-merge strategy: merge feature/contract-spec-v0.1 into main via PR #264
+
+  - type:
+      change.completed
+
+    area:
+      repository_history_governance
+
+    findings:
+      - RH001 root-commit guard failed with 18 roots; 17 orphan roots held by origin/backup/stash-20260816-*
+      - all 20 remote backup/stash branches backed up to a git bundle then deleted
+      - stale local tracking refs outside the main-only refspec removed manually
+
+  - type:
+      change.completed
+
+    area:
+      frontend_browser_hardening
+
+    findings:
+      - J10 approval-dialog aligned with the canonical action bar (nav.canonical-form-action-bar, commit ba5d2fca)
+      - X2ManyRelationRenderer many2many select gained aria-label for axe select-name
+
+  - type:
+      change.completed
+
+    area:
+      verification_guards
+
+    findings:
+      - test_inventory.csv, complexity_budget_report.md, split_plan_queue.md regenerated via generate scripts
+      - web_contract_v2_frontend_architecture_guard stale fallback token retired; selector boundary now covers useContractV2ShadowDiagnostics.ts
+      - empty statusbar fallback stub kept per frontend_scene_component_bridge_guard
+
+  - type:
+      verification.completed
+
+    result:
+      PASS
+
+    checks:
+      - frontend_release_gate (full mode, 14m30s, first full-mode run in repo history)
+      - professional_authorization
+      - professional_quality_gate
+      - public_guard (root commit count = 1)
+      - python310
+
+  - type:
+      completed
+
+    merge_commit:
+      31d6e6e5
+
+    merged_at:
+      2026-08-18T19:11:35Z
