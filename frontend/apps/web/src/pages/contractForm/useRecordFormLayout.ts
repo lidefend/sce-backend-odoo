@@ -25,7 +25,7 @@ import {
   resolveNativeModifierFieldValue,
   type NativeLayoutLikeNode, type FieldSemanticMeta,
 } from './nativeLayoutUtils';
-import { normalizeNativeFormStatusbar, normalizeWorkflowPhaseStatusbar, resolveStatusbarSelectionValue } from './workflowContract';
+import { normalizeNativeFormStatusbar, resolveStatusbarSelectionValue } from './workflowContract';
 import type { NativeStatusbarVm } from './types';
 import {
   fieldGroupTitleMatches, isReadableFieldGroupTitle, layoutHasReadableFieldGroups,
@@ -47,7 +47,6 @@ export function useRecordFormLayout(context: {
   nativeFormDesignFieldLabels: Ref<Record<string, string>>; formLayoutColumnsDraft: Ref<1|2|3>;
   fieldVisibilityDraft: Record<string, boolean>; contractActionFromNativeRow: (row: Record<string, unknown>) => unknown;
   policyContext: ComputedRef<any>; rights: ComputedRef<{create:boolean;write:boolean}>;
-  currentWorkflowContract: () => Record<string, unknown>;
   markFieldChanged: (name: string) => void;
   layoutNodes: () => Array<{kind:string;name:string}>;
 }) {
@@ -140,7 +139,7 @@ export function useRecordFormLayout(context: {
     return normalizeNativeFormStatusbar({recordId:context.recordId.value,formView:context.contract.value?.views?.form,
       fields:context.contract.value?.fields||{},formData:context.formData,mainData:main,fieldReadonly:(field)=>runtimeState(field).readonly,
       readonly:context.renderProfile.value==='readonly'||(context.recordId.value?!context.rights.value.write:!context.rights.value.create),
-      fallback:normalizeWorkflowPhaseStatusbar(context.currentWorkflowContract())});
+      fallback:{visible:false,field:'',current:'',states:[],reachedValues:[],readonly:true}});
   });
   const setStatusbarValue=(value:string)=>{const field=nativeStatusbar.value.field;if(!field||nativeStatusbar.value.readonly)return;
     context.formData[field]=resolveStatusbarSelectionValue(context.contract.value?.fields?.[field],value);context.markFieldChanged(field);};

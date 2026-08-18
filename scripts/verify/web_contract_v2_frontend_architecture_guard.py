@@ -323,7 +323,7 @@ REQUIRED_WORKFLOW_STATUSBAR_CONTRACT_TOKENS: tuple[tuple[Path, str], ...] = (
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "function normalizeNativeFormStatusbar"),
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "const statusbar = dictOrEmpty(workflow.statusbar)"),
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "if (!input.recordId)"),
-    (WEB_ROOT / "pages/contractForm/useRecordFormLayout.ts", "fallback:normalizeWorkflowPhaseStatusbar(context.currentWorkflowContract())"),
+    (WEB_ROOT / "pages/contractForm/useRecordFormLayout.ts", "fallback:{visible:false,field:'',current:'',states:[],reachedValues:[],readonly:true}"),
     (WEB_ROOT / "pages/ContractFormPage.vue", "recordId: recordId.value"),
     (ROOT / "docs/audit/workflow_state_unification_plan.md", "New-record forms must not render workflow statusbar"),
     (ROOT / "make/ci.mk", "verify.workflow_contract.browser.create_statusbar.host"),
