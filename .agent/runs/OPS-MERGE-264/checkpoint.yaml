@@ -1,0 +1,22 @@
+checkpoint:
+
+  captured_at:
+    2026-08-18T20:10:00+08:00
+
+  main_head:
+    31d6e6e5
+
+  merged_pr:
+    264
+
+  state:
+    - local main fast-forwarded to 31d6e6e5, working tree clean
+    - origin/backup/stash-* remote branches deleted after bundle backup
+    - local remote.origin.fetch is still main-only; stale tracking refs must be removed manually after future remote branch deletions
+    - spec worktree still occupies local branch feature/contract-spec-v0.1; remote branch not auto-deleted by GitHub
+    - fix/local-development-lifecycle-v2 local branch merged and removable
+
+  follow_ups:
+    - R3 demo physical isolation migration
+    - remote 200+ branch cleanup
+    - gitee-mirror sync

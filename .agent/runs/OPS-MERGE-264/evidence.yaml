@@ -1,0 +1,17 @@
+evidence:
+
+  goal:
+    OPS-MERGE-264
+
+  verification:
+    - pull_request_264_all_checks_green
+    - public_guard_single_root_history
+    - frontend_full_mode_browser_journeys_J01_J11
+    - axe_accessibility_no_blocking_findings
+    - ci_generated_reports_guard
+
+  source:
+    - https://github.com/lidefend/sce-backend-odoo/pull/264
+    - merge commit 31d6e6e5 on main
+    - head commit a74d7a5d
+    - backup bundle ~/workspace/private-ops/git-bundles/backup-refs-20260818.bundle (sha256 358dfc09, 22 refs)
