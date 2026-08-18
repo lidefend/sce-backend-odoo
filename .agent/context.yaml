@@ -1,0 +1,19 @@
+project:
+  name: sce-backend-odoo-p0-ui5-scene-foundation-recovery-v2-p0-scene-component-bridge-v1-p0-canonical-effective-primary-v1
+  role: sce-backend-odoo 的恢复/桥接工作副本（P0 UI5 场景基础恢复 v2 + 场景组件桥 v1 + canonical effective primary v1）
+
+architecture:
+  backend:
+    type: odoo
+  frontend:
+    type: vue
+
+authoritative:
+  guard:
+    path: AGENTS.md
+  architecture_guard:
+    path: ARCHITECTURE_GUARD.md
+
+lineage:
+  parent_repo: sce-backend-odoo
+  note: 目录名即变更谱系；任务结束后应回流或归档，禁止与主仓库长期并行演进
