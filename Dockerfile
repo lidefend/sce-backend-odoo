@@ -90,7 +90,7 @@ RUN pip3 install --no-cache-dir -r /tmp/requirements-odoo.txt
 
 # Product addons are copied explicitly. Customer, demo, acceptance-fixture and
 # migration payload modules must be mounted as separate delivery artifacts.
-RUN mkdir -p /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons \
+RUN mkdir -p /mnt/product-addons /mnt/customer-addons /mnt/test-addons /mnt/source-addons /mnt/demo-addons \
     && ln -s /mnt/product-addons /mnt/extra-addons
 COPY --chown=odoo:odoo addons/sc_norm_engine/ /mnt/product-addons/sc_norm_engine/
 COPY --chown=odoo:odoo addons/smart_core/ /mnt/product-addons/smart_core/

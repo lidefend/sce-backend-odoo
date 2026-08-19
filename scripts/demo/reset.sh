@@ -35,7 +35,7 @@ else
 fi
 
 DEMO_LOGFILE="${DEMO_LOGFILE:-/var/lib/odoo/demo_install.log}"
-ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH:-/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons,/mnt/addons_external/oca_server_ux}"
+ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH:-/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons,/mnt/demo-addons,/mnt/addons_external/oca_server_ux}"
 
 log "install seed/demo modules on ${DB_NAME}"
 
