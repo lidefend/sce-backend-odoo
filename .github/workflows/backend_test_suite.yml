@@ -89,6 +89,30 @@ jobs:
           echo "MODULES=${MODULES}" >> "${GITHUB_ENV}"
           printf 'backend suite modules:\n%s\n' "${MODULES}"
 
+      # The compose build enforces the immutable frontend fingerprint via the
+      # Dockerfile 'frontend-verified' stage, so the expected hash must be
+      # derived from the 'frontend-artifact' stage before docker compose
+      # build (same approach as demo-ci.yml). First real execution on the
+      # self-hosted runner (run 32179847781) failed without this step.
+      - name: Calculate frontend build fingerprint
+        run: |
+          set -euo pipefail
+          artifact_dir="${RUNNER_TEMP}/frontend-artifact-${GITHUB_RUN_ID}"
+          docker buildx build \
+            --file Dockerfile \
+            --target frontend-artifact \
+            --output "type=local,dest=${artifact_dir}" \
+            --build-arg "APT_MIRROR=${APT_MIRROR:-default}" \
+            .
+          recorded_hash="$(cat "${artifact_dir}/.build-sha256")"
+          calculated_hash="$(cd "${artifact_dir}" && LC_ALL=C find . -type f ! -name .build-sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+          test -n "${recorded_hash}"
+          test "${recorded_hash}" = "${calculated_hash}"
+          echo "FRONTEND_BUILD_SHA256=${recorded_hash}" >> "${GITHUB_ENV}"
+          echo "SOURCE_SHA=${HEAD_SHA}" >> "${GITHUB_ENV}"
+          find "${artifact_dir}" -mindepth 1 -delete
+          rmdir "${artifact_dir}"
+
       - name: Build images and start database
         run: |
           set -euo pipefail
