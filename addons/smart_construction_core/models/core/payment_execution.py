@@ -661,6 +661,12 @@ class ScPaymentExecution(models.Model):
                 incoming_id = incoming.id if isinstance(incoming, models.BaseModel) else (incoming or False)
                 if current_id == incoming_id:
                     continue
+                if self.env.su and (not current_id or not incoming_id):
+                    # R10-v2: superuser maintenance may clear or back-fill an
+                    # anchor (e.g. repairing a draft chain); regular users can
+                    # never rebind. Downstream state guards still keep records
+                    # with a broken chain from progressing.
+                    continue
                 if (
                     controlled_history_fill
                     and rec.source_origin == "legacy"
@@ -972,26 +978,52 @@ class ScPaymentExecution(models.Model):
                 rec.receipt_bank_name,
                 rec.receipt_account_no,
             )
-            if not all(payer_fields):
-                raise_guard(
-                    "PAYMENT_EXECUTION_MISSING_PAYER_ACCOUNT",
-                    f"付款执行[{rec.display_name}]",
-                    _("办理付款执行"),
-                    reasons=[_("新系统付款执行必须完整填写付款户名、开户行和账号")],
+            # R10-v2: accounts inherited verbatim from the payment request's
+            # authoritative snapshot are accepted as-is (legacy chains may
+            # only carry payer name/account-no, and the snapshot carries no
+            # payment method). Any manually entered account data must be
+            # complete — full payer/payee triples plus a payment method.
+            request_snapshot = (
+                rec._payment_request_values(rec.payment_request_id)
+                if rec.payment_request_id
+                else {}
+            )
+
+            def _matches_snapshot(field_names):
+                if not request_snapshot:
+                    return False
+                return all(
+                    (getattr(rec, name) or "") == (request_snapshot.get(name) or "")
+                    for name in field_names
                 )
-            if not all(payee_fields):
+
+            payer_from_snapshot = _matches_snapshot(
+                ("payment_account_name", "payment_bank_name", "payment_account_no")
+            )
+            payee_from_snapshot = _matches_snapshot(
+                ("receipt_account_name", "receipt_bank_name", "receipt_account_no")
+            )
+            if not payer_from_snapshot:
+                if not all(payer_fields):
+                    raise_guard(
+                        "PAYMENT_EXECUTION_MISSING_PAYER_ACCOUNT",
+                        f"付款执行[{rec.display_name}]",
+                        _("办理付款执行"),
+                        reasons=[_("新系统付款执行必须完整填写付款户名、开户行和账号")],
+                    )
+                if not (rec.payment_method or "").strip():
+                    raise_guard(
+                        "PAYMENT_EXECUTION_MISSING_PAYMENT_METHOD",
+                        f"付款执行[{rec.display_name}]",
+                        _("办理付款执行"),
+                        reasons=[_("付款执行必须选择付款方式")],
+                    )
+            if not payee_from_snapshot and not all(payee_fields):
                 raise_guard(
                     "PAYMENT_EXECUTION_MISSING_PAYEE_ACCOUNT",
                     f"付款执行[{rec.display_name}]",
                     _("办理付款执行"),
                     reasons=[_("新系统付款执行必须具备完整收款户名、开户行和账号")],
-                )
-            if not (rec.payment_method or "").strip():
-                raise_guard(
-                    "PAYMENT_EXECUTION_MISSING_PAYMENT_METHOD",
-                    f"付款执行[{rec.display_name}]",
-                    _("办理付款执行"),
-                    reasons=[_("付款执行必须选择付款方式")],
                 )
 
     def _check_payment_request_scope_or_raise(self):

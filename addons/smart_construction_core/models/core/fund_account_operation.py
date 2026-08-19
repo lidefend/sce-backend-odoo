@@ -309,11 +309,13 @@ class ScFundAccountOperation(models.Model):
         if not project_id:
             return False
         # R10: use sudo() to bypass record rules in visibility check
+        # R10-v2: company-less projects are shared records, visible to all.
         project = self.sudo().env["project.project"].search(
             [
                 ("id", "=", project_id),
+                "|",
+                ("company_id", "=", False),
                 ("company_id", "=", company_id),
-                ("company_id", "in", allowed_company_ids),
             ],
             limit=1,
         )
@@ -331,10 +333,17 @@ class ScFundAccountOperation(models.Model):
         account = self.env["sc.fund.account"].search(
             [
                 ("id", "=", account_id),
+                # R10-v2: company-less accounts/projects stay shared across
+                # companies (project.company_id has no default in this build).
+                "|",
+                ("company_id", "=", False),
+                "&",
                 ("company_id", "=", company_id),
                 ("company_id", "in", allowed_company_ids),
                 "|",
                 ("project_id", "=", False),
+                "|",
+                ("project_id.company_id", "=", False),
                 ("project_id.company_id", "=", company_id),
             ],
             limit=1,

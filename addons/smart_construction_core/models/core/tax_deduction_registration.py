@@ -221,9 +221,12 @@ class ScTaxDeductionRegistration(models.Model):
 
     @api.model
     def _require_visible_company_project(self, project_id):
+        # R10-v2: company-less projects are shared records, visible to all.
         project = self.sudo().env["project.project"].search(
             [
                 ("id", "=", project_id),
+                "|",
+                ("company_id", "=", False),
                 ("company_id", "in", self.env.companies.ids),
             ],
             limit=1,

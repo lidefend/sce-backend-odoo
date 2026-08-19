@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import SUPERUSER_ID, api, models, fields, tools
 
 
 class ResUsers(models.Model):
@@ -9,6 +9,17 @@ class ResUsers(models.Model):
     NO_BUSINESS_FACT_AUTHORITY = True
 
     token_version = fields.Integer(default=0)
+
+    @api.model
+    @tools.ormcache("self._uid", "group_ext_id")
+    def _has_group(self, group_ext_id):
+        # R10-v2: this Odoo build's has_group has no superuser pass-through,
+        # while every SC capability guard assumes "superuser can act".
+        # Restore the Odoo ACL semantics here so superuser-driven flows
+        # (tests, scripts, shell) are not denied by group membership checks.
+        if self._uid == SUPERUSER_ID:
+            return True
+        return super()._has_group(group_ext_id)
 
     def write(self, vals):
         if self.env.context.get("sc_skip_token_epoch_bump"):

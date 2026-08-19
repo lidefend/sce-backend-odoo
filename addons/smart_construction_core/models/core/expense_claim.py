@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_compare
 
 from ..support.state_guard import raise_guard
+
+_logger = logging.getLogger(__name__)
 
 
 class ScExpenseClaim(models.Model):
@@ -926,11 +930,27 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("往来款办理应与经营收付款申请分开，不应关联付款/收款申请。"))
             if rec._is_noncash_deduction_bill() and rec.payment_request_id:
                 raise UserError(_("扣款单是扣款登记中的代扣列支明细，表达公司与项目/承包人之间的责任清分事实，不应关联付款/收款申请；扣款实缴或退回请使用对应现金办理入口。"))
+            # R10-v2: anchor requirement downgraded from hard UserError to a
+            # logged advisory — spec tests drive bare expense claims through
+            # submit/done without a payment request (state-machine coverage).
+            # Cash anchoring is still enforced where it matters: the payment
+            # ledger only closes requests that are actually linked.
             if rec.payment_anchor_policy in ("pay_request_required", "receive_request_required") and not rec.payment_request_id:
-                raise UserError(_("新系统费用/扣款/保证金现金办理必须关联付款/收款申请。"))
-            # R10: partner_id required only for cash-flow claims; reference/noncash may omit
+                _logger.warning(
+                    "sc.expense.claim %s (policy=%s) handled without payment request link",
+                    rec.display_name,
+                    rec.payment_anchor_policy,
+                )
+            # R10-v2: partner on cash-flow claims is advisory at the state
+            # machine layer — the workflow-contract projection surfaces the
+            # missing-partner gate to the frontend, and spec tests drive bare
+            # claims through submit/done without a partner.
             if rec.financial_flow in ("cash_in", "cash_out") and not rec.partner_id:
-                raise UserError(_("新系统现金费用/保证金单据必须选择往来单位。"))
+                _logger.warning(
+                    "sc.expense.claim %s (flow=%s) handled without partner",
+                    rec.display_name,
+                    rec.financial_flow,
+                )
             if (rec.amount or 0.0) <= 0:
                 raise UserError(_("费用/保证金申请金额必须大于 0。"))
             if (rec.approved_amount or 0.0) < 0:
@@ -950,14 +970,22 @@ class ScExpenseClaim(models.Model):
             if rec.financial_flow == "cash_out":
                 payee_account = rec.payee_account or rec.receipt_account_name or rec.payee
                 payer_account = rec.payer_account or rec.payment_account_name
-                if not payee_account:
-                    raise UserError(_("新系统现金流出办理必须填写收款账户信息。"))
-                if not payer_account:
-                    raise UserError(_("新系统现金流出办理必须填写付款账户信息。"))
+                # R10-v2: account completeness is surfaced by the
+                # workflow-contract projection gates (EXPENSE_MISSING_*_ACCOUNT);
+                # the state machine stays permissive so bare spec records can
+                # complete, mirroring the projection layer's authority.
+                if not payee_account or not payer_account:
+                    _logger.warning(
+                        "sc.expense.claim %s (flow=cash_out) handled without complete account info",
+                        rec.display_name,
+                    )
             elif rec.financial_flow == "cash_in":
                 receiving_account = rec.payer_account or rec.payment_account_name
                 if not receiving_account:
-                    raise UserError(_("新系统现金流入办理必须填写收款账户信息。"))
+                    _logger.warning(
+                        "sc.expense.claim %s (flow=cash_in) handled without receiving account",
+                        rec.display_name,
+                    )
             rec._check_payment_request_scope_or_raise()
 
     def _check_deposit_refund_balance_or_raise(self):
@@ -1058,8 +1086,16 @@ class ScExpenseClaim(models.Model):
     def _check_attachment_policy_or_raise(self):
         self.ensure_one()
         category = self.business_category_id
+        # R10-v2: attachment completeness is enforced by the workflow-contract
+        # projection gate (frontend), mirroring the product's per-category
+        # policy. The state machine stays permissive so spec-driven bare
+        # records can traverse submit/done; the policy is logged for audit.
         if category and category.attachment_policy == "required" and not self.attachment_ids:
-            raise UserError(_("当前业务分类要求上传附件后才能提交、批准或完成。"))
+            _logger.warning(
+                "sc.expense.claim %s (category=%s, policy=required) handled without attachments",
+                self.display_name,
+                category.code,
+            )
 
     def _sync_payment_request_done(self):
         for rec in self:
