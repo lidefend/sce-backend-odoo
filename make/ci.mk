@@ -704,7 +704,7 @@ ci.generated_reports.guard: guard.prod.forbid
 	@python3 scripts/ci/generate_complexity_budget_report.py
 	@python3 scripts/ci/generate_split_plan_queue.py
 	@python3 scripts/ci/generate_github_remote_execution_plan.py
-	@python3 scripts/ci/generate_contract_structure_fingerprint.py
+	@python3 scripts/ci/generate_contract_structure_fingerprint.py --diff
 	@echo "[OK] tracked generated reports are current"
 
 verify.menu_config_tree_editor.behavior: guard.prod.forbid

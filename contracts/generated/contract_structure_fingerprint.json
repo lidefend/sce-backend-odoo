@@ -2,6 +2,247 @@
   "domains": [
     {
       "contract_fields": [
+        "currency",
+        "payment_request",
+        "payment_state",
+        "project",
+        "state"
+      ],
+      "contract_states": [
+        "approved",
+        "cancel",
+        "done",
+        "draft",
+        "legacy_confirmed",
+        "submit"
+      ],
+      "contract_transitions": [
+        "approve",
+        "cancel",
+        "complete",
+        "submit"
+      ],
+      "entity": "ScExpenseClaim",
+      "id": "expense_claim",
+      "model": "ScExpenseClaim",
+      "model_fields": {
+        "currency": {
+          "_status": "missing"
+        },
+        "payment_request": {
+          "_status": "missing"
+        },
+        "payment_state": {
+          "type": "Char"
+        },
+        "project": {
+          "_status": "missing"
+        },
+        "state": {
+          "required": true,
+          "type": "Selection"
+        }
+      },
+      "model_file": "addons/smart_construction_core/models/core/expense_claim.py",
+      "module": "",
+      "odoo_model": "ScExpenseClaim",
+      "version": 1
+    },
+    {
+      "contract_fields": [
+        "amount_total",
+        "amount_untaxed",
+        "completion_date",
+        "contract_date",
+        "expected_sign_date",
+        "invoice_amount",
+        "project",
+        "received_amount",
+        "settlement_amount",
+        "sign_status",
+        "state",
+        "subcontract_mode"
+      ],
+      "contract_states": [
+        "cancel",
+        "confirmed",
+        "draft",
+        "legacy_confirmed",
+        "signed"
+      ],
+      "contract_transitions": [
+        "cancel",
+        "confirm",
+        "sign"
+      ],
+      "entity": "ScGeneralContract",
+      "id": "general_contract",
+      "model": "ScGeneralContract",
+      "model_fields": {
+        "amount_total": {
+          "required": true,
+          "type": "Monetary"
+        },
+        "amount_untaxed": {
+          "type": "Monetary"
+        },
+        "completion_date": {
+          "type": "Date"
+        },
+        "contract_date": {
+          "type": "Date"
+        },
+        "expected_sign_date": {
+          "type": "Date"
+        },
+        "invoice_amount": {
+          "type": "Monetary"
+        },
+        "project": {
+          "_status": "missing"
+        },
+        "received_amount": {
+          "type": "Monetary"
+        },
+        "settlement_amount": {
+          "type": "Monetary"
+        },
+        "sign_status": {
+          "type": "Char"
+        },
+        "state": {
+          "required": true,
+          "type": "Selection"
+        },
+        "subcontract_mode": {
+          "type": "Selection"
+        }
+      },
+      "model_file": "addons/smart_construction_core/models/core/general_contract.py",
+      "module": "",
+      "odoo_model": "ScGeneralContract",
+      "version": 1
+    },
+    {
+      "contract_fields": [
+        "invoice_code",
+        "invoice_date",
+        "invoice_no",
+        "invoice_type",
+        "project",
+        "recipient_unit_name",
+        "recognition_date",
+        "state",
+        "tax_rate"
+      ],
+      "contract_states": [
+        "cancel",
+        "confirmed",
+        "draft",
+        "legacy_confirmed",
+        "registered"
+      ],
+      "contract_transitions": [
+        "cancel",
+        "confirm",
+        "register"
+      ],
+      "entity": "ScInvoiceRegistration",
+      "id": "invoice_registration",
+      "model": "ScInvoiceRegistration",
+      "model_fields": {
+        "invoice_code": {
+          "_status": "missing"
+        },
+        "invoice_date": {
+          "_status": "missing"
+        },
+        "invoice_no": {
+          "_status": "missing"
+        },
+        "invoice_type": {
+          "_status": "missing"
+        },
+        "project": {
+          "_status": "missing"
+        },
+        "recipient_unit_name": {
+          "_status": "missing"
+        },
+        "recognition_date": {
+          "_status": "missing"
+        },
+        "state": {
+          "_status": "missing"
+        },
+        "tax_rate": {
+          "_status": "missing"
+        }
+      },
+      "model_file": "addons/smart_construction_core/models/core/daily_contract_settlement.py",
+      "module": "",
+      "odoo_model": "ScInvoiceRegistration",
+      "version": 1
+    },
+    {
+      "contract_fields": [
+        "cancellation_kind",
+        "contract",
+        "partner",
+        "payment_request",
+        "project",
+        "reject_reason",
+        "state"
+      ],
+      "contract_states": [
+        "cancel",
+        "confirmed",
+        "draft",
+        "legacy_confirmed",
+        "paid"
+      ],
+      "contract_transitions": [
+        "cancel",
+        "confirm",
+        "mark_paid",
+        "reverse_payment"
+      ],
+      "entity": "ScPaymentExecution",
+      "id": "payment_execution",
+      "model": "ScPaymentExecution",
+      "model_fields": {
+        "cancellation_kind": {
+          "readonly": true,
+          "type": "Selection"
+        },
+        "contract": {
+          "_status": "missing"
+        },
+        "partner": {
+          "_status": "missing"
+        },
+        "payment_request": {
+          "_status": "missing"
+        },
+        "project": {
+          "_status": "missing"
+        },
+        "reject_reason": {
+          "readonly": true,
+          "type": "Char"
+        },
+        "state": {
+          "required": true,
+          "type": "Selection"
+        }
+      },
+      "model_file": "addons/smart_construction_core/models/core/payment_execution.py",
+      "module": "",
+      "odoo_model": "ScPaymentExecution",
+      "version": 1
+    },
+    {
+      "contract_fields": [
         "amount",
         "contract_id",
         "name",
@@ -98,10 +339,51 @@
     },
     {
       "contract_fields": [
-        "cancellation_kind",
-        "contract",
-        "partner",
-        "payment_request",
+        "execution_state",
+        "lifecycle_state",
+        "name"
+      ],
+      "contract_states": [
+        "closed",
+        "closing",
+        "done",
+        "draft",
+        "in_progress",
+        "paused",
+        "warranty"
+      ],
+      "contract_transitions": [
+        "close",
+        "complete",
+        "pause",
+        "resume",
+        "start",
+        "start_closing",
+        "start_warranty"
+      ],
+      "entity": "ProjectProject",
+      "id": "project_lifecycle",
+      "model": "ProjectProject",
+      "model_fields": {
+        "execution_state": {
+          "_status": "missing"
+        },
+        "lifecycle_state": {
+          "type": "Selection"
+        },
+        "name": {
+          "_status": "missing"
+        }
+      },
+      "model_file": "addons/smart_construction_core/models/core/project_core.py",
+      "module": "",
+      "odoo_model": "ProjectProject",
+      "version": 1
+    },
+    {
+      "contract_fields": [
+        "currency",
+        "note",
         "project",
         "reject_reason",
         "state"
@@ -111,30 +393,22 @@
         "confirmed",
         "draft",
         "legacy_confirmed",
-        "paid"
+        "received"
       ],
       "contract_transitions": [
         "cancel",
         "confirm",
-        "mark_paid",
-        "reverse_payment"
+        "mark_received"
       ],
-      "entity": "ScPaymentExecution",
-      "id": "payment_execution",
-      "model": "ScPaymentExecution",
+      "entity": "ScReceiptIncome",
+      "id": "receipt_income",
+      "model": "ScReceiptIncome",
       "model_fields": {
-        "cancellation_kind": {
-          "readonly": true,
-          "type": "Selection"
-        },
-        "contract": {
+        "currency": {
           "_status": "missing"
         },
-        "partner": {
-          "_status": "missing"
-        },
-        "payment_request": {
-          "_status": "missing"
+        "note": {
+          "type": "Text"
         },
         "project": {
           "_status": "missing"
@@ -148,84 +422,9 @@
           "type": "Selection"
         }
       },
-      "model_file": "addons/smart_construction_core/models/core/payment_execution.py",
+      "model_file": "addons/smart_construction_core/models/core/receipt_income.py",
       "module": "",
-      "odoo_model": "ScPaymentExecution",
-      "version": 1
-    },
-    {
-      "contract_fields": [
-        "amount_total",
-        "amount_untaxed",
-        "completion_date",
-        "contract_date",
-        "expected_sign_date",
-        "invoice_amount",
-        "project",
-        "received_amount",
-        "settlement_amount",
-        "sign_status",
-        "state",
-        "subcontract_mode"
-      ],
-      "contract_states": [
-        "cancel",
-        "confirmed",
-        "draft",
-        "legacy_confirmed",
-        "signed"
-      ],
-      "contract_transitions": [
-        "cancel",
-        "confirm",
-        "sign"
-      ],
-      "entity": "ScGeneralContract",
-      "id": "general_contract",
-      "model": "ScGeneralContract",
-      "model_fields": {
-        "amount_total": {
-          "required": true,
-          "type": "Monetary"
-        },
-        "amount_untaxed": {
-          "type": "Monetary"
-        },
-        "completion_date": {
-          "type": "Date"
-        },
-        "contract_date": {
-          "type": "Date"
-        },
-        "expected_sign_date": {
-          "type": "Date"
-        },
-        "invoice_amount": {
-          "type": "Monetary"
-        },
-        "project": {
-          "_status": "missing"
-        },
-        "received_amount": {
-          "type": "Monetary"
-        },
-        "settlement_amount": {
-          "type": "Monetary"
-        },
-        "sign_status": {
-          "type": "Char"
-        },
-        "state": {
-          "required": true,
-          "type": "Selection"
-        },
-        "subcontract_mode": {
-          "type": "Selection"
-        }
-      },
-      "model_file": "addons/smart_construction_core/models/core/general_contract.py",
-      "module": "",
-      "odoo_model": "ScGeneralContract",
+      "odoo_model": "ScReceiptIncome",
       "version": 1
     },
     {
@@ -305,207 +504,6 @@
         }
       },
       "version": 1
-    },
-    {
-      "contract_fields": [
-        "currency",
-        "payment_request",
-        "payment_state",
-        "project",
-        "state"
-      ],
-      "contract_states": [
-        "approved",
-        "cancel",
-        "done",
-        "draft",
-        "legacy_confirmed",
-        "submit"
-      ],
-      "contract_transitions": [
-        "approve",
-        "cancel",
-        "complete",
-        "submit"
-      ],
-      "entity": "ScExpenseClaim",
-      "id": "expense_claim",
-      "model": "ScExpenseClaim",
-      "model_fields": {
-        "currency": {
-          "_status": "missing"
-        },
-        "payment_request": {
-          "_status": "missing"
-        },
-        "payment_state": {
-          "type": "Char"
-        },
-        "project": {
-          "_status": "missing"
-        },
-        "state": {
-          "required": true,
-          "type": "Selection"
-        }
-      },
-      "model_file": "addons/smart_construction_core/models/core/expense_claim.py",
-      "module": "",
-      "odoo_model": "ScExpenseClaim",
-      "version": 1
-    },
-    {
-      "contract_fields": [
-        "invoice_code",
-        "invoice_date",
-        "invoice_no",
-        "invoice_type",
-        "project",
-        "recipient_unit_name",
-        "recognition_date",
-        "state",
-        "tax_rate"
-      ],
-      "contract_states": [
-        "cancel",
-        "confirmed",
-        "draft",
-        "legacy_confirmed",
-        "registered"
-      ],
-      "contract_transitions": [
-        "cancel",
-        "confirm",
-        "register"
-      ],
-      "entity": "ScInvoiceRegistration",
-      "id": "invoice_registration",
-      "model": "ScInvoiceRegistration",
-      "model_fields": {
-        "invoice_code": {
-          "type": "Char"
-        },
-        "invoice_date": {
-          "type": "Date"
-        },
-        "invoice_no": {
-          "type": "Char"
-        },
-        "invoice_type": {
-          "type": "Char"
-        },
-        "project": {
-          "_status": "missing"
-        },
-        "recipient_unit_name": {
-          "type": "Char"
-        },
-        "recognition_date": {
-          "type": "Date"
-        },
-        "state": {
-          "required": true,
-          "type": "Selection"
-        },
-        "tax_rate": {
-          "type": "Char"
-        }
-      },
-      "model_file": "addons/smart_construction_core/models/core/invoice_registration.py",
-      "module": "",
-      "odoo_model": "ScInvoiceRegistration",
-      "version": 1
-    },
-    {
-      "contract_fields": [
-        "currency",
-        "note",
-        "project",
-        "reject_reason",
-        "state"
-      ],
-      "contract_states": [
-        "cancel",
-        "confirmed",
-        "draft",
-        "legacy_confirmed",
-        "received"
-      ],
-      "contract_transitions": [
-        "cancel",
-        "confirm",
-        "mark_received"
-      ],
-      "entity": "ScReceiptIncome",
-      "id": "receipt_income",
-      "model": "ScReceiptIncome",
-      "model_fields": {
-        "currency": {
-          "_status": "missing"
-        },
-        "note": {
-          "type": "Text"
-        },
-        "project": {
-          "_status": "missing"
-        },
-        "reject_reason": {
-          "readonly": true,
-          "type": "Char"
-        },
-        "state": {
-          "required": true,
-          "type": "Selection"
-        }
-      },
-      "model_file": "addons/smart_construction_core/models/core/receipt_income.py",
-      "module": "",
-      "odoo_model": "ScReceiptIncome",
-      "version": 1
-    },
-    {
-      "contract_fields": [
-        "execution_state",
-        "lifecycle_state",
-        "name"
-      ],
-      "contract_states": [
-        "closed",
-        "closing",
-        "done",
-        "draft",
-        "in_progress",
-        "paused",
-        "warranty"
-      ],
-      "contract_transitions": [
-        "close",
-        "complete",
-        "pause",
-        "resume",
-        "start",
-        "start_closing",
-        "start_warranty"
-      ],
-      "entity": "ProjectProject",
-      "id": "project_lifecycle",
-      "model": "ProjectProject",
-      "model_fields": {
-        "execution_state": {
-          "_status": "missing"
-        },
-        "lifecycle_state": {
-          "_status": "missing"
-        },
-        "name": {
-          "readonly": true,
-          "type": "Char"
-        }
-      },
-      "model_file": "addons/smart_construction_core/models/support/contract_center.py",
-      "module": "",
-      "odoo_model": "ProjectProject",
-      "version": 1
     }
   ],
   "extensions": [
@@ -550,13 +548,13 @@
       "version": 1
     },
     {
-      "content_hash": "ecdb2c62508a53f8",
-      "path": "schemas/project-ref.yaml",
+      "content_hash": "47ae0093d41f72c6",
+      "path": "schemas/payment-request.yaml",
       "version": 1
     },
     {
-      "content_hash": "47ae0093d41f72c6",
-      "path": "schemas/payment-request.yaml",
+      "content_hash": "ecdb2c62508a53f8",
+      "path": "schemas/project-ref.yaml",
       "version": 1
     }
   ],

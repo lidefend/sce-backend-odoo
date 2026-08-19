@@ -3,7 +3,7 @@
 # ======================================================
 .PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock
 
-verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock:
+verify.contract.lint:
 	@python3 scripts/verify/contracts_lint.py
 	@$(MAKE) --no-print-directory contract.registry.export
 

@@ -56,7 +56,8 @@ def find_model_file_by_class(class_name: str) -> Optional[Path]:
     if not class_name:
         return None
     pattern = re.compile(rf'^class\s+{re.escape(class_name)}\s*\(')
-    for py_file in ADDONS_DIR.rglob("*.py"):
+    # Sort glob results for deterministic, cross-filesystem ordering
+    for py_file in sorted(ADDONS_DIR.rglob("*.py")):
         try:
             for line in py_file.read_text(encoding="utf-8", errors="ignore").splitlines():
                 if pattern.match(line):
@@ -297,8 +298,8 @@ def fingerprint_domain_contract(
     # Try 1: explicit state_machine constant in source_of_truth
     if sm_const:
         suffix = sm_const.split(".")[-1] if "." in sm_const else sm_const
-        # Look up by constant name in sm_map (keyed by model name)
-        for _model, entry in sm_map.items():
+        # Look up by constant name in sm_map (keyed by model name, sorted for determinism)
+        for _model, entry in sorted(sm_map.items()):
             if entry.get("constant") == suffix:
                 sm_entry = entry
                 break
@@ -310,7 +311,7 @@ def fingerprint_domain_contract(
     # Try 3: derive constant name from contract id (e.g. payment_request -> PAYMENT_REQUEST)
     if not sm_entry:
         derived = contract_id.upper()
-        for _model, entry in sm_map.items():
+        for _model, entry in sorted(sm_map.items()):
             if entry.get("constant") == derived:
                 sm_entry = entry
                 break
@@ -371,7 +372,10 @@ def generate_fingerprint() -> Dict[str, Any]:
         contract_path = CONTRACTS_DIR / rel
         if not contract_path.is_file():
             continue
-        content_hash = hashlib.sha256(contract_path.read_bytes()).hexdigest()[:16]
+        # Normalise line endings before hashing (defensive: CRLF -> LF)
+        content = contract_path.read_text(encoding="utf-8", errors="ignore")
+        content = content.replace("\r\n", "\n").replace("\r", "\n")
+        content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
         entry_fp = {"path": rel, "version": entry.get("version"), "content_hash": content_hash}
         if kind == "schema":
             schemas.append(entry_fp)
@@ -379,6 +383,12 @@ def generate_fingerprint() -> Dict[str, Any]:
             extensions.append(entry_fp)
         elif kind == "product":
             product_contracts.append(entry_fp)
+
+    # Sort output lists by their natural key for deterministic ordering
+    domains.sort(key=lambda d: d.get("id", ""))
+    schemas.sort(key=lambda d: d.get("path", ""))
+    extensions.sort(key=lambda d: d.get("path", ""))
+    product_contracts.sort(key=lambda d: d.get("path", ""))
 
     return {
         "generated_by": "scripts/ci/generate_contract_structure_fingerprint.py",
@@ -393,6 +403,7 @@ def generate_fingerprint() -> Dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate contract structure fingerprint")
     parser.add_argument("--write", action="store_true", help="write fingerprint to file")
+    parser.add_argument("--diff", action="store_true", help="show diff when fingerprint is stale")
     args = parser.parse_args()
 
     fingerprint = generate_fingerprint()
@@ -418,6 +429,24 @@ def main() -> int:
 
     print("[ERROR] contract structure fingerprint is stale.")
     print("  Run: python3 scripts/ci/generate_contract_structure_fingerprint.py --write")
+
+    if args.diff:
+        # Show unified diff between committed and freshly generated
+        import difflib
+        committed_lines = committed_canonical.splitlines(keepends=True)
+        generated_lines = canonical.splitlines(keepends=True)
+        diff = difflib.unified_diff(
+            committed_lines, generated_lines,
+            fromfile="committed (contracts/generated/contract_structure_fingerprint.json)",
+            tofile="generated (fresh)",
+            n=3,
+        )
+        diff_text = "".join(diff)
+        if diff_text:
+            print("\n--- DIFF ---")
+            print(diff_text)
+        else:
+            print("\n[INFO] canonical JSON is identical but raw text differs (whitespace?)")
     return 1
 
 
