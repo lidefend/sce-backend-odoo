@@ -215,7 +215,6 @@
         'views/support/portal_language_selector_fix.xml',
         'views/signup_templates.xml',
         # Patch 文件移到最后加载
-        'security/action_groups_patch.xml',
         'security/menu_tech_hide_patch.xml',
         'actions/project_native_action_overrides.xml',
         'views/menu_business_taxonomy.xml',
@@ -286,6 +285,7 @@
         'data/settlement_adjustment_form_productization_contract.xml',
         'data/remaining_p3_form_productization_contract.xml',
         'data/product_policy_menu_sync.xml',
+        'security/action_groups_patch.xml',
     ],
     'assets': {
         'web.assets_frontend_minimal': [

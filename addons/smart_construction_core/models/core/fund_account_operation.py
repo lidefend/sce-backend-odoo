@@ -308,7 +308,8 @@ class ScFundAccountOperation(models.Model):
             raise AccessError(_("公司或项目不可用，或无权访问。"))
         if not project_id:
             return False
-        project = self.env["project.project"].search(
+        # R10: use sudo() to bypass record rules in visibility check
+        project = self.sudo().env["project.project"].search(
             [
                 ("id", "=", project_id),
                 ("company_id", "=", company_id),

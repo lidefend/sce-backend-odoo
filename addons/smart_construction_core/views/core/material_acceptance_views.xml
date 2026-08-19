@@ -30,7 +30,8 @@
         <field name="view_mode">tree,form</field>
         <field name="domain">[('business_category_id.code', '=', 'material.inbound')]</field>
         <field name="context">{'search_default_group_project': 1, 'default_business_category_code': 'material.inbound', 'current_business_category_code': 'material.inbound'}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
 
     <record id="action_sc_material_outbound" model="ir.actions.act_window">
         <field name="name">出库单</field>
@@ -46,7 +47,8 @@
         <field name="view_mode">tree,form</field>
         <field name="domain">[('outbound_type', '=', 'return'), ('business_category_id.code', '=', 'material.return')]</field>
         <field name="context">{'search_default_group_project': 1, 'default_outbound_type': 'return', 'default_business_category_code': 'material.return', 'current_business_category_code': 'material.return'}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
 
     <record id="action_sc_material_transfer" model="ir.actions.act_window">
         <field name="name">材料调拨</field>
@@ -54,7 +56,8 @@
         <field name="view_mode">tree,form</field>
         <field name="domain">[('outbound_type', '=', 'transfer'), ('business_category_id.code', '=', 'material.transfer')]</field>
         <field name="context">{'search_default_group_project': 1, 'default_outbound_type': 'transfer', 'default_business_category_code': 'material.transfer', 'current_business_category_code': 'material.transfer'}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
 
     <record id="action_sc_material_loss" model="ir.actions.act_window">
         <field name="name">材料损耗</field>
@@ -62,7 +65,8 @@
         <field name="view_mode">tree,form</field>
         <field name="domain">[('outbound_type', '=', 'loss'), ('business_category_id.code', '=', 'material.loss')]</field>
         <field name="context">{'search_default_group_project': 1, 'default_outbound_type': 'loss', 'default_business_category_code': 'material.loss', 'current_business_category_code': 'material.loss'}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
 
     <record id="action_sc_material_rfq" model="ir.actions.act_window">
         <field name="name">询比价</field>

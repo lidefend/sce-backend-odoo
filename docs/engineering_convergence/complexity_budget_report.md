@@ -25,7 +25,7 @@ Generated from repository source files. This report is informational during the 
 | 3046 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 3016 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2705 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 2591 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
+| 2593 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 2509 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2464 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2438 | Python source | `addons/smart_core/handlers/system_init.py` |
@@ -75,8 +75,8 @@ Generated from repository source files. This report is informational during the 
 | 1308 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1260 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
+| 1246 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1245 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
-| 1245 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1240 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
@@ -122,7 +122,7 @@ Generated from repository source files. This report is informational during the 
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
-| 826 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
+| 827 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 815 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 488 | YAML workflow | `scripts/verify/registry.yaml` |
@@ -152,7 +152,7 @@ Generated from repository source files. This report is informational during the 
 | 3046 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 3016 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2705 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 2591 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
+| 2593 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 2509 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2464 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2438 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
@@ -195,8 +195,8 @@ Generated from repository source files. This report is informational during the 
 | 1308 | warning | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1260 | warning | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1256 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
+| 1246 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1245 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
-| 1245 | warning | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1240 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1218 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |

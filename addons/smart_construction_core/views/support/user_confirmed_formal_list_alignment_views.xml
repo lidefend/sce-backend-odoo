@@ -142,7 +142,8 @@
         <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_tax_deduction_registration_formal_deduction_bill_tree')})]"/>
         <field name="domain">[('business_category_id.code', '=', 'finance.tax.deduction')]</field>
         <field name="context">{'search_default_group_project': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
 
     <record id="action_sc_expense_claim_company_finance_expense_acceptance" model="ir.actions.act_window">
         <field name="name">公司财务支出</field>
@@ -152,7 +153,8 @@
         <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_expense_claim_formal_company_finance_expense_tree')})]"/>
         <field name="domain">[('claim_type', '=', 'expense')]</field>
         <field name="context">{'search_default_active_rows': 1, 'search_default_group_project': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
 
     <record id="action_sc_payment_execution_company_finance_expense" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_sc_payment_execution_formal_company_finance_expense_tree"/>
@@ -168,7 +170,8 @@
         <field name="search_view_id" ref="smart_construction_core.view_tender_guarantee_search"/>
         <field name="domain">[]</field>
         <field name="context">{'search_default_group_project': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
 
     <record id="action_sc_salary_registration" model="ir.actions.act_window">
         <field name="name">项目管理人员工资登记</field>

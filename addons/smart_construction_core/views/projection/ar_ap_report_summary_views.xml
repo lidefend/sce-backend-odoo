@@ -72,6 +72,7 @@
             <field name="res_model">sc.ar.ap.report.summary</field>
             <field name="view_mode">tree,pivot</field>
             <field name="search_view_id" ref="view_sc_ar_ap_report_summary_search"/>
+                    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_read'), ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]" />
         </record>
     </data>
 </odoo>

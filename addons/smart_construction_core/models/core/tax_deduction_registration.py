@@ -221,7 +221,7 @@ class ScTaxDeductionRegistration(models.Model):
 
     @api.model
     def _require_visible_company_project(self, project_id):
-        project = self.env["project.project"].search(
+        project = self.sudo().env["project.project"].search(
             [
                 ("id", "=", project_id),
                 ("company_id", "in", self.env.companies.ids),

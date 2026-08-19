@@ -99,7 +99,7 @@ class TestP0FinanceAggregateGate(TransactionCase):
             return _ctx("construction.contract").create(
                 {
                     "subject": name,
-                    "type": "out",
+                    "type": "in",
                     "project_id": project.id,
                     "partner_id": partner.id,
                     "tax_id": tax.id,

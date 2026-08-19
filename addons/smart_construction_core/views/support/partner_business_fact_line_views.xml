@@ -93,5 +93,6 @@
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="smart_construction_core.view_sc_partner_business_fact_line_search"/>
         <field name="context">{'search_default_group_source_label': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]" />
+        </record>
 </odoo>

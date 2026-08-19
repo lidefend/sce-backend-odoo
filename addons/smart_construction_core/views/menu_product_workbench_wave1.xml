@@ -11,6 +11,7 @@
             <field name="search_view_id" ref="smart_construction_core.view_sc_workbench_item_search"/>
             <field name="domain">[('fact_type', 'in', ['my_todo', 'my_approval'])]</field>
             <field name="context">{'search_default_group_priority': 1}</field>
+                    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_task_entry_access')])]" />
         </record>
         <record id="menu_sc_operating_metrics_project" model="ir.ui.menu">
             <field name="name">数据总览</field><field name="parent_id" ref="smart_construction_core.menu_sc_workspace_center"/><field name="sequence">10</field><field name="active">True</field>

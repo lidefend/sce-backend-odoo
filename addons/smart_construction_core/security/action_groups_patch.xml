@@ -538,5 +538,82 @@
         <record id="purchase.action_purchase_order_report_all" model="ir.actions.act_window">
             <field name="groups_id" eval="[(6, 0, [ref('purchase.group_purchase_user')])]" />
         </record>
+
+    </data>
+
+    <!-- R10: Action groups_id patches (non-noupdate to ensure application on install) -->
+    <data>
+        <!-- R10: Actions that were missing groups_id (test_install_gate / test_action_groups_gate) -->
+
+        <!-- Finance / AR-AP report -->
+        <record id="action_sc_ar_ap_report_summary" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_read'), ref('smart_construction_core.group_sc_cap_finance_user'), ref('smart_construction_core.group_sc_cap_finance_manager')])]" />
+        </record>
+
+        <!-- User-confirmed formal list actions (acceptance workflows) -->
+        <record id="action_sc_equipment_usage_shift_user_confirmed" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
+        <record id="action_sc_expense_claim_company_finance_expense_acceptance" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
+        <record id="action_sc_labor_usage_casual" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
+        <record id="action_sc_labor_usage_ticket" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
+        <record id="action_sc_subcontract_request_user_confirmed" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
+        <record id="action_sc_tax_deduction_registration_deduction_bill_acceptance" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
+        <record id="action_tender_guarantee_formal_payment_deposit_return" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
+
+        <!-- Material domain actions -->
+        <record id="action_sc_material_inbound_handling" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
+        <record id="action_sc_material_loss" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
+        <record id="action_sc_material_quote_user_confirmed" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
+        <record id="action_sc_material_return" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
+        <record id="action_sc_material_transfer" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
+
+        <!-- Business config / partner data -->
+        <record id="action_sc_partner_business_fact_line" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]" />
+        </record>
+
+        <!-- Workbench task center -->
+        <record id="action_sc_workbench_task_center" model="ir.actions.act_window">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_task_entry_access')])]" />
+        </record>
+
+        <!-- Server actions: tier callbacks -->
+        <record id="server_action_material_outbound_on_approved" model="ir.actions.server">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
+        <record id="server_action_material_outbound_on_rejected" model="ir.actions.server">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
+        <record id="server_action_self_funding_registration_on_approved" model="ir.actions.server">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_manager')])]" />
+        </record>
+        <record id="server_action_self_funding_registration_on_rejected" model="ir.actions.server">
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_manager')])]" />
+        </record>
+    
+
     </data>
 </odoo>
