@@ -31,7 +31,7 @@ compose_dev run --rm -T --entrypoint /usr/bin/odoo odoo \
   --config=/var/lib/odoo/odoo.conf \
   -d "${DB_NAME}" \
   --db_host=db --db_port=5432 --db_user="${DB_USER}" --db_password="${DB_PASSWORD}" \
-  --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/addons_external/oca_server_ux \
+  --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/demo-addons,/mnt/addons_external/oca_server_ux \
   -i "${LOCAL_CLEAN_MODULES:-sc_norm_engine}" --without-demo=all \
   --no-http --workers=0 --max-cron-threads=0 --stop-after-init
 compose_dev up -d
