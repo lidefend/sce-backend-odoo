@@ -15,7 +15,7 @@ check_manifest() {
 }
 
 CORE_MANIFEST="addons/smart_construction_core/__manifest__.py"
-DEMO_MANIFEST="addons/smart_construction_demo/__manifest__.py"
+DEMO_MANIFEST="demo_addons/smart_construction_demo/__manifest__.py"
 SEED_MANIFEST="addons/smart_construction_seed/__manifest__.py"
 
 check_manifest "$CORE_MANIFEST" "dictionary_demo\\.xml"

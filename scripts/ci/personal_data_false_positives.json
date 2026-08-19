@@ -9,6 +9,13 @@
       "reason": "synthetic_demo_placeholder_replaced_before_merge"
     },
     {
+      "rule_id": "PD002",
+      "path": "demo_addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py",
+      "blob_id": "7f9dcb7a1a3300a0399628722487b1a8e2257aeb",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "synthetic_demo_placeholder_replaced_before_merge"
+    },
+    {
       "rule_id": "PD003",
       "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
       "blob_id": "f2156e8e1bfd60f4f58bd2ea0684a0a22a0fdb7a",

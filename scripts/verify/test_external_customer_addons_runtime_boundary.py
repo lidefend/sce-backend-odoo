@@ -68,7 +68,10 @@ class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
         self.assertLess(text.index(condition), text.index(override))
 
     def test_module_operations_do_not_require_customer_mount_for_product(self):
-        base_path = "/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,$ADDONS_EXTERNAL_MOUNT"
+        base_path = (
+            "/usr/lib/python3/dist-packages/odoo/addons,"
+            "/mnt/source-addons,/mnt/demo-addons,$ADDONS_EXTERNAL_MOUNT"
+        )
         for relative in ("scripts/mod/install.sh", "scripts/mod/upgrade.sh"):
             with self.subTest(script=relative):
                 text = (ROOT / relative).read_text(encoding="utf-8")

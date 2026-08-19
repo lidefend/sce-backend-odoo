@@ -256,11 +256,11 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertLess(reset.index("set +e"), reset.index("odoo --config"))
         self.assertLess(reset.index("rc=${PIPESTATUS[0]}"), reset.index("set -e\nif"))
 
-        hook = (ROOT / "addons/smart_construction_demo/hooks.py").read_text(
+        hook = (ROOT / "demo_addons/smart_construction_demo/hooks.py").read_text(
             encoding="utf-8"
         )
         registry = (
-            ROOT / "addons/smart_construction_demo/seed/registry.py"
+            ROOT / "demo_addons/smart_construction_demo/seed/registry.py"
         ).read_text(encoding="utf-8")
         for guard_source in (hook, registry):
             self.assertIn('"sc_dev_demo"', guard_source)
@@ -277,14 +277,14 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertNotIn("JWT_SECRET}", credentials)
 
         scenario_loader = (
-            ROOT / "addons/smart_construction_demo/tools/scenario_loader.py"
+            ROOT / "demo_addons/smart_construction_demo/tools/scenario_loader.py"
         ).read_text(encoding="utf-8")
         self.assertNotIn("allow_payment_ledger_create", scenario_loader)
         self.assertIn("._ensure_payment_ledger(", scenario_loader)
 
         project_seed = (
             ROOT
-            / "addons/smart_construction_demo/seed/steps/step_20_projects_demo.py"
+            / "demo_addons/smart_construction_demo/seed/steps/step_20_projects_demo.py"
         ).read_text(encoding="utf-8")
         self.assertNotIn('"line_type": "heading"', project_seed)
         self.assertIn('"line_type": "group"', project_seed)

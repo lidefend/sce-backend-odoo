@@ -94,7 +94,7 @@ def is_runtime_scope(relative: str) -> bool:
 def is_tenant_reference_scope(relative: str) -> bool:
     return relative in RUNTIME_FILES or relative.startswith(
         (
-            "addons/smart_construction_demo/",
+            "demo_addons/smart_construction_demo/",
             "addons/smart_construction_seed/",
             "addons/smart_construction_acceptance_fixture/",
             "make/",

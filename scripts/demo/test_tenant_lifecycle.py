@@ -46,7 +46,7 @@ class DemoTenantLifecycleTest(unittest.TestCase):
             self.assertIn("_pre_%s" % variable, source)
 
     def test_demo_data_does_not_reference_retired_wbs_model(self):
-        for path in (ROOT / "addons/smart_construction_demo").rglob("*.xml"):
+        for path in (ROOT / "demo_addons/smart_construction_demo").rglob("*.xml"):
             self.assertNotIn('model="project.wbs"', path.read_text())
 
     def test_reset_loads_and_verifies_release_grade_seed(self):
@@ -64,7 +64,7 @@ class DemoTenantLifecycleTest(unittest.TestCase):
         self.assertIn("verify.demo.formal_product_coverage", source)
 
     def test_demo_boq_lines_follow_version_governance(self):
-        demo_root = ROOT / "addons/smart_construction_demo"
+        demo_root = ROOT / "demo_addons/smart_construction_demo"
         for path in demo_root.rglob("*.xml"):
             source = path.read_text()
             if 'model="project.boq.line"' in source:
@@ -98,7 +98,7 @@ class DemoTenantLifecycleTest(unittest.TestCase):
             )
 
     def test_release_demo_excludes_legacy_migration_carriers(self):
-        demo_root = ROOT / "addons/smart_construction_demo"
+        demo_root = ROOT / "demo_addons/smart_construction_demo"
         for path in demo_root.rglob("*.xml"):
             source = path.read_text()
             self.assertNotIn('model="sc.legacy.', source, str(path))

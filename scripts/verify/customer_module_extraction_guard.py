@@ -24,7 +24,30 @@ def main() -> int:
         if _is_customer_module(module_name):
             errors.append(f"customer module must stay outside product addons: addons/{module_name}")
 
-    demo_root = ROOT / "addons" / "smart_construction_demo"
+    # R3 physical isolation (PRODUCTIZATION-P0-SPRINT-001): the demo payload
+    # lives in demo_addons/ outside the product addons tree, and no
+    # production image COPY whitelist may ever pull it back in.
+    demo_root = ROOT / "demo_addons" / "smart_construction_demo"
+    if not (demo_root / "__manifest__.py").exists():
+        errors.append("demo module must live in demo_addons/smart_construction_demo")
+    if (ROOT / "addons" / "smart_construction_demo").exists():
+        errors.append(
+            "demo module must stay physically isolated outside product addons: "
+            "addons/smart_construction_demo"
+        )
+    for dockerfile_name in ("Dockerfile", "Dockerfile.production-candidate"):
+        dockerfile = ROOT / dockerfile_name
+        if not dockerfile.exists():
+            continue
+        for line in dockerfile.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("COPY") and (
+                "demo_addons" in stripped or "smart_construction_demo" in stripped
+            ):
+                errors.append(
+                    f"production image COPY whitelist must not include demo "
+                    f"payload: {dockerfile_name}: {stripped}"
+                )
     demo_manifest = ast.literal_eval((demo_root / "__manifest__.py").read_text(encoding="utf-8"))
     dependencies = set(demo_manifest.get("depends", []))
     if "smart_construction_bundle" not in dependencies:
