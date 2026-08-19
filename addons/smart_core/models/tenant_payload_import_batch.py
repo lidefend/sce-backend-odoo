@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 from odoo import api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError, ValidationError, AccessError
 
 from odoo.addons.smart_core.utils.tenant_payload_v1 import (
     TenantPayloadError,
@@ -19,7 +19,7 @@ IMPORTER_GROUP = "smart_core.group_smart_core_tenant_payload_importer"
 
 def _assert_signed_import_boundary(env):
     if not env.user.has_group(IMPORTER_GROUP):
-        raise UserError("TPV1_IMPORT_OPERATOR_REQUIRED")
+        raise AccessError("TPV1_IMPORT_OPERATOR_REQUIRED")
     if not env.context.get("sc_tenant_payload_import"):
         raise UserError("TPV1_SIGNED_IMPORT_CONTEXT_REQUIRED")
     if env.registry.in_test_mode():

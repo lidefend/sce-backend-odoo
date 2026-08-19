@@ -67,7 +67,8 @@ class ProjectRiskAction(models.Model):
             if rec.state not in ("claimed", "escalated"):
                 raise UserError(_("只有已认领或已升级的风险事项可以关闭。"))
             if not rec.owner_id:
-                raise UserError(_("风险事项关闭前必须明确负责人。"))
+                # R10: Auto-assign current user as owner (supports escalate->close flow)
+                rec.owner_id = self.env.user
             values = {"state": "closed"}
             values["note"] = rec._merge_note(note)
             rec.write(values)

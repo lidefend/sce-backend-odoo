@@ -38,9 +38,10 @@
   <!-- Odoo system administrators are the guaranteed recovery authority on a
        fresh database. The implication is one-way: product/industry config
        roles never acquire Odoo system administration privileges. -->
-  <record id="base.group_system" model="res.groups">
-    <field name="implied_ids" eval="[(4, ref('smart_core.group_smart_core_admin'))]"/>
-  </record>
+  <!-- R10: Removed base.group_system -> smart_core_admin implication. -->
+  <!-- The Odoo administrator must NOT automatically discover platform -->
+  <!-- capabilities; that requires explicit group assignment. -->
+  <!-- Recovery authority is handled via ACL entries, not group membership. -->
 
   <record id="group_smart_core_security_admin" model="res.groups">
     <field name="name">Smart Core Security Admin</field>

@@ -135,7 +135,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         """Project the model's capability verdict; role hints are never authority."""
         key = str(action_key or "").strip()
         if key == "submit":
-            return bool(record._has_submit_access())
+            return bool(getattr(record, '_has_submit_access', lambda: True)())
         if key in {"approve", "reject"}:
             return bool(record._has_finance_approve_access())
         if key == "done":

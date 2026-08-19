@@ -928,8 +928,9 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("扣款单是扣款登记中的代扣列支明细，表达公司与项目/承包人之间的责任清分事实，不应关联付款/收款申请；扣款实缴或退回请使用对应现金办理入口。"))
             if rec.payment_anchor_policy in ("pay_request_required", "receive_request_required") and not rec.payment_request_id:
                 raise UserError(_("新系统费用/扣款/保证金现金办理必须关联付款/收款申请。"))
-            if not rec.partner_id:
-                raise UserError(_("新系统费用/保证金单据必须选择往来单位。"))
+            # R10: partner_id required only for cash-flow claims; reference/noncash may omit
+            if rec.financial_flow in ("cash_in", "cash_out") and not rec.partner_id:
+                raise UserError(_("新系统现金费用/保证金单据必须选择往来单位。"))
             if (rec.amount or 0.0) <= 0:
                 raise UserError(_("费用/保证金申请金额必须大于 0。"))
             if (rec.approved_amount or 0.0) < 0:

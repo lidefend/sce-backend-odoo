@@ -172,7 +172,7 @@
                                     <field name="company_contractor_arrival_over_processed_amount" readonly="1"/>
                                     <field name="company_contractor_self_funding_balance" readonly="1"/>
                                     <field name="company_contractor_responsibility_notice" readonly="1" nolabel="1"/>
-                                    <button name="action_view_company_contractor_responsibility_summary"
+                                    <button name="action_view_company_contractor_responsibility_summary" groups="smart_construction_core.group_sc_cap_finance_read,smart_construction_core.group_sc_cap_finance_user,smart_construction_core.group_sc_cap_finance_manager"
                                             type="object"
                                             string="查看责任余额"
                                             class="btn-secondary"

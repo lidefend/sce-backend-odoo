@@ -2267,7 +2267,9 @@ class PaymentRequest(models.Model):
                 raise UserError("请先选择关联合同或结算单后再提交付款/收款申请。")
             if rec.contract_id and rec.contract_id.state == "cancel":
                 raise UserError("关联合同已取消，不能提交付款/收款申请。")
-            rec._check_settlement_remaining_amount()
+            # R10: Overpay is handled as a soft advisory via _collect_payment_advisories,
+            # not as a hard guard at submit. The advisory system allows override when
+            # force_block_enabled is False (default).
             rec._check_material_settlement_remaining_amount()
             advisory_result[rec.id] = rec._handle_payment_advisories(
                 "提交付款申请",
