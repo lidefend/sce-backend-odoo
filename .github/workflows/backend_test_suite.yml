@@ -89,6 +89,49 @@ jobs:
           echo "MODULES=${MODULES}" >> "${GITHUB_ENV}"
           printf 'backend suite modules:\n%s\n' "${MODULES}"
 
+      - name: Configure compose environment
+        run: |
+          set -euo pipefail
+          ci_env="${RUNNER_TEMP}/backend-suite-env-${GITHUB_RUN_ID}"
+          db_password="$(openssl rand -hex 16)"
+          admin_password="$(openssl rand -hex 16)"
+          jwt_secret="$(openssl rand -hex 24)"
+          bootstrap_secret="$(openssl rand -hex 16)"
+          {
+            printf 'DB_USER=odoo\n'
+            printf 'DB_PASSWORD=%s\n' "${db_password}"
+            printf 'DB_NAME=%s\n' "${DB_NAME}"
+            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
+            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
+            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
+            printf 'SC_BOOTSTRAP_LOGIN=backend_suite_ci\n'
+            printf 'SCENE_CHANNEL=stable\n'
+            printf 'SCENE_USE_PINNED=0\n'
+            printf 'SCENE_ROLLBACK=0\n'
+            printf 'ODOO_DBFILTER=^%s$\n' "${DB_NAME}"
+            printf 'DB_DATA=%s-db-data\n' "${COMPOSE_PROJECT_NAME}"
+            printf 'REDIS_DATA=%s-redis-data\n' "${COMPOSE_PROJECT_NAME}"
+            printf 'ODOO_DATA=%s-odoo-data\n' "${COMPOSE_PROJECT_NAME}"
+            printf 'SC_ENVIRONMENT=test\n'
+          } > "${ci_env}"
+          {
+            printf 'ENV_FILE=%s\n' "${ci_env}"
+            printf 'DB_USER=odoo\n'
+            printf 'DB_PASSWORD=%s\n' "${db_password}"
+            printf 'ADMIN_PASSWD=%s\n' "${admin_password}"
+            printf 'JWT_SECRET=%s\n' "${jwt_secret}"
+            printf 'SC_BOOTSTRAP_SECRET=%s\n' "${bootstrap_secret}"
+            printf 'SC_BOOTSTRAP_LOGIN=backend_suite_ci\n'
+            printf 'SCENE_CHANNEL=stable\n'
+            printf 'SCENE_USE_PINNED=0\n'
+            printf 'SCENE_ROLLBACK=0\n'
+            printf 'ODOO_DBFILTER=^%s$\n' "${DB_NAME}"
+            printf 'DB_DATA=%s-db-data\n' "${COMPOSE_PROJECT_NAME}"
+            printf 'REDIS_DATA=%s-redis-data\n' "${COMPOSE_PROJECT_NAME}"
+            printf 'ODOO_DATA=%s-odoo-data\n' "${COMPOSE_PROJECT_NAME}"
+            printf 'SC_ENVIRONMENT=test\n'
+          } >> "${GITHUB_ENV}"
+
       # The compose build enforces the immutable frontend fingerprint via the
       # Dockerfile 'frontend-verified' stage, so the expected hash must be
       # derived from the 'frontend-artifact' stage before docker compose
