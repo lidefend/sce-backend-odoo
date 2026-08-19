@@ -80,7 +80,7 @@ jobs:
           if [ -n "${override}" ]; then
             MODULES="${override//,/ }"
           else
-            MODULES="$(find addons -maxdepth 2 -type d -name tests -printf '%h\n' \
+            MODULES="$(find addons demo_addons -maxdepth 2 -type d -name tests -printf '%h\n' \
               | while read -r dir; do
                   [ -f "${dir}/__manifest__.py" ] && basename "${dir}"
                 done | sort -u | tr '\n' ' ')"

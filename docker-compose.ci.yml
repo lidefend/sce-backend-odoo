@@ -41,6 +41,7 @@ services:
     volumes:
       - odoodata:/var/lib/odoo
       - ./addons:/mnt/source-addons
+      - ./demo_addons:/mnt/demo-addons
       - ./addons_external:/mnt/addons_external
       - ./docs:/mnt/docs:ro
       - ./config/odoo.ci.conf:/etc/odoo/odoo.conf:ro

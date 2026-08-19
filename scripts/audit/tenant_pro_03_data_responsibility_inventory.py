@@ -88,7 +88,7 @@ def tracked_paths() -> list[str]:
 
 def module_for(path: str) -> str:
     parts = Path(path).parts
-    if len(parts) >= 2 and parts[0] in {"addons", "customer_addons"}:
+    if len(parts) >= 2 and parts[0] in {"addons", "customer_addons", "demo_addons"}:
         return parts[1]
     return ""
 
@@ -97,7 +97,9 @@ def is_inventory_scope(path: str) -> bool:
     lowered = path.lower()
     name = Path(path).name
     suffix = Path(path).suffix.lower()
-    if path.startswith(("addons/smart_construction_demo/", "addons/smart_construction_seed/")):
+    if path.startswith(
+            ("demo_addons/smart_construction_demo/", "addons/smart_construction_seed/")
+        ):
         return True
     if path.startswith(("scripts/demo/", "scripts/verify/")):
         return True

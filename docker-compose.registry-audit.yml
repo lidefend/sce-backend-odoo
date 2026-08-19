@@ -55,6 +55,7 @@ services:
       - registry_audit_odoodata:/var/lib/odoo
       - registry_audit_extraaddons:/mnt/extra-addons
       - ./addons:/mnt/source-addons:ro
+      - ./demo_addons:/mnt/demo-addons:ro
       - ./addons_external:/mnt/addons_external:ro
       - ./scripts/ops/registry_audit:/mnt/registry-audit:ro
       - ${REGISTRY_AUDIT_OUTPUT_DIRECTORY}:/mnt/registry-audit-output:rw

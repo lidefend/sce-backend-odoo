@@ -102,6 +102,10 @@ services:
       # this path; they contain only /mnt/product-addons and may mount one
       # private customer artifact through docker-compose.customer-addons.yml.
       - ./addons:/mnt/source-addons
+      # Demo payload is physically isolated from the product addons tree
+      # (PRODUCTIZATION R3). Development/CI/audit surfaces mount it here;
+      # immutable production images never COPY or mount this root.
+      - ./demo_addons:/mnt/demo-addons
       - ./addons_external:/mnt/addons_external
       - ./artifacts:/mnt/artifacts
       - ./scripts:/mnt/scripts:ro
