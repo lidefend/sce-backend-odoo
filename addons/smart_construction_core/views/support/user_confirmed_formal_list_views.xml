@@ -438,7 +438,8 @@
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_material_rfq_quote_formal_tree')}),             (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_material_rfq_form')})         ]" />
         <field name="domain">[]</field>
         <field name="context">{'search_default_group_project': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_read'), ref('smart_construction_core.group_sc_cap_material_user'), ref('smart_construction_core.group_sc_cap_material_manager')])]" />
+        </record>
     <record id="action_sc_subcontract_request_user_confirmed" model="ir.actions.act_window">
         <field name="name">分包方单</field>
         <field name="res_model">sc.subcontract.request</field>
@@ -447,7 +448,8 @@
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_subcontract_request_user_confirmed_tree')}),             (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_subcontract_request_form')})         ]" />
         <field name="domain">[]</field>
         <field name="context">{'search_default_group_project': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
     <record id="action_sc_equipment_usage_shift_user_confirmed" model="ir.actions.act_window">
         <field name="name">机械台班记录</field>
         <field name="res_model">sc.equipment.usage</field>
@@ -456,7 +458,8 @@
         <field name="view_ids" eval="[(5, 0, 0),             (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_equipment_usage_shift_formal_tree')}),             (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_equipment_usage_form')})         ]" />
         <field name="domain">[]</field>
         <field name="context">{'search_default_group_project': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
     <record id="action_project_material_plan" model="ir.actions.act_window">
         <field name="view_id" eval="False" />
         <field name="view_ids" eval="[(5, 0, 0)]" />
@@ -466,13 +469,15 @@
         <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_labor_usage_ticket_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_labor_usage_form')})]" />
         <field name="domain">[('usage_type', '=', 'ticket')]</field>
         <field name="context">{'default_usage_type': 'ticket', 'search_default_group_project': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
     <record id="action_sc_labor_usage_casual" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_sc_labor_usage_casual_user_confirmed_tree" />
         <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_labor_usage_casual_user_confirmed_tree')}), (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_labor_usage_form')})]" />
         <field name="domain">[('usage_type', '=', 'casual')]</field>
         <field name="context">{'default_usage_type': 'casual', 'search_default_group_project': 1}</field>
-    </record>
+                <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]" />
+        </record>
     <record id="action_payment_request_user_payment_apply" model="ir.actions.act_window">
         <field name="view_id" ref="smart_construction_core.view_payment_request_formal_payment_apply_tree" />
         <field name="views" eval="[(ref('smart_construction_core.view_payment_request_formal_payment_apply_tree'), 'tree'), (ref('smart_construction_core.view_payment_request_form'), 'form')]" />

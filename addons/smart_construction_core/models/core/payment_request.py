@@ -2019,8 +2019,8 @@ class PaymentRequest(models.Model):
                 raise ValidationError(_("结算单合同必须与付款申请一致。"))
             opm.ensure_payment_settlement_currency_consistency(rec, settle)
             # 已进入流程的记录在字段更改时仍要守住额度
-            if rec.state in ("submit", "approve", "approved", "done"):
-                rec._check_settlement_remaining_amount()
+            # R10: overpay handled as advisory via _handle_payment_advisories
+            # (previously a hard _check_settlement_remaining_amount call here)
 
     @api.constrains("material_settlement_id", "type", "project_id", "partner_id", "amount", "state")
     def _check_material_settlement_consistency(self):
@@ -2311,7 +2311,7 @@ class PaymentRequest(models.Model):
                     "审批付款申请",
                     reasons=["tier validation not complete"],
                 )
-            rec._check_settlement_remaining_amount()
+            # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
             advisory_result[rec.id] = rec._handle_payment_advisories(
                 "审批付款申请",
@@ -2336,7 +2336,7 @@ class PaymentRequest(models.Model):
             if rec.state != "submit":
                 continue
             if rec.validation_status in ("waiting", "pending"):
-                rec._check_settlement_remaining_amount()
+                # R10: overpay handled as advisory via _handle_payment_advisories
                 rec._check_material_settlement_remaining_amount()
                 advisory_result[rec.id] = rec._handle_payment_advisories(
                     "审批付款申请",
@@ -2349,7 +2349,7 @@ class PaymentRequest(models.Model):
             if rec.validation_status == "validated":
                 return rec.action_approve()
             if rec.validation_status in ("no", False) and not rec.review_ids:
-                rec._check_settlement_remaining_amount()
+                # R10: overpay handled as advisory via _handle_payment_advisories
                 rec._check_material_settlement_remaining_amount()
                 advisory_result[rec.id] = rec._handle_payment_advisories(
                     "审批付款申请",
@@ -2374,7 +2374,7 @@ class PaymentRequest(models.Model):
         advisory_result = {}
         result = None
         for rec in self:
-            rec._check_settlement_remaining_amount()
+            # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
             advisory_result[rec.id] = rec._handle_payment_advisories(
                 "批准付款申请",
@@ -2423,7 +2423,7 @@ class PaymentRequest(models.Model):
                     "完成付款申请",
                     reasons=[f"当前状态为 {rec.state}"],
                 )
-            rec._check_settlement_remaining_amount()
+            # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
             advisory_result[rec.id] = rec._handle_payment_advisories(
                 "完成付款申请",
@@ -2537,7 +2537,7 @@ class PaymentRequest(models.Model):
         for rec in self:
             if rec.state != "submit":
                 continue
-            rec._check_settlement_remaining_amount()
+            # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
             advisories = rec._collect_payment_advisories("approve")
             if advisories:

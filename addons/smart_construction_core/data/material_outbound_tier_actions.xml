@@ -12,6 +12,7 @@ if not target_records and env.context.get("active_model") == "sc.material.outbou
 if target_records:
     target_records.action_on_tier_approved()
 ]]></field>
+                    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_manager')])]" />
         </record>
 
         <record id="server_action_material_outbound_on_rejected" model="ir.actions.server">
@@ -25,6 +26,7 @@ if not target_records and env.context.get("active_model") == "sc.material.outbou
 if target_records:
     target_records.action_on_tier_rejected()
 ]]></field>
+                    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_material_manager')])]" />
         </record>
     </data>
 </odoo>
