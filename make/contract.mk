@@ -1,7 +1,7 @@
 # ======================================================
 # ================== Contract ==========================
 # ======================================================
-.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint
+.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock
 
 verify.contract.lint:
 	@python3 scripts/verify/contracts_lint.py
@@ -69,3 +69,16 @@ gate.contract.bootstrap:
 gate.contract.bootstrap-pass:
 	@$(MAKE) --no-print-directory verify.contract.preflight
 	@DB="$(DB_NAME)" CASES_FILE="docs/contract/cases.yml" REF_DIR="docs/contract/snapshots" CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" scripts/contract/gate_contract.sh --bootstrap --bootstrap-pass
+
+# --- Contract structure fingerprint (hard lock) -----------------------
+# The fingerprint captures contract-relevant code structure (field
+# declarations + state-machine definitions).  If the code changes in
+# ways that affect the contract, the fingerprint changes and CI fails
+# unless the contract YAML under contracts/ was also updated.
+
+.PHONY: contract.structure.fingerprint verify.contract.structure_lock
+
+contract.structure.fingerprint: guard.prod.forbid
+	@python3 scripts/ci/generate_contract_structure_fingerprint.py --write
+
+# verify.contract.structure_lock is defined in make/ci.mk

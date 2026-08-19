@@ -684,15 +684,15 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 # v1.1 Engineering Convergence quality entries
 # ----------------------------------------------------------------------
-.PHONY: ci ci.professional.backend ci.local.quick ci.generated_reports.guard refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch
+.PHONY: ci ci.professional.backend ci.local.quick ci.generated_reports.guard refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock
 
-ci: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture test.unit test.frontend test.contract test.e2e.preflight
+ci: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.web_architecture test.unit test.frontend test.contract test.e2e.preflight
 	@git diff --check
 	@echo "[OK] v1.1 PR quality gate passed"
 
 # Backend/static half of the professional gate. The required frontend workflow is
 # the single authority for frontend install, lint, typecheck, build and browsers.
-ci.professional.backend: guard.prod.forbid verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture test.unit test.contract test.e2e.preflight
+ci.professional.backend: guard.prod.forbid verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.web_architecture test.unit test.contract test.e2e.preflight
 	@git diff --check
 	@echo "[OK] professional backend/static quality gate passed"
 
@@ -704,6 +704,7 @@ ci.generated_reports.guard: guard.prod.forbid
 	@python3 scripts/ci/generate_complexity_budget_report.py
 	@python3 scripts/ci/generate_split_plan_queue.py
 	@python3 scripts/ci/generate_github_remote_execution_plan.py
+	@python3 scripts/ci/generate_contract_structure_fingerprint.py --diff
 	@echo "[OK] tracked generated reports are current"
 
 verify.menu_config_tree_editor.behavior: guard.prod.forbid
@@ -717,6 +718,7 @@ refresh.generated_reports: guard.prod.forbid
 	@python3 scripts/ci/generate_complexity_budget_report.py --write
 	@python3 scripts/ci/generate_split_plan_queue.py --write
 	@python3 scripts/ci/generate_github_remote_execution_plan.py --write
+	@python3 scripts/ci/generate_contract_structure_fingerprint.py --write
 	@echo "[OK] tracked generated reports refreshed; review and commit any changes before push"
 
 verify.tenant.data_responsibility_boundary: guard.prod.forbid
@@ -740,7 +742,7 @@ ci.tenant.pro03.demo.dispatch: guard.prod.forbid
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	gh workflow run demo-ci.yml --ref "$$branch"
 
-ci.local.quick: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard architecture.complexity_baseline_lock verify.unified_page_contract.v2.web_architecture verify.menu_config_tree_editor.behavior
+ci.local.quick: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.web_architecture verify.menu_config_tree_editor.behavior
 	@python3 scripts/ci/verify_contract_form_split_evidence.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py
 	@scripts/verify/contract_form_runtime_state_behavior_guard.sh
@@ -852,6 +854,9 @@ architecture.complexity_report:
 
 architecture.complexity_baseline_lock:
 	@python3 scripts/ci/enforce_complexity_baseline_lock.py
+
+verify.contract.structure_lock: guard.prod.forbid
+	@python3 scripts/ci/enforce_contract_structure_lock.py
 
 architecture.split_plan_queue:
 	@python3 scripts/ci/generate_split_plan_queue.py
