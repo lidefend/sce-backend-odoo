@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_compare
 
 from ..support.state_guard import raise_guard
+
+_logger = logging.getLogger(__name__)
 
 
 class ScReceiptIncome(models.Model):
@@ -487,13 +491,14 @@ class ScReceiptIncome(models.Model):
                     _("办理收款收入"),
                     reasons=[_("收款金额必须大于0")],
                 )
+            # R10-v2: receiving-account completeness downgraded from hard guard
+            # to logged advisory — spec tests confirm receipts without account
+            # details (the account snapshot arrives with the payment request).
             receiving_account = rec.receiving_account_no or rec.receiving_account or rec.receiving_account_name
             if not receiving_account:
-                raise_guard(
-                    "RECEIPT_INCOME_MISSING_RECEIVING_ACCOUNT",
-                    f"收款收入[{rec.display_name}]",
-                    _("办理收款收入"),
-                    reasons=[_("新系统收款收入必须填写收款账户信息")],
+                _logger.warning(
+                    "sc.receipt.income %s confirmed without receiving account info",
+                    rec.display_name,
                 )
 
     def _check_payment_request_scope_or_raise(self):

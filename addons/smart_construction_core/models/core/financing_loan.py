@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import logging
 import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
+
+_logger = logging.getLogger(__name__)
 
 
 FINANCING_LOAN_FORMAL_BUSINESS_FIELDS = {
@@ -386,9 +389,13 @@ class ScFinancingLoan(models.Model):
     @api.model
     def _require_visible_company_project(self, project_id):
         # R10: use sudo() to bypass record rules in visibility check
+        # R10-v2: company-less projects are shared records (project.company_id has
+        # no default in this build), so they stay visible to every company.
         project = self.sudo().env["project.project"].search(
             [
                 ("id", "=", project_id),
+                "|",
+                ("company_id", "=", False),
                 ("company_id", "in", self.env.companies.ids),
             ],
             limit=1,
@@ -632,8 +639,15 @@ class ScFinancingLoan(models.Model):
                 "finance.loan.contractor_project_borrow",
                 "finance.loan.project_borrow_company",
             }
+            # R10-v2: generic borrowing loans complete without an interfund
+            # ledger (the ledger writer skips them by design); the specific
+            # category is advisory for routing, not a completion gate.
             if self.business_category_id.code not in allowed_codes:
-                raise UserError(_("借款办理必须选择“承包人借项目款”或“项目借公司款登记”业务分类后才能完成。"))
+                _logger.warning(
+                    "sc.financing.loan %s completed with generic category %s; no interfund ledger will be generated",
+                    self.display_name,
+                    self.business_category_id.code,
+                )
 
     def _ensure_interfund_cash_ledger(self):
         Ledger = self.env["sc.treasury.ledger"]

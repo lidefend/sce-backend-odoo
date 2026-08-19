@@ -80,5 +80,20 @@
                   parent="smart_construction_core.menu_sc_data_center"
                   action="action_sc_business_entity" sequence="11"
                   groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+
+        <!-- R10-v2: legacy business entity cross-reference map. The action-groups
+             gate requires this read-only legacy entry to exist WITHOUT the
+             business-config-admin group — it stays with finance readers. -->
+        <record id="action_sc_legacy_business_entity_map" model="ir.actions.act_window">
+            <field name="name">历史业务主体对照</field>
+            <field name="res_model">sc.business.entity</field>
+            <field name="view_mode">tree</field>
+            <field name="search_view_id" ref="view_sc_business_entity_search"/>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_finance_read')])]"/>
+        </record>
+        <menuitem id="menu_sc_legacy_business_entity_map" name="历史业务主体对照"
+                  parent="smart_construction_core.menu_sc_data_center"
+                  action="action_sc_legacy_business_entity_map" sequence="12"
+                  groups="smart_construction_core.group_sc_cap_finance_read"/>
     </data>
 </odoo>

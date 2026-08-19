@@ -66,9 +66,11 @@ class ProjectRiskAction(models.Model):
         for rec in self:
             if rec.state not in ("claimed", "escalated"):
                 raise UserError(_("只有已认领或已升级的风险事项可以关闭。"))
+            # R10-v2: closing without an owner is a spec-level invalid state;
+            # callers (e.g. the risk_action_execute handler) must claim/assign
+            # an owner before closing.
             if not rec.owner_id:
-                # R10: Auto-assign current user as owner (supports escalate->close flow)
-                rec.owner_id = self.env.user
+                raise UserError(_("风险事项必须先认领负责人才能关闭。"))
             values = {"state": "closed"}
             values["note"] = rec._merge_note(note)
             rec.write(values)

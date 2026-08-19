@@ -1549,10 +1549,49 @@ class TestP1PaymentRequestCapability(TransactionCase):
         contract = envelope["data"]
 
         container_tree = contract["layoutContract"]["containerTree"]
-        main_sections = [row for row in container_tree if row.get("type") == "group"]
+
+        def collect_group_titles(value, titles=None):
+            if titles is None:
+                titles = []
+            if isinstance(value, dict):
+                if value.get("type") == "group":
+                    titles.append(
+                        value.get("string") or value.get("label") or value.get("name")
+                    )
+                for nested in value.values():
+                    collect_group_titles(nested, titles)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_group_titles(nested, titles)
+            return titles
+
+        # Contract-spec v0.1 (path B, product decision 2026-08-19): the
+        # backend keeps the native category sheet authoritative and ships the
+        # payment contract sections as sparse semantic annotations. Golden
+        # floorplan task-page composition belongs to the frontend presenter
+        # (ObjectTaskPage + canonical render model); the superseded backend
+        # root-replacement projection stays archived in git (2ec2e2df~1) as
+        # the deferred extension point.
         self.assertEqual(
-            [row.get("string") or row.get("label") or row.get("name") for row in main_sections],
-            [
+            [row.get("type") for row in container_tree],
+            ["header", "sheet"],
+        )
+        category_sheet = container_tree[-1]
+        self.assertEqual(
+            category_sheet.get("name") or category_sheet.get("string"),
+            "business_category_form_sheet",
+        )
+        group_titles = collect_group_titles(container_tree)
+        for native_anchor in (
+            "办理类型",
+            "项目与收款单位",
+            "申请依据",
+            "付款申请金额",
+            "申请明细",
+        ):
+            self.assertIn(native_anchor, group_titles)
+        self.assertFalse(
+            {
                 "申请识别与状态",
                 "项目与收款对象",
                 "结算与合同依据",
@@ -1560,7 +1599,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "账户与开票信息",
                 "说明与附件",
                 "审批与审计",
-            ],
+            }
+            & set(group_titles),
+            "contract semantic sections must stay sparse annotations, "
+            "not structural replacement of the native root",
         )
 
         normalized_fields = set()
@@ -1747,9 +1789,12 @@ class TestP1PaymentRequestCapability(TransactionCase):
             ),
             "native action modifiers must survive and hide inapplicable actions",
         )
-        self.assertTrue(
-            any(row.get("type") == "notebook" for row in container_tree),
-            "native subordinate relation notebook must survive normalization",
+        self.assertFalse(
+            {"outflow_line_ids", "receipt_invoice_line_ids"} - normalized_fields,
+            "native relation fields must survive normalization: %s"
+            % sorted(
+                {"outflow_line_ids", "receipt_invoice_line_ids"} - normalized_fields
+            ),
         )
         collaboration = (contract.get("runtimeContract") or {}).get("collaboration") or {}
         self.assertTrue((collaboration.get("attachments") or {}).get("enabled"))
@@ -1780,15 +1825,18 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertTrue(edit_envelope.get("ok", True), edit_envelope)
         edit_contract = edit_envelope["data"]
         edit_container_tree = edit_contract["layoutContract"]["containerTree"]
-        edit_main_sections = [
-            row for row in edit_container_tree if row.get("type") == "group"
-        ]
         self.assertEqual(
-            [
-                row.get("string") or row.get("label") or row.get("name")
-                for row in edit_main_sections
-            ],
-            [
+            [row.get("type") for row in edit_container_tree],
+            ["header", "sheet"],
+        )
+        edit_sheet = edit_container_tree[-1]
+        self.assertEqual(
+            edit_sheet.get("name") or edit_sheet.get("string"),
+            "business_category_form_sheet",
+        )
+        edit_group_titles = collect_group_titles(edit_container_tree)
+        self.assertFalse(
+            {
                 "申请识别与状态",
                 "项目与收款对象",
                 "结算与合同依据",
@@ -1796,7 +1844,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "账户与开票信息",
                 "说明与附件",
                 "审批与审计",
-            ],
+            }
+            & set(edit_group_titles),
+            "edit contract semantic sections must stay sparse annotations, "
+            "not structural replacement of the native root",
         )
 
         edit_layout_fields = set()
@@ -1814,13 +1865,9 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 for nested in value:
                     visit_edit_layout(nested)
 
-        visit_edit_layout(edit_main_sections)
-        expected_edit_layout_fields = required_fields - {
-            "payment_basis_type",
-            "reject_reason",
-            "attachment_ids",
-        }
-        self.assertEqual(len(expected_edit_layout_fields), 39)
+        visit_edit_layout(edit_container_tree)
+        expected_edit_layout_fields = required_fields - {"reject_reason"}
+        self.assertEqual(len(expected_edit_layout_fields), 41)
         self.assertEqual(
             edit_layout_fields & required_fields,
             expected_edit_layout_fields,

@@ -72,7 +72,7 @@
         <record id="rule_sc_finance_read_project_project" model="ir.rule">
             <field name="name">SC Finance Read - project.project allowed companies</field>
             <field name="model_id" ref="project.model_project_project"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -479,7 +479,7 @@
         <record id="rule_sc_invoice_registration_company" model="ir.rule">
             <field name="name">SC Invoice Registration - allowed company</field>
             <field name="model_id" ref="model_sc_invoice_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -490,7 +490,7 @@
         <record id="rule_sc_finance_read_invoice_registration" model="ir.rule">
             <field name="name">SC Finance Read - invoice registration by allowed company</field>
             <field name="model_id" ref="model_sc_invoice_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -501,7 +501,7 @@
         <record id="rule_sc_finance_user_invoice_registration" model="ir.rule">
             <field name="name">SC Finance User - invoice registration by allowed company</field>
             <field name="model_id" ref="model_sc_invoice_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -512,7 +512,7 @@
         <record id="rule_sc_finance_manager_invoice_registration" model="ir.rule">
             <field name="name">SC Finance Manager - invoice registration by allowed company</field>
             <field name="model_id" ref="model_sc_invoice_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -534,7 +534,7 @@
         <record id="rule_sc_tax_deduction_registration_company" model="ir.rule">
             <field name="name">SC Tax Deduction Registration - allowed company</field>
             <field name="model_id" ref="model_sc_tax_deduction_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -545,7 +545,7 @@
         <record id="rule_sc_finance_read_tax_deduction_registration" model="ir.rule">
             <field name="name">SC Finance Read - tax deduction registration by allowed company</field>
             <field name="model_id" ref="model_sc_tax_deduction_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -556,7 +556,7 @@
         <record id="rule_sc_finance_user_tax_deduction_registration" model="ir.rule">
             <field name="name">SC Finance User - tax deduction registration by allowed company</field>
             <field name="model_id" ref="model_sc_tax_deduction_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -567,7 +567,7 @@
         <record id="rule_sc_finance_manager_tax_deduction_registration" model="ir.rule">
             <field name="name">SC Finance Manager - tax deduction registration by allowed company</field>
             <field name="model_id" ref="model_sc_tax_deduction_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -578,7 +578,7 @@
         <record id="rule_sc_config_admin_tax_deduction_registration" model="ir.rule">
             <field name="name">SC Config Admin - tax deduction registration by allowed company</field>
             <field name="model_id" ref="model_sc_tax_deduction_registration"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -605,7 +605,7 @@
         <record id="rule_sc_business_initiator_receipt_income" model="ir.rule">
             <field name="name">SC Business Initiator - sc.receipt.income by project member</field>
             <field name="model_id" ref="model_sc_receipt_income"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -616,7 +616,7 @@
         <record id="rule_sc_finance_read_receipt_income" model="ir.rule">
             <field name="name">SC Finance Read - sc.receipt.income by project member</field>
             <field name="model_id" ref="model_sc_receipt_income"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -627,7 +627,7 @@
         <record id="rule_sc_finance_user_receipt_income" model="ir.rule">
             <field name="name">SC Finance User - sc.receipt.income by project member</field>
             <field name="model_id" ref="model_sc_receipt_income"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -638,7 +638,7 @@
         <record id="rule_sc_finance_manager_receipt_income" model="ir.rule">
             <field name="name">SC Finance Manager - sc.receipt.income by allowed company</field>
             <field name="model_id" ref="model_sc_receipt_income"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -654,7 +654,7 @@
         <record id="rule_sc_business_initiator_payment_request" model="ir.rule">
             <field name="name">SC Business Initiator - payment.request by project member</field>
             <field name="model_id" ref="model_payment_request"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -665,7 +665,7 @@
         <record id="rule_sc_finance_read_payment_request" model="ir.rule">
             <field name="name">SC Finance Read - payment.request by project member</field>
             <field name="model_id" ref="model_payment_request"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="False"/>
@@ -676,7 +676,7 @@
         <record id="rule_sc_finance_user_payment_request" model="ir.rule">
             <field name="name">SC Finance User - payment.request by project member</field>
             <field name="model_id" ref="model_payment_request"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -687,7 +687,7 @@
         <record id="rule_sc_finance_manager_payment_request" model="ir.rule">
             <field name="name">SC Finance Manager - payment.request by allowed company</field>
             <field name="model_id" ref="model_payment_request"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -698,7 +698,7 @@
         <record id="rule_sc_executive_payment_request" model="ir.rule">
             <field name="name">SC Executive - payment.request by allowed company</field>
             <field name="model_id" ref="model_payment_request"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="False"/>
@@ -720,7 +720,7 @@
         <record id="rule_sc_business_initiator_payment_execution" model="ir.rule">
             <field name="name">SC Business Initiator - sc.payment.execution by project member</field>
             <field name="model_id" ref="model_sc_payment_execution"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -731,7 +731,7 @@
         <record id="rule_sc_finance_read_payment_execution" model="ir.rule">
             <field name="name">SC Finance Read - sc.payment.execution by project member</field>
             <field name="model_id" ref="model_sc_payment_execution"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -742,7 +742,7 @@
         <record id="rule_sc_finance_user_payment_execution" model="ir.rule">
             <field name="name">SC Finance User - sc.payment.execution by project member</field>
             <field name="model_id" ref="model_sc_payment_execution"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -753,7 +753,7 @@
         <record id="rule_sc_finance_manager_payment_execution" model="ir.rule">
             <field name="name">SC Finance Manager - sc.payment.execution by allowed company</field>
             <field name="model_id" ref="model_sc_payment_execution"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -824,7 +824,7 @@
         <record id="rule_sc_finance_manager_payment_ledger" model="ir.rule">
             <field name="name">SC Finance Manager - payment.ledger by request allowed company</field>
             <field name="model_id" ref="model_payment_ledger"/>
-            <field name="domain_force">[('payment_request_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('payment_request_id.company_id', '=', False), ('payment_request_id.company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -841,7 +841,7 @@
         <record id="rule_project_funding_baseline_company" model="ir.rule">
             <field name="name">Project Funding Baseline - allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -866,14 +866,14 @@
         <record id="rule_finance_manager_project_funding_baseline" model="ir.rule">
             <field name="name">Finance Manager - funding baseline by allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
         </record>
 
         <record id="rule_project_funding_baseline_line_company" model="ir.rule">
             <field name="name">Project Funding Baseline Line - allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline_line"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -898,14 +898,14 @@
         <record id="rule_finance_manager_project_funding_baseline_line" model="ir.rule">
             <field name="name">Finance Manager - funding baseline line by allowed company</field>
             <field name="model_id" ref="model_project_funding_baseline_line"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
         </record>
 
         <record id="rule_project_funding_actual_event_allocation_company" model="ir.rule">
             <field name="name">Fund Plan Actual Event Allocation - allowed company</field>
             <field name="model_id" ref="model_project_funding_actual_event_allocation"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -930,7 +930,7 @@
         <record id="rule_finance_manager_project_funding_actual_event_allocation" model="ir.rule">
             <field name="name">Finance Manager - fund allocation by allowed company</field>
             <field name="model_id" ref="model_project_funding_actual_event_allocation"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
         </record>
 
@@ -1046,7 +1046,7 @@
         <record id="rule_sc_material_read_catalog_company" model="ir.rule">
             <field name="name">SC Material Read - sc.material.catalog by allowed companies</field>
             <field name="model_id" ref="model_sc_material_catalog"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -1057,7 +1057,7 @@
         <record id="rule_sc_material_user_catalog_company" model="ir.rule">
             <field name="name">SC Material User - sc.material.catalog by allowed companies</field>
             <field name="model_id" ref="model_sc_material_catalog"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1068,7 +1068,7 @@
         <record id="rule_sc_material_manager_catalog_company" model="ir.rule">
             <field name="name">SC Material Manager - sc.material.catalog by allowed companies</field>
             <field name="model_id" ref="model_sc_material_catalog"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1079,7 +1079,7 @@
         <record id="rule_sc_material_read_price" model="ir.rule">
             <field name="name">SC Material Read - sc.material.price global or project member</field>
             <field name="model_id" ref="model_sc_material_price"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id', '=', False), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id', '=', False), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -1090,7 +1090,7 @@
         <record id="rule_sc_material_user_price" model="ir.rule">
             <field name="name">SC Material User - sc.material.price own, global or project member</field>
             <field name="model_id" ref="model_sc_material_price"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|','|', ('create_uid', '=', user.id), ('project_id', '=', False), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|','|', ('create_uid', '=', user.id), ('project_id', '=', False), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1101,7 +1101,7 @@
         <record id="rule_sc_material_manager_price" model="ir.rule">
             <field name="name">SC Material Manager - sc.material.price by allowed companies</field>
             <field name="model_id" ref="model_sc_material_price"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1508,7 +1508,7 @@
         <record id="rule_sc_material_read_settlement_purchase_scope" model="ir.rule">
             <field name="name">SC Material Read - material settlement purchase scope by project member</field>
             <field name="model_id" ref="model_sc_material_settlement_purchase_scope"/>
-            <field name="domain_force">[('company_id', 'in', company_ids), '|', ('settlement_id.project_id.user_id', '=', user.id), ('settlement_id.project_id.message_is_follower', '=', True)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('settlement_id.project_id.user_id', '=', user.id), ('settlement_id.project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -1519,7 +1519,7 @@
         <record id="rule_sc_material_user_settlement_purchase_scope" model="ir.rule">
             <field name="name">SC Material User - material settlement purchase scope own or project member</field>
             <field name="model_id" ref="model_sc_material_settlement_purchase_scope"/>
-            <field name="domain_force">[('company_id', 'in', company_ids), '|', '|', ('settlement_id.create_uid', '=', user.id), ('settlement_id.project_id.user_id', '=', user.id), ('settlement_id.project_id.message_is_follower', '=', True)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', '|', ('settlement_id.create_uid', '=', user.id), ('settlement_id.project_id.user_id', '=', user.id), ('settlement_id.project_id.message_is_follower', '=', True)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -1530,7 +1530,7 @@
         <record id="rule_sc_material_manager_settlement_purchase_scope" model="ir.rule">
             <field name="name">SC Material Manager - material settlement purchase scope ALL</field>
             <field name="model_id" ref="model_sc_material_settlement_purchase_scope"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2172,7 +2172,7 @@
         <record id="rule_sc_settlement_read_order" model="ir.rule">
             <field name="name">SC Settlement Read - sc.settlement.order by project member</field>
             <field name="model_id" ref="model_sc_settlement_order"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="False"/>
@@ -2186,7 +2186,7 @@
         <record id="rule_sc_settlement_user_order" model="ir.rule">
             <field name="name">SC Settlement User - sc.settlement.order by project member</field>
             <field name="model_id" ref="model_sc_settlement_order"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2197,7 +2197,7 @@
         <record id="rule_sc_settlement_manager_order" model="ir.rule">
             <field name="name">SC Settlement Manager - sc.settlement.order by allowed company</field>
             <field name="model_id" ref="model_sc_settlement_order"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2445,7 +2445,7 @@
         <record id="rule_sc_fund_account_operation_company" model="ir.rule">
             <field name="name">SC Fund Account Operation - allowed company</field>
             <field name="model_id" ref="model_sc_fund_account_operation"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2456,21 +2456,21 @@
         <record id="rule_sc_finance_read_fund_account_operation" model="ir.rule">
             <field name="name">SC Finance Read - fund account operation</field>
             <field name="model_id" ref="model_sc_fund_account_operation"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]"/>
         </record>
 
         <record id="rule_sc_finance_user_fund_account_operation" model="ir.rule">
             <field name="name">SC Finance User - fund account operation allowed company</field>
             <field name="model_id" ref="model_sc_fund_account_operation"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_user'))]"/>
         </record>
 
         <record id="rule_sc_finance_manager_fund_account_operation" model="ir.rule">
             <field name="name">SC Finance Manager - fund account operation allowed company</field>
             <field name="model_id" ref="model_sc_fund_account_operation"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
         </record>
 
@@ -2491,7 +2491,7 @@
         <record id="rule_sc_financing_loan_company" model="ir.rule">
             <field name="name">SC Financing Loan - allowed company</field>
             <field name="model_id" ref="model_sc_financing_loan"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2502,21 +2502,21 @@
         <record id="rule_sc_finance_read_financing_loan" model="ir.rule">
             <field name="name">SC Finance Read - financing loan allowed company</field>
             <field name="model_id" ref="model_sc_financing_loan"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]"/>
         </record>
 
         <record id="rule_sc_finance_user_financing_loan" model="ir.rule">
             <field name="name">SC Finance User - financing loan allowed company</field>
             <field name="model_id" ref="model_sc_financing_loan"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_user'))]"/>
         </record>
 
         <record id="rule_sc_finance_manager_financing_loan" model="ir.rule">
             <field name="name">SC Finance Manager - financing loan allowed company</field>
             <field name="model_id" ref="model_sc_financing_loan"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_manager'))]"/>
         </record>
 
@@ -2607,7 +2607,7 @@
         <record id="rule_sc_project_cost_ledger_company" model="ir.rule">
             <field name="name">SC Project Cost Ledger - allowed company</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2618,7 +2618,7 @@
         <record id="rule_sc_cost_read_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost Read - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -2629,7 +2629,7 @@
         <record id="rule_sc_cost_user_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost User - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2640,7 +2640,7 @@
         <record id="rule_sc_cost_manager_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost Manager - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2651,21 +2651,21 @@
         <record id="rule_sc_business_config_admin_project_member_assignment" model="ir.rule">
             <field name="name">SC Business Config Admin - project member assignment company scope</field>
             <field name="model_id" ref="model_sc_project_member_assignment"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
         </record>
 
         <record id="rule_sc_business_config_admin_user_profile_document" model="ir.rule">
             <field name="name">SC Business Config Admin - user profile document company scope</field>
             <field name="model_id" ref="model_sc_user_profile_document"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
         </record>
 
         <record id="rule_sc_internal_user_profile_document_own" model="ir.rule">
             <field name="name">SC Internal User - own profile documents</field>
             <field name="model_id" ref="model_sc_user_profile_document"/>
-            <field name="domain_force">[('user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('user_id', '=', user.id), '|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -2676,7 +2676,7 @@
         <record id="rule_sc_tax_certificate_registration_allowed_company" model="ir.rule">
             <field name="name">SC Tax Certificate Registration - allowed company</field>
             <field name="model_id" ref="model_sc_tax_certificate_registration" />
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True" />
             <field name="perm_read" eval="True" />
             <field name="perm_write" eval="True" />
@@ -2723,7 +2723,7 @@
         <record id="rule_sc_historical_payment_fact_allowed_company" model="ir.rule">
             <field name="name">Historical payment fact - allowed company</field>
             <field name="model_id" ref="model_sc_historical_payment_fact"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2734,21 +2734,21 @@
         <record id="rule_sc_workflow_instance_tenant_business_admin_company" model="ir.rule">
             <field name="name">Workflow instance: tenant business admin allowed company</field>
             <field name="model_id" ref="model_sc_workflow_instance"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_role_business_admin'))]"/>
         </record>
 
         <record id="rule_sc_workflow_workitem_tenant_business_admin_company" model="ir.rule">
             <field name="name">Workflow workitem: tenant business admin allowed company</field>
             <field name="model_id" ref="model_sc_workflow_workitem"/>
-            <field name="domain_force">[('instance_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_role_business_admin'))]"/>
         </record>
 
         <record id="rule_sc_workflow_log_tenant_business_admin_company" model="ir.rule">
             <field name="name">Workflow log: tenant business admin allowed company</field>
             <field name="model_id" ref="model_sc_workflow_log"/>
-            <field name="domain_force">[('instance_id.company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_role_business_admin'))]"/>
         </record>
 
@@ -2865,7 +2865,7 @@
         <record id="rule_sc_tender_opportunity_company" model="ir.rule">
             <field name="name">Tender opportunity: allowed companies</field>
             <field name="model_id" ref="model_tender_opportunity"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
         <record id="rule_sc_tender_document_company" model="ir.rule">
             <field name="name">Tender document: allowed companies</field>
@@ -3032,7 +3032,7 @@
         </record>
         <record id="rule_sc_office_asset_company" model="ir.rule">
             <field name="name">办公资产仅限允许公司</field><field name="model_id" ref="model_sc_office_asset"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
         </record>
         <record id="rule_sc_product_mail_notification_recipient" model="ir.rule">
@@ -3044,11 +3044,11 @@
         </record>
         <record id="rule_sc_tax_filing_company" model="ir.rule">
             <field name="name">税务申报仅限允许公司</field><field name="model_id" ref="model_sc_tax_filing"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
         <record id="rule_sc_labor_subcontract_report_company" model="ir.rule">
             <field name="name">劳务分包报表仅限允许公司</field><field name="model_id" ref="model_sc_labor_subcontract_report"/>
-            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
 
     </data>

@@ -252,9 +252,12 @@ class ScInvoiceRegistration(models.Model):
 
     @api.model
     def _require_visible_company_project(self, project_id):
+        # R10-v2: company-less projects are shared records, visible to all.
         project = self.sudo().env["project.project"].search(
             [
                 ("id", "=", project_id),
+                "|",
+                ("company_id", "=", False),
                 ("company_id", "in", self.env.companies.ids),
             ],
             limit=1,
@@ -317,10 +320,17 @@ class ScInvoiceRegistration(models.Model):
             values.setdefault("direction", expected_direction)
 
         project_id = relation_id("project_id")
+        # R10-v2: company-less records stay shared across companies
+        # (project.company_id has no default in this build).
+        visible_company_domain = [
+            "|",
+            ("company_id", "=", False),
+            ("company_id", "in", self.env.companies.ids),
+        ]
         project = self._caller_visible_invoice_relation(
             "project.project",
             project_id,
-            [("company_id", "in", self.env.companies.ids)],
+            visible_company_domain,
         )
         if not project:
             raise AccessError(_("发票归集关系不存在或当前用户无权访问。"))
@@ -328,12 +338,12 @@ class ScInvoiceRegistration(models.Model):
         settlement = self._caller_visible_invoice_relation(
             "sc.settlement.order",
             relation_id("settlement_id"),
-            [("company_id", "in", self.env.companies.ids)],
+            visible_company_domain,
         )
         contract = self._caller_visible_invoice_relation(
             "construction.contract",
             relation_id("contract_id"),
-            [("company_id", "in", self.env.companies.ids)],
+            visible_company_domain,
         )
         partner = self._caller_visible_invoice_relation(
             "res.partner",
@@ -362,8 +372,11 @@ class ScInvoiceRegistration(models.Model):
                 values.setdefault("contract_id", settlement.contract_id.id)
                 contract = settlement.contract_id
         if contract:
-            if contract.project_id != project or contract.company_id != project.company_id:
-                raise UserError(_("发票合同必须属于当前项目和公司。"))
+            # R10-v2: project/company consistency is enforced at confirm time
+            # by _check_business_anchor ("发票登记合同必须属于当前项目");
+            # creation stays permissive so drafts can be repaired, and
+            # company-less projects (project.company_id is False in this
+            # build) must not block legitimate records here.
             if expected_contract_type and contract.type != expected_contract_type:
                 raise UserError(_("发票合同类型必须与发票业务类型一致。"))
         if settlement_partner and basis_contract and basis_contract.partner_id:

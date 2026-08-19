@@ -1245,6 +1245,12 @@ class PaymentRequest(models.Model):
 
     def action_create_payment_execution(self):
         self.ensure_one()
+        # R10-v2: overpay UX guard lives on the action layer only. The shared
+        # readiness helper must stay usable for authorised ledger/execution
+        # writes (e.g. reversal anchors on fully paid requests).
+        for record in self:
+            if record.is_fully_paid:
+                raise UserError(_("付款申请已足额付款，不能继续生成付款登记。"))
         self._assert_payment_execution_ready(require_authorized_actor=True)
         action = self.env.ref("smart_construction_core.action_sc_payment_execution").read()[0]
         action["name"] = _("新建付款登记")
@@ -1290,7 +1296,7 @@ class PaymentRequest(models.Model):
             "default_receipt_account_name": self.payment_account_name or self.partner_account_name,
             "default_receipt_bank_name": self.payment_bank_name or self.partner_bank_name,
             "default_receipt_account_no": self.payment_account_no or self.partner_bank_account,
-            "default_payment_account_name": self.payer_unit,
+            "default_payment_account_name": self.payer_unit or self.legacy_payment_account_name,
             "default_payment_account_no": self.legacy_payment_account_no,
             "default_note": self.note,
         }
@@ -1325,8 +1331,6 @@ class PaymentRequest(models.Model):
         for record in self:
             if record.type != "pay":
                 raise UserError(_("只有付款申请可以生成付款登记。"))
-            if record.is_fully_paid:
-                raise UserError(_("付款申请已足额付款，不能继续生成付款登记。"))
             if record.state != "approved":
                 raise UserError(_("付款申请必须处于已批准状态才能生成付款登记。"))
             if not record._has_payment_basis():

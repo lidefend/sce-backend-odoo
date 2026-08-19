@@ -187,12 +187,13 @@
         <record id="group_sc_cap_finance_user" model="res.groups">
             <field name="name">SC 能力 - 财务中心经办</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
-            <!-- R10: Do NOT imply finance_read to avoid record-rule AND-conflict. -->
-            <!-- Menu/button visibility is handled by listing all three groups on each menu. -->
+            <!-- R10-v2: restore the finance capability chain (read <- user <- manager). -->
+            <!-- Group record rules are OR-merged in Odoo, so the chain only widens scope; -->
+            <!-- it is required for ACL inheritance (e.g. sc.settlement.order finance_read -->
+            <!-- ACL entries) and for _has_submit_access transitive checks. -->
             <field name="implied_ids" eval="[
                 (6, 0, [
-                    ref('smart_construction_core.group_sc_internal_user'),
-                    ref('smart_construction_core.group_sc_cap_accounting_read'),
+                    ref('smart_construction_core.group_sc_cap_finance_read'),
                     ref('smart_core.group_smart_core_finance_approver')
                 ])
             ]"/>
@@ -201,13 +202,10 @@
         <record id="group_sc_cap_finance_manager" model="res.groups">
             <field name="name">SC 能力 - 财务中心审批</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
-            <!-- R10: Do NOT imply finance_user to avoid record-rule AND-conflict. -->
-            <!-- Manager gets broader record-rule scope; menu visibility is via explicit group listing. -->
+            <!-- R10-v2: manager implies finance_user (restores chain to finance_read). -->
             <field name="implied_ids" eval="[
                 (6, 0, [
-                    ref('smart_construction_core.group_sc_internal_user'),
-                    ref('smart_construction_core.group_sc_cap_accounting_read'),
-                    ref('smart_core.group_smart_core_finance_approver')
+                    ref('smart_construction_core.group_sc_cap_finance_user')
                 ])
             ]"/>
         </record>

@@ -137,7 +137,9 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         if key == "submit":
             return bool(getattr(record, '_has_submit_access', lambda: True)())
         if key in {"approve", "reject"}:
-            return bool(record._has_finance_approve_access())
+            # R10-v2: stub records in work-item projections may not carry the
+            # finance-approve helper; mirror the submit fallback semantics.
+            return bool(getattr(record, '_has_finance_approve_access', lambda: False)())
         if key == "done":
             return bool(
                 self.env.user.has_group(

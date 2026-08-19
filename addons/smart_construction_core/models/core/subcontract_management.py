@@ -549,7 +549,13 @@ class ScSubcontractRegister(models.Model):
             contract = register.contract_id
             if not contract:
                 continue
-            if contract.project_id.company_id != contract.company_id:
+            # R10-v2: company-less projects are shared records; only enforce the
+            # consistency check when both sides carry an explicit company.
+            if (
+                contract.project_id.company_id
+                and contract.company_id
+                and contract.project_id.company_id != contract.company_id
+            ):
                 raise ValidationError(_("分包合同项目与合同公司必须一致。"))
             targets = {
                 "project_id": contract.project_id,
@@ -658,6 +664,11 @@ class ScSubcontractRegister(models.Model):
                         _("有效分包登记币种必须与分包合同币种一致。")
                     )
                 total += amount
+            # R10-v2: contracts without line amounts (amount_total <= 0) carry
+            # no authoritative bound — registration is unconstrained until
+            # the contract amount is defined.
+            if (contract.amount_total or 0.0) <= 0:
+                continue
             if contract.currency_id.compare_amounts(
                 total, contract.amount_total
             ) > 0:
@@ -1099,6 +1110,11 @@ class ScSubcontractSettlement(models.Model):
                         _("有效分包结算币种必须与分包合同币种一致。")
                     )
                 total += amount
+            # R10-v2: contracts without line amounts (amount_total <= 0) carry
+            # no authoritative bound — settlement is unconstrained until the
+            # contract amount is defined.
+            if (contract.amount_total or 0.0) <= 0:
+                continue
             if contract.currency_id.compare_amounts(
                 total, contract.amount_total
             ) > 0:
@@ -1117,7 +1133,7 @@ class ScSubcontractSettlement(models.Model):
             ["registered_amount", "currency_id", "register_id"]
         )
         settlement_line_model.flush_model(
-            ["register_line_id", "settlement_id", "amount_total", "currency_id"]
+            ["register_line_id", "settlement_id", "amount_untaxed", "currency_id"]
         )
         register_lines = register_line_model.search(
             [("id", "in", register_line_ids)]
@@ -1130,7 +1146,7 @@ class ScSubcontractSettlement(models.Model):
             f"""
                 SELECT line.register_line_id,
                        line.currency_id,
-                       COALESCE(SUM(line.amount_total), 0.0)
+                       COALESCE(SUM(line.amount_untaxed), 0.0)
                   FROM {settlement_line_model._table} AS line
                   JOIN {self._table} AS settlement
                     ON settlement.id = line.settlement_id
@@ -1145,6 +1161,9 @@ class ScSubcontractSettlement(models.Model):
             amounts_by_register_line.setdefault(line_id, []).append(
                 (currency_id, amount)
             )
+        # R10-v2: the register line authority is an untaxed bound (registered
+        # qty * price); settlement tax is a pass-through and must not consume
+        # the registered amount headroom.
         for register_line in register_lines:
             contract = register_line.register_id.contract_id
             if not contract:
@@ -1162,7 +1181,7 @@ class ScSubcontractSettlement(models.Model):
                 total, register_line.registered_amount
             ) > 0:
                 raise ValidationError(
-                    _("有效分包结算累计含税金额不能超过来源登记明细金额。")
+                    _("有效分包结算累计未税金额不能超过来源登记明细金额。")
                 )
 
     @api.model_create_multi
@@ -1284,7 +1303,13 @@ class ScSubcontractSettlement(models.Model):
                     _("分包结算完整登记集合必须收敛到唯一分包合同。")
                 )
             contract = contracts[0]
-            if contract.project_id.company_id != contract.company_id:
+            # R10-v2: company-less projects are shared records; only enforce the
+            # consistency check when both sides carry an explicit company.
+            if (
+                contract.project_id.company_id
+                and contract.company_id
+                and contract.project_id.company_id != contract.company_id
+            ):
                 raise ValidationError(_("分包合同项目与合同公司必须一致。"))
             for register in registers:
                 if register.project_id != contract.project_id:

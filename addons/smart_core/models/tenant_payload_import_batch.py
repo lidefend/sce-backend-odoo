@@ -31,7 +31,10 @@ def _assert_signed_import_boundary(env):
         env.context.get("sc_tenant_payload_maintenance_capability", "") or ""
     )
     if not maintenance_capability_matches(actual, expected):
-        raise UserError("TPV1_SIGNED_MAINTENANCE_CAPABILITY_REQUIRED")
+        # R10-v2: an import context presented WITHOUT the signed maintenance
+        # capability is an unauthorized access attempt, not a usage mistake —
+        # spec tests assert AccessError here (context-missing stays UserError).
+        raise AccessError("TPV1_SIGNED_MAINTENANCE_CAPABILITY_REQUIRED")
 
 
 class ResCompany(models.Model):
