@@ -91,7 +91,14 @@ class OdooViewParser(_BaseViewParserMixin,
         model = self.env[model_name]
         odoo_view = view_data if isinstance(view_data, dict) else self._safe_get_view_data(model, view_type)
         arch = (odoo_view or {}).get('arch') or ''
-        fields_info = self._enrich_view_fields_info(model, arch, (odoo_view or {}).get('fields') or {})
+        root = self._view_root(odoo_view)
+        fields_info = self._enrich_view_fields_info(
+            model,
+            arch,
+            (odoo_view or {}).get('fields') or {},
+            root=root,
+            fields_snapshot=(odoo_view or {}).get('_fields_snapshot'),
+        )
         toolbar_raw = (odoo_view or {}).get('toolbar') or {}
 
         _logger.debug("VIEW_PARSER_DEBUG: model=%s view_type=%s arch_length=%s fields_count=%s",
@@ -99,19 +106,26 @@ class OdooViewParser(_BaseViewParserMixin,
         if arch:
             _logger.debug("VIEW_PARSER_DEBUG: arch_preview=%s", arch[:200])
 
-        parsed_structure = self._lossless_parse_xml(arch)
+        parsed_structure = self._lossless_parse_xml(root if root is not None else arch)
 
         # search 合并（主视图内嵌） + 独立 search 视图
         try:
-            search_view = self._safe_get_view_data(model, 'search')
+            if view_type in ('form', 'tree'):
+                # PageAssembler obtains the effective search contract from
+                # app.search.config. Both parsers replace this local value
+                # with an empty placeholder, so loading it here is discarded.
+                search_view = None
+            else:
+                search_view = odoo_view if view_type == 'search' else self._safe_get_view_data(model, 'search')
         except Exception:
             search_view = None
+        search_root = self._view_root(search_view)
 
         base = {
-            "modifiers": self._collect_modifiers(arch),
+            "modifiers": self._collect_modifiers(arch, root=root),
             "search": self._merge_search(
-                self._parse_search_from_arch(arch),
-                self._parse_search_from_arch((search_view or {}).get('arch') or '')
+                self._parse_search_from_arch(arch, root=root),
+                self._parse_search_from_arch('', root=None if view_type == 'search' else search_root)
             ),
             "toolbar": self._normalize_toolbar(toolbar_raw),
             "order": getattr(model, '_order', 'id desc') or 'id desc',
@@ -119,13 +133,19 @@ class OdooViewParser(_BaseViewParserMixin,
 
         vt = view_type
         if vt == 'tree':
-            tree_blk = self._parse_tree_view(arch, fields_info)
+            tree_blk = self._parse_tree_view(arch, fields_info, root=root)
             # tree 的 default_order 覆盖全局 order
             if tree_blk.get('default_order'):
                 base["order"] = tree_blk['default_order']
             base.update(tree_blk)
         elif vt == 'form':
-            form_blk = self._parse_form_view(arch, fields_info, model_name)
+            form_blk = self._parse_form_view(
+                arch,
+                fields_info,
+                model_name,
+                root=root,
+                parsed_structure=parsed_structure,
+            )
             _logger.debug("VIEW_PARSER_DEBUG: form_blk keys=%s", list(form_blk.keys()))
             _logger.debug("VIEW_PARSER_DEBUG: form_blk layout=%s", form_blk.get('layout'))
             if form_blk.get('layout'):
@@ -134,17 +154,17 @@ class OdooViewParser(_BaseViewParserMixin,
                     _logger.debug("VIEW_PARSER_DEBUG: form_blk first layout item=%s", form_blk['layout'][0])
             base.update(form_blk)
         elif vt == 'kanban':
-            base.update({"kanban": self._parse_kanban_view(arch, fields_info)})
+            base.update({"kanban": self._parse_kanban_view(arch, fields_info, root=root)})
         elif vt == 'pivot':
-            base.update({"pivot": self._parse_pivot_view(arch, fields_info)})
+            base.update({"pivot": self._parse_pivot_view(arch, fields_info, root=root)})
         elif vt == 'graph':
-            base.update({"graph": self._parse_graph_view(arch, fields_info)})
+            base.update({"graph": self._parse_graph_view(arch, fields_info, root=root)})
         elif vt == 'calendar':
-            base.update({"calendar": self._parse_calendar_view(arch)})
+            base.update({"calendar": self._parse_calendar_view(arch, root=root)})
         elif vt == 'gantt':
-            base.update({"gantt": self._parse_gantt_view(arch)})
+            base.update({"gantt": self._parse_gantt_view(arch, root=root)})
         elif vt == 'activity':
-            base.update({"activity": self._parse_activity_view(arch)})
+            base.update({"activity": self._parse_activity_view(arch, root=root)})
         elif vt == 'search':
             pass
         else:
@@ -160,7 +180,7 @@ class OdooViewParser(_BaseViewParserMixin,
             **base,
         }
 
-    def _enrich_view_fields_info(self, model, arch, fields_info):
+    def _enrich_view_fields_info(self, model, arch, fields_info, root=None, fields_snapshot=None):
         """
         Odoo get_view can omit fields that only appear inside inline x2many
         subviews. Those fields still define native form structure, so the
@@ -168,9 +188,10 @@ class OdooViewParser(_BaseViewParserMixin,
         """
         out = {name: dict(meta) if isinstance(meta, dict) else meta for name, meta in (fields_info or {}).items()}
         missing = []
-        if arch:
+        if root is not None or arch:
             try:
-                root = etree.fromstring(arch.encode('utf-8'))
+                if root is None:
+                    root = self._parse_arch_root(arch)
                 for el in root.xpath(".//field[@name]"):
                     fname = (el.get("name") or "").strip()
                     field_string = (el.get("string") or "").strip()
@@ -183,11 +204,14 @@ class OdooViewParser(_BaseViewParserMixin,
                 _logger.exception("VIEW_PARSER_DEBUG: enrich fields_info parse failed")
         if not missing:
             return out
-        try:
-            model_fields = model.fields_get(missing)
-        except Exception:
-            _logger.exception("VIEW_PARSER_DEBUG: fields_get enrich failed for %s", missing)
-            model_fields = {}
+        if isinstance(fields_snapshot, dict):
+            model_fields = {name: fields_snapshot.get(name) for name in missing if fields_snapshot.get(name)}
+        else:
+            try:
+                model_fields = model.fields_get(missing)
+            except Exception:
+                _logger.exception("VIEW_PARSER_DEBUG: fields_get enrich failed for %s", missing)
+                model_fields = {}
         for fname in missing:
             meta = (model_fields or {}).get(fname)
             if isinstance(meta, dict):

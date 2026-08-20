@@ -109,6 +109,33 @@ class ContractMixinViewSurfaceTests(unittest.TestCase):
         )
         self.assertNotIn("unsafe_nested", result)
 
+    def test_governed_tree_preserves_occurrence_behavior_and_action_identity(self):
+        result = self.mixin.sanitize_governed_contract(
+            "tree",
+            {
+                "column_occurrences": [
+                    {"name": "amount", "occurrence_index": 0, "modifiers": {"readonly": True}},
+                    {"name": "partner_id", "occurrence_index": 1, "relation_active_actions": {"write": False}},
+                ],
+                "row_actions": [
+                    {
+                        "name": "approve",
+                        "native_identity": {
+                            "type": "object",
+                            "name": "approve",
+                            "data_hotkey": "a",
+                        },
+                    }
+                ],
+                "unsafe_nested": {"should": "drop"},
+            },
+        )
+
+        self.assertEqual(len(result["column_occurrences"]), 2)
+        self.assertEqual(result["column_occurrences"][1]["relation_active_actions"], {"write": False})
+        self.assertEqual(result["row_actions"][0]["native_identity"]["data_hotkey"], "a")
+        self.assertNotIn("unsafe_nested", result)
+
 
 if __name__ == "__main__":
     unittest.main()

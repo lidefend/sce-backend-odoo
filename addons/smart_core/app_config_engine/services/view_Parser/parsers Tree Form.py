@@ -374,15 +374,88 @@ class _TreeFormParserMixin:
         }
 
     # ---------------- tree 解析 ----------------
-    def _parse_tree_view(self, arch, fields_info):
-        columns, row_actions, row_classes = [], [], []
+    @staticmethod
+    def _native_element_identity(el):
+        """Return a stable locator and 1-based duplicate ordinal for an XML node."""
+        tag = str(getattr(el, 'tag', '') or '')
+        name = el.get('name') if hasattr(el, 'get') else None
+        duplicate_ordinal = 1
+        segments = []
+        current = el
+        while current is not None and isinstance(getattr(current, 'tag', None), str):
+            parent = current.getparent() if hasattr(current, 'getparent') else None
+            current_tag = str(current.tag)
+            tag_ordinal = 1
+            if parent is not None:
+                tag_siblings = [child for child in parent if getattr(child, 'tag', None) == current_tag]
+                try:
+                    tag_ordinal = tag_siblings.index(current) + 1
+                except ValueError:
+                    tag_ordinal = 1
+                if current is el:
+                    duplicate_siblings = [
+                        child for child in parent
+                        if getattr(child, 'tag', None) == tag and child.get('name') == name
+                    ]
+                    try:
+                        duplicate_ordinal = duplicate_siblings.index(current) + 1
+                    except ValueError:
+                        duplicate_ordinal = 1
+            segments.append(f"{current_tag}[{tag_ordinal}]")
+            current = parent
+        return {
+            "native_locator": "/" + "/".join(reversed(segments)),
+            "occurrence_index": duplicate_ordinal,
+        }
+
+    def _native_behavior_from_element(self, el, field_info=None):
+        """Project occurrence-level native behavior without name-based merging."""
+        modifiers = {}
+        for key in ('readonly', 'required', 'invisible', 'column_invisible'):
+            value = el.get(key)
+            if value is not None:
+                modifiers[key] = self._normalize_modifier_value(value)
+
+        for key, value in (el.attrib or {}).items():
+            if key.startswith('decoration-') and value is not None:
+                modifiers[key] = self._normalize_modifier_value(value)
+
+        for source_key in ('attrs', 'modifiers'):
+            raw_value = el.get(source_key)
+            if not raw_value:
+                continue
+            parsed = self._safe_eval_expr(raw_value)
+            if isinstance(parsed, dict):
+                for key, value in parsed.items():
+                    if key in ('readonly', 'required', 'invisible', 'column_invisible') or str(key).startswith('decoration-'):
+                        modifiers[key] = value
+
+        relation_active_actions = {}
+        info = field_info if isinstance(field_info, dict) else {}
+        field_type = str(info.get('type') or '').strip().lower()
+        widget = str(el.get('widget') or info.get('widget') or '').strip().lower()
+        supported_attrs = ()
+        if field_type == 'many2one':
+            supported_attrs = (('can_create', 'create'), ('can_write', 'write'))
+        elif field_type == 'many2many' and widget == 'many2many_tags':
+            supported_attrs = (('can_create', 'create'),)
+        for source_attr, action_name in supported_attrs:
+            value = el.get(source_attr)
+            if value is not None:
+                relation_active_actions[action_name] = self._normalize_modifier_value(value)
+
+        return modifiers, relation_active_actions
+
+    def _parse_tree_view(self, arch, fields_info, root=None):
+        columns, column_occurrences, row_actions, row_classes = [], [], [], []
         page_size = 50
         modifiers = {}
         capabilities = {"inline_edit": False, "can_create": True, "can_delete": True}
         default_order = None
 
         try:
-            root = etree.fromstring(arch.encode('utf-8')) if arch else None
+            if root is None:
+                root = etree.fromstring(arch.encode('utf-8')) if arch else None
             if root is not None and root.tag in ('tree', 'list'):
                 # default_order / editable / create / delete / limit
                 default_order = root.get('default_order')
@@ -399,10 +472,32 @@ class _TreeFormParserMixin:
                         page_size = 50
 
                 # 1) 列与列级属性
-                for el in root.xpath('./field[@name]'):
+                for source_position, el in enumerate(root.xpath('./field[@name]')):
                     fname = el.get('name')
                     if not fname:
                         continue
+                    field_info = fields_info.get(fname) if isinstance(fields_info, dict) else {}
+                    occurrence_modifiers, relation_active_actions = self._native_behavior_from_element(el, field_info)
+                    occurrence_identity = self._native_element_identity(el)
+                    occurrence = {
+                        "name": fname,
+                        "field_type": str((field_info or {}).get("type") or "").strip().lower(),
+                        "widget": str(el.get("widget") or (field_info or {}).get("widget") or "").strip().lower(),
+                        "source_position": source_position,
+                        **occurrence_identity,
+                        "attributes": dict(el.attrib or {}),
+                        "modifiers": occurrence_modifiers,
+                    }
+                    if occurrence["field_type"] == "monetary":
+                        occurrence["currency_field"] = str(
+                            (field_info or {}).get("currency_field") or "currency_id"
+                        ).strip()
+                        digits = (field_info or {}).get("digits")
+                        if isinstance(digits, (list, tuple)) and len(digits) == 2:
+                            occurrence["digits"] = list(digits)
+                    if relation_active_actions:
+                        occurrence["relation_active_actions"] = relation_active_actions
+                    column_occurrences.append(occurrence)
                     if fname not in columns:
                         columns.append(fname)
                     mods = modifiers.setdefault(fname, {})
@@ -472,6 +567,7 @@ class _TreeFormParserMixin:
         return {
             "columns": columns,
             "columns_schema": columns_schema,
+            "column_occurrences": column_occurrences,
             "row_actions": row_actions,
             "page_size": page_size,
             "row_classes": row_classes,
@@ -516,7 +612,7 @@ class _TreeFormParserMixin:
             return bool(default)
         return str(raw).strip().lower() not in ('0', 'false', 'no', 'off')
 
-    def _parse_form_view(self, arch, fields_info, model_name):
+    def _parse_form_view(self, arch, fields_info, model_name, root=None, parsed_structure=None):
         """
         返回契约块：
         {
@@ -524,8 +620,7 @@ class _TreeFormParserMixin:
           subviews, chatter, attachments, search
         }
         """
-        root = None
-        if arch:
+        if root is None and arch:
             try:
                 root = etree.fromstring(arch.encode('utf-8'))
             except Exception:
@@ -543,7 +638,9 @@ class _TreeFormParserMixin:
         _logger.debug("FORM_PARSER_DEBUG: layout_dom=%s", layout_dom)
 
         # 2) lossless 结果作为兜底/补充
-        layout_ll = self._convert_parsed_structure_to_layout(self._lossless_parse_xml(arch), fields_info)
+        if parsed_structure is None:
+            parsed_structure = self._lossless_parse_xml(root if root is not None else arch)
+        layout_ll = self._convert_parsed_structure_to_layout(parsed_structure, fields_info)
         layout = self._merge_layout(layout_dom, layout_ll)
         _logger.debug("FORM_PARSER_DEBUG: merged layout=%s", layout)
 
@@ -676,6 +773,21 @@ class _TreeFormParserMixin:
                     "tier": "primary" if ("btn-primary" in classes or "oe_highlight" in classes) else "overflow",
                 },
                 "badge": badge or None,
+                "native_identity": {
+                    "type": btype,
+                    "name": name_raw,
+                    "id": btn_node.get('id'),
+                    "string": btn_node.get('string'),
+                    "title": btn_node.get('title'),
+                    "help": btn_node.get('help'),
+                    "data_hotkey": btn_node.get('data-hotkey'),
+                    "special": btn_node.get('special'),
+                    "context_raw": context_raw,
+                    "domain_raw": domain_raw,
+                    "confirm_raw": btn_node.get('confirm'),
+                    "icon": icon,
+                    **self._native_element_identity(btn_node),
+                },
                 "payload": {
                     "method": None,
                     "ref": None,
@@ -689,6 +801,27 @@ class _TreeFormParserMixin:
                     "options_raw": options_raw,
                 }
             }
+
+            native_scope = base["native_identity"]
+            locator = native_scope.get("native_locator") or ""
+            classes_set = set(classes)
+            if "/tree[" in locator or "/list[" in locator:
+                canonical_region = "row_actions"
+            elif "/header[" in locator:
+                canonical_region = "header_buttons"
+            elif "oe_stat_button" in classes_set:
+                canonical_region = "stat_buttons"
+            else:
+                canonical_region = "layout"
+            projection_region = {
+                "row": "row_actions",
+                "header": "header_buttons",
+                "stat": "stat_buttons",
+                "body": "layout",
+            }.get(level, str(level or "layout"))
+            native_scope["canonical_region"] = canonical_region
+            native_scope["projection_region"] = projection_region
+            native_scope["authoritative"] = projection_region == canonical_region
 
             def _finalize(base, btype):
                 if base.get("selection") not in ("single", "multi", "none"):
@@ -868,19 +1001,11 @@ class _TreeFormParserMixin:
                     except Exception:
                         node['cols'] = 2
             # 容器级修饰（显隐/只读）
-            mods = {}
-            for k in ('readonly', 'required', 'invisible'):
-                v = el.get(k)
-                if v:
-                    mods[k] = self._normalize_modifier_value(v)
-            if el.get('attrs'):
-                parsed = self._safe_eval_expr(el.get('attrs'))
-                if isinstance(parsed, dict):
-                    for k in ('readonly', 'required', 'invisible'):
-                        if k in parsed:
-                            mods[k] = parsed[k]
+            mods, relation_active_actions = self._native_behavior_from_element(el)
             if mods:
-                node.setdefault('attributes', {})['modifiers'] = mods
+                node['modifiers'] = mods
+            if relation_active_actions:
+                node['relation_active_actions'] = relation_active_actions
 
             # 递归子节点
             children = []
@@ -916,7 +1041,12 @@ class _TreeFormParserMixin:
             fname = el.get('name') or ''
             if not fname:
                 return None
-            node = {'type': 'field', 'name': fname, 'attributes': _attrs(el)}
+            node = {
+                'type': 'field',
+                'name': fname,
+                'attributes': _attrs(el),
+                **self._native_element_identity(el),
+            }
             meta = self._field_info_for_layout(fname, fields_info)
             # 覆盖 label/help/widget
             if el.get('string'):
@@ -939,18 +1069,12 @@ class _TreeFormParserMixin:
                 node['filename'] = el.get('filename')
                 meta['filename'] = el.get('filename')
             # 局部修饰
-            fmods = {}
-            for k in ('readonly', 'required', 'invisible'):
-                if el.get(k):
-                    fmods[k] = self._normalize_modifier_value(el.get(k))
-            if el.get('attrs'):
-                parsed = self._safe_eval_expr(el.get('attrs'))
-                if isinstance(parsed, dict):
-                    for k in ('readonly', 'required', 'invisible'):
-                        if k in parsed:
-                            fmods[k] = parsed[k]
+            fmods, relation_active_actions = self._native_behavior_from_element(el, meta)
             if fmods:
                 meta.setdefault('modifiers', {}).update(fmods)
+                node['modifiers'] = fmods
+            if relation_active_actions:
+                node['relation_active_actions'] = relation_active_actions
             node['fieldInfo'] = meta
 
             # inline 子视图在这里不展开（交给 _collect_x2many_subviews_from_dom）
@@ -963,21 +1087,15 @@ class _TreeFormParserMixin:
                 'name': el.get('name', ''),
                 'label': self._resolve_action_label(el, el.get('name', '')),
                 'buttonType': el.get('type', 'object'),
+                'attributes': _attrs(el),
+                **self._native_element_identity(el),
                 'action': self._button_to_action(el, level='body'),
             }
-            mods = {}
-            for k in ('readonly', 'required', 'invisible'):
-                if el.get(k):
-                    mods[k] = self._normalize_modifier_value(el.get(k))
-            if el.get('attrs'):
-                parsed = self._safe_eval_expr(el.get('attrs'))
-                if isinstance(parsed, dict):
-                    for k in ('readonly', 'required', 'invisible'):
-                        if k in parsed:
-                            mods[k] = parsed[k]
+            mods, permissions = self._native_behavior_from_element(el)
             if mods:
                 node['modifiers'] = mods
-                node.setdefault('attributes', {})['modifiers'] = mods
+            if permissions:
+                node['permissions'] = permissions
             return node
 
         if tag == 'widget':
@@ -993,7 +1111,7 @@ class _TreeFormParserMixin:
             if el.get('invisible'):
                 mods['invisible'] = self._normalize_modifier_value(el.get('invisible'))
             if mods:
-                node.setdefault('attributes', {})['modifiers'] = mods
+                node['modifiers'] = mods
             return node
 
         # 其他未知节点：以 container 兜底
@@ -1226,16 +1344,28 @@ class _TreeFormParserMixin:
             ftype = finfo.get('type')
             if ftype not in ('one2many', 'many2many'):
                 continue
+            if fname in sub:
+                previous = sub[fname]
+                previous['host_occurrence_ambiguous'] = True
+                previous['host_occurrence_count'] = int(previous.get('host_occurrence_count') or 1) + 1
+                previous.setdefault('policies', {}).update({
+                    'inline_edit': False,
+                    'can_create': False,
+                    'can_unlink': False,
+                    'reason_code': 'AMBIGUOUS_NATIVE_HOST_OCCURRENCE',
+                })
+                continue
             entry = {}
+            entry['host_occurrence_count'] = 1
             relation = finfo.get('relation')
             relation_fields = self._safe_relation_fields_for_subview(relation)
             # 1) inline 定义
             inline_tree = el.xpath('./tree')
             inline_form = el.xpath('./form')
             if inline_tree:
-                entry['tree'] = self._parse_inline_tree_columns(inline_tree[0])
+                entry['tree'] = self._parse_tree_view('', relation_fields, root=inline_tree[0])
             if inline_form:
-                entry['form'] = {"layout": self._extract_form_layout_dom(inline_form[0], {})}
+                entry['form'] = {"layout": self._extract_form_layout_dom(inline_form[0], relation_fields)}
 
             # 2) 引用式（views/context）
             try:
@@ -1248,9 +1378,16 @@ class _TreeFormParserMixin:
                             if vt in ('tree', 'form'):
                                 blk = self._safe_get_view_data(self.env[relation], vt)
                                 if vt == 'tree':
-                                    entry['tree'] = self._parse_inline_tree_columns(etree.fromstring((blk or {}).get('arch', '').encode('utf-8'))) if (blk or {}).get('arch') else entry.get('tree')
+                                    entry['tree'] = self._parse_tree_view(
+                                        '',
+                                        relation_fields,
+                                        root=etree.fromstring((blk or {}).get('arch', '').encode('utf-8')),
+                                    ) if (blk or {}).get('arch') else entry.get('tree')
                                 else:
-                                    entry['form'] = {"layout": self._extract_form_layout_dom(etree.fromstring((blk or {}).get('arch','').encode('utf-8')), {})} if (blk or {}).get('arch') else entry.get('form')
+                                    entry['form'] = {"layout": self._extract_form_layout_dom(
+                                        etree.fromstring((blk or {}).get('arch','').encode('utf-8')),
+                                        relation_fields,
+                                    )} if (blk or {}).get('arch') else entry.get('form')
                 # context="{'tree_view_ref': 'xmlid'}" 风格
                 ctx = self._safe_eval_expr(el.get('context')) if el.get('context') else None
                 xmlid = (isinstance(ctx, dict) and (ctx.get('tree_view_ref') or ctx.get('form_view_ref')))
@@ -1262,13 +1399,27 @@ class _TreeFormParserMixin:
                         if res and res[0] == 'ir.ui.view':
                             view_rec = self.env['ir.ui.view'].browse(res[1])
                             if view_rec.type == 'tree':
-                                entry['tree'] = self._parse_inline_tree_columns(etree.fromstring(view_rec.arch_db.encode('utf-8')))
+                                entry['tree'] = self._parse_tree_view(
+                                    '',
+                                    relation_fields,
+                                    root=etree.fromstring(view_rec.arch_db.encode('utf-8')),
+                                )
                             elif view_rec.type == 'form':
-                                entry['form'] = {"layout": self._extract_form_layout_dom(etree.fromstring(view_rec.arch_db.encode('utf-8')), {})}
+                                entry['form'] = {"layout": self._extract_form_layout_dom(
+                                    etree.fromstring(view_rec.arch_db.encode('utf-8')),
+                                    relation_fields,
+                                )}
                     except Exception:
                         pass
             except Exception:
                 _logger.exception("collect x2many subviews (ref) failed for %s", fname)
+                entry['reference_parse_outcome'] = 'error'
+                entry.setdefault('policies', {}).update({
+                    'inline_edit': False,
+                    'can_create': False,
+                    'can_unlink': False,
+                    'reason_code': 'NATIVE_SUBVIEW_REFERENCE_PARSE_FAILED',
+                })
 
             # 最小兜底
             if not entry.get('tree'):
@@ -1487,16 +1638,12 @@ class _TreeFormParserMixin:
 
     def _field_info_for_layout(self, fname, fields_info):
         meta = (fields_info or {}).get(fname, {}) or {}
-        return {
-            'name': fname,
-            'type': meta.get('type', 'char'),
-            'label': meta.get('string') or fname,
-            'help': meta.get('help') or '',
-            'relation': meta.get('relation') or '',
-            'required': bool(meta.get('required')),  # 仅供前端初始提示
-            'readonly': bool(meta.get('readonly')),
-            'widget': meta.get('widget') or '',
-        }
+        from odoo.addons.smart_core.utils.native_field_descriptor import project_native_field_descriptor
+        return project_native_field_descriptor(
+            fname,
+            meta,
+            widget=str(meta.get('widget') or ''),
+        )
 
     # ---------------- 推断x2many子视图 ----------------
     def _infer_x2many_subviews(self, fields_meta):

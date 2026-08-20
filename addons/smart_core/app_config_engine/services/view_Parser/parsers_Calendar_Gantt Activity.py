@@ -33,7 +33,7 @@ class _CalendarGanttActivitySearchParserMixin:
         }
 
     # ---------------- calendar 解析 ----------------
-    def _parse_calendar_view(self, arch):
+    def _parse_calendar_view(self, arch, root=None):
         out = {
             "date_start": "date_start",
             "date_stop": "date_end",
@@ -46,8 +46,9 @@ class _CalendarGanttActivitySearchParserMixin:
             "native_attrs": {},
         }
         try:
-            if arch:
-                root = etree.fromstring(arch.encode('utf-8'))
+            if root is not None or arch:
+                if root is None:
+                    root = etree.fromstring(arch.encode('utf-8'))
                 if root.tag != 'calendar':
                     cals = root.xpath('.//calendar')
                     root = cals[0] if cals else root
@@ -75,7 +76,7 @@ class _CalendarGanttActivitySearchParserMixin:
         return out
 
     # ---------------- gantt 解析 ----------------
-    def _parse_gantt_view(self, arch):
+    def _parse_gantt_view(self, arch, root=None):
         out = {
             "date_start": "date_start",
             "date_stop": "date_end",
@@ -90,8 +91,9 @@ class _CalendarGanttActivitySearchParserMixin:
             "native_attrs": {},
         }
         try:
-            if arch:
-                root = etree.fromstring(arch.encode('utf-8'))
+            if root is not None or arch:
+                if root is None:
+                    root = etree.fromstring(arch.encode('utf-8'))
                 if root.tag != 'gantt':
                     g = root.xpath('.//gantt')
                     root = g[0] if g else root
@@ -129,7 +131,7 @@ class _CalendarGanttActivitySearchParserMixin:
         return out
 
     # ---------------- activity 解析（最小可用） ----------------
-    def _parse_activity_view(self, arch):
+    def _parse_activity_view(self, arch, root=None):
         out = {
             "template_qweb": None,
             "activity_type_slots": {},
@@ -139,8 +141,9 @@ class _CalendarGanttActivitySearchParserMixin:
             "native_attrs": {},
         }
         try:
-            if arch:
-                root = etree.fromstring(arch.encode('utf-8'))
+            if root is not None or arch:
+                if root is None:
+                    root = etree.fromstring(arch.encode('utf-8'))
                 if root.tag != 'activity':
                     ac = root.xpath('.//activity')
                     root = ac[0] if ac else root
@@ -159,12 +162,13 @@ class _CalendarGanttActivitySearchParserMixin:
         return out
 
     # ---------------- search 解析与合并 ----------------
-    def _parse_search_from_arch(self, arch):
+    def _parse_search_from_arch(self, arch, root=None):
         out = {"filters": [], "group_by": [], "group_by_fields": [], "search_fields": [], "facets": {"enabled": True}}
         try:
-            if not arch:
+            if root is None and not arch:
                 return out
-            root = etree.fromstring(arch.encode('utf-8'))
+            if root is None:
+                root = etree.fromstring(arch.encode('utf-8'))
             search_nodes = root.xpath('.//search') if root.tag != 'search' else [root]
             if not search_nodes:
                 return out
