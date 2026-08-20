@@ -58,3 +58,17 @@
 - Validation: `python3 -m unittest scripts.verify.test_product_view_structure_contract`.
 - Result: `14` non-zero tests passed; no database, Make, baseline, or global
   preflight mutation was performed.
+
+## Q1-3 local.clean structure authority
+
+- Odoo authority: Odoo 17 public `get_view()` user-visible arch, with
+  `_get_view()` limited to provenance diagnostics.
+- Candidate fingerprint: `bcf860df22dc633c3c224b6cde62023e0ed4b2e49c2fd5e86decefe449a6b39a`.
+- Runtime: `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$`,
+  `demo_data=false`.
+- Export: `89` formal menus, `65` models, `280` resolved surfaces; form `87`,
+  tree `84`, search `89`, pivot `9`, graph `6`, kanban `4`, activity `1`.
+- Validation: `19` targeted tests passed; baseline guard passed; independent
+  `local.clean.view_structure_gate` re-export matched the tracked baseline.
+- Containment: the known `local.clean.health` frontend-root `403` belongs to
+  the environment/frontend layer. It was not rerun or repaired in this batch.
