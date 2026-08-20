@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -12,16 +13,20 @@ from typing import Any
 from odoo import SUPERUSER_ID
 from odoo.addons.smart_core.handlers.load_contract import LoadContractHandler
 
-from scripts.contract.complete_worktree_fingerprint import validate_fingerprint
-from scripts.contract.product_view_contract_carriers_common import (
+try:
+    ROOT = Path(__file__).resolve().parents[2]
+except NameError:
+    ROOT = Path("/mnt")
+sys.path.insert(0, str(ROOT / "scripts" / "contract"))
+
+from complete_worktree_fingerprint import validate_fingerprint  # noqa: E402
+from product_view_contract_carriers_common import (  # noqa: E402
     TYPE_REQUIRED_KEYS,
     assert_system_identity,
     atomic_write_json,
-    enable_database_read_only,
     expected_normalized_selectors,
     file_sha256,
     normalized_value_errors,
-    restore_database_read_write,
     sha256_json,
     stable_selector_payload,
     with_manifest,
@@ -35,7 +40,8 @@ def _required_path(name: str) -> Path:
     value = os.environ.get(name, "").strip()
     if not value:
         raise ValueError(f"missing {name}")
-    return Path(value)
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -93,10 +99,10 @@ def _runtime_authority(runtime_env: Any, structure: dict[str, Any], fingerprint:
         "language": source["language"],
         "group_profile": group_profile,
         "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler",
-        "capture_mode": "final_response_readonly_bridge",
+        "capture_mode": "final_response_rollback_sandbox",
         "force_refresh": True,
         "external_contract_service_absent": True,
-        "database_transaction_read_only": True,
+        "capture_transaction_strategy": "dedicated_cursor_rollback",
         "exporter_version": SCHEMA,
     }
 
@@ -122,7 +128,7 @@ def _capture_surface(runtime_env: Any, surface: dict[str, Any], authority: dict[
     if surface["source_kind"] == "database_view":
         requested_view_id = runtime_env.ref(surface["view_ref"]).id
         request_context["requested_view_id"] = requested_view_id
-    elif surface["source_kind"] != "synthetic_default":
+    elif surface["source_kind"] != "synthetic_default_view":
         raise ValueError(f"unsupported source kind: {surface['source_kind']}")
     request = {
         "menu_id": menu_id,
@@ -263,13 +269,12 @@ if output.resolve() in {structure_input.resolve(), fingerprint_input.resolve()}:
     raise ValueError("carrier output must not overwrite an input")
 output.unlink(missing_ok=True)
 captured = None
-with env.registry.cursor() as readonly_cr:
+with env.registry.cursor() as capture_cr:
     try:
-        enable_database_read_only(readonly_cr)
-        runtime = env(cr=readonly_cr, context={**dict(env.context or {}), "lang": "en_US", "contract_projection_readonly": True})
+        runtime = env(cr=capture_cr, context={**dict(env.context or {}), "lang": "en_US"})
         captured = capture(runtime, structure_input, fingerprint_input)
     finally:
-        restore_database_read_write(readonly_cr)
+        capture_cr.rollback()
 if captured is not None:
     atomic_write_json(output, captured)
     print(json.dumps({"status": "PASS", "surface_count": captured["summary"]["surface_count"], "manifest_sha256": captured["manifest_sha256"]}, sort_keys=True))

@@ -11,10 +11,10 @@
 - 仅允许 `local.clean`：`sc-local-clean` / `sc_clean` / `^sc_clean$` / `demo_data=false`。
 - 请求固定 `include=all`、`force_refresh=true`，避免 304 无载体响应。
 - 运行库出现仓库无法证明只读性的 `app.contract.service` 时失败关闭。
-- 采集使用独立数据库 cursor，并同时设置 session 与 transaction read-only；采集后必须回滚并恢复连接默认值。该保证覆盖数据库写入，不宣称拦截未登记的外部副作用。
+- 采集使用独立数据库 cursor，按真实 handler 语义执行，成功或失败后都必须统一回滚；不得把整条 handler 链强制改成数据库只读事务。该隔离覆盖未提交的数据库写入，不宣称拦截显式提交或未登记的外部副作用。
 - `tree` 是 Odoo 17 规范类型；不得向 handler 请求 `list`。
 - 采集输入必须是同一候选指纹下重新导出并通过结构门禁的 `artifacts/contract/product_view_structure_contract.json`，不得使用历史 tracked 基线代替。
-- 数据库视图通过 `context.requested_view_id` 绑定本次运行记录；synthetic default 不得伪造该 ID。
+- 数据库视图通过 `context.requested_view_id` 绑定本次运行记录；`synthetic_default_view` 不得伪造该 ID。
 
 ## 载体规则
 

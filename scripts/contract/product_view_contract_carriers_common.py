@@ -108,24 +108,6 @@ def normalized_value_errors(view_type: str, model: str, selector: str, value: An
     return errors
 
 
-def enable_database_read_only(cursor: Any) -> None:
-    cursor.execute("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY")
-    cursor.execute("SET TRANSACTION READ ONLY")
-    cursor.execute("SHOW transaction_read_only")
-    if cursor.fetchone()[0] != "on":
-        raise ValueError("database transaction is not read-only")
-
-
-def restore_database_read_write(cursor: Any) -> None:
-    cursor.rollback()
-    cursor.execute("SET SESSION CHARACTERISTICS AS TRANSACTION READ WRITE")
-    cursor.commit()
-    cursor.execute("SHOW transaction_read_only")
-    if cursor.fetchone()[0] != "off":
-        raise ValueError("database connection did not restore read-write default")
-    cursor.rollback()
-
-
 def assert_system_identity(runtime_uid: int, superuser_id: int, declared_user: str) -> None:
     if runtime_uid != superuser_id or declared_user != "__system__":
         raise ValueError("carrier collector requires exact superuser identity")

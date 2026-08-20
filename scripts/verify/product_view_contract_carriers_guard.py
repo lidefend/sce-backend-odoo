@@ -94,8 +94,8 @@ def validate_carriers(
             errors.append(f"authority {key} differs from structure input")
     runtime_constants = {
         "runtime_profile": "local.clean", "compose_project": "sc-local-clean", "database": "sc_clean", "database_filter": "^sc_clean$", "demo_data": False,
-        "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler", "capture_mode": "final_response_readonly_bridge", "force_refresh": True,
-        "external_contract_service_absent": True, "database_transaction_read_only": True, "exporter_version": "product_view_contract_carriers/v1",
+        "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler", "capture_mode": "final_response_rollback_sandbox", "force_refresh": True,
+        "external_contract_service_absent": True, "capture_transaction_strategy": "dedicated_cursor_rollback", "exporter_version": "product_view_contract_carriers/v1",
     }
     for key, expected in runtime_constants.items():
         if authority.get(key) != expected:
@@ -128,7 +128,7 @@ def validate_carriers(
         requested = request.get("context", {}).get("requested_view_id")
         if surface["source_kind"] == "database_view" and requested != binding.get("requested_view_id"):
             errors.append(f"{ref} requested view binding mismatch")
-        if surface["source_kind"] == "synthetic_default" and (request.get("context") or binding.get("requested_view_id") != 0):
+        if surface["source_kind"] == "synthetic_default_view" and (request.get("context") or binding.get("requested_view_id") != 0):
             errors.append(f"{ref} synthetic default fabricated a requested view")
         response = entry.get("response", {})
         if response.get("status") != "success" or response.get("code") != 200 or response.get("source_authority") != "load_contract_final_response" or response.get("degraded") is not False:

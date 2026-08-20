@@ -32,7 +32,7 @@ $defs:
   authority:
     type: object
     additionalProperties: false
-    required: [branch, candidate_fingerprint, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, handler, capture_mode, force_refresh, external_contract_service_absent, database_transaction_read_only, exporter_version]
+    required: [branch, candidate_fingerprint, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, handler, capture_mode, force_refresh, external_contract_service_absent, capture_transaction_strategy, exporter_version]
     properties:
       branch: {$ref: '#/$defs/text'}
       candidate_fingerprint: {$ref: '#/$defs/candidate_fingerprint'}
@@ -58,10 +58,10 @@ $defs:
       language: {$ref: '#/$defs/text'}
       group_profile: {type: array, minItems: 1, uniqueItems: true, items: {$ref: '#/$defs/text'}}
       handler: {const: odoo.addons.smart_core.handlers.load_contract.LoadContractHandler}
-      capture_mode: {const: final_response_readonly_bridge}
+      capture_mode: {const: final_response_rollback_sandbox}
       force_refresh: {const: true}
       external_contract_service_absent: {const: true}
-      database_transaction_read_only: {const: true}
+      capture_transaction_strategy: {const: dedicated_cursor_rollback}
       exporter_version: {const: product_view_contract_carriers/v1}
   structure_input:
     type: object
@@ -101,7 +101,7 @@ $defs:
       model: {$ref: '#/$defs/text'}
       view_type: {enum: [form, tree, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]}
       view_ref: {$ref: '#/$defs/text'}
-      source_kind: {enum: [database_view, synthetic_default]}
+      source_kind: {enum: [database_view, synthetic_default_view]}
       hashes:
         type: object
         additionalProperties: false
@@ -178,7 +178,7 @@ $defs:
                   required: [requested_view_id]
       - if:
           properties:
-            source_kind: {const: synthetic_default}
+            source_kind: {const: synthetic_default_view}
         then:
           properties:
             runtime_binding:

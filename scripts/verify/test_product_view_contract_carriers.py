@@ -9,8 +9,6 @@ import yaml
 from scripts.contract.complete_worktree_fingerprint import EXCLUDED_PATHS
 from scripts.contract.product_view_contract_carriers_common import (
     assert_system_identity,
-    enable_database_read_only,
-    restore_database_read_write,
     sha256_json,
     stable_selector_payload,
     with_manifest,
@@ -19,32 +17,6 @@ from scripts.verify.product_view_contract_carriers_guard import validate_carrier
 
 
 ROOT = Path(__file__).resolve().parents[2]
-
-
-class FakeCursor:
-    def __init__(self) -> None:
-        self.default = "off"
-        self.current = "off"
-        self.result = None
-
-    def execute(self, statement: str) -> None:
-        if statement.endswith("READ ONLY") and statement.startswith("SET SESSION"):
-            self.default = "on"
-        elif statement == "SET TRANSACTION READ ONLY":
-            self.current = "on"
-        elif statement.endswith("READ WRITE"):
-            self.default = "off"
-        elif statement == "SHOW transaction_read_only":
-            self.result = (self.current,)
-
-    def fetchone(self):
-        return self.result
-
-    def commit(self) -> None:
-        self.current = self.default
-
-    def rollback(self) -> None:
-        self.current = self.default
 
 
 class ProductViewContractCarriersTests(unittest.TestCase):
@@ -81,8 +53,8 @@ class ProductViewContractCarriersTests(unittest.TestCase):
         self.authority = {
             "branch": "feature/test", "candidate_fingerprint": fp, "runtime_profile": "local.clean", "compose_project": "sc-local-clean", "database": "sc_clean", "database_filter": "^sc_clean$", "demo_data": False,
             "module_set": module_set, "module_set_sha256": sha256_json(module_set), "user": "__system__", "company": "base.main_company", "language": "en_US", "group_profile": ["base.group_system"],
-            "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler", "capture_mode": "final_response_readonly_bridge", "force_refresh": True, "external_contract_service_absent": True, "exporter_version": "product_view_contract_carriers/v1",
-            "database_transaction_read_only": True,
+            "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler", "capture_mode": "final_response_rollback_sandbox", "force_refresh": True, "external_contract_service_absent": True, "exporter_version": "product_view_contract_carriers/v1",
+            "capture_transaction_strategy": "dedicated_cursor_rollback",
         }
         value = {"model": "x.model", "view_type": "form", "layout": {}, "statusbar": {}, "header_buttons": [], "field_modifiers": {}, "subviews": {}, "capabilities": {}}
         entry = {
@@ -187,19 +159,25 @@ class ProductViewContractCarriersTests(unittest.TestCase):
         value = with_manifest(value)
         self.assertTrue(any("semantic" in error for error in self.errors(value)))
 
-    def test_read_only_session_restores_after_handler_commit(self) -> None:
-        cursor = FakeCursor()
-        enable_database_read_only(cursor)
-        cursor.commit()
-        self.assertEqual(cursor.current, "on")
-        restore_database_read_write(cursor)
-        self.assertEqual(cursor.default, "off")
-        self.assertEqual(cursor.current, "off")
-
     def test_system_identity_requires_exact_superuser_uid(self) -> None:
         assert_system_identity(1, 1, "__system__")
         with self.assertRaises(ValueError):
             assert_system_identity(2, 1, "__system__")
+
+    def test_synthetic_default_view_rejects_runtime_view_id(self) -> None:
+        value = deepcopy(self.artifact)
+        entry = value["entries"][0]
+        entry["source_kind"] = "synthetic_default_view"
+        entry["runtime_binding"]["requested_view_id"] = 0
+        entry["request"]["context"] = {}
+        value = with_manifest(value)
+        structure = deepcopy(self.structure)
+        structure["entries"][0]["surfaces"][0]["source_kind"] = "synthetic_default_view"
+        structure = with_manifest(structure)
+        value["structure_input"]["manifest_sha256"] = structure["manifest_sha256"]
+        value = with_manifest(value)
+        errors = validate_carriers(value, structure, self.fingerprint, self.schema, "a" * 64, self.fingerprint)
+        self.assertEqual(errors, [])
 
 
 if __name__ == "__main__":

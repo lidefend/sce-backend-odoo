@@ -11,10 +11,10 @@ This contract is a P4 evidence asset containing normalized and semantic carriers
 - Only governed `local.clean` is allowed: `sc-local-clean` / `sc_clean` / `^sc_clean$` / `demo_data=false`.
 - Requests use `include=all` and `force_refresh=true` to prevent carrier-free 304 responses.
 - Capture fails closed when runtime registers an `app.contract.service` whose read-only behavior is not proven by this repository.
-- Capture uses a dedicated database cursor with both session and transaction read-only settings, then rolls back and restores the connection default. This guarantees database write rejection; it does not claim to intercept unregistered external side effects.
+- Capture uses a dedicated database cursor, executes the real handler semantics, and always rolls the transaction back on success or failure. It must not force the entire handler chain into a database read-only transaction. This isolates uncommitted database writes; it does not claim to intercept explicit commits or unregistered external side effects.
 - `tree` is the canonical Odoo 17 type; the handler is never called with `list`.
 - Capture consumes only `artifacts/contract/product_view_structure_contract.json` exported and gated under the same candidate fingerprint; a historical tracked baseline is not a substitute.
-- Database views bind the runtime record through `context.requested_view_id`; synthetic defaults must not fabricate that ID.
+- Database views bind the runtime record through `context.requested_view_id`; `synthetic_default_view` surfaces must not fabricate that ID.
 
 ## Carrier rules
 
