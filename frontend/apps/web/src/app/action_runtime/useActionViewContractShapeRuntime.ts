@@ -7,6 +7,7 @@ import {
   resolveUnifiedPageContractV2ListProfile,
   resolveUnifiedPageContractV2SurfacePolicies,
 } from '../contracts/unifiedPageContractV2';
+import { resolveActivityRequestedFields } from '../contracts/actionViewActivityContract';
 
 type Dict = Record<string, unknown>;
 
@@ -194,14 +195,7 @@ export function extractAdvancedViewFieldsFromContract(contract: unknown, mode: s
     return uniqueFields([dateStart, dateStop, ...slotFields, ...fallbackNames].filter(Boolean));
   }
   if (mode === 'activity') {
-    const activityField = String(blockValue('field') || '').trim();
-    const slotFields = [
-      ...collectSlotFieldNames(blockValue('activity_type_slots')),
-      ...collectSlotFieldNames(blockValue('deadline_slots')),
-      ...collectSlotFieldNames(blockValue('assignee_slots')),
-      ...normalizeFieldNames(blockValue('fields')),
-    ];
-    return uniqueFields([activityField, ...slotFields, ...fallbackNames].filter(Boolean));
+    return resolveActivityRequestedFields(contract);
   }
   if (mode === 'dashboard') {
     const kpis = Array.isArray(blockValue('kpis')) ? blockValue('kpis') as unknown[] : [];

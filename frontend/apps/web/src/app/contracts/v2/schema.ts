@@ -1,6 +1,9 @@
 import type {
   ContractV2ActionContract,
   ContractV2ActionRule,
+  ContractV2ActivityNode,
+  ContractV2ActivityNodeOccurrence,
+  ContractV2ActivityProfile,
   ContractV2Auth,
   ContractV2ButtonStatus,
   ContractV2AdaptMode,
@@ -397,6 +400,141 @@ function decodeContainer(
   };
 }
 
+function decodeActivityNode(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ActivityNode | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'activity node must be an object' });
+    return null;
+  }
+  const tag = requiredString(raw, 'tag', path, issues);
+  const nativeLocator = requiredString(raw, 'native_locator', path, issues);
+  const occurrenceIndex = Number(raw.occurrence_index);
+  const sourcePosition = Number(raw.source_position);
+  if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrence_index`, message: 'must be a positive integer' });
+  if (!Number.isInteger(sourcePosition) || sourcePosition < 0) issues.push({ path: `${path}.source_position`, message: 'must be a non-negative integer' });
+  const childrenRaw = requiredArray(raw, 'children', path, issues);
+  const children = childrenRaw
+    .map((child, index) => decodeActivityNode(child, `${path}.children[${index}]`, issues))
+    .filter((child): child is ContractV2ActivityNode => Boolean(child));
+  if (!tag || !nativeLocator) return null;
+  return {
+    tag,
+    native_locator: nativeLocator,
+    occurrence_index: occurrenceIndex,
+    source_position: sourcePosition,
+    attributes: requiredRecord(raw, 'attributes', path, issues),
+    ...(optionalString(raw, 'text') ? { text: optionalString(raw, 'text') } : {}),
+    ...(optionalString(raw, 'tail') ? { tail: optionalString(raw, 'tail') } : {}),
+    children,
+  };
+}
+
+function decodeActivityNodeOccurrence(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ActivityNodeOccurrence | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'activity node occurrence must be an object' });
+    return null;
+  }
+  const tag = requiredString(raw, 'tag', path, issues);
+  const nativeLocator = requiredString(raw, 'native_locator', path, issues);
+  const occurrenceIndex = Number(raw.occurrence_index);
+  const sourcePosition = Number(raw.source_position);
+  if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrence_index`, message: 'must be a positive integer' });
+  if (!Number.isInteger(sourcePosition) || sourcePosition < 0) issues.push({ path: `${path}.source_position`, message: 'must be a non-negative integer' });
+  if (!tag || !nativeLocator) return null;
+  return {
+    tag,
+    native_locator: nativeLocator,
+    occurrence_index: occurrenceIndex,
+    source_position: sourcePosition,
+    attributes: requiredRecord(raw, 'attributes', path, issues),
+    ...(optionalString(raw, 'text') ? { text: optionalString(raw, 'text') } : {}),
+    ...(optionalString(raw, 'tail') ? { tail: optionalString(raw, 'tail') } : {}),
+  };
+}
+
+function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2ActivityProfile | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isRecord(raw)) {
+    issues.push({ path: 'layoutContract.activityProfile', message: 'must be an object' });
+    return undefined;
+  }
+  const path = 'layoutContract.activityProfile';
+  const authority = requiredRecord(raw, 'sourceAuthority', path, issues);
+  if (asString(authority.kind) !== 'native_activity_view_projection') {
+    issues.push({ path: `${path}.sourceAuthority.kind`, message: 'must be native_activity_view_projection' });
+  }
+  const authorityNames = asStringArray(authority.authorities).sort();
+  if (JSON.stringify(authorityNames) !== JSON.stringify(['ir.actions.act_window', 'ir.model.fields', 'ir.ui.view'])) {
+    issues.push({ path: `${path}.sourceAuthority.authorities`, message: 'must identify the governed native authorities' });
+  }
+  if (asString(authority.runtime_carrier) !== 'ui.contract.v2.layoutContract.activityProfile') {
+    issues.push({ path: `${path}.sourceAuthority.runtime_carrier`, message: 'must identify the activity profile runtime carrier' });
+  }
+  if (authority.projection_only !== true || authority.no_business_fact_authority !== true) {
+    issues.push({ path: `${path}.sourceAuthority`, message: 'must remain projection-only without business fact authority' });
+  }
+  const fieldOccurrences = requiredArray(raw, 'fieldOccurrences', path, issues).map((item, index) => {
+    const itemPath = `${path}.fieldOccurrences[${index}]`;
+    if (!isRecord(item)) {
+      issues.push({ path: itemPath, message: 'must be an object' });
+      return null;
+    }
+    const occurrenceIndex = Number(item.occurrence_index);
+    const sourcePosition = Number(item.source_position);
+    if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${itemPath}.occurrence_index`, message: 'must be a positive integer' });
+    if (!Number.isInteger(sourcePosition) || sourcePosition < 0) issues.push({ path: `${itemPath}.source_position`, message: 'must be a non-negative integer' });
+    const digits = Array.isArray(item.digits) && item.digits.length === 2
+      ? [Number(item.digits[0]), Number(item.digits[1])] as [number, number]
+      : undefined;
+    if (digits && (!digits.every((value) => Number.isInteger(value) && value >= 0) || digits[1] > digits[0])) {
+      issues.push({ path: `${itemPath}.digits`, message: 'must contain valid precision and scale integers' });
+    }
+    return {
+      name: requiredString(item, 'name', itemPath, issues),
+      label: requiredString(item, 'label', itemPath, issues),
+      widget: typeof item.widget === 'string' ? item.widget : '',
+      native_locator: requiredString(item, 'native_locator', itemPath, issues),
+      occurrence_index: occurrenceIndex,
+      source_position: sourcePosition,
+      attributes: requiredRecord(item, 'attributes', itemPath, issues),
+      ...(optionalString(item, 'text') ? { text: optionalString(item, 'text') } : {}),
+      ...(optionalString(item, 'tail') ? { tail: optionalString(item, 'tail') } : {}),
+      modifiers: item.modifiers,
+      decorations: requiredArray(item, 'decorations', itemPath, issues).filter(isRecord),
+      ...(optionalString(item, 'field_type') ? { field_type: optionalString(item, 'field_type') } : {}),
+      ...(optionalString(item, 'currency_field') ? { currency_field: optionalString(item, 'currency_field') } : {}),
+      ...(digits ? { digits } : {}),
+    };
+  }).filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const templateRaw = requiredRecord(raw, 'template', path, issues);
+  const templateNodes = requiredArray(templateRaw, 'nodes', `${path}.template`, issues)
+    .map((item, index) => decodeActivityNode(item, `${path}.template.nodes[${index}]`, issues))
+    .filter((item): item is ContractV2ActivityNode => Boolean(item));
+  const actions = requiredArray(raw, 'actions', path, issues).filter(isRecord);
+  const actionCount = Number(raw.actionCount);
+  if (!Number.isInteger(actionCount) || actionCount < 0) issues.push({ path: `${path}.actionCount`, message: 'must be a non-negative integer' });
+  if (Number.isInteger(actionCount) && actionCount !== actions.length) issues.push({ path: `${path}.actionCount`, message: 'must equal actions length' });
+  return {
+    activityTypeSlots: requiredRecord(raw, 'activityTypeSlots', path, issues),
+    deadlineSlots: requiredRecord(raw, 'deadlineSlots', path, issues),
+    assigneeSlots: requiredRecord(raw, 'assigneeSlots', path, issues),
+    fieldOccurrences,
+    nativeAttrs: requiredRecord(raw, 'nativeAttrs', path, issues),
+    nodeOccurrences: requiredArray(raw, 'nodeOccurrences', path, issues)
+      .map((item, index) => decodeActivityNodeOccurrence(item, `${path}.nodeOccurrences[${index}]`, issues))
+      .filter((item): item is ContractV2ActivityNodeOccurrence => Boolean(item)),
+    template: {
+      native_locator: requiredString(templateRaw, 'native_locator', `${path}.template`, issues),
+      occurrence_index: requiredInteger(templateRaw, 'occurrence_index', `${path}.template`, issues),
+      names: asStringArray(templateRaw.names),
+      nodes: templateNodes,
+    },
+    templateQwebPresent: requiredBoolean(raw, 'templateQwebPresent', path, issues, false),
+    actions,
+    actionCount,
+    sourceAuthority: authority,
+  };
+}
+
 function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2LayoutContract {
   const containerTreeRaw = Array.isArray(source.containerTree) ? source.containerTree : [];
   if (!Array.isArray(source.containerTree)) {
@@ -414,6 +552,9 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
     componentRegistry: requiredRecord(source, 'componentRegistry', 'layoutContract', issues),
     ...(Object.keys(asRecord(source.listProfile)).length
       ? { listProfile: asRecord(source.listProfile) }
+      : {}),
+    ...(source.activityProfile !== undefined
+      ? { activityProfile: decodeActivityProfile(source.activityProfile, issues) }
       : {}),
   };
 }

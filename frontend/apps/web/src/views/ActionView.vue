@@ -19,7 +19,7 @@
       @driver-change="handleSceneDriverChange"
     >
     <template #standard>
-    <section v-if="vm.header.actions.length" class="page-actions">
+    <section v-if="viewMode !== 'activity' && vm.header.actions.length" class="page-actions">
       <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">
         {{ action.label || action.key }}
       </button>
@@ -503,6 +503,85 @@
         />
       </template>
     </ListPage>
+    <ActivityPage
+      v-else-if="viewMode === 'activity'"
+      :title="vm.page.title"
+      :loading="isUiBusy"
+      :model="activitySurfaceModel"
+      :labels="{
+        eyebrow: t('activity_surface_eyebrow', '原生活动视图'),
+        countSuffix: t('activity_surface_count_suffix', '条'),
+        loading: t('activity_surface_loading', '正在加载活动记录...'),
+        unavailable: t('activity_surface_unavailable', '活动视图契约不可用'),
+        record: t('activity_surface_record', '记录'),
+        emptyTitle: t('activity_surface_empty_title', '暂无活动记录'),
+        emptyHint: t('activity_surface_empty_hint', '当前筛选范围内没有可显示的数据。'),
+      }"
+      @open-record="handleCollectionRowClick"
+    >
+      <template v-if="showTopActionToolbar" #toolbar>
+        <ActionSurfaceToolbar
+          :loading="isUiBusy"
+          :show-view-switch="showViewSwitch"
+          :view-label="toolbarUiLabel('view_switch', '视图')"
+          :view-modes="vm.page.availableViewModes"
+          :current-view-mode="vm.page.viewMode"
+          :view-mode-labels="toolbarViewModeLabels"
+          :search-value="toolbarSearchDraft"
+          :search-placeholder="toolbarUiLabel('search_placeholder', '搜索关键字')"
+          :clear-label="t('chip_action_clear', '清除')"
+          :show-filter="showToolbarFilter"
+          :filter-label="toolbarUiLabel('filters', '筛选')"
+          :filter-primary="vm.filters.quickFilters.primary"
+          :filter-overflow="vm.filters.quickFilters.overflow"
+          :active-filter-key="activeContractFilterKey"
+          :show-saved-filter="showToolbarSavedFilter"
+          :saved-filter-label="toolbarUiLabel('saved_filters', '收藏夹')"
+          :saved-filter-primary="vm.filters.savedFilters.primary"
+          :saved-filter-overflow="vm.filters.savedFilters.overflow"
+          :active-saved-filter-key="activeSavedFilterKey"
+          :sort-label="toolbarUiLabel('sort', '排序')"
+          :sort-options="displaySortOptions"
+          :sort-value="sortValue"
+          :show-group="showToolbarGroup"
+          :group-label="toolbarUiLabel('group_by', '分组方式')"
+          :group-primary="vm.filters.groupBy.primary"
+          :group-overflow="vm.filters.groupBy.overflow"
+          :custom-filter-enabled="customSearchCapabilities.filterEnabled"
+          :custom-filter-label="customSearchCapabilities.filterLabel"
+          :custom-filter-fields="customFilterFields"
+          :custom-group-enabled="customSearchCapabilities.groupEnabled"
+          :custom-group-label="customSearchCapabilities.groupLabel"
+          :custom-group-fields="customGroupByChips"
+          :favorite-save-enabled="false"
+          :favorite-save-label="customSearchCapabilities.favoriteLabel"
+          :active-custom-filter-label="activeCustomFilterLabel"
+          :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
+          :active-group-key="toolbarActiveGroupKey"
+          :can-create-record="false"
+          :create-label="toolbarUiLabel('create', '新建')"
+          :active-condition-count="toolbarActiveConditionCount"
+          :ui-labels="toolbarUiLabels"
+          @switch-view="switchViewMode"
+          @search-composition-start="onToolbarSearchCompositionStart"
+          @search-composition-end="onToolbarSearchCompositionEnd"
+          @search-input="onToolbarSearchInput"
+          @search-submit="submitToolbarSearch"
+          @clear-search="clearToolbarSearch"
+          @filter="applyContractFilter"
+          @clear-filter="clearContractFilter"
+          @saved-filter="applySavedFilter"
+          @clear-saved-filter="clearSavedFilter"
+          @sort="handleSort"
+          @group="applyGroupBy"
+          @custom-group="applyCustomGroupBy"
+          @clear-group="clearGroupBy"
+          @custom-filter="applyCustomFilter"
+          @clear-custom-filter="clearCustomFilter"
+          @clear-all="clearAllListConditions"
+        />
+      </template>
+    </ActivityPage>
     <section v-else-if="isSectionVisible('advanced_view', { defaultEnabled: pageSectionEnabled('advanced_view', true), tag: 'section' })" class="advanced-view" :style="getSectionStyle('advanced_view')">
       <header class="advanced-view-head">
         <h3>{{ vm.content.advanced?.title }}</h3>
@@ -597,6 +676,8 @@ import { intentRequest } from '../api/intents';
 import { useSessionStore } from '../stores/session';
 import ListPage from '../pages/ListPage.vue';
 import KanbanPage from '../pages/KanbanPage.vue';
+import ActivityPage from '../pages/ActivityPage.vue';
+import { resolveActivitySurfaceModel } from '../app/contracts/actionViewActivityContract';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import GroupSummaryBar from '../components/GroupSummaryBar.vue';
@@ -953,6 +1034,7 @@ const renderErrorMessage = ref('');
 const traceId = ref('');
 const lastTraceId = ref('');
 const records = ref<Array<Record<string, unknown>>>([]);
+const activitySurfaceModel = computed(() => resolveActivitySurfaceModel(actionContract.value, records.value));
 const listTotalCount = ref<number | null>(null);
 const listOffset = ref(Math.max(0, Math.trunc(Number(route.query.list_offset || 0))));
 const listLimitOverride = ref(0);
