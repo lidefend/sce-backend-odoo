@@ -63,12 +63,17 @@
 
 - Odoo authority: Odoo 17 public `get_view()` user-visible arch, with
   `_get_view()` limited to provenance diagnostics.
-- Candidate fingerprint: `bcf860df22dc633c3c224b6cde62023e0ed4b2e49c2fd5e86decefe449a6b39a`.
+- Candidate fingerprint: the authoritative complete digest is embedded in the
+  tracked view-structure baseline; this run record intentionally avoids a
+  self-referential future-HEAD value.
 - Runtime: `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$`,
   `demo_data=false`.
 - Export: `89` formal menus, `65` models, `280` resolved surfaces; form `87`,
   tree `84`, search `89`, pivot `9`, graph `6`, kanban `4`, activity `1`.
-- Validation: `19` targeted tests passed; baseline guard passed; independent
+- Validation: `21` targeted tests passed; baseline guard passed; independent
   `local.clean.view_structure_gate` re-export matched the tracked baseline.
+- Evidence carrier: the generated baseline is the only exact fingerprint
+  exclusion; its source digest is recomputed from the current scope and its
+  source HEAD must be an ancestor of the carrier HEAD.
 - Containment: the known `local.clean.health` frontend-root `403` belongs to
   the environment/frontend layer. It was not rerun or repaired in this batch.
