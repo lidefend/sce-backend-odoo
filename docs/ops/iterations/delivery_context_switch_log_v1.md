@@ -4918,3 +4918,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   useContractV2ShadowDiagnostics.ts, keeping the empty statusbar fallback stub
   required by frontend_scene_component_bridge_guard.
 - Run registration: .agent/runs/OPS-MERGE-264 (goal/events/evidence/checkpoint).
+
+## Native-view contract capability closure bootstrap (2026-08-20)
+
+- Branch / baseline: `feature/native-view-contract-capability-closure-v1` /
+  `35f31407ab34ffff1d43de264e51de5f858a2596` from the passing `origin/main`
+  after PR #275.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product with
+  P4 evidence tooling / native-view contract pipeline and generic renderer
+  registry / `smart_core`, `frontend/apps/web`, contract and verification tools.
+- Reason / boundary: formal product views use materially more native structure,
+  modifiers, actions and collection semantics than current sample-level gates
+  can prove end to end. The topic establishes a capability-atom loss ledger,
+  then closes canonical semantics and renderers without adding P1/P2 business
+  meaning or frontend inference.
+- Why Here / Why Not Elsewhere: native normalization, semantic projection and
+  generic rendering are reusable platform mechanisms. Construction defaults
+  remain in P1, customer preferences remain in P2/P3, and P4 scripts provide
+  evidence only rather than runtime authority.
+- Blast radius / validation: bounded by the formal menu policy and the existing
+  `local.clean` profile. No new runtime identity or fixture is permitted. Each
+  batch must prove non-zero targeted tests, exact policy coverage, zero silent
+  capability loss and fingerprint-bound generated evidence.
