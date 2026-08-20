@@ -115,6 +115,23 @@ verify.contract.view_carrier: contract.view_carrier.export
 gate.contract.view_carrier: verify.contract.view_carrier
 	@echo "[gate.contract.view_carrier] PASS artifact=$(VIEW_CARRIER_CANDIDATE)"
 
+VIEW_NORMALIZED_CAPABILITY_MAP ?= contracts/product/native-view-normalized-capability-map-v1.yaml
+VIEW_NORMALIZED_CAPABILITY_MAP_SCHEMA ?= contracts/schemas/native-view-normalized-capability-map-v1.yaml
+VIEW_CAPABILITY_TAXONOMY ?= contracts/product/native-view-capability-taxonomy-v1.yaml
+VIEW_CAPABILITY_REASONS ?= contracts/product/native-view-capability-reason-codes-v1.yaml
+
+.PHONY: verify.contract.native_view_normalized_map gate.contract.native_view_normalized_map
+verify.contract.native_view_normalized_map: verify.contract.view_carrier
+	@PYTHONPATH="$(ROOT_DIR)" python3 scripts/verify/native_view_normalized_capability_map_guard.py \
+	  --structure "$(VIEW_STRUCTURE_CANDIDATE)" --carrier "$(VIEW_CARRIER_CANDIDATE)" \
+	  --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" --carrier-schema "$(VIEW_CARRIER_SCHEMA)" \
+	  --taxonomy "$(VIEW_CAPABILITY_TAXONOMY)" \
+	  --normalized-map "$(VIEW_NORMALIZED_CAPABILITY_MAP)" --reasons "$(VIEW_CAPABILITY_REASONS)" \
+	  --schema "$(VIEW_NORMALIZED_CAPABILITY_MAP_SCHEMA)"
+
+gate.contract.native_view_normalized_map: verify.contract.native_view_normalized_map
+	@echo "[gate.contract.native_view_normalized_map] PASS map=$(VIEW_NORMALIZED_CAPABILITY_MAP)"
+
 verify.contract.catalog: guard.prod.forbid
 	@python3 scripts/verify/intent_cases_integrity_guard.py --cases-file docs/contract/cases.yml
 	@$(MAKE) --no-print-directory contract.catalog.export

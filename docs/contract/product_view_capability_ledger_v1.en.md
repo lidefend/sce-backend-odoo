@@ -42,7 +42,7 @@ Each `evidence_refs` item contains a repository-relative path, file SHA, candida
 
 Acceptance requires native occurrence count to equal `ready + fallback + unsupported`, `silent_loss_count` to be zero, every non-ready atom to have a registered reason and executable exit condition, and all evidence to bind the same frozen candidate fingerprint.
 
-The reason-code authority is `contracts/product/native-view-capability-reason-codes-v1.yaml`, the taxonomy is `contracts/product/native-view-capability-taxonomy-v1.yaml`, and structural constraints are `contracts/schemas/product-view-capability-ledger-v1.yaml` and `contracts/schemas/native-view-capability-reason-codes-v1.yaml`. Schema expresses local constraints only; the fail-closed guard enforces cross-file references, uniqueness, conservation, reason-stage matching, and hash recomputation.
+The reason-code authority is `contracts/product/native-view-capability-reason-codes-v1.yaml`, the taxonomy is `contracts/product/native-view-capability-taxonomy-v1.yaml`, the unique native-to-normalized carrier mapping authority is `contracts/product/native-view-normalized-capability-map-v1.yaml`, and structural constraints are `contracts/schemas/product-view-capability-ledger-v1.yaml`, `contracts/schemas/native-view-capability-reason-codes-v1.yaml`, and `contracts/schemas/native-view-normalized-capability-map-v1.yaml`. Schema expresses local constraints only; the fail-closed guard enforces cross-file references, uniqueness, conservation, reason-stage matching, and hash recomputation. A whole normalized carrier does not prove occurrence-level preservation; `mapping_unproven` cannot produce `present`.
 
 ## 6. Classification and correlation rules
 

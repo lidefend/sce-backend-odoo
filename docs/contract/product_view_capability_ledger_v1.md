@@ -42,7 +42,7 @@
 
 验收要求原生能力出现数等于 `ready + fallback + unsupported`，`silent_loss_count` 等于零，每个非就绪原子都有注册原因和可执行退出条件，并且全部证据绑定同一冻结候选指纹。
 
-原因码权威文件为 `contracts/product/native-view-capability-reason-codes-v1.yaml`，taxonomy 为 `contracts/product/native-view-capability-taxonomy-v1.yaml`，结构约束为 `contracts/schemas/product-view-capability-ledger-v1.yaml` 和 `contracts/schemas/native-view-capability-reason-codes-v1.yaml`。Schema 只能表达局部约束；跨文件引用、唯一性、守恒、原因码阶段匹配和哈希复算必须由 fail-closed 守卫执行。
+原因码权威文件为 `contracts/product/native-view-capability-reason-codes-v1.yaml`，taxonomy 为 `contracts/product/native-view-capability-taxonomy-v1.yaml`，原生到规范化载体的唯一映射权威为 `contracts/product/native-view-normalized-capability-map-v1.yaml`，结构约束为 `contracts/schemas/product-view-capability-ledger-v1.yaml`、`contracts/schemas/native-view-capability-reason-codes-v1.yaml` 和 `contracts/schemas/native-view-normalized-capability-map-v1.yaml`。Schema 只能表达局部约束；跨文件引用、唯一性、守恒、原因码阶段匹配和哈希复算必须由 fail-closed 守卫执行。整块 normalized carrier 存在不能证明逐 occurrence 承载；`mapping_unproven` 不能生成 `present`。
 
 ## 6. 分类与关联规则
 
