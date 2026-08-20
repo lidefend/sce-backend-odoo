@@ -490,6 +490,7 @@ import {
   one2manyColumnInputType,
   one2manyCreateLabelFromPolicies,
   one2manyColumnsFromSubview,
+  resolveOne2manyRowColumnBehavior,
   one2manyRowActionsFromSubview,
   one2manyDraftSummary,
   one2manyPrimaryColumnFromColumns,
@@ -811,6 +812,7 @@ const {
   resolveColumns: (fieldName) => one2manyColumns(fieldName),
   resolvePrimaryColumn: (fieldName) => one2manyPrimaryColumn(fieldName),
   resolveRelationOptions: (fieldName) => relationOptionsForField(fieldName),
+  parentValues: () => formData,
   markFieldChanged,
 });
 const changedFieldSet = new Set<string>();
@@ -1497,7 +1499,7 @@ const showSearchFilters = computed(() => {
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
   one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
-  mergeNativeLayoutFieldDescriptorsIntoContract, nativeFieldSubview, one2manyColumns, one2manyRowActions, one2manyPolicies, one2manyCanCreate,
+  mergeNativeLayoutFieldDescriptorsIntoContract, nativeFieldSubview, one2manyColumns, visibleOne2manyColumns, one2manyRowColumnBehavior, one2manyRowActions, one2manyPolicies, one2manyCanCreate,
   one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
   hydrateVisibleOne2manyRows, one2manyRowErrors, setRelationKeyword, filteredRelationOptions, relationModel,
   formUiLabels, formUiLabel, dynamicDomainFromDescriptor, resolveDynamicDomainDependencyValue, clearDynamicRelationDependents,
@@ -1533,7 +1535,7 @@ const {
   relationSearchColumnsFromContract, relationSearchDialog, relationSearchDialogContract,
   relationSearchLimit, relationSearchOrder, relationSearchReadFields,
   relationSearchRowsFromRecords, relationUiLabel, relationUiLabels,
-  reload: (...args: []) => reload(...args), route, router,
+  reload: (...args: []) => reload(...args), resolveOne2manyRowColumnBehavior, route, router,
   runRelationSearchFromRuntime, runtimeRelationDomainFromModifiers, sanitizeUiErrorMessage,
   selectOne2manySubview, selectRelationSearchOptionFromRuntime, selectedRelationOptionsFromRuntime,
   setRelationKeywordValue, validationErrors,
@@ -1582,7 +1584,7 @@ const {
   navigateActionResponseResult, normalizeActionKind, normalizeActionSafety,
   normalizeRequiredParams, normalizeWorkflowActionRows, normalizeWorkflowEvidenceGateRows,
   onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate,
-  one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns,
+  one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, visibleOne2manyColumns, one2manyRowColumnBehavior,
   one2manyCreateLabel, one2manyRowActions, one2manyRowErrors, one2manyRowHints,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary,
   openNativeAttachment, openNativeChatterAction, openRelationCreateForm,

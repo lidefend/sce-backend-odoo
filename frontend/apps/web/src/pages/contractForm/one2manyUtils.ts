@@ -2,6 +2,7 @@ import { buildOne2ManyInlineCommands } from '../../app/x2manyCommands';
 import { fieldType, fromDatetimeInputValue, normalizeRelationIds, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
+import { evaluateNativeModifierValue } from './nativeLayoutUtils';
 
 export function subviewColumnCount(subview: unknown): number {
   if (!subview || typeof subview !== 'object' || Array.isArray(subview)) return 0;
@@ -108,6 +109,7 @@ export function one2manyColumnsFromSubview(
         readonly: relationValueRequiresSelector || (readonly ?? Boolean(descriptor?.readonly)),
         nativeLocator: locator || undefined,
         occurrenceIndex: occurrenceIndex > 0 ? occurrenceIndex : undefined,
+        modifiers: Object.keys(modifiers).length ? modifiers : undefined,
         relationActiveActions: Object.keys(relationActions).length ? relationActions : undefined,
         selection: Array.isArray(row.selection)
           ? row.selection as Array<[string, string]>
@@ -116,6 +118,48 @@ export function one2manyColumnsFromSubview(
     });
   }
   return out;
+}
+
+export function resolveOne2manyRowColumnBehavior(
+  column: One2ManyColumn,
+  rowValues: Record<string, unknown>,
+  parentValues: Record<string, unknown> = {},
+  modifierPatches: Record<string, Record<string, unknown>> = {},
+) {
+  const runtimeModifiers = modifierPatches[column.name] && typeof modifierPatches[column.name] === 'object'
+    ? modifierPatches[column.name]
+    : {};
+  const modifiers = { ...(column.modifiers || {}), ...runtimeModifiers };
+  const evaluateModifier = (value: unknown) => evaluateNativeModifierValue(value, (field) => {
+    const fieldName = String(field || '').trim();
+    if (fieldName.startsWith('parent.')) return parentValues[fieldName.slice('parent.'.length)];
+    return rowValues[fieldName];
+  });
+  const isCanonical = (value: unknown): boolean => {
+    if (typeof value === 'boolean' || value === 0 || value === 1) return true;
+    if (typeof value === 'string') return ['0', '1', 'false', 'False', 'true', 'True'].includes(value.trim());
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const row = value as Record<string, unknown>;
+    const kind = String(row.kind || '').trim();
+    if (kind === 'static') return true;
+    if (kind === 'not') return isCanonical(row.expr);
+    if (kind === 'all' || kind === 'any') return Array.isArray(row.exprs) && row.exprs.every(isCanonical);
+    if (kind !== 'field_truthy' && kind !== 'field_compare') return false;
+    const fields = [row.field, row.value_field].filter(Boolean).map((field) => String(field));
+    return fields.every((field) => !field.startsWith('context.'));
+  };
+  const verdict = (key: 'invisible' | 'readonly' | 'required' | 'column_invisible') => {
+    const value = modifiers[key];
+    if (value === undefined) return false;
+    if (!isCanonical(value)) return key !== 'required';
+    return evaluateModifier(value);
+  };
+  return {
+    invisible: verdict('invisible'),
+    columnInvisible: verdict('column_invisible'),
+    readonly: Boolean(column.readonly || verdict('readonly')),
+    required: Boolean(column.required || verdict('required')),
+  };
 }
 
 export function one2manyRowActionsFromSubview(subview: unknown) {
@@ -279,11 +323,15 @@ export function setOne2manyDraftRowField(params: {
   rowKey: string;
   column: One2ManyColumn;
   value: unknown;
+  parentValues?: Record<string, unknown>;
 }) {
-  if (params.column.readonly) return false;
   const rows = ensureOne2manyRows(params.rowsByField, params.fieldName);
   const row = rows.find((item) => item.key === params.rowKey);
   if (!row) return false;
+  const behavior = resolveOne2manyRowColumnBehavior(
+    params.column, row.values || {}, params.parentValues || {}, row.modifierPatches || {},
+  );
+  if (behavior.invisible || behavior.columnInvisible || behavior.readonly) return false;
   const normalized = normalizeOne2manyColumnValue(params.column, params.value);
   row.values = {
     ...(row.values || {}),
@@ -370,6 +418,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
   recordId: number;
   resolvePrimaryColumn: (fieldName: string) => string;
   resolveColumns: (fieldName: string) => One2ManyColumn[];
+  parentValues?: Record<string, unknown>;
 }) {
   const issues: string[] = [];
   const rowErrors: Record<string, string[]> = {};
@@ -379,15 +428,18 @@ export function collectOne2manyDraftValidationFromRows(params: {
     if (params.recordId && !hasTouchedRows) return;
     const primary = params.resolvePrimaryColumn(fieldName);
     const columns = params.resolveColumns(fieldName);
-    const requiredColumns = columns.filter((column, index, rows) => (
-      column.required && rows.findIndex((candidate) => candidate.name === column.name) === index
-    ));
     const labels = new Set<string>();
     rows.forEach((row, index) => {
       if (row.removed) return;
       const rowKey = `${fieldName}:${row.key}`;
       const perRow: string[] = [];
-      requiredColumns.forEach((column) => {
+      const checkedRequiredFields = new Set<string>();
+      columns.forEach((column) => {
+        const behavior = resolveOne2manyRowColumnBehavior(
+          column, row.values || {}, params.parentValues || {}, row.modifierPatches || {},
+        );
+        if (!behavior.required || behavior.invisible || behavior.columnInvisible || checkedRequiredFields.has(column.name)) return;
+        checkedRequiredFields.add(column.name);
         const value = row.values?.[column.name];
         if (isOne2manyEmptyValue(column, value)) {
           perRow.push(`${column.label}不能为空`);

@@ -135,6 +135,7 @@ export type One2ManyInlineRow = {
   dirty: boolean;
   dirtyFields: string[];
   values: Record<string, unknown>;
+  modifierPatches?: Record<string, Record<string, unknown>>;
 };
 
 export type One2ManyColumn = {
@@ -146,8 +147,16 @@ export type One2ManyColumn = {
   readonly?: boolean;
   nativeLocator?: string;
   occurrenceIndex?: number;
+  modifiers?: Record<string, unknown>;
   relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
+};
+
+export type One2ManyRowColumnBehavior = {
+  invisible: boolean;
+  columnInvisible: boolean;
+  readonly: boolean;
+  required: boolean;
 };
 
 export type ContractAccessPolicy = {

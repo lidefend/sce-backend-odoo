@@ -1006,7 +1006,12 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   const field = String(row.field || '').trim();
   if (!field) return false;
   if (kind === 'field_truthy') return Boolean(resolveFieldValue(field));
-  if (kind === 'field_compare') return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), row.value);
+  if (kind === 'field_compare') {
+    const expected = String(row.value_field || '').trim()
+      ? resolveFieldValue(String(row.value_field))
+      : row.value;
+    return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), expected);
+  }
   return false;
 }
 

@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
-import { one2manyColumnsFromSubview, one2manyRowActionsFromSubview, selectOne2manySubview } from '../src/pages/contractForm/one2manyUtils';
+import {
+  collectOne2manyDraftValidationFromRows,
+  one2manyColumnsFromSubview,
+  one2manyRowActionsFromSubview,
+  resolveOne2manyRowColumnBehavior,
+  selectOne2manySubview,
+  setOne2manyDraftRowField,
+} from '../src/pages/contractForm/one2manyUtils';
 import {
   resolveActionCollectionPresentation,
   resolveGroupedCollectionPresentation,
@@ -116,6 +123,68 @@ assert.deepEqual(inlineOccurrenceColumns.map((column) => ({
   { key: '/form/field[1]/tree[1]/field[2]', name: 'partner_id', label: 'Delivery Partner', readonly: true },
 ]);
 assert.equal(one2manyColumnsFromSubview({ tree: { columns: [], column_occurrences: inlineNativeSubview.tree.column_occurrences } }, () => null).length, 0);
+const dynamicColumn = {
+  name: 'note', label: '说明', ttype: 'char', required: false,
+  modifiers: {
+    invisible: { kind: 'field_compare', field: 'state', operator: '=', value: 'hidden' },
+    readonly: { kind: 'field_compare', field: 'state', operator: '=', value: 'done' },
+    required: { kind: 'field_compare', field: 'state', operator: '=', value: 'draft' },
+  },
+};
+assert.deepEqual(resolveOne2manyRowColumnBehavior(dynamicColumn, { state: 'draft', note: '' }), {
+  invisible: false, columnInvisible: false, readonly: false, required: true,
+});
+assert.deepEqual(resolveOne2manyRowColumnBehavior(dynamicColumn, { state: 'done', note: 'locked' }), {
+  invisible: false, columnInvisible: false, readonly: true, required: false,
+});
+assert.deepEqual(resolveOne2manyRowColumnBehavior(dynamicColumn, { state: 'hidden', note: '' }), {
+  invisible: true, columnInvisible: false, readonly: false, required: false,
+});
+assert.equal(resolveOne2manyRowColumnBehavior({
+  ...dynamicColumn, modifiers: { column_invisible: "context.get('hide_note')" },
+}, {}, {}).columnInvisible, true);
+assert.equal(resolveOne2manyRowColumnBehavior({
+  ...dynamicColumn,
+  modifiers: { column_invisible: { kind: 'field_truthy', field: 'parent.hide_note' } },
+}, {}, { hide_note: false }).columnInvisible, false);
+const hiddenRequiredColumn = {
+  ...dynamicColumn,
+  required: true,
+  modifiers: { column_invisible: true },
+};
+const hiddenRows = { line_ids: [{
+  key: 'hidden-column', id: 10, isNew: false, removed: false, dirty: false, dirtyFields: [],
+  values: { state: 'draft', note: '' },
+}] };
+assert.equal(setOne2manyDraftRowField({
+  rowsByField: hiddenRows, fieldName: 'line_ids', rowKey: 'hidden-column', column: hiddenRequiredColumn, value: 'mutated',
+}), false);
+assert.equal(hiddenRows.line_ids[0].dirty, false);
+assert.deepEqual(collectOne2manyDraftValidationFromRows({
+  rowsByField: hiddenRows, recordId: 1, resolvePrimaryColumn: () => 'state', resolveColumns: () => [hiddenRequiredColumn],
+}), { issues: [], rowErrors: {} });
+const dynamicRows = { line_ids: [{
+  key: 'done', id: 7, isNew: false, removed: false, dirty: false, dirtyFields: [],
+  values: { state: 'done', note: 'locked' },
+}, {
+  key: 'draft', id: 8, isNew: false, removed: false, dirty: true, dirtyFields: [],
+  values: { state: 'draft', note: '' },
+}, {
+  key: 'hidden', id: 9, isNew: false, removed: false, dirty: true, dirtyFields: [],
+  values: { state: 'hidden', note: '' },
+}] };
+assert.equal(setOne2manyDraftRowField({
+  rowsByField: dynamicRows, fieldName: 'line_ids', rowKey: 'done', column: dynamicColumn, value: 'mutated',
+}), false);
+assert.equal(dynamicRows.line_ids[0].values.note, 'locked');
+assert.equal(dynamicRows.line_ids[0].dirty, false);
+dynamicRows.line_ids[1].modifierPatches = { note: { invisible: true, required: true } };
+assert.deepEqual(collectOne2manyDraftValidationFromRows({
+  rowsByField: dynamicRows, recordId: 1, resolvePrimaryColumn: () => 'state', resolveColumns: () => [dynamicColumn],
+}), {
+  issues: [],
+  rowErrors: {},
+});
 const inlineActions = one2manyRowActionsFromSubview({ tree: { row_actions: [
   {
     label: 'Open Child', kind: 'object', payload: { method: 'action_open', type: 'object' },

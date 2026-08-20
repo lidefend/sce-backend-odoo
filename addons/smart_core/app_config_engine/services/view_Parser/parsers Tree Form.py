@@ -428,7 +428,7 @@ class _TreeFormParserMixin:
             if isinstance(parsed, dict):
                 for key, value in parsed.items():
                     if key in ('readonly', 'required', 'invisible', 'column_invisible') or str(key).startswith('decoration-'):
-                        modifiers[key] = value
+                        modifiers[key] = self._normalize_modifier_value(value)
 
         relation_active_actions = {}
         info = field_info if isinstance(field_info, dict) else {}

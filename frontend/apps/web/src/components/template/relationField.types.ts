@@ -13,6 +13,7 @@ export type RelationFieldRow = {
   removed?: boolean;
   dirty?: boolean;
   values: Record<string, unknown>;
+  modifierPatches?: Record<string, Record<string, unknown>>;
 };
 
 export type RelationFieldAction = {
@@ -33,8 +34,16 @@ export type RelationFieldColumn = {
   readonly?: boolean;
   nativeLocator?: string;
   occurrenceIndex?: number;
+  modifiers?: Record<string, unknown>;
   relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
+};
+
+export type RelationFieldColumnBehavior = {
+  invisible: boolean;
+  columnInvisible: boolean;
+  readonly: boolean;
+  required: boolean;
 };
 
 export type RelationFieldAdapter = {
@@ -59,6 +68,8 @@ export type RelationFieldAdapter = {
   visibleOne2manyRows: (name: string) => RelationFieldRow[];
   one2manyRowStateLabel: (row: RelationFieldRow) => string;
   one2manyColumns: (name: string) => RelationFieldColumn[];
+  visibleOne2manyColumns: (name: string) => RelationFieldColumn[];
+  one2manyRowColumnBehavior: (name: string, row: RelationFieldRow, column: RelationFieldColumn) => RelationFieldColumnBehavior;
   one2manyRowActions: (name: string) => RelationFieldAction[];
   runOne2manyRowAction: (name: string, row: RelationFieldRow, action: RelationFieldAction) => void;
   setOne2manyRowField: (name: string, rowKey: string, column: RelationFieldColumn, value: unknown) => void;

@@ -4940,3 +4940,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `local.clean` profile. No new runtime identity or fixture is permitted. Each
   batch must prove non-zero targeted tests, exact policy coverage, zero silent
   capability loss and fingerprint-bound generated evidence.
+
+## Native one2many row modifier terminal closure (2026-08-21)
+
+- Branch / anchor: `feature/native-view-contract-capability-closure-v1` /
+  `d1637be2` before the batch.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  generic relation renderer and native modifier carrier / `smart_core` and
+  `frontend/apps/web`.
+- Reason / boundary: canonical native modifier AST and authoritative onchange
+  row verdicts now drive the same per-row visibility, readonly, required,
+  zero-write and validation decisions. No construction or customer semantics,
+  taxonomy, runtime profile or database identity was added.
+- Blast radius / validation: all generic one2many cells; non-zero collection
+  semantics tests, 15 parser/guard tests, strict TypeScript, governed
+  `local.clean` `smart_core` upgrade, and fingerprint-bound independent review.

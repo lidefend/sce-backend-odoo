@@ -100,8 +100,11 @@ def _install_odoo_shim():
     addons_mod = types.ModuleType("odoo.addons")
     smart_core_mod = types.ModuleType("odoo.addons.smart_core")
     utils_mod = types.ModuleType("odoo.addons.smart_core.utils")
-    native_modifier_mod = types.ModuleType("odoo.addons.smart_core.utils.native_modifier")
-    native_modifier_mod.normalize_native_modifier = lambda value: value
+    native_modifier_module_name = "odoo.addons.smart_core.utils.native_modifier"
+    native_modifier_path = Path(__file__).resolve().parents[1] / "utils" / "native_modifier.py"
+    native_modifier_spec = importlib.util.spec_from_file_location(native_modifier_module_name, native_modifier_path)
+    native_modifier_mod = importlib.util.module_from_spec(native_modifier_spec)
+    native_modifier_spec.loader.exec_module(native_modifier_mod)
     sys.modules["odoo"] = odoo_mod
     sys.modules["odoo.tools"] = tools_mod
     sys.modules["odoo.tools.safe_eval"] = safe_eval_mod
@@ -109,7 +112,7 @@ def _install_odoo_shim():
     sys.modules["odoo.addons.smart_core"] = smart_core_mod
     sys.modules["odoo.addons.smart_core.utils"] = utils_mod
     sys.modules[descriptor_module_name] = descriptor_mod
-    sys.modules["odoo.addons.smart_core.utils.native_modifier"] = native_modifier_mod
+    sys.modules[native_modifier_module_name] = native_modifier_mod
 
 
 def _load_calendar_mixin():
@@ -178,12 +181,7 @@ class _TreeFormParserProbe(_load_tree_form_mixin()):
             return None
 
     def _normalize_modifier_value(self, value):
-        text = str(value).strip()
-        if text in ("1", "True", "true"):
-            return True
-        if text in ("0", "False", "false"):
-            return False
-        return value
+        return super()._normalize_modifier_value(value)
 
     def _resolve_action_label(self, button, name):
         return button.get("string") or button.get("title") or name
@@ -332,8 +330,33 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(result["column_occurrences"][1]["occurrence_index"], 2)
         self.assertEqual(result["column_occurrences"][0]["modifiers"], {"readonly": True})
         self.assertEqual(result["column_occurrences"][0]["relation_active_actions"], {"write": False})
-        self.assertEqual(result["column_occurrences"][1]["modifiers"], {"invisible": "state == 'done'"})
+        self.assertEqual(result["column_occurrences"][1]["modifiers"], {
+            "invisible": {
+                "kind": "field_compare",
+                "field": "state",
+                "operator": "==",
+                "value": "done",
+                "raw": "state == 'done'",
+            }
+        })
         self.assertEqual(result["column_occurrences"][1]["relation_active_actions"], {"write": True})
+
+    def test_tree_occurrence_attrs_modifiers_are_canonical_ast(self):
+        result = self.tree_form_parser._parse_tree_view(
+            """
+            <tree>
+                <field name="name" attrs="{'readonly': [('state', '=', 'done')]}"/>
+            </tree>
+            """,
+            {"name": {"type": "char", "string": "Name"}},
+        )
+
+        self.assertEqual(result["column_occurrences"][0]["modifiers"]["readonly"], {
+            "kind": "field_compare",
+            "field": "state",
+            "operator": "==",
+            "value": "done",
+        })
 
     def test_form_field_keeps_raw_and_normalized_modifier_values(self):
         element = _parse_test_xml(
@@ -430,7 +453,15 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(partner_occurrences[0]["relation_active_actions"], {"write": False})
         self.assertEqual(partner_occurrences[1]["relation_active_actions"], {"write": True})
         self.assertEqual(partner_occurrences[0]["modifiers"], {"readonly": True})
-        self.assertEqual(partner_occurrences[1]["modifiers"], {"invisible": "state == 'done'"})
+        self.assertEqual(partner_occurrences[1]["modifiers"], {
+            "invisible": {
+                "kind": "field_compare",
+                "field": "state",
+                "operator": "==",
+                "value": "done",
+                "raw": "state == 'done'",
+            }
+        })
         self.assertEqual(len(tree["row_actions"]), 1)
         self.assertEqual(tree["row_actions"][0]["payload"]["method"], "open_partner")
         self.assertEqual(
