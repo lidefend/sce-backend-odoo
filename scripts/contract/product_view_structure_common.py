@@ -114,7 +114,7 @@ def normalize_arch(arch: str, *, semantic: bool) -> dict[str, Any]:
     return _node_payload(root, semantic=semantic)
 
 
-def _segment(node: dict[str, Any]) -> str:
+def structure_segment(node: dict[str, Any]) -> str:
     tag = str(node.get("tag") or "node")
     attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
     for key in ("name", "id", "for", "widget"):
@@ -133,11 +133,11 @@ def collect_occurrences(structure: dict[str, Any], view_ref: str) -> list[dict[s
         children = [child for child in node.get("children") or [] if isinstance(child, dict)]
         totals: dict[str, int] = {}
         for child in children:
-            base = _segment(child)
+            base = structure_segment(child)
             totals[base] = totals.get(base, 0) + 1
         seen: dict[str, int] = {}
         for child in children:
-            base = _segment(child)
+            base = structure_segment(child)
             seen[base] = seen.get(base, 0) + 1
             suffix = f"#{seen[base]}" if totals[base] > 1 else ""
             locator = f"{parent_locator}/{base}{suffix}"
@@ -151,7 +151,7 @@ def collect_occurrences(structure: dict[str, Any], view_ref: str) -> list[dict[s
             })
             visit(child, locator)
 
-    root_locator = f"resolved:{view_ref}/{_segment(structure)}"
+    root_locator = f"resolved:{view_ref}/{structure_segment(structure)}"
     root_attrs = structure.get("attrs") if isinstance(structure.get("attrs"), dict) else {}
     rows.append({
         "locator": root_locator, "occurrence_index": 1,

@@ -18,7 +18,9 @@ tag_sets:
   search: [filter, searchpanel]
 node_rules:
   - {id: root, tags: root, capability_key: structure.view_root}
-  - {id: form_container, tags: form_container, capability_key: structure.container}
+  - {id: form_container, tags: form_container, view_types: [form], capability_key: structure.container}
+  - {id: search_group, tags_exact: [group], view_types: [search], capability_key: search.group_by}
+  - {id: search_separator, tags_exact: [separator], view_types: [search], capability_key: search.separator}
   - {id: action, tags: action, capability_key: action.button}
   - {id: search_filter, tags: search, capability_key: search.filter}
   - {id: tree_groupby, tags_exact: [groupby], capability_key: tree.group_by}
@@ -41,23 +43,38 @@ attribute_rules:
   - {id: modifier_expression, attributes: [modifiers], tags: '*', capability_key: modifier.expression}
   - {id: modifier_decoration, attribute_prefixes: [decoration-], tags: '*', capability_key: modifier.decoration}
   - {id: field_identity, attributes: [name], tags: field, capability_key: field.identity}
-  - {id: field_contract, attributes: [widget, options, domain, context, placeholder, help, nolabel, colspan, filename, force_save, on_change, optional, sum, operator, filter_domain, interval, mode], tags: field, capability_key_template: 'field.{attribute}'}
-  - {id: field_label, attributes: [string], tags: field, capability_key: field.label}
+  - {id: field_contract, attributes: [widget, options, domain, context, placeholder, help, nolabel, colspan, filename, force_save, on_change, optional, sum, operator, filter_domain, interval, mode, date, statusbar_visible, statusbar_colors], tags: field, capability_key_template: 'field.{attribute}'}
+  - {id: field_label, attributes: [string, status_label, tooltip], tags: field, capability_key: field.label}
   - {id: field_type, attributes: [type], tags: field, capability_key: field.type}
   - {id: action_identity, attributes: [name], tags: action, capability_key: action.identity}
   - {id: action_contract, attributes: [type, context, domain, confirm, icon, special, data-hotkey], tags: action, capability_key_template: 'action.{attribute}'}
+  - {id: action_metadata, attributes: [id, help], tags: action, capability_key_template: 'action.{attribute}'}
   - {id: action_label, attributes: [string, title], tags: action, capability_key: action.label}
   - {id: search_identity, attributes: [name], tags: search, capability_key: search.identity}
-  - {id: search_contract, attributes: [domain, context, filter_domain, operator, date, default_group_by, groupby, string], tags: search, capability_key_template: 'search.{attribute}'}
-  - {id: root_behavior, attributes: [create, edit, delete, editable, multi_edit, default_order, default_group_by, limit, expand, group_create, sample, stacked, js_class, open_form_view], tags: root, capability_key_template: '{view_type}.{attribute}'}
+  - {id: search_contract, attributes: [domain, context, filter_domain, operator, date, default_group_by, groupby, string, type], tags: search, capability_key_template: 'search.{attribute}'}
+  - {id: search_group_expand, attributes: [expand], tags_exact: [group], view_types: [search], capability_key: search.expand}
+  - {id: searchpanel_field_behavior, attributes: [icon, limit], tags_exact: [field], view_types: [search], ancestor_tags: [searchpanel], capability_key_template: 'search.searchpanel_{attribute}'}
+  - {id: search_filter_help, attributes: [help], tags_exact: [filter], view_types: [search], capability_key: search.help}
+  - {id: tree_groupby_identity, attributes: [name], tags_exact: [groupby], view_types: [tree], capability_key: tree.groupby_identity}
+  - {id: root_behavior, attributes: [create, edit, delete, editable, multi_edit, default_order, default_group_by, limit, expand, group_create, sample, stacked, js_class, open_form_view, type, widget], tags: root, capability_key_template: '{tag}.{attribute}'}
+  - {id: root_label, attributes: [string, title], tags: root, capability_key: structure.label}
   - {id: structure_identity, attributes: [name, id, for], tags: form_container, capability_key: structure.identity}
   - {id: structure_label, attributes: [string, title, status_label, tooltip], tags: form_container, capability_key: structure.label}
-  - {id: structure_behavior, attributes: [statusbar_visible, statusbar_colors, business_domain_compute, can_create, can_write, col, role], tags: form_container, capability_key_template: 'structure.{attribute}'}
+  - {id: structure_behavior, attributes: [statusbar_visible, statusbar_colors, col], tags: form_container, capability_key_template: 'structure.{attribute}'}
+  - {id: permission, attributes: [can_create, can_write, business_domain_compute], tags: '*', capability_key_template: 'permission.{attribute}'}
+  - {id: groupby_attribute, attributes: [groupby], tags: '*', capability_key: search.groupby}
   - {id: template_expression, attribute_prefixes: [t-], tags: template, capability_key: template.qweb_expression}
-  - {id: presentation, attributes: [aria-label, bg_color, class, cx, cy, data-sc-anchor, data-tab, dir, display, fill, font-size, height, href, password, r, stroke, stroke-dasharray, stroke-linecap, stroke-width, style, text, text-anchor, transform, viewBox, width, x, y], tags: '*', capability_key: structure.presentation}
+  - {id: presentation, attributes: [aria-label, bg_color, class, cx, cy, data-sc-anchor, data-tab, dir, display, fill, font-size, height, href, password, r, role, stroke, stroke-dasharray, stroke-linecap, stroke-width, style, text, text-anchor, transform, viewBox, width, x, y], tags: '*', capability_key: structure.presentation}
   - {id: template_generic_identity, attributes: [name, id, for], tags: template, capability_key: template.qweb_expression}
   - {id: template_generic_label, attributes: [string, title], tags: template, capability_key: template.qweb_expression}
-  - {id: residual_exact, attributes: [date, groupby, statusbar_visible, statusbar_colors, type, widget, icon, colspan, mode], tags: form_container, capability_key_template: 'structure.{attribute}'}
+  - {id: inline_create_context, attributes: [context], tags_exact: [create], view_types: [form], ancestor_tags: [tree], capability_key: tree.create_context}
+  - {id: form_label_help, attributes: [help], tags_exact: [label], view_types: [form], capability_key: structure.help}
+  - {id: inline_tree_nolabel, attributes: [nolabel], tags_exact: [tree], view_types: [form], capability_key: tree.nolabel}
+  - {id: template_colspan, attributes: [colspan], tags_exact: [div, span], view_types: [form], capability_key: template.colspan}
+  - {id: template_link_type, attributes: [type], tags_exact: [a], view_types: [form], capability_key: template.link_type}
+  - {id: form_widget_options, attributes: [options], tags_exact: [widget], view_types: [form], capability_key: structure.widget_options}
+  - {id: form_setting_help, attributes: [help], tags_exact: [setting], view_types: [form], capability_key: structure.help}
+  - {id: residual_exact, attributes: [date, type, widget, icon, colspan, mode], tags: form_container, capability_key_template: 'structure.{attribute}'}
 locator:
   prefix: 'resolved:<view_ref>'
   segment_identity_priority: [tag_and_name, tag_and_id, tag_and_for, tag_and_widget, structural_fingerprint]
