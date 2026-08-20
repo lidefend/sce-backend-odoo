@@ -148,7 +148,10 @@ def _capture_surface(runtime_env: Any, surface: dict[str, Any], authority: dict[
     if status != "success" or code != 200 or not isinstance(data, dict):
         raise ValueError(f"{surface['contract_ref']} handler failed status={status} code={code}")
     if data.get("degraded") is not False:
-        raise ValueError(f"{surface['contract_ref']} degraded response")
+        raise ValueError(
+            f"{surface['contract_ref']} degraded response "
+            f"warnings={data.get('warnings') or []} missing_models={data.get('missing_models') or []}"
+        )
     warnings = data.get("warnings") or []
     if not isinstance(warnings, list) or any(str(item).startswith("view_contract_fallback:") for item in warnings):
         raise ValueError(f"{surface['contract_ref']} ungoverned fallback warning")
