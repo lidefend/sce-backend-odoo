@@ -157,8 +157,23 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
     def test_complex_view_types_remain_explicit_in_v2_contract(self):
         for view_type in ("pivot", "graph", "calendar", "gantt", "activity", "dashboard"):
             with self.subTest(view_type=view_type):
+                source = {"model": "x.report", "view_type": view_type, "fields": {}}
+                if view_type == "activity":
+                    root = {"tag": "activity", "native_locator": "activity", "occurrence_index": 1,
+                            "source_position": 0, "attributes": {"string": "Activities"}, "text": "", "tail": ""}
+                    templates = {"tag": "templates", "native_locator": "activity/templates", "occurrence_index": 1,
+                                 "source_position": 1, "attributes": {}, "text": "", "tail": ""}
+                    field = {"tag": "field", "name": "x_subject", "label": "Subject",
+                             "native_locator": "activity/templates/field[name=x_subject]", "occurrence_index": 1,
+                             "source_position": 2, "attributes": {"name": "x_subject", "t-name": "activity-box"}, "text": "", "tail": ""}
+                    source["views"] = {"activity": {"activity": {
+                        "field_occurrences": [field], "node_occurrences": [root, templates, field],
+                        "native_attrs": root["attributes"], "actions": [],
+                        "template": {"native_locator": "activity/templates", "occurrence_index": 1,
+                                     "names": ["activity-box"], "nodes": [{**field, "children": []}]},
+                    }}}
                 contract = assembler.assemble_unified_page_contract_v2(
-                    {"model": "x.report", "view_type": view_type, "fields": {}},
+                    source,
                     source_type="ui.contract",
                     client_type="web_pc",
                     request_id=f"test.complex.{view_type}",
@@ -2699,6 +2714,57 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(full["searchContract"]["saved_filters"][0]["name"], "用户收藏")
         self.assertEqual(full["searchContract"]["group_by"][0]["field"], "manager_id")
         self.assertEqual(full["dataContract"]["search"]["default_sort"], "write_date desc")
+
+    def test_activity_projection_requires_complete_native_carrier(self):
+        occurrence = {
+            "tag": "activity", "native_locator": "activity", "occurrence_index": 1,
+            "source_position": 0, "attributes": {"string": "Activities"}, "text": "", "tail": "",
+        }
+        templates = {
+            "tag": "templates", "native_locator": "activity/templates", "occurrence_index": 1,
+            "source_position": 1, "attributes": {}, "text": "", "tail": "",
+        }
+        field = {
+            "name": "x_subject", "label": "Subject", "native_locator": "activity/templates/field[name=x_subject]",
+            "occurrence_index": 1, "source_position": 2, "attributes": {"name": "x_subject", "t-name": "activity-box"},
+            "text": "", "tail": "", "field_type": "char",
+        }
+        source = {
+            "model": "x.activity", "view_type": "activity", "fields": {"x_subject": {"type": "char"}},
+            "views": {"activity": {"activity": {
+                "activity_type_slots": {}, "deadline_slots": {}, "assignee_slots": {},
+                "field_occurrences": [field], "native_attrs": occurrence["attributes"],
+                "node_occurrences": [occurrence, templates, {**field, "tag": "field"}],
+                "template": {"native_locator": "activity/templates", "occurrence_index": 1,
+                             "names": ["activity-box"], "nodes": [{"tag": "field", **field, "children": []}]},
+                "template_qweb": "<templates/>", "actions": [],
+            }}},
+        }
+        full = assembler.assemble_unified_page_contract_v2(source, source_type="ui.contract")
+        self.assertEqual(full["layoutContract"]["activityProfile"]["actionCount"], 0)
+        broken = dict(source)
+        broken["views"] = {"activity": {"activity": {**source["views"]["activity"]["activity"], "field_occurrences": {}}}}
+        with self.assertRaisesRegex(ValueError, "field_occurrences"):
+            assembler.assemble_unified_page_contract_v2(broken, source_type="ui.contract")
+        mismatched = dict(source)
+        bad_template = {**source["views"]["activity"]["activity"]["template"]}
+        bad_template["nodes"] = [{**bad_template["nodes"][0], "source_position": 9}]
+        mismatched["views"] = {"activity": {"activity": {
+            **source["views"]["activity"]["activity"], "template": bad_template,
+        }}}
+        with self.assertRaisesRegex(ValueError, "template occurrence evidence mismatch"):
+            assembler.assemble_unified_page_contract_v2(mismatched, source_type="ui.contract")
+        button = {
+            "tag": "button", "native_locator": "activity/button[name=open_item]", "occurrence_index": 1,
+            "source_position": 3, "attributes": {"type": "object", "name": "open_item"}, "text": "", "tail": "",
+        }
+        omitted_action = dict(source)
+        omitted_action["views"] = {"activity": {"activity": {
+            **source["views"]["activity"]["activity"],
+            "node_occurrences": [*source["views"]["activity"]["activity"]["node_occurrences"], button],
+        }}}
+        with self.assertRaisesRegex(ValueError, "action occurrence parity mismatch"):
+            assembler.assemble_unified_page_contract_v2(omitted_action, source_type="ui.contract")
 
 
 if __name__ == "__main__":

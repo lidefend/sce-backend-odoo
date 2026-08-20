@@ -561,7 +561,10 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         elif vt == 'gantt':
             block['gantt'] = vp.get('gantt', {'date_start': 'date_start', 'date_stop': 'date_end', 'progress': 'progress'})
         elif vt == 'activity':
-            block['activity'] = vp.get('activity', {'templates': None})
+            activity = vp.get('activity')
+            if not isinstance(activity, dict) or not activity.get('node_occurrences') or not activity.get('template'):
+                raise ValueError('activity native projection evidence is required')
+            block['activity'] = activity
         elif vt == 'dashboard':
             block['dashboard'] = vp.get('dashboard', {'cards': []})
         return block

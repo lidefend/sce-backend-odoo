@@ -164,7 +164,7 @@ class OdooViewParser(_BaseViewParserMixin,
         elif vt == 'gantt':
             base.update({"gantt": self._parse_gantt_view(arch, root=root)})
         elif vt == 'activity':
-            base.update({"activity": self._parse_activity_view(arch, root=root)})
+            base.update({"activity": self._parse_activity_view(arch, fields_info, root=root)})
         elif vt == 'search':
             pass
         else:

@@ -42,6 +42,109 @@ def _list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
 
 
+def _validated_activity_projection(collection_view: Any) -> dict[str, Any]:
+    if not isinstance(collection_view, dict):
+        raise ValueError("native Activity view carrier must be an object")
+    native_activity = collection_view.get("activity")
+    if not isinstance(native_activity, dict) or not native_activity:
+        raise ValueError("native Activity projection is required")
+    for key in ("field_occurrences", "node_occurrences", "actions"):
+        rows = native_activity.get(key)
+        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+            raise ValueError(f"native Activity {key} must be an object array")
+    for key in ("native_attrs", "template"):
+        if not isinstance(native_activity.get(key), dict) or not native_activity.get(key):
+            raise ValueError(f"native Activity {key} is required")
+    if not native_activity["field_occurrences"] or not native_activity["node_occurrences"]:
+        raise ValueError("native Activity occurrence evidence is required")
+    template = native_activity["template"]
+    if not isinstance(template.get("nodes"), list) or not template.get("nodes"):
+        raise ValueError("native Activity template nodes are required")
+
+    def occurrence_identity(row: dict[str, Any], *, tag: str = "") -> tuple[Any, ...]:
+        return (
+            tag or row.get("tag"), row.get("native_locator"), row.get("occurrence_index"),
+            row.get("source_position"), row.get("attributes"), row.get("text", ""), row.get("tail", ""),
+        )
+
+    node_by_locator: dict[str, dict[str, Any]] = {}
+    source_positions: set[int] = set()
+    for row in native_activity["node_occurrences"]:
+        locator = _text(row.get("native_locator"))
+        position = row.get("source_position")
+        if (not locator or locator in node_by_locator or not _text(row.get("tag"))
+                or not isinstance(row.get("occurrence_index"), int) or row["occurrence_index"] < 1
+                or not isinstance(position, int) or position < 0 or position in source_positions
+                or not isinstance(row.get("attributes"), dict)):
+            raise ValueError("native Activity node occurrence identity is invalid")
+        node_by_locator[locator] = row
+        source_positions.add(position)
+
+    for row in native_activity["field_occurrences"]:
+        locator = _text(row.get("native_locator"))
+        node = node_by_locator.get(locator)
+        if (not node or occurrence_identity(row, tag="field") != occurrence_identity(node)
+                or _text(row.get("name")) != _text(_dict(node.get("attributes")).get("name"))):
+            raise ValueError("native Activity field occurrence evidence mismatch")
+
+    def validate_template_nodes(rows: list[Any]) -> None:
+        discovered_names: list[str] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ValueError("native Activity template node must be an object")
+            node = node_by_locator.get(_text(row.get("native_locator")))
+            if not node or occurrence_identity(row) != occurrence_identity(node):
+                raise ValueError("native Activity template occurrence evidence mismatch")
+            template_name = _text(_dict(row.get("attributes")).get("t-name"))
+            if template_name:
+                discovered_names.append(template_name)
+            children = row.get("children", [])
+            if not isinstance(children, list):
+                raise ValueError("native Activity template children must be an array")
+            discovered_names.extend(validate_template_nodes(children))
+        return discovered_names
+
+    template_root = node_by_locator.get(_text(template.get("native_locator")))
+    if (not template_root or _text(template_root.get("tag")) != "templates"
+            or template.get("occurrence_index") != template_root.get("occurrence_index")):
+        raise ValueError("native Activity template root evidence mismatch")
+    discovered_names = validate_template_nodes(template["nodes"])
+    if template.get("names") != discovered_names:
+        raise ValueError("native Activity template names evidence mismatch")
+
+    valid_button_nodes = {
+        locator: row for locator, row in node_by_locator.items()
+        if _text(row.get("tag")) == "button"
+        and _text(_dict(row.get("attributes")).get("name"))
+        and _text(_dict(row.get("attributes")).get("type")).lower() in {"object", "action"}
+    }
+    action_by_locator: dict[str, dict[str, Any]] = {}
+    for action in native_activity["actions"]:
+        locator = _text(action.get("native_locator"))
+        node = valid_button_nodes.get(locator)
+        attributes = _dict(node.get("attributes")) if node else {}
+        expected_identity = {
+            "authoritative": True, "canonical_region": "activity.actions",
+            "native_locator": locator, "occurrence_index": node.get("occurrence_index") if node else None,
+            "type": _text(attributes.get("type")).lower(), "name": _text(attributes.get("name")),
+            "id": attributes.get("id") or "", "context_raw": attributes.get("context") or "",
+            "domain_raw": attributes.get("domain") or "", "confirm": attributes.get("confirm") or "",
+            "special": attributes.get("special") or "", "data_hotkey": attributes.get("data-hotkey") or "",
+        }
+        if (not node or locator in action_by_locator
+                or action.get("occurrence_index") != node.get("occurrence_index")
+                or action.get("source_position") != node.get("source_position")
+                or action.get("attributes") != attributes
+                or _text(action.get("name")) != expected_identity["name"]
+                or _text(action.get("type")).lower() != expected_identity["type"]
+                or action.get("native_identity") != expected_identity):
+            raise ValueError("native Activity action occurrence evidence mismatch")
+        action_by_locator[locator] = action
+    if set(action_by_locator) != set(valid_button_nodes):
+        raise ValueError("native Activity action occurrence parity mismatch")
+    return native_activity
+
+
 def _text(value: Any, default: str = "") -> str:
     text = str(value or "").strip()
     return text or default
@@ -683,6 +786,27 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             "projection_only": True,
             "no_business_fact_authority": True,
             "runtime_carrier": "ui.contract.v2.layoutContract.listProfile",
+        }
+    if view_type == "activity":
+        native_activity = _validated_activity_projection(collection_view)
+        contract["layoutContract"]["activityProfile"] = {
+                "activityTypeSlots": deepcopy(_dict(native_activity.get("activity_type_slots"))),
+                "deadlineSlots": deepcopy(_dict(native_activity.get("deadline_slots"))),
+                "assigneeSlots": deepcopy(_dict(native_activity.get("assignee_slots"))),
+                "fieldOccurrences": deepcopy(native_activity["field_occurrences"]),
+                "nativeAttrs": deepcopy(_dict(native_activity.get("native_attrs"))),
+                "nodeOccurrences": deepcopy(native_activity["node_occurrences"]),
+                "template": deepcopy(_dict(native_activity.get("template"))),
+                "templateQwebPresent": bool(native_activity.get("template_qweb")),
+                "actions": deepcopy(native_activity["actions"]),
+                "actionCount": len(native_activity["actions"]),
+                "sourceAuthority": {
+                    "kind": "native_activity_view_projection",
+                    "authorities": ["ir.ui.view", "ir.model.fields", "ir.actions.act_window"],
+                    "projection_only": True,
+                    "no_business_fact_authority": True,
+                    "runtime_carrier": "ui.contract.v2.layoutContract.activityProfile",
+                },
         }
     interaction_mode = _text(_dict(ui.get("head")).get("interaction_mode"))
     if interaction_mode:

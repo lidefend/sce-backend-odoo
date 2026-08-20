@@ -109,6 +109,19 @@ class ContractMixinViewSurfaceTests(unittest.TestCase):
         )
         self.assertNotIn("unsafe_nested", result)
 
+    def test_governed_sanitize_preserves_native_activity_evidence(self):
+        activity = {
+            "native_attrs": {"string": "Activities"},
+            "node_occurrences": [{"tag": "activity", "native_locator": "activity", "attributes": {"string": "Activities"}}],
+            "field_occurrences": [{"name": "amount", "field_type": "monetary", "currency_field": "company_currency_id", "digits": [16, 2]}],
+            "template": {"native_locator": "activity/templates[1]", "nodes": [{"tag": "field", "children": []}]},
+            "actions": [],
+        }
+        result = self.mixin.sanitize_governed_contract("activity", {"activity": activity, "unsafe_nested": {"should": "drop"}})
+
+        self.assertEqual(result["activity"], activity)
+        self.assertNotIn("unsafe_nested", result)
+
     def test_governed_tree_preserves_occurrence_behavior_and_action_identity(self):
         result = self.mixin.sanitize_governed_contract(
             "tree",

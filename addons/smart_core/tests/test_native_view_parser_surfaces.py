@@ -525,5 +525,65 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(entry["policies"]["reason_code"], "AMBIGUOUS_NATIVE_HOST_OCCURRENCE")
 
 
+class ActivitySurfaceParserTests(unittest.TestCase):
+    def _parser(self):
+        mixin = _load_calendar_mixin()
+
+        class Parser(mixin):
+            @staticmethod
+            def _safe_eval_expr(value):
+                return {"kind": "raw", "value": value}
+
+        return Parser()
+
+    def test_activity_occurrences_preserve_fields_decorations_template_and_actions(self):
+        parsed = self._parser()._parse_activity_view("""
+            <activity activity_type="x_kind" date_deadline="x_due" user_id="x_owner">
+              <field name="company_currency_id"/>
+              <field name="x_subject" string="Subject"/>
+              <field name="x_subject" string="Subject copy" decoration-info="state == 'new'"/>
+              <templates><t t-name="activity-box"><div><field name="x_due" widget="date"/><field name="x_partner"/><field name="x_amount" widget="monetary"/></div></t></templates>
+              <button type="object" name="open_item" string="Open"/>
+              <button type="button" name="client_only" string="Client"/>
+              <button type="object" string="Missing name"/>
+            </activity>
+        """, {
+            "company_currency_id": {"type": "many2one", "relation": "res.currency", "string": "Currency"},
+            "x_subject": {"type": "char", "string": "Subject"},
+            "x_due": {"type": "date", "string": "Due"},
+            "x_partner": {"type": "many2one", "relation": "res.partner", "string": "Partner"},
+            "x_amount": {"type": "monetary", "currency_field": "company_currency_id", "digits": [16, 2], "string": "Amount"},
+        })
+        self.assertEqual(parsed["activity_type_slots"], {"type": "x_kind"})
+        self.assertEqual(parsed["deadline_slots"], {"deadline": "x_due"})
+        self.assertEqual(parsed["assignee_slots"], {"assignee": "x_owner"})
+        subjects = [row for row in parsed["field_occurrences"] if row["name"] == "x_subject"]
+        self.assertEqual([row["occurrence_index"] for row in subjects], [1, 2])
+        self.assertEqual([row["name"] for row in parsed["fields"]].count("x_subject"), 1)
+        self.assertEqual(subjects[1]["decorations"][0]["class"], "info")
+        occurrences = {row["name"]: row for row in parsed["field_occurrences"] if row["name"] != "x_subject"}
+        self.assertEqual(occurrences["company_currency_id"]["label"], "Currency")
+        self.assertEqual(occurrences["x_due"]["label"], "Due")
+        self.assertEqual(occurrences["x_partner"]["field_type"], "many2one")
+        self.assertEqual(occurrences["x_amount"]["field_type"], "monetary")
+        self.assertEqual(occurrences["x_amount"]["currency_field"], "company_currency_id")
+        self.assertEqual(occurrences["x_amount"]["digits"], [16, 2])
+        self.assertEqual(parsed["template"]["names"], ["activity-box"])
+        self.assertTrue(parsed["template"]["nodes"])
+        self.assertNotIn("open_item", str(parsed["template"]))
+        self.assertEqual(len(parsed["actions"]), 1)
+        self.assertEqual(parsed["actions"][0]["native_identity"]["name"], "open_item")
+        self.assertTrue(parsed["actions"][0]["native_identity"]["authoritative"])
+
+    def test_activity_parser_fails_closed_without_activity_root(self):
+        parser = self._parser()
+        with self.assertRaises(ValueError):
+            parser._parse_activity_view("")
+        with self.assertRaises(ValueError):
+            parser._parse_activity_view("<form><field name='x'/></form>")
+        with self.assertRaises(Exception):
+            parser._parse_activity_view("<activity>")
+
+
 if __name__ == "__main__":
     unittest.main()

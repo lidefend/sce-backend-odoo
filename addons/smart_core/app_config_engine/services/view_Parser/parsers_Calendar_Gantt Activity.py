@@ -131,34 +131,186 @@ class _CalendarGanttActivitySearchParserMixin:
         return out
 
     # ---------------- activity 解析（最小可用） ----------------
-    def _parse_activity_view(self, arch, root=None):
+    def _parse_activity_view(self, arch, fields_info=None, root=None):
         out = {
             "template_qweb": None,
+            "template": None,
             "activity_type_slots": {},
             "deadline_slots": {},
             "assignee_slots": {},
             "fields": [],
+            "field_occurrences": [],
+            "node_occurrences": [],
+            "actions": [],
             "native_attrs": {},
         }
-        try:
-            if root is not None or arch:
-                if root is None:
-                    root = etree.fromstring(arch.encode('utf-8'))
-                if root.tag != 'activity':
-                    ac = root.xpath('.//activity')
-                    root = ac[0] if ac else root
-                out["native_attrs"] = dict(root.attrib or {})
-                if root.get('activity_type'):
-                    out["activity_type_slots"]["type"] = root.get('activity_type')
-                if root.get('date_deadline'):
-                    out["deadline_slots"]["deadline"] = root.get('date_deadline')
-                if root.get('user_id'):
-                    out["assignee_slots"]["assignee"] = root.get('user_id')
-                out["fields"] = self._parse_view_field_nodes(root)
-                tmpl = root.xpath('.//templates')
-                out["template_qweb"] = tmpl and etree.tostring(tmpl[0], encoding='unicode') or None
-        except Exception:
-            _logger.exception("parse activity view failed")
+        if root is None and not arch:
+            raise ValueError("activity view arch is required")
+        if root is None:
+            root = etree.fromstring(arch.encode('utf-8'))
+        if root.tag != 'activity':
+            activity_nodes = root.xpath('.//activity')
+            if not activity_nodes:
+                raise ValueError("activity view root is required")
+            root = activity_nodes[0]
+
+        def escaped(value):
+            return str(value or '').replace('~', '~0').replace('/', '~1')
+
+        node_rows = []
+        field_rows = []
+        action_rows = []
+        source_position = 0
+        template_tree = None
+
+        def visit(node, parent_locator):
+            nonlocal source_position, template_tree
+            tag = str(node.tag or '')
+            attributes = dict(node.attrib or {})
+            identity = attributes.get('name') or attributes.get('t-name') or ''
+            siblings = list(node.getparent()) if node.getparent() is not None else [node]
+            matching_siblings = [
+                sibling for sibling in siblings
+                if str(sibling.tag or '') == tag
+                and str(sibling.get('name') or sibling.get('t-name') or '') == identity
+            ]
+            occurrence_index = next(
+                (index for index, sibling in enumerate(matching_siblings, 1) if sibling == node),
+                1,
+            )
+            identity_key = 'name' if attributes.get('name') else 't-name' if attributes.get('t-name') else ''
+            identity_part = (
+                f"[{identity_key}={escaped(identity)}]"
+                if identity_key
+                else f"[{occurrence_index}]"
+            )
+            if identity_key and len(matching_siblings) > 1:
+                identity_part += f"[{occurrence_index}]"
+            locator = f"{parent_locator}/{tag}{identity_part}" if parent_locator else f"{tag}{identity_part}"
+            current_position = source_position
+            source_position += 1
+            row = {
+                "tag": tag,
+                "native_locator": locator,
+                "occurrence_index": occurrence_index,
+                "source_position": current_position,
+                "attributes": attributes,
+                "text": str(node.text or '').strip(),
+                "tail": str(node.tail or '').strip(),
+            }
+            node_rows.append(row)
+            if tag == 'field' and identity:
+                from odoo.addons.smart_core.utils.native_field_descriptor import project_native_field_descriptor
+                field_metadata = (fields_info or {}).get(identity) or {}
+                descriptor = project_native_field_descriptor(
+                    identity,
+                    field_metadata,
+                    label=attributes.get('string') or None,
+                    widget=attributes.get('widget') or '',
+                )
+                decorations = [
+                    {
+                        "class": key.replace('decoration-', ''),
+                        "expr_raw": value,
+                        "expr": self._safe_eval_expr(value),
+                    }
+                    for key, value in sorted(attributes.items())
+                    if key.startswith('decoration-') and value
+                ]
+                field_rows.append({
+                    "name": identity,
+                    "label": descriptor.get("label") or identity,
+                    "widget": attributes.get('widget') or '',
+                    "native_locator": locator,
+                    "occurrence_index": occurrence_index,
+                    "source_position": current_position,
+                    "attributes": attributes,
+                    "text": str(node.text or '').strip(),
+                    "tail": str(node.tail or '').strip(),
+                    "modifiers": attributes.get('modifiers') or '',
+                    "decorations": decorations,
+                    "field_type": descriptor.get("type") or "",
+                    "currency_field": str(field_metadata.get("currency_field") or "").strip()
+                    if descriptor.get("type") == "monetary" else "",
+                    "digits": list(field_metadata.get("digits"))
+                    if descriptor.get("type") == "monetary"
+                    and isinstance(field_metadata.get("digits"), (list, tuple))
+                    and len(field_metadata.get("digits")) == 2 else [],
+                })
+            action_type = str(attributes.get('type') or '').strip().lower()
+            action_name = str(attributes.get('name') or '').strip()
+            if tag == 'button' and action_name and action_type in {'object', 'action'}:
+                action_rows.append({
+                    "name": action_name,
+                    "type": action_type,
+                    "label": attributes.get('string') or '',
+                    "native_locator": locator,
+                    "occurrence_index": occurrence_index,
+                    "source_position": current_position,
+                    "attributes": attributes,
+                    "native_identity": {
+                        "authoritative": True,
+                        "canonical_region": "activity.actions",
+                        "native_locator": locator,
+                        "occurrence_index": occurrence_index,
+                        "type": action_type,
+                        "name": action_name,
+                        "id": attributes.get('id') or '',
+                        "context_raw": attributes.get('context') or '',
+                        "domain_raw": attributes.get('domain') or '',
+                        "confirm": attributes.get('confirm') or '',
+                        "special": attributes.get('special') or '',
+                        "data_hotkey": attributes.get('data-hotkey') or '',
+                    },
+                })
+            children = [visit(child, locator) for child in node]
+            tree_row = dict(row)
+            tree_row["children"] = children
+            if tag == 'templates':
+                template_tree = tree_row
+            return tree_row
+
+        visit(root, '')
+
+        out["native_attrs"] = dict(root.attrib or {})
+        if root.get('activity_type'):
+            out["activity_type_slots"]["type"] = root.get('activity_type')
+        if root.get('date_deadline'):
+            out["deadline_slots"]["deadline"] = root.get('date_deadline')
+        if root.get('user_id'):
+            out["assignee_slots"]["assignee"] = root.get('user_id')
+        out["node_occurrences"] = node_rows
+        out["field_occurrences"] = field_rows
+        compatible_fields = []
+        compatible_names = set()
+        for row in field_rows:
+            if row["name"] in compatible_names:
+                continue
+            compatible_names.add(row["name"])
+            compatible_fields.append({
+                "name": row["name"],
+                "label": row["label"],
+                "widget": row["widget"],
+                "invisible": row["attributes"].get('invisible') or '',
+                "modifiers": row["modifiers"],
+            })
+        out["fields"] = compatible_fields
+        out["actions"] = action_rows
+        templates = root.xpath('.//templates')
+        if templates and template_tree:
+            template_root = templates[0]
+            template_names = [
+                str(node.get('t-name') or '').strip()
+                for node in template_root.iter()
+                if str(node.get('t-name') or '').strip()
+            ]
+            out["template_qweb"] = etree.tostring(template_root, encoding='unicode')
+            out["template"] = {
+                "native_locator": template_tree["native_locator"],
+                "occurrence_index": template_tree["occurrence_index"],
+                "names": template_names,
+                "nodes": template_tree["children"],
+            }
         return out
 
     # ---------------- search 解析与合并 ----------------

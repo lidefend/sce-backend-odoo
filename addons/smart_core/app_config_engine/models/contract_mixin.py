@@ -80,6 +80,7 @@ class ContractSchemaMixin(models.AbstractModel):
             'widgets',
             'capabilities',
             'kanban',
+            'activity',
             'collection_presentation',
         }
 
