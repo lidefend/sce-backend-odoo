@@ -4,9 +4,9 @@
     "candidate_fingerprint": {
       "algorithm": "codex_complete_worktree_fingerprint/v1",
       "baseline_sha": "35f31407ab34ffff1d43de264e51de5f858a2596",
-      "digest": "61bff788f055468554568437f6524c828fd6274cd0da3e972af0c9e2f13c4d70",
-      "git_head": "e64e6a3bae6c6b2e315d7347bcafdb38c3ae4947",
-      "scope_manifest_sha256": "63eb5ee6f64ecea802783b56d7f7bc53cd34f500f0828f6b2707f5562fd87d95"
+      "digest": "f36fe58c784bbd0c05b6a9b62b8d78630743da603687ab6975e5d493a9c0d09d",
+      "git_head": "db28e98f90e532fe263a34ccc9d9fc73c6ca768a",
+      "scope_manifest_sha256": "3d54d38c22345c122eb84c26a54715c1a852ca915e9b6fc3b1fac2cc293b805b"
     },
     "company": "base.main_company",
     "compose_project": "sc-local-clean",
@@ -247,7 +247,7 @@
         "name": "smart_construction_core"
       },
       {
-        "installed_version": "17.0.1.1.10",
+        "installed_version": "17.0.1.1.11",
         "name": "smart_core"
       },
       {
@@ -327,7 +327,7 @@
         "name": "web_unsplash"
       }
     ],
-    "module_set_sha256": "3951914d32560a0d4fe5662a677116a56d828d9a4f498128da26aad46f2ba920",
+    "module_set_sha256": "c1d179f55ae82986fce858d05e7d0203819d9d8eaefd49808bf4be0a10b1d47a",
     "runtime_profile": "local.clean",
     "runtime_source": "odoo.get_view_resolved_arch_and_native_inheritance_engine",
     "user": "__system__"
@@ -232460,7 +232460,7 @@
       "visible_menu_path": "智慧施工管理平台 / 产品配置 / 字段管理"
     }
   ],
-  "manifest_sha256": "731f587cb35caefb3486c829e3a67bd41269c425959d6a0472627e82d38142f8",
+  "manifest_sha256": "c4b9386668f92383e7ee917bb1c16a6b088a5f82a1b9c38258dbabccafa3ab44",
   "schema": "product_view_structure_contract/v1",
   "summary": {
     "error_count": 0,
