@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import subprocess
 import sys
 from typing import Any
 
@@ -25,6 +26,38 @@ def _load(path: Path) -> dict[str, Any]:
         raise ValueError(f"cannot load {path}: {exc}") from exc
     if not isinstance(value, dict):
         raise ValueError(f"{path} must contain a JSON object")
+    return value
+
+
+def _source_fingerprint_digest(current: dict[str, Any], source_head: str) -> str:
+    canonical = {
+        "algorithm": current.get("algorithm"), "git_head": source_head,
+        "baseline_sha": current.get("baseline_sha"), "branch": current.get("branch"),
+        "scope_manifest_sha256": current.get("scope_manifest_sha256"),
+        "excluded_paths": current.get("excluded_paths"), "entries": current.get("entries"),
+    }
+    return sha256_json(canonical)
+
+
+def _source_head_errors(manifest: dict[str, Any], current: dict[str, Any]) -> list[str]:
+    authority = manifest.get("authority") if isinstance(manifest.get("authority"), dict) else {}
+    source = authority.get("candidate_fingerprint") if isinstance(authority.get("candidate_fingerprint"), dict) else {}
+    source_head, current_head = str(source.get("git_head") or ""), str(current.get("git_head") or "")
+    if source_head == current_head:
+        return []
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", source_head, current_head],
+        cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    return [] if result.returncode == 0 else ["authority source HEAD is not an ancestor of the evidence carrier HEAD"]
+
+
+def _comparison_payload(manifest: dict[str, Any]) -> dict[str, Any]:
+    value = json.loads(json.dumps(manifest))
+    value.pop("manifest_sha256", None)
+    fingerprint = value.get("authority", {}).get("candidate_fingerprint", {})
+    fingerprint.pop("git_head", None)
+    fingerprint.pop("digest", None)
     return value
 
 
@@ -127,9 +160,15 @@ def validate_manifest(manifest: dict[str, Any], policy: dict[str, Any], policy_s
     for key, value in expected_identity.items():
         if authority.get(key) != value:
             errors.append(f"authority.{key} mismatch")
-    expected_fp = {key: fingerprint.get(key) for key in ("algorithm", "git_head", "baseline_sha", "scope_manifest_sha256", "digest")}
-    if authority.get("candidate_fingerprint") != expected_fp or authority.get("branch") != fingerprint.get("branch"):
-        errors.append("authority candidate fingerprint mismatch")
+    source_fp = authority.get("candidate_fingerprint") if isinstance(authority.get("candidate_fingerprint"), dict) else {}
+    for key in ("algorithm", "baseline_sha", "scope_manifest_sha256"):
+        if source_fp.get(key) != fingerprint.get(key):
+            errors.append(f"authority candidate fingerprint {key} mismatch")
+    source_head = str(source_fp.get("git_head") or "")
+    if source_fp.get("digest") != _source_fingerprint_digest(fingerprint, source_head):
+        errors.append("authority candidate fingerprint digest mismatch")
+    if authority.get("branch") != fingerprint.get("branch"):
+        errors.append("authority candidate fingerprint branch mismatch")
     if authority.get("formal_menu_policy_sha256") != policy_sha256:
         errors.append("formal menu policy hash mismatch")
     if authority.get("database_policy_sha256") != database_policy_sha256:
@@ -159,10 +198,12 @@ def main() -> int:
         policy, fingerprint = _load(policy_path), _load(ROOT / args.fingerprint)
         baseline = _load(ROOT / args.manifest)
         errors.extend(validate_manifest(baseline, policy, file_sha256(policy_path), file_sha256(database_path), fingerprint))
+        errors.extend(_source_head_errors(baseline, fingerprint))
         if args.candidate:
             candidate = _load(ROOT / args.candidate)
             errors.extend(f"candidate: {error}" for error in validate_manifest(candidate, policy, file_sha256(policy_path), file_sha256(database_path), fingerprint))
-            if baseline != candidate:
+            errors.extend(f"candidate: {error}" for error in _source_head_errors(candidate, fingerprint))
+            if _comparison_payload(baseline) != _comparison_payload(candidate):
                 errors.append("candidate differs from tracked structure baseline")
     except (ValueError, OSError) as exc:
         errors.append(str(exc))

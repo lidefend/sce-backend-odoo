@@ -83,6 +83,21 @@ class ProductViewStructureContractTests(unittest.TestCase):
         value["authority"]["candidate_fingerprint"]["digest"] = "0" * 64
         self.assertTrue(any("candidate fingerprint" in error for error in self.errors(value)))
 
+    def test_evidence_carrier_head_change_preserves_identical_scope(self):
+        current = deepcopy(self.fingerprint)
+        current["git_head"] = "9" * 64
+        canonical = {key: current[key] for key in ("algorithm", "git_head", "baseline_sha", "branch", "scope_manifest_sha256", "excluded_paths", "entries")}
+        current["digest"] = sha256_json(canonical)
+        self.assertEqual(
+            validate_manifest(self.manifest, self.policy, "5" * 64, "6" * 64, current),
+            [],
+        )
+
+    def test_evidence_carrier_scope_change_fails(self):
+        current = deepcopy(self.fingerprint)
+        current["scope_manifest_sha256"] = "9" * 64
+        self.assertTrue(any("scope_manifest_sha256" in error for error in validate_manifest(self.manifest, self.policy, "5" * 64, "6" * 64, current)))
+
     def test_fingerprint_digest_tampering_fails(self):
         value = deepcopy(self.fingerprint)
         value["digest"] = "0" * 64
