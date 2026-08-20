@@ -1,7 +1,16 @@
 # ======================================================
 # ================== Contract ==========================
 # ======================================================
-.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock
+.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock contract.view_structure.fingerprint contract.view_structure.export contract.view_structure.baseline verify.contract.view_structure gate.contract.view_structure
+
+VIEW_STRUCTURE_POLICY ?= scripts/verify/baselines/formal_business_product_menu_policy_v1.json
+VIEW_STRUCTURE_DATABASE_POLICY ?= docs/governance/database_architecture_policy.md
+VIEW_STRUCTURE_BASELINE ?= contracts/generated/product_view_structure_contract.json
+VIEW_STRUCTURE_CANDIDATE ?= artifacts/contract/product_view_structure_contract.json
+VIEW_STRUCTURE_CONTAINER_CANDIDATE ?= /tmp/product_view_structure_contract.json
+VIEW_STRUCTURE_FINGERPRINT ?= artifacts/contract/product_view_candidate_fingerprint.json
+VIEW_STRUCTURE_REPORT ?= artifacts/backend/product_view_structure_contract_guard.json
+VIEW_STRUCTURE_BASELINE_SHA ?= $(shell git merge-base HEAD origin/main)
 
 verify.contract.lint:
 	@python3 scripts/verify/contracts_lint.py
@@ -35,6 +44,46 @@ contract.catalog.export:
 
 contract.evidence.export:
 	@python3 scripts/contract/export_evidence.py
+
+contract.view_structure.fingerprint: guard.prod.forbid
+	@test -n "$(VIEW_STRUCTURE_BASELINE_SHA)" || { echo "[contract.view_structure.fingerprint] missing baseline SHA" >&2; exit 2; }
+	@python3 scripts/contract/complete_worktree_fingerprint.py \
+	  --baseline "$(VIEW_STRUCTURE_BASELINE_SHA)" \
+	  --output "$(VIEW_STRUCTURE_FINGERPRINT)"
+
+contract.view_structure.export: guard.prod.forbid check-compose-project check-compose-env contract.view_structure.fingerprint
+	@mkdir -p "$$(dirname "$(VIEW_STRUCTURE_CANDIDATE)")"
+	@$(RUN_ENV) \
+	  PRODUCT_VIEW_STRUCTURE_POLICY="$(VIEW_STRUCTURE_POLICY)" \
+	  PRODUCT_VIEW_DATABASE_POLICY="$(VIEW_STRUCTURE_DATABASE_POLICY)" \
+	  PRODUCT_VIEW_CANDIDATE_FINGERPRINT="$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  PRODUCT_VIEW_STRUCTURE_OUTPUT="$(VIEW_STRUCTURE_CONTAINER_CANDIDATE)" \
+	  DB_NAME="$(DB_NAME)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/contract/export_product_view_structure.py
+	@$(RUN_ENV) $(COMPOSE_BASE) exec -T $(ODOO_SERVICE) cat "$(VIEW_STRUCTURE_CONTAINER_CANDIDATE)" > "$(VIEW_STRUCTURE_CANDIDATE).tmp"
+	@mv "$(VIEW_STRUCTURE_CANDIDATE).tmp" "$(VIEW_STRUCTURE_CANDIDATE)"
+
+contract.view_structure.baseline: contract.view_structure.export
+	@python3 scripts/verify/product_view_structure_contract_guard.py \
+	  --manifest "$(VIEW_STRUCTURE_CANDIDATE)" --policy "$(VIEW_STRUCTURE_POLICY)" \
+	  --database-policy "$(VIEW_STRUCTURE_DATABASE_POLICY)" --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  --report "$(VIEW_STRUCTURE_REPORT)"
+	@mkdir -p "$$(dirname "$(VIEW_STRUCTURE_BASELINE)")"
+	@cp "$(VIEW_STRUCTURE_CANDIDATE)" "$(VIEW_STRUCTURE_BASELINE).tmp"
+	@mv "$(VIEW_STRUCTURE_BASELINE).tmp" "$(VIEW_STRUCTURE_BASELINE)"
+	@echo "[contract.view_structure.baseline] baseline=$(VIEW_STRUCTURE_BASELINE)"
+
+verify.contract.view_structure: guard.prod.forbid contract.view_structure.fingerprint
+	@python3 scripts/verify/product_view_structure_contract_guard.py \
+	  --manifest "$(VIEW_STRUCTURE_BASELINE)" --policy "$(VIEW_STRUCTURE_POLICY)" \
+	  --database-policy "$(VIEW_STRUCTURE_DATABASE_POLICY)" --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  --report "$(VIEW_STRUCTURE_REPORT)"
+
+gate.contract.view_structure: contract.view_structure.export
+	@python3 scripts/verify/product_view_structure_contract_guard.py \
+	  --manifest "$(VIEW_STRUCTURE_BASELINE)" --candidate "$(VIEW_STRUCTURE_CANDIDATE)" \
+	  --policy "$(VIEW_STRUCTURE_POLICY)" --database-policy "$(VIEW_STRUCTURE_DATABASE_POLICY)" \
+	  --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" --report "$(VIEW_STRUCTURE_REPORT)"
 
 verify.contract.catalog: guard.prod.forbid
 	@python3 scripts/verify/intent_cases_integrity_guard.py --cases-file docs/contract/cases.yml

@@ -357,4 +357,11 @@ odoo.logs: check-compose-project check-compose-env
 odoo.exec: check-compose-project check-compose-env
 	@$(RUN_ENV) $(COMPOSE_BASE) exec -T $(ODOO_SERVICE) bash
 
+.PHONY: local.clean.view_structure_baseline local.clean.view_structure_gate
+local.clean.view_structure_baseline: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" contract.view_structure.baseline
+
+local.clean.view_structure_gate: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" gate.contract.view_structure
+
 # ======================================================
