@@ -1,0 +1,211 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://smart-construction.local/contracts/product-view-contract-carriers-v1.yaml
+title: Product View Contract Carriers V1
+type: object
+additionalProperties: false
+required: [schema, authority, structure_input, summary, entries, manifest_sha256]
+properties:
+  schema: {const: product_view_contract_carriers/v1}
+  authority: {$ref: '#/$defs/authority'}
+  structure_input: {$ref: '#/$defs/structure_input'}
+  summary: {$ref: '#/$defs/summary'}
+  entries:
+    type: array
+    minItems: 1
+    items: {$ref: '#/$defs/entry'}
+  manifest_sha256: {$ref: '#/$defs/sha256'}
+$defs:
+  sha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+  git_oid: {type: string, pattern: '^[0-9a-f]{40}$'}
+  text: {type: string, minLength: 1}
+  json_pointer: {type: string, pattern: '^(/([^/~]|~[01])*)*$'}
+  candidate_fingerprint:
+    type: object
+    additionalProperties: false
+    required: [algorithm, git_head, baseline_sha, scope_manifest_sha256, digest]
+    properties:
+      algorithm: {const: codex_complete_worktree_fingerprint/v1}
+      git_head: {$ref: '#/$defs/git_oid'}
+      baseline_sha: {$ref: '#/$defs/git_oid'}
+      scope_manifest_sha256: {$ref: '#/$defs/sha256'}
+      digest: {$ref: '#/$defs/sha256'}
+  authority:
+    type: object
+    additionalProperties: false
+    required: [branch, candidate_fingerprint, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, handler, capture_mode, force_refresh, external_contract_service_absent, database_transaction_read_only, exporter_version]
+    properties:
+      branch: {$ref: '#/$defs/text'}
+      candidate_fingerprint: {$ref: '#/$defs/candidate_fingerprint'}
+      runtime_profile: {const: local.clean}
+      compose_project: {const: sc-local-clean}
+      database: {const: sc_clean}
+      database_filter: {const: '^sc_clean$'}
+      demo_data: {const: false}
+      module_set:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: object
+          additionalProperties: false
+          required: [name, installed_version]
+          properties:
+            name: {$ref: '#/$defs/text'}
+            installed_version: {$ref: '#/$defs/text'}
+      module_set_sha256: {$ref: '#/$defs/sha256'}
+      user: {$ref: '#/$defs/text'}
+      company: {$ref: '#/$defs/text'}
+      language: {$ref: '#/$defs/text'}
+      group_profile: {type: array, minItems: 1, uniqueItems: true, items: {$ref: '#/$defs/text'}}
+      handler: {const: odoo.addons.smart_core.handlers.load_contract.LoadContractHandler}
+      capture_mode: {const: final_response_readonly_bridge}
+      force_refresh: {const: true}
+      external_contract_service_absent: {const: true}
+      database_transaction_read_only: {const: true}
+      exporter_version: {const: product_view_contract_carriers/v1}
+  structure_input:
+    type: object
+    additionalProperties: false
+    required: [path, sha256, manifest_sha256, candidate_fingerprint, formal_menu_policy_sha256, expected_formal_menu_count, expected_model_count, expected_surface_count]
+    properties:
+      path: {const: artifacts/contract/product_view_structure_candidate.json}
+      sha256: {$ref: '#/$defs/sha256'}
+      manifest_sha256: {$ref: '#/$defs/sha256'}
+      candidate_fingerprint: {$ref: '#/$defs/candidate_fingerprint'}
+      formal_menu_policy_sha256: {$ref: '#/$defs/sha256'}
+      expected_formal_menu_count: {type: integer, minimum: 1}
+      expected_model_count: {type: integer, minimum: 1}
+      expected_surface_count: {type: integer, minimum: 1}
+  summary:
+    type: object
+    additionalProperties: false
+    required: [formal_menu_count, model_count, surface_count, complete_count, normalized_only_count, error_count, normalized_carrier_count, semantic_carrier_count, view_type_counts]
+    properties:
+      formal_menu_count: {type: integer, minimum: 1}
+      model_count: {type: integer, minimum: 1}
+      surface_count: {type: integer, minimum: 1}
+      complete_count: {type: integer, minimum: 0}
+      normalized_only_count: {type: integer, minimum: 0}
+      error_count: {const: 0}
+      normalized_carrier_count: {type: integer, minimum: 1}
+      semantic_carrier_count: {type: integer, minimum: 0}
+      view_type_counts: {type: object, minProperties: 1, additionalProperties: {type: integer, minimum: 1}}
+  entry:
+    type: object
+    additionalProperties: false
+    required: [contract_ref, menu_xmlid, action_xmlid, model, view_type, view_ref, source_kind, hashes, runtime_binding, request, response, normalized_carriers, semantic_carriers, capture_outcome]
+    properties:
+      contract_ref: {$ref: '#/$defs/text'}
+      menu_xmlid: {$ref: '#/$defs/text'}
+      action_xmlid: {$ref: '#/$defs/text'}
+      model: {$ref: '#/$defs/text'}
+      view_type: {enum: [form, tree, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]}
+      view_ref: {$ref: '#/$defs/text'}
+      source_kind: {enum: [database_view, synthetic_default]}
+      hashes:
+        type: object
+        additionalProperties: false
+        required: [source_graph_sha256, resolved_arch_sha256, semantic_structure_sha256]
+        properties:
+          source_graph_sha256: {$ref: '#/$defs/sha256'}
+          resolved_arch_sha256: {$ref: '#/$defs/sha256'}
+          semantic_structure_sha256: {$ref: '#/$defs/sha256'}
+      runtime_binding:
+        type: object
+        additionalProperties: false
+        required: [menu_id, action_id, requested_view_id, selector_sha256]
+        properties:
+          menu_id: {type: integer, minimum: 1}
+          action_id: {type: integer, minimum: 1}
+          requested_view_id: {type: integer, minimum: 0}
+          selector_sha256: {$ref: '#/$defs/sha256'}
+      request:
+        type: object
+        additionalProperties: false
+        required: [menu_id, action_id, model, view_type, include, force_refresh, context]
+        properties:
+          menu_id: {type: integer, minimum: 1}
+          action_id: {type: integer, minimum: 1}
+          model: {$ref: '#/$defs/text'}
+          view_type: {enum: [form, tree, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]}
+          include: {const: all}
+          force_refresh: {const: true}
+          context:
+            type: object
+            additionalProperties: false
+            properties:
+              requested_view_id: {type: integer, minimum: 1}
+      response:
+        type: object
+        additionalProperties: false
+        required: [status, code, source_authority, etag, degraded, warnings]
+        properties:
+          status: {const: success}
+          code: {const: 200}
+          source_authority: {const: load_contract_final_response}
+          etag: {type: string}
+          degraded: {const: false}
+          warnings: {type: array, uniqueItems: true, items: {type: string, pattern: '^(?!view_contract_fallback:).*'}}
+      normalized_carriers:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {$ref: '#/$defs/normalized_carrier'}
+      semantic_carriers:
+        type: array
+        maxItems: 1
+        uniqueItems: true
+        items: {$ref: '#/$defs/semantic_carrier'}
+      capture_outcome:
+        type: object
+        additionalProperties: false
+        required: [status, reason_code]
+        properties:
+          status: {enum: [complete, normalized_only]}
+          reason_code: {type: string}
+    allOf:
+      - if:
+          properties:
+            source_kind: {const: database_view}
+        then:
+          properties:
+            runtime_binding:
+              properties:
+                requested_view_id: {type: integer, minimum: 1}
+            request:
+              properties:
+                context:
+                  required: [requested_view_id]
+      - if:
+          properties:
+            source_kind: {const: synthetic_default}
+        then:
+          properties:
+            runtime_binding:
+              properties:
+                requested_view_id: {const: 0}
+            request:
+              properties:
+                context: {maxProperties: 0}
+  carrier_base:
+    type: object
+    additionalProperties: false
+    required: [source_selector, artifact_selector, source_authority, value, value_hash]
+    properties:
+      source_selector: {$ref: '#/$defs/json_pointer'}
+      artifact_selector: {$ref: '#/$defs/json_pointer'}
+      source_authority: {enum: [normalized_contract, semantic_page]}
+      value: {}
+      value_hash: {$ref: '#/$defs/sha256'}
+  normalized_carrier:
+    allOf:
+      - {$ref: '#/$defs/carrier_base'}
+      - properties:
+          source_authority: {const: normalized_contract}
+  semantic_carrier:
+    allOf:
+      - {$ref: '#/$defs/carrier_base'}
+      - properties:
+          source_selector: {const: /data/semantic_page}
+          source_authority: {const: semantic_page}
+          value: {type: object}
