@@ -10,7 +10,7 @@
 
 ## 2. 权威运行身份
 
-每份台账必须绑定既有 `codex_complete_worktree_fingerprint/v1` 完整候选指纹、Git HEAD、基线 SHA、范围清单哈希，以及数据库架构政策、正式菜单政策、原因码注册表、视图结构基线、模块版本集合、用户、公司、语言和权限组。运行身份固定为 `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$` 且 `demo_data=false`，不得使用 Git commit SHA 代替完整指纹，也不得使用手工拼装的 Compose、数据库或凭据代替。为消除自引用，完整指纹只允许精确排除 `contracts/generated/product_view_structure_contract.json`；排除路径与原因本身必须进入 canonical digest，禁止目录、通配符或可变排除项。
+每份台账必须绑定既有 `codex_complete_worktree_fingerprint/v1` 完整候选指纹、Git HEAD、基线 SHA、范围清单哈希，以及数据库架构政策、正式菜单政策、原因码注册表、taxonomy、normalized map、frontend map、同候选视图结构与 carrier evidence、模块版本集合、用户、公司、语言和权限组。运行身份固定为 `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$` 且 `demo_data=false`，不得使用 Git commit SHA 代替完整指纹，也不得使用手工拼装的 Compose、数据库或凭据代替。运行 evidence 固定引用 `artifacts/contract` 下由受治理 Make target 生成的候选文件，不复制为大型 tracked baseline，也不得引用另一候选的历史 artifact。
 
 生成基线后的 evidence-carrier commit 可以使当前 HEAD 晚于台账中的 source HEAD，但守卫必须使用当前完整 scope entries 重算 source digest，并证明 source HEAD 是当前 HEAD 的祖先且 scope hash 完全相同。基线与独立重导出比较时只忽略 source/current HEAD、其 fingerprint digest 及派生 manifest hash；其他权威、结构或运行事实不得归一化。
 

@@ -30,10 +30,12 @@ $defs:
   authority:
     type: object
     additionalProperties: false
-    required: [branch, candidate_fingerprint, database_policy_path, database_policy_sha256, formal_menu_policy_path, formal_menu_policy_sha256, reason_registry_path, reason_registry_sha256, taxonomy_path, taxonomy_sha256, frontend_map_path, frontend_map_sha256, view_structure_baseline_path, view_structure_baseline_sha256, carrier_evidence_path, carrier_evidence_sha256, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, exporter_version]
+    required: [branch, candidate_fingerprint, fingerprint_evidence_path, fingerprint_evidence_sha256, database_policy_path, database_policy_sha256, formal_menu_policy_path, formal_menu_policy_sha256, reason_registry_path, reason_registry_sha256, taxonomy_path, taxonomy_sha256, normalized_map_path, normalized_map_sha256, frontend_map_path, frontend_map_sha256, view_structure_evidence_path, view_structure_evidence_sha256, view_structure_manifest_sha256, carrier_evidence_path, carrier_evidence_sha256, carrier_evidence_manifest_sha256, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, exporter_version]
     properties:
       branch: {$ref: '#/$defs/text'}
       candidate_fingerprint: {$ref: '#/$defs/candidate_fingerprint'}
+      fingerprint_evidence_path: {const: artifacts/contract/product_view_candidate_fingerprint.json}
+      fingerprint_evidence_sha256: {$ref: '#/$defs/sha256'}
       database_policy_path: {const: docs/governance/database_architecture_policy.md}
       database_policy_sha256: {$ref: '#/$defs/sha256'}
       formal_menu_policy_path: {const: scripts/verify/baselines/formal_business_product_menu_policy_v1.json}
@@ -42,12 +44,16 @@ $defs:
       reason_registry_sha256: {$ref: '#/$defs/sha256'}
       taxonomy_path: {const: contracts/product/native-view-capability-taxonomy-v1.yaml}
       taxonomy_sha256: {$ref: '#/$defs/sha256'}
+      normalized_map_path: {const: contracts/product/native-view-normalized-capability-map-v1.yaml}
+      normalized_map_sha256: {$ref: '#/$defs/sha256'}
       frontend_map_path: {const: contracts/product/native-view-frontend-capability-map-v1.yaml}
       frontend_map_sha256: {$ref: '#/$defs/sha256'}
-      view_structure_baseline_path: {const: contracts/generated/product_view_structure_contract.json}
-      view_structure_baseline_sha256: {$ref: '#/$defs/sha256'}
-      carrier_evidence_path: {const: contracts/generated/product_view_contract_carriers.json}
+      view_structure_evidence_path: {const: artifacts/contract/product_view_structure_contract.json}
+      view_structure_evidence_sha256: {$ref: '#/$defs/sha256'}
+      view_structure_manifest_sha256: {$ref: '#/$defs/sha256'}
+      carrier_evidence_path: {const: artifacts/contract/product_view_contract_carriers_candidate.json}
       carrier_evidence_sha256: {$ref: '#/$defs/sha256'}
+      carrier_evidence_manifest_sha256: {$ref: '#/$defs/sha256'}
       runtime_profile: {const: local.clean}
       compose_project: {const: sc-local-clean}
       database: {const: sc_clean}
@@ -105,7 +111,7 @@ $defs:
       menu_xmlid: {$ref: '#/$defs/text'}
       action_xmlid: {$ref: '#/$defs/text'}
       model: {$ref: '#/$defs/text'}
-      view_type: {enum: [form, tree, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]}
+      view_type: {enum: [form, tree, search, kanban, pivot, graph, activity]}
       view_ref: {$ref: '#/$defs/text'}
       hashes:
         type: object
