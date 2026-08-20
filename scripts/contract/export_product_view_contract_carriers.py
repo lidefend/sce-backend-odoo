@@ -231,7 +231,7 @@ def capture(runtime_env: Any, structure_path: Path, fingerprint_path: Path) -> d
         "schema": SCHEMA,
         "authority": authority,
         "structure_input": {
-            "path": "artifacts/contract/product_view_structure_candidate.json",
+            "path": "artifacts/contract/product_view_structure_contract.json",
             "sha256": file_sha256(structure_path),
             "manifest_sha256": structure["manifest_sha256"],
             "candidate_fingerprint": authority["candidate_fingerprint"],

@@ -98,7 +98,7 @@ class ProductViewContractCarriersTests(unittest.TestCase):
         self.artifact = with_manifest({
             "schema": "product_view_contract_carriers/v1",
             "authority": self.authority,
-            "structure_input": {"path": "artifacts/contract/product_view_structure_candidate.json", "sha256": "a" * 64, "manifest_sha256": self.structure["manifest_sha256"], "candidate_fingerprint": fp, "formal_menu_policy_sha256": "b" * 64, "expected_formal_menu_count": 1, "expected_model_count": 1, "expected_surface_count": 1},
+            "structure_input": {"path": "artifacts/contract/product_view_structure_contract.json", "sha256": "a" * 64, "manifest_sha256": self.structure["manifest_sha256"], "candidate_fingerprint": fp, "formal_menu_policy_sha256": "b" * 64, "expected_formal_menu_count": 1, "expected_model_count": 1, "expected_surface_count": 1},
             "summary": {"formal_menu_count": 1, "model_count": 1, "surface_count": 1, "complete_count": 0, "normalized_only_count": 1, "error_count": 0, "normalized_carrier_count": 1, "semantic_carrier_count": 0, "view_type_counts": {"form": 1}},
             "entries": [entry],
         })

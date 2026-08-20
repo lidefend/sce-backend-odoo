@@ -205,7 +205,7 @@ def validate_carriers(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--artifact", default="artifacts/contract/product_view_contract_carriers_candidate.json")
-    parser.add_argument("--structure", default="artifacts/contract/product_view_structure_candidate.json")
+    parser.add_argument("--structure", default="artifacts/contract/product_view_structure_contract.json")
     parser.add_argument("--fingerprint", default="artifacts/contract/product_view_candidate_fingerprint.json")
     parser.add_argument("--schema", default="contracts/schemas/product-view-contract-carriers-v1.yaml")
     args = parser.parse_args()

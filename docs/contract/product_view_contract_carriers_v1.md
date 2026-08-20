@@ -13,7 +13,7 @@
 - 运行库出现仓库无法证明只读性的 `app.contract.service` 时失败关闭。
 - 采集使用独立数据库 cursor，并同时设置 session 与 transaction read-only；采集后必须回滚并恢复连接默认值。该保证覆盖数据库写入，不宣称拦截未登记的外部副作用。
 - `tree` 是 Odoo 17 规范类型；不得向 handler 请求 `list`。
-- 采集输入必须是同一候选指纹下重新导出并通过结构门禁的 `artifacts/contract/product_view_structure_candidate.json`，不得使用历史 tracked 基线代替。
+- 采集输入必须是同一候选指纹下重新导出并通过结构门禁的 `artifacts/contract/product_view_structure_contract.json`，不得使用历史 tracked 基线代替。
 - 数据库视图通过 `context.requested_view_id` 绑定本次运行记录；synthetic default 不得伪造该 ID。
 
 ## 载体规则
