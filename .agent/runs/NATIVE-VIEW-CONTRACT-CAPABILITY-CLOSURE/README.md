@@ -114,7 +114,8 @@
 - Formal Product Layer: P0 platform mechanism, supported by P4 evidence and
   gates.
 - Scope: `modifier.*`, `action.*`, `permission.*`, plus root
-  `create/edit/delete`; the reference blast radius is `5,272` atoms.
+  `create/edit/delete`; the reference blast radius is `5,271` atoms (`5,143`
+  behavior-family atoms plus `128` root behavior atoms).
 - Excluded until Q3: layout and field semantics, search/group/order/paging,
   x2many presentation, chatter, template, widget, and kanban content closure.
 - Dynamic verdicts require governed user, company, record, and mode evidence;
