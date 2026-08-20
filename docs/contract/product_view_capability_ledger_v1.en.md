@@ -1,5 +1,7 @@
 # Product View Capability Ledger Contract V1
 
+[中文版](product_view_capability_ledger_v1.md)
+
 ## 1. Purpose and boundary
 
 This contract defines atom-level evidence from an Odoo native-view occurrence to frontend interaction. It measures how much native-view capability the product contract actually carries. It is a P4 evidence and gate mechanism measuring the generic P0 `smart_core` contract pipeline; it does not introduce business semantics or move industry or customer rules into the platform kernel.
@@ -8,11 +10,11 @@ This phase defines measurement facts only. The ledger and its reason codes are n
 
 ## 2. Authoritative runtime identity
 
-Every ledger binds the full candidate fingerprint, database architecture policy hash, module set, user, company, language, and group profile. Runtime identity is fixed to `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$`; manually assembled Compose, database, or credential commands cannot satisfy the gate.
+Every ledger binds the existing `codex_complete_worktree_fingerprint/v1` complete candidate fingerprint, Git HEAD, baseline SHA, scope-manifest hash, database architecture policy, formal-menu policy, reason registry, view-structure baseline, versioned module set, user, company, language, and group profile. Runtime identity is fixed to `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$` with `demo_data=false`. A Git commit SHA alone is not the complete fingerprint, and manually assembled Compose, database, or credential commands cannot satisfy the gate.
 
 ## 3. Capability atoms and evidence chain
 
-A capability atom represents one locatable native-view occurrence, not a deduplicated field or button name. `atom_id` must distinguish repeated fields, repeated buttons, inheritance contributors, and nested subviews.
+A capability atom represents one locatable native-view occurrence, not a deduplicated field or button name. `occurrence_index` is the one-based ordinal among equal base locators under one parent; one atom represents exactly one occurrence. `atom_id` excludes the value hash and distinguishes repeated fields, repeated buttons, inheritance contributors, and nested subviews.
 
 The evidence chain records `native`, `normalized`, `semantic`, and `frontend` stages. The frontend stage explicitly binds the canonical atom, compatibility projection, consumer symbol, renderer, and interaction symbol. `source_authority` is mandatory; behavior determined by multiple sources without one declared authority cannot be ready.
 
@@ -24,14 +26,16 @@ Every native capability atom has exactly one terminal state:
 - `fallback`: an explicit, governed, traceable degradation path exists but does not fully preserve the native capability.
 - `unsupported`: no usable carrier or renderer exists, or the capability is explicitly rejected.
 
-A `ready` atom has an empty `reason_code`; `fallback` and `unsupported` atoms reference the reason-code registry. Unknown state, silent deletion, and unclassified loss are invalid.
+A `ready` atom has an empty `reason_code`, all three carrier stages present with non-zero counts and recomputable hashes, and one frontend source with non-empty consumer, renderer, and interaction symbols. `fallback` and `unsupported` reference a registered reason whose status and first-loss stage match the atom. A reason with `gate_effect=silent_loss` cannot produce a publishable ledger. Unknown state, silent deletion, and unclassified loss are invalid.
 
 The static presence of a field, parser node, or renderer proves carrier presence only, not end-to-end readiness. Dynamic modifiers, permissions, record context, and interaction behavior require governed runtime evidence; without it, the atom is at best `fallback`.
 
 ## 5. Zero-silent-loss gate
 
-The guard recomputes all content and manifest hashes and verifies authority identity, summary counts, contract references, parent-child surface relationships, the native contribution graph, and reason codes. A native capability without a terminal state, with broken evidence, mismatched hashes or counts, or an unknown reason code increments `silent_loss_count` and fails the gate.
+Hash input is UTF-8 canonical JSON with sorted object keys, no insignificant whitespace, and unescaped Unicode. `manifest_sha256` covers the complete ledger except itself. The guard recomputes all hashes and verifies authority identity, conservation totals, unique `contract_ref`/`atom_id`, the `menu_xmlid::canonical_view_type` relation, the native contribution graph, and reason codes. `list` is only an input alias and is canonicalized to `tree`; it is invalid in a ledger.
+
+Each `evidence_refs` item contains a repository-relative path, file SHA, candidate fingerprint, stage, and resolvable selector. The guard proves that the file exists, its hash matches, its candidate is identical, and the selector locates the claimed fact. Broken evidence, mismatched hashes or totals, and unknown reasons are silent loss and fail the gate.
 
 Acceptance requires native occurrence count to equal `ready + fallback + unsupported`, `silent_loss_count` to be zero, every non-ready atom to have a registered reason and executable exit condition, and all evidence to bind the same frozen candidate fingerprint.
 
-The reason-code authority is `contracts/product/native-view-capability-reason-codes-v1.yaml`; the structural constraint is `contracts/schemas/product-view-capability-ledger-v1.yaml`.
+The reason-code authority is `contracts/product/native-view-capability-reason-codes-v1.yaml`, the taxonomy is `contracts/product/native-view-capability-taxonomy-v1.yaml`, and structural constraints are `contracts/schemas/product-view-capability-ledger-v1.yaml` and `contracts/schemas/native-view-capability-reason-codes-v1.yaml`. Schema expresses local constraints only; the fail-closed guard enforces cross-file references, uniqueness, conservation, reason-stage matching, and hash recomputation.

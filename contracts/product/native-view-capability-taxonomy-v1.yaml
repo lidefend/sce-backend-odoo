@@ -1,0 +1,26 @@
+schema: native_view_capability_taxonomy/v1
+unknown_atom_policy: fail_closed
+canonical_view_types: [form, tree, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]
+excluded_native_syntax: [xml_comment, indentation_whitespace, namespace_declaration]
+families:
+  structure: [view_root, header, sheet, group, notebook, page, container, separator, label, chatter, templates, subview]
+  field: [occurrence, label, widget, options, domain, context, placeholder, help, nolabel, colspan, selection, relation_subview]
+  modifier: [readonly, required, invisible, column_invisible, groups, states, decoration]
+  action: [button, type, identity, placement, selection, context, domain, groups, states, confirm, icon, priority, badge]
+  form: [create, edit, delete, duplicate, statusbar, statusbar_visible, button_box, ribbon]
+  tree: [column_order, default_order, editable, create, delete, limit, optional, aggregate, row_action, row_decoration]
+  search: [search_field, operator, filter_domain, filter, domain, context, group_by, search_panel, search_panel_field, separator]
+  kanban: [template, field, default_group_by, quick_create, quick_action, decoration, progressbar, drag_capability]
+  pivot: [measure, dimension, axis, interval, aggregate]
+  graph: [type, measure, dimension, interval, aggregate, format]
+  calendar: [date_start, date_stop, color, scale, popup, quick_add, field]
+  gantt: [date_start, date_stop, progress, resource, dependency, scale, decoration, consolidate, field]
+  activity: [activity_type, deadline, assignee, field, template]
+  template: [qweb_template, qweb_field, qweb_action, qweb_expression]
+  pipeline: [resolved_view, source_graph, primary_parse, fallback_parse, semantic_projection, unclassified_native_atom]
+locator:
+  prefix: 'resolved:<view_ref>'
+  segment_identity_priority: [tag_and_name, tag_and_id, tag_and_for, tag_and_widget, structural_fingerprint]
+  duplicate_rule: one_based_preorder_within_equal_parent_segment
+  translated_label_is_identity: false
+  value_hash_is_identity: false

@@ -1,0 +1,25 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://smart-construction.local/contracts/native-view-capability-reason-codes-v1.yaml
+title: Native View Capability Reason Codes V1
+type: object
+additionalProperties: false
+required: [schema, scope, authority, entries]
+properties:
+  schema: {const: native_view_capability_reason_codes/v1}
+  scope: {const: product_view_capability_ledger/v1}
+  authority: {const: p4_evidence_classification_only}
+  entries:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [code, category, stage, status, gate_effect, meaning, exit_condition]
+      properties:
+        code: {type: string, pattern: '^[A-Z][A-Z0-9_]+$'}
+        category: {enum: [contract_loss, evidence_gap, runtime_gap, semantic_reduction, provenance_gap, frontend_projection, frontend_inference, renderer_gap, native_failure]}
+        stage: {enum: [native, normalized, semantic, frontend, interaction]}
+        status: {enum: [fallback, unsupported]}
+        gate_effect: {enum: [classified_gap, silent_loss]}
+        meaning: {type: string, minLength: 1}
+        exit_condition: {type: string, minLength: 1}

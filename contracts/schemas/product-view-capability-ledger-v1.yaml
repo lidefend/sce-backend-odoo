@@ -1,5 +1,5 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: https://smart-construction.local/contracts/product-view-capability-ledger-v1.schema.json
+$id: https://smart-construction.local/contracts/product-view-capability-ledger-v1.yaml
 title: Product View Capability Ledger V1
 type: object
 additionalProperties: false
@@ -10,74 +10,155 @@ properties:
   summary: {$ref: '#/$defs/summary'}
   entries:
     type: array
+    minItems: 1
     items: {$ref: '#/$defs/surface_entry'}
   manifest_sha256: {$ref: '#/$defs/sha256'}
 $defs:
-  sha256:
-    type: string
-    pattern: '^[0-9a-f]{64}$'
-  non_empty_string: {type: string, minLength: 1}
+  sha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+  text: {type: string, minLength: 1}
+  candidate_fingerprint:
+    type: object
+    additionalProperties: false
+    required: [algorithm, git_head, baseline_sha, scope_manifest_sha256, digest]
+    properties:
+      algorithm: {const: codex_complete_worktree_fingerprint/v1}
+      git_head: {$ref: '#/$defs/sha256'}
+      baseline_sha: {$ref: '#/$defs/sha256'}
+      scope_manifest_sha256: {$ref: '#/$defs/sha256'}
+      digest: {$ref: '#/$defs/sha256'}
   authority:
     type: object
     additionalProperties: false
-    required: [branch, candidate_fingerprint, policy_path, policy_sha256, runtime_profile, compose_project, database, database_filter, module_set, user, company, language, group_profile, exporter_version]
+    required: [branch, candidate_fingerprint, database_policy_path, database_policy_sha256, formal_menu_policy_path, formal_menu_policy_sha256, reason_registry_path, reason_registry_sha256, view_structure_baseline_path, view_structure_baseline_sha256, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, exporter_version]
     properties:
-      branch: {$ref: '#/$defs/non_empty_string'}
-      candidate_fingerprint: {$ref: '#/$defs/sha256'}
-      policy_path: {const: docs/governance/database_architecture_policy.md}
-      policy_sha256: {$ref: '#/$defs/sha256'}
+      branch: {$ref: '#/$defs/text'}
+      candidate_fingerprint: {$ref: '#/$defs/candidate_fingerprint'}
+      database_policy_path: {const: docs/governance/database_architecture_policy.md}
+      database_policy_sha256: {$ref: '#/$defs/sha256'}
+      formal_menu_policy_path: {const: scripts/verify/baselines/formal_business_product_menu_policy_v1.json}
+      formal_menu_policy_sha256: {$ref: '#/$defs/sha256'}
+      reason_registry_path: {const: contracts/product/native-view-capability-reason-codes-v1.yaml}
+      reason_registry_sha256: {$ref: '#/$defs/sha256'}
+      view_structure_baseline_path: {const: contracts/generated/product_view_structure_contract.json}
+      view_structure_baseline_sha256: {$ref: '#/$defs/sha256'}
       runtime_profile: {const: local.clean}
       compose_project: {const: sc-local-clean}
       database: {const: sc_clean}
       database_filter: {const: '^sc_clean$'}
+      demo_data: {const: false}
       module_set:
         type: array
         minItems: 1
         uniqueItems: true
-        items: {$ref: '#/$defs/non_empty_string'}
-      user: {$ref: '#/$defs/non_empty_string'}
-      company: {$ref: '#/$defs/non_empty_string'}
-      language: {$ref: '#/$defs/non_empty_string'}
+        items:
+          type: object
+          additionalProperties: false
+          required: [name, installed_version]
+          properties:
+            name: {$ref: '#/$defs/text'}
+            installed_version: {$ref: '#/$defs/text'}
+      module_set_sha256: {$ref: '#/$defs/sha256'}
+      user: {$ref: '#/$defs/text'}
+      company: {$ref: '#/$defs/text'}
+      language: {$ref: '#/$defs/text'}
       group_profile:
         type: array
+        minItems: 1
         uniqueItems: true
-        items: {$ref: '#/$defs/non_empty_string'}
+        items: {$ref: '#/$defs/text'}
       exporter_version: {const: product_view_capability_ledger/v1}
   summary:
     type: object
     additionalProperties: false
-    required: [formal_menu_count, model_count, resolved_surface_count, capability_atom_count, ready_count, fallback_count, unsupported_count, silent_loss_count]
+    required: [formal_menu_count, model_count, resolved_surface_count, capability_atom_count, ready_count, fallback_count, unsupported_count, silent_loss_count, view_type_counts]
     properties:
-      formal_menu_count: {type: integer, minimum: 0}
-      model_count: {type: integer, minimum: 0}
-      resolved_surface_count: {type: integer, minimum: 0}
-      capability_atom_count: {type: integer, minimum: 0}
+      formal_menu_count: {type: integer, minimum: 1}
+      model_count: {type: integer, minimum: 1}
+      resolved_surface_count: {type: integer, minimum: 1}
+      capability_atom_count: {type: integer, minimum: 1}
       ready_count: {type: integer, minimum: 0}
       fallback_count: {type: integer, minimum: 0}
       unsupported_count: {type: integer, minimum: 0}
-      silent_loss_count: {type: integer, minimum: 0}
+      silent_loss_count: {const: 0}
+      view_type_counts:
+        type: object
+        minProperties: 1
+        additionalProperties: {type: integer, minimum: 1}
   surface_entry:
     type: object
     additionalProperties: false
-    required: [contract_ref, menu_xmlid, action_xmlid, model, view_type, native_view_hash, atoms]
+    required: [contract_ref, menu_xmlid, action_xmlid, model, view_type, view_ref, hashes, source_graph, parse_outcome, atoms]
     properties:
-      contract_ref: {$ref: '#/$defs/non_empty_string'}
-      menu_xmlid: {$ref: '#/$defs/non_empty_string'}
-      action_xmlid: {$ref: '#/$defs/non_empty_string'}
-      model: {$ref: '#/$defs/non_empty_string'}
-      view_type:
-        enum: [form, tree, list, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]
-      native_view_hash: {$ref: '#/$defs/sha256'}
+      contract_ref: {$ref: '#/$defs/text'}
+      menu_xmlid: {$ref: '#/$defs/text'}
+      action_xmlid: {$ref: '#/$defs/text'}
+      model: {$ref: '#/$defs/text'}
+      view_type: {enum: [form, tree, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]}
+      view_ref: {$ref: '#/$defs/text'}
+      hashes:
+        type: object
+        additionalProperties: false
+        required: [source_graph_sha256, resolved_arch_sha256, semantic_structure_sha256]
+        properties:
+          source_graph_sha256: {$ref: '#/$defs/sha256'}
+          resolved_arch_sha256: {$ref: '#/$defs/sha256'}
+          semantic_structure_sha256: {$ref: '#/$defs/sha256'}
+      source_graph: {$ref: '#/$defs/source_graph'}
+      parse_outcome:
+        type: object
+        additionalProperties: false
+        required: [primary, fallback]
+        properties:
+          primary: {enum: [success, failure]}
+          fallback: {enum: [inactive, active, untraced]}
       atoms:
         type: array
+        minItems: 1
         items: {$ref: '#/$defs/capability_atom'}
+  source_graph:
+    type: object
+    additionalProperties: false
+    required: [root_ref, contributors, edges, application_order, graph_sha256]
+    properties:
+      root_ref: {$ref: '#/$defs/text'}
+      contributors:
+        type: array
+        minItems: 1
+        items:
+          type: object
+          additionalProperties: false
+          required: [view_ref, inherit_ref, mode, priority, active, groups, arch_sha256, applicability]
+          properties:
+            view_ref: {$ref: '#/$defs/text'}
+            inherit_ref: {type: string}
+            mode: {$ref: '#/$defs/text'}
+            priority: {type: integer}
+            active: {type: boolean}
+            groups: {type: array, uniqueItems: true, items: {$ref: '#/$defs/text'}}
+            arch_sha256: {$ref: '#/$defs/sha256'}
+            applicability: {enum: [applied, pruned, unproven]}
+      edges:
+        type: array
+        items:
+          type: object
+          additionalProperties: false
+          required: [parent_ref, child_ref]
+          properties:
+            parent_ref: {$ref: '#/$defs/text'}
+            child_ref: {$ref: '#/$defs/text'}
+      application_order:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {$ref: '#/$defs/text'}
+      graph_sha256: {$ref: '#/$defs/sha256'}
   capability_atom:
     type: object
     additionalProperties: false
     required: [atom_id, capability_key, native, normalized, semantic, frontend, terminal_status, reason_code, evidence_refs]
     properties:
-      atom_id: {$ref: '#/$defs/non_empty_string'}
-      capability_key: {$ref: '#/$defs/non_empty_string'}
+      atom_id: {$ref: '#/$defs/sha256'}
+      capability_key: {$ref: '#/$defs/text'}
       native: {$ref: '#/$defs/native_stage'}
       normalized: {$ref: '#/$defs/contract_stage'}
       semantic: {$ref: '#/$defs/contract_stage'}
@@ -88,7 +169,7 @@ $defs:
         type: array
         minItems: 1
         uniqueItems: true
-        items: {$ref: '#/$defs/non_empty_string'}
+        items: {$ref: '#/$defs/evidence_ref'}
     allOf:
       - if:
           properties:
@@ -96,37 +177,48 @@ $defs:
         then:
           properties:
             reason_code: {maxLength: 0}
+            normalized: {$ref: '#/$defs/ready_contract_stage'}
+            semantic: {$ref: '#/$defs/ready_contract_stage'}
+            frontend: {$ref: '#/$defs/ready_frontend_stage'}
         else:
           properties:
-            reason_code: {minLength: 1}
+            reason_code: {$ref: '#/$defs/text'}
   terminal_status: {enum: [ready, fallback, unsupported]}
   stage_status: {enum: [present, reduced, missing, not_applicable, unproven]}
   source_authority: {enum: [native_view, normalized_contract, semantic_page, scene_contract, route_state, compatibility_projection, runtime_default, none]}
   native_stage:
     type: object
     additionalProperties: false
-    required: [occurrence, locator, value_hash]
+    required: [occurrence_index, origin_view_ref, locator, canonical_value, value_hash]
     properties:
-      occurrence: {type: integer, minimum: 1}
-      locator: {$ref: '#/$defs/non_empty_string'}
+      occurrence_index: {type: integer, minimum: 1}
+      origin_view_ref: {$ref: '#/$defs/text'}
+      locator: {$ref: '#/$defs/text'}
+      canonical_value: {}
       value_hash: {$ref: '#/$defs/sha256'}
   contract_stage:
     type: object
     additionalProperties: false
-    required: [status, count, carrier_refs, source_authority]
+    required: [status, count, carrier_refs, value_hash, source_authority]
     properties:
       status: {$ref: '#/$defs/stage_status'}
       count: {type: integer, minimum: 0}
-      carrier_refs:
-        type: array
-        uniqueItems: true
-        items: {$ref: '#/$defs/non_empty_string'}
-      value_hash: {$ref: '#/$defs/sha256'}
+      carrier_refs: {type: array, uniqueItems: true, items: {$ref: '#/$defs/text'}}
+      value_hash: {type: string, pattern: '^(|[0-9a-f]{64})$'}
       source_authority: {$ref: '#/$defs/source_authority'}
+  ready_contract_stage:
+    allOf:
+      - {$ref: '#/$defs/contract_stage'}
+      - properties:
+          status: {const: present}
+          count: {type: integer, minimum: 1}
+          carrier_refs: {minItems: 1}
+          value_hash: {$ref: '#/$defs/sha256'}
+          source_authority: {enum: [normalized_contract, semantic_page]}
   frontend_stage:
     type: object
     additionalProperties: false
-    required: [status, canonical_atom_ref, projection_atom_ref, consumer_symbol, renderer_key, interaction_symbol, source_authority, source_count]
+    required: [status, canonical_atom_ref, projection_atom_ref, consumer_symbol, renderer_key, interaction_symbol, value_hash, source_authority, source_count]
     properties:
       status: {$ref: '#/$defs/stage_status'}
       canonical_atom_ref: {type: string}
@@ -134,5 +226,28 @@ $defs:
       consumer_symbol: {type: string}
       renderer_key: {type: string}
       interaction_symbol: {type: string}
+      value_hash: {type: string, pattern: '^(|[0-9a-f]{64})$'}
       source_authority: {$ref: '#/$defs/source_authority'}
       source_count: {type: integer, minimum: 0}
+  ready_frontend_stage:
+    allOf:
+      - {$ref: '#/$defs/frontend_stage'}
+      - properties:
+          status: {const: present}
+          canonical_atom_ref: {$ref: '#/$defs/text'}
+          consumer_symbol: {$ref: '#/$defs/text'}
+          renderer_key: {$ref: '#/$defs/text'}
+          interaction_symbol: {$ref: '#/$defs/text'}
+          value_hash: {$ref: '#/$defs/sha256'}
+          source_authority: {enum: [normalized_contract, semantic_page]}
+          source_count: {const: 1}
+  evidence_ref:
+    type: object
+    additionalProperties: false
+    required: [path, sha256, candidate_fingerprint, stage, selector]
+    properties:
+      path: {$ref: '#/$defs/text'}
+      sha256: {$ref: '#/$defs/sha256'}
+      candidate_fingerprint: {$ref: '#/$defs/sha256'}
+      stage: {enum: [native, normalized, semantic, frontend, interaction]}
+      selector: {$ref: '#/$defs/text'}
