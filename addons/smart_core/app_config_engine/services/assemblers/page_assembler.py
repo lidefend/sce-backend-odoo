@@ -7,6 +7,8 @@
 import json
 import logging
 import re
+import time
+from copy import deepcopy
 from odoo import _
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -25,8 +27,11 @@ from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     FORM_FIELD_CONFIG_INTENTS,
     is_business_config_runtime_model,
 )
+
+_RELATION_SEARCH_DIALOG_HOT_CACHE = {}
+_RELATION_SEARCH_DIALOG_HOT_CACHE_MAX = 256
 from ...utils.misc import safe_eval
-from ...utils.view_utils import extract_tree_columns_strict, normalize_cols_safely
+from ...utils.view_utils import normalize_cols_safely
 
 _logger = logging.getLogger(__name__)
 
@@ -357,11 +362,16 @@ class PageAssembler:
         if requested_render_profile:
             data["render_profile"] = requested_render_profile
         versions = {}
+        model_fields_snapshot = su[model].fields_get()
+        view_projection_sources = {}
 
         # 1) 字段：从模型配置生成；再归一化到 {name: {...}} 形式
         #    - 使用 su_env 读模型元数据，避免被权限限制
         try:
-            mcfg = su['app.model.config']._generate_from_ir_model(model)
+            mcfg = su['app.model.config']._generate_from_ir_model(
+                model,
+                fields_get_snapshot=model_fields_snapshot,
+            )
             data["fields"] = self._to_fields_map(mcfg.get_model_contract().get("fields", []), env=env, model=mcfg.model)
             versions["model"] = mcfg.version
         except KeyError:
@@ -370,18 +380,7 @@ class PageAssembler:
             data["fields"] = self._to_fields_map(list(env[model]._fields.keys()), env=env, model=model)
             versions["model"] = 0
 
-        # 2) 从原始 tree 视图 XML 严格提取列（★ P0 修复核心）
-        original_tree_cols = []
-        original_default_order = None
-        try:
-            v_info = su[model].get_view(view_type='tree')
-            original_tree_cols, original_default_order = extract_tree_columns_strict(v_info.get('arch'), v_info.get('fields', {}))
-            if original_tree_cols:
-                _logger.info("直接从源视图提取到可见字段: %s", [c['name'] for c in original_tree_cols])
-        except Exception as e:
-            _logger.warning("从原始视图提取字段失败: %s", e)
-
-        # 3) 视图契约（多视图）——视图元信息用 su_env 获取，运行时修剪在各自组装器里完成
+        # 2) 视图契约（多视图）——单次 get_view/解析后复用统一投影结果
         v_versions = []
         view_context = {}
         if isinstance(action, dict) and action.get("id"):
@@ -398,7 +397,11 @@ class PageAssembler:
                 if requested_view_id and len(view_types) == 1:
                     scoped_view_context["contract_view_id"] = requested_view_id
                 view_config_model = env['app.view.config'].with_context(**scoped_view_context) if scoped_view_context else env['app.view.config']
-                vcfg = view_config_model._generate_from_fields_view_get(model, vt)
+                view_data = view_config_model._safe_get_view_data(model, vt)
+                if isinstance(view_data, dict):
+                    view_data['_fields_snapshot'] = model_fields_snapshot
+                    view_projection_sources[vt] = view_data
+                vcfg = view_config_model._generate_from_fields_view_get(model, vt, view_data=view_data)
                 # app.view.config is platform metadata and ordinary business
                 # users do not read it directly. Keep metadata access elevated,
                 # but bind the environment user to the real requester so
@@ -425,21 +428,15 @@ class PageAssembler:
 
             v_contract = self._coerce_view_contract_semantics(vt, v_contract)
 
-            if vt == 'tree':
-                # 解析器没产出 columns 时，用严格列兜底
-                cols = v_contract.get('columns') or []
-                if not cols and original_tree_cols:
-                    v_contract['columns'] = [c['name'] for c in original_tree_cols]
-                    if original_default_order:
-                        v_contract['default_order'] = original_default_order
-                # 禁用对 columns 的二次“脏覆盖”
-
             data["views"][vt] = v_contract
         versions["view"] = ",".join(v_versions) if v_versions else "1"
 
-        # 4) 搜索条件（运行时需要当前用户上下文，因此用 env）
+        # 3) 搜索条件（运行时需要当前用户上下文，因此用 env）
         try:
-            scfg = env['app.search.config']._generate_from_search(model)
+            scfg = env['app.search.config']._generate_from_search(
+                model,
+                fields_get_snapshot=model_fields_snapshot,
+            )
             data["search"] = scfg.get_search_contract(filter_runtime=True, include_user_filters=True)
             versions["search"] = scfg.version
         except KeyError:
@@ -472,14 +469,13 @@ class PageAssembler:
         permissions_root = data["permissions"] if isinstance(data.get("permissions"), dict) else {}
         effective_permissions = permissions_root.get("effective") if isinstance(permissions_root.get("effective"), dict) else {}
         effective_rights = effective_permissions.get("rights") if isinstance(effective_permissions.get("rights"), dict) else {}
-        effective_rights.update(
-            {
-                "read": env[model].check_access_rights("read", raise_exception=False),
-                "write": env[model].check_access_rights("write", raise_exception=False),
-                "create": env[model].check_access_rights("create", raise_exception=False),
-                "unlink": env[model].check_access_rights("unlink", raise_exception=False),
-            }
-        )
+        runtime_rights = {
+            "read": env[model].check_access_rights("read", raise_exception=False),
+            "write": env[model].check_access_rights("write", raise_exception=False),
+            "create": env[model].check_access_rights("create", raise_exception=False),
+            "unlink": env[model].check_access_rights("unlink", raise_exception=False),
+        }
+        effective_rights.update(runtime_rights)
         effective_permissions["rights"] = effective_rights
         permissions_root["effective"] = effective_permissions
         permissions_root["record"] = {
@@ -519,7 +515,11 @@ class PageAssembler:
             versions["reports"] = 0
 
         try:
-            wcfg = su['app.workflow.config']._generate_from_workflow(model)
+            wcfg = su['app.workflow.config']._generate_from_workflow(
+                model,
+                fields_get_snapshot=model_fields_snapshot,
+                form_view_data=view_projection_sources.get('form'),
+            )
             data["workflow"] = wcfg.get_workflow_contract(filter_runtime=True)
             versions["workflow"] = wcfg.version
         except KeyError:
@@ -529,7 +529,10 @@ class PageAssembler:
             versions["workflow"] = 0
 
         try:
-            vcfg2 = su['app.validator.config']._generate_from_validators(model)
+            vcfg2 = su['app.validator.config']._generate_from_validators(
+                model,
+                fields_get_snapshot=model_fields_snapshot,
+            )
             data["validator"] = vcfg2.get_validator_contract()
             versions["validator"] = vcfg2.version
         except KeyError:
@@ -540,7 +543,7 @@ class PageAssembler:
 
         # 8) head（标题/ACL 概览/上下文）
         #    - ACL 概览继续用 check_access_rights（仅四权），与 permissions.effective.rights 一致
-        can_create = env[model].check_access_rights('create', raise_exception=False)
+        can_create = runtime_rights.get('create', False)
         data["head"] = {
             "title": self._resolve_page_title(model, action),
             "model": model,
@@ -559,10 +562,10 @@ class PageAssembler:
             "context": effective_context,
             "context_raw": action_context_raw,
             "permissions": {
-                "read": env[model].check_access_rights('read', raise_exception=False),
-                "write": env[model].check_access_rights('write', raise_exception=False),
+                "read": runtime_rights.get('read', False),
+                "write": runtime_rights.get('write', False),
                 "create": can_create,
-                "unlink": env[model].check_access_rights('unlink', raise_exception=False),
+                "unlink": runtime_rights.get('unlink', False),
             }
         }
         if requested_record_id and requested_record_id > 0:
@@ -1610,14 +1613,17 @@ class PageAssembler:
         labels = field_labels if isinstance(field_labels, dict) else {}
         label = str(labels.get(name) or (descriptor or {}).get("string") or (descriptor or {}).get("label") or name).strip()
         node = {"type": "field", "name": name}
-        field_info = {"name": name}
+        from odoo.addons.smart_core.utils.native_field_descriptor import project_native_field_descriptor
+        field_info = project_native_field_descriptor(
+            name,
+            descriptor,
+            label=label,
+            widget=str(descriptor.get("widget") or ""),
+        )
         if label:
             node["string"] = label
             node["label"] = label
             field_info["label"] = label
-        for key in ("type", "relation", "relation_field", "selection", "required", "readonly"):
-            if key in descriptor:
-                field_info[key] = descriptor[key]
         subview = self._form_policy_one2many_subview(name, descriptor, field_policy)
         if subview:
             field_info["subview"] = subview
@@ -2978,7 +2984,13 @@ class PageAssembler:
                 continue
             row["default"] = row is matched_row
 
-    def _inject_relation_entry_contract(self, data, model_name=""):
+    def _inject_relation_entry_contract(
+        self,
+        data,
+        model_name="",
+        stage_timings=None,
+        relation_cache_key="",
+    ):
         fields = data.get("fields") if isinstance(data, dict) else None
         if not isinstance(fields, dict) or not fields:
             return
@@ -2987,6 +2999,7 @@ class PageAssembler:
         record_defaults = data.get("record") if isinstance(data.get("record"), dict) else {}
         if record_defaults:
             contract_context = {**record_defaults, **contract_context}
+        started_at = time.monotonic()
         relation_models = set()
         for desc in fields.values():
             if not isinstance(desc, dict):
@@ -2997,7 +3010,17 @@ class PageAssembler:
                 relation_models.add(relation)
         if not relation_models:
             return
+        relation_models_ready_at = time.monotonic()
         relation_entry_map = self._build_relation_entry_map(relation_models)
+        relation_map_ready_at = time.monotonic()
+        relation_projection_cache = {}
+        relation_cache_key = str(relation_cache_key or "").strip()
+        if relation_cache_key:
+            for relation in relation_models:
+                shared_key = (relation_cache_key, relation, model_name)
+                cached_dialog = _RELATION_SEARCH_DIALOG_HOT_CACHE.get(shared_key)
+                if isinstance(cached_dialog, dict):
+                    relation_projection_cache[("search_dialog", relation, model_name)] = deepcopy(cached_dialog)
         for field_name, desc in fields.items():
             if not isinstance(desc, dict):
                 continue
@@ -3009,7 +3032,25 @@ class PageAssembler:
                     relation_entry_map[relation],
                     model_name=model_name,
                     contract_context=contract_context,
+                    relation_projection_cache=relation_projection_cache,
+                    relation_cache_key=relation_cache_key,
                 )
+        if relation_cache_key:
+            for relation in relation_models:
+                local_key = ("search_dialog", relation, model_name)
+                dialog = relation_projection_cache.get(local_key)
+                if not isinstance(dialog, dict):
+                    continue
+                shared_key = (relation_cache_key, relation, model_name)
+                if len(_RELATION_SEARCH_DIALOG_HOT_CACHE) >= _RELATION_SEARCH_DIALOG_HOT_CACHE_MAX:
+                    _RELATION_SEARCH_DIALOG_HOT_CACHE.pop(next(iter(_RELATION_SEARCH_DIALOG_HOT_CACHE)))
+                _RELATION_SEARCH_DIALOG_HOT_CACHE[shared_key] = deepcopy(dialog)
+        if stage_timings is not None:
+            stage_timings.update({
+                "relation_models_collect": int((relation_models_ready_at - started_at) * 1000),
+                "relation_base_map": int((relation_map_ready_at - relation_models_ready_at) * 1000),
+                "relation_field_projection": int((time.monotonic() - relation_map_ready_at) * 1000),
+            })
 
     def _extract_dictionary_type_from_domain(self, domain_raw):
         if not domain_raw:
@@ -3086,7 +3127,16 @@ class PageAssembler:
         except Exception:
             return None
 
-    def _build_relation_entry_for_field(self, field_name, descriptor, base_entry, model_name="", contract_context=None):
+    def _build_relation_entry_for_field(
+        self,
+        field_name,
+        descriptor,
+        base_entry,
+        model_name="",
+        contract_context=None,
+        relation_projection_cache=None,
+        relation_cache_key="",
+    ):
         entry = dict(base_entry or {})
         relation = str(descriptor.get("relation") or "").strip()
         can_read = bool(entry.get("can_read", True))
@@ -3207,12 +3257,42 @@ class PageAssembler:
                 relation_order = str(options_override.get("order") or "").strip()
             if isinstance(options_override.get("ui_labels"), dict):
                 ui_labels_extra.update(options_override.get("ui_labels") or {})
-        inline_create = self._build_relation_inline_create_contract(
+        projection_cache = relation_projection_cache if isinstance(relation_projection_cache, dict) else {}
+        inline_cache_key = (
+            "inline_create",
             relation,
-            can_read=can_read,
-            can_create=can_create,
-            default_vals=default_vals,
+            can_read,
+            can_create,
+            json.dumps(default_vals, sort_keys=True, separators=(",", ":"), default=str),
         )
+        inline_create = projection_cache.get(inline_cache_key)
+        shared_inline_key = ("inline_create", str(relation_cache_key or "").strip(), *inline_cache_key[1:])
+        if not isinstance(inline_create, dict) and relation_cache_key:
+            shared_inline = _RELATION_SEARCH_DIALOG_HOT_CACHE.get(shared_inline_key)
+            if isinstance(shared_inline, dict):
+                inline_create = deepcopy(shared_inline)
+        if not isinstance(inline_create, dict):
+            inline_create = self._build_relation_inline_create_contract(
+                relation,
+                can_read=can_read,
+                can_create=can_create,
+                default_vals=default_vals,
+            )
+            projection_cache[inline_cache_key] = deepcopy(inline_create)
+            if relation_cache_key:
+                if len(_RELATION_SEARCH_DIALOG_HOT_CACHE) >= _RELATION_SEARCH_DIALOG_HOT_CACHE_MAX:
+                    _RELATION_SEARCH_DIALOG_HOT_CACHE.pop(next(iter(_RELATION_SEARCH_DIALOG_HOT_CACHE)))
+                _RELATION_SEARCH_DIALOG_HOT_CACHE[shared_inline_key] = deepcopy(inline_create)
+        else:
+            inline_create = deepcopy(inline_create)
+
+        search_dialog_cache_key = ("search_dialog", relation, model_name)
+        search_dialog = projection_cache.get(search_dialog_cache_key)
+        if not isinstance(search_dialog, dict):
+            search_dialog = self._build_relation_search_dialog_contract(relation, model_name=model_name)
+            projection_cache[search_dialog_cache_key] = deepcopy(search_dialog)
+        else:
+            search_dialog = deepcopy(search_dialog)
 
         if not can_read:
             create_mode = "disabled"
@@ -3249,7 +3329,7 @@ class PageAssembler:
                 "can_create": can_create,
                 "reason_code": reason_code,
                 "inline_create": inline_create,
-                "search_dialog": self._build_relation_search_dialog_contract(relation, model_name=model_name),
+                "search_dialog": search_dialog,
                 "ui_labels": {
                     "search_more": _("搜索更多..."),
                     "quick_create": _("快速新建..."),
@@ -3518,6 +3598,76 @@ class PageAssembler:
         return entry_map
 
     # ---------------- 首屏数据 ----------------
+
+    def apply_runtime_record_overlay(
+        self,
+        data,
+        *,
+        model_name,
+        record_id,
+        render_profile="",
+    ):
+        """Apply record-bound facts to a reusable page-contract base.
+
+        The input may originate from a persisted static projection. This method
+        is therefore the only bridge allowed to add record identity, record-rule
+        rights and record-dependent action/access verdicts before terminal V2
+        projection.
+        """
+        if not isinstance(data, dict) or not model_name:
+            return data
+        try:
+            record_id = int(record_id or 0)
+        except Exception:
+            record_id = 0
+        if record_id <= 0:
+            return data
+        profile = str(render_profile or "").strip().lower()
+        if profile in {"read", "view"}:
+            profile = "readonly"
+        if profile not in {"create", "edit", "readonly"}:
+            profile = "edit"
+
+        data["record_id"] = record_id
+        data["res_id"] = record_id
+        data["render_profile"] = profile
+        head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        head = dict(head)
+        head["record_id"] = record_id
+        head["res_id"] = record_id
+        head["render_profile"] = profile
+        data["head"] = head
+
+        permissions = data.get("permissions") if isinstance(data.get("permissions"), dict) else {}
+        permissions = dict(permissions)
+        permissions["record"] = {
+            "rights": self._record_rule_rights(self.env, model_name, record_id),
+            "record_id": record_id,
+        }
+        data["permissions"] = permissions
+
+        self._inject_record_version_contract(
+            data,
+            model_name=model_name,
+            record_id=record_id,
+            render_profile=profile,
+        )
+        self._inject_form_business_actions(
+            data,
+            model_name=model_name,
+            record_id=record_id,
+            render_profile=profile,
+        )
+        self._apply_render_profile_action_visibility(
+            data,
+            render_profile=profile,
+            record_id=record_id,
+        )
+        self._sync_visible_form_required_markers(data)
+        self._apply_access_policy(data, model_name=model_name)
+        if isinstance(data.get("head"), dict) and isinstance(data.get("access_policy"), dict):
+            data["head"]["access_policy"] = dict(data.get("access_policy") or {})
+        return data
 
     def _fetch_initial_data(self, env, model, view_types, p, assembled):
         """

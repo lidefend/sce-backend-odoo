@@ -18,6 +18,12 @@ class RenderOdooConfTests(unittest.TestCase):
 
         self.assertIn("./VERSION:/opt/sce-product/VERSION:ro", compose)
 
+    def test_source_mounted_runtime_prefers_candidate_addons(self):
+        template = (ROOT / "config/odoo.conf.template").read_text(encoding="utf-8")
+        addons_line = next(line for line in template.splitlines() if line.startswith("addons_path = "))
+
+        self.assertLess(addons_line.index("/mnt/source-addons"), addons_line.index("/mnt/product-addons"))
+
     def test_dev_omits_only_unavailable_addons_roots(self):
         rendered = (
             "[options]\n"

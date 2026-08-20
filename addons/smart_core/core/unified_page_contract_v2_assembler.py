@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from copy import deepcopy
 from typing import Any
 
@@ -256,7 +257,9 @@ def assemble_unified_page_contract_v2(
     client_type: str = "web_pc",
     request_id: str = "request.upc.v2.assembler",
     trace_id: str = "",
+    stage_timings: dict[str, int] | None = None,
 ) -> dict[str, Any]:
+    started_at = time.monotonic()
     source = _dict(source_contract)
     resolved = _resolve_source_type(source, source_type)
     payload = _extract_source_payload(source, resolved)
@@ -268,9 +271,12 @@ def assemble_unified_page_contract_v2(
         contract = _assemble_ui_contract(source, client_type=client_type, request_id=request_id)
     else:
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
+    assembled_at = time.monotonic()
     _merge_action_rules_by_backend_identity(contract)
+    actions_merged_at = time.monotonic()
     _bind_native_layout_action_references(contract)
-    return seal_unified_page_contract(
+    actions_bound_at = time.monotonic()
+    sealed = seal_unified_page_contract(
         contract,
         source_payload=payload if resolved != "ui.contract" else source,
         source_type=resolved,
@@ -282,6 +288,14 @@ def assemble_unified_page_contract_v2(
         generator_version=CONTRACT_VERSION,
         source_authority=source_authority_contract(),
     )
+    if stage_timings is not None:
+        stage_timings.update({
+            "v2_source_assembly": int((assembled_at - started_at) * 1000),
+            "v2_action_merge": int((actions_merged_at - assembled_at) * 1000),
+            "v2_action_binding": int((actions_bound_at - actions_merged_at) * 1000),
+            "v2_seal": int((time.monotonic() - actions_bound_at) * 1000),
+        })
+    return sealed
 
 
 def assemble_unified_page_patch_v2(
@@ -2478,6 +2492,7 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                 "intent": intent,
                 "target": deepcopy(_dict(row.get("target"))),
                 "button": deepcopy(_dict(row.get("button"))),
+                "nativeIdentity": deepcopy(_dict(row.get("native_identity") or row.get("nativeIdentity"))),
                 "triggerType": normalize_trigger_type(row.get("trigger") or row.get("display_mode")),
                 "sourceWidgetId": source_id,
                 "targetIds": [],
@@ -2556,6 +2571,13 @@ def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]
 
 
 def _action_backend_identity(rule: dict[str, Any]) -> str:
+    native_identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
+    native_locator = _text(native_identity.get("native_locator"))
+    if native_identity.get("authoritative") is True and native_locator:
+        native_type = _text(native_identity.get("type"), "object").lower()
+        native_name = _text(native_identity.get("name"), "anonymous")
+        occurrence_index = _positive_int(native_identity.get("occurrence_index"), 1)
+        return f"native_button:{native_type}:{native_name}:{native_locator}:{occurrence_index}"
     button = _dict(rule.get("button"))
     button_type = _text(button.get("type") or button.get("buttonType"), "object").lower()
     method = _text(button.get("name") or button.get("method"))
@@ -2605,6 +2627,7 @@ def _native_layout_action_backend_identity(action: dict[str, Any]) -> str:
     action_id = _positive_int(payload.get("action_id") or action.get("action_id"), 0)
     if kind in {"open", "url"} or intent in {"open", "url"} or action_id:
         return _action_backend_identity({
+            "nativeIdentity": deepcopy(_dict(action.get("native_identity") or action.get("nativeIdentity"))),
             "target": {
                 "action_id": action_id,
                 "action_ref": payload.get("ref") or action.get("ref"),
@@ -2614,6 +2637,7 @@ def _native_layout_action_backend_identity(action: dict[str, Any]) -> str:
             },
         })
     return _action_backend_identity({
+        "nativeIdentity": deepcopy(_dict(action.get("native_identity") or action.get("nativeIdentity"))),
         "button": {
             "name": _text(action.get("name") or action.get("method_name") or payload.get("method")),
             "type": _text(action.get("button_type") or payload.get("type") or action.get("type"), "object"),
@@ -3246,6 +3270,9 @@ def _append_ui_contract_actions(
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:
+        native_identity = _dict(row.get("native_identity") or row.get("nativeIdentity"))
+        if native_identity and native_identity.get("authoritative") is False:
+            continue
         raw_key = _text(row.get("key") or row.get("name") or row.get("type") or row.get("string"), "action")
         key = _stable_id(raw_key, "action")
         policy = _dict(action_policies.get(raw_key) or action_policies.get(key))
@@ -3300,7 +3327,16 @@ def _append_ui_contract_actions(
         permission_unresolved = bool(permission_constraints) and (
             not entitlement_evaluated or not explicit_permission_verdict
         )
-        if (
+        if kind == "server" or payload.get("server_action_id"):
+            action_intent = "execute_button"
+            target = {}
+            button = {
+                "name": _text(row.get("name") or row.get("key"), key),
+                "type": "server_action",
+                "server_action_id": payload.get("server_action_id"),
+                "xml_id": payload.get("xml_id"),
+            }
+        elif (
             kind in {"open", "url"}
             or intent in {"open", "url"}
             or _positive_int(row.get("action_id"), 0)
@@ -3323,15 +3359,6 @@ def _append_ui_contract_actions(
                 "target": payload.get("target"),
             }
             button = {}
-        elif kind == "server" or payload.get("server_action_id"):
-            action_intent = "execute_button"
-            target = {}
-            button = {
-                "name": _text(row.get("name") or row.get("key"), key),
-                "type": "server_action",
-                "server_action_id": payload.get("server_action_id"),
-                "xml_id": payload.get("xml_id"),
-            }
         else:
             action_intent = _text(row.get("intent"), "execute_button")
             target = deepcopy(_dict(row.get("target")))
@@ -3407,6 +3434,7 @@ def _append_ui_contract_actions(
                     or ("product_contract" if policy.get("label") or policy.get("presentation") else ""),
                     "native_contract",
                 ),
+                "native_identity": deepcopy(native_identity),
             }
         )
     _append_actions(contract, normalized, source_widget_id=source_widget_id)
@@ -3423,6 +3451,9 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:
+        native_identity = _dict(row.get("native_identity") or row.get("nativeIdentity"))
+        if native_identity and native_identity.get("authoritative") is False:
+            continue
         raw_key = _text(row.get("key") or row.get("name") or row.get("intent"), "row_action")
         key = _stable_id(raw_key, "row_action")
         policy = _dict(action_policies.get(raw_key) or action_policies.get(key))
@@ -3470,7 +3501,15 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
         permission_unresolved = bool(permission_constraints) and (
             not entitlement_evaluated or not explicit_permission_verdict
         )
-        if (
+        if kind == "server" or payload.get("server_action_id"):
+            target = {}
+            button = {
+                "name": _text(row.get("name") or row.get("key"), key),
+                "type": "server_action",
+                "server_action_id": payload.get("server_action_id"),
+                "xml_id": payload.get("xml_id"),
+            }
+        elif (
             kind in {"open", "url"}
             or intent in {"open", "url"}
             or _positive_int(row.get("action_id"), 0)
@@ -3489,14 +3528,6 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
                 "target": payload.get("target"),
             }
             button = {}
-        elif kind == "server" or payload.get("server_action_id"):
-            target = {}
-            button = {
-                "name": _text(row.get("name") or row.get("key"), key),
-                "type": "server_action",
-                "server_action_id": payload.get("server_action_id"),
-                "xml_id": payload.get("xml_id"),
-            }
         else:
             target = deepcopy(_dict(row.get("target")))
             button = deepcopy(_dict(row.get("button")))
@@ -3550,6 +3581,7 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
             "source_channel": _text(row.get("_source_channel"), "native_row_action"),
             "presentation_authority": _text(row.get("presentation_authority"), "native_contract"),
             "presentation_priority": _positive_int(row.get("presentation_priority"), 100),
+            "native_identity": deepcopy(native_identity),
         })
     _append_actions(contract, normalized, source_widget_id="page.row")
 

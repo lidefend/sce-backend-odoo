@@ -1,7 +1,7 @@
 # ======================================================
 # ==================== Dev =============================
 # ======================================================
-.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.sync_demo local.dev.snapshot local.dev.rebuild_demo local.dev.verify_demo local.dev.health local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.logs local.clean.frontend local.clean.install local.clean.rebuild local.clean.health local.env.status verify.local.development_lifecycle.unit
+.PHONY: up down restart logs ps odoo-shell prod.restart.safe prod.restart.full deploy.prod.sim.oneclick prod.sim.fresh.replay prod.sim.data.replay prod.sim.business.usable.init prod.sim.replay.then.usable.init prod.sim.replay.then.project frontend.dev frontend.stop frontend.restart frontend.logs acceptance.runtime.preflight acceptance.runtime.infrastructure.restore frontend.acceptance.up frontend.acceptance.down frontend.acceptance.health backend.acceptance.up backend.acceptance.down backend.acceptance.health frontend.collection.acceptance.up frontend.collection.acceptance.down backend.collection.acceptance.up backend.collection.acceptance.down verify.dev.acceptance.release release.dev.acceptance.publish release.daily_dev.acceptance.publish release.daily_product_navigation.snapshot local.dev.demo_credentials.prepare local.dev.ready local.dev.up local.dev.down local.dev.restart local.dev.logs local.dev.ps local.dev.test local.dev.upgrade local.dev.sync_demo local.dev.snapshot local.dev.rebuild_demo local.dev.verify_demo local.dev.health local.sample.require_env local.sample.ready local.sample.prepare local.sample.up local.sample.down local.sample.logs local.sample.snapshot local.sample.restore local.sample.discard local.sample.health local.clean.require_env local.clean.prepare local.clean.up local.clean.down local.clean.restart local.clean.logs local.clean.frontend local.clean.install local.clean.rebuild local.clean.health local.env.status verify.local.development_lifecycle.unit
 up: check-compose-project check-compose-env
 	@$(RUN_ENV) bash scripts/dev/up.sh
 down: check-compose-project check-compose-env
@@ -142,6 +142,9 @@ local.clean.up: guard.prod.forbid local.clean.prepare
 local.clean.down: guard.prod.forbid local.clean.require_env
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" down
 
+local.clean.restart: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
+
 local.clean.logs: guard.prod.forbid local.clean.require_env
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/local_environment_doctor.sh clean
@@ -155,6 +158,20 @@ local.clean.install: guard.prod.forbid local.clean.up
 	  MODULE="$(LOCAL_CLEAN_MODULES)" WITHOUT_DEMO=--without-demo=all mod.install
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory local.clean.frontend
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
+
+.PHONY: local.clean.upgrade
+local.clean.upgrade: guard.prod.forbid local.clean.up
+	@test -n "$(strip $(MODULE))" || { echo "MODULE is required for local.clean.upgrade" >&2; exit 2; }
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
+	  CODEX_MODE=fast CODEX_NEED_UPGRADE=1 MODULE="$(MODULE)" mod.upgrade
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
+
+.PHONY: local.clean.contract_projection_cache.probe
+local.clean.contract_projection_cache.probe: guard.prod.forbid local.clean.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" \
+	  python3 scripts/verify/contract_projection_cache_runtime_probe.py \
+	  --phase "$${CACHE_PROBE_PHASE:-initial}" \
+	  --output "$${CACHE_PROBE_OUTPUT:-artifacts/backend/contract_projection_cache_runtime_probe.json}"
 
 local.clean.rebuild: export LOCAL_CLEAN_PREPARE_FOR_REBUILD=1
 local.clean.rebuild: guard.prod.forbid local.clean.prepare

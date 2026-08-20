@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import ast
+import time
 from copy import deepcopy
 from typing import Any, Dict, Optional
 from lxml import etree
@@ -27,9 +28,20 @@ from ..core.unified_page_contract_v2_modifier_dependencies import (
     hydrate_final_modifier_dependencies,
 )
 from ..core.scene_provider import load_scenes_from_db_or_fallback
+from ..core.ui_base_contract_asset_repository import (
+    get_runtime_source_asset,
+    upsert_runtime_source_asset,
+)
 from ..core.request_params import parse_positive_int
 from ..utils.contract_governance import apply_contract_governance, resolve_contract_mode, resolve_contract_surface
 from ..utils.extension_hooks import call_extension_hook_first
+from ..utils.load_contract_response_cache import (
+    CONTRACT_PROJECTION_HOT_CACHE,
+    build_projection_cache_key,
+    build_projection_source_token,
+    projection_base_params,
+    projection_role_code,
+)
 from . import ui_contract_v2_adapters as _adapters
 from . import ui_contract_v2_authority as _authority
 from .ui_contract_v2_constants import (
@@ -377,6 +389,8 @@ class UiContractV2Handler(BaseIntentHandler):
         return [*preferred, *[name for name in columns if name not in preferred]]
 
     def handle(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
+        started_at = time.monotonic()
+        assembler_stages: dict[str, int] = {}
         params = self._params(payload)
         client_type = resolve_client_type(self._headers(), params)
         delivery_profile = resolve_delivery_profile(client_type, params)
@@ -406,22 +420,143 @@ class UiContractV2Handler(BaseIntentHandler):
         scene_binding_error = self._validate_scene_action_binding(params)
         if scene_binding_error is not None:
             return scene_binding_error
-        source_result = UiContractHandler(
-            projection_env,
-            su_env=projection_su_env,
-            request=self.request,
-            context=ctx or self.context,
-            payload=ui_params,
-        ).handle(ui_params, ctx)
-        source_envelope = self._envelope(source_result)
-        if not source_envelope.get("ok", True):
-            return source_result
+        cache_model = str(params.get("model") or ui_params.get("model") or "").strip()
+        action_id, _action_error = parse_positive_int(
+            params.get("action_id") or params.get("actionId") or ui_params.get("action_id"),
+            allow_empty=True,
+        )
+        menu_id, _menu_error = parse_positive_int(
+            params.get("menu_id") or params.get("menuId") or ui_params.get("menu_id"),
+            allow_empty=True,
+        )
+        if not cache_model and action_id:
+            action_record = self.env["ir.actions.act_window"].sudo().browse(action_id)
+            if action_record.exists():
+                cache_model = str(action_record.res_model or "").strip()
+        base_params = projection_base_params(params)
+        base_ui_params = projection_base_params(ui_params)
+        cache_key = ""
+        source_token = ""
+        cached_source = None
+        projection_cache_status = "bypass"
+        projection_cache_reason = "dynamic_request"
+        projection_cache_persisted = False
+        if cache_model and base_params is not None and base_ui_params is not None:
+            projection_cache_status = "miss"
+            projection_cache_reason = "asset_not_found"
+            cache_key = build_projection_cache_key(
+                self.env,
+                namespace="ui.contract.v2.source",
+                params=base_params,
+                model_name=cache_model,
+                view_types=base_params.get("view_type") or base_params.get("viewType") or "form",
+                context=dict(self.env.context or {}),
+            )
+            source_token = build_projection_source_token(
+                self.env,
+                model_name=cache_model,
+                menu_id=menu_id,
+                action_id=action_id,
+            )
+            if cache_key and source_token:
+                cached_source = CONTRACT_PROJECTION_HOT_CACHE.get(cache_key, source_token)
+                if cached_source is not None:
+                    projection_cache_status = "hot"
+                    projection_cache_reason = "hot_cache_hit"
+                if cached_source is None:
+                    cached_source = get_runtime_source_asset(
+                        self.env,
+                        cache_key=f"ui.contract.v2:{cache_key}",
+                        source_token=source_token,
+                        role_code=projection_role_code(self.env),
+                        company_id=self.env.company.id,
+                    ) or None
+                    if cached_source is not None:
+                        projection_cache_status = "persisted"
+                        projection_cache_reason = "runtime_source_asset_hit"
+                        CONTRACT_PROJECTION_HOT_CACHE.put(cache_key, source_token, cached_source)
+            else:
+                projection_cache_status = "bypass"
+                projection_cache_reason = (
+                    "cache_identity_unavailable" if not cache_key else "source_token_unavailable"
+                )
+        cache_lookup_ready_at = time.monotonic()
+        if cached_source is not None:
+            ui_data = deepcopy(cached_source.get("ui_data") or {})
+            ui_meta = deepcopy(cached_source.get("ui_meta") or {})
+            ui_meta.pop("trace_id", None)
+            ui_meta.pop("request_id", None)
+        else:
+            source_result = UiContractHandler(
+                projection_env,
+                su_env=projection_su_env,
+                request=self.request,
+                context=ctx or self.context,
+                payload=base_ui_params or ui_params,
+            ).handle(base_ui_params or ui_params, ctx)
+            source_envelope = self._envelope(source_result)
+            if not source_envelope.get("ok", True):
+                return source_result
 
-        ui_data = source_envelope.get("data") or {}
-        ui_meta = source_envelope.get("meta") or {}
-        ui_data, ui_meta = self._resolve_entry_contract(ui_data, ui_meta, ui_params, ctx)
+            ui_data = source_envelope.get("data") or {}
+            ui_meta = source_envelope.get("meta") or {}
+            ui_data, ui_meta = self._resolve_entry_contract(
+                ui_data,
+                ui_meta,
+                base_ui_params or ui_params,
+                ctx,
+            )
+            if cache_key and source_token:
+                cached_payload = {
+                    "ui_data": deepcopy(ui_data),
+                    "ui_meta": {
+                        key: deepcopy(value)
+                        for key, value in ui_meta.items()
+                        if key not in {"trace_id", "request_id"}
+                    },
+                }
+                CONTRACT_PROJECTION_HOT_CACHE.put(cache_key, source_token, cached_payload)
+                persisted_asset = upsert_runtime_source_asset(
+                    self.env,
+                    cache_key=f"ui.contract.v2:{cache_key}",
+                    source_token=source_token,
+                    payload=cached_payload,
+                    role_code=projection_role_code(self.env),
+                    company_id=self.env.company.id,
+                    source_ref=f"ui.contract.v2:{cache_model}",
+                )
+                projection_cache_persisted = bool(persisted_asset)
+                if not projection_cache_persisted:
+                    projection_cache_reason = "runtime_source_asset_write_failed"
+        source_ready_at = time.monotonic()
         model = params.get("model") or ui_data.get("model") or ui_meta.get("model") or ""
         view_type = params.get("view_type") or params.get("viewType") or ui_data.get("view_type") or ui_meta.get("view_type") or "form"
+        runtime_record_id, _record_id_error = parse_positive_int(
+            params.get("record_id")
+            or params.get("recordId")
+            or ui_params.get("record_id")
+            or ui_params.get("recordId"),
+            allow_empty=True,
+        )
+        if runtime_record_id:
+            try:
+                from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
+
+                PageAssembler(self.env, self.su_env).apply_runtime_record_overlay(
+                    ui_data,
+                    model_name=str(model or "").strip(),
+                    record_id=runtime_record_id,
+                    render_profile=(
+                        params.get("render_profile")
+                        or params.get("renderProfile")
+                        or ui_params.get("render_profile")
+                        or ui_params.get("renderProfile")
+                    ),
+                )
+            except Exception:
+                _logger.warning("ui.contract.v2 record overlay failed", exc_info=True)
+                return self._err(500, "record-bound contract overlay failed")
+        record_overlay_ready_at = time.monotonic()
         trace_id = _authority.resolve_trace_id(self.context, ui_meta)
         request_id = (
             params.get("request_id")
@@ -429,6 +564,68 @@ class UiContractV2Handler(BaseIntentHandler):
             or trace_id
             or f"ui.contract.v2.{model or 'unknown'}.{view_type or 'form'}"
         )
+
+        assembled_cached = (
+            cached_source.get("_assembled_v2")
+            if not runtime_record_id and isinstance(cached_source, dict)
+            else None
+        )
+        if (
+            isinstance(assembled_cached, dict)
+            and assembled_cached.get("client_type") == client_type
+            and assembled_cached.get("delivery_profile") == delivery_profile
+            and assembled_cached.get("limit_params") == limit_params
+            and isinstance(assembled_cached.get("contract"), dict)
+            and isinstance(assembled_cached.get("source_contract"), dict)
+        ):
+            projection_cache_status = "hot"
+            projection_cache_reason = "assembled_v2_hot_cache_hit"
+            source_contract = deepcopy(assembled_cached["source_contract"])
+            contract_v2 = deepcopy(assembled_cached["contract"])
+            contract_v2 = _authority.seal_runtime_contract(
+                self,
+                contract_v2,
+                source_contract,
+                "ui.contract",
+                str(request_id),
+                trace_id,
+                client_type,
+            )
+            return IntentExecutionResult(
+                ok=True,
+                data=contract_v2,
+                meta={
+                    "intent": self.INTENT_TYPE,
+                    "version": self.VERSION,
+                    "contract_version": CONTRACT_VERSION,
+                    "client_type": client_type,
+                    "delivery_profile": delivery_profile,
+                    "source_type": "ui.contract",
+                    "source_intent": ui_meta.get("intent") or "ui.contract",
+                    "source_kind": self.SOURCE_KIND,
+                    "source_authorities": list(self.SOURCE_AUTHORITIES),
+                    "source_authority": self.source_authority_contract(),
+                    "projection_cache": {
+                        "status": projection_cache_status,
+                        "reason": projection_cache_reason,
+                        "contract_kind": "runtime_source",
+                        "record_overlay": False,
+                        "identity_ready": bool(cache_key),
+                        "source_token_ready": bool(source_token),
+                        "identity_ref": cache_key[:12] if cache_key else "",
+                        "source_ref": source_token[:12] if source_token else "",
+                        "asset_write_succeeded": projection_cache_persisted,
+                        "stages_ms": {
+                            "authority_and_cache_lookup": int((cache_lookup_ready_at - started_at) * 1000),
+                            "source_projection": int((source_ready_at - cache_lookup_ready_at) * 1000),
+                            "record_overlay": int((record_overlay_ready_at - source_ready_at) * 1000),
+                            "v2_projection_and_seal": int((time.monotonic() - record_overlay_ready_at) * 1000),
+                            **assembler_stages,
+                        },
+                    },
+                    "elapsed_ms": int((time.monotonic() - started_at) * 1000),
+                },
+            )
 
         source_contract = dict(ui_data) if isinstance(ui_data, dict) else {}
         nested_ui_contract = source_contract.pop("ui_contract", {})
@@ -467,6 +664,7 @@ class UiContractV2Handler(BaseIntentHandler):
             "record": source_record,
             "source_meta": ui_meta,
         })
+        route_source_ready_at = time.monotonic()
         try:
             from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
 
@@ -476,11 +674,13 @@ class UiContractV2Handler(BaseIntentHandler):
             )
         except Exception:
             _logger.debug("ui.contract.v2 route collection presentation refresh skipped", exc_info=True)
+        collection_presentation_at = time.monotonic()
         self._inject_action_window_contract(
             source_contract,
             params=params,
             ui_params=ui_params,
         )
+        action_window_at = time.monotonic()
         self._inject_current_form_settings_action(
             source_contract,
             params=params,
@@ -488,23 +688,33 @@ class UiContractV2Handler(BaseIntentHandler):
             model=str(model or "").strip(),
             view_type=str(view_type or "").strip().lower(),
         )
+        form_settings_action_at = time.monotonic()
         self._inject_record_business_category_context(
             source_contract,
             model=str(model or "").strip(),
             record_id=params.get("record_id") or params.get("recordId") or ui_params.get("record_id") or ui_params.get("recordId"),
         )
+        business_category_context_at = time.monotonic()
         self._inject_business_category_form_policy(
             source_contract,
             params=params,
             ui_params=ui_params,
             model=str(model or "").strip(),
             view_type=str(view_type or "").strip().lower(),
+            stage_timings=assembler_stages,
+            relation_cache_key=(
+                f"{cache_key}:{source_token}"
+                if cache_key and source_token
+                else ""
+            ),
         )
+        business_category_policy_at = time.monotonic()
         self._inject_business_operation_contract(
             source_contract,
             model=str(model or "").strip(),
             view_type=str(view_type or "").strip().lower(),
         )
+        business_operation_at = time.monotonic()
         self._inject_standard_submit_header_button(
             source_contract,
             model=str(model or "").strip(),
@@ -512,15 +722,18 @@ class UiContractV2Handler(BaseIntentHandler):
             render_profile=str(params.get("render_profile") or params.get("renderProfile") or params.get("profile") or "").strip().lower(),
             record_id=params.get("record_id") or params.get("recordId"),
         )
+        submit_header_button_at = time.monotonic()
         self._inject_collaboration_contract(
             source_contract,
             model=str(model or "").strip(),
             view_type=str(view_type or "").strip().lower(),
         )
+        collaboration_contract_at = time.monotonic()
         self._inject_native_group_layout_columns(
             source_contract,
             view_type=str(view_type or "").strip().lower(),
         )
+        native_group_layout_at = time.monotonic()
         hydrated_record = self._hydrate_record_snapshot(
             model=str(model or "").strip(),
             record_id=params.get("record_id") or params.get("recordId") or ui_params.get("record_id") or ui_params.get("recordId"),
@@ -528,6 +741,7 @@ class UiContractV2Handler(BaseIntentHandler):
             current_record=source_record,
             view_type=str(view_type or "").strip().lower(),
         )
+        record_snapshot_hydrated_at = time.monotonic()
         if hydrated_record:
             source_contract["record"] = hydrated_record
         hook_payload = call_extension_hook_first(
@@ -550,24 +764,30 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if isinstance(hook_payload, dict):
             source_contract = dict(hook_payload)
+        projected_contract_hook_at = time.monotonic()
         source_contract = self._apply_extension_projected_contract_normalizers(
             source_contract,
             view_type=str(view_type or "").strip().lower(),
             client_type=client_type,
             delivery_profile=delivery_profile,
         )
+        projected_contract_normalizers_at = time.monotonic()
         self._project_action_group_entitlements(source_contract)
+        action_entitlements_at = time.monotonic()
         contract_v2 = assemble_unified_page_contract_v2(
             source_contract,
             source_type="ui.contract",
             client_type=client_type,
             request_id=str(request_id),
             trace_id=trace_id,
+            stage_timings=assembler_stages,
         )
+        post_assembler_at = time.monotonic()
         self._apply_field_policies_to_v2_status(contract_v2, source_contract)
         self._ensure_native_layout_widget_status_visible(contract_v2)
         self._apply_legacy_visible_list_layout(contract_v2, source_contract)
         self._project_v2_source_policies(contract_v2, source_contract)
+        policies_projected_at = time.monotonic()
         contract_v2 = self._apply_extension_unified_page_contract_normalizers(
             contract_v2,
             source_contract=source_contract,
@@ -575,8 +795,10 @@ class UiContractV2Handler(BaseIntentHandler):
             client_type=client_type,
             delivery_profile=delivery_profile,
         )
+        extensions_normalized_at = time.monotonic()
         self._apply_business_config_form_groups_to_v2(contract_v2, source_contract=source_contract)
         self._enforce_business_list_config_projection(contract_v2, source_contract)
+        business_config_projected_at = time.monotonic()
         hook_payload = call_extension_hook_first(
             self.env,
             "smart_core_finalize_unified_page_contract_v2",
@@ -597,7 +819,9 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if isinstance(hook_payload, dict):
             contract_v2 = dict(hook_payload)
+        finalize_hook_at = time.monotonic()
         contract_v2 = project_runtime_business_actions(contract_v2)
+        runtime_actions_projected_at = time.monotonic()
         hydrate_final_modifier_dependencies(
             self.env,
             contract_v2,
@@ -606,17 +830,67 @@ class UiContractV2Handler(BaseIntentHandler):
             view_type=str(view_type or "").strip().lower(),
             logger=_logger,
         )
+        modifier_dependencies_at = time.monotonic()
         hydrate_final_layout_modifier_status(contract_v2)
         hydrate_final_action_modifier_status(contract_v2)
+        modifier_status_at = time.monotonic()
         contract_v2 = trim_unified_page_contract_v2(
             contract_v2,
             client_type=client_type,
             delivery_profile=delivery_profile,
             **limit_params,
         )
+        contract_trimmed_at = time.monotonic()
+        if not runtime_record_id and cache_key and source_token:
+            CONTRACT_PROJECTION_HOT_CACHE.put(
+                cache_key,
+                source_token,
+                {
+                    "ui_data": deepcopy(ui_data),
+                    "ui_meta": {
+                        key: deepcopy(value)
+                        for key, value in ui_meta.items()
+                        if key not in {"trace_id", "request_id"}
+                    },
+                    "_assembled_v2": {
+                        "client_type": client_type,
+                        "delivery_profile": delivery_profile,
+                        "limit_params": deepcopy(limit_params),
+                        "contract": deepcopy(contract_v2),
+                        "source_contract": deepcopy(source_contract),
+                    },
+                },
+            )
+        assembled_cache_stored_at = time.monotonic()
         contract_v2 = _authority.seal_runtime_contract(
             self, contract_v2, source_contract, "ui.contract", str(request_id), trace_id, client_type
         )
+        runtime_sealed_at = time.monotonic()
+        assembler_stages.update({
+            "route_collection_presentation": int((collection_presentation_at - route_source_ready_at) * 1000),
+            "route_action_window": int((action_window_at - collection_presentation_at) * 1000),
+            "route_form_settings_action": int((form_settings_action_at - action_window_at) * 1000),
+            "route_business_category_context": int((business_category_context_at - form_settings_action_at) * 1000),
+            "route_business_category_policy": int((business_category_policy_at - business_category_context_at) * 1000),
+            "route_business_operation": int((business_operation_at - business_category_policy_at) * 1000),
+            "route_submit_header_button": int((submit_header_button_at - business_operation_at) * 1000),
+            "route_collaboration_contract": int((collaboration_contract_at - submit_header_button_at) * 1000),
+            "route_native_group_layout": int((native_group_layout_at - collaboration_contract_at) * 1000),
+            "route_record_snapshot": int((record_snapshot_hydrated_at - native_group_layout_at) * 1000),
+            "route_projected_contract_hook": int((projected_contract_hook_at - record_snapshot_hydrated_at) * 1000),
+            "route_projected_normalizers": int((projected_contract_normalizers_at - projected_contract_hook_at) * 1000),
+            "route_action_entitlements": int((action_entitlements_at - projected_contract_normalizers_at) * 1000),
+            "post_field_source_policies": int((policies_projected_at - post_assembler_at) * 1000),
+            "post_extension_normalizers": int((extensions_normalized_at - policies_projected_at) * 1000),
+            "post_business_config": int((business_config_projected_at - extensions_normalized_at) * 1000),
+            "post_finalize_hook": int((finalize_hook_at - business_config_projected_at) * 1000),
+            "post_runtime_actions": int((runtime_actions_projected_at - finalize_hook_at) * 1000),
+            "post_modifier_dependencies": int((modifier_dependencies_at - runtime_actions_projected_at) * 1000),
+            "post_modifier_status": int((modifier_status_at - modifier_dependencies_at) * 1000),
+            "post_trim": int((contract_trimmed_at - modifier_status_at) * 1000),
+            "post_cache_store": int((assembled_cache_stored_at - contract_trimmed_at) * 1000),
+            "post_runtime_seal": int((runtime_sealed_at - assembled_cache_stored_at) * 1000),
+        })
 
         return IntentExecutionResult(
             ok=True,
@@ -632,6 +906,25 @@ class UiContractV2Handler(BaseIntentHandler):
                 "source_kind": self.SOURCE_KIND,
                 "source_authorities": list(self.SOURCE_AUTHORITIES),
                 "source_authority": self.source_authority_contract(),
+                "projection_cache": {
+                    "status": projection_cache_status,
+                    "reason": projection_cache_reason,
+                    "contract_kind": "runtime_source",
+                    "record_overlay": bool(runtime_record_id),
+                    "identity_ready": bool(cache_key),
+                    "source_token_ready": bool(source_token),
+                    "identity_ref": cache_key[:12] if cache_key else "",
+                    "source_ref": source_token[:12] if source_token else "",
+                    "asset_write_succeeded": projection_cache_persisted,
+                    "stages_ms": {
+                        "authority_and_cache_lookup": int((cache_lookup_ready_at - started_at) * 1000),
+                        "source_projection": int((source_ready_at - cache_lookup_ready_at) * 1000),
+                        "record_overlay": int((record_overlay_ready_at - source_ready_at) * 1000),
+                        "v2_projection_and_seal": int((time.monotonic() - record_overlay_ready_at) * 1000),
+                        **assembler_stages,
+                    },
+                },
+                "elapsed_ms": int((time.monotonic() - started_at) * 1000),
             },
         )
 
@@ -949,9 +1242,12 @@ class UiContractV2Handler(BaseIntentHandler):
         ui_params: dict[str, Any],
         model: str,
         view_type: str,
+        stage_timings: dict[str, int] | None = None,
+        relation_cache_key: str = "",
     ) -> None:
         if view_type != "form" or not model:
             return
+        started_at = time.monotonic()
         try:
             from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
 
@@ -1038,14 +1334,28 @@ class UiContractV2Handler(BaseIntentHandler):
             if normalized_render_profile not in {"create", "edit", "readonly"}:
                 normalized_render_profile = "edit"
             source_contract["render_profile"] = normalized_render_profile
+            context_ready_at = time.monotonic()
             assembler = PageAssembler(self.env, self.su_env)
             assembler._inject_business_category_form_policy(
                 source_contract,
                 model_name=model,
                 render_profile=normalized_render_profile,
             )
-            assembler._inject_relation_entry_contract(source_contract, model)
+            policy_injected_at = time.monotonic()
+            assembler._inject_relation_entry_contract(
+                source_contract,
+                model,
+                stage_timings=stage_timings,
+                relation_cache_key=relation_cache_key,
+            )
+            relation_contract_at = time.monotonic()
             if not source_contract.get("business_form_policy"):
+                if stage_timings is not None:
+                    stage_timings.update({
+                        "category_context_merge": int((context_ready_at - started_at) * 1000),
+                        "category_policy_inject": int((policy_injected_at - context_ready_at) * 1000),
+                        "category_relation_contract": int((relation_contract_at - policy_injected_at) * 1000),
+                    })
                 return
             business_policy_groups = deepcopy(
                 source_contract.get("field_groups")
@@ -1077,6 +1387,7 @@ class UiContractV2Handler(BaseIntentHandler):
                     head = dict(head)
                     head["context"] = dict(merged_context)
                     source_contract["head"] = head
+            governed_at = time.monotonic()
             if business_policy_fields:
                 business_policy = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
                 field_aliases = self._form_field_aliases(model, source_contract)
@@ -1108,9 +1419,24 @@ class UiContractV2Handler(BaseIntentHandler):
                     business_policy_groups = normalized_groups
                 source_contract["field_groups"] = business_policy_groups
                 self._ensure_business_policy_layout_fields_visible(source_contract, business_policy_groups)
+            aliases_projected_at = time.monotonic()
             self._inject_relation_entry_policies(source_contract, model=model)
+            relation_policies_at = time.monotonic()
             self._inject_business_category_form_structure(source_contract, model=model)
+            form_structure_at = time.monotonic()
             self._sync_contract_original_contract_relation_to_v2_nodes(source_contract)
+            nodes_synced_at = time.monotonic()
+            if stage_timings is not None:
+                stage_timings.update({
+                    "category_context_merge": int((context_ready_at - started_at) * 1000),
+                    "category_policy_inject": int((policy_injected_at - context_ready_at) * 1000),
+                    "category_relation_contract": int((relation_contract_at - policy_injected_at) * 1000),
+                    "category_contract_governance": int((governed_at - relation_contract_at) * 1000),
+                    "category_alias_projection": int((aliases_projected_at - governed_at) * 1000),
+                    "category_relation_policies": int((relation_policies_at - aliases_projected_at) * 1000),
+                    "category_form_structure": int((form_structure_at - relation_policies_at) * 1000),
+                    "category_node_sync": int((nodes_synced_at - form_structure_at) * 1000),
+                })
         except Exception:
             _logger.debug("ui.contract.v2 business category form policy injection skipped", exc_info=True)
 

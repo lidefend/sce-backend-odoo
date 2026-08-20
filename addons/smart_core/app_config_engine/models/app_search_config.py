@@ -50,7 +50,7 @@ class AppSearchConfig(models.Model):
     # ======================= 生成（聚合） =======================
 
     @api.model
-    def _generate_from_search(self, model_name):
+    def _generate_from_search(self, model_name, fields_get_snapshot=None):
         """
         生成/更新 “搜索契约”：
         1) 解析 search 视图：filters（含 domain/context/groups）、默认 group_by
@@ -71,10 +71,15 @@ class AppSearchConfig(models.Model):
             saved_filters = self._collect_ir_filters(model_name)
 
             # 3) group_by 候选（基于字段元数据）
-            groupby_candidates = self._infer_groupby_candidates(model_name, prefer=view_groupbys)
+            groupby_candidates = self._infer_groupby_candidates(
+                model_name,
+                prefer=view_groupbys,
+                fields_get_snapshot=fields_get_snapshot,
+            )
             custom_search = self._build_custom_search_contract(
                 model_name,
                 prefer_groupbys=view_groupbys,
+                fields_get_snapshot=fields_get_snapshot,
             )
 
             # 4) 统一结构
@@ -395,7 +400,7 @@ class AppSearchConfig(models.Model):
 
     # ======================= group_by 候选推断 =======================
 
-    def _infer_groupby_candidates(self, model_name, prefer=None):
+    def _infer_groupby_candidates(self, model_name, prefer=None, fields_get_snapshot=None):
         """
         基于 fields_get 推断可 group_by 字段：
         - 优先：search 内显式提供的 group_by（prefer）
@@ -404,8 +409,7 @@ class AppSearchConfig(models.Model):
         返回：[{field,label,type,default}]
         """
         prefer = prefer or []
-        Model = self.env[model_name].sudo()
-        fget = Model.fields_get()
+        fget = fields_get_snapshot if isinstance(fields_get_snapshot, dict) else self.env[model_name].sudo().fields_get()
         candidates = []
 
         def add_field(fname, default=False, label=None, key=None, context_raw=None, source=None, sequence=None):
@@ -472,9 +476,12 @@ class AppSearchConfig(models.Model):
 
     # ======================= 工具 =======================
 
-    def _build_custom_search_contract(self, model_name, prefer_groupbys=None):
-        Model = self.env[model_name].sudo()
-        fields_meta = Model.fields_get()
+    def _build_custom_search_contract(self, model_name, prefer_groupbys=None, fields_get_snapshot=None):
+        fields_meta = (
+            fields_get_snapshot
+            if isinstance(fields_get_snapshot, dict)
+            else self.env[model_name].sudo().fields_get()
+        )
         filter_fields = []
         group_fields = []
         seen_filter = set()

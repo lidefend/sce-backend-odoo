@@ -218,13 +218,13 @@ class AppPermissionConfig(models.Model):
             _apply_acl_for('__all__')
 
         # 命中的组（支持 xmlid 和 id 形式）
-        all_groups = self.env['res.groups'].sudo().search([])
         xmlid_to_id = {}
         try:
-            if hasattr(all_groups, 'get_external_id'):
-                mapping = all_groups.get_external_id() or {}
+            user_group_records = self.env['res.groups'].sudo().browse(list(user_groups))
+            if hasattr(user_group_records, 'get_external_id'):
+                mapping = user_group_records.get_external_id() or {}
             else:
-                mapping = all_groups.get_xml_id() or {}
+                mapping = user_group_records.get_xml_id() or {}
             if isinstance(mapping, dict):
                 for gid, xid in mapping.items():
                     if xid:
