@@ -4,9 +4,9 @@
     "candidate_fingerprint": {
       "algorithm": "codex_complete_worktree_fingerprint/v1",
       "baseline_sha": "35f31407ab34ffff1d43de264e51de5f858a2596",
-      "digest": "e9b7e371e514721b0dba6724c7bb323108e87433b851e38bff054fa981fcf963",
-      "git_head": "e2490009ff90ecbfdf7a35a8d2ae5325fac4603c",
-      "scope_manifest_sha256": "95604a2277b6715ab5889afd9398fe629e21deb238230a6632b67ccf3f198e82"
+      "digest": "b79d4b0f921e11feb306b6365c5b77b5d35a46fb83d044e92c4f02af42426a51",
+      "git_head": "06890362a1c639a4ab83c4f83b87a41d8a59c927",
+      "scope_manifest_sha256": "c12c4b68dc2dbcabd8b1e81bab9c56a343a848542c61a68502696193da9c030d"
     },
     "company": "base.main_company",
     "compose_project": "sc-local-clean",
@@ -232460,7 +232460,7 @@
       "visible_menu_path": "智慧施工管理平台 / 产品配置 / 字段管理"
     }
   ],
-  "manifest_sha256": "4a40adfbda5aff47fb725fa42989a1f9e147e75c56d50c4e84182c9174d72417",
+  "manifest_sha256": "4cc859dfb48dee4be9deac9a2715f9883d8bfe2e61391bd09d9c9713afa82844",
   "schema": "product_view_structure_contract/v1",
   "summary": {
     "error_count": 0,
