@@ -49,3 +49,12 @@
 - Scope: contract definition only; no runtime, database, Make, or global gate mutation.
 - Result: capability atom schema, terminal-state rules, reason-code registry,
   and bilingual contract semantics frozen for the Q1 collector.
+
+## Q1-2 governed structure collector
+
+- Start commit: `72c37653`.
+- Scope: complete worktree fingerprint, read-only native structure exporter,
+  fail-closed integrity guard, and targeted unit tests.
+- Validation: `python3 -m unittest scripts.verify.test_product_view_structure_contract`.
+- Result: `14` non-zero tests passed; no database, Make, baseline, or global
+  preflight mutation was performed.
