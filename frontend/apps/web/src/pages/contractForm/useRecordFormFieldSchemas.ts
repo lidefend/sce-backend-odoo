@@ -12,7 +12,7 @@ import { evaluateFieldPolicy } from '../../app/contractPolicies';
 import { collectUnifiedPageContractV2FieldContainerStatus } from '../../app/contracts/unifiedPageContractV2';
 import {
   applyReadonlyFieldValues, buildLegacyLayoutNodes, buildNativeFieldSchemas, nativeFieldPresentation,
-  isStaticTruthyModifier,
+  resolveNativeOccurrenceBehavior, resolveNativeRelationActiveActions,
   nativeNodeFieldDescriptor as nativeNodeFieldDescriptorFromNode, nativeNodeWidget, nativeNodeWidgetSemantics,
   type NativeLayoutLikeNode,
 } from './nativeLayoutUtils';
@@ -36,25 +36,26 @@ export function useRecordFormFieldSchemas(context: {
   relationUiLabel:(descriptor:FieldDescriptor|undefined,key:string,fallback?:string)=>string;
   inputFieldValue:(name:string)=>string; many2oneValue:(name:string)=>string;
   toDateInputValue:(value:unknown)=>string; toDatetimeInputValue:(value:unknown)=>string;
+  evaluateNativeModifierValue:(value:unknown)=>boolean;
 }) {
   const nativeNodeFieldDescriptor=(node:NativeFormLayoutNode,fallback?:FieldDescriptor)=>nativeNodeFieldDescriptorFromNode(node as NativeLayoutLikeNode,fallback,context.contractFieldLabel);
   const nativeLayoutNodeToFieldNode=(node:NativeFormLayoutNode,index:number):LayoutNode|null=>{
     const name=String(node?.name||'').trim(); if(!name||!context.isNativeFieldVisible(name,node))return null;
     const descriptor=nativeNodeFieldDescriptor(node,context.contract.value?.fields?.[name]); if(!descriptor)return null;
     const source=node as Record<string,unknown>; const state=context.runtimeState(name);
-    // Dynamic modifiers arrive as formal AST objects and must be evaluated by
-    // runtimeState. Treating the object itself as truthy makes every conditional
-    // readonly/required expression permanent.
-    const nativeReadonly=isStaticTruthyModifier(source.readonly);
-    const nativeRequired=isStaticTruthyModifier(source.required);
+    const nativeBehavior=resolveNativeOccurrenceBehavior(source,context.evaluateNativeModifierValue);
+    const nativeRelationActiveActions=resolveNativeRelationActiveActions(source,context.evaluateNativeModifierValue);
+    const occurrenceDescriptor={...descriptor,native_relation_active_actions:nativeRelationActiveActions} as FieldDescriptor;
     const resolved=evaluateFieldPolicy(context.contract.value,name,{required:Boolean(descriptor.required),readonly:Boolean(descriptor.readonly)},context.evaluatePolicyContext.value);
     const presentation=nativeFieldPresentation({node:source,descriptor,resolveFieldLabel:context.contractFieldLabel,
       editable:context.isContractFieldOrderEditable.value,effectiveFieldSize:context.effectiveFieldSize});
     context.rememberFormConfigFieldLabel(name,presentation.label);
-    return {key:`native_field_${name}_${index}`,kind:'field',name,label:presentation.label,
-      readonly:Boolean(nativeReadonly||resolved.readonly||state.readonly||(context.recordId.value?!context.rights.value.write:!context.rights.value.create)),
-      required:Boolean(nativeRequired||resolved.required||state.required||descriptor.required),widget:nativeNodeWidget(source),
-      widgetSemantics:nativeNodeWidgetSemantics(source),spanClass:presentation.spanClass,descriptor};
+    const nativeLocator=String(source.native_locator||'').trim(); const occurrenceIndex=Number(source.occurrence_index||0);
+    const occurrenceKey=nativeLocator||`${name}[${occurrenceIndex>0?occurrenceIndex:index+1}]`;
+    return {key:`native_field:${occurrenceKey}`,kind:'field',name,label:presentation.label,
+      readonly:Boolean(nativeBehavior.readonly||resolved.readonly||state.readonly||(context.recordId.value?!context.rights.value.write:!context.rights.value.create)),
+      required:Boolean(nativeBehavior.required||resolved.required||state.required||descriptor.required),widget:nativeNodeWidget(source),
+      widgetSemantics:nativeNodeWidgetSemantics(source),spanClass:presentation.spanClass,descriptor:occurrenceDescriptor};
   };
   const v2FieldValue=(name:string)=>{const key=String(name||'').trim();if(!key||!context.v2ContractStore.value?.widgetsByFieldCode.has(key))return{found:false,value:undefined};
     const source=resolveContractV2ValueSource(context.v2ContractStore.value).values;if(!Object.prototype.hasOwnProperty.call(source,key))return{found:false,value:undefined};return{found:true,value:source[key]};};
@@ -91,12 +92,17 @@ export function useRecordFormFieldSchemas(context: {
     resolveHelpText:(field)=>String((field.descriptor as Record<string,unknown>|undefined)?.help||'').trim(),
     resolveErrorText:(field)=>context.validationErrors.value.find(message=>String(message||'').includes(String(field.label||'').trim()))||'',
     resolveSelectionOptions:mapDescriptorSelectionOptions,resolveRelationOptions:(name)=>mapRelationOptions(context.relationOptionsForField(name)),
-    resolveRelationCreateMode:(_name,descriptor)=>context.relationCreateMode(descriptor),
-    resolveRelationInlineCreate:(_name,descriptor)=>context.relationInlineCreate(descriptor),resolveRelationTextValue:context.relationKeyword,
+    resolveRelationCreateMode:(_name,descriptor)=>((descriptor as Record<string,unknown>|undefined)?.native_relation_active_actions as Record<string,unknown>|undefined)?.create===false?'none':context.relationCreateMode(descriptor),
+    resolveRelationInlineCreate:(_name,descriptor)=>{
+      const configured=context.relationInlineCreate(descriptor);
+      return ((descriptor as Record<string,unknown>|undefined)?.native_relation_active_actions as Record<string,unknown>|undefined)?.create===false
+        ? {...configured,enabled:false,createOnNoMatch:false}
+        : configured;
+    },resolveRelationTextValue:context.relationKeyword,
     resolveCanOpenRelationRecord:context.canOpenRelationRecordForm,
     resolveRelationRecordOpenLabel:(_name,descriptor)=>context.relationUiLabel(descriptor,'open_existing','维护当前项'),
     resolveRelationSearchLabel:(_name,descriptor)=>context.relationUiLabel(descriptor,'search_more'),
-    resolveRelationCreateLabel:(_name,descriptor)=>{const mode=context.relationCreateMode(descriptor);return mode==='page'?context.relationUiLabel(descriptor,'create_and_edit'):mode==='quick'?context.relationUiLabel(descriptor,'quick_create'):'';},
+    resolveRelationCreateLabel:(_name,descriptor)=>{const mode=((descriptor as Record<string,unknown>|undefined)?.native_relation_active_actions as Record<string,unknown>|undefined)?.create===false?'none':context.relationCreateMode(descriptor);return mode==='page'?context.relationUiLabel(descriptor,'create_and_edit'):mode==='quick'?context.relationUiLabel(descriptor,'quick_create'):'';},
     resolveRelationInlineCreateLabel:(_name,descriptor,keyword)=>{const template=context.relationUiLabel(descriptor,'inline_create');const label=String(keyword||'').trim();return template.includes('%s')?template.replace('%s',label):template||label;},
     many2oneCreateToken:'__create__',many2oneSearchToken:'__search_more__',many2oneOpenToken:'__open_record__',
   });

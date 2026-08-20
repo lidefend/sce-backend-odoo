@@ -265,6 +265,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     relationOptionsForField, relationCreateMode, relationInlineCreate, relationKeyword,
     canOpenRelationRecordForm, relationUiLabel, inputFieldValue, many2oneValue,
     toDateInputValue, toDatetimeInputValue,
+    evaluateNativeModifierValue,
   });
 
   function collectSceneValidationPrecheckErrors(fieldLabels: Record<string, string>): string[] {

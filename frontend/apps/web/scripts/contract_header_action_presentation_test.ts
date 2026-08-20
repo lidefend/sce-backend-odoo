@@ -7,7 +7,12 @@ import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from '.
 import { presentContractHeaderActions } from '../src/pages/contractForm/headerActionPresentation';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
 import { useFormActionRuntime } from '../src/pages/contractForm/useFormActionRuntime';
-import { evaluateNativeModifierValue, resolveNativeModifierFieldValue } from '../src/pages/contractForm/nativeLayoutUtils';
+import {
+  evaluateNativeModifierValue,
+  resolveNativeModifierFieldValue,
+  resolveNativeOccurrenceBehavior,
+  resolveNativeRelationActiveActions,
+} from '../src/pages/contractForm/nativeLayoutUtils';
 
 const action = (overrides: Record<string, unknown>) => ({
   key: 'action',
@@ -38,6 +43,55 @@ assert.equal(evaluateNativeModifierValue(
   activeRelationVisibility,
   (field) => resolveNativeModifierFieldValue({ ...modifierFormData, has_active_relation: false }, modifierMainData, field),
 ), true, 'hydrated formData remains authoritative when it contains the dependency');
+
+const evaluateDraftModifier = (value: unknown) => evaluateNativeModifierValue(
+  value,
+  (field) => resolveNativeModifierFieldValue({ state: 'draft' }, {}, field),
+);
+assert.deepEqual(resolveNativeOccurrenceBehavior({
+  type: 'field', name: 'amount', modifiers: {
+    invisible: false,
+    readonly: { kind: 'field_compare', field: 'state', operator: '=', value: 'draft' },
+    required: true,
+  },
+}, evaluateDraftModifier), {
+  invisible: false,
+  readonly: true,
+  required: true,
+}, 'first same-name occurrence evaluates its own dynamic behavior');
+assert.deepEqual(resolveNativeOccurrenceBehavior({
+  type: 'field', name: 'amount', modifiers: {
+    invisible: { kind: 'field_compare', field: 'state', operator: '=', value: 'done' },
+    readonly: false,
+    required: false,
+  },
+}, evaluateDraftModifier), {
+  invisible: false,
+  readonly: false,
+  required: false,
+}, 'second same-name occurrence remains independent from the first occurrence');
+assert.equal(resolveNativeOccurrenceBehavior({
+  type: 'field', name: 'amount', modifiers: {
+    invisible: { kind: 'field_compare', field: 'state', operator: '=', value: 'done' },
+  },
+}, (value) => evaluateNativeModifierValue(value, (field) => field === 'state' ? 'done' : undefined)).invisible, true,
+'the occurrence responds to record context changes');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'partner_id',
+  relation_active_actions: { create: false, write: true },
+}, evaluateDraftModifier), {
+  create: false,
+  write: true,
+}, 'many2one relation actions remain separate from field readonly behavior');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'reference',
+  attributes: { can_create: '0' },
+}, evaluateDraftModifier), {
+  create: null,
+  write: null,
+}, 'raw unsupported attributes never become relation action verdicts');
 
 const rule = (key: string, sourceWidgetId: string, targetScope: string, overrides: Record<string, unknown> = {}) => ({
   actionKey: key,

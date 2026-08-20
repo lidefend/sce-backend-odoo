@@ -125,6 +125,43 @@ export function extractKanbanFieldsFromContract(contract: unknown): string[] {
   return [];
 }
 
+export function extractNativeColumnOccurrenceSchema(contract: unknown): Dict[] {
+  const typed = (contract || {}) as Dict;
+  const payload = (typed.data && typeof typed.data === 'object' ? typed.data : typed) as Dict;
+  const views = (payload.views || {}) as Dict;
+  const tree = (views.tree || views.list || {}) as Dict;
+  const occurrences = tree.column_occurrences;
+  if (!Array.isArray(occurrences)) return [];
+
+  return occurrences
+    .filter((row): row is Dict => Boolean(row && typeof row === 'object' && !Array.isArray(row)))
+    .map((occurrence) => {
+      const attributes = (
+        occurrence.attributes
+        && typeof occurrence.attributes === 'object'
+        && !Array.isArray(occurrence.attributes)
+      ) ? occurrence.attributes as Dict : {};
+      const modifiers = (
+        occurrence.modifiers
+        && typeof occurrence.modifiers === 'object'
+        && !Array.isArray(occurrence.modifiers)
+      ) ? occurrence.modifiers as Dict : {};
+      const label = String(attributes.string || '').trim();
+      return {
+        ...attributes,
+        ...occurrence,
+        type: occurrence.field_type || attributes.type,
+        widget: occurrence.widget || attributes.widget,
+        ...(label ? { label, string: label } : {}),
+        readonly: modifiers.readonly ?? attributes.readonly,
+        required: modifiers.required ?? attributes.required,
+        invisible: modifiers.invisible ?? attributes.invisible,
+        column_invisible: modifiers.column_invisible ?? attributes.column_invisible,
+      };
+    })
+    .filter((column) => String(column.name || '').trim());
+}
+
 export function extractAdvancedViewFieldsFromContract(contract: unknown, mode: string): string[] {
   const typed = (contract || {}) as Dict;
   const directViews = typed.views as Dict | undefined;
@@ -209,8 +246,10 @@ export function extractListFieldSemanticsFromContract(contract: unknown): Dict[]
   const views = (typed.views || {}) as Dict;
   const tree = (views.tree || views.list || {}) as Dict;
   const schemas: Dict[] = [];
+  const occurrenceSchema = extractNativeColumnOccurrenceSchema(typed);
   const legacySchema = tree.columns_schema || tree.columnsSchema;
-  if (Array.isArray(legacySchema)) schemas.push(...legacySchema as Dict[]);
+  if (occurrenceSchema.length) schemas.push(...occurrenceSchema);
+  else if (Array.isArray(legacySchema)) schemas.push(...legacySchema as Dict[]);
 
   collectUnifiedPageContractV2FieldWidgets(typed).forEach((widget) => {
     const config = (widget.componentConfig || {}) as Dict;
@@ -334,6 +373,8 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         ...(widget.componentConfig || {}),
       }));
     }
+    const occurrenceSchema = extractNativeColumnOccurrenceSchema(typed);
+    if (occurrenceSchema.length) return occurrenceSchema;
     const directViews = typed.views as Dict | undefined;
     const treeBlock = directViews ? (directViews.tree || directViews.list || {}) as Dict : {};
     const schema = treeBlock.columnsSchema || treeBlock.columns_schema;
@@ -347,19 +388,38 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
     const hidden = new Set(Array.isArray(profile?.hidden_columns) ? profile?.hidden_columns || [] : []);
     const v2FieldStatus = collectUnifiedPageContractV2FieldStatus(contract);
     const schemaRows = extractColumnSchemaFromContract(contract);
-    const schemaByName = schemaRows.reduce<Record<string, Dict>>((acc, row) => {
-      const name = String(row.name || '').trim();
-      if (name && !acc[name]) acc[name] = row;
-      return acc;
-    }, {});
-    const baseColumns = preferred.length ? preferred : extractColumnsFromContract(contract, []);
+    const occurrenceSchema = extractNativeColumnOccurrenceSchema(contract);
+    const columnRows: Array<{ key: string; name: string; schema: Dict }> = [];
+    if (occurrenceSchema.length) {
+      const seenNames = new Set<string>();
+      occurrenceSchema.forEach((schema) => {
+        const name = String(schema.name || '').trim();
+        if (!name) return;
+        const locator = String(schema.native_locator || '').trim();
+        const occurrenceIndex = Number(schema.occurrence_index || 1);
+        const key = seenNames.has(name)
+          ? `${name}@@${locator || `occurrence[${occurrenceIndex}]`}`
+          : name;
+        seenNames.add(name);
+        columnRows.push({ key, name, schema });
+      });
+    } else {
+      const schemaByName = schemaRows.reduce<Record<string, Dict>>((acc, row) => {
+        const name = String(row.name || '').trim();
+        if (name && !acc[name]) acc[name] = row;
+        return acc;
+      }, {});
+      const baseColumns = preferred.length ? preferred : extractColumnsFromContract(contract, []);
+      uniqueFields([...baseColumns, ...Array.from(hidden)]).forEach((name) => {
+        columnRows.push({ key: name, name, schema: schemaByName[name] || {} });
+      });
+    }
     const labels = {
       ...contractColumnLabels.value,
       ...((profile?.column_labels || {}) as Record<string, string>),
     };
-    return uniqueFields([...baseColumns, ...Array.from(hidden)])
-      .map((name) => {
-        const schema = schemaByName[name] || {};
+    return columnRows
+      .map(({ key, name, schema }) => {
         const field = fieldsMap[name] || {};
         const status = v2FieldStatus[name];
         const optional = String(schema.optional || '').trim();
@@ -373,10 +433,10 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         const aggregate = String(schema.aggregate || (schema.sum ? 'sum' : '')).trim();
         const rawSelection = Array.isArray(schema.selection) ? schema.selection : field.selection;
         return {
-          name,
+          name: key,
           label: String(labels[name] || schema.label || schema.string || field.string || name).trim() || name,
           optional,
-          defaultVisible: !hidden.has(name) && optional !== 'hide' && !invisible,
+          defaultVisible: !hidden.has(key) && !hidden.has(name) && optional !== 'hide' && !invisible,
           sortable: sortableRaw === false ? false : undefined,
           type: type || undefined,
           widget: widget || undefined,

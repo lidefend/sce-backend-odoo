@@ -820,7 +820,7 @@ export function isNativeFieldVisible(input: NativeFieldVisibilityInput) {
 
 export function isNativeLayoutNodeVisible(input: NativeLayoutNodeVisibilityInput) {
   const nodeRaw = input.node;
-  if (input.evaluateModifier(nativeModifierValue(nodeRaw, 'invisible'))) return false;
+  if (resolveNativeOccurrenceBehavior(nodeRaw, input.evaluateModifier).invisible) return false;
   const node = nodeRaw as Record<string, unknown>;
   const nodeType = String(node.type || '').trim().toLowerCase();
   if (node.visible === false && !(input.editable && nodeType === 'group')) return false;
@@ -1008,6 +1008,43 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   if (kind === 'field_truthy') return Boolean(resolveFieldValue(field));
   if (kind === 'field_compare') return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), row.value);
   return false;
+}
+
+export type NativeOccurrenceBehavior = {
+  invisible: boolean;
+  readonly: boolean;
+  required: boolean;
+};
+
+export function resolveNativeOccurrenceBehavior(
+  node: NativeLayoutLikeNode,
+  evaluateModifier: (value: unknown) => boolean,
+): NativeOccurrenceBehavior {
+  return {
+    invisible: evaluateModifier(nativeModifierValue(node, 'invisible')),
+    readonly: evaluateModifier(nativeModifierValue(node, 'readonly')),
+    required: evaluateModifier(nativeModifierValue(node, 'required')),
+  };
+}
+
+export type NativeRelationActiveActions = {
+  create: boolean | null;
+  write: boolean | null;
+};
+
+export function resolveNativeRelationActiveActions(
+  node: NativeLayoutLikeNode,
+  evaluateAction: (value: unknown) => boolean,
+): NativeRelationActiveActions {
+  const actions = node.relation_active_actions
+    && typeof node.relation_active_actions === 'object'
+    && !Array.isArray(node.relation_active_actions)
+    ? node.relation_active_actions as Record<string, unknown>
+    : {};
+  const verdict = (key: string): boolean | null => Object.prototype.hasOwnProperty.call(actions, key)
+    ? evaluateAction(actions[key])
+    : null;
+  return { create: verdict('create'), write: verdict('write') };
 }
 
 export function resolveNativeModifierFieldValue(

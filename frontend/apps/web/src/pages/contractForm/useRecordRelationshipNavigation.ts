@@ -92,13 +92,26 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     return Number.isFinite(id) && id > 0 ? Math.trunc(id) : 0;
   }
 
+  function nativeRelationWriteAllowed(descriptor?: FieldDescriptor) {
+    const nativeActions = (descriptor as Record<string, unknown> | undefined)?.native_relation_active_actions;
+    if (!nativeActions || typeof nativeActions !== 'object' || Array.isArray(nativeActions)) return true;
+    return (nativeActions as Record<string, unknown>).write !== false;
+  }
+
   function canOpenRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
     const relation = relationModel(fieldName);
     const entry = relationEntry(descriptor);
-    return Boolean(relation && currentRelationRecordId(fieldName) > 0 && entry?.canRead !== false && entry?.canOpen !== false);
+    return Boolean(
+      nativeRelationWriteAllowed(descriptor)
+      && relation
+      && currentRelationRecordId(fieldName) > 0
+      && entry?.canRead !== false
+      && entry?.canOpen !== false,
+    );
   }
 
   async function openRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
+    if (!nativeRelationWriteAllowed(descriptor)) return;
     const relation = relationModel(fieldName);
     const recordId = currentRelationRecordId(fieldName);
     const entry = relationEntry(descriptor);

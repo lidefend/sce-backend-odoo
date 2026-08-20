@@ -147,7 +147,11 @@ def main() -> int:
         "resolveUnifiedPageContractV2",
         "v2?.pageInfo?.model",
     ))
-    require_tokens(errors, contract_form_source, "web v2 form structure store selector", (
+    form_structure_consumer_source = "\n".join((
+        contract_form_source,
+        read("pages/contractForm/useContractV2ShadowDiagnostics.ts"),
+    ))
+    require_tokens(errors, form_structure_consumer_source, "web v2 form structure store selector", (
         "resolveContractV2FormStructureContract",
         "v2ShadowFormStructureContract",
         "v2ShadowFormStructureSlotCount",

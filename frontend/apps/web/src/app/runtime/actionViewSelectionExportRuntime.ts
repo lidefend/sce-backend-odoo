@@ -1,6 +1,14 @@
 import { exportActionViewRecords } from './actionViewDataRuntime';
 
-type ColumnOption = { name: string; defaultVisible?: boolean };
+type ColumnOption = {
+  name: string;
+  label?: string;
+  defaultVisible?: boolean;
+  valueField?: string;
+  exportField?: string;
+};
+
+type ExportField = { field: string; label: string };
 
 export function resolveSelectionActions(
   actions: string[],
@@ -22,13 +30,25 @@ export function resolveSelectionActions(
     }));
 }
 
-function visibleExportFields(columns: string[], options: ColumnOption[], visibility: Record<string, boolean>): string[] {
+function visibleExportFields(
+  columns: string[],
+  options: ColumnOption[],
+  visibility: Record<string, boolean>,
+  labels: Record<string, string>,
+): ExportField[] {
   const optionByName = new Map(options.map((option) => [option.name, option]));
-  return columns.filter((field, index, rows) => {
-    if (!field || field === 'id' || rows.indexOf(field) !== index) return false;
-    if (typeof visibility[field] === 'boolean') return visibility[field];
-    return optionByName.get(field)?.defaultVisible !== false;
-  });
+  const seenFields = new Set<string>();
+  return columns.reduce<ExportField[]>((rows, key) => {
+    const option = optionByName.get(key);
+    const field = String(option?.exportField || option?.valueField || key).trim();
+    const visible = typeof visibility[key] === 'boolean'
+      ? visibility[key]
+      : option?.defaultVisible !== false;
+    if (!visible || !field || field === 'id' || field.includes('@@') || seenFields.has(field)) return rows;
+    seenFields.add(field);
+    rows.push({ field, label: String(option?.label || labels[key] || labels[field] || field).trim() || field });
+    return rows;
+  }, []);
 }
 
 function downloadBase64(filename: string, mimeType: string, contentB64: string): void {
@@ -57,12 +77,18 @@ export async function executeActionViewSelectionExport(options: {
 }): Promise<void> {
   options.setBusy(true);
   try {
-    const fields = visibleExportFields(options.columns, options.columnOptions, options.visibility);
+    const exportFields = visibleExportFields(
+      options.columns,
+      options.columnOptions,
+      options.visibility,
+      options.columnLabels,
+    );
+    const fields = exportFields.map((item) => item.field);
     const result = await exportActionViewRecords({
       model: options.model,
       ids: options.ids,
       fields,
-      columnLabels: Object.fromEntries(fields.map((field) => [field, options.columnLabels[field] || field])),
+      columnLabels: Object.fromEntries(exportFields.map((item) => [item.field, item.label])),
       context: options.context,
     });
     downloadBase64(result.file_name, result.mime_type, result.content_b64);

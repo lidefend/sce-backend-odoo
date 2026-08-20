@@ -182,8 +182,11 @@ export function buildContractFormActions(params: {
       continue;
     }
     const rowLabel = normalizeActionLabel(row.label);
-    const keyBase = String(row.key || row.name || rowLabel || '').trim();
-    const key = dedup.has(keyBase) && rowLabel ? `${keyBase}:${rowLabel}` : keyBase;
+    const backendIdentity = String(row.backendIdentity || row.backend_identity || '').trim();
+    const rowActionKey = String(row.key || row.name || rowLabel || '').trim();
+    if (backendIdentity && dedup.has(backendIdentity)) continue;
+    const keyBase = backendIdentity || rowActionKey;
+    const key = !backendIdentity && dedup.has(keyBase) && rowLabel ? `${keyBase}:${rowLabel}` : keyBase;
     if (!key || dedup.has(key)) continue;
     dedup.add(key);
     const payload = parseMaybeJsonRecord(row.payload);
@@ -192,7 +195,7 @@ export function buildContractFormActions(params: {
     const effectiveKind = protocol?.mutation ? 'mutation' : normalizeActionKind(row.kind);
     const level = String(row.level || 'body').trim().toLowerCase();
     const actionId = toPositiveInt(payload.action_id) ?? toPositiveInt(payload.ref) ?? toPositiveInt(row.actionId) ?? toPositiveInt(row.action_id);
-    const methodName = detectObjectMethodFromActionKey(key, String(payload.method || row.method || '').trim());
+    const methodName = detectObjectMethodFromActionKey(rowActionKey || key, String(payload.method || row.method || '').trim());
     if (row.workflow_contract_action !== true && methodName && workflowMethods.has(methodName)) continue;
     if (params.isTierValidationActionHidden(methodName)) continue;
     const selectionRaw = String(row.selection || 'none').trim().toLowerCase();
@@ -217,7 +220,7 @@ export function buildContractFormActions(params: {
     const enabled = authorizationAllowed && !requiresSavedRecord;
     out.push({
       key,
-      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
+      backendIdentity: backendIdentity || undefined,
       label: normalizeActionLabel(row.label, key),
       kind: effectiveKind,
       level,
