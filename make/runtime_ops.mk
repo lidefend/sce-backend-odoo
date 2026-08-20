@@ -1765,6 +1765,36 @@ acceptance.frontend.core_record_form.journeys: guard.prod.forbid
 	export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh core-record-form-journeys
 
+.PHONY: acceptance.frontend.activity_surface.browser verify.frontend.activity_surface.browser.internal
+acceptance.frontend.activity_surface.browser: guard.prod.forbid
+	@set -e; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh activity-surface-browser
+
+verify.frontend.activity_surface.browser.internal: guard.prod.forbid check-compose-project check-compose-env
+	@set -e; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory contract.view_structure.fingerprint; \
+	CANDIDATE_FINGERPRINT="$$(python3 -c 'import json; print(json.load(open("artifacts/contract/product_view_candidate_fingerprint.json"))["digest"])')"; \
+	CANDIDATE_GIT_HEAD="$$(python3 -c 'import json; print(json.load(open("artifacts/contract/product_view_candidate_fingerprint.json"))["git_head"])')"; \
+	CANDIDATE_SCOPE_MANIFEST="$$(python3 -c 'import json; print(json.load(open("artifacts/contract/product_view_candidate_fingerprint.json"))["scope_manifest_sha256"])')"; \
+	CANDIDATE_PATH_COUNT="$$(python3 -c 'import json; print(len(json.load(open("artifacts/contract/product_view_candidate_fingerprint.json"))["entries"]))')"; \
+	export CANDIDATE_FINGERPRINT CANDIDATE_GIT_HEAD CANDIDATE_SCOPE_MANIFEST CANDIDATE_PATH_COUNT; \
+	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
+	$(MAKE) --no-print-directory backend.acceptance.up; \
+	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_activity_surface_runtime_ids.py 2>&1 )" || { printf '%s\n' "$$target_output"; exit 1; }; \
+	target_line="$$(printf '%s\n' "$$target_output" | sed -n 's/^FRONTEND_ACTIVITY_SURFACE_TARGET_JSON=//p' | tail -n 1)"; test -n "$$target_line" || { printf '%s\n' "$$target_output"; exit 2; }; \
+	TARGET_ACTION_ID="$$(printf '%s' "$$target_line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["action_id"])')"; \
+	TARGET_MENU_ID="$$(printf '%s' "$$target_line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["menu_id"])')"; export TARGET_ACTION_ID TARGET_MENU_ID; \
+	TARGET_RECORD_ID="$$(printf '%s' "$$target_line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["record_id"])')"; \
+	TARGET_COMPANY_ID="$$(printf '%s' "$$target_line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["company_id"])')"; export TARGET_RECORD_ID TARGET_COMPANY_ID; \
+	DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" python3 scripts/verify/frontend_acceptance_login_probe.py; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
+	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} E2E_LOGIN=fixture_role_activity_accounting E2E_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" TARGET_ACTION_ID="$$TARGET_ACTION_ID" TARGET_MENU_ID="$$TARGET_MENU_ID" TARGET_RECORD_ID="$$TARGET_RECORD_ID" TARGET_COMPANY_ID="$$TARGET_COMPANY_ID" CANDIDATE_FINGERPRINT="$$CANDIDATE_FINGERPRINT" CANDIDATE_GIT_HEAD="$$CANDIDATE_GIT_HEAD" CANDIDATE_SCOPE_MANIFEST="$$CANDIDATE_SCOPE_MANIFEST" CANDIDATE_PATH_COUNT="$$CANDIDATE_PATH_COUNT" RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" REQUIRE_ACTIVITY_SURFACE=1 ARTIFACT_DIR=artifacts/frontend-activity-surface $(MAKE) --no-print-directory verify.frontend.all_list_visual.audit
+
 frontend.acceptance.release.build:
 	@VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance scripts/dev/pnpm_exec.sh -C frontend/apps/web exec vite build --outDir dist-release
 

@@ -121,6 +121,7 @@ verify.frontend.all_list_visual.audit: guard.prod.forbid
 	@E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" \
 		DB_NAME="$(DB_NAME)" \
 		FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081}" \
+		REQUIRE_ACTIVITY_SURFACE="$${REQUIRE_ACTIVITY_SURFACE:-0}" \
 		CONCURRENCY="$${CONCURRENCY:-1}" \
 		ARTIFACT_DIR="$${ARTIFACT_DIR:-/tmp/frontend-all-list-visual-audit}" \
 		node scripts/verify/frontend_all_list_visual_audit.mjs

@@ -375,6 +375,12 @@ case "$command" in
     source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
     frontend_acceptance_make "FE_PRO_03_JOURNEY=${FE_PRO_03_JOURNEY:-ALL}" verify.frontend.core_record_form.journeys
     ;;
+  activity-surface-browser)
+    preflight
+    # shellcheck source=../common/frontend_acceptance_make_identity.sh
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make verify.frontend.activity_surface.browser.internal
+    ;;
   release-preflight)
     preflight
     if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
