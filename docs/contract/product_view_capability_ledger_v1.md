@@ -43,3 +43,11 @@
 验收要求原生能力出现数等于 `ready + fallback + unsupported`，`silent_loss_count` 等于零，每个非就绪原子都有注册原因和可执行退出条件，并且全部证据绑定同一冻结候选指纹。
 
 原因码权威文件为 `contracts/product/native-view-capability-reason-codes-v1.yaml`，taxonomy 为 `contracts/product/native-view-capability-taxonomy-v1.yaml`，结构约束为 `contracts/schemas/product-view-capability-ledger-v1.yaml` 和 `contracts/schemas/native-view-capability-reason-codes-v1.yaml`。Schema 只能表达局部约束；跨文件引用、唯一性、守恒、原因码阶段匹配和哈希复算必须由 fail-closed 守卫执行。
+
+## 6. 分类与关联规则
+
+Git commit identity 使用 40 位 `git_oid`，内容与清单使用 64 位 SHA256，两者不得混用。每个 resolved node 及其每个受治理属性都是 native candidate；必须由机器 taxonomy 唯一分类或命中明确 exclusion。守恒关系为 `native_candidate_count = classified_atom_count + excluded_native_count + unclassified_native_count + ambiguous_native_count`，其中 unclassified、ambiguous 和 silent loss 必须为零。
+
+当前结构基线只能证明 resolved view，不能证明具体节点来自哪个继承 contributor。无法证明时 `origin_status=unproven`、`origin_view_ref` 为空，并使用最早损失阶段的原因；禁止伪填 root view。原因优先级固定为 `native -> normalized -> semantic -> frontend -> interaction`。
+
+正式 carrier 必须在同一候选和 `sc_clean` 运行中按 `contract_ref/menu/action/model/view_type/view_ref/resolved_arch_sha256` 全等生成。旧 semantic 样本和 `model + view_type` 相似项不能作为产品证据。Evidence selector 只允许 `json-pointer:/...` 或 `symbol:...`，路径必须位于受控根、文件哈希和候选指纹相同且 selector 可解析。

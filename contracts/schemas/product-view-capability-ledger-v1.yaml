@@ -15,6 +15,7 @@ properties:
   manifest_sha256: {$ref: '#/$defs/sha256'}
 $defs:
   sha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+  git_oid: {type: string, pattern: '^[0-9a-f]{40}$'}
   text: {type: string, minLength: 1}
   candidate_fingerprint:
     type: object
@@ -22,14 +23,14 @@ $defs:
     required: [algorithm, git_head, baseline_sha, scope_manifest_sha256, digest]
     properties:
       algorithm: {const: codex_complete_worktree_fingerprint/v1}
-      git_head: {$ref: '#/$defs/sha256'}
-      baseline_sha: {$ref: '#/$defs/sha256'}
+      git_head: {$ref: '#/$defs/git_oid'}
+      baseline_sha: {$ref: '#/$defs/git_oid'}
       scope_manifest_sha256: {$ref: '#/$defs/sha256'}
       digest: {$ref: '#/$defs/sha256'}
   authority:
     type: object
     additionalProperties: false
-    required: [branch, candidate_fingerprint, database_policy_path, database_policy_sha256, formal_menu_policy_path, formal_menu_policy_sha256, reason_registry_path, reason_registry_sha256, view_structure_baseline_path, view_structure_baseline_sha256, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, exporter_version]
+    required: [branch, candidate_fingerprint, database_policy_path, database_policy_sha256, formal_menu_policy_path, formal_menu_policy_sha256, reason_registry_path, reason_registry_sha256, taxonomy_path, taxonomy_sha256, frontend_map_path, frontend_map_sha256, view_structure_baseline_path, view_structure_baseline_sha256, carrier_evidence_path, carrier_evidence_sha256, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, exporter_version]
     properties:
       branch: {$ref: '#/$defs/text'}
       candidate_fingerprint: {$ref: '#/$defs/candidate_fingerprint'}
@@ -39,8 +40,14 @@ $defs:
       formal_menu_policy_sha256: {$ref: '#/$defs/sha256'}
       reason_registry_path: {const: contracts/product/native-view-capability-reason-codes-v1.yaml}
       reason_registry_sha256: {$ref: '#/$defs/sha256'}
+      taxonomy_path: {const: contracts/product/native-view-capability-taxonomy-v1.yaml}
+      taxonomy_sha256: {$ref: '#/$defs/sha256'}
+      frontend_map_path: {const: contracts/product/native-view-frontend-capability-map-v1.yaml}
+      frontend_map_sha256: {$ref: '#/$defs/sha256'}
       view_structure_baseline_path: {const: contracts/generated/product_view_structure_contract.json}
       view_structure_baseline_sha256: {$ref: '#/$defs/sha256'}
+      carrier_evidence_path: {const: contracts/generated/product_view_contract_carriers.json}
+      carrier_evidence_sha256: {$ref: '#/$defs/sha256'}
       runtime_profile: {const: local.clean}
       compose_project: {const: sc-local-clean}
       database: {const: sc_clean}
@@ -70,11 +77,16 @@ $defs:
   summary:
     type: object
     additionalProperties: false
-    required: [formal_menu_count, model_count, resolved_surface_count, capability_atom_count, ready_count, fallback_count, unsupported_count, silent_loss_count, view_type_counts]
+    required: [formal_menu_count, model_count, resolved_surface_count, native_candidate_count, classified_atom_count, excluded_native_count, unclassified_native_count, ambiguous_native_count, capability_atom_count, ready_count, fallback_count, unsupported_count, silent_loss_count, view_type_counts]
     properties:
       formal_menu_count: {type: integer, minimum: 1}
       model_count: {type: integer, minimum: 1}
       resolved_surface_count: {type: integer, minimum: 1}
+      native_candidate_count: {type: integer, minimum: 1}
+      classified_atom_count: {type: integer, minimum: 1}
+      excluded_native_count: {type: integer, minimum: 0}
+      unclassified_native_count: {const: 0}
+      ambiguous_native_count: {const: 0}
       capability_atom_count: {type: integer, minimum: 1}
       ready_count: {type: integer, minimum: 0}
       fallback_count: {type: integer, minimum: 0}
@@ -189,10 +201,12 @@ $defs:
   native_stage:
     type: object
     additionalProperties: false
-    required: [occurrence_index, origin_view_ref, locator, canonical_value, value_hash]
+    required: [occurrence_index, resolved_view_ref, origin_view_ref, origin_status, locator, canonical_value, value_hash]
     properties:
       occurrence_index: {type: integer, minimum: 1}
-      origin_view_ref: {$ref: '#/$defs/text'}
+      resolved_view_ref: {$ref: '#/$defs/text'}
+      origin_view_ref: {type: string}
+      origin_status: {enum: [proven, unproven, synthetic_default]}
       locator: {$ref: '#/$defs/text'}
       canonical_value: {}
       value_hash: {$ref: '#/$defs/sha256'}
@@ -250,4 +264,4 @@ $defs:
       sha256: {$ref: '#/$defs/sha256'}
       candidate_fingerprint: {$ref: '#/$defs/sha256'}
       stage: {enum: [native, normalized, semantic, frontend, interaction]}
-      selector: {$ref: '#/$defs/text'}
+      selector: {type: string, pattern: '^(json-pointer:/|symbol:).+'}

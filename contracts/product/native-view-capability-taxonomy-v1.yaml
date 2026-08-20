@@ -1,26 +1,72 @@
 schema: native_view_capability_taxonomy/v1
+authority: p4_evidence_classification_only
 unknown_atom_policy: fail_closed
-canonical_view_types: [form, tree, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]
-excluded_native_syntax: [xml_comment, indentation_whitespace, namespace_declaration]
-families:
-  structure: [view_root, header, sheet, group, notebook, page, container, separator, label, chatter, templates, subview]
-  field: [occurrence, label, widget, options, domain, context, placeholder, help, nolabel, colspan, selection, relation_subview]
-  modifier: [readonly, required, invisible, column_invisible, groups, states, decoration]
-  action: [button, type, identity, placement, selection, context, domain, groups, states, confirm, icon, priority, badge]
-  form: [create, edit, delete, duplicate, statusbar, statusbar_visible, button_box, ribbon]
-  tree: [column_order, default_order, editable, create, delete, limit, optional, aggregate, row_action, row_decoration]
-  search: [search_field, operator, filter_domain, filter, domain, context, group_by, search_panel, search_panel_field, separator]
-  kanban: [template, field, default_group_by, quick_create, quick_action, decoration, progressbar, drag_capability]
-  pivot: [measure, dimension, axis, interval, aggregate]
-  graph: [type, measure, dimension, interval, aggregate, format]
-  calendar: [date_start, date_stop, color, scale, popup, quick_add, field]
-  gantt: [date_start, date_stop, progress, resource, dependency, scale, decoration, consolidate, field]
-  activity: [activity_type, deadline, assignee, field, template]
-  template: [qweb_template, qweb_field, qweb_action, qweb_expression]
-  pipeline: [resolved_view, source_graph, primary_parse, fallback_parse, semantic_projection, unclassified_native_atom]
+ambiguous_atom_policy: fail_closed
+canonical_view_types: [form, tree, search, kanban, pivot, graph, activity]
+input_aliases:
+  view_type: {list: tree}
+excluded_native_syntax:
+  - {kind: xml_comment, reason: non_behavioral_serialization}
+  - {kind: indentation_whitespace, reason: non_behavioral_serialization}
+  - {kind: namespace_declaration, reason: non_behavioral_serialization}
+tag_sets:
+  root: [form, tree, search, kanban, pivot, graph, activity]
+  form_container: [header, sheet, group, notebook, page, separator, label, chatter, footer, control, create, setting, widget]
+  template: [templates, t, div, span, h1, i, strong, bold, em, br, img, a, svg, circle, style, text]
+  field: [field]
+  action: [button]
+  search: [filter, searchpanel]
+node_rules:
+  - {id: root, tags: root, capability_key: structure.view_root}
+  - {id: form_container, tags: form_container, capability_key: structure.container}
+  - {id: action, tags: action, capability_key: action.button}
+  - {id: search_filter, tags: search, capability_key: search.filter}
+  - {id: tree_groupby, tags_exact: [groupby], capability_key: tree.group_by}
+  - {id: template, tags: template, capability_key: template.qweb_template}
+  - {id: search_field, tags: field, view_types: [search], capability_key: search.search_field}
+  - {id: tree_field, tags: field, view_types: [tree], capability_key: tree.column}
+  - {id: pivot_field, tags: field, view_types: [pivot], capability_key: pivot.field}
+  - {id: graph_field, tags: field, view_types: [graph], capability_key: graph.field}
+  - {id: activity_field, tags: field, view_types: [activity], capability_key: activity.field}
+  - {id: kanban_field, tags: field, view_types: [kanban], capability_key: kanban.field}
+  - {id: nested_template_field, tags: field, view_types: [form], ancestor_tags: [templates, kanban], capability_key: template.qweb_field}
+  - {id: nested_tree_field, tags: field, view_types: [form], ancestor_tags: [tree], capability_key: tree.column}
+  - {id: form_field, tags: field, view_types: [form], absent_ancestor_tags: [templates, kanban, tree], capability_key: field.occurrence}
+attribute_rules:
+  - {id: modifier_readonly, attributes: [readonly], tags: '*', capability_key: modifier.readonly}
+  - {id: modifier_required, attributes: [required], tags: '*', capability_key: modifier.required}
+  - {id: modifier_invisible, attributes: [invisible], tags: '*', capability_key: modifier.invisible}
+  - {id: modifier_column_invisible, attributes: [column_invisible], tags: '*', capability_key: modifier.column_invisible}
+  - {id: modifier_groups, attributes: [groups], tags: '*', capability_key: modifier.groups}
+  - {id: modifier_expression, attributes: [modifiers], tags: '*', capability_key: modifier.expression}
+  - {id: modifier_decoration, attribute_prefixes: [decoration-], tags: '*', capability_key: modifier.decoration}
+  - {id: field_identity, attributes: [name], tags: field, capability_key: field.identity}
+  - {id: field_contract, attributes: [widget, options, domain, context, placeholder, help, nolabel, colspan, filename, force_save, on_change, optional, sum, operator, filter_domain, interval, mode], tags: field, capability_key_template: 'field.{attribute}'}
+  - {id: field_label, attributes: [string], tags: field, capability_key: field.label}
+  - {id: field_type, attributes: [type], tags: field, capability_key: field.type}
+  - {id: action_identity, attributes: [name], tags: action, capability_key: action.identity}
+  - {id: action_contract, attributes: [type, context, domain, confirm, icon, special, data-hotkey], tags: action, capability_key_template: 'action.{attribute}'}
+  - {id: action_label, attributes: [string, title], tags: action, capability_key: action.label}
+  - {id: search_identity, attributes: [name], tags: search, capability_key: search.identity}
+  - {id: search_contract, attributes: [domain, context, filter_domain, operator, date, default_group_by, groupby, string], tags: search, capability_key_template: 'search.{attribute}'}
+  - {id: root_behavior, attributes: [create, edit, delete, editable, multi_edit, default_order, default_group_by, limit, expand, group_create, sample, stacked, js_class, open_form_view], tags: root, capability_key_template: '{view_type}.{attribute}'}
+  - {id: structure_identity, attributes: [name, id, for], tags: form_container, capability_key: structure.identity}
+  - {id: structure_label, attributes: [string, title, status_label, tooltip], tags: form_container, capability_key: structure.label}
+  - {id: structure_behavior, attributes: [statusbar_visible, statusbar_colors, business_domain_compute, can_create, can_write, col, role], tags: form_container, capability_key_template: 'structure.{attribute}'}
+  - {id: template_expression, attribute_prefixes: [t-], tags: template, capability_key: template.qweb_expression}
+  - {id: presentation, attributes: [aria-label, bg_color, class, cx, cy, data-sc-anchor, data-tab, dir, display, fill, font-size, height, href, password, r, stroke, stroke-dasharray, stroke-linecap, stroke-width, style, text, text-anchor, transform, viewBox, width, x, y], tags: '*', capability_key: structure.presentation}
+  - {id: template_generic_identity, attributes: [name, id, for], tags: template, capability_key: template.qweb_expression}
+  - {id: template_generic_label, attributes: [string, title], tags: template, capability_key: template.qweb_expression}
+  - {id: residual_exact, attributes: [date, groupby, statusbar_visible, statusbar_colors, type, widget, icon, colspan, mode], tags: form_container, capability_key_template: 'structure.{attribute}'}
 locator:
   prefix: 'resolved:<view_ref>'
   segment_identity_priority: [tag_and_name, tag_and_id, tag_and_for, tag_and_widget, structural_fingerprint]
   duplicate_rule: one_based_preorder_within_equal_parent_segment
   translated_label_is_identity: false
   value_hash_is_identity: false
+atom_identity:
+  algorithm: sha256
+  fields: [contract_ref, capability_key, resolved_view_ref, locator, occurrence_index]
+origin_policy:
+  unresolved_contributor: {origin_status: unproven, reason_code: CAPABILITY_NATIVE_CONTRIBUTOR_APPLICATION_UNPROVEN}
+  synthetic_default: {origin_status: synthetic_default}

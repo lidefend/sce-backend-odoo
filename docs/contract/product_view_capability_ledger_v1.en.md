@@ -43,3 +43,11 @@ Each `evidence_refs` item contains a repository-relative path, file SHA, candida
 Acceptance requires native occurrence count to equal `ready + fallback + unsupported`, `silent_loss_count` to be zero, every non-ready atom to have a registered reason and executable exit condition, and all evidence to bind the same frozen candidate fingerprint.
 
 The reason-code authority is `contracts/product/native-view-capability-reason-codes-v1.yaml`, the taxonomy is `contracts/product/native-view-capability-taxonomy-v1.yaml`, and structural constraints are `contracts/schemas/product-view-capability-ledger-v1.yaml` and `contracts/schemas/native-view-capability-reason-codes-v1.yaml`. Schema expresses local constraints only; the fail-closed guard enforces cross-file references, uniqueness, conservation, reason-stage matching, and hash recomputation.
+
+## 6. Classification and correlation rules
+
+Git commit identity uses a 40-character `git_oid`; content and manifest identity use 64-character SHA256. They are not interchangeable. Every resolved node and every governed attribute is a native candidate and must match exactly one machine-taxonomy rule or one explicit exclusion. Conservation is `native_candidate_count = classified_atom_count + excluded_native_count + unclassified_native_count + ambiguous_native_count`; unclassified, ambiguous, and silent-loss counts must be zero.
+
+The current structure baseline proves the resolved view but not the exact contributor that originated each node. When origin is not proven, `origin_status=unproven`, `origin_view_ref` is empty, and the earliest-loss reason applies; inventing the root view as origin is forbidden. Reason priority is fixed as `native -> normalized -> semantic -> frontend -> interaction`.
+
+Formal carriers are generated in the same candidate and `sc_clean` runtime and must exactly match `contract_ref/menu/action/model/view_type/view_ref/resolved_arch_sha256`. Legacy semantic samples and `model + view_type` similarity are not product evidence. Evidence selectors are limited to `json-pointer:/...` and `symbol:...`; paths remain under governed roots, file hashes and candidate fingerprints match, and selectors resolve.
