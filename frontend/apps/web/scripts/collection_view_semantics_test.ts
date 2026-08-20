@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { one2manyColumnsFromSubview, selectOne2manySubview } from '../src/pages/contractForm/one2manyUtils';
+import { one2manyColumnsFromSubview, one2manyRowActionsFromSubview, selectOne2manySubview } from '../src/pages/contractForm/one2manyUtils';
 import {
   resolveActionCollectionPresentation,
   resolveGroupedCollectionPresentation,
@@ -116,6 +116,30 @@ assert.deepEqual(inlineOccurrenceColumns.map((column) => ({
   { key: '/form/field[1]/tree[1]/field[2]', name: 'partner_id', label: 'Delivery Partner', readonly: true },
 ]);
 assert.equal(one2manyColumnsFromSubview({ tree: { columns: [], column_occurrences: inlineNativeSubview.tree.column_occurrences } }, () => null).length, 0);
+const inlineActions = one2manyRowActionsFromSubview({ tree: { row_actions: [
+  {
+    label: 'Open Child', kind: 'object', payload: { method: 'action_open', type: 'object' },
+    native_identity: { authoritative: true, canonical_region: 'row_actions', native_locator: '/form/field[1]/tree[1]/button[1]' },
+    action_safety: { classification: 'safe', requires_confirm: false },
+  },
+  {
+    label: 'Context Child', kind: 'object', payload: { method: 'action_context', type: 'object', context_raw: "{'default_mode': 'edit'}" },
+    native_identity: { authoritative: true, canonical_region: 'row_actions', native_locator: '/form/field[1]/tree[1]/button[2]' },
+    action_safety: { classification: 'safe', requires_confirm: false },
+  },
+  {
+    label: 'Conditional Child', kind: 'object', payload: { method: 'action_conditional', type: 'object' },
+    native_identity: { authoritative: true, canonical_region: 'row_actions', native_locator: '/form/field[1]/tree[1]/button[3]' },
+    action_safety: { classification: 'safe', requires_confirm: false },
+    visible: { attrs: { invisible: { kind: 'field_truthy', field: 'blocked' } }, domain: [], states: [] },
+  },
+  { label: 'Synthetic', kind: 'open', payload: { view_mode: 'form' } },
+] } });
+assert.deepEqual(inlineActions.map((action) => ({ label: action.label, enabled: action.enabled })), [
+  { label: 'Open Child', enabled: true },
+  { label: 'Context Child', enabled: false },
+  { label: 'Conditional Child', enabled: false },
+]);
 assert.equal(occurrenceColumns.length, 2);
 assert.deepEqual(occurrenceColumns.map((column) => ({
   name: column.name,

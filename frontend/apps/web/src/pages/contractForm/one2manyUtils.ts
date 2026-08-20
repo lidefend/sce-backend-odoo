@@ -118,6 +118,62 @@ export function one2manyColumnsFromSubview(
   return out;
 }
 
+export function one2manyRowActionsFromSubview(subview: unknown) {
+  const tree = subview && typeof subview === 'object' && !Array.isArray(subview)
+    ? (subview as Record<string, unknown>).tree
+    : undefined;
+  const actions = tree && typeof tree === 'object' && !Array.isArray(tree)
+    ? (tree as Record<string, unknown>).row_actions
+    : undefined;
+  if (!Array.isArray(actions)) return [];
+  return actions.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const row = item as Record<string, unknown>;
+    const identity = row.native_identity && typeof row.native_identity === 'object' && !Array.isArray(row.native_identity)
+      ? row.native_identity as Record<string, unknown>
+      : {};
+    const payload = row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload)
+      ? row.payload as Record<string, unknown>
+      : {};
+    const safety = row.action_safety && typeof row.action_safety === 'object' && !Array.isArray(row.action_safety)
+      ? row.action_safety as Record<string, unknown>
+      : {};
+    const visible = row.visible && typeof row.visible === 'object' && !Array.isArray(row.visible)
+      ? row.visible as Record<string, unknown>
+      : {};
+    const locator = String(identity.native_locator || '').trim();
+    const methodName = String(payload.method || '').trim();
+    const kind = String(row.kind || payload.type || '').trim().toLowerCase();
+    if (identity.authoritative !== true || identity.canonical_region !== 'row_actions' || !locator) return [];
+    const contextRaw = String(payload.context_raw || identity.context_raw || '').trim();
+    const confirm = String(payload.confirm || '').trim();
+    const visibleAttrs = visible.attrs && typeof visible.attrs === 'object' && !Array.isArray(visible.attrs)
+      ? Object.keys(visible.attrs as Record<string, unknown>)
+      : [];
+    const hasConditionalVisibility = visibleAttrs.length > 0
+      || (Array.isArray(visible.domain) && visible.domain.length > 0)
+      || (Array.isArray(visible.states) && visible.states.length > 0);
+    const enabled = kind === 'object'
+      && Boolean(methodName)
+      && !contextRaw
+      && !confirm
+      && safety.classification === 'safe'
+      && safety.requires_confirm !== true
+      && !hasConditionalVisibility
+      && row.allowed !== false
+      && row.enabled !== false
+      && row.disabled !== true;
+    return [{
+      key: locator,
+      label: String(row.label || identity.string || methodName || '操作').trim(),
+      kind,
+      methodName: methodName || undefined,
+      enabled,
+      nativeLocator: locator,
+    }];
+  });
+}
+
 export function one2manyCanCreateFromPolicies(policies: Record<string, unknown>) {
   return policies.can_create !== false;
 }

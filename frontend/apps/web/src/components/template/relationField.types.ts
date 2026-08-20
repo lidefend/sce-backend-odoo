@@ -8,7 +8,20 @@ export type RelationFieldOption = {
 
 export type RelationFieldRow = {
   key: string;
+  id?: number | null;
+  isNew?: boolean;
+  removed?: boolean;
+  dirty?: boolean;
   values: Record<string, unknown>;
+};
+
+export type RelationFieldAction = {
+  key: string;
+  label: string;
+  kind: string;
+  methodName?: string;
+  enabled: boolean;
+  nativeLocator: string;
 };
 
 export type RelationFieldColumn = {
@@ -46,6 +59,8 @@ export type RelationFieldAdapter = {
   visibleOne2manyRows: (name: string) => RelationFieldRow[];
   one2manyRowStateLabel: (row: RelationFieldRow) => string;
   one2manyColumns: (name: string) => RelationFieldColumn[];
+  one2manyRowActions: (name: string) => RelationFieldAction[];
+  runOne2manyRowAction: (name: string, row: RelationFieldRow, action: RelationFieldAction) => void;
   setOne2manyRowField: (name: string, rowKey: string, column: RelationFieldColumn, value: unknown) => void;
   removeOne2manyRow: (name: string, rowKey: string) => void;
   one2manyRowErrors: (name: string, rowKey: string) => string[];

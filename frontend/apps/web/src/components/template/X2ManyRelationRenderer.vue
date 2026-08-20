@@ -151,6 +151,14 @@
           </label>
         </div>
         <button
+          v-for="action in adapter.one2manyRowActions(field.name)"
+          :key="`${row.key}-${action.key}`"
+          class="ghost o2m-row-action"
+          type="button"
+          :disabled="adapter.busy || !Number.isInteger(Number(row.id)) || Number(row.id) <= 0 || row.isNew || row.removed || !action.enabled"
+          @click="adapter.runOne2manyRowAction(field.name, row, action)"
+        >{{ action.label }}</button>
+        <button
           class="ghost o2m-row-remove"
           type="button"
           :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
