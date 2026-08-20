@@ -18,6 +18,8 @@
 
 证据链依次记录 `native`、`normalized`、`semantic` 和 `frontend`。前端阶段必须明确绑定规范原子、兼容投影、消费符号、渲染器和交互符号。`source_authority` 必须显式声明；多个来源共同决定行为但没有唯一权威时，不能判定为就绪。
 
+本仓库的运行权威是 Odoo 17。用户态 resolved arch 必须来自公开 `get_view()`；`_get_view()` 只能辅助记录来源，不得替代最终结构。当 Odoo 找不到数据库 `ir.ui.view` 而调用 `_get_default_<view_type>_view()` 时，`get_view()["id"]` 合法为 `False`。此时必须记录 `synthetic_default_view` 及模型实现符号，不能伪造数据库 view identity。Odoo 17 的事实层规范类型为 `tree`；`list` 只作为客户端投影。
+
 ## 4. 终态规则
 
 每个原生能力原子必须且只能获得一个终态：

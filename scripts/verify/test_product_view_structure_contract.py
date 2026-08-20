@@ -6,7 +6,7 @@ import unittest
 from scripts.contract.complete_worktree_fingerprint import validate_fingerprint
 from scripts.contract.product_view_structure_common import (
     FINGERPRINT_SCHEMA, collect_occurrences, collect_references, content_digest,
-    normalize_arch, policy_menu_rows, sha256_json,
+    normalize_arch, policy_menu_rows, resolve_odoo17_view, sha256_json,
 )
 from scripts.verify.product_view_structure_contract_guard import validate_manifest
 
@@ -22,7 +22,7 @@ class ProductViewStructureContractTests(unittest.TestCase):
         occurrences = collect_occurrences(semantic, "x.view")
         graph_body = {"root_ref": "x.view", "contributors": [{"view_ref": "x.view", "inherit_ref": "", "mode": "primary", "priority": 16, "active": True, "groups": [], "arch_sha256": "4" * 64, "applicability": "applied"}], "edges": [], "application_order": ["x.view"]}
         graph = {**graph_body, "graph_sha256": sha256_json(graph_body)}
-        surface = {"contract_ref": "x.menu::form", "menu_xmlid": "x.menu", "action_xmlid": "x.action", "model": "x.model", "view_type": "form", "view_ref": "x.view", "hashes": {"source_graph_sha256": graph["graph_sha256"], "resolved_arch_sha256": sha256_json(resolved), "semantic_structure_sha256": sha256_json(semantic)}, "source_graph": graph, "parse_outcome": {"primary": "success", "fallback": "inactive"}, "references": collect_references(occurrences), "occurrences": occurrences, "resolved_structure": resolved, "semantic_structure": semantic}
+        surface = {"contract_ref": "x.menu::form", "menu_xmlid": "x.menu", "action_xmlid": "x.action", "model": "x.model", "view_type": "form", "view_ref": "x.view", "source_kind": "database_view", "hashes": {"source_graph_sha256": graph["graph_sha256"], "resolved_arch_sha256": sha256_json(resolved), "semantic_structure_sha256": sha256_json(semantic)}, "source_graph": graph, "parse_outcome": {"primary": "success", "fallback": "inactive"}, "references": collect_references(occurrences), "occurrences": occurrences, "resolved_structure": resolved, "semantic_structure": semantic}
         authority = {"branch": "feature/x", "candidate_fingerprint": {key: self.fingerprint[key] for key in ("algorithm", "git_head", "baseline_sha", "scope_manifest_sha256", "digest")}, "database_policy_path": "docs/governance/database_architecture_policy.md", "database_policy_sha256": "6" * 64, "formal_menu_policy_path": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json", "formal_menu_policy_sha256": "5" * 64, "runtime_profile": "local.clean", "compose_project": "sc-local-clean", "database": "sc_clean", "database_filter": "^sc_clean$", "demo_data": False, "module_set": [{"name": "base", "installed_version": "1"}], "module_set_sha256": sha256_json([{"name": "base", "installed_version": "1"}]), "user": "admin", "company": "base.main_company", "language": "en_US", "group_profile": ["base.group_user"], "exporter_version": "product_view_structure_contract/v1", "runtime_source": "odoo.get_view_resolved_arch_and_native_inheritance_engine"}
         self.manifest = {"schema": "product_view_structure_contract/v1", "authority": authority, "summary": {"formal_menu_count": 1, "resolved_view_action_count": 1, "non_view_action_count": 0, "error_count": 0, "resolved_surface_count": 1, "model_count": 1, "view_type_counts": {"form": 1}}, "entries": [{"menu_xmlid": "x.menu", "res_model": "x.model", "status": "resolved_view_action", "declared_view_types": ["form"], "surfaces": [surface]}]}
         self.manifest["manifest_sha256"] = content_digest(self.manifest, "manifest_sha256")
@@ -97,6 +97,46 @@ class ProductViewStructureContractTests(unittest.TestCase):
         value = deepcopy(self.manifest)
         value["manifest_sha256"] = "0" * 64
         self.assertTrue(any("manifest hash" in error for error in self.errors(value)))
+
+    def test_odoo17_explicit_view_is_passed_to_both_layers(self):
+        model = _FakeModel(public_id=17, native_id=17)
+        result = resolve_odoo17_view(model, 17, "form")
+        self.assertEqual(result[3], "database_view")
+        self.assertEqual(model.calls, [("native", {"view_type": "form", "view_id": 17}), ("public", {"view_type": "form", "view_id": 17})])
+
+    def test_odoo17_default_selection_omits_view_id(self):
+        model = _FakeModel(public_id=18, native_id=18)
+        result = resolve_odoo17_view(model, 0, "tree")
+        self.assertEqual(result[3], "database_view")
+        self.assertEqual(model.calls, [("native", {"view_type": "tree"}), ("public", {"view_type": "tree"})])
+
+    def test_odoo17_synthetic_default_accepts_false_id(self):
+        result = resolve_odoo17_view(_FakeModel(public_id=False, native_id=False), 0, "search")
+        self.assertEqual(result[3], "synthetic_default_view")
+
+    def test_odoo17_public_native_id_mismatch_fails(self):
+        with self.assertRaisesRegex(ValueError, "public/native selected view mismatch"):
+            resolve_odoo17_view(_FakeModel(public_id=17, native_id=18), 0, "form")
+
+
+class _FakeView:
+    def __init__(self, view_id):
+        self.id = view_id
+
+
+class _FakeModel:
+    def __init__(self, public_id, native_id):
+        self.public_id = public_id
+        self.native_id = native_id
+        self.calls = []
+
+    def _get_view(self, **kwargs):
+        self.calls.append(("native", kwargs))
+        return object(), _FakeView(self.native_id)
+
+    def get_view(self, **kwargs):
+        self.calls.append(("public", kwargs))
+        return {"id": self.public_id, "arch": "<form/>"}
 
 
 if __name__ == "__main__":

@@ -84,6 +84,13 @@ def validate_manifest(manifest: dict[str, Any], policy: dict[str, Any], policy_s
             if hashes.get("semantic_structure_sha256") != sha256_json(semantic_structure):
                 errors.append(f"{ref}: semantic structure hash is stale")
             view_ref = str(surface.get("view_ref") or "")
+            source_kind = str(surface.get("source_kind") or "")
+            if source_kind not in {"database_view", "synthetic_default_view"}:
+                errors.append(f"{ref}: invalid source kind")
+            if source_kind == "synthetic_default_view" and not view_ref.startswith("synthetic:"):
+                errors.append(f"{ref}: synthetic default has invalid provenance")
+            if source_kind == "database_view" and view_ref.startswith("synthetic:"):
+                errors.append(f"{ref}: database view has synthetic provenance")
             occurrences = collect_occurrences(semantic_structure, view_ref)
             if surface.get("occurrences") != occurrences:
                 errors.append(f"{ref}: occurrence inventory is stale")
@@ -98,6 +105,10 @@ def validate_manifest(manifest: dict[str, Any], policy: dict[str, Any], policy_s
             contributor_refs = [item.get("view_ref") for item in contributors if isinstance(item, dict)]
             if not contributors or graph.get("application_order") != contributor_refs or graph.get("root_ref") not in contributor_refs:
                 errors.append(f"{ref}: source graph is empty or order is unproven")
+            if source_kind == "synthetic_default_view":
+                modes = [item.get("mode") for item in contributors if isinstance(item, dict)]
+                if modes != ["synthetic_default"] or graph.get("root_ref") != view_ref:
+                    errors.append(f"{ref}: synthetic default source graph is invalid")
             if surface.get("parse_outcome") != {"primary": "success", "fallback": "inactive"}:
                 errors.append(f"{ref}: parse outcome is not primary success")
     summary = manifest.get("summary") if isinstance(manifest.get("summary"), dict) else {}

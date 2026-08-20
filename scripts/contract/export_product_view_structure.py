@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+import collections
 import json
 import os
 import sys
 from pathlib import Path
 
+from lxml import etree
 from odoo.tools.safe_eval import safe_eval
 
 try:
@@ -18,7 +20,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "contract"))
 from product_view_structure_common import (  # noqa: E402
     CANONICAL_VIEW_TYPES, SCHEMA, collect_occurrences, collect_references,
     content_digest, file_sha256, normalize_arch, normalize_view_type,
-    policy_menu_rows, sha256_json, sha256_text,
+    policy_menu_rows, resolve_odoo17_view, sha256_json, sha256_text,
 )
 from complete_worktree_fingerprint import validate_fingerprint  # noqa: E402
 
@@ -109,28 +111,58 @@ def _group_refs(view) -> list[str]:
     return sorted(refs)
 
 
-def _source_graph(resolved_view) -> dict:
-    root = resolved_view
+def _source_graph(resolved_view, model_name: str, view_type: str, native_arch) -> dict:
+    if not resolved_view:
+        ref = f"synthetic:{model_name}:_get_default_{view_type}_view"
+        row = {
+            "view_ref": ref, "inherit_ref": "", "mode": "synthetic_default",
+            "priority": 0, "active": True, "groups": [],
+            "arch_sha256": sha256_text(etree.tostring(native_arch, encoding="unicode")),
+            "applicability": "applied",
+        }
+        body = {"root_ref": ref, "contributors": [row], "edges": [], "application_order": [ref]}
+        return {**body, "graph_sha256": sha256_json(body)}
+
+    selected = resolved_view
+    root = selected
+    selected_chain = []
     while root.inherit_id:
+        selected_chain.append(root.id)
         root = root.inherit_id
-    inheritors = root._get_inheriting_views()
-    contributors = root | inheritors
-    rows = []
-    edges = []
-    order = []
-    for view in contributors:
+    selected_chain.append(root.id)
+    views = selected.browse(selected_chain)
+    if "check_view_ids" not in views.env.context:
+        views = views.with_context(check_view_ids=[])
+    views.env.context["check_view_ids"].extend(selected_chain)
+    tree_views = views._get_inheriting_views()
+    hierarchy = collections.defaultdict(list)
+    for view in tree_views:
+        hierarchy[view.inherit_id.id].append(view)
+    applied = [root]
+    queue = collections.deque(sorted(hierarchy[root.id], key=lambda view: view.mode))
+    while queue:
+        view = queue.popleft()
+        applied.append(view)
+        for child in reversed(hierarchy[view.id]):
+            if child.mode == "primary":
+                queue.append(child)
+            else:
+                queue.appendleft(child)
+    rows, edges, order = [], [], []
+    applied_ids = {view.id for view in applied}
+    for view in applied:
         ref = _record_ref(view)
-        parent_ref = _record_ref(view.inherit_id) if view.inherit_id else ""
+        parent_ref = _record_ref(view.inherit_id) if view.inherit_id and view.inherit_id.id in applied_ids else ""
         rows.append({
             "view_ref": ref, "inherit_ref": parent_ref, "mode": str(view.mode or ""),
             "priority": int(view.priority or 0), "active": bool(view.active),
-            "groups": _group_refs(view), "arch_sha256": sha256_text(str(view.arch_db or "")),
+            "groups": _group_refs(view), "arch_sha256": sha256_text(str(view.arch or "")),
             "applicability": "applied",
         })
         order.append(ref)
         if parent_ref:
             edges.append({"parent_ref": parent_ref, "child_ref": ref})
-    if not rows or _record_ref(root) not in order:
+    if not rows or _record_ref(root) != order[0]:
         raise ValueError("native inheritance engine returned an empty or rootless contribution graph")
     body = {"root_ref": _record_ref(root), "contributors": rows, "edges": edges, "application_order": order}
     return {**body, "graph_sha256": sha256_json(body)}
@@ -140,25 +172,21 @@ def _surface(menu_row: dict, action, view_type: str, view_ids: dict[str, int]) -
     model_name = str(action.res_model or "")
     Model = env[model_name].with_context(**_action_context(action))  # noqa: F821
     requested = int(view_ids.get(view_type) or 0)
-    view_def = Model.get_view(view_id=requested or None, view_type=view_type)
-    resolved_id = int(view_def.get("id") or requested or 0)
-    if not resolved_id:
-        raise ValueError("native get_view returned no resolved view id")
-    view_record = env["ir.ui.view"].browse(resolved_id)  # noqa: F821
-    if not view_record.exists():
-        raise ValueError(f"resolved view {resolved_id} does not exist")
-    view_ref = _record_ref(view_record)
+    view_def, native_arch, view_record, source_kind = resolve_odoo17_view(Model, requested, view_type)
+    if source_kind == "database_view" and not view_record.exists():
+        raise ValueError(f"resolved view {view_record.id} does not exist")
+    view_ref = _record_ref(view_record) if view_record else f"synthetic:{model_name}:_get_default_{view_type}_view"
     arch = str(view_def.get("arch") or "")
     resolved = normalize_arch(arch, semantic=False)
     semantic = normalize_arch(arch, semantic=True)
     if normalize_view_type(resolved.get("tag")) != view_type:
         raise ValueError(f"resolved root {resolved.get('tag')!r} does not match {view_type!r}")
     occurrences = collect_occurrences(semantic, view_ref)
-    graph = _source_graph(view_record)
+    graph = _source_graph(view_record, model_name, view_type, native_arch)
     return {
         "contract_ref": f"{menu_row['menu_xmlid']}::{view_type}",
         "menu_xmlid": menu_row["menu_xmlid"], "action_xmlid": _xmlid(action),
-        "model": model_name, "view_type": view_type, "view_ref": view_ref,
+        "model": model_name, "view_type": view_type, "view_ref": view_ref, "source_kind": source_kind,
         "hashes": {"source_graph_sha256": graph["graph_sha256"], "resolved_arch_sha256": sha256_json(resolved), "semantic_structure_sha256": sha256_json(semantic)},
         "source_graph": graph, "parse_outcome": {"primary": "success", "fallback": "inactive"},
         "references": collect_references(occurrences), "occurrences": occurrences,

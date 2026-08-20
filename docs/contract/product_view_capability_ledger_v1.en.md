@@ -18,6 +18,8 @@ A capability atom represents one locatable native-view occurrence, not a dedupli
 
 The evidence chain records `native`, `normalized`, `semantic`, and `frontend` stages. The frontend stage explicitly binds the canonical atom, compatibility projection, consumer symbol, renderer, and interaction symbol. `source_authority` is mandatory; behavior determined by multiple sources without one declared authority cannot be ready.
 
+This repository's runtime authority is Odoo 17. The user-visible resolved arch comes from public `get_view()`; `_get_view()` may support provenance evidence but must not replace the final structure. When no database `ir.ui.view` exists and Odoo calls `_get_default_<view_type>_view()`, `get_view()["id"]` is legitimately `False`. The ledger records `synthetic_default_view` and the model implementation symbol without inventing a database-view identity. Odoo 17 uses `tree` as the fact-layer canonical type; `list` is a client projection only.
+
 ## 4. Terminal-state rules
 
 Every native capability atom has exactly one terminal state:
