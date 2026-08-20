@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { one2manyColumnsFromSubview, selectOne2manySubview } from '../src/pages/contractForm/one2manyUtils';
 import {
   resolveActionCollectionPresentation,
   resolveGroupedCollectionPresentation,
@@ -12,7 +13,10 @@ import {
 } from '../src/app/runtime/collectionViewRuntime';
 import { buildActionViewRowClickTarget, shouldUseCanonicalCollectionDetail } from '../src/app/runtime/actionViewInteractionRuntime';
 import { pickContractNavQuery } from '../src/app/navigationContext';
-import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import {
+  extractKanbanFieldsFromContract,
+  extractNativeColumnOccurrenceSchema,
+} from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import { resolveLoadKanbanFieldApplyState } from '../src/app/runtime/actionViewLoadViewFieldStateRuntime';
 import { resolveDesktopListCandidates } from '../src/pages/listPage/listColumnVisibility';
 
@@ -70,6 +74,71 @@ assert.equal(resolveGroupedCollectionPresentation(
 assert.deepEqual(extractKanbanFieldsFromContract({ views: { kanban: { fields: [
   { field: { name: 'name', label: '名称' } }, { field: { name: 'lifecycle_state', label: '状态' } },
 ] } } }), ['name', 'lifecycle_state']);
+const occurrenceColumns = extractNativeColumnOccurrenceSchema({ views: { tree: {
+  columns_schema: [{ name: 'amount_total', label: 'merged legacy column' }],
+  column_occurrences: [
+    {
+      name: 'amount_total', field_type: 'monetary', widget: 'monetary',
+      source_position: 0, occurrence_index: 1, native_locator: '/tree/field[1]',
+      attributes: { string: 'Untaxed Amount', optional: 'show' },
+      modifiers: { readonly: true },
+    },
+    {
+      name: 'amount_total', field_type: 'monetary', widget: 'monetary',
+      source_position: 1, occurrence_index: 2, native_locator: '/tree/field[2]',
+      attributes: { string: 'Tax Included', optional: 'hide' },
+      modifiers: { column_invisible: false },
+    },
+  ],
+} } });
+
+const inlineNativeSubview = { tree: { columns: [{ name: 'partner_id' }], column_occurrences: [
+  {
+    name: 'partner_id', field_type: 'many2one', native_locator: '/form/field[1]/tree[1]/field[1]', occurrence_index: 1,
+    attributes: { string: 'Billing Partner' }, modifiers: { readonly: false }, relation_active_actions: { write: true },
+  },
+  {
+    name: 'partner_id', field_type: 'many2one', native_locator: '/form/field[1]/tree[1]/field[2]', occurrence_index: 2,
+    attributes: { string: 'Delivery Partner' }, relation_active_actions: { write: false },
+  },
+] } };
+const inlineSelectedSubview = selectOne2manySubview(
+  { tree: { columns: ['display_name'] } },
+  inlineNativeSubview,
+);
+assert.equal(inlineSelectedSubview, inlineNativeSubview);
+const inlineOccurrenceColumns = one2manyColumnsFromSubview(inlineSelectedSubview, () => null);
+assert.equal(inlineOccurrenceColumns.length, 2);
+assert.deepEqual(inlineOccurrenceColumns.map((column) => ({
+  key: column.key, name: column.name, label: column.label, readonly: column.readonly,
+})), [
+  { key: '/form/field[1]/tree[1]/field[1]', name: 'partner_id', label: 'Billing Partner', readonly: true },
+  { key: '/form/field[1]/tree[1]/field[2]', name: 'partner_id', label: 'Delivery Partner', readonly: true },
+]);
+assert.equal(one2manyColumnsFromSubview({ tree: { columns: [], column_occurrences: inlineNativeSubview.tree.column_occurrences } }, () => null).length, 0);
+assert.equal(occurrenceColumns.length, 2);
+assert.deepEqual(occurrenceColumns.map((column) => ({
+  name: column.name,
+  label: column.label,
+  type: column.type,
+  widget: column.widget,
+  source_position: column.source_position,
+  occurrence_index: column.occurrence_index,
+  native_locator: column.native_locator,
+  readonly: column.readonly,
+  column_invisible: column.column_invisible,
+})), [
+  {
+    name: 'amount_total', label: 'Untaxed Amount', type: 'monetary', widget: 'monetary',
+    source_position: 0, occurrence_index: 1, native_locator: '/tree/field[1]',
+    readonly: true, column_invisible: undefined,
+  },
+  {
+    name: 'amount_total', label: 'Tax Included', type: 'monetary', widget: 'monetary',
+    source_position: 1, occurrence_index: 2, native_locator: '/tree/field[2]',
+    readonly: undefined, column_invisible: false,
+  },
+]);
 assert.deepEqual(resolveLoadKanbanFieldApplyState({
   kanbanContractFields: [{ name: 'name' }, { name: 'lifecycle_state' }] as unknown as string[],
   fallbackKanbanFields: [], advancedContractFields: [], uniqueFieldsFn: (fields) => [...new Set(fields)],

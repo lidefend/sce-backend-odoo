@@ -12,11 +12,15 @@ export type RelationFieldRow = {
 };
 
 export type RelationFieldColumn = {
+  key?: string;
   name: string;
   label: string;
   ttype: string;
   required: boolean;
   readonly?: boolean;
+  nativeLocator?: string;
+  occurrenceIndex?: number;
+  relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
 };
 

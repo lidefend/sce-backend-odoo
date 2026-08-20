@@ -103,7 +103,7 @@
       <span class="o2m-header-fields">
         <span
           v-for="column in adapter.one2manyColumns(field.name)"
-          :key="`${field.name}-header-${column.name}`"
+          :key="`${field.name}-header-${column.key || column.name}`"
           class="o2m-header-cell"
         >{{ column.label }}</span>
       </span>
@@ -115,7 +115,7 @@
         <div class="o2m-fields">
           <label
             v-for="column in adapter.one2manyColumns(field.name)"
-            :key="`${row.key}-${column.name}`"
+            :key="`${row.key}-${column.key || column.name}`"
             class="o2m-field"
           >
             <span class="meta">{{ column.label }}</span>
