@@ -67,10 +67,10 @@ goal:
       status: completed
     - id: Q1
       title: product_capability_loss_ledger
-      status: active
+      status: completed
     - id: Q2
       title: modifiers_actions_permissions_closure
-      status: planned
+      status: active
     - id: Q3
       title: form_tree_search_kanban_semantic_closure
       status: planned

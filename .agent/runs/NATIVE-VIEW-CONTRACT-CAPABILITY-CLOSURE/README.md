@@ -77,3 +77,46 @@
   source HEAD must be an ancestor of the carrier HEAD.
 - Containment: the known `local.clean.health` frontend-root `403` belongs to
   the environment/frontend layer. It was not rerun or repaired in this batch.
+
+## Q1-4 product capability loss ledger
+
+- Status: completed.
+- Mechanism commits: `0b465d65`, `48c268c2`, `58037b4e`, `1847e131`,
+  `659c3dc4`, and `e64e6a3b`.
+- Evidence-carrier commit: `ecb96e35`.
+- Final clean-HEAD fingerprint: `87aa0e279860b3b8223f0df2d04775ae20a4f54746a4a85d6ce6a2e9cd31ee0f`.
+- Final scope path count: `6531`.
+- Runtime identity: `local.clean` / `sc-local-clean` / `sc_clean` /
+  `^sc_clean$`, `demo_data=false`.
+- Governed commands: `make local.clean.view_structure_baseline`,
+  `make local.clean.view_structure_gate`, and
+  `make local.clean.view_capability_ledger_gate`.
+- Structure result: `89` formal menus, `65` models, `280` resolved surfaces;
+  every surface resolved successfully.
+- Ledger result: `26,531` native candidates and classified atoms, `0`
+  unclassified, `0` ambiguous, `0` ready, `0` fallback, `26,531`
+  unsupported, and `0` silent loss.
+- Targeted verification: `7` ledger mutation tests were collected inside the
+  governed Make gate; the standalone capability/taxonomy suite collected `12`
+  tests. Zero-test execution is not accepted.
+- Evidence semantics: `4,770` occurrence origins remain explicitly unproven
+  with the native first-loss reason; the remaining `21,761` atoms use the
+  normalized-mapping first-loss reason. No static frontend symbol is promoted
+  to end-to-end readiness.
+- Independent review: final backend and governance reviews reported
+  `S0=0`, `S1=0` against the frozen candidate.
+- Rollback: revert the evidence-carrier commit first, then revert Q1 mechanism
+  commits in reverse order. Q1 introduces no product business semantics,
+  customer data, database fixture, runtime profile, or frontend activation.
+
+## Q2 active boundary
+
+- Formal Product Layer: P0 platform mechanism, supported by P4 evidence and
+  gates.
+- Scope: `modifier.*`, `action.*`, `permission.*`, plus root
+  `create/edit/delete`; the reference blast radius is `5,272` atoms.
+- Excluded until Q3: layout and field semantics, search/group/order/paging,
+  x2many presentation, chatter, template, widget, and kanban content closure.
+- Dynamic verdicts require governed user, company, record, and mode evidence;
+  the `local.clean/system/main` carrier cannot be generalized to other
+  contexts.
