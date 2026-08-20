@@ -23,6 +23,7 @@ class NativeCandidate:
     resolved_view_ref: str
     ancestors: tuple[str, ...]
     canonical_value: Any
+    source_selector: str = ""
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -32,6 +33,10 @@ def load_yaml(path: Path) -> dict[str, Any]:
     return value
 
 
+def _pointer_escape(value: str) -> str:
+    return value.replace("~", "~0").replace("/", "~1")
+
+
 def iter_native_candidates(surface: dict[str, Any]) -> Iterator[NativeCandidate]:
     structure = surface.get("resolved_structure")
     if not isinstance(structure, dict):
@@ -39,29 +44,32 @@ def iter_native_candidates(surface: dict[str, Any]) -> Iterator[NativeCandidate]
     view_ref = str(surface.get("view_ref") or "")
     view_type = str(surface.get("view_type") or "")
 
-    def emit(node: dict[str, Any], locator: str, occurrence: int, ancestors: tuple[str, ...]):
+    def emit(node: dict[str, Any], locator: str, occurrence: int, ancestors: tuple[str, ...], pointer: str):
         tag = str(node.get("tag") or "")
         node_value = {"tag": tag}
         if "text" in node:
             node_value["text"] = node["text"]
-        yield NativeCandidate("node", view_type, tag, "", locator, occurrence, view_ref, ancestors, node_value)
+        yield NativeCandidate("node", view_type, tag, "", locator, occurrence, view_ref, ancestors, node_value, pointer)
         attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
         for attribute, value in sorted(attrs.items()):
-            yield NativeCandidate("attribute", view_type, tag, str(attribute), f"{locator}/@{attribute}", occurrence, view_ref, ancestors, value)
+            yield NativeCandidate(
+                "attribute", view_type, tag, str(attribute), f"{locator}/@{attribute}",
+                occurrence, view_ref, ancestors, value, f"{pointer}/attrs/{_pointer_escape(str(attribute))}",
+            )
         children = [child for child in node.get("children") or [] if isinstance(child, dict)]
         totals: dict[str, int] = {}
         for child in children:
             base = structure_segment(child)
             totals[base] = totals.get(base, 0) + 1
         seen: dict[str, int] = {}
-        for child in children:
+        for child_index, child in enumerate(children):
             base = structure_segment(child)
             seen[base] = seen.get(base, 0) + 1
             suffix = f"#{seen[base]}" if totals[base] > 1 else ""
-            yield from emit(child, f"{locator}/{base}{suffix}", seen[base], ancestors + (tag,))
+            yield from emit(child, f"{locator}/{base}{suffix}", seen[base], ancestors + (tag,), f"{pointer}/children/{child_index}")
 
     root_locator = f"resolved:{view_ref}/{structure_segment(structure)}"
-    yield from emit(structure, root_locator, 1, ())
+    yield from emit(structure, root_locator, 1, (), "/resolved_structure")
 
 
 def _tags(rule: dict[str, Any], taxonomy: dict[str, Any]) -> set[str] | None:
@@ -124,8 +132,8 @@ def classify_structure(structure: dict[str, Any], taxonomy: dict[str, Any]) -> d
     atoms, unknown, ambiguous = [], [], []
     seen_ids: set[str] = set()
     entries = structure.get("entries") if isinstance(structure.get("entries"), list) else []
-    for entry in entries:
-        for surface in entry.get("surfaces") or []:
+    for entry_index, entry in enumerate(entries):
+        for surface_index, surface in enumerate(entry.get("surfaces") or []):
             contract_ref = str(surface.get("contract_ref") or "")
             for candidate in iter_native_candidates(surface):
                 matches = classify_candidate(candidate, taxonomy)
@@ -151,5 +159,6 @@ def classify_structure(structure: dict[str, Any], taxonomy: dict[str, Any]) -> d
                     "resolved_view_ref": candidate.resolved_view_ref,
                     "canonical_value": candidate.canonical_value,
                     "value_hash": sha256_json(candidate.canonical_value),
+                    "source_selector": f"/entries/{entry_index}/surfaces/{surface_index}{candidate.source_selector}",
                 })
     return {"atoms": atoms, "unknown": unknown, "ambiguous": ambiguous}

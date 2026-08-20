@@ -48,6 +48,6 @@
 
 Git commit identity 使用 40 位 `git_oid`，内容与清单使用 64 位 SHA256，两者不得混用。每个 resolved node 及其每个受治理属性都是 native candidate；必须由机器 taxonomy 唯一分类或命中明确 exclusion。守恒关系为 `native_candidate_count = classified_atom_count + excluded_native_count + unclassified_native_count + ambiguous_native_count`，其中 unclassified、ambiguous 和 silent loss 必须为零。
 
-当前结构基线只能证明 resolved view，不能证明具体节点来自哪个继承 contributor。无法证明时 `origin_status=unproven`、`origin_view_ref` 为空，并使用最早损失阶段的原因；禁止伪填 root view。原因优先级固定为 `native -> normalized -> semantic -> frontend -> interaction`。
+当前结构基线只能证明 resolved view，不能证明具体节点来自哪个继承 contributor。无法证明时 `origin_status=unproven`、`origin_view_ref` 为空，并使用 native-stage `CAPABILITY_NATIVE_OCCURRENCE_ORIGIN_UNPROVEN`；禁止伪填 root view。原因优先级固定为 `native -> normalized -> semantic -> frontend -> interaction`。终态表示最终是否可交付，最早损失决定该终态的原因码；因此来源无法定位且后续也没有载体的原子仍为 `unsupported`，但必须报告 native-stage 原因。
 
 正式 carrier 必须在同一候选和 `sc_clean` 运行中按 `contract_ref/menu/action/model/view_type/view_ref/resolved_arch_sha256` 全等生成。旧 semantic 样本和 `model + view_type` 相似项不能作为产品证据。Evidence selector 只允许 `json-pointer:/...` 或 `symbol:...`，路径必须位于受控根、文件哈希和候选指纹相同且 selector 可解析。

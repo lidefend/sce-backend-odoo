@@ -132,6 +132,38 @@ verify.contract.native_view_normalized_map: verify.contract.view_carrier
 gate.contract.native_view_normalized_map: verify.contract.native_view_normalized_map
 	@echo "[gate.contract.native_view_normalized_map] PASS map=$(VIEW_NORMALIZED_CAPABILITY_MAP)"
 
+VIEW_CAPABILITY_LEDGER_CANDIDATE ?= artifacts/contract/product_view_capability_ledger_candidate.json
+VIEW_CAPABILITY_LEDGER_SCHEMA ?= contracts/schemas/product-view-capability-ledger-v1.yaml
+VIEW_FRONTEND_CAPABILITY_MAP ?= contracts/product/native-view-frontend-capability-map-v1.yaml
+
+.PHONY: verify.contract.native_view_frontend_map_candidate contract.view_capability_ledger.export verify.contract.view_capability_ledger gate.contract.view_capability_ledger
+verify.contract.native_view_frontend_map_candidate: verify.contract.view_carrier
+	@PYTHONPATH="$(ROOT_DIR)" python3 scripts/verify/native_view_frontend_capability_map_guard.py \
+	  --structure "$(VIEW_STRUCTURE_CANDIDATE)" --taxonomy "$(VIEW_CAPABILITY_TAXONOMY)" \
+	  --frontend-map "$(VIEW_FRONTEND_CAPABILITY_MAP)" --reasons "$(VIEW_CAPABILITY_REASONS)"
+
+contract.view_capability_ledger.export:
+	@rm -f "$(VIEW_CAPABILITY_LEDGER_CANDIDATE)" "$(VIEW_CAPABILITY_LEDGER_CANDIDATE).tmp"
+	@$(MAKE) --no-print-directory gate.contract.native_view_normalized_map verify.contract.native_view_frontend_map_candidate || { \
+	  rm -f "$(VIEW_CAPABILITY_LEDGER_CANDIDATE)" "$(VIEW_CAPABILITY_LEDGER_CANDIDATE).tmp"; exit 1; }
+	@PYTHONPATH="$(ROOT_DIR)" python3 -m unittest scripts.verify.test_product_view_capability_ledger || { \
+	  rm -f "$(VIEW_CAPABILITY_LEDGER_CANDIDATE)" "$(VIEW_CAPABILITY_LEDGER_CANDIDATE).tmp"; exit 1; }
+	@PYTHONPATH="$(ROOT_DIR)" python3 scripts/contract/export_product_view_capability_ledger.py \
+	  --structure "$(VIEW_STRUCTURE_CANDIDATE)" --carrier "$(VIEW_CARRIER_CANDIDATE)" --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  --taxonomy "$(VIEW_CAPABILITY_TAXONOMY)" --normalized-map "$(VIEW_NORMALIZED_CAPABILITY_MAP)" \
+	  --frontend-map "$(VIEW_FRONTEND_CAPABILITY_MAP)" --reasons "$(VIEW_CAPABILITY_REASONS)" --output "$(VIEW_CAPABILITY_LEDGER_CANDIDATE)" || { \
+	  rm -f "$(VIEW_CAPABILITY_LEDGER_CANDIDATE)" "$(VIEW_CAPABILITY_LEDGER_CANDIDATE).tmp"; exit 1; }
+
+verify.contract.view_capability_ledger: contract.view_capability_ledger.export
+	@PYTHONPATH="$(ROOT_DIR)" python3 scripts/verify/product_view_capability_ledger_guard.py \
+	  --artifact "$(VIEW_CAPABILITY_LEDGER_CANDIDATE)" --schema "$(VIEW_CAPABILITY_LEDGER_SCHEMA)" \
+	  --structure "$(VIEW_STRUCTURE_CANDIDATE)" --carrier "$(VIEW_CARRIER_CANDIDATE)" --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  --taxonomy "$(VIEW_CAPABILITY_TAXONOMY)" --normalized-map "$(VIEW_NORMALIZED_CAPABILITY_MAP)" \
+	  --frontend-map "$(VIEW_FRONTEND_CAPABILITY_MAP)" --reasons "$(VIEW_CAPABILITY_REASONS)"
+
+gate.contract.view_capability_ledger: verify.contract.view_capability_ledger
+	@echo "[gate.contract.view_capability_ledger] PASS artifact=$(VIEW_CAPABILITY_LEDGER_CANDIDATE)"
+
 verify.contract.catalog: guard.prod.forbid
 	@python3 scripts/verify/intent_cases_integrity_guard.py --cases-file docs/contract/cases.yml
 	@$(MAKE) --no-print-directory contract.catalog.export
