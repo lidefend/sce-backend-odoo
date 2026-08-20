@@ -14,6 +14,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from scripts.contract.product_view_structure_common import FINGERPRINT_SCHEMA, sha256_bytes, sha256_json  # noqa: E402
 
+EXCLUDED_PATHS = [{
+    "path": "contracts/generated/product_view_structure_contract.json",
+    "reason": "self_generated_view_structure_authority",
+}]
+
 
 def _git(*args: str) -> bytes:
     return subprocess.run(["git", *args], cwd=ROOT, check=True, stdout=subprocess.PIPE).stdout
@@ -23,7 +28,8 @@ def build_fingerprint(baseline_sha: str) -> dict:
     head = _git("rev-parse", "HEAD").decode().strip()
     branch = _git("branch", "--show-current").decode().strip()
     raw_paths = _git("ls-files", "--cached", "--others", "--exclude-standard", "-z")
-    paths = sorted({item.decode("utf-8") for item in raw_paths.split(b"\0") if item})
+    excluded = {row["path"] for row in EXCLUDED_PATHS}
+    paths = sorted({item.decode("utf-8") for item in raw_paths.split(b"\0") if item and item.decode("utf-8") not in excluded})
     index_rows = {}
     for line in _git("ls-files", "-s", "-z").split(b"\0"):
         if not line:
@@ -47,7 +53,8 @@ def build_fingerprint(baseline_sha: str) -> dict:
     scope_sha = sha256_json(entries)
     canonical = {
         "algorithm": FINGERPRINT_SCHEMA, "git_head": head, "baseline_sha": baseline_sha,
-        "branch": branch, "scope_manifest_sha256": scope_sha, "entries": entries,
+        "branch": branch, "scope_manifest_sha256": scope_sha,
+        "excluded_paths": EXCLUDED_PATHS, "entries": entries,
     }
     return {**canonical, "digest": sha256_json(canonical)}
 
@@ -61,7 +68,9 @@ def validate_fingerprint(payload: dict) -> list[str]:
         errors.append("fingerprint scope is empty")
     if payload.get("scope_manifest_sha256") != sha256_json(entries):
         errors.append("fingerprint scope manifest hash is stale")
-    canonical = {key: payload.get(key) for key in ("algorithm", "git_head", "baseline_sha", "branch", "scope_manifest_sha256", "entries")}
+    if payload.get("excluded_paths") != EXCLUDED_PATHS:
+        errors.append("fingerprint exclusions differ from the exact self-generated authority exclusion")
+    canonical = {key: payload.get(key) for key in ("algorithm", "git_head", "baseline_sha", "branch", "scope_manifest_sha256", "excluded_paths", "entries")}
     if payload.get("digest") != sha256_json(canonical):
         errors.append("fingerprint digest is stale")
     return errors

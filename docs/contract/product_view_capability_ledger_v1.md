@@ -10,7 +10,7 @@
 
 ## 2. 权威运行身份
 
-每份台账必须绑定既有 `codex_complete_worktree_fingerprint/v1` 完整候选指纹、Git HEAD、基线 SHA、范围清单哈希，以及数据库架构政策、正式菜单政策、原因码注册表、视图结构基线、模块版本集合、用户、公司、语言和权限组。运行身份固定为 `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$` 且 `demo_data=false`，不得使用 Git commit SHA 代替完整指纹，也不得使用手工拼装的 Compose、数据库或凭据代替。
+每份台账必须绑定既有 `codex_complete_worktree_fingerprint/v1` 完整候选指纹、Git HEAD、基线 SHA、范围清单哈希，以及数据库架构政策、正式菜单政策、原因码注册表、视图结构基线、模块版本集合、用户、公司、语言和权限组。运行身份固定为 `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$` 且 `demo_data=false`，不得使用 Git commit SHA 代替完整指纹，也不得使用手工拼装的 Compose、数据库或凭据代替。为消除自引用，完整指纹只允许精确排除 `contracts/generated/product_view_structure_contract.json`；排除路径与原因本身必须进入 canonical digest，禁止目录、通配符或可变排除项。
 
 ## 3. 能力原子与证据链
 

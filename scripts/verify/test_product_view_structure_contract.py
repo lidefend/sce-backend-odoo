@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 import unittest
 
-from scripts.contract.complete_worktree_fingerprint import validate_fingerprint
+from scripts.contract.complete_worktree_fingerprint import EXCLUDED_PATHS, validate_fingerprint
 from scripts.contract.product_view_structure_common import (
     FINGERPRINT_SCHEMA, collect_occurrences, collect_references, content_digest,
     normalize_arch, policy_menu_rows, resolve_odoo17_view, sha256_json,
@@ -15,7 +15,7 @@ class ProductViewStructureContractTests(unittest.TestCase):
     def setUp(self):
         self.policy = {"products": [{"capabilities": [{"enabled": True, "release_state": "released", "menu_xmlid": "x.menu", "res_model": "x.model"}]}]}
         entries = [{"path": "x", "tracked": True, "mode": "100644", "index_blob": "a" * 40, "worktree_kind": "file", "worktree_sha256": "1" * 64}]
-        canonical = {"algorithm": FINGERPRINT_SCHEMA, "git_head": "2" * 64, "baseline_sha": "3" * 64, "branch": "feature/x", "scope_manifest_sha256": sha256_json(entries), "entries": entries}
+        canonical = {"algorithm": FINGERPRINT_SCHEMA, "git_head": "2" * 64, "baseline_sha": "3" * 64, "branch": "feature/x", "scope_manifest_sha256": sha256_json(entries), "excluded_paths": EXCLUDED_PATHS, "entries": entries}
         self.fingerprint = {**canonical, "digest": sha256_json(canonical)}
         semantic = normalize_arch('<form><field name="name"/><field name="name"/><button name="go" type="object"/></form>', semantic=True)
         resolved = normalize_arch('<form data-native="x"><field name="name"/><field name="name"/><button name="go" type="object"/></form>', semantic=False)
@@ -87,6 +87,11 @@ class ProductViewStructureContractTests(unittest.TestCase):
         value = deepcopy(self.fingerprint)
         value["digest"] = "0" * 64
         self.assertTrue(validate_fingerprint(value))
+
+    def test_fingerprint_rejects_broad_or_missing_exclusion(self):
+        value = deepcopy(self.fingerprint)
+        value["excluded_paths"] = [{"path": "contracts/generated", "reason": "broad"}]
+        self.assertTrue(any("exclusions" in error for error in validate_fingerprint(value)))
 
     def test_summary_tampering_fails(self):
         value = deepcopy(self.manifest)

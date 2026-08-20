@@ -10,7 +10,7 @@ This phase defines measurement facts only. The ledger and its reason codes are n
 
 ## 2. Authoritative runtime identity
 
-Every ledger binds the existing `codex_complete_worktree_fingerprint/v1` complete candidate fingerprint, Git HEAD, baseline SHA, scope-manifest hash, database architecture policy, formal-menu policy, reason registry, view-structure baseline, versioned module set, user, company, language, and group profile. Runtime identity is fixed to `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$` with `demo_data=false`. A Git commit SHA alone is not the complete fingerprint, and manually assembled Compose, database, or credential commands cannot satisfy the gate.
+Every ledger binds the existing `codex_complete_worktree_fingerprint/v1` complete candidate fingerprint, Git HEAD, baseline SHA, scope-manifest hash, database architecture policy, formal-menu policy, reason registry, view-structure baseline, versioned module set, user, company, language, and group profile. Runtime identity is fixed to `local.clean` / `sc-local-clean` / `sc_clean` / `^sc_clean$` with `demo_data=false`. A Git commit SHA alone is not the complete fingerprint, and manually assembled Compose, database, or credential commands cannot satisfy the gate. To remove self-reference, the complete fingerprint may exclude only the exact `contracts/generated/product_view_structure_contract.json` file; the excluded path and reason are themselves part of the canonical digest, and directory, wildcard, or mutable exclusions are forbidden.
 
 ## 3. Capability atoms and evidence chain
 
