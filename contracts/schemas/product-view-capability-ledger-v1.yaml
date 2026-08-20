@@ -1,0 +1,138 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://smart-construction.local/contracts/product-view-capability-ledger-v1.schema.json
+title: Product View Capability Ledger V1
+type: object
+additionalProperties: false
+required: [schema, authority, summary, entries, manifest_sha256]
+properties:
+  schema: {const: product_view_capability_ledger/v1}
+  authority: {$ref: '#/$defs/authority'}
+  summary: {$ref: '#/$defs/summary'}
+  entries:
+    type: array
+    items: {$ref: '#/$defs/surface_entry'}
+  manifest_sha256: {$ref: '#/$defs/sha256'}
+$defs:
+  sha256:
+    type: string
+    pattern: '^[0-9a-f]{64}$'
+  non_empty_string: {type: string, minLength: 1}
+  authority:
+    type: object
+    additionalProperties: false
+    required: [branch, candidate_fingerprint, policy_path, policy_sha256, runtime_profile, compose_project, database, database_filter, module_set, user, company, language, group_profile, exporter_version]
+    properties:
+      branch: {$ref: '#/$defs/non_empty_string'}
+      candidate_fingerprint: {$ref: '#/$defs/sha256'}
+      policy_path: {const: docs/governance/database_architecture_policy.md}
+      policy_sha256: {$ref: '#/$defs/sha256'}
+      runtime_profile: {const: local.clean}
+      compose_project: {const: sc-local-clean}
+      database: {const: sc_clean}
+      database_filter: {const: '^sc_clean$'}
+      module_set:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {$ref: '#/$defs/non_empty_string'}
+      user: {$ref: '#/$defs/non_empty_string'}
+      company: {$ref: '#/$defs/non_empty_string'}
+      language: {$ref: '#/$defs/non_empty_string'}
+      group_profile:
+        type: array
+        uniqueItems: true
+        items: {$ref: '#/$defs/non_empty_string'}
+      exporter_version: {const: product_view_capability_ledger/v1}
+  summary:
+    type: object
+    additionalProperties: false
+    required: [formal_menu_count, model_count, resolved_surface_count, capability_atom_count, ready_count, fallback_count, unsupported_count, silent_loss_count]
+    properties:
+      formal_menu_count: {type: integer, minimum: 0}
+      model_count: {type: integer, minimum: 0}
+      resolved_surface_count: {type: integer, minimum: 0}
+      capability_atom_count: {type: integer, minimum: 0}
+      ready_count: {type: integer, minimum: 0}
+      fallback_count: {type: integer, minimum: 0}
+      unsupported_count: {type: integer, minimum: 0}
+      silent_loss_count: {type: integer, minimum: 0}
+  surface_entry:
+    type: object
+    additionalProperties: false
+    required: [contract_ref, menu_xmlid, action_xmlid, model, view_type, native_view_hash, atoms]
+    properties:
+      contract_ref: {$ref: '#/$defs/non_empty_string'}
+      menu_xmlid: {$ref: '#/$defs/non_empty_string'}
+      action_xmlid: {$ref: '#/$defs/non_empty_string'}
+      model: {$ref: '#/$defs/non_empty_string'}
+      view_type:
+        enum: [form, tree, list, search, kanban, pivot, graph, calendar, gantt, activity, dashboard]
+      native_view_hash: {$ref: '#/$defs/sha256'}
+      atoms:
+        type: array
+        items: {$ref: '#/$defs/capability_atom'}
+  capability_atom:
+    type: object
+    additionalProperties: false
+    required: [atom_id, capability_key, native, normalized, semantic, frontend, terminal_status, reason_code, evidence_refs]
+    properties:
+      atom_id: {$ref: '#/$defs/non_empty_string'}
+      capability_key: {$ref: '#/$defs/non_empty_string'}
+      native: {$ref: '#/$defs/native_stage'}
+      normalized: {$ref: '#/$defs/contract_stage'}
+      semantic: {$ref: '#/$defs/contract_stage'}
+      frontend: {$ref: '#/$defs/frontend_stage'}
+      terminal_status: {$ref: '#/$defs/terminal_status'}
+      reason_code: {type: string}
+      evidence_refs:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {$ref: '#/$defs/non_empty_string'}
+    allOf:
+      - if:
+          properties:
+            terminal_status: {const: ready}
+        then:
+          properties:
+            reason_code: {maxLength: 0}
+        else:
+          properties:
+            reason_code: {minLength: 1}
+  terminal_status: {enum: [ready, fallback, unsupported]}
+  stage_status: {enum: [present, reduced, missing, not_applicable, unproven]}
+  source_authority: {enum: [native_view, normalized_contract, semantic_page, scene_contract, route_state, compatibility_projection, runtime_default, none]}
+  native_stage:
+    type: object
+    additionalProperties: false
+    required: [occurrence, locator, value_hash]
+    properties:
+      occurrence: {type: integer, minimum: 1}
+      locator: {$ref: '#/$defs/non_empty_string'}
+      value_hash: {$ref: '#/$defs/sha256'}
+  contract_stage:
+    type: object
+    additionalProperties: false
+    required: [status, count, carrier_refs, source_authority]
+    properties:
+      status: {$ref: '#/$defs/stage_status'}
+      count: {type: integer, minimum: 0}
+      carrier_refs:
+        type: array
+        uniqueItems: true
+        items: {$ref: '#/$defs/non_empty_string'}
+      value_hash: {$ref: '#/$defs/sha256'}
+      source_authority: {$ref: '#/$defs/source_authority'}
+  frontend_stage:
+    type: object
+    additionalProperties: false
+    required: [status, canonical_atom_ref, projection_atom_ref, consumer_symbol, renderer_key, interaction_symbol, source_authority, source_count]
+    properties:
+      status: {$ref: '#/$defs/stage_status'}
+      canonical_atom_ref: {type: string}
+      projection_atom_ref: {type: string}
+      consumer_symbol: {type: string}
+      renderer_key: {type: string}
+      interaction_symbol: {type: string}
+      source_authority: {$ref: '#/$defs/source_authority'}
+      source_count: {type: integer, minimum: 0}

@@ -67,7 +67,7 @@ goal:
       status: completed
     - id: Q1
       title: product_capability_loss_ledger
-      status: planned
+      status: active
     - id: Q2
       title: modifiers_actions_permissions_closure
       status: planned
@@ -96,4 +96,3 @@ goal:
     - batch_scoped_commits
     - generated_baseline_and_gate_changes_land_after_mechanism_tests
     - renderer_activation_is_independent_from_parser_and_contract_commits
-

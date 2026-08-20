@@ -43,3 +43,9 @@
 - This worktree was created through `make workspace.worktree.create` with the
   exact full baseline SHA.
 
+## Q1-1 contract definition
+
+- Candidate fingerprint: `4655fcb28c1101ee80500ceb4088177da153349a`.
+- Scope: contract definition only; no runtime, database, Make, or global gate mutation.
+- Result: capability atom schema, terminal-state rules, reason-code registry,
+  and bilingual contract semantics frozen for the Q1 collector.
