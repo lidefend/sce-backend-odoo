@@ -163,7 +163,10 @@ class _CalendarGanttActivitySearchParserMixin:
 
     # ---------------- search 解析与合并 ----------------
     def _parse_search_from_arch(self, arch, root=None):
-        out = {"filters": [], "group_by": [], "group_by_fields": [], "search_fields": [], "facets": {"enabled": True}}
+        out = {
+            "filters": [], "group_by": [], "group_by_fields": [], "search_fields": [],
+            "search_panel": {"sections": []}, "facets": {"enabled": True},
+        }
         try:
             if root is None and not arch:
                 return out
@@ -179,9 +182,61 @@ class _CalendarGanttActivitySearchParserMixin:
             group_by_fields = []
             search_fields = []
             for s in search_nodes:
-                for field in s.xpath('.//field[@name]'):
+                occurrence_nodes = [node for node in s.iter() if node is not s and node.tag in ('filter', 'field')]
+                source_positions = {id(node): index for index, node in enumerate(occurrence_nodes)}
+
+                def identity(element):
+                    tag = str(element.tag or '')
+                    name = element.get('name')
+                    duplicate_ordinal = 1
+                    segments = []
+                    current = element
+                    while current is not None and isinstance(getattr(current, 'tag', None), str):
+                        parent = current.getparent() if hasattr(current, 'getparent') else None
+                        tag_ordinal = 1
+                        if parent is not None:
+                            siblings = [child for child in parent if getattr(child, 'tag', None) == current.tag]
+                            if current in siblings:
+                                tag_ordinal = siblings.index(current) + 1
+                            if current is element:
+                                duplicates = [
+                                    child for child in parent
+                                    if getattr(child, 'tag', None) == tag and child.get('name') == name
+                                ]
+                                if current in duplicates:
+                                    duplicate_ordinal = duplicates.index(current) + 1
+                        segments.append('%s[%s]' % (current.tag, tag_ordinal))
+                        current = parent
+                    return {
+                        "native_locator": "/" + "/".join(reversed(segments)),
+                        "occurrence_index": duplicate_ordinal,
+                        "source_position": source_positions[id(element)],
+                        "attributes": dict(element.attrib or {}),
+                    }
+
+                for field in (node for node in occurrence_nodes if node.tag == 'field'):
                     fname = (field.get('name') or '').strip()
                     if not fname:
+                        continue
+                    parent = field.getparent()
+                    inside_search_panel = False
+                    while parent is not None:
+                        if getattr(parent, 'tag', None) == 'searchpanel':
+                            inside_search_panel = True
+                            break
+                        parent = parent.getparent() if hasattr(parent, 'getparent') else None
+                    if inside_search_panel:
+                        out["search_panel"]["sections"].append({
+                            "field": fname,
+                            "name": fname,
+                            "label": field.get('string') or fname,
+                            "domain_raw": field.get('domain') or '',
+                            "groupby": field.get('groupby') or '',
+                            "hierarchize": field.get('hierarchize'),
+                            "select": field.get('select'),
+                            "limit": field.get('limit'),
+                            **identity(field),
+                        })
                         continue
                     search_fields.append({
                         "name": fname,
@@ -189,8 +244,12 @@ class _CalendarGanttActivitySearchParserMixin:
                         "operator": field.get('operator') or '',
                         "filter_domain_raw": field.get('filter_domain') or '',
                         "context_raw": field.get('context') or '',
+                        "domain_raw": field.get('domain') or '',
+                        "optional": field.get('optional'),
+                        "sum": field.get('sum'),
+                        **identity(field),
                     })
-                for f in s.xpath('.//filter'):
+                for f in (node for node in occurrence_nodes if node.tag == 'filter'):
                     name = f.get('name') or ''
                     label = f.get('string') or name
                     domain_raw = f.get('domain')
@@ -198,6 +257,7 @@ class _CalendarGanttActivitySearchParserMixin:
                     domain_val = self._safe_eval_expr(domain_raw)
                     context_val = self._safe_eval_expr(context_raw)
 
+                    occurrence = identity(f)
                     filters.append({
                         "name": name or label,
                         "label": label,
@@ -205,6 +265,10 @@ class _CalendarGanttActivitySearchParserMixin:
                         "domain_raw": domain_raw,
                         "context_raw": context_raw,
                         "context": context_val if isinstance(context_val, dict) else {},
+                        "help": f.get('help') or '',
+                        "date": f.get('date'),
+                        "type": f.get('type'),
+                        **occurrence,
                     })
 
                     gb = None
@@ -224,6 +288,7 @@ class _CalendarGanttActivitySearchParserMixin:
                             "label": label,
                             "field": gb,
                             "context_raw": context_raw,
+                            **occurrence,
                         })
 
             out["filters"] = filters
@@ -233,7 +298,7 @@ class _CalendarGanttActivitySearchParserMixin:
             return out
         except Exception:
             _logger.exception("parse search view failed")
-            return out
+            raise
 
     def _merge_search(self, primary, secondary):
         """
@@ -246,6 +311,9 @@ class _CalendarGanttActivitySearchParserMixin:
         secondary = secondary or {"filters": [], "group_by": [], "facets": {"enabled": True}}
 
         def _key(f):
+            locator = str(f.get('native_locator') or '').strip()
+            if locator:
+                return ('native', locator, int(f.get('occurrence_index') or 0))
             return (
                 (f.get('name') or ''),
                 (f.get('label') or ''),
@@ -274,7 +342,7 @@ class _CalendarGanttActivitySearchParserMixin:
         merged_search_fields = []
         sf_seen = set()
         for row in (primary.get('search_fields', []) + secondary.get('search_fields', [])):
-            key = (row.get('name') or '', row.get('filter_domain_raw') or '', row.get('context_raw') or '')
+            key = _key(row)
             if key in sf_seen:
                 continue
             sf_seen.add(key)
@@ -283,17 +351,29 @@ class _CalendarGanttActivitySearchParserMixin:
         merged_group_fields = []
         gf_seen = set()
         for row in (primary.get('group_by_fields', []) + secondary.get('group_by_fields', [])):
-            key = (row.get('name') or '', str(row.get('field') or ''), row.get('context_raw') or '')
+            key = _key(row)
             if key in gf_seen:
                 continue
             gf_seen.add(key)
             merged_group_fields.append(row)
+
+        merged_panel_sections = []
+        panel_seen = set()
+        for source in (primary, secondary):
+            panel = source.get('search_panel') if isinstance(source.get('search_panel'), dict) else {}
+            for row in panel.get('sections', []) if isinstance(panel.get('sections'), list) else []:
+                key = _key(row)
+                if key in panel_seen:
+                    continue
+                panel_seen.add(key)
+                merged_panel_sections.append(row)
 
         return {
             "filters": merged_filters,
             "group_by": merged_gb,
             "group_by_fields": merged_group_fields,
             "search_fields": merged_search_fields,
+            "search_panel": {"sections": merged_panel_sections},
             "facets": {"enabled": facets_enabled},
         }
 

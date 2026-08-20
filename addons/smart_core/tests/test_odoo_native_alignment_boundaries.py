@@ -789,6 +789,26 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(identity.get("source_view_id"), view.id)
         self.assertEqual(identity.get("projection_scope"), f"view:{view.id}:res.partner:form")
 
+    def test_view_config_projection_identity_rejects_invalid_explicit_view(self):
+        ViewConfig = self.env["app.view.config"].sudo()
+        wrong_model = self.env["ir.ui.view"].sudo().create({
+            "name": "Wrong model explicit search view",
+            "model": "res.users",
+            "type": "search",
+            "arch": '<search><field name="name"/></search>',
+        })
+        wrong_type = self.env["ir.ui.view"].sudo().create({
+            "name": "Wrong type explicit partner view",
+            "model": "res.partner",
+            "type": "form",
+            "arch": '<form><field name="name"/></form>',
+        })
+
+        for view_id in (999999999, wrong_model.id, wrong_type.id):
+            with self.subTest(view_id=view_id):
+                with self.assertRaises(ValueError):
+                    ViewConfig.with_context(contract_view_id=view_id)._projection_identity("res.partner", "search")
+
     def test_explicit_form_view_uses_lossless_parser_for_div_wrapped_fields(self):
         view = self.env["ir.ui.view"].sudo().create({
             "name": "Native alignment explicit partner form",

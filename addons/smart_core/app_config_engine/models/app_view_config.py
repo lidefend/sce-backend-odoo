@@ -114,17 +114,30 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
     def _projection_identity(self, model_name, view_type):
         context = dict(self.env.context or {})
         action_id = context.get('contract_action_id')
-        requested_view_id = context.get('contract_view_id') or context.get('requested_view_id')
+        requested_view_raw = context.get('contract_view_id')
+        if requested_view_raw in (None, False, ''):
+            requested_view_raw = context.get('requested_view_id')
+        requested_view_explicit = requested_view_raw not in (None, False, '')
+        requested_view_id = requested_view_raw
         action = None
         source_view_id = False
         try:
             requested_view_id = int(requested_view_id or 0)
-        except Exception:
-            requested_view_id = 0
-        if requested_view_id:
+        except Exception as exc:
+            raise ValueError("explicit view id is invalid") from exc
+        if requested_view_explicit:
+            if requested_view_id <= 0:
+                raise ValueError("explicit view id must be a positive integer")
             view = self.env['ir.ui.view'].sudo().browse(requested_view_id)
-            if view.exists() and view.model == model_name and view.type == view_type:
-                source_view_id = view.id
+            if not view.exists():
+                raise ValueError("explicit view %s does not exist" % requested_view_id)
+            actual_type = 'tree' if view.type == 'list' else view.type
+            expected_type = 'tree' if view_type == 'list' else view_type
+            if view.model != model_name or actual_type != expected_type:
+                raise ValueError(
+                    "explicit view %s does not match %s.%s" % (requested_view_id, model_name, expected_type)
+                )
+            source_view_id = view.id
         try:
             action_id = int(action_id or 0)
         except Exception:
@@ -585,6 +598,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         # below are still performed with sudo.
         Model = self.env[model_name]
         data = {}
+        view_id = False
 
         def _prepared_view_data(raw):
             if not isinstance(raw, dict) or not raw.get('arch'):
@@ -616,6 +630,8 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 _logger.debug("加载指定视图ID失败: %s", e)
             else:
                 _logger.warning("加载指定视图ID失败: %s", e)
+        if view_id and self.env.context.get('contract_projection_readonly'):
+            raise ValueError("specified view %s unavailable for %s.%s" % (view_id, model_name, view_type))
 
         # b) 标准方式（按类型）
         try:

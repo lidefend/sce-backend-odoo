@@ -32,6 +32,18 @@ class _ElementWrapper:
     def __iter__(self):
         return iter([_ElementWrapper(item, self) for item in list(self._element)])
 
+    def iter(self):
+        rows = []
+
+        def visit(element, parent=None):
+            current = _ElementWrapper(element, parent)
+            rows.append(current)
+            for child in list(element):
+                visit(child, current)
+
+        visit(self._element, self._parent)
+        return iter(rows)
+
     def __eq__(self, other):
         return isinstance(other, _ElementWrapper) and self._element is other._element
 
@@ -260,10 +272,31 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         )
 
         self.assertEqual(result["search_fields"][0]["name"], "partner_id")
+        self.assertEqual(result["search_fields"][0]["native_locator"], "/search[1]/field[1]")
+        self.assertEqual(result["search_fields"][0]["occurrence_index"], 1)
+        self.assertEqual(result["group_by_fields"][0]["native_locator"], "/search[1]/filter[2]")
         self.assertEqual(result["filters"][0]["name"], "mine")
         self.assertEqual(result["group_by"], ["user_id"])
         self.assertEqual(result["group_by_fields"][0]["field"], "user_id")
 
+    def test_search_parser_separates_search_panel_and_duplicate_group_by_occurrences(self):
+        result = self.parser._parse_search_from_arch("""
+            <search>
+                <filter name="by_partner" string="Partner A" context="{'group_by': 'partner_id'}"/>
+                <filter name="by_partner" string="Partner B" context="{'group_by': 'partner_id'}"/>
+                <field name="name" string="Name"/>
+                <searchpanel><field name="company_id" string="Company" hierarchize="1"/></searchpanel>
+            </search>
+        """)
+
+        self.assertEqual(len(result["group_by_fields"]), 2)
+        self.assertEqual([row["occurrence_index"] for row in result["group_by_fields"]], [1, 2])
+        self.assertEqual([row["name"] for row in result["search_fields"]], ["name"])
+        self.assertEqual(result["search_panel"]["sections"][0]["field"], "company_id")
+        self.assertEqual(result["search_panel"]["sections"][0]["native_locator"], "/search[1]/searchpanel[1]/field[1]")
+        merged = self.parser._merge_search(result, {})
+        self.assertEqual(len(merged["group_by_fields"]), 2)
+        self.assertEqual(len(merged["search_panel"]["sections"]), 1)
     def test_workflow_board_requires_group_semantics(self):
         result = self.kanban_parser._parse_kanban_view(
             '<kanban default_group_by="state"><field name="name"/><field name="state"/></kanban>',

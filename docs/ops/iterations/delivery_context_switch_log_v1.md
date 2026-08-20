@@ -4955,3 +4955,17 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius / validation: all generic one2many cells; non-zero collection
   semantics tests, 15 parser/guard tests, strict TypeScript, governed
   `local.clean` `smart_core` upgrade, and fingerprint-bound independent review.
+
+## Native search occurrence carrier closure (2026-08-21)
+
+- Branch / anchor: `feature/native-view-contract-capability-closure-v1` /
+  `4b1a7430` before the batch.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  canonical native search projection / `smart_core` `app.search.config`.
+- Reason / boundary: all formal search surfaces need duplicate-safe filter,
+  group-by and search-field occurrence identity in the existing `/data/search`
+  carrier. The batch preserves existing consumer keys and adds no frontend,
+  business-module, taxonomy, environment or database semantics.
+- Blast radius / validation: 89 formal search surfaces; model unit tests,
+  governed incremental `smart_core` upgrade, product view gates and
+  fingerprint-bound independent review.

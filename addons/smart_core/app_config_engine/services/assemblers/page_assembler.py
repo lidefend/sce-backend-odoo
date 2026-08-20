@@ -364,6 +364,7 @@ class PageAssembler:
         versions = {}
         model_fields_snapshot = su[model].fields_get()
         view_projection_sources = {}
+        view_projection_contracts = {}
 
         # 1) 字段：从模型配置生成；再归一化到 {name: {...}} 形式
         #    - 使用 su_env 读模型元数据，避免被权限限制
@@ -385,16 +386,47 @@ class PageAssembler:
         view_context = {}
         if isinstance(action, dict) and action.get("id"):
             view_context["contract_action_id"] = action.get("id")
-        requested_view_id = p.get("view_id") or p.get("viewId")
+        requested_view_raw = (
+            p.get("view_id")
+            or p.get("viewId")
+            or request_context.get("contract_view_id")
+            or request_context.get("requested_view_id")
+            or env_context.get("contract_view_id")
+            or env_context.get("requested_view_id")
+        )
+        requested_view_explicit = requested_view_raw not in (None, False, "")
         try:
-            requested_view_id = int(requested_view_id or 0)
-        except Exception:
-            requested_view_id = 0
+            requested_view_id = int(requested_view_raw or 0)
+        except Exception as exc:
+            raise ValueError("explicit view id is invalid") from exc
+        if requested_view_explicit and requested_view_id <= 0:
+            raise ValueError("explicit view id must be a positive integer")
+        requested_view_type = str(
+            p.get("view_type")
+            or p.get("viewType")
+            or request_context.get("view_type")
+            or request_context.get("viewType")
+            or env_context.get("view_type")
+            or env_context.get("viewType")
+            or ""
+        ).strip().lower()
+        if requested_view_type == "list":
+            requested_view_type = "tree"
+        canonical_view_types = [
+            "tree" if str(value or "").strip().lower() == "list" else str(value or "").strip().lower()
+            for value in view_types
+        ]
+        if requested_view_explicit and canonical_view_types.count(requested_view_type) != 1:
+            raise ValueError("explicit view id requires exactly one matching requested view type")
         view_context["contract_projection_readonly"] = True
         for vt in view_types:
+            canonical_vt = "tree" if str(vt or "").strip().lower() == "list" else str(vt or "").strip().lower()
+            explicit_target_view = requested_view_explicit and canonical_vt == requested_view_type
             try:
                 scoped_view_context = dict(view_context)
-                if requested_view_id and len(view_types) == 1:
+                scoped_view_context["contract_view_id"] = False
+                scoped_view_context["requested_view_id"] = False
+                if explicit_target_view:
                     scoped_view_context["contract_view_id"] = requested_view_id
                 view_config_model = env['app.view.config'].with_context(**scoped_view_context) if scoped_view_context else env['app.view.config']
                 view_data = view_config_model._safe_get_view_data(model, vt)
@@ -408,12 +440,17 @@ class PageAssembler:
                 # runtime group/ACL filtering still matches native Odoo.
                 vcfg_runtime = vcfg.with_user(env.user).sudo().with_context(**scoped_view_context)
                 v_contract = vcfg_runtime.get_contract_api(filter_runtime=True, check_model_acl=True)
+                view_projection_contracts[vt] = v_contract
                 v_versions.append(str(v_contract.get("effective_version") or vcfg.version))
             except KeyError:
+                if explicit_target_view:
+                    raise
                 mark_missing("app.view.config")
                 _logger.warning("app.view.config missing; fallback view contract for model=%s vt=%s", model, vt)
                 v_contract = {"type": vt}
             except Exception as e:
+                if explicit_target_view:
+                    raise
                 data["degraded"] = True
                 reason = f"view_contract_fallback:{vt}:{type(e).__name__}"
                 if reason not in warnings:
@@ -444,7 +481,14 @@ class PageAssembler:
             _logger.warning("app.search.config missing; fallback search contract for model=%s", model)
             data["search"] = {}
             versions["search"] = 0
-        self._inject_search_view_orchestration(data, env=env, model=model, view_context=view_context, versions=versions)
+        self._inject_search_view_orchestration(
+            data,
+            env=env,
+            model=model,
+            view_context=view_context,
+            versions=versions,
+            search_contract=view_projection_contracts.get("search"),
+        )
         self._apply_action_search_defaults(data, effective_context)
         self._inject_view_orchestration_summary(data)
         data["context"] = effective_context
@@ -2911,18 +2955,21 @@ class PageAssembler:
             parts.append(value)
         versions["view"] = ",".join(parts) if parts else value
 
-    def _inject_search_view_orchestration(self, data, *, env, model, view_context, versions=None):
+    def _inject_search_view_orchestration(self, data, *, env, model, view_context, versions=None, search_contract=None):
         if not model or "app.view.config" not in env:
             return
         context = dict(view_context or {})
         context["contract_projection_readonly"] = True
+        context["contract_view_id"] = False
+        context["requested_view_id"] = False
         try:
-            view_config = env["app.view.config"].with_context(**context)._generate_from_fields_view_get(model, "search")
-            runtime_view_config = view_config.with_user(env.user).sudo().with_context(**context)
-            search_contract = runtime_view_config.get_contract_api(filter_runtime=True, check_model_acl=True)
+            if not isinstance(search_contract, dict):
+                view_config = env["app.view.config"].with_context(**context)._generate_from_fields_view_get(model, "search")
+                runtime_view_config = view_config.with_user(env.user).sudo().with_context(**context)
+                search_contract = runtime_view_config.get_contract_api(filter_runtime=True, check_model_acl=True)
         except Exception:
             _logger.exception("Failed to apply search view orchestration for model=%s", model)
-            return
+            raise
         if not isinstance(search_contract, dict):
             return
         self._append_view_version_token(versions, search_contract.get("effective_version"))
@@ -2932,10 +2979,15 @@ class PageAssembler:
             return
         base_search = data.get("search") if isinstance(data.get("search"), dict) else {}
         merged = dict(base_search)
-        for key in ("filters", "group_by", "facets"):
-            value = orchestrated_search.get(key)
-            if value:
-                merged[key] = value
+        native_projection = {
+            "filters": orchestrated_search.get("filters"),
+            "group_by": orchestrated_search.get("group_by_fields") or orchestrated_search.get("group_by"),
+            "fields": orchestrated_search.get("search_fields"),
+            "search_panel": orchestrated_search.get("search_panel"),
+            "facets": orchestrated_search.get("facets"),
+        }
+        for key, value in native_projection.items():
+            merged[key] = value
         data["search"] = merged
 
     def _apply_action_search_defaults(self, data, action_context):
