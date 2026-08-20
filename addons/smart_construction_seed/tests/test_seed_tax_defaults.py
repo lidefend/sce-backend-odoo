@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import os
+from unittest.mock import patch
+
 from odoo.tests import TransactionCase, tagged
 
 
@@ -27,21 +30,27 @@ class TestSeedTaxDefaults(TransactionCase):
         )
 
     def test_registered_business_company_can_receive_contract_tax_defaults(self):
+        maintenance_capability = "a" * 64
         importer_group = self.env.ref(
             "smart_core.group_smart_core_tenant_payload_importer"
         )
         self.env.user.write({"groups_id": [(4, importer_group.id)]})
         company = self.env["res.company"].create({"name": "Registered company fixture"})
-        self.env["sc.tenant.company.registration"].with_context(
-            sc_tenant_payload_import=True
-        ).create(
-            {
-                "tenant_key": "registered-fixture",
-                "company_id": company.id,
-                "source_module": "test_tenant_payload",
-                "source_external_key": "company-1",
-            }
-        )
+        with patch.dict(
+            os.environ,
+            {"SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY": maintenance_capability},
+        ):
+            self.env["sc.tenant.company.registration"].with_context(
+                sc_tenant_payload_import=True,
+                sc_tenant_payload_maintenance_capability=maintenance_capability,
+            ).create(
+                {
+                    "tenant_key": "registered-fixture",
+                    "company_id": company.id,
+                    "source_module": "test_tenant_payload",
+                    "source_external_key": "company-1",
+                }
+            )
 
         taxes = self.env["account.tax"].sudo().search(
             [

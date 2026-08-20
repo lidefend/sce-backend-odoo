@@ -354,12 +354,22 @@ class TestCorePaymentAmountSemantics(TransactionCase):
         )
 
     def _tax(self, name, company):
+        country = (
+            company.account_fiscal_country_id
+            or company.partner_id.country_id
+            or self.env.ref("base.cn")
+        )
         group = self._model("account.tax.group", company).search(
-            [("company_id", "=", company.id)], limit=1
+            [("company_id", "=", company.id), ("country_id", "=", country.id)],
+            limit=1,
         )
         if not group:
             group = self._model("account.tax.group", company).create(
-                {"name": f"{company.name} Tax Group", "company_id": company.id}
+                {
+                    "name": f"{company.name} Tax Group",
+                    "company_id": company.id,
+                    "country_id": country.id,
+                }
             )
         return self._model("account.tax", company).create(
             {
@@ -369,7 +379,7 @@ class TestCorePaymentAmountSemantics(TransactionCase):
                 "type_tax_use": "purchase",
                 "company_id": company.id,
                 "tax_group_id": group.id,
-                "country_id": (company.country_id or self.env.ref("base.cn")).id,
+                "country_id": country.id,
             }
         )
 
