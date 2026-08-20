@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "contract"))
 from product_view_structure_common import (  # noqa: E402
     CANONICAL_VIEW_TYPES, SCHEMA, collect_occurrences, collect_references,
     content_digest, file_sha256, normalize_arch, normalize_view_type,
-    policy_menu_rows, resolve_odoo17_view, sha256_json, sha256_text,
+    policy_menu_rows, resolve_odoo17_view, sha256_bytes, sha256_json, sha256_text,
 )
 from complete_worktree_fingerprint import validate_fingerprint  # noqa: E402
 
