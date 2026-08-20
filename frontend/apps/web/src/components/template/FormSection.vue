@@ -293,6 +293,21 @@
                   rows="4"
                   @input="emitFieldChange(field, ($event.target as HTMLTextAreaElement).value)"
                 />
+                <div v-else-if="field.type === 'monetary'" class="field-monetary-control">
+                  <input
+                    :id="fieldControlId(field)"
+                    :value="String(field.inputValue ?? '')"
+                    class="input"
+                    :aria-required="field.required || undefined"
+                    :aria-invalid="field.invalid || undefined"
+                    :aria-describedby="fieldDescribedBy(field)"
+                    type="number"
+                    :step="monetaryInputStep(field.digits)"
+                    :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
+                    @input="emitFieldChange(field, ($event.target as HTMLInputElement).value)"
+                  />
+                  <span v-if="field.currencyLabel" class="field-currency-label">{{ field.currencyLabel }}</span>
+                </div>
                 <input
                   v-else
                   :id="fieldControlId(field)"
@@ -341,6 +356,7 @@ import ScSelect from '../design-system/ScSelect.vue';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
+import { formatMonetaryDisplayValue, monetaryInputStep } from './formSection.mapper';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -617,6 +633,9 @@ function inputPlaceholderText(field: FormSectionFieldSchema) {
 
 function readonlyText(field: FormSectionFieldSchema) {
   const fieldType = String(field.type || field.descriptor?.ttype || field.descriptor?.type || '').trim().toLowerCase();
+  if (fieldType === 'monetary') {
+    return formatMonetaryDisplayValue(field.value, field.digits, field.currencyLabel);
+  }
   const normalizedValue = ['date', 'datetime', 'many2one'].includes(fieldType)
     && String(field.value).trim().toLowerCase() === 'false'
     ? ''
@@ -1538,5 +1557,18 @@ select.input {
   .native-date-range-separator {
     display: none;
   }
+}
+.field-monetary-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-currency-label {
+  color: var(--sc-text-secondary, #596579);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 </style>

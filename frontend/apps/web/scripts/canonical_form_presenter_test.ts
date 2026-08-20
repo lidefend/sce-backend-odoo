@@ -13,6 +13,28 @@ import {
 } from '../src/pages/contractForm/canonicalFormRenderer';
 import { resolveCanonicalFormActionExecution, validateCanonicalFormActionExecutors } from '../src/pages/contractForm/canonicalFormActionExecutor';
 import type { ContractAction } from '../src/pages/contractForm/types';
+import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
+import {
+  formatMonetaryDisplayValue,
+  monetaryInputStep,
+  normalizeMonetaryDigits,
+  resolveCurrencyDisplayLabel,
+} from '../src/components/template/formSection.mapper';
+
+assert.deepEqual(normalizeMonetaryDigits([16, 2]), [16, 2]);
+assert.equal(normalizeMonetaryDigits([16, -1]), undefined);
+assert.equal(normalizeMonetaryDigits([2, 3]), undefined);
+assert.equal(resolveCurrencyDisplayLabel([7, 'USD']), 'USD');
+assert.equal(resolveCurrencyDisplayLabel({ id: 7, symbol: '€', name: 'EUR' }), 'EUR');
+assert.equal(monetaryInputStep([16, 2]), '0.01');
+assert.equal(monetaryInputStep(undefined), 'any');
+assert.equal(formatMonetaryDisplayValue(1234.5, [16, 2], 'USD', 'en-US'), '$1,234.50');
+assert.equal(formatMonetaryDisplayValue(1234.5, [16, 1], '元', 'en-US'), '1,234.5 元');
+assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US'), '-');
+assert.equal(normalizeContractFieldValue({
+  name: 'amount', value: '12.345', descriptor: { type: 'monetary', digits: [16, 2] } as never,
+  originalValue: 0, buildOne2manyValue: () => [],
+}), 12.35);
 
 function snapshot(): ContractV2Snapshot {
   return {

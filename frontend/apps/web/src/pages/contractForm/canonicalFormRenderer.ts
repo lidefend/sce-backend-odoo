@@ -1,6 +1,7 @@
 import type { FieldDescriptor } from '@sc/schema';
 import type { CanonicalFormField, CanonicalFormNode, CanonicalRelationValue } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldSchema, TemplateSelectOption } from '../../components/template/formSection.types';
+import { normalizeMonetaryDigits, resolveCurrencyDisplayLabel } from '../../components/template/formSection.mapper';
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -55,6 +56,10 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
       ? { relation: text(config.relation || config.relationModel || config.relation_model) }
       : {}),
     ...(text(config.filename) ? { filename: text(config.filename) } : {}),
+    ...(normalizeMonetaryDigits(config.digits) ? { digits: normalizeMonetaryDigits(config.digits) } : {}),
+    ...(text(config.currencyField || config.currency_field)
+      ? { currency_field: text(config.currencyField || config.currency_field) }
+      : {}),
   };
 }
 
@@ -63,6 +68,13 @@ export function canonicalFieldToFormSection(field: CanonicalFormField): FormSect
   const type = text(field.fieldType || config.fieldType || config.field_type || 'char').toLowerCase() || 'char';
   const descriptor = fieldDescriptor(field);
   const relation = type === 'many2one' ? relationValue(field.value) : null;
+  const digits = type === 'monetary' ? normalizeMonetaryDigits(config.digits) : undefined;
+  const currencyField = type === 'monetary'
+    ? text(config.currencyField || config.currency_field || 'currency_id')
+    : '';
+  const currencyLabel = type === 'monetary'
+    ? resolveCurrencyDisplayLabel(config.currencyLabel || config.currency_label || config.currencyValue || config.currency_value)
+    : '';
   return {
     key: field.widgetId,
     name: field.fieldCode,
@@ -71,6 +83,9 @@ export function canonicalFieldToFormSection(field: CanonicalFormField): FormSect
     type,
     widget: text(config.widget),
     widgetSemantics: asRecord(config.widgetSemantics || config.widget_semantics),
+    digits,
+    currencyField: currencyField || undefined,
+    currencyLabel: currencyLabel || undefined,
     required: field.required,
     readonly: field.readonly || field.disabled,
     helpText: field.reasonCode,

@@ -25,6 +25,9 @@ export type FormSectionFieldSchema = {
   type: TemplateFieldType;
   widget?: string;
   widgetSemantics?: Record<string, unknown>;
+  digits?: [number, number];
+  currencyField?: string;
+  currencyLabel?: string;
   required: boolean;
   readonly: boolean;
   invalid?: boolean;

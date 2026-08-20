@@ -46,12 +46,64 @@ export type BuildFormSectionFieldSchemasOptions = {
   many2oneOpenToken?: string;
 };
 
+export function normalizeMonetaryDigits(value: unknown): [number, number] | undefined {
+  if (!Array.isArray(value) || value.length !== 2) return undefined;
+  const precision = Number(value[0]);
+  const scale = Number(value[1]);
+  if (!Number.isInteger(precision) || !Number.isInteger(scale) || precision <= 0 || scale < 0 || scale > 20 || scale > precision) {
+    return undefined;
+  }
+  return [precision, scale];
+}
+
+export function resolveCurrencyDisplayLabel(value: unknown): string {
+  if (Array.isArray(value)) return String(value[1] || '').trim();
+  if (value && typeof value === 'object') {
+    const row = value as Record<string, unknown>;
+    return String(row.name || row.display_name || row.symbol || '').trim();
+  }
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+export function monetaryInputStep(digits?: [number, number]): string {
+  if (!digits) return 'any';
+  const scale = digits[1];
+  return scale === 0 ? '1' : `0.${'0'.repeat(Math.max(0, scale - 1))}1`;
+}
+
+export function formatMonetaryDisplayValue(
+  value: unknown,
+  digits?: [number, number],
+  currencyLabel = '',
+  locale?: string,
+): string {
+  if (value === null || value === undefined || value === false || value === '') return '-';
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '-';
+  const scale = digits?.[1];
+  const options: Intl.NumberFormatOptions = Number.isInteger(scale)
+    ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
+    : {};
+  const currencyCode = /^[A-Z]{3}$/.test(currencyLabel) ? currencyLabel : '';
+  if (currencyCode) {
+    return new Intl.NumberFormat(locale, { ...options, style: 'currency', currency: currencyCode }).format(numeric);
+  }
+  const formatted = new Intl.NumberFormat(locale, options).format(numeric);
+  return currencyLabel ? `${formatted} ${currencyLabel}` : formatted;
+}
+
 export function buildFormSectionFieldSchemas(
   fields: FormSectionMapperFieldNode[],
   options: BuildFormSectionFieldSchemasOptions,
 ): FormSectionFieldSchema[] {
   return fields.map((field) => {
     const type = options.resolveFieldType(field.descriptor) || 'char';
+    const descriptor = (field.descriptor || {}) as Record<string, unknown>;
+    const digits = type === 'monetary' ? normalizeMonetaryDigits(descriptor.digits) : undefined;
+    const currencyField = type === 'monetary'
+      ? String(descriptor.currency_field || 'currency_id').trim()
+      : '';
+    const currencyLabel = currencyField ? resolveCurrencyDisplayLabel(options.resolveRawValue(currencyField)) : '';
     const descriptorWidget = field.descriptor && typeof field.descriptor === 'object'
       ? String((field.descriptor as Record<string, unknown>).widget || '').trim()
       : '';
@@ -69,6 +121,9 @@ export function buildFormSectionFieldSchemas(
       type,
       widget,
       widgetSemantics: semantics,
+      digits,
+      currencyField: currencyField || undefined,
+      currencyLabel: currencyLabel || undefined,
       required: options.resolveRequired(field),
       readonly: field.readonly,
       invalid: Boolean(errorText),
