@@ -1,7 +1,7 @@
 # ======================================================
 # ================== Contract ==========================
 # ======================================================
-.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock contract.view_structure.fingerprint contract.view_structure.export contract.view_structure.baseline verify.contract.view_structure gate.contract.view_structure
+.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock contract.view_structure.fingerprint contract.view_structure.export contract.view_structure.baseline verify.contract.view_structure verify.contract.view_structure_candidate gate.contract.view_structure contract.view_carrier.export verify.contract.view_carrier gate.contract.view_carrier
 
 VIEW_STRUCTURE_POLICY ?= scripts/verify/baselines/formal_business_product_menu_policy_v1.json
 VIEW_STRUCTURE_DATABASE_POLICY ?= docs/governance/database_architecture_policy.md
@@ -11,6 +11,9 @@ VIEW_STRUCTURE_CONTAINER_CANDIDATE ?= /tmp/product_view_structure_contract.json
 VIEW_STRUCTURE_FINGERPRINT ?= artifacts/contract/product_view_candidate_fingerprint.json
 VIEW_STRUCTURE_REPORT ?= artifacts/backend/product_view_structure_contract_guard.json
 VIEW_STRUCTURE_BASELINE_SHA ?= $(shell git merge-base HEAD origin/main)
+VIEW_CARRIER_CANDIDATE ?= artifacts/contract/product_view_contract_carriers_candidate.json
+VIEW_CARRIER_CONTAINER_CANDIDATE ?= /tmp/product_view_contract_carriers_candidate.json
+VIEW_CARRIER_SCHEMA ?= contracts/schemas/product-view-contract-carriers-v1.yaml
 
 verify.contract.lint:
 	@python3 scripts/verify/contracts_lint.py
@@ -73,6 +76,12 @@ contract.view_structure.baseline: contract.view_structure.export
 	@mv "$(VIEW_STRUCTURE_BASELINE).tmp" "$(VIEW_STRUCTURE_BASELINE)"
 	@echo "[contract.view_structure.baseline] baseline=$(VIEW_STRUCTURE_BASELINE)"
 
+verify.contract.view_structure_candidate: contract.view_structure.export
+	@python3 scripts/verify/product_view_structure_contract_guard.py \
+	  --manifest "$(VIEW_STRUCTURE_CANDIDATE)" --policy "$(VIEW_STRUCTURE_POLICY)" \
+	  --database-policy "$(VIEW_STRUCTURE_DATABASE_POLICY)" --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  --report "$(VIEW_STRUCTURE_REPORT)"
+
 verify.contract.view_structure: guard.prod.forbid contract.view_structure.fingerprint
 	@python3 scripts/verify/product_view_structure_contract_guard.py \
 	  --manifest "$(VIEW_STRUCTURE_BASELINE)" --policy "$(VIEW_STRUCTURE_POLICY)" \
@@ -84,6 +93,27 @@ gate.contract.view_structure: contract.view_structure.export
 	  --manifest "$(VIEW_STRUCTURE_BASELINE)" --candidate "$(VIEW_STRUCTURE_CANDIDATE)" \
 	  --policy "$(VIEW_STRUCTURE_POLICY)" --database-policy "$(VIEW_STRUCTURE_DATABASE_POLICY)" \
 	  --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" --report "$(VIEW_STRUCTURE_REPORT)"
+
+contract.view_carrier.export: guard.prod.forbid check-compose-project check-compose-env verify.contract.view_structure_candidate
+	@mkdir -p "$$(dirname "$(VIEW_CARRIER_CANDIDATE)")"
+	@rm -f "$(VIEW_CARRIER_CANDIDATE)" "$(VIEW_CARRIER_CANDIDATE).tmp"
+	@$(RUN_ENV) $(COMPOSE_BASE) exec -T $(ODOO_SERVICE) rm -f "$(VIEW_CARRIER_CONTAINER_CANDIDATE)"
+	@$(RUN_ENV) \
+	  PRODUCT_VIEW_CARRIER_STRUCTURE_INPUT="$(VIEW_STRUCTURE_CANDIDATE)" \
+	  PRODUCT_VIEW_CARRIER_FINGERPRINT="$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  PRODUCT_VIEW_CARRIER_OUTPUT="$(VIEW_CARRIER_CONTAINER_CANDIDATE)" \
+	  DB_NAME="$(DB_NAME)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/contract/export_product_view_contract_carriers.py
+	@$(RUN_ENV) $(COMPOSE_BASE) exec -T $(ODOO_SERVICE) cat "$(VIEW_CARRIER_CONTAINER_CANDIDATE)" > "$(VIEW_CARRIER_CANDIDATE).tmp"
+	@mv "$(VIEW_CARRIER_CANDIDATE).tmp" "$(VIEW_CARRIER_CANDIDATE)"
+
+verify.contract.view_carrier: contract.view_carrier.export
+	@PYTHONPATH="$(ROOT_DIR)" python3 scripts/verify/product_view_contract_carriers_guard.py \
+	  --artifact "$(VIEW_CARRIER_CANDIDATE)" --structure "$(VIEW_STRUCTURE_CANDIDATE)" \
+	  --fingerprint "$(VIEW_STRUCTURE_FINGERPRINT)" --schema "$(VIEW_CARRIER_SCHEMA)"
+
+gate.contract.view_carrier: verify.contract.view_carrier
+	@echo "[gate.contract.view_carrier] PASS artifact=$(VIEW_CARRIER_CANDIDATE)"
 
 verify.contract.catalog: guard.prod.forbid
 	@python3 scripts/verify/intent_cases_integrity_guard.py --cases-file docs/contract/cases.yml
