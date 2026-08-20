@@ -369,6 +369,12 @@ case "$command" in
     preflight
     bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
     ;;
+  core-record-form-journeys)
+    preflight
+    # shellcheck source=../common/frontend_acceptance_make_identity.sh
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make "FE_PRO_03_JOURNEY=${FE_PRO_03_JOURNEY:-ALL}" verify.frontend.core_record_form.journeys
+    ;;
   release-preflight)
     preflight
     if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then

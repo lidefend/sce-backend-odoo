@@ -87,9 +87,10 @@ async function j12(page) {
 
 async function openLegalPaymentCreate(page) {
   await page.goto(`${BASE_URL}${recordRoute(TARGETS.settlement)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const workspace = page.locator('.financial-workspace[data-workspace-kind="settlement"]');
-  await workspace.waitFor({ timeout: 45000 });
-  await workspace.getByRole('button', { name: '新建付款申请', exact: true }).click();
+  await waitForm(page);
+  const createPayment = page.getByRole('button', { name: '新建付款申请', exact: true });
+  await createPayment.waitFor({ timeout: 45000 });
+  await createPayment.click();
   await page.waitForURL((url) => url.pathname.includes('/f/payment.request/new'), { timeout: 45000 });
   await waitForm(page);
 }
@@ -140,7 +141,7 @@ async function j13(page) {
   const localValue = String(Number(authorityValue || 0) + 1);
   await existingAmount.fill(localValue);
   const removeConflict = await interceptWriteConflict(page);
-  await page.getByRole('button', { name: /^保存(?:草稿)?$/ }).first().click();
+  await page.getByRole('button', { name: /^保存(?:草稿|修改)?$/ }).first().click();
   await page.getByRole('heading', { name: '记录已被其他操作更新' }).waitFor({ timeout: 30000 });
   check(await existingAmount.inputValue() === localValue, 'J13 conflict did not retain local input');
   const intercepted = await removeConflict();
@@ -160,9 +161,9 @@ async function main() {
   check(TARGETS.contract?.record_id > 0 && TARGETS.settlement?.record_id > 0 && TARGETS.core_form_request?.record_id > 0, 'missing J12/J13 targets');
   const browser = await launchChromium({ headless: true });
   const report = { schema_version: 'frontend_core_record_form_journeys.v1', database: DB_NAME, j12: {}, j13: {}, runtime: {}, pass: false };
+  let page;
   try {
     let context;
-    let page;
     const j12Runtime = { console: [], pageerror: [], unexpectedHttp: [] };
     const j13Runtime = { console: [], pageerror: [], unexpectedHttp: [] };
     if (JOURNEY === 'ALL' || JOURNEY === 'J12') {
@@ -174,7 +175,7 @@ async function main() {
       applyReleasedNavigationTarget(
         TARGETS,
         ['contract'],
-        await releasedNavigation.targetByMenuXmlid('smart_construction_core.menu_sc_contract_center'),
+        await releasedNavigation.target(TARGETS.contract.action_xmlid),
       );
       report.j12 = await j12(page);
       await context.close();
@@ -201,7 +202,17 @@ async function main() {
     fs.writeFileSync(path.join(OUTPUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
     console.log('[verify.frontend.core_record_form.journeys] PASS J12 J13');
   } catch (error) {
-    fs.writeFileSync(path.join(OUTPUT, 'failure.json'), `${JSON.stringify({ ...report, error: error.stack || error.message }, null, 2)}\n`);
+    const activePage = page;
+    const diagnostic = activePage
+      ? {
+          url: activePage.url(),
+          title: await activePage.title().catch(() => ''),
+          productPageMode: await activePage.locator('[data-product-page-mode]').first().getAttribute('data-product-page-mode').catch(() => ''),
+          bodyText: (await activePage.locator('body').innerText().catch(() => '')).slice(0, 4000),
+        }
+      : {};
+    if (activePage) await activePage.screenshot({ path: path.join(OUTPUT, 'failure.png'), fullPage: true }).catch(() => {});
+    fs.writeFileSync(path.join(OUTPUT, 'failure.json'), `${JSON.stringify({ ...report, diagnostic, error: error.stack || error.message }, null, 2)}\n`);
     throw error;
   } finally {
     await browser.close();
