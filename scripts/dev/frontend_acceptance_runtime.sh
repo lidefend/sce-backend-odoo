@@ -286,6 +286,19 @@ case "$command" in
     curl -fsS "http://127.0.0.1:${BACKEND_ACCEPTANCE_PORT}/web/login" >/dev/null
     echo "[backend.acceptance.health] PASS db=$BACKEND_ACCEPTANCE_DB url=http://127.0.0.1:$BACKEND_ACCEPTANCE_PORT"
     ;;
+  backend-logs)
+    preflight
+    docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1 || {
+      echo "[backend.acceptance.logs] DENY managed backend is absent" >&2
+      exit 2
+    }
+    validate_backend_identity
+    if docker exec "$BACKEND_ACCEPTANCE_NAME" test -f /opt/sce-runtime/logs/odoo.log; then
+      docker exec "$BACKEND_ACCEPTANCE_NAME" tail -n 200 /opt/sce-runtime/logs/odoo.log
+    else
+      docker logs --tail 200 "$BACKEND_ACCEPTANCE_NAME"
+    fi
+    ;;
   frontend-up)
     validate_frontend_launch_contract
     preflight
@@ -343,6 +356,10 @@ case "$command" in
     source "$ROOT_DIR/scripts/common/compose.sh"
     compose_dev up -d --wait db redis odoo
     bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
+    compose_dev restart odoo
+    compose_dev up -d --wait odoo
+    preflight
+    echo "[frontend.acceptance.registry] RELOADED local project=$COMPOSE_PROJECT_NAME sha=$(git -C "$ROOT_DIR" rev-parse HEAD)"
     ;;
   infrastructure-restore)
     for volume in "$DB_DATA" "$REDIS_DATA" "$ODOO_DATA"; do

@@ -302,6 +302,55 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.payment_execution_status_display, "办理中：草稿")
         self.assertEqual(execution.state, "draft")
 
+    def test_payment_execution_readonly_normalized_contract_is_loadable(self):
+        _request, execution = self._approved_execution()
+        self.env.cr.execute(
+            "UPDATE sc_payment_execution SET state = 'paid' WHERE id = %s",
+            (execution.id,),
+        )
+        execution.invalidate_recordset(["state"])
+        action = self.env.ref(
+            "smart_construction_core.action_sc_payment_execution_actual_outflow"
+        )
+        menu = self.env.ref("smart_construction_core.menu_sc_payment_execution")
+        finance = self._internal_user(
+            "p1_execution_contract_finance_manager",
+            "smart_construction_core.group_sc_role_finance_manager",
+        )
+
+        result = UiContractV2Handler(
+            self.env(user=finance),
+            su_env=self.env["ir.model"].sudo().env,
+        ).handle(
+            {
+                "model": "sc.payment.execution",
+                "view_type": "form",
+                "record_id": execution.id,
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "render_profile": "readonly",
+                "contract_surface": "user",
+                "source_mode": "governance_pipeline",
+                "context": {"company_id": self.env.company.id},
+                "delivery_profile": "full",
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.0.x"],
+                "client_contract_capabilities": [
+                    "container_tree.v2",
+                    "data_source.v2",
+                    "action_rule.v2",
+                    "relation_entry.v2",
+                    "status_contract.v2",
+                ],
+            }
+        )
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        self.assertEqual(contract["pageInfo"]["model"], "sc.payment.execution")
+        self.assertEqual(contract["pageInfo"]["viewType"], "form")
+
     def test_finance_manager_can_read_same_company_project_and_contract_anchors(self):
         finance_manager = self._internal_user(
             "p1_anchor_finance_manager",

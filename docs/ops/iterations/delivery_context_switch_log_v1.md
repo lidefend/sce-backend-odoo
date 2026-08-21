@@ -5037,3 +5037,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   fallback. Existing runtime unit tests, scene bridge guard, production build,
   governed page identity and the authoritative frontend release gate provide
   containment evidence.
+
+## Payment execution acceptance baseline refresh closure (2026-08-22)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `bb45cf29`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling plus P1
+  regression coverage / governed frontend acceptance baseline lifecycle /
+  `scripts/test`, `scripts/dev`, and `smart_construction_core` tests.
+- Reason / boundary: the persistent acceptance database retained an older form
+  orchestration row. `mod.install` did not refresh already-installed module XML,
+  so the real `sc.payment.execution` readonly journey reached a synthetic
+  `creator_name` node without native occurrence identity and Contract V2
+  correctly failed closed.
+- Why Here / Why Not Elsewhere: the current P0 occurrence validator and current
+  P1 form sources are valid. The owner is the P4 baseline lifecycle, which must
+  refresh `smart_core` before `smart_construction_core` and reload the Odoo
+  registry before fixture reset. No validator weakening, fabricated locator,
+  frontend fallback, new contract variant, database, profile, or fixture was
+  introduced.
+- Blast radius / validation: only the registered `sc_frontend_acceptance`
+  ensure path and its read-only backend log access changed. The actual-outflow
+  P1 Contract V2 test, governance unit tests, governed baseline refresh, and
+  the `FE-A-PE-001` browser detail journey provide containment evidence.
