@@ -18,6 +18,12 @@ class RenderOdooConfTests(unittest.TestCase):
 
         self.assertIn("./VERSION:/opt/sce-product/VERSION:ro", compose)
 
+    def test_runtime_entrypoint_always_uses_validated_renderer(self):
+        entrypoint = (ROOT / "scripts" / "odoo-entrypoint.sh").read_text(encoding="utf-8")
+
+        self.assertIn('python3 /usr/local/bin/render_odoo_conf.py "$TPL" "$OUT"', entrypoint)
+        self.assertNotIn("envsubst <", entrypoint)
+
     def test_dev_omits_only_unavailable_addons_roots(self):
         rendered = (
             "[options]\n"
@@ -33,6 +39,24 @@ class RenderOdooConfTests(unittest.TestCase):
 
         self.assertIn("addons_path = /native,/mnt/source-addons\n", normalized)
         self.assertEqual(removed, ("/mnt/product-addons", "/mnt/test-addons"))
+
+    def test_dev_prefers_candidate_source_over_embedded_product_copy(self):
+        rendered = (
+            "[options]\n"
+            "addons_path = /native,/mnt/product-addons,/mnt/source-addons,/mnt/demo-addons\n"
+        )
+
+        normalized, removed = TARGET.normalize_non_production_addons_path(
+            rendered,
+            environment="dev",
+            is_directory=lambda _value: True,
+        )
+
+        self.assertIn(
+            "addons_path = /native,/mnt/source-addons,/mnt/product-addons,/mnt/demo-addons\n",
+            normalized,
+        )
+        self.assertEqual(removed, ())
 
     def test_production_keeps_declared_roots_unchanged(self):
         rendered = "addons_path = /native,/mnt/product-addons,/mnt/customer-addons\n"

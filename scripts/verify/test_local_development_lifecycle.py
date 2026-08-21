@@ -14,6 +14,13 @@ SAMPLE_PREPARE = ROOT / "scripts/dev/local_sample_env_prepare.sh"
 
 
 class LocalDevelopmentLifecycleTest(unittest.TestCase):
+    def test_safe_runner_includes_registered_demo_addons_mount(self):
+        runner = (ROOT / "scripts" / "test" / "test_safe.sh").read_text(encoding="utf-8")
+        self.assertIn(
+            "/mnt/source-addons,/mnt/demo-addons,${ADDONS_EXTERNAL_MOUNT}",
+            runner,
+        )
+
     def test_demo_verifier_uses_registered_company_tax_contract(self):
         verifier = (ROOT / "scripts/verify/demo.sh").read_text(encoding="utf-8")
         self.assertIn("legacy global tax XMLIDs absent", verifier)
@@ -109,6 +116,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             "local.dev.test",
             "local.dev.upgrade",
             "local.dev.sync_demo",
+            "local.dev.contract_snapshot",
             "local.dev.rebuild_demo",
             "local.dev.verify_demo",
             "local.sample.prepare",
@@ -200,6 +208,11 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("local.dev.test: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.upgrade: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.snapshot: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn("local.dev.contract_snapshot: guard.prod.forbid local.dev.ready", make_text)
+        contract_snapshot = make_text.split("local.dev.contract_snapshot:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn('ENV_FILE="$(LOCAL_DEV_ENV_FILE)"', contract_snapshot)
+        self.assertIn("$(LOCAL_ENV_ISOLATE)", contract_snapshot)
+        self.assertIn("contract.export_all", contract_snapshot)
         self.assertIn(
             "local.dev.rebuild_demo: guard.prod.forbid local.dev.demo_credentials.prepare",
             make_text,
