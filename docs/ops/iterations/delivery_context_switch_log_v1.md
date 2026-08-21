@@ -5059,3 +5059,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   ensure path and its read-only backend log access changed. The actual-outflow
   P1 Contract V2 test, governance unit tests, governed baseline refresh, and
   the `FE-A-PE-001` browser detail journey provide containment evidence.
+
+## My Work authoritative payment-detail target closure (2026-08-22)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `7b5b4b61`.
+- Formal Product Layer / Layer Target / Module: P1 construction standard
+  product / payment work-item navigation target /
+  `smart_construction_core` with its typed frontend consumer.
+- Reason / boundary: the product workspace declared the formal payment action
+  XMLID but emitted a model-only `/r/payment.request/<id>` route. Opening a
+  work item therefore bypassed the action-bound golden contract and reached an
+  actionless compatibility projection. The service now resolves and carries
+  the registered action/menu identity in the target and route.
+- Why Here / Why Not Elsewhere: the payment work-item service already owns this
+  P1 target. The generic frontend continues to consume the supplied route; it
+  does not infer a model, role, label or state. P0 native occurrence validation
+  remains fail-closed, and no Lite, Scene DTO, Native ledger or UI5 capability
+  is added.
+- Blast radius / validation: only `我的工作 -> 付款申请详情` navigation changes.
+  The exact service test, strict TypeScript, P1 completeness guard, governed
+  acceptance upgrade/fixture cycle and J10 browser journey provide containment
+  evidence.

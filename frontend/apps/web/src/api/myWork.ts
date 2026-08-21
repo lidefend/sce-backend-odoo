@@ -135,7 +135,16 @@ export type ProductMyWorkItem = {
   sort_values: Record<string, string | number | null>;
   actions: ProductMyWorkAction[];
   completed_event?: { code?: string; label?: string; at?: string };
-  target: { route: string; model: string; record_id: number; action_xmlid?: string; menu_xmlid?: string };
+  target: {
+    route: string;
+    model: string;
+    record_id: number;
+    action_ref?: string;
+    action_xmlid?: string;
+    menu_xmlid?: string;
+    action_id?: number;
+    menu_id?: number;
+  };
   source_authority: string;
 };
 
