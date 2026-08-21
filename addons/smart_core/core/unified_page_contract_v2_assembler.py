@@ -2956,6 +2956,7 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("visible_profiles", "visibleProfiles"),
             ("presentation", "presentation"),
             ("action_safety", "actionSafety"),
+            ("refresh_policy", "refreshPolicy"),
             ("allowed", "allowed"),
             ("enabled", "enabled"),
             ("disabled", "disabled"),
@@ -3257,6 +3258,8 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
                     current_safety.get("requires_confirm") or incoming_safety.get("requires_confirm")
                 ),
             }
+        if not _dict(current.get("refreshPolicy")) and _dict(row.get("refreshPolicy")):
+            current["refreshPolicy"] = deepcopy(row.get("refreshPolicy"))
         if _action_presentation_priority(row) > _action_presentation_priority(current):
             current["label"] = _text(row.get("label"), _text(current.get("label")))
             if _dict(row.get("presentation")):
@@ -3537,6 +3540,8 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                     row[field_name] = value
             if _dict(runtime_business.get("actionSafety")):
                 row["actionSafety"] = deepcopy(runtime_business.get("actionSafety"))
+            if _dict(runtime_business.get("refreshPolicy")):
+                row["refreshPolicy"] = deepcopy(runtime_business.get("refreshPolicy"))
             if _text(runtime_business.get("reasonCode")):
                 row["reasonCode"] = runtime_business.get("reasonCode")
         invisible = _action_invisible_constraint(row)

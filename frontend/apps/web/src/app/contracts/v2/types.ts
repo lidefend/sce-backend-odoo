@@ -160,6 +160,7 @@ export interface ContractV2ActionRule {
   visibleProfiles?: string[];
   presentation?: ContractV2Dictionary;
   actionSafety?: ContractV2Dictionary;
+  refreshPolicy?: ContractV2Dictionary;
   submitPolicy?: ContractV2Dictionary;
   tracePolicy?: ContractV2Dictionary;
   sourceTrace?: ContractV2Dictionary[];

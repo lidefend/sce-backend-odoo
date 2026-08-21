@@ -1616,6 +1616,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                         "requires_confirm": True,
                         "confirm_message": "确认提交？",
                     },
+                    "refreshPolicy": {"on_success": ["scene_projection"], "mode": "reload_record"},
                 },
             ]},
             "statusContract": {"buttonStatus": [{
@@ -1639,6 +1640,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertFalse(native_action["enabled"])
         self.assertTrue(native_action["disabled"])
         self.assertEqual(native_action["actionSafety"]["confirm_message"], "确认提交？")
+        self.assertEqual(native_action["refreshPolicy"]["mode"], "reload_record")
 
     def test_form_field_modifiers_are_attached_to_native_field_status(self):
         contract = assembler.assemble_unified_page_contract_v2(

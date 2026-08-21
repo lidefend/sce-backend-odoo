@@ -28,6 +28,11 @@ if not record:
     raise RuntimeError("governed local.dev payment request is not readable by demo_role_finance")
 record.check_access_rights("read")
 record.check_access_rule("read")
+actionable_record = payment_env.search([("name", "=", "DEMO-PR-FLOORPLAN-001")], limit=1)
+if not actionable_record:
+    raise RuntimeError("governed submit-ready payment request fixture is missing")
+actionable_record.check_access_rights("read")
+actionable_record.check_access_rule("read")
 execution_env = env["sc.payment.execution"].with_user(user).with_company(user.company_id).with_context(
     allowed_company_ids=user.company_ids.ids,
     active_test=False,
@@ -82,6 +87,14 @@ fingerprint_payload = {
         ("payment_request_id", "=", record.id),
     ])),
 }
+actionable_fingerprint_payload = {
+    "id": int(actionable_record.id),
+    "write_date": actionable_record.write_date.isoformat() if actionable_record.write_date else "",
+    "state": str(actionable_record.state or ""),
+    "validation_status": str(actionable_record.validation_status or ""),
+    "name": str(actionable_record.name or ""),
+    "amount": float(actionable_record.amount or 0.0),
+}
 payload = {
     "database": env.cr.dbname,
     "user": {"id": int(user.id), "login": user.login, "xmlid": xmlid(user)},
@@ -124,8 +137,20 @@ payload = {
         "legal_next_action": str(record.legal_next_action_display or ""),
         "blocking_reason": str(record.payment_blocking_reason_display or ""),
     },
+    "actionable_record": {
+        "id": int(actionable_record.id),
+        "name": str(actionable_record.name or ""),
+        "state": str(actionable_record.state or ""),
+        "validation_status": str(actionable_record.validation_status or ""),
+        "amount": float(actionable_record.amount or 0.0),
+        "legal_next_action": str(actionable_record.legal_next_action_display or ""),
+        "blocking_reason": str(actionable_record.payment_blocking_reason_display or ""),
+    },
     "business_fingerprint": hashlib.sha256(
         json.dumps(fingerprint_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest(),
+    "actionable_fingerprint": hashlib.sha256(
+        json.dumps(actionable_fingerprint_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
     ).hexdigest(),
     "candidate_inventory": candidate_rows,
 }

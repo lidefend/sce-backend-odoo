@@ -132,6 +132,7 @@ export function buildContractFormActions(params: {
           : ['create', 'edit', 'readonly'],
         presentation: row.presentation,
         action_safety: row.actionSafety ?? row.action_safety,
+        refresh_policy: row.refreshPolicy ?? row.refresh_policy,
       });
   });
   merged.push(...params.sceneReadyActions);
