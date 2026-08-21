@@ -97,7 +97,15 @@ async function collectNative(page) {
 }
 
 async function collectCustom(page) {
-  await page.locator('[data-native-contract-structure] .native-form-tree').first().waitFor({ timeout: 45000 });
+  await page.waitForFunction(() => (
+    document.querySelector('[data-native-contract-structure] .native-form-tree')
+    || document.querySelector('.sc-state-panel[role="alert"]')
+  ), null, { timeout: 45000 });
+  const errorPanel = page.locator('.sc-state-panel[role="alert"]').first();
+  if (await errorPanel.count()) {
+    const message = normalize(await errorPanel.innerText());
+    throw new Error(`custom form render failed: ${message.slice(0, 2000)}`);
+  }
   const tabs = unique(await page.locator('[data-native-contract-structure] .native-tabs .native-tab').allTextContents());
   for (const label of tabs) {
     await page.locator('[data-native-contract-structure] .native-tabs .native-tab').filter({ hasText: label }).first().click();
@@ -146,7 +154,16 @@ try {
   const customPage = await customContext.newPage();
   attachDiagnostics(customPage, 'custom', errors, blockedMutations, contractBodies);
   await loginCustom(customPage);
-  await customPage.goto(`${frontendUrl}/r/${model}/${recordId}?action_id=${actionId}&menu_id=${menuId}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await customPage.goto(`${frontendUrl}/a/${actionId}?menu_id=${menuId}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await customPage.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
+  const targetRow = customPage.locator('tbody tr').filter({ hasText: String(target.record.name || '') }).first();
+  await targetRow.waitFor({ timeout: 45000 });
+  await targetRow.click();
+  await customPage.waitForURL((url) => (
+    url.pathname === `/r/${model}/${recordId}`
+    && url.searchParams.get('action_id') === String(actionId)
+    && url.searchParams.get('menu_id') === String(menuId)
+  ), { timeout: 45000 });
   report.custom = await collectCustom(customPage);
   await customPage.screenshot({ path: path.join(outputDir, 'custom-payment-request.png'), fullPage: true });
   await customContext.close();

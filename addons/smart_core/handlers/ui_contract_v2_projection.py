@@ -425,27 +425,27 @@ def ensure_native_layout_widget_status_visible(contract_v2: dict[str, Any]) -> N
             )
         )
 
-    visible_widget_ids: set[str] = set()
+    widget_visibility: dict[str, bool] = {}
 
     def walk(rows: list[Any]) -> None:
         for row in rows:
             if not isinstance(row, dict):
                 continue
             node_type = str(row.get("type") or row.get("containerType") or "").strip().lower()
-            if node_type == "field" and not node_invisible(row):
+            if node_type == "field":
                 widget_id = str(row.get("widgetId") or "").strip()
                 if not widget_id:
                     field_name = str(row.get("name") or row.get("field") or "").strip()
                     widget_id = f"field.{field_name}" if field_name else ""
                 if widget_id:
-                    visible_widget_ids.add(widget_id)
+                    widget_visibility[widget_id] = not node_invisible(row)
             for key in ("children", "pages", "tabs", "nodes", "items"):
                 children = row.get(key)
                 if isinstance(children, list):
                     walk(children)
 
     walk(container_tree)
-    if not visible_widget_ids:
+    if not widget_visibility:
         return
     status_contract = contract_v2.get("statusContract") if isinstance(contract_v2.get("statusContract"), dict) else {}
     widget_status = status_contract.get("widgetStatus") if isinstance(status_contract.get("widgetStatus"), list) else []
@@ -454,22 +454,27 @@ def ensure_native_layout_widget_status_visible(contract_v2: dict[str, Any]) -> N
         if not isinstance(row, dict):
             continue
         widget_id = str(row.get("widgetId") or "").strip()
-        if widget_id not in visible_widget_ids:
+        if widget_id not in widget_visibility:
             continue
         seen.add(widget_id)
-        row["visible"] = True
-        if row.get("readonly") is True:
+        if not widget_visibility[widget_id]:
+            row["visible"] = False
+            row["auth"] = "none"
+        else:
+            row["visible"] = True
+        if widget_visibility[widget_id] and row.get("readonly") is True:
             row["auth"] = "read"
-        elif row.get("disabled") is not True:
+        elif widget_visibility[widget_id] and row.get("disabled") is not True:
             row["auth"] = "edit"
-    for widget_id in sorted(visible_widget_ids - seen):
+    for widget_id in sorted(set(widget_visibility) - seen):
+        visible = widget_visibility[widget_id]
         widget_status.append({
             "widgetId": widget_id,
-            "visible": True,
+            "visible": visible,
             "readonly": False,
             "required": False,
             "disabled": False,
-            "auth": "edit",
+            "auth": "edit" if visible else "none",
         })
     set_v2_widget_status(contract_v2, widget_status)
 

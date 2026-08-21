@@ -926,6 +926,73 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(rows["field.name"]["auth"], "edit")
         self.assertFalse(rows["field.hidden"]["visible"])
 
+    def test_projection_adds_status_for_late_native_form_occurrence(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        occurrence_widget_id = "field.company_contractor_responsibility_state.occ.test"
+        contract = {
+            "layoutContract": {
+                "containerTree": [
+                    {
+                        "type": "group",
+                        "children": [
+                            {
+                                "type": "field",
+                                "name": "company_contractor_responsibility_state",
+                                "widgetId": occurrence_widget_id,
+                            }
+                        ],
+                    }
+                ]
+            },
+            "statusContract": {"widgetStatus": []},
+        }
+
+        handler._normalize_final_layout_contract(contract)
+        handler._ensure_native_layout_widget_status_visible(contract)
+
+        rows = [
+            row
+            for row in contract["statusContract"]["widgetStatus"]
+            if row.get("widgetId") == occurrence_widget_id
+        ]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["auth"], "edit")
+        self.assertTrue(rows[0]["visible"])
+
+    def test_projection_adds_status_for_late_hidden_native_form_occurrence(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        occurrence_widget_id = "field.company_contractor_responsibility_summary_id.occ.test"
+        contract = {
+            "layoutContract": {
+                "containerTree": [
+                    {
+                        "type": "group",
+                        "children": [
+                            {
+                                "type": "field",
+                                "name": "company_contractor_responsibility_summary_id",
+                                "widgetId": occurrence_widget_id,
+                                "attributes": {"invisible": "1"},
+                            }
+                        ],
+                    }
+                ]
+            },
+            "statusContract": {"widgetStatus": []},
+        }
+
+        handler._normalize_final_layout_contract(contract)
+        handler._ensure_native_layout_widget_status_visible(contract)
+
+        rows = [
+            row
+            for row in contract["statusContract"]["widgetStatus"]
+            if row.get("widgetId") == occurrence_widget_id
+        ]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["auth"], "none")
+        self.assertFalse(rows[0]["visible"])
+
     def test_layout_governance_applies_group_columns_and_visibility(self):
         handler = self.module.UiContractV2Handler(env=object())
         source_contract = {

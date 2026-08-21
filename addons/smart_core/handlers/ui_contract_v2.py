@@ -856,6 +856,10 @@ class UiContractV2Handler(BaseIntentHandler):
         if isinstance(hook_payload, dict):
             contract_v2 = dict(hook_payload)
         self._normalize_final_layout_contract(contract_v2)
+        # Extension finalizers may append native form occurrences after the
+        # assembler's initial status pass. Reconcile the final tree before
+        # modifier hydration so every delivered occurrence has one status.
+        self._ensure_native_layout_widget_status_visible(contract_v2)
         finalize_hook_at = time.monotonic()
         contract_v2 = project_runtime_business_actions(contract_v2)
         runtime_actions_projected_at = time.monotonic()

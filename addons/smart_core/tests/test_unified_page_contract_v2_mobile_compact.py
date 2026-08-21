@@ -2242,6 +2242,67 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         self.assertNotIn("compat", trimmed["meta"])
 
+    def test_web_pc_prunes_widget_status_without_delivered_widget(self):
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "fields": {
+                "name": {"name": "name", "type": "char", "string": "名称"},
+            },
+        }
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.status.reference.integrity",
+        )
+        full["statusContract"]["widgetStatus"].append({
+            "widgetId": "field.off_view_model_field",
+            "visible": True,
+            "readonly": False,
+            "required": False,
+            "disabled": False,
+            "auth": "edit",
+        })
+        occurrence_widget_id = "field.name.occ.test"
+        full["layoutContract"]["containerTree"][0]["pages"] = [{
+            "containerId": "page.test",
+            "containerType": "page",
+            "type": "page",
+            "children": [{
+                "containerId": occurrence_widget_id,
+                "containerType": "field",
+                "type": "field",
+                "name": "name",
+                "widgetId": occurrence_widget_id,
+                "children": [],
+                "widgetList": [],
+            }],
+            "widgetList": [],
+        }]
+        full["statusContract"]["widgetStatus"].append({
+            "widgetId": occurrence_widget_id,
+            "visible": True,
+            "readonly": False,
+            "required": False,
+            "disabled": False,
+            "auth": "edit",
+        })
+
+        trimmed = client.trim_unified_page_contract_v2(
+            full,
+            client_type="web_pc",
+            delivery_profile="full",
+        )
+
+        delivered_widget_ids = set(client._collect_widget_ids(trimmed["layoutContract"]["containerTree"]))
+        status_widget_ids = {
+            row["widgetId"] for row in trimmed["statusContract"]["widgetStatus"]
+        }
+        self.assertEqual(status_widget_ids, delivered_widget_ids)
+        self.assertNotIn("field.off_view_model_field", status_widget_ids)
+        self.assertIn(occurrence_widget_id, status_widget_ids)
+
     def test_ui_contract_v2_preserves_native_form_layout_tree(self):
         source = {
             "model": "project.project",
