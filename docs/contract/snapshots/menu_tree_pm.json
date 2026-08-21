@@ -13,7 +13,7 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {},
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

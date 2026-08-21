@@ -1,0 +1,23 @@
+{
+  "action": null,
+  "case": "route_authority_validate_missing_action_intent_admin",
+  "error": {
+    "code": 403,
+    "message": "route authority denied",
+    "reason_code": "ROUTE_ACTION_REQUIRED"
+  },
+  "execute_error": null,
+  "execute_result": null,
+  "fallback": false,
+  "meta_fields": null,
+  "model": null,
+  "op": "intent.invoke",
+  "record": null,
+  "record_error": null,
+  "snapshot_schema_version": "1.0.0",
+  "ui_contract": null,
+  "ui_contract_raw": {},
+  "user": "admin",
+  "user_fallback": null,
+  "view_type": null
+}

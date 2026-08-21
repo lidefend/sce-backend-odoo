@@ -2,7 +2,10 @@
   "action": null,
   "case": "business_evidence_trace_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": "INVALID_EVIDENCE_TRACE_INPUT",
+    "message": "business_model 和 business_id 必须有效"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,11 +16,26 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
+    "error": {
+      "code": "INVALID_EVIDENCE_TRACE_INPUT",
+      "message": "business_model 和 business_id 必须有效"
+    },
+    "meta": {
+      "elapsed_ms": 0,
       "intent": "business.evidence.trace",
-      "runtime_snapshot": false
-    }
+      "source_authority": {
+        "authorities": [
+          "sc.evidence",
+          "sc.evidence.link",
+          "sc.evidence.timeline.service",
+          "odoo.orm"
+        ],
+        "kind": "business_evidence_trace_projection",
+        "projection_only": true,
+        "runtime_carrier": "evidence_trace_contract"
+      }
+    },
+    "ok": false
   },
   "user": "admin",
   "user_fallback": null,

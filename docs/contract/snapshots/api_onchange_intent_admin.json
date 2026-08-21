@@ -18,7 +18,9 @@
     ],
     "line_patches": [],
     "modifiers_patch": {},
-    "patch": {},
+    "patch": {
+      "id": "NewId_0x735997d2e080"
+    },
     "schema_version": "v1",
     "warnings": []
   },

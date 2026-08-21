@@ -14,11 +14,14 @@
   "ui_contract": null,
   "ui_contract_raw": {
     "datas": "b'aGVsbG8='",
-    "id": 720,
+    "id": 1199,
+    "legacy_url": "",
     "mimetype": "text/plain",
     "name": "snapshot-upload.txt",
     "res_id": 1,
-    "res_model": "project.project"
+    "res_model": "project.project",
+    "type": "binary",
+    "url": ""
   },
   "user": "admin",
   "user_fallback": null,

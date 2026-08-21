@@ -2,7 +2,14 @@
   "action": null,
   "case": "chatter_activity_update_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": "MISSING_PARAMS",
+    "error_category": "validation",
+    "message": "缺少参数 model/res_id/activity_id/action",
+    "reason_code": "MISSING_PARAMS",
+    "retryable": false,
+    "suggested_action": "fix_input"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,10 +20,10 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "chatter.activity.update",
-      "runtime_snapshot": false
+    "result": {
+      "message": "缺少参数 model/res_id/activity_id/action",
+      "reason_code": "MISSING_PARAMS",
+      "success": false
     }
   },
   "user": "admin",

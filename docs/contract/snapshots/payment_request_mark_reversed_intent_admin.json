@@ -1,0 +1,40 @@
+{
+  "action": null,
+  "case": "payment_request_mark_reversed_intent_admin",
+  "error": {
+    "code": "NOT_FOUND",
+    "error_category": "not_found",
+    "message": "payment request not found",
+    "reason_code": "NOT_FOUND",
+    "retryable": false,
+    "suggested_action": "refresh_list"
+  },
+  "execute_error": null,
+  "execute_result": null,
+  "fallback": false,
+  "meta_fields": null,
+  "model": null,
+  "op": "intent.invoke",
+  "record": null,
+  "record_error": null,
+  "snapshot_schema_version": "1.0.0",
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "idempotency_fingerprint": "052c3d82a0008f5ef64b7c89c16fc5ed94f80e80",
+    "idempotency_key": "snapshot_payment_request_mark_reversed_missing",
+    "idempotency_replay_reason_code": "",
+    "idempotent_replay": false,
+    "intent_action": "mark_reversed",
+    "message": "payment request not found",
+    "reason_code": "NOT_FOUND",
+    "replay_age_ms": 0,
+    "replay_from_audit_id": 0,
+    "replay_original_trace_id": "",
+    "replay_window_expired": false,
+    "status_code": 404,
+    "success": false
+  },
+  "user": "admin",
+  "user_fallback": null,
+  "view_type": null
+}

@@ -13,11 +13,198 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "collaboration.users.search",
-      "runtime_snapshot": false
-    }
+    "raw": [
+      {
+        "items": [
+          {
+            "email": "admin@example.com",
+            "id": 2,
+            "login": "admin",
+            "name": "Administrator",
+            "partner_id": 3,
+            "partner_name": "Administrator"
+          },
+          {
+            "email": "",
+            "id": 50,
+            "login": "sc_test_admin",
+            "name": "Demo-全能力",
+            "partner_id": 63,
+            "partner_name": "Demo-全能力"
+          },
+          {
+            "email": "",
+            "id": 10,
+            "login": "fin1",
+            "name": "Demo-出纳A",
+            "partner_id": 20,
+            "partner_name": "Demo-出纳A"
+          },
+          {
+            "email": "",
+            "id": 22,
+            "login": "sc_contract_read",
+            "name": "Demo-合同只读",
+            "partner_id": 32,
+            "partner_name": "Demo-合同只读"
+          },
+          {
+            "email": "",
+            "id": 24,
+            "login": "sc_contract_mgr",
+            "name": "Demo-合同审批",
+            "partner_id": 34,
+            "partner_name": "Demo-合同审批"
+          },
+          {
+            "email": "",
+            "id": 12,
+            "login": "ct1",
+            "name": "Demo-合同管理员A",
+            "partner_id": 22,
+            "partner_name": "Demo-合同管理员A"
+          },
+          {
+            "email": "",
+            "id": 23,
+            "login": "sc_contract_user_cap",
+            "name": "Demo-合同经办",
+            "partner_id": 33,
+            "partner_name": "Demo-合同经办"
+          },
+          {
+            "email": "",
+            "id": 19,
+            "login": "sc_cost_read",
+            "name": "Demo-成本只读",
+            "partner_id": 29,
+            "partner_name": "Demo-成本只读"
+          },
+          {
+            "email": "",
+            "id": 13,
+            "login": "cost1",
+            "name": "Demo-成本员A",
+            "partner_id": 23,
+            "partner_name": "Demo-成本员A"
+          },
+          {
+            "email": "",
+            "id": 21,
+            "login": "sc_cost_mgr",
+            "name": "Demo-成本审批",
+            "partner_id": 31,
+            "partner_name": "Demo-成本审批"
+          },
+          {
+            "email": "",
+            "id": 20,
+            "login": "sc_cost_user_cap",
+            "name": "Demo-成本经办",
+            "partner_id": 30,
+            "partner_name": "Demo-成本经办"
+          },
+          {
+            "email": "",
+            "id": 15,
+            "login": "sc_material_mgr",
+            "name": "Demo-物资主管",
+            "partner_id": 25,
+            "partner_name": "Demo-物资主管"
+          },
+          {
+            "email": "",
+            "id": 8,
+            "login": "mat_mgr",
+            "name": "Demo-物资主管A",
+            "partner_id": 18,
+            "partner_name": "Demo-物资主管A"
+          },
+          {
+            "email": "",
+            "id": 28,
+            "login": "sc_material_read",
+            "name": "Demo-物资只读",
+            "partner_id": 38,
+            "partner_name": "Demo-物资只读"
+          },
+          {
+            "email": "",
+            "id": 7,
+            "login": "mat1",
+            "name": "Demo-物资员A",
+            "partner_id": 17,
+            "partner_name": "Demo-物资员A"
+          },
+          {
+            "email": "",
+            "id": 29,
+            "login": "sc_material_user_cap",
+            "name": "Demo-物资经办",
+            "partner_id": 39,
+            "partner_name": "Demo-物资经办"
+          },
+          {
+            "email": "",
+            "id": 32,
+            "login": "sc_settlement_read",
+            "name": "Demo-结算只读",
+            "partner_id": 42,
+            "partner_name": "Demo-结算只读"
+          },
+          {
+            "email": "",
+            "id": 34,
+            "login": "sc_settlement_mgr",
+            "name": "Demo-结算审批",
+            "partner_id": 44,
+            "partner_name": "Demo-结算审批"
+          },
+          {
+            "email": "",
+            "id": 33,
+            "login": "sc_settlement_user_cap",
+            "name": "Demo-结算经办",
+            "partner_id": 43,
+            "partner_name": "Demo-结算经办"
+          },
+          {
+            "email": "",
+            "id": 30,
+            "login": "sc_finance_read",
+            "name": "Demo-财务只读",
+            "partner_id": 40,
+            "partner_name": "Demo-财务只读"
+          }
+        ],
+        "source_authority": {
+          "authorities": [
+            "res.users",
+            "res.partner",
+            "res.groups",
+            "ir.rule"
+          ],
+          "kind": "odoo_collaboration_user_directory_projection",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "runtime_carrier": "collaboration.users.search"
+        }
+      },
+      {
+        "source_authority": {
+          "authorities": [
+            "res.users",
+            "res.partner",
+            "res.groups",
+            "ir.rule"
+          ],
+          "kind": "odoo_collaboration_user_directory_projection",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "runtime_carrier": "collaboration.users.search"
+        }
+      }
+    ]
   },
   "user": "admin",
   "user_fallback": null,

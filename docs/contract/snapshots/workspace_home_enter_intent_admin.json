@@ -1,7 +1,6 @@
 {
   "action": null,
   "case": "workspace_home_enter_intent_admin",
-  "contract_version": "v1",
   "error": null,
   "execute_error": null,
   "execute_result": null,
@@ -11,12 +10,402 @@
   "op": "intent.invoke",
   "record": null,
   "record_error": null,
+  "snapshot_schema_version": "1.0.0",
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "workspace.home.enter",
-      "runtime_snapshot": false
+    "block_schema": {
+      "types": {
+        "metric_card": {
+          "required": [
+            "key",
+            "type",
+            "title",
+            "value",
+            "target"
+          ]
+        },
+        "native_view_ref": {
+          "required": [
+            "key",
+            "type",
+            "title",
+            "model",
+            "view_mode",
+            "target"
+          ]
+        },
+        "shortcut_grid": {
+          "required": [
+            "key",
+            "type",
+            "title",
+            "items"
+          ]
+        },
+        "todo_list": {
+          "required": [
+            "key",
+            "type",
+            "title",
+            "items"
+          ]
+        },
+        "warning_list": {
+          "required": [
+            "key",
+            "type",
+            "title",
+            "items"
+          ]
+        }
+      },
+      "version": "2.0.0"
+    },
+    "datasets": {
+      "ds_active_projects": [
+        {
+          "action_key": "open_active_projects",
+          "hint": "有效项目",
+          "key": "active_projects",
+          "label": "进行中项目",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_sc_project_my_list",
+            "type": "action"
+          },
+          "tone": "neutral",
+          "value": 26
+        }
+      ],
+      "ds_pending_payments": [
+        {
+          "action_key": "open_pending_payments",
+          "hint": "付款/收款申请",
+          "key": "pending_payments",
+          "label": "待处理付款",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_payment_request_my",
+            "type": "action"
+          },
+          "tone": "neutral",
+          "value": 0
+        }
+      ],
+      "ds_project_list_ref": [
+        {
+          "key": "summary",
+          "label": "说明",
+          "value": "嵌入原生项目列表摘要，可继续打开完整列表/看板。"
+        },
+        {
+          "key": "model",
+          "label": "业务对象",
+          "value": "project.project"
+        },
+        {
+          "key": "count",
+          "label": "记录数",
+          "value": 26
+        }
+      ],
+      "ds_project_total": [
+        {
+          "action_key": "open_project_total",
+          "hint": "当前可见项目",
+          "key": "project_total",
+          "label": "项目总数",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_sc_project_list",
+            "type": "action"
+          },
+          "tone": "neutral",
+          "value": 26
+        }
+      ],
+      "ds_quick_entries": [
+        {
+          "action_key": "open_quick_entries_projects",
+          "hint": "",
+          "id": "projects",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_sc_project_list",
+            "type": "action"
+          },
+          "title": "项目台账"
+        },
+        {
+          "action_key": "open_quick_entries_intake",
+          "hint": "",
+          "id": "intake",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_project_initiation",
+            "type": "action"
+          },
+          "title": "项目立项"
+        },
+        {
+          "action_key": "open_quick_entries_payments",
+          "hint": "",
+          "id": "payments",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_payment_request_my",
+            "type": "action"
+          },
+          "title": "付款申请"
+        },
+        {
+          "action_key": "open_quick_entries_contracts",
+          "hint": "",
+          "id": "contracts",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_project_contract_overview",
+            "type": "action"
+          },
+          "title": "合同汇总"
+        }
+      ],
+      "ds_today_todos": [],
+      "ds_warnings": []
+    },
+    "page": {
+      "blocks": [
+        {
+          "key": "project_total",
+          "subtitle": "当前可见项目",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_sc_project_list",
+            "type": "action"
+          },
+          "title": "项目总数",
+          "tone": "neutral",
+          "type": "metric_card",
+          "value": 26
+        },
+        {
+          "key": "active_projects",
+          "subtitle": "有效项目",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_sc_project_my_list",
+            "type": "action"
+          },
+          "title": "进行中项目",
+          "tone": "neutral",
+          "type": "metric_card",
+          "value": 26
+        },
+        {
+          "key": "pending_payments",
+          "subtitle": "付款/收款申请",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_payment_request_my",
+            "type": "action"
+          },
+          "title": "待处理付款",
+          "tone": "neutral",
+          "type": "metric_card",
+          "value": 0
+        },
+        {
+          "items": [
+            {
+              "key": "projects",
+              "label": "项目台账",
+              "target": {
+                "action_xmlid": "smart_construction_core.action_sc_project_list",
+                "type": "action"
+              }
+            },
+            {
+              "key": "intake",
+              "label": "项目立项",
+              "target": {
+                "action_xmlid": "smart_construction_core.action_project_initiation",
+                "type": "action"
+              }
+            },
+            {
+              "key": "payments",
+              "label": "付款申请",
+              "target": {
+                "action_xmlid": "smart_construction_core.action_payment_request_my",
+                "type": "action"
+              }
+            },
+            {
+              "key": "contracts",
+              "label": "合同汇总",
+              "target": {
+                "action_xmlid": "smart_construction_core.action_project_contract_overview",
+                "type": "action"
+              }
+            }
+          ],
+          "key": "quick_entries",
+          "title": "快捷入口",
+          "type": "shortcut_grid"
+        },
+        {
+          "empty_text": "暂无待办",
+          "items": [],
+          "key": "today_todos",
+          "title": "我的待办",
+          "type": "todo_list"
+        },
+        {
+          "empty_text": "暂无预警",
+          "items": [],
+          "key": "warnings",
+          "title": "预警",
+          "type": "warning_list"
+        },
+        {
+          "count": 26,
+          "key": "project_list_ref",
+          "model": "project.project",
+          "summary": "嵌入原生项目列表摘要，可继续打开完整列表/看板。",
+          "target": {
+            "action_xmlid": "smart_construction_core.action_sc_project_list",
+            "type": "action"
+          },
+          "title": "项目列表摘要",
+          "type": "native_view_ref",
+          "view_mode": "tree,kanban,form"
+        }
+      ],
+      "layout": "block_grid"
+    },
+    "page_orchestration": {
+      "contract_version": "2.0.0",
+      "page": {
+        "key": "workspace.home",
+        "layout_mode": "block_grid",
+        "page_type": "dashboard",
+        "subtitle": "今日任务、快捷入口与业务摘要",
+        "title": "角色首页"
+      },
+      "scene_key": "workspace.home",
+      "schema_version": "2.0.0",
+      "zones": [
+        {
+          "blocks": [
+            {
+              "actions": [
+                {
+                  "key": "open_project_total",
+                  "label": "打开"
+                }
+              ],
+              "block_type": "metric",
+              "data_source": "ds_project_total",
+              "key": "project_total",
+              "priority": 100,
+              "subtitle": "当前可见项目",
+              "title": "",
+              "tone": "neutral"
+            },
+            {
+              "actions": [
+                {
+                  "key": "open_active_projects",
+                  "label": "打开"
+                }
+              ],
+              "block_type": "metric",
+              "data_source": "ds_active_projects",
+              "key": "active_projects",
+              "priority": 99,
+              "subtitle": "有效项目",
+              "title": "",
+              "tone": "neutral"
+            },
+            {
+              "actions": [
+                {
+                  "key": "open_pending_payments",
+                  "label": "打开"
+                }
+              ],
+              "block_type": "metric",
+              "data_source": "ds_pending_payments",
+              "key": "pending_payments",
+              "priority": 98,
+              "subtitle": "付款/收款申请",
+              "title": "",
+              "tone": "neutral"
+            },
+            {
+              "actions": [],
+              "block_type": "entry_grid",
+              "data_source": "ds_quick_entries",
+              "key": "quick_entries",
+              "priority": 97,
+              "subtitle": "",
+              "title": "快捷入口",
+              "tone": "neutral"
+            },
+            {
+              "actions": [],
+              "block_type": "todo_list",
+              "data_source": "ds_today_todos",
+              "key": "today_todos",
+              "priority": 96,
+              "subtitle": "",
+              "title": "我的待办",
+              "tone": "neutral"
+            },
+            {
+              "actions": [],
+              "block_type": "alert_panel",
+              "data_source": "ds_warnings",
+              "key": "warnings",
+              "priority": 95,
+              "subtitle": "",
+              "title": "预警",
+              "tone": "neutral"
+            },
+            {
+              "actions": [
+                {
+                  "key": "open_project_list_ref",
+                  "label": "打开明细"
+                }
+              ],
+              "block_type": "record_summary",
+              "data_source": "ds_project_list_ref",
+              "key": "project_list_ref",
+              "priority": 94,
+              "subtitle": "",
+              "title": "项目列表摘要",
+              "tone": "neutral"
+            }
+          ],
+          "display_mode": "grid",
+          "key": "main",
+          "priority": 100,
+          "title": "",
+          "zone_type": "primary"
+        }
+      ]
+    },
+    "scene": {
+      "key": "workspace.home",
+      "subtitle": "今日任务、快捷入口与业务摘要",
+      "title": "角色首页"
+    },
+    "schema_version": "2.0.0",
+    "source_authority": {
+      "authorities": [
+        "project.project",
+        "payment.request",
+        "sc.project.risk",
+        "ir.actions",
+        "ir.ui.menu",
+        "res.groups",
+        "odoo.orm"
+      ],
+      "kind": "workspace_home_odoo_native_capability_projection",
+      "no_business_fact_authority": true,
+      "projection_only": true,
+      "runtime_carrier": "workspace_scene_contract"
     }
   },
   "user": "admin",

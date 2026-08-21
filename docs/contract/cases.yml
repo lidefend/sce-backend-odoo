@@ -6,12 +6,12 @@
   },
   {
     "case": "menu_tree_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "nav"
   },
   {
     "case": "project_list_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "project.project",
     "view_type": "list",
     "op": "model",
@@ -19,7 +19,7 @@
   },
   {
     "case": "project_form_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "project.project",
     "view_type": "form",
     "id": 1,
@@ -28,7 +28,7 @@
   },
   {
     "case": "execute_button_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "project.project",
     "view_type": "form",
     "id": 1,
@@ -37,7 +37,7 @@
   },
   {
     "case": "execute_button_missing_method",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "project.project",
     "view_type": "form",
     "id": 1,
@@ -46,16 +46,17 @@
   },
   {
     "case": "execute_button_missing_record",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "project.project",
     "view_type": "form",
     "id": 999999,
     "op": "model",
-    "execute_method": "action_sc_submit"
+    "execute_method": "action_sc_submit",
+    "allow_record_error": true
   },
   {
     "case": "execute_button_not_allowed",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "project.project",
     "view_type": "form",
     "id": 1,
@@ -64,7 +65,7 @@
   },
   {
     "case": "execute_button_error",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "project.project",
     "view_type": "form",
     "id": 1,
@@ -73,7 +74,7 @@
   },
   {
     "case": "form_save_simple_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "project.project",
     "view_type": "form",
     "id": 1,
@@ -81,59 +82,59 @@
   },
   {
     "case": "attachment_list_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "model": "ir.attachment",
     "view_type": "list",
     "op": "model"
   },
   {
     "case": "project_kanban_lifecycle_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "project.project",
     "view_type": "kanban",
-    "action_xmlid": "smart_construction_core.action_sc_project_kanban_lifecycle",
+    "action_xmlid": "smart_construction_core.action_sc_project_list",
     "include_meta": true
   },
   {
     "case": "project_capability_matrix_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "meta.describe_project_capabilities",
     "model": "project.project",
     "project_id": 1
   },
   {
     "case": "capability_matrix_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "contract.capability_matrix"
   },
   {
     "case": "portal_lifecycle_dashboard_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "ui.contract",
     "route": "/portal/lifecycle",
     "trace_id": "portal_snapshot"
   },
   {
     "case": "portal_lifecycle_dashboard_pm_contractmeta",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "ui.contract",
     "route": "/portal/lifecycle",
     "trace_id": "portal_snapshot_contractmeta"
   },
   {
     "case": "portal_dashboard_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "contract.portal_dashboard"
   },
   {
     "case": "portal_execute_button_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "contract.portal_execute_button"
   },
   {
     "case": "portal_execute_button_not_allowed",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "contract.portal_execute_button",
     "model": "project.project",
     "id": 1,
@@ -141,7 +142,7 @@
   },
   {
     "case": "my_work_summary_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "intent.invoke",
     "intent": "my.work.summary",
     "intent_params": {
@@ -155,7 +156,7 @@
   },
   {
     "case": "my_work_complete_batch_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "intent.invoke",
     "intent": "my.work.complete_batch",
     "intent_params": {
@@ -168,7 +169,7 @@
   },
   {
     "case": "my_work_complete_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "intent.invoke",
     "intent": "my.work.complete",
     "intent_params": {
@@ -179,9 +180,10 @@
   },
   {
     "case": "api_data_batch_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "intent.invoke",
     "intent": "api.data.batch",
+    "allow_error_response": true,
     "intent_params": {
       "model": "res.partner",
       "ids": [
@@ -193,7 +195,7 @@
   },
   {
     "case": "usage_report_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "compare_mode": "shape",
     "op": "intent.invoke",
     "intent": "usage.report",
@@ -204,7 +206,7 @@
   },
   {
     "case": "usage_track_intent_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "intent.invoke",
     "intent": "usage.track",
     "intent_params": {
@@ -214,7 +216,7 @@
   },
   {
     "case": "usage_export_csv_intent_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "compare_mode": "shape",
     "op": "intent.invoke",
     "intent": "usage.export.csv",
@@ -339,6 +341,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "payment.request.available_actions",
+    "allow_error_response": true,
     "intent_params": {
       "id": 1
     }
@@ -398,6 +401,28 @@
     "intent_params": {
       "id": 1,
       "request_id": "snapshot_payment_request_done_1"
+    }
+  },
+  {
+    "case": "payment_request_create_execution_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "payment.request.create_execution",
+    "allow_error_response": true,
+    "intent_params": {
+      "id": 999999,
+      "request_id": "snapshot_payment_request_create_execution_missing"
+    }
+  },
+  {
+    "case": "payment_request_mark_reversed_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "payment.request.mark_reversed",
+    "allow_error_response": true,
+    "intent_params": {
+      "id": 999999,
+      "request_id": "snapshot_payment_request_mark_reversed_missing"
     }
   },
   {
@@ -565,7 +590,7 @@
   },
   {
     "case": "api_data_intent_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "intent.invoke",
     "intent": "api.data",
     "intent_params": {
@@ -582,7 +607,7 @@
   },
   {
     "case": "api_data_create_intent_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "compare_mode": "shape",
     "op": "intent.invoke",
     "intent": "api.data.create",
@@ -597,7 +622,7 @@
   },
   {
     "case": "api_data_unlink_intent_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "intent.invoke",
     "intent": "api.data.unlink",
     "intent_params": {
@@ -624,7 +649,7 @@
   },
   {
     "case": "load_view_intent_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "compare_mode": "shape",
     "op": "intent.invoke",
     "intent": "load_view",
@@ -799,7 +824,7 @@
   },
   {
     "case": "project_dashboard_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "project.project",
     "view_type": "kanban",
@@ -808,7 +833,7 @@
   },
   {
     "case": "project_list_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "project.project",
     "view_type": "list",
@@ -817,7 +842,7 @@
   },
   {
     "case": "contract_list_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "construction.contract",
     "view_type": "list",
@@ -826,7 +851,7 @@
   },
   {
     "case": "contract_income_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "construction.contract",
     "view_type": "list",
@@ -835,7 +860,7 @@
   },
   {
     "case": "contract_expense_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "construction.contract",
     "view_type": "list",
@@ -844,7 +869,7 @@
   },
   {
     "case": "cost_ledger_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "project.cost.ledger",
     "view_type": "list",
@@ -853,7 +878,7 @@
   },
   {
     "case": "cost_compare_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "project.cost.ledger",
     "view_type": "list",
@@ -862,7 +887,7 @@
   },
   {
     "case": "payment_request_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "payment.request",
     "view_type": "list",
@@ -871,7 +896,7 @@
   },
   {
     "case": "operating_risk_drill_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "payment.request",
     "view_type": "list",
@@ -880,7 +905,7 @@
   },
   {
     "case": "project_task_all_action_pm",
-    "user": "pm",
+    "user": "demo_role_pm",
     "op": "action_open",
     "model": "project.task",
     "view_type": "list",
@@ -892,6 +917,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "business.evidence.trace",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -899,6 +925,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "chatter.activity.schedule",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -906,6 +933,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "chatter.activity.update",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -920,6 +948,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "cost.tracking.block.fetch",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -927,6 +956,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "cost.tracking.record.create",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -962,6 +992,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "global.message.send",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -969,6 +1000,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "payment.block.fetch",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -976,6 +1008,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "payment.enter",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -983,6 +1016,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "payment.record.create",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -990,13 +1024,14 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "project.connection.transition",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
     "case": "project_context_search_intent_admin",
     "user": "admin",
     "op": "intent.invoke",
-    "intent": "project.context.search",
+    "intent": "record.context.search",
     "intent_params": {}
   },
   {
@@ -1004,6 +1039,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "project.dashboard.block.fetch",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1032,6 +1068,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "project.execution.advance",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1039,6 +1076,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "project.execution.block.fetch",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1046,6 +1084,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "project.execution.enter",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1053,6 +1092,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "project.initiation.enter",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1060,6 +1100,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "project.plan_bootstrap.block.fetch",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1067,6 +1108,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "project.plan_bootstrap.enter",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1074,6 +1116,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.approve",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1081,6 +1124,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.freeze",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1088,6 +1132,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.promote",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1095,6 +1140,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.rollback",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1102,6 +1148,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.runtime_probe",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1109,6 +1156,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.set_page_enabled",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1123,6 +1171,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.sync_policy",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1130,6 +1179,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.update_page_policy",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1137,6 +1187,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "release.operator.update_policy",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1144,6 +1195,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "search.favorite.set",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1151,6 +1203,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "settlement.block.fetch",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1158,6 +1211,7 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "settlement.enter",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {
@@ -1172,7 +1226,12 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "ui.contract.v2",
-    "intent_params": {}
+    "intent_params": {
+      "op": "model",
+      "model": "project.project",
+      "view_type": "list",
+      "client_type": "web"
+    }
   },
   {
     "case": "user_view_preference_get_intent_admin",
@@ -1193,6 +1252,56 @@
     "user": "admin",
     "op": "intent.invoke",
     "intent": "workspace.home.enter",
+    "intent_params": {}
+  },
+  {
+    "case": "auth_credential_list_intent_admin",
+    "user": "admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "intent": "auth.credential.list",
+    "intent_params": {}
+  },
+  {
+    "case": "auth_credential_create_invalid_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "auth.credential.create",
+    "allow_error_response": true,
+    "intent_params": {}
+  },
+  {
+    "case": "auth_credential_revoke_missing_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "auth.credential.revoke",
+    "allow_error_response": true,
+    "intent_params": {
+      "credential_id": "snapshot-missing"
+    }
+  },
+  {
+    "case": "auth_credential_rotate_invalid_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "auth.credential.rotate",
+    "allow_error_response": true,
+    "intent_params": {}
+  },
+  {
+    "case": "auth_machine_token_invalid_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "auth.machine.token",
+    "allow_error_response": true,
+    "intent_params": {}
+  },
+  {
+    "case": "route_authority_validate_missing_action_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "route.authority.validate",
+    "allow_error_response": true,
     "intent_params": {}
   },
   {

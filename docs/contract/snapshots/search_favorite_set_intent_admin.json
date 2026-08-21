@@ -2,7 +2,10 @@
   "action": null,
   "case": "search_favorite_set_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": 400,
+    "message": "model 无效"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,11 +16,31 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "search.favorite.set",
-      "runtime_snapshot": false
-    }
+    "error": {
+      "code": 400,
+      "message": "model 无效"
+    },
+    "meta": {
+      "source_authorities": [
+        "ir.filters",
+        "app.search.config",
+        "ir.model.access"
+      ],
+      "source_authority": {
+        "authorities": [
+          "ir.filters",
+          "app.search.config",
+          "ir.model.access"
+        ],
+        "kind": "odoo_filter_write_proxy",
+        "no_business_fact_authority": true,
+        "projection_only": true,
+        "runtime_carrier": "search.favorite.set",
+        "write_proxy": true
+      },
+      "source_kind": "odoo_filter_write_proxy"
+    },
+    "ok": false
   },
   "user": "admin",
   "user_fallback": null,

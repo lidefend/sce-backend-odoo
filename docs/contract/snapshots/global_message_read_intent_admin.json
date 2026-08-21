@@ -13,10 +13,8 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "global.message.read",
-      "runtime_snapshot": false
+    "result": {
+      "updated": 0
     }
   },
   "user": "admin",

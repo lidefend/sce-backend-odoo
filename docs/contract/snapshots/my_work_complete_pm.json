@@ -13,7 +13,7 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "done_at": "2026-04-23 10:35:54",
+    "done_at": "2026-08-20 06:06:53",
     "error_category": "not_found",
     "id": 999999991,
     "message": "待办不存在",
@@ -23,7 +23,7 @@
     "success": false,
     "suggested_action": "refresh_list"
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

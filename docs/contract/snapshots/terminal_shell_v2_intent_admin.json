@@ -13,11 +13,136 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "terminal.shell.v2",
-      "runtime_snapshot": false
-    }
+    "activeAppId": "release_management",
+    "apps": [
+      {
+        "badges": {
+          "count": 0
+        },
+        "icon": null,
+        "id": "workspace",
+        "key": "app:workspace",
+        "label": "角色首页",
+        "meta": {
+          "app_id": "workspace",
+          "category": "platform",
+          "fallback": true,
+          "primary_scene": "workspace.home",
+          "sequence": 0
+        }
+      },
+      {
+        "badges": {
+          "count": 0
+        },
+        "icon": null,
+        "id": "release_management",
+        "key": "app:release_management",
+        "label": "产品发布",
+        "meta": {
+          "action_xmlid": "smart_core.action_sc_product_policy",
+          "admin_only": true,
+          "app_id": "release_management",
+          "category": "platform_admin",
+          "menu_xmlid": "smart_core.menu_smart_core_release_root",
+          "sequence": -20
+        }
+      },
+      {
+        "badges": {
+          "count": 0
+        },
+        "icon": null,
+        "id": "company_access",
+        "key": "app:company_access",
+        "label": "公司访问",
+        "meta": {
+          "action_xmlid": "smart_core.action_sc_subscription_plan",
+          "admin_only": true,
+          "app_id": "company_access",
+          "category": "platform_admin",
+          "menu_xmlid": "smart_core.menu_smart_core_company_access_root",
+          "sequence": -10
+        }
+      },
+      {
+        "badges": {
+          "count": 1
+        },
+        "icon": null,
+        "id": "config",
+        "key": "app:config",
+        "label": "业务配置",
+        "meta": {
+          "app_id": "config",
+          "category": "platform",
+          "primary_scene": "config.center",
+          "sequence": 210,
+          "source": "native_odoo_menu_fallback"
+        }
+      }
+    ],
+    "clientType": "web_pc",
+    "defaultEntry": {
+      "appId": "release_management",
+      "featureKey": "default",
+      "key": "feature:release_management:default",
+      "label": "产品发布",
+      "open": {
+        "intent": "release.operator.surface",
+        "name": "产品发布",
+        "route": "/admin/release-operator?product_key=platform.standard",
+        "scene_key": "release.operator",
+        "subject": "ui.contract"
+      },
+      "sceneKey": "release.operator"
+    },
+    "defaultOpenTarget": {
+      "route": "/s/default",
+      "scene_key": "default",
+      "subject": "ui.contract"
+    },
+    "deliveryProfile": "full",
+    "meta": {
+      "catalogIntent": "app.catalog",
+      "navIntent": "app.nav",
+      "openIntent": "app.open"
+    },
+    "navigation": {
+      "meta": {
+        "fingerprint": "559950b322d73c8804803f6815565505"
+      },
+      "sections": [
+        {
+          "children": [
+            {
+              "children": [],
+              "key": "feature:release_management:default",
+              "label": "产品发布",
+              "meta": {
+                "app": "release_management",
+                "feature": "default",
+                "kind": "admin",
+                "open": {
+                  "intent": "release.operator.surface",
+                  "name": "产品发布",
+                  "route": "/admin/release-operator?product_key=platform.standard",
+                  "scene_key": "release.operator",
+                  "subject": "ui.contract"
+                }
+              }
+            }
+          ],
+          "key": "section:release_management:admin",
+          "label": "管理",
+          "meta": {
+            "section": "admin"
+          }
+        }
+      ]
+    },
+    "renderContractIntent": "ui.contract.v2",
+    "shellVersion": "2.2.0"
   },
   "user": "admin",
   "user_fallback": null,

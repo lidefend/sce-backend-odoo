@@ -15,7 +15,9 @@
   "ui_contract_raw": {
     "raw": [
       {
+        "auxiliary_authorities": [],
         "counts": {
+          "activities": 0,
           "attachments": 0,
           "audit": 0,
           "messages": 1,
@@ -23,18 +25,67 @@
         },
         "items": [
           {
-            "at": "2026-04-23T09:54:01",
+            "at": "2026-08-18T20:18:51",
             "body": "",
-            "id": 678,
-            "key": "m-678",
-            "meta": "System · 2026-04-23T09:54:01",
-            "title": "评论",
+            "id": 145,
+            "key": "m-145",
+            "meta": "OdooBot · 2026-08-18T20:18:51",
+            "subtype": "mail.mt_note",
+            "title": "备注",
             "type": "message",
-            "typeLabel": "评论"
+            "typeLabel": "备注"
           }
-        ]
+        ],
+        "paging": {
+          "has_more": false,
+          "limit": 10,
+          "next_offset": null,
+          "offset": 0
+        },
+        "source_authorities": [
+          "mail.message",
+          "ir.attachment",
+          "mail.activity"
+        ],
+        "source_authority": {
+          "authorities": [
+            "mail.message",
+            "ir.attachment",
+            "mail.activity"
+          ],
+          "auxiliary_authorities": [
+            "sc.audit.log"
+          ],
+          "kind": "odoo_collaboration_timeline_projection",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "rebuildable": true,
+          "runtime_carrier": "chatter.timeline"
+        }
       },
-      {}
+      {
+        "auxiliary_authorities": [],
+        "source_authorities": [
+          "mail.message",
+          "ir.attachment",
+          "mail.activity"
+        ],
+        "source_authority": {
+          "authorities": [
+            "mail.message",
+            "ir.attachment",
+            "mail.activity"
+          ],
+          "auxiliary_authorities": [
+            "sc.audit.log"
+          ],
+          "kind": "odoo_collaboration_timeline_projection",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "rebuildable": true,
+          "runtime_carrier": "chatter.timeline"
+        }
+      }
     ]
   },
   "user": "admin",

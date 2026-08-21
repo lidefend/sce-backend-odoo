@@ -14,7 +14,7 @@
   "ui_contract": null,
   "ui_contract_raw": {
     "completed_ids": [],
-    "done_at": "2026-04-23 10:35:45",
+    "done_at": "2026-08-20 06:06:51",
     "done_count": 0,
     "execution_mode": "full",
     "failed_count": 1,
@@ -50,7 +50,7 @@
       "non_retryable": 1,
       "retryable": 0
     },
-    "idempotency_fingerprint": "f8f45f265ac535343ef0d0e9a992c74ae42af0bd",
+    "idempotency_fingerprint": "4bd766bbc3bd077f0c61841c9a6da08f66615eba",
     "idempotency_key": "snapshot_my_work_batch_1",
     "idempotency_replay_reason_code": "",
     "idempotent_replay": false,
@@ -65,7 +65,7 @@
     "success": false,
     "todo_remaining": 0
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

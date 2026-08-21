@@ -2,7 +2,11 @@
   "action": null,
   "case": "project_initiation_enter_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": "MISSING_PARAMS",
+    "message": "缺少必填字段：name",
+    "suggested_action": "fix_input"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,10 +17,20 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
+    "lifecycle_hints": {
+      "first_action": "fill_required_fields",
+      "primary_action_label": "补全必填信息",
+      "reason_code": "MISSING_PARAMS",
+      "stage": "project_create_input_missing",
+      "suggested_action_intent": "project.initiation.enter",
+      "suggested_action_title": "补全后重试创建"
+    },
+    "suggested_action_payload": {
       "intent": "project.initiation.enter",
-      "runtime_snapshot": false
+      "params": {
+        "reason_code": "MISSING_PARAMS"
+      },
+      "reason_code": "MISSING_PARAMS"
     }
   },
   "user": "admin",
