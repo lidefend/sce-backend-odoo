@@ -574,15 +574,11 @@ def smart_core_normalize_projected_contract_data(env, data, context):
 
 
 def smart_core_normalize_unified_page_contract_v2(env, contract, context):
-    del env
-    if not isinstance(contract, dict):
-        return None
-    source = (context or {}).get("source_contract") if isinstance(context, dict) else {}
-    source = source if isinstance(source, dict) else {}
-    out = deepcopy(contract)
-    _sc_general_contract_tax_contract(out, source_contract=source)
-    _sc_normalize_general_contract_company_form(out, source_contract=source)
-    return out if out != contract else None
+    del env, contract, context
+    # Native Unified Page Contract V2 is already canonical.  Industry
+    # projected-data compatibility normalizers must not rebuild its layout or
+    # synthesize name-level widget status rows.
+    return None
 
 
 def _sc_field_name(node: Any) -> str:
@@ -627,10 +623,6 @@ def _sc_form_layout_columns_from_governance(governance: dict[str, Any] | None, t
 
 def _sc_apply_form_layout_governance_to_group(node: dict[str, Any], title: str = "", *, source_contract: dict[str, Any] | None = None) -> None:
     _contract_helpers.sc_apply_form_layout_governance_to_group(node, title, source_contract=source_contract)
-
-
-def _sc_normalize_general_contract_company_form(contract: dict[str, Any], source_contract: dict[str, Any] | None = None) -> None:
-    _contract_normalizers.normalize_general_contract_company_form(contract, source_contract=source_contract)
 
 
 def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):

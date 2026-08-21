@@ -371,7 +371,18 @@ def assemble_unified_page_contract_v2(
     elif resolved == "page_orchestration_v1":
         contract = _assemble_page_orchestration(payload, client_type=client_type, request_id=request_id)
     elif resolved == "ui.contract":
-        contract = _assemble_ui_contract(source, client_type=client_type, request_id=request_id)
+        contract = _assemble_ui_contract(
+            source,
+            client_type=client_type,
+            request_id=request_id,
+            source_type=resolved,
+        )
+    elif resolved == "native_form_projection":
+        contract = _assemble_native_form_projection(
+            source,
+            client_type=client_type,
+            request_id=request_id,
+        )
     else:
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
     assembled_at = time.monotonic()
@@ -381,7 +392,7 @@ def assemble_unified_page_contract_v2(
     actions_bound_at = time.monotonic()
     sealed = seal_unified_page_contract(
         contract,
-        source_payload=payload if resolved != "ui.contract" else source,
+        source_payload=payload if resolved not in {"ui.contract", "native_form_projection"} else source,
         source_type=resolved,
         request_id=request_id,
         trace_id=trace_id,
@@ -579,7 +590,13 @@ def _assemble_page_orchestration(source: dict[str, Any], *, client_type: str, re
     return contract
 
 
-def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_id: str) -> dict[str, Any]:
+def _assemble_ui_contract(
+    source: dict[str, Any],
+    *,
+    client_type: str,
+    request_id: str,
+    source_type: str = "ui.contract",
+) -> dict[str, Any]:
     ui = _dict(source)
     head = _dict(source.get("head") or ui.get("head"))
     model = _text(source.get("model") or ui.get("model"))
@@ -598,7 +615,7 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
         view_type="list" if view_type == "tree" else view_type,
         layout_type=layout_type,
         client_type=client_type,
-        source_type="ui.contract",
+        source_type=source_type,
         source_payload=source,
         request_id=request_id,
     )
@@ -606,6 +623,10 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     source_context = _ui_source_context(_dict(source), _dict(ui))
     render_profile = _text(source_context.get("renderProfile")).lower()
     source_context_context = _dict(source_context.get("context"))
+    form_modifier_record = {
+        **source_context_context,
+        **deepcopy(_dict(source.get("record"))),
+    }
     raw_field_map = _dict(ui.get("fields") or source.get("fields"))
     fields_by_name: dict[str, dict[str, Any]] = {}
     for key, value in raw_field_map.items():
@@ -678,6 +699,7 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     form_structure_contract = _dict(source.get("formStructureContract") or source.get("form_structure_contract"))
     form_structure_applied = False
     if layout_type == "form" and native_layout_rows:
+        native_widget_status: list[dict[str, Any]] = []
         container_tree = _normalize_native_layout_nodes(
             native_layout_rows,
             fields_by_name,
@@ -685,9 +707,13 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             form_subviews=form_subviews,
             component_keys=component_keys,
             container_status=contract["statusContract"]["containerStatus"],
-            widget_status=contract["statusContract"]["widgetStatus"],
-            context=source_context_context,
+            widget_status=native_widget_status,
+            context=form_modifier_record,
         )
+        # A native Form is occurrence-authoritative.  Name-level status rows
+        # built from the compatibility field map have no layout owner and
+        # must not survive beside the exact occurrence rows.
+        contract["statusContract"]["widgetStatus"] = native_widget_status
         if form_structure_contract:
             _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
             form_structure_applied = True
@@ -742,6 +768,9 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             {"containerId": sheet_id, "visible": True, "disabled": False},
             {"containerId": group_id, "visible": True, "disabled": False},
         ])
+        if form_structure_contract:
+            _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
+            form_structure_applied = True
     else:
         container_id = "main.table"
         widgets = []
@@ -812,6 +841,9 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     if interaction_mode:
         contract["runtimeContract"]["interactionMode"] = interaction_mode
         contract["runtimeContract"]["actionTarget"] = _text(_dict(ui.get("head")).get("action_target"), "current")
+    record_version_policy = _dict(ui.get("record_version") or _dict(ui.get("head")).get("record_version"))
+    if record_version_policy:
+        contract["runtimeContract"]["recordVersionPolicy"] = deepcopy(record_version_policy)
     if form_structure_contract and form_structure_applied:
         contract["formStructureContract"] = deepcopy(form_structure_contract)
     contract["dataContract"]["dataMeta"]["fieldCount"] = len(fields)
@@ -826,10 +858,18 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
         verdict = _dict(form_capabilities.get(key))
         if verdict:
             contract["statusContract"]["globalStatus"][key] = deepcopy(verdict)
-    effective_render_profile = _text(form_capabilities.get("effectiveRenderProfile")).lower()
+    effective_render_profile = _text(
+        form_capabilities.get("effectiveRenderProfile") or render_profile
+    ).lower()
     if effective_render_profile in {"create", "edit", "readonly"}:
         contract["statusContract"]["globalStatus"]["effectiveRenderProfile"] = effective_render_profile
     effective_record_capabilities = _dict(form_capabilities.get("effectiveRecordCapabilities"))
+    if not effective_record_capabilities:
+        effective_record_capabilities = _ui_contract_permission_rights(_dict(source), _dict(ui))
+        if effective_record_capabilities:
+            contract["statusContract"]["globalStatus"]["effectiveRecordCapabilities"] = deepcopy(
+                effective_record_capabilities
+            )
     if effective_render_profile == "create" and effective_record_capabilities.get("create") is not True:
         contract["statusContract"]["globalStatus"]["pageVisible"] = False
         contract["statusContract"]["globalStatus"]["pageAuth"] = "none"
@@ -903,6 +943,135 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     _append_ui_contract_actions(contract, ui, source_widget_id="page.root", main_data=contract["dataContract"]["mainData"])
     _append_ui_contract_row_actions(contract, ui)
     _append_registered_kanban_row_action(contract, model=model, view_type=view_type)
+    return contract
+
+
+def _assemble_native_form_projection(
+    source: dict[str, Any],
+    *,
+    client_type: str,
+    request_id: str,
+) -> dict[str, Any]:
+    marker = _dict(source.get("nativeFormProjection"))
+    authority = _dict(marker.get("sourceAuthority"))
+    model = _text(source.get("model"))
+    if marker.get("schemaVersion") != "2.0":
+        raise ValueError("native form projection schemaVersion must be 2.0")
+    if _text(marker.get("model")) != model or _text(marker.get("viewType")) != "form":
+        raise ValueError("native form projection identity mismatch")
+    if _text(source.get("view_type")) != "form":
+        raise ValueError("native form projection source view_type must be form")
+    if authority.get("kind") != "native_form_projection":
+        raise ValueError("native form projection authority kind mismatch")
+    if authority.get("projectionOnly") is not True or authority.get("noBusinessFactAuthority") is not True:
+        raise ValueError("native form projection authority boundary is incomplete")
+    field_descriptors = marker.get("fieldDescriptors")
+    layout = marker.get("layout")
+    capabilities = marker.get("capabilities")
+    subviews = marker.get("subviews")
+    header_buttons = marker.get("headerButtons")
+    if not isinstance(field_descriptors, dict):
+        raise ValueError("native form projection fieldDescriptors must be an object")
+    if not isinstance(layout, list) or not layout:
+        raise ValueError("native form projection resolved layout is missing")
+    if not isinstance(capabilities, dict) or not isinstance(subviews, dict):
+        raise ValueError("native form projection capabilities and subviews must be objects")
+    if not isinstance(header_buttons, list):
+        raise ValueError("native form projection headerButtons must be an array")
+    field_names = set(field_descriptors)
+
+    def validate_occurrences(nodes: list[Any]) -> None:
+        for raw in nodes:
+            if not isinstance(raw, dict):
+                raise ValueError("native form projection layout nodes must be objects")
+            node_type = _text(raw.get("type") or raw.get("kind")).lower()
+            if node_type == "field":
+                field_name = _text(raw.get("name") or raw.get("field"))
+                native_locator = _text(raw.get("native_locator") or raw.get("nativeLocator"))
+                occurrence_index = _positive_int(
+                    raw.get("occurrence_index") or raw.get("occurrenceIndex"),
+                    0,
+                )
+                source_position = (
+                    raw.get("source_position")
+                    if "source_position" in raw
+                    else raw.get("sourcePosition")
+                )
+                if not field_name or field_name not in field_names:
+                    raise ValueError("native form projection field descriptor identity mismatch")
+                if not native_locator or occurrence_index <= 0:
+                    raise ValueError("native form projection field occurrence identity is incomplete")
+                if not isinstance(source_position, int) or isinstance(source_position, bool) or source_position < 0:
+                    raise ValueError("native form projection field source_position is invalid")
+            children = raw.get("children")
+            if isinstance(children, list):
+                validate_occurrences(children)
+
+    validate_occurrences(layout)
+    page = _dict(marker.get("page"))
+    actions = _dict(marker.get("actions"))
+    runtime = _dict(marker.get("runtime"))
+    canonical_source = {
+        "nativeFormProjection": deepcopy(marker),
+        "model": model,
+        "view_type": "form",
+        "title": deepcopy(page.get("title")),
+        "head": deepcopy(_dict(page.get("head"))),
+        "record_id": deepcopy(page.get("recordId")),
+        "render_profile": deepcopy(page.get("renderProfile")),
+        "domain": deepcopy(_list(page.get("domain"))),
+        "domain_raw": deepcopy(page.get("domainRaw")),
+        "context": deepcopy(_dict(page.get("context"))),
+        "context_raw": deepcopy(page.get("contextRaw")),
+        "order": deepcopy(page.get("order")),
+        "limit": deepcopy(page.get("limit")),
+        "record": deepcopy(_dict(marker.get("record"))),
+        "search": deepcopy(_dict(marker.get("search"))),
+        "permissions": deepcopy(_dict(marker.get("permissions"))),
+        "fields": deepcopy(field_descriptors),
+        "buttons": deepcopy(_list(actions.get("buttons"))),
+        "business_actions": deepcopy(_list(actions.get("businessActions"))),
+        "toolbar": deepcopy(_dict(actions.get("toolbar"))),
+        "action_groups": deepcopy(_list(actions.get("actionGroups"))),
+        "action_policies": deepcopy(_dict(actions.get("actionPolicies"))),
+        "action_schema": deepcopy(_dict(actions.get("actionSchema"))),
+        "collaboration": deepcopy(_dict(runtime.get("collaboration"))),
+        "record_version": deepcopy(_dict(runtime.get("recordVersion"))),
+        "data_sources": deepcopy(_dict(runtime.get("dataSources"))),
+        "business_operation_profile": deepcopy(_dict(runtime.get("businessOperationProfile"))),
+        "visible_fields": deepcopy(_list(runtime.get("visibleFields"))),
+        "field_groups": deepcopy(_list(runtime.get("fieldGroups"))),
+        "formStructureContract": deepcopy(_dict(runtime.get("formStructureContract"))),
+        "views": {
+        "form": {
+            "layout": deepcopy(layout),
+            "capabilities": deepcopy(capabilities),
+            "subviews": deepcopy(subviews),
+            "header_buttons": deepcopy(header_buttons),
+        }
+        },
+        "header_buttons": deepcopy(header_buttons),
+    }
+    contract = _assemble_ui_contract(
+        canonical_source,
+        client_type=client_type,
+        request_id=request_id,
+        source_type="native_form_projection",
+    )
+    runtime_extensions = {
+        "intakeAutosave": deepcopy(_dict(runtime.get("intakeAutosave"))),
+        "fieldSemantics": deepcopy(_dict(runtime.get("fieldSemantics"))),
+        "validationRules": deepcopy(_list(runtime.get("validationRules"))),
+        "governance": deepcopy(_dict(runtime.get("governance"))),
+    }
+    if any(bool(value) for value in runtime_extensions.values()):
+        runtime_contract = _dict(contract.get("runtimeContract"))
+        if not runtime_contract:
+            runtime_contract = {}
+            contract["runtimeContract"] = runtime_contract
+        for key, value in runtime_extensions.items():
+            if value:
+                runtime_contract[key] = value
     return contract
 
 
@@ -1120,6 +1289,12 @@ def _view_column_schema_by_name(ui: dict[str, Any], view_type: str) -> dict[str,
 
 def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     field_name = _stable_id(field.get("name"), "field")
+    native_locator = _text(field.get("native_locator"))
+    occurrence_index = _positive_int(field.get("occurrence_index"), 0)
+    source_position = field.get("source_position")
+    widget_id = f"field.{field_name}"
+    if layout_type == "form" and native_locator:
+        widget_id = f"field.{field_name}.occ.{_fingerprint({'locator': native_locator, 'occurrence': occurrence_index})}"
     explicit_widget = _text(field.get("widget"))
     widget_type = "table" if layout_type == "table" else explicit_widget or _widget_type_from_field(field)
     component_key = _component_key(widget_type)
@@ -1133,6 +1308,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "currency_field", "precision", "sum", "aggregate", "aggregate_label",
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
+        "native_locator", "occurrence_index", "source_position", "modifiers",
     ):
         if key in field:
             component_config[key] = deepcopy(field.get(key))
@@ -1151,7 +1327,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     if widget_options:
         component_config["widgetOptions"] = deepcopy(widget_options)
     return {
-        "widgetId": f"field.{field_name}",
+        "widgetId": widget_id,
         "widgetType": widget_type,
         "fieldCode": field_name,
         "label": _text(field.get("string") or field.get("label"), field_name),
@@ -1159,6 +1335,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "componentKey": component_key,
         "capabilities": capabilities,
         "componentConfig": component_config,
+        "fieldDescriptor": deepcopy(field),
     }
 
 
@@ -1178,6 +1355,9 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     field_info = _dict(node.get("fieldInfo") or node.get("field_info"))
     field_source.update({k: deepcopy(v) for k, v in field_info.items() if k not in {"label", "string"}})
     field_source["name"] = field_name
+    for key in ("native_locator", "occurrence_index", "source_position", "modifiers"):
+        if key in node:
+            field_source[key] = deepcopy(node.get(key))
     field_source.setdefault("string", label)
     field_source.setdefault("label", label)
     if _text(node.get("widget")):
@@ -1200,6 +1380,11 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     out["componentKey"] = widget["componentKey"]
     out["componentConfig"] = component_config
     out["widgetId"] = widget["widgetId"]
+    native_locator = _text(field_source.get("native_locator"))
+    if layout_type == "form" and native_locator:
+        out["nativeLocator"] = native_locator
+        out["occurrenceIndex"] = _positive_int(field_source.get("occurrence_index"), 0)
+        out["sourcePosition"] = field_source.get("source_position")
     out.setdefault("field_info", field_info)
     return out
 
@@ -1219,6 +1404,7 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
         "currency_field", "precision", "aggregate", "aggregate_label",
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
+        "native_locator", "occurrence_index", "source_position", "modifiers",
     ):
         if key in node:
             field_source[key] = deepcopy(node.get(key))
@@ -1298,8 +1484,22 @@ def _normalize_native_layout_nodes(
                     normalized["field_info"] = deepcopy(field_info)
             widget_source = _field_source_with_node_info(normalized, field, fallback_name=node_name or _text(field.get("name")))
             widget = _field_widget(widget_source, layout_type=layout_type)
+            container_id = widget["widgetId"]
+            if container_id in used_container_ids:
+                raise ValueError("native form field container identity is duplicated")
+            used_container_ids.add(container_id)
+            normalized["containerId"] = container_id
+            normalized["containerType"] = "field"
             component_keys.add(widget["componentKey"])
-            widget_status.append(_field_status(widget_source, widget["widgetId"], context=context))
+            widget_status.append(_field_status(
+                widget_source,
+                widget["widgetId"],
+                context=context,
+                occurrence=bool(
+                    _text(widget_source.get("native_locator"))
+                    and _positive_int(widget_source.get("occurrence_index"), 0)
+                ),
+            ))
             out.append(normalized)
             continue
         container_id = _text(node.get("containerId") or node.get("container_id") or node_name)
@@ -2512,6 +2712,23 @@ def _modifier_true(value: Any) -> bool:
     return False
 
 
+def _field_modifier_constraint(field: dict[str, Any], key: str) -> tuple[bool, Any]:
+    modifiers = _dict(field.get("modifiers"))
+    attributes = _dict(field.get("attributes"))
+    attribute_modifiers = _dict(attributes.get("modifiers"))
+    for source in (modifiers, attribute_modifiers, field, attributes):
+        if key in source:
+            return True, source.get(key)
+    return False, None
+
+
+def _field_modifier_verdict(field: dict[str, Any], key: str, record: dict[str, Any]) -> tuple[bool, bool | None]:
+    present, value = _field_modifier_constraint(field, key)
+    if not present:
+        return False, False
+    return True, _evaluate_action_modifier(value, record, strict=True)
+
+
 def _contextual_modifier_true(value: Any, context: dict[str, Any]) -> bool | None:
     if value is True:
         return True
@@ -2570,22 +2787,51 @@ def _apply_contextual_invisible_modifier(node: dict[str, Any], context: dict[str
     return resolved
 
 
-def _field_status(field: dict[str, Any], widget_id: str, *, context: dict[str, Any] | None = None) -> dict[str, Any]:
-    readonly = bool(field.get("readonly") is True or _modifier_true(field.get("readonly")))
-    invisible = _contextual_modifier_true(field.get("invisible"), context or {})
-    if invisible is None:
-        invisible = _modifier_true(field.get("invisible"))
-    column_invisible = _contextual_modifier_true(field.get("column_invisible"), context or {})
-    if column_invisible is None:
-        column_invisible = _modifier_true(field.get("column_invisible"))
-    visible = not (invisible or column_invisible)
+def _field_status(
+    field: dict[str, Any],
+    widget_id: str,
+    *,
+    context: dict[str, Any] | None = None,
+    occurrence: bool = False,
+) -> dict[str, Any]:
+    if not occurrence:
+        invisible_value = _field_modifier_constraint(field, "invisible")[1]
+        column_invisible_value = _field_modifier_constraint(field, "column_invisible")[1]
+        contextual_invisible = _contextual_modifier_true(invisible_value, context or {})
+        contextual_column_invisible = _contextual_modifier_true(column_invisible_value, context or {})
+        invisible = _modifier_true(invisible_value) if contextual_invisible is None else contextual_invisible
+        column_invisible = (
+            _modifier_true(column_invisible_value)
+            if contextual_column_invisible is None
+            else contextual_column_invisible
+        )
+        readonly = _modifier_true(_field_modifier_constraint(field, "readonly")[1])
+        required = _modifier_true(_field_modifier_constraint(field, "required")[1])
+        return {
+            "widgetId": widget_id,
+            "visible": not invisible and not column_invisible,
+            "readonly": readonly,
+            "required": required,
+            "disabled": False,
+            "auth": "read" if readonly else "edit",
+        }
+    record = context or {}
+    _, invisible = _field_modifier_verdict(field, "invisible", record)
+    _, column_invisible = _field_modifier_verdict(field, "column_invisible", record)
+    _, readonly = _field_modifier_verdict(field, "readonly", record)
+    _, required = _field_modifier_verdict(field, "required", record)
+    unresolved = any(value is None for value in (invisible, column_invisible, readonly, required))
+    visible = invisible is False and column_invisible is False
+    readonly_value = readonly is not False
+    required_value = required is not False
     return {
         "widgetId": widget_id,
         "visible": visible,
-        "readonly": readonly,
-        "required": bool(field.get("required") is True or _modifier_true(field.get("required"))),
-        "disabled": False,
-        "auth": "read" if readonly else "edit",
+        "readonly": readonly_value,
+        "required": required_value,
+        "disabled": unresolved,
+        "auth": "read" if readonly_value else "edit",
+        **({"reasonCode": "NATIVE_MODIFIER_UNRESOLVED"} if unresolved else {}),
     }
 
 
@@ -3041,16 +3287,20 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
     _enforce_single_effective_primary_action(contract)
 
 
-def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool:
+def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool | None:
     left = actual[0] if isinstance(actual, (list, tuple)) and actual else actual
     if operator in {"=", "=="}:
         return left == expected
     if operator in {"!=", "<>"}:
         return left != expected
     if operator == "in":
-        return isinstance(expected, (list, tuple, set)) and left in expected
+        if not isinstance(expected, (list, tuple, set)):
+            return None
+        return left in expected
     if operator == "not in":
-        return isinstance(expected, (list, tuple, set)) and left not in expected
+        if not isinstance(expected, (list, tuple, set)):
+            return None
+        return left not in expected
     try:
         if operator == ">":
             return left > expected
@@ -3061,27 +3311,30 @@ def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool:
         if operator == "<=":
             return left <= expected
     except (TypeError, ValueError):
-        return False
-    return False
+        return None
+    return None
 
 
-def _evaluate_action_modifier(value: Any, record: dict[str, Any]) -> bool | None:
+def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: bool = False) -> bool | None:
     if isinstance(value, bool):
         return value
-    if value in (None, "", 0, "0", "false", "False"):
+    if value is None or value == "":
+        return None if strict else False
+    if value in (0, "0", "false", "False"):
         return False
     if value in (1, "1", "true", "True"):
         return True
     if not isinstance(value, dict):
-        return None
+        return None if strict else False
     kind = _text(value.get("kind"))
     if kind == "static":
-        return bool(value.get("value"))
+        static_value = value.get("value")
+        return static_value if isinstance(static_value, bool) else (None if strict else False)
     if kind == "not":
-        resolved = _evaluate_action_modifier(value.get("expr"), record)
+        resolved = _evaluate_action_modifier(value.get("expr"), record, strict=strict)
         return None if resolved is None else not resolved
     if kind in {"all", "any"}:
-        values = [_evaluate_action_modifier(item, record) for item in _list(value.get("exprs"))]
+        values = [_evaluate_action_modifier(item, record, strict=strict) for item in _list(value.get("exprs"))]
         if kind == "all":
             if False in values:
                 return False
@@ -3091,19 +3344,20 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any]) -> bool | None
         return False if values and all(item is False for item in values) else None
     field = _text(value.get("field"))
     if not field or field not in record:
-        return None
+        return None if strict else False
     if kind == "field_truthy":
         return bool(record.get(field))
     if kind == "field_compare":
         value_field = _text(value.get("value_field"))
         if value_field:
             if value_field not in record:
-                return None
+                return None if strict else False
             expected = record.get(value_field)
         else:
             expected = value.get("value")
-        return _compare_action_value(record.get(field), _text(value.get("operator")), expected)
-    return None
+        compared = _compare_action_value(record.get(field), _text(value.get("operator")), expected)
+        return compared if strict or compared is not None else False
+    return None if strict else False
 
 
 def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
@@ -3193,7 +3447,7 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
             status = {"btnId": btn_id, "visible": True, "disabled": False}
             statuses.append(status)
             status_by_btn_id[btn_id] = status
-        verdict = _evaluate_action_modifier(invisible, record)
+        verdict = _evaluate_action_modifier(invisible, record, strict=True)
         if verdict is True:
             status["visible"] = False
             status.setdefault("reasonCode", "ACTION_NOT_VISIBLE_IN_STATE")
@@ -3233,20 +3487,6 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
         if isinstance(row, dict) and _text(row.get("widgetId"))
     }
 
-    def invisible_constraint(node: dict[str, Any]) -> Any:
-        attributes = _dict(node.get("attributes"))
-        attribute_modifiers = _dict(attributes.get("modifiers"))
-        modifiers = _dict(node.get("modifiers"))
-        for value in (
-            modifiers.get("invisible"),
-            attribute_modifiers.get("invisible"),
-            node.get("invisible"),
-            attributes.get("invisible"),
-        ):
-            if value is not None:
-                return value
-        return None
-
     def visit(value: Any) -> None:
         if isinstance(value, list):
             for item in value:
@@ -3254,28 +3494,63 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
             return
         if not isinstance(value, dict):
             return
-        constraint = invisible_constraint(value)
-        if constraint is not None:
-            verdict = _evaluate_action_modifier(constraint, record)
-            node_type = _text(value.get("type") or value.get("containerType")).lower()
-            if node_type == "field":
-                widget_id = _text(value.get("widgetId") or f"field.{_text(value.get('name'))}")
-                status = widget_by_id.get(widget_id)
-            else:
+        node_type = _text(value.get("type") or value.get("containerType")).lower()
+        if node_type == "field":
+            widget_id = _text(value.get("widgetId") or f"field.{_text(value.get('name'))}")
+            status = widget_by_id.get(widget_id)
+            if isinstance(status, dict):
+                if ".occ." not in widget_id:
+                    present, constraint = _field_modifier_constraint(value, "invisible")
+                    if present:
+                        verdict = _evaluate_action_modifier(constraint, record, strict=True)
+                        if verdict is True:
+                            status["visible"] = False
+                            status.setdefault("reasonCode", "NATIVE_MODIFIER_INVISIBLE")
+                        elif verdict is False:
+                            status["visible"] = True
+                            if status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
+                                status.pop("reasonCode", None)
+                        else:
+                            status["visible"] = False
+                            status["disabled"] = True
+                            status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
+                    for key in ("children", "pages", "tabs", "nodes", "items"):
+                        visit(value.get(key))
+                    return
+                _, invisible = _field_modifier_verdict(value, "invisible", record)
+                _, column_invisible = _field_modifier_verdict(value, "column_invisible", record)
+                _, readonly = _field_modifier_verdict(value, "readonly", record)
+                _, required = _field_modifier_verdict(value, "required", record)
+                unresolved = any(item is None for item in (invisible, column_invisible, readonly, required))
+                status["visible"] = invisible is False and column_invisible is False
+                status["readonly"] = readonly is not False
+                status["required"] = required is not False
+                status["disabled"] = unresolved
+                status["auth"] = "read" if status["readonly"] else "edit"
+                if unresolved:
+                    status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
+                elif not status["visible"]:
+                    status["reasonCode"] = "NATIVE_MODIFIER_INVISIBLE"
+                elif status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
+                    status.pop("reasonCode", None)
+        else:
+            present, constraint = _field_modifier_constraint(value, "invisible")
+            if present:
+                verdict = _evaluate_action_modifier(constraint, record, strict=True)
                 container_id = _text(value.get("containerId"))
                 status = container_by_id.get(container_id)
-            if isinstance(status, dict):
-                if verdict is True:
-                    status["visible"] = False
-                    status.setdefault("reasonCode", "NATIVE_MODIFIER_INVISIBLE")
-                elif verdict is False:
-                    status["visible"] = True
-                    if status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
-                        status.pop("reasonCode", None)
-                else:
-                    status["visible"] = False
-                    status["disabled"] = True
-                    status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
+                if isinstance(status, dict):
+                    if verdict is True:
+                        status["visible"] = False
+                        status.setdefault("reasonCode", "NATIVE_MODIFIER_INVISIBLE")
+                    elif verdict is False:
+                        status["visible"] = True
+                        if status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
+                            status.pop("reasonCode", None)
+                    else:
+                        status["visible"] = False
+                        status["disabled"] = True
+                        status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
         for key in ("children", "pages", "tabs", "nodes", "items"):
             visit(value.get(key))
 

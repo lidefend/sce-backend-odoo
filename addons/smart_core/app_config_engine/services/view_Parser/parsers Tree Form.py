@@ -918,9 +918,10 @@ class _TreeFormParserMixin:
             if form is None:
                 return []
         
+        source_nodes = list(form.iter())
         out = []
         for ch in form:
-            node = self._node_to_layout_from_dom(ch, fields_info)
+            node = self._node_to_layout_from_dom(ch, fields_info, source_nodes)
             if node:
                 out.append(node)
         
@@ -963,7 +964,7 @@ class _TreeFormParserMixin:
             for tab in node['tabs']:
                 self._ensure_complete_layout_structure(tab)
 
-    def _node_to_layout_from_dom(self, el, fields_info):
+    def _node_to_layout_from_dom(self, el, fields_info, source_nodes=None):
         tag = getattr(el, 'tag', '')
         if not tag or not isinstance(tag, str):
             return None
@@ -1010,7 +1011,7 @@ class _TreeFormParserMixin:
             # 递归子节点
             children = []
             for ch in el:
-                cv = self._node_to_layout_from_dom(ch, fields_info)
+                cv = self._node_to_layout_from_dom(ch, fields_info, source_nodes)
                 if cv:
                     children.append(cv)
                 tail = " ".join((ch.tail or "").split())
@@ -1047,6 +1048,12 @@ class _TreeFormParserMixin:
                 'attributes': _attrs(el),
                 **self._native_element_identity(el),
             }
+            if source_nodes is None:
+                raise ValueError('form field source position authority is missing')
+            try:
+                node['source_position'] = source_nodes.index(el)
+            except ValueError as exc:
+                raise ValueError('form field source position is unresolved') from exc
             meta = self._field_info_for_layout(fname, fields_info)
             # 覆盖 label/help/widget
             if el.get('string'):
@@ -1121,7 +1128,7 @@ class _TreeFormParserMixin:
             node['text'] = text
         children = []
         for ch in el:
-            cv = self._node_to_layout_from_dom(ch, fields_info)
+            cv = self._node_to_layout_from_dom(ch, fields_info, source_nodes)
             if cv:
                 children.append(cv)
             tail = " ".join((ch.tail or "").split())

@@ -10,6 +10,7 @@ runtime inputs which are not represented by ``write_date``.
 import copy
 import hashlib
 import json
+import os
 import time
 from collections import OrderedDict
 from threading import RLock
@@ -139,7 +140,11 @@ def build_projection_source_token(env, *, model_name, menu_id=None, action_id=No
         "sc.scene",
     )
     try:
-        versions = []
+        versions = [[
+            "runtime_source",
+            str(os.getenv("SC_SOURCE_REVISION") or "").strip().lower(),
+            str(os.getenv("SC_SOURCE_FINGERPRINT") or "").strip().lower(),
+        ]]
         for model_code, domain in specifications:
             if model_code not in env:
                 return ""

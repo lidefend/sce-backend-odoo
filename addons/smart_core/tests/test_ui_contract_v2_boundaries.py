@@ -82,10 +82,18 @@ def _load_handler():
     handlers_mod = _install_module("odoo.addons.smart_core.handlers")
     core_mod = _install_module("odoo.addons.smart_core.core")
     utils_mod = _install_module("odoo.addons.smart_core.utils")
+    app_config_mod = _install_module("odoo.addons.smart_core.app_config_engine")
+    services_mod = _install_module("odoo.addons.smart_core.app_config_engine.services")
+    assemblers_mod = _install_module("odoo.addons.smart_core.app_config_engine.services.assemblers")
+    dispatchers_mod = _install_module("odoo.addons.smart_core.app_config_engine.services.dispatchers")
     smart_core_mod.__path__ = [str(root)]
     handlers_mod.__path__ = [str(root / "handlers")]
     core_mod.__path__ = [str(root / "core")]
     utils_mod.__path__ = [str(root / "utils")]
+    app_config_mod.__path__ = [str(root / "app_config_engine")]
+    services_mod.__path__ = [str(root / "app_config_engine" / "services")]
+    assemblers_mod.__path__ = [str(root / "app_config_engine" / "services" / "assemblers")]
+    dispatchers_mod.__path__ = [str(root / "app_config_engine" / "services" / "dispatchers")]
 
     _install_module("odoo.addons.smart_core.core.base_handler", BaseIntentHandler=_BaseIntentHandler)
     _install_module("odoo.addons.smart_core.utils.extension_hooks", call_extension_hook_first=lambda *args, **kwargs: None)
@@ -159,6 +167,44 @@ def _load_handler():
 
     _install_module("odoo.addons.smart_core.handlers.ui_contract", UiContractHandler=_UiContractHandler)
 
+    class _ActionDispatcher:
+        def __init__(self, env, su_env):
+            self.env = env
+            self.su_env = su_env
+
+        def dispatch(self, payload):
+            captured.setdefault("native_form_payloads", []).append(dict(payload or {}))
+            return {
+                "model": payload.get("model") or "res.partner",
+                "view_type": "form",
+                "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+                "views": {"form": {"layout": [{
+                    "type": "field", "name": "name",
+                    "native_locator": "form/field[name=name]",
+                    "occurrence_index": 1, "source_position": 0,
+                }]}},
+                "data": {"record": {"id": 42, "name": "ACME"}},
+            }, {"view": "native-form-test"}
+
+    _install_module(
+        "odoo.addons.smart_core.app_config_engine.services.dispatchers.action_dispatcher",
+        ActionDispatcher=_ActionDispatcher,
+    )
+
+    class _PageAssembler:
+        def __init__(self, env, su_env):
+            self.env = env
+            self.su_env = su_env
+
+        def apply_runtime_record_overlay(self, ui_data, **kwargs):
+            captured.setdefault("record_overlays", []).append(dict(kwargs))
+            return ui_data
+
+    _install_module(
+        "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler",
+        PageAssembler=_PageAssembler,
+    )
+
     class _PreviewAccessDenied(Exception):
         pass
 
@@ -204,6 +250,19 @@ def _load_frozen_projection(revision="cb6e276115cf3f8a3e7605362e869bf211a7a021")
 class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
+
+    def test_native_form_source_bypasses_legacy_ui_contract_handler(self):
+        handler = self.module.UiContractV2Handler(env=object(), su_env=object())
+        data, meta = handler._dispatch_native_form_source(
+            handler.env,
+            handler.su_env,
+            {"op": "model", "model": "res.partner", "view_type": "form"},
+        )
+        self.assertEqual(self.module._captured.get("ui_payloads"), None)
+        self.assertEqual(len(self.module._captured.get("native_form_payloads") or []), 1)
+        self.assertEqual(data["nativeFormProjection"]["schemaVersion"], "2.0")
+        self.assertEqual(data["nativeFormProjection"]["sourceAuthority"]["kind"], "native_form_projection")
+        self.assertEqual(meta["source_type"], "native_form_projection")
 
     def test_final_modifier_dependency_beyond_snapshot_budget_is_hydrated(self):
         class _Field:
@@ -783,6 +842,44 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(rows["field.amount"]["visible"])
         self.assertEqual(rows["field.amount"]["auth"], "none")
 
+    def test_projection_applies_field_policy_to_native_form_occurrences_without_legacy_status(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        first = "field.amount.occ.first"
+        second = "field.amount.occ.second"
+        contract = {
+            "layoutContract": {
+                "layoutType": "form",
+                "containerTree": [{
+                    "type": "group",
+                    "containerType": "group",
+                    "containerId": "group.amount",
+                    "children": [
+                        {"type": "field", "containerType": "field", "fieldCode": "amount", "widgetId": first, "containerId": first},
+                        {"type": "field", "containerType": "field", "fieldCode": "amount", "widgetId": second, "containerId": second},
+                    ],
+                }],
+            },
+            "statusContract": {
+                "widgetStatus": [
+                    {"widgetId": "field.amount", "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"},
+                    {"widgetId": first, "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"},
+                    {"widgetId": second, "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"},
+                ]
+            },
+        }
+
+        handler._apply_field_policies_to_v2_status(
+            contract,
+            {"render_profile": "readonly", "field_policies": {"amount": {"readonly_profiles": ["readonly"]}}},
+        )
+
+        rows = {row["widgetId"]: row for row in contract["statusContract"]["widgetStatus"]}
+        self.assertEqual(set(rows), {first, second})
+        self.assertTrue(rows[first]["readonly"])
+        self.assertTrue(rows[second]["readonly"])
+        self.assertEqual(rows[first]["auth"], "read")
+        self.assertEqual(rows[second]["auth"], "read")
+
     def test_projection_marks_native_visible_layout_fields_editable(self):
         handler = self.module.UiContractV2Handler(env=object())
         contract = {
@@ -944,7 +1041,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(result.error["message"], "max_containers 无效")
 
     def test_form_record_contract_requests_record_data(self):
-        handler = self.module.UiContractV2Handler(env=object())
+        handler = self.module.UiContractV2Handler(env={})
 
         result = handler.handle(
             payload={
@@ -958,7 +1055,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
 
         self.assertTrue(result.ok)
-        payloads = self.module._captured["ui_payloads"]
+        self.assertNotIn("ui_payloads", self.module._captured)
+        payloads = self.module._captured["native_form_payloads"]
         self.assertTrue(payloads)
         model_payloads = [row for row in payloads if row.get("op") == "model" or row.get("subject") == "model"]
         self.assertTrue(model_payloads)
@@ -985,7 +1083,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(model_payloads[-1].get("with_data"))
 
     def test_nested_source_record_is_promoted_to_v2_main_source(self):
-        handler = self.module.UiContractV2Handler(env=object())
+        handler = self.module.UiContractV2Handler(env={})
 
         result = handler.handle(
             payload={

@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from pathlib import Path
 
 
@@ -27,9 +28,15 @@ class _FixtureElement:
         self.attrib = element.attrib
         self.text = element.text
         self.tail = element.tail
+        self._children = [_FixtureElement(child, self) for child in element]
 
     def __iter__(self):
-        return iter([_FixtureElement(child, self) for child in self._element])
+        return iter(self._children)
+
+    def iter(self):
+        yield self
+        for child in self:
+            yield from child.iter()
 
     def get(self, key, default=None):
         return self._element.get(key, default)
@@ -223,7 +230,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(data_contract["mainData"]["manager_id"], 43)
         self.assertEqual(data_contract["mainData"]["user_id"], 43)
         self.assertEqual(data_contract["mainData"]["phase_key"], "initiation")
-        self.assertEqual(trimmed["statusContract"]["globalStatus"]["pageAuth"], "edit")
+        self.assertEqual(trimmed["statusContract"]["globalStatus"]["pageAuth"], "none")
 
     def test_ui_contract_v2_edit_form_page_auth_follows_write_permission(self):
         source = {
@@ -254,6 +261,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         self.assertEqual(full["statusContract"]["globalStatus"]["pageAuth"], "edit")
+        self.assertEqual(full["statusContract"]["globalStatus"]["effectiveRenderProfile"], "edit")
+        self.assertTrue(full["statusContract"]["globalStatus"]["effectiveRecordCapabilities"]["write"])
         save = next(row for row in full["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
         self.assertEqual(save["backendIdentity"], "contract_action:form.save")
         self.assertEqual(save["visibleProfiles"], ["edit"])
@@ -1254,7 +1263,10 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         rule = full["actionContract"]["actionRuleList"][0]
-        self.assertEqual(rule["backendIdentity"], "button:object:action_review")
+        self.assertEqual(
+            rule["backendIdentity"],
+            "native_button:object:action_review:/tree[1]/button[1]:1",
+        )
         self.assertEqual(
             rule["permissionConstraints"]["clauses"][0]["requiredGroups"],
             ["base.group_system"],
@@ -1450,6 +1462,90 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         self.assertFalse(status["visible"])
         self.assertTrue(status["readonly"])
+
+    def test_form_field_occurrences_keep_distinct_identity_and_dynamic_status(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "fields": {
+                    "state": {"name": "state", "type": "selection"},
+                    "amount": {"name": "amount", "type": "float"},
+                },
+                "views": {"form": {"layout": [{"type": "sheet", "children": [
+                    {"type": "field", "name": "amount", "native_locator": "form/sheet/field[name=amount][1]", "occurrence_index": 1, "source_position": 1,
+                     "modifiers": {"invisible": {"kind": "field_compare", "field": "state", "operator": "=", "value": "draft"}, "readonly": {"kind": "field_compare", "field": "state", "operator": "=", "value": "draft"}, "required": False}},
+                    {"type": "field", "name": "amount", "native_locator": "form/sheet/field[name=amount][2]", "occurrence_index": 2, "source_position": 2,
+                     "modifiers": {"readonly": False, "required": {"kind": "field_compare", "field": "state", "operator": "=", "value": "draft"}}},
+                ]}]}},
+                "record": {"state": "draft", "amount": 10},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.field.occurrence.modifier",
+        )
+
+        nodes = contract["layoutContract"]["containerTree"][0]["children"]
+        self.assertEqual(len({row["widgetId"] for row in nodes}), 2)
+        self.assertEqual(
+            [row["containerId"] for row in nodes],
+            [row["widgetId"] for row in nodes],
+        )
+        self.assertEqual([row["containerType"] for row in nodes], ["field", "field"])
+        statuses = {row["widgetId"]: row for row in contract["statusContract"]["widgetStatus"]}
+        self.assertEqual(set(statuses), {row["widgetId"] for row in nodes})
+        self.assertNotIn("field.amount", statuses)
+        self.assertNotIn("field.state", statuses)
+        first, second = (statuses[row["widgetId"]] for row in nodes)
+        self.assertFalse(first["visible"])
+        self.assertTrue(second["visible"])
+        self.assertTrue(first["readonly"])
+        self.assertFalse(first["required"])
+        self.assertFalse(second["readonly"])
+        self.assertTrue(second["required"])
+
+    def test_final_layout_modifier_hydration_fails_closed_for_unknown_field_modifier(self):
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "field", "name": "amount", "widgetId": "field.amount.occ.test",
+                "modifiers": {"readonly": {"kind": "unsupported"}, "required": {"kind": "unsupported"}},
+            }]},
+            "statusContract": {
+                "containerStatus": [],
+                "widgetStatus": [{"widgetId": "field.amount.occ.test", "visible": True, "readonly": False, "required": False, "disabled": False}],
+            },
+            "dataContract": {"mainData": {"amount": 10}},
+        }
+        assembler.hydrate_final_layout_modifier_status(contract)
+        status = contract["statusContract"]["widgetStatus"][0]
+        self.assertTrue(status["readonly"])
+        self.assertTrue(status["required"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "NATIVE_MODIFIER_UNRESOLVED")
+
+    def test_final_layout_modifier_hydration_fails_closed_for_malformed_comparisons(self):
+        for modifier in (
+            {"kind": "field_compare", "field": "amount", "operator": "unsupported", "value": 10},
+            {"kind": "field_compare", "field": "amount", "operator": ">", "value": "not-a-number"},
+            {"kind": "static", "value": "false"},
+        ):
+            contract = {
+                "layoutContract": {"containerTree": [{
+                    "type": "field", "name": "amount", "widgetId": "field.amount.occ.test",
+                    "modifiers": {"invisible": modifier, "readonly": modifier, "required": modifier},
+                }]},
+                "statusContract": {"containerStatus": [], "widgetStatus": [{
+                    "widgetId": "field.amount.occ.test", "visible": True, "readonly": False,
+                    "required": False, "disabled": False,
+                }]},
+                "dataContract": {"mainData": {"amount": 10}},
+            }
+            assembler.hydrate_final_layout_modifier_status(contract)
+            status = contract["statusContract"]["widgetStatus"][0]
+            self.assertFalse(status["visible"])
+            self.assertTrue(status["readonly"])
+            self.assertTrue(status["required"])
+            self.assertTrue(status["disabled"])
 
     def test_native_form_layout_buttons_enter_canonical_action_authority(self):
         contract = assembler.assemble_unified_page_contract_v2(
@@ -2765,6 +2861,79 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         }}}
         with self.assertRaisesRegex(ValueError, "action occurrence parity mismatch"):
             assembler.assemble_unified_page_contract_v2(omitted_action, source_type="ui.contract")
+
+    def test_native_form_projection_requires_explicit_authority_and_resolved_layout(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {"form": {"layout": [{
+                "type": "field", "name": "name",
+                "native_locator": "form/field[name=name]",
+                "occurrence_index": 1, "source_position": 0,
+            }]}},
+            "nativeFormProjection": {
+                "schemaVersion": "2.0",
+                "model": "x.document",
+                "viewType": "form",
+                "fieldDescriptors": {"name": {"name": "name", "type": "char", "string": "Name"}},
+                "layout": [{
+                    "type": "field", "name": "name",
+                    "native_locator": "form/field[name=name]",
+                    "occurrence_index": 1, "source_position": 0,
+                }],
+                "capabilities": {},
+                "subviews": {},
+                "headerButtons": [],
+                "sourceAuthority": {
+                    "kind": "native_form_projection",
+                    "authorities": ["ir.ui.view", "ir.model.fields", "ir.model.access", "ir.rule"],
+                    "projectionOnly": True,
+                    "noBusinessFactAuthority": True,
+                    "runtimeCarrier": "app_config_engine.page_assembler.form",
+                },
+            },
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="native_form_projection",
+        )
+        self.assertEqual(contract["meta"]["sourceType"], "native_form_projection")
+
+        camel_identity = deepcopy(source)
+        camel_field = camel_identity["nativeFormProjection"]["layout"][0]
+        camel_field["nativeLocator"] = camel_field.pop("native_locator")
+        camel_field["occurrenceIndex"] = camel_field.pop("occurrence_index")
+        camel_field["sourcePosition"] = camel_field.pop("source_position")
+        camel_contract = assembler.assemble_unified_page_contract_v2(
+            camel_identity,
+            source_type="native_form_projection",
+        )
+        self.assertEqual(camel_contract["meta"]["sourceType"], "native_form_projection")
+
+        invalid_position = deepcopy(camel_identity)
+        invalid_position["nativeFormProjection"]["layout"][0]["sourcePosition"] = -1
+        with self.assertRaisesRegex(ValueError, "source_position is invalid"):
+            assembler.assemble_unified_page_contract_v2(
+                invalid_position,
+                source_type="native_form_projection",
+            )
+
+        missing_authority = deepcopy(source)
+        missing_authority["nativeFormProjection"] = {}
+        with self.assertRaisesRegex(ValueError, "schemaVersion"):
+            assembler.assemble_unified_page_contract_v2(
+                missing_authority,
+                source_type="native_form_projection",
+            )
+
+        missing_layout = deepcopy(source)
+        missing_layout["nativeFormProjection"].pop("layout")
+        with self.assertRaisesRegex(ValueError, "resolved layout"):
+            assembler.assemble_unified_page_contract_v2(
+                missing_layout,
+                source_type="native_form_projection",
+            )
 
 
 if __name__ == "__main__":

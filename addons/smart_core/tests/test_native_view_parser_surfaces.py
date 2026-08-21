@@ -343,6 +343,22 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertNotIn("_arch_root", serialized)
         self.assertEqual(serialized["fields"]["name"]["type"], "char")
 
+    def test_form_parser_preserves_field_occurrence_source_positions(self):
+        layout = self.tree_form_parser._extract_form_layout_dom(
+            _parse_test_xml(
+                '<form><sheet><group>'
+                '<field name="name" readonly="1"/>'
+                '<field name="name" required="1"/>'
+                '</group></sheet></form>'
+            ),
+            {"name": {"type": "char", "string": "Name"}},
+        )
+
+        fields = layout[0]["children"][0]["children"]
+        self.assertEqual([row["source_position"] for row in fields], [3, 4])
+        self.assertEqual([row["occurrence_index"] for row in fields], [1, 2])
+        self.assertNotEqual(fields[0]["native_locator"], fields[1]["native_locator"])
+
     def test_tree_parser_preserves_duplicate_field_behavior_occurrences(self):
         result = self.tree_form_parser._parse_tree_view(
             """
@@ -395,7 +411,11 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         element = _parse_test_xml(
             '<field name="partner_id" modifiers="{\'readonly\': true}" can_create="0"/>'
         )
-        node = self.tree_form_parser._node_to_layout_from_dom(element, {"partner_id": {"type": "many2one"}})
+        node = self.tree_form_parser._node_to_layout_from_dom(
+            element,
+            {"partner_id": {"type": "many2one"}},
+            list(element.iter()),
+        )
 
         self.assertEqual(node["attributes"]["modifiers"], "{'readonly': true}")
         self.assertEqual(node["relation_active_actions"], {"create": False})
@@ -413,9 +433,11 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             '<tree><field name="amount_total" widget="monetary"/></tree>',
             fields_info,
         )
+        form_element = _parse_test_xml('<field name="amount_total" widget="monetary"/>')
         form = self.tree_form_parser._node_to_layout_from_dom(
-            _parse_test_xml('<field name="amount_total" widget="monetary"/>'),
+            form_element,
             fields_info,
+            list(form_element.iter()),
         )
 
         self.assertEqual(tree["column_occurrences"][0]["currency_field"], "company_currency_id")
@@ -428,7 +450,11 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
 
     def test_non_relational_can_create_remains_raw_without_fake_active_action(self):
         element = _parse_test_xml('<field name="reference" can_create="0"/>')
-        node = self.tree_form_parser._node_to_layout_from_dom(element, {"reference": {"type": "char"}})
+        node = self.tree_form_parser._node_to_layout_from_dom(
+            element,
+            {"reference": {"type": "char"}},
+            list(element.iter()),
+        )
 
         self.assertEqual(node["attributes"]["can_create"], "0")
         self.assertNotIn("relation_active_actions", node)

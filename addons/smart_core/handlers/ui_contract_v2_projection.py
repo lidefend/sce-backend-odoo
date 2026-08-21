@@ -293,6 +293,38 @@ def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contra
         render_profile = "edit"
     status_contract = contract_v2.get("statusContract") if isinstance(contract_v2.get("statusContract"), dict) else {}
     widget_status = status_contract.get("widgetStatus") if isinstance(status_contract.get("widgetStatus"), list) else []
+    layout_contract = contract_v2.get("layoutContract") if isinstance(contract_v2.get("layoutContract"), dict) else {}
+    native_form = str(layout_contract.get("layoutType") or "").strip().lower() == "form"
+    form_widgets_by_field: dict[str, list[str]] = {}
+
+    def collect_form_widgets(value: Any) -> None:
+        if isinstance(value, list):
+            for item in value:
+                collect_form_widgets(item)
+            return
+        if not isinstance(value, dict):
+            return
+        node_type = str(value.get("containerType") or value.get("type") or "").strip().lower()
+        if node_type == "field":
+            field_code = str(value.get("fieldCode") or value.get("name") or value.get("field") or "").strip()
+            widget_id = str(value.get("widgetId") or value.get("containerId") or "").strip()
+            if field_code and widget_id:
+                form_widgets_by_field.setdefault(field_code, []).append(widget_id)
+        for key in ("children", "pages", "tabs", "nodes", "items"):
+            collect_form_widgets(value.get(key))
+
+    if native_form:
+        collect_form_widgets(layout_contract.get("containerTree"))
+        owned_widget_ids = {
+            widget_id
+            for widget_ids in form_widgets_by_field.values()
+            for widget_id in widget_ids
+        }
+        widget_status = [
+            row
+            for row in widget_status
+            if isinstance(row, dict) and str(row.get("widgetId") or "").strip() in owned_widget_ids
+        ]
     by_widget: dict[str, list[dict[str, Any]]] = {}
     for row in widget_status:
         if not isinstance(row, dict):
@@ -323,8 +355,17 @@ def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contra
         if not field_code:
             continue
         widget_id = f"field.{field_code}"
-        rows = by_widget.get(widget_id)
+        if native_form:
+            rows = [
+                row
+                for occurrence_widget_id in form_widgets_by_field.get(field_code, [])
+                for row in by_widget.get(occurrence_widget_id, [])
+            ]
+        else:
+            rows = by_widget.get(widget_id)
         if not rows:
+            if native_form:
+                continue
             row = {
                 "widgetId": widget_id,
                 "visible": True,

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import importlib.util
+import os
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "utils" / "load_contract_response_cache.py"
@@ -54,6 +57,41 @@ class TestLoadContractResponseCache(unittest.TestCase):
         self.assertIsNone(self.cache.get("page-b", "source"))
         self.assertEqual(self.cache.get("page-a", "source")["page"], "a")
         self.assertEqual(self.cache.get("page-c", "source")["page"], "c")
+
+    def test_projection_source_token_changes_with_runtime_source_fingerprint(self):
+        class FakeModel:
+            _fields = {"write_date": object()}
+
+            def sudo(self):
+                return self
+
+            def with_context(self, **_kwargs):
+                return self
+
+            def search(self, _domain, **_kwargs):
+                return SimpleNamespace(id=1, write_date="2026-08-21 00:00:00", latest_version="")
+
+        class FakeEnv:
+            def __init__(self):
+                self.user = SimpleNamespace(id=7)
+                self._model = FakeModel()
+
+            def __contains__(self, _model_code):
+                return True
+
+            def __getitem__(self, _model_code):
+                return self._model
+
+        env = FakeEnv()
+        base = {"SC_SOURCE_REVISION": "a" * 40, "SC_SOURCE_FINGERPRINT": "b" * 64}
+        with patch.dict(os.environ, base, clear=False):
+            first = TARGET.build_projection_source_token(env, model_name="x.record")
+        with patch.dict(os.environ, {**base, "SC_SOURCE_FINGERPRINT": "c" * 64}, clear=False):
+            second = TARGET.build_projection_source_token(env, model_name="x.record")
+
+        self.assertTrue(first)
+        self.assertTrue(second)
+        self.assertNotEqual(first, second)
 
 
 if __name__ == "__main__":

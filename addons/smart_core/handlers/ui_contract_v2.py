@@ -61,6 +61,7 @@ from .ui_contract_v2_constants import (
     STANDARD_LOWCODE_COLUMN_LABELS,
 )
 from . import ui_contract_v2_projection as _projection
+from ..app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from .ui_contract import UiContractHandler
 from .ui_contract_preview import PreviewAccessDenied, build_projection_environments
 _logger = logging.getLogger(__name__)
@@ -407,6 +408,8 @@ class UiContractV2Handler(BaseIntentHandler):
         if limit_error:
             return self._err(400, f"{limit_error} 无效")
         ui_params = self._ui_contract_params(params)
+        native_form_source = self._uses_native_form_source(ui_params)
+        runtime_source_type = "native_form_projection" if native_form_source else "ui.contract"
         projection_context = dict(getattr(self.env, "context", {}) or {})
         projection_context["contract_projection_readonly"] = True
         try:
@@ -441,16 +444,25 @@ class UiContractV2Handler(BaseIntentHandler):
         projection_cache_status = "bypass"
         projection_cache_reason = "dynamic_request"
         projection_cache_persisted = False
-        if cache_model and base_params is not None and base_ui_params is not None:
+        if (
+            cache_model
+            and base_params is not None
+            and base_ui_params is not None
+            and getattr(self.env, "company", None) is not None
+        ):
             projection_cache_status = "miss"
             projection_cache_reason = "asset_not_found"
             cache_key = build_projection_cache_key(
                 self.env,
-                namespace="ui.contract.v2.source",
+                namespace=(
+                    "ui.contract.v2.native_form_projection.v1"
+                    if native_form_source
+                    else "ui.contract.v2.source"
+                ),
                 params=base_params,
                 model_name=cache_model,
                 view_types=base_params.get("view_type") or base_params.get("viewType") or "form",
-                context=dict(self.env.context or {}),
+                context=dict(getattr(self.env, "context", {}) or {}),
             )
             source_token = build_projection_source_token(
                 self.env,
@@ -480,6 +492,14 @@ class UiContractV2Handler(BaseIntentHandler):
                 projection_cache_reason = (
                     "cache_identity_unavailable" if not cache_key else "source_token_unavailable"
                 )
+        if (
+            native_form_source
+            and cached_source is not None
+            and cached_source.get("source_type") != runtime_source_type
+        ):
+            cached_source = None
+            projection_cache_status = "miss"
+            projection_cache_reason = "native_form_source_type_mismatch"
         cache_lookup_ready_at = time.monotonic()
         if cached_source is not None:
             ui_data = deepcopy(cached_source.get("ui_data") or {})
@@ -487,27 +507,41 @@ class UiContractV2Handler(BaseIntentHandler):
             ui_meta.pop("trace_id", None)
             ui_meta.pop("request_id", None)
         else:
-            source_result = UiContractHandler(
-                projection_env,
-                su_env=projection_su_env,
-                request=self.request,
-                context=ctx or self.context,
-                payload=base_ui_params or ui_params,
-            ).handle(base_ui_params or ui_params, ctx)
-            source_envelope = self._envelope(source_result)
-            if not source_envelope.get("ok", True):
-                return source_result
+            if native_form_source:
+                try:
+                    ui_data, ui_meta = self._dispatch_native_form_source(
+                        projection_env,
+                        projection_su_env,
+                        base_ui_params or ui_params,
+                    )
+                except (KeyError, ValueError) as exc:
+                    return self._err(400, str(exc) or "native form projection failed")
+                except Exception:
+                    _logger.exception("native form projection failed")
+                    return self._err(500, "native form projection failed")
+            else:
+                source_result = UiContractHandler(
+                    projection_env,
+                    su_env=projection_su_env,
+                    request=self.request,
+                    context=ctx or self.context,
+                    payload=base_ui_params or ui_params,
+                ).handle(base_ui_params or ui_params, ctx)
+                source_envelope = self._envelope(source_result)
+                if not source_envelope.get("ok", True):
+                    return source_result
 
-            ui_data = source_envelope.get("data") or {}
-            ui_meta = source_envelope.get("meta") or {}
-            ui_data, ui_meta = self._resolve_entry_contract(
-                ui_data,
-                ui_meta,
-                base_ui_params or ui_params,
-                ctx,
-            )
+                ui_data = source_envelope.get("data") or {}
+                ui_meta = source_envelope.get("meta") or {}
+                ui_data, ui_meta = self._resolve_entry_contract(
+                    ui_data,
+                    ui_meta,
+                    base_ui_params or ui_params,
+                    ctx,
+                )
             if cache_key and source_token:
                 cached_payload = {
+                    "source_type": runtime_source_type,
                     "ui_data": deepcopy(ui_data),
                     "ui_meta": {
                         key: deepcopy(value)
@@ -586,7 +620,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 self,
                 contract_v2,
                 source_contract,
-                "ui.contract",
+                runtime_source_type,
                 str(request_id),
                 trace_id,
                 client_type,
@@ -600,7 +634,7 @@ class UiContractV2Handler(BaseIntentHandler):
                     "contract_version": CONTRACT_VERSION,
                     "client_type": client_type,
                     "delivery_profile": delivery_profile,
-                    "source_type": "ui.contract",
+                    "source_type": runtime_source_type,
                     "source_intent": ui_meta.get("intent") or "ui.contract",
                     "source_kind": self.SOURCE_KIND,
                     "source_authorities": list(self.SOURCE_AUTHORITIES),
@@ -774,9 +808,11 @@ class UiContractV2Handler(BaseIntentHandler):
         projected_contract_normalizers_at = time.monotonic()
         self._project_action_group_entitlements(source_contract)
         action_entitlements_at = time.monotonic()
+        if native_form_source:
+            self._refresh_native_form_projection(source_contract)
         contract_v2 = assemble_unified_page_contract_v2(
             source_contract,
-            source_type="ui.contract",
+            source_type=runtime_source_type,
             client_type=client_type,
             request_id=str(request_id),
             trace_id=trace_id,
@@ -846,6 +882,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 cache_key,
                 source_token,
                 {
+                    "source_type": runtime_source_type,
                     "ui_data": deepcopy(ui_data),
                     "ui_meta": {
                         key: deepcopy(value)
@@ -863,7 +900,7 @@ class UiContractV2Handler(BaseIntentHandler):
             )
         assembled_cache_stored_at = time.monotonic()
         contract_v2 = _authority.seal_runtime_contract(
-            self, contract_v2, source_contract, "ui.contract", str(request_id), trace_id, client_type
+            self, contract_v2, source_contract, runtime_source_type, str(request_id), trace_id, client_type
         )
         runtime_sealed_at = time.monotonic()
         assembler_stages.update({
@@ -901,7 +938,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "contract_version": CONTRACT_VERSION,
                 "client_type": client_type,
                 "delivery_profile": delivery_profile,
-                "source_type": "ui.contract",
+                "source_type": runtime_source_type,
                 "source_intent": ui_meta.get("intent") or "ui.contract",
                 "source_kind": self.SOURCE_KIND,
                 "source_authorities": list(self.SOURCE_AUTHORITIES),
@@ -3705,6 +3742,195 @@ class UiContractV2Handler(BaseIntentHandler):
 
     def _ui_contract_params(self, params: dict[str, Any]) -> dict[str, Any]:
         return _adapters.ui_contract_params(params)
+
+    @staticmethod
+    def _uses_native_form_source(ui_params: dict[str, Any]) -> bool:
+        view_type = str(ui_params.get("view_type") or ui_params.get("viewType") or "").strip().lower()
+        if view_type == "list":
+            view_type = "tree"
+        if view_type == "form":
+            return True
+        render_profile = str(
+            ui_params.get("render_profile") or ui_params.get("renderProfile") or ""
+        ).strip().lower()
+        record_id = (
+            ui_params.get("record_id")
+            or ui_params.get("recordId")
+            or ui_params.get("res_id")
+            or ui_params.get("resId")
+        )
+        return not view_type and bool(record_id or render_profile in {"create", "edit", "readonly"})
+
+    @staticmethod
+    def _dispatch_native_form_source(env, su_env, ui_params: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+        direct_params = dict(ui_params)
+        op = str(direct_params.pop("op", "") or direct_params.get("subject") or "").strip().lower()
+        if op == "model":
+            direct_params["subject"] = "model"
+        elif op in {"action", "action_open", "menu"}:
+            direct_params["subject"] = "action"
+        else:
+            raise ValueError("native form projection requires model, action, or menu authority")
+        direct_params["view_type"] = "form"
+        direct_params["view_types"] = ["form"]
+        result = ActionDispatcher(env, su_env).dispatch(direct_params)
+        if not isinstance(result, tuple) or len(result) != 2:
+            raise ValueError("native form projection returned an invalid source payload")
+        data, versions = result
+        if not isinstance(data, dict):
+            raise ValueError("native form projection data must be an object")
+        model = str(data.get("model") or direct_params.get("model") or "").strip()
+        fields = data.get("fields")
+        views = data.get("views")
+        form_view = views.get("form") if isinstance(views, dict) else None
+        if not model:
+            raise ValueError("native form projection requires a model authority")
+        if not isinstance(fields, dict):
+            raise ValueError("native form projection requires field descriptors")
+        if (
+            not isinstance(form_view, dict)
+            or not isinstance(form_view.get("layout"), list)
+            or not form_view.get("layout")
+        ):
+            raise ValueError("native form projection requires a resolved native form layout")
+        data["model"] = model
+        data["view_type"] = "form"
+        data["nativeFormProjection"] = {
+            "schemaVersion": "2.0",
+            "model": model,
+            "viewType": "form",
+            "fieldDescriptors": deepcopy(fields),
+            "layout": deepcopy(form_view["layout"]),
+            "capabilities": deepcopy(
+                form_view.get("capabilities") if isinstance(form_view.get("capabilities"), dict) else {}
+            ),
+            "subviews": deepcopy(
+                form_view.get("subviews") if isinstance(form_view.get("subviews"), dict) else {}
+            ),
+            "headerButtons": deepcopy(
+                form_view.get("header_buttons") if isinstance(form_view.get("header_buttons"), list) else []
+            ),
+            "sourceAuthority": {
+                "kind": "native_form_projection",
+                "authorities": [
+                    "ir.ui.view",
+                    "ir.model.fields",
+                    "ir.model.access",
+                    "ir.rule",
+                ],
+                "projectionOnly": True,
+                "noBusinessFactAuthority": True,
+                "runtimeCarrier": "app_config_engine.page_assembler.form",
+            },
+        }
+        version_map = versions if isinstance(versions, dict) else {}
+        return data, {
+            "intent": "ui.contract.v2",
+            "source_type": "native_form_projection",
+            "source_kind": "app_config_page_assembler",
+            "versions": deepcopy(version_map),
+        }
+
+    @staticmethod
+    def _refresh_native_form_projection(source: dict[str, Any]) -> None:
+        marker = source.get("nativeFormProjection")
+        if not isinstance(marker, dict):
+            raise ValueError("native form projection marker is missing")
+        views = source.get("views") if isinstance(source.get("views"), dict) else {}
+        form_view = views.get("form") if isinstance(views.get("form"), dict) else {}
+        fields = source.get("fields")
+        layout = form_view.get("layout")
+        if not isinstance(fields, dict) or not isinstance(layout, list) or not layout:
+            raise ValueError("native form projection final carrier is incomplete")
+        marker.update({
+            "model": str(source.get("model") or marker.get("model") or "").strip(),
+            "viewType": "form",
+            "fieldDescriptors": deepcopy(fields),
+            "layout": deepcopy(layout),
+            "capabilities": deepcopy(
+                form_view.get("capabilities") if isinstance(form_view.get("capabilities"), dict) else {}
+            ),
+            "subviews": deepcopy(
+                form_view.get("subviews") if isinstance(form_view.get("subviews"), dict) else {}
+            ),
+            "headerButtons": deepcopy(
+                form_view.get("header_buttons") if isinstance(form_view.get("header_buttons"), list) else []
+            ),
+            "page": {
+                "title": deepcopy(source.get("title")),
+                "head": deepcopy(source.get("head") if isinstance(source.get("head"), dict) else {}),
+                "recordId": deepcopy(source.get("record_id") or source.get("recordId")),
+                "renderProfile": deepcopy(source.get("render_profile") or source.get("renderProfile")),
+                "domain": deepcopy(source.get("domain") if isinstance(source.get("domain"), list) else []),
+                "domainRaw": deepcopy(source.get("domain_raw") or source.get("domainRaw")),
+                "context": deepcopy(source.get("context") if isinstance(source.get("context"), dict) else {}),
+                "contextRaw": deepcopy(source.get("context_raw") or source.get("contextRaw")),
+                "order": deepcopy(source.get("order")),
+                "limit": deepcopy(source.get("limit")),
+            },
+            "record": deepcopy(source.get("record") if isinstance(source.get("record"), dict) else {}),
+            "search": deepcopy(source.get("search") if isinstance(source.get("search"), dict) else {}),
+            "permissions": deepcopy(
+                source.get("permissions") if isinstance(source.get("permissions"), dict) else {}
+            ),
+            "actions": {
+                "buttons": deepcopy(source.get("buttons") if isinstance(source.get("buttons"), list) else []),
+                "businessActions": deepcopy(
+                    source.get("business_actions") if isinstance(source.get("business_actions"), list) else []
+                ),
+                "toolbar": deepcopy(source.get("toolbar") if isinstance(source.get("toolbar"), dict) else {}),
+                "actionGroups": deepcopy(
+                    source.get("action_groups") if isinstance(source.get("action_groups"), list) else []
+                ),
+                "actionPolicies": deepcopy(
+                    source.get("action_policies") if isinstance(source.get("action_policies"), dict) else {}
+                ),
+                "actionSchema": deepcopy(
+                    source.get("action_schema") if isinstance(source.get("action_schema"), dict) else {}
+                ),
+            },
+            "runtime": {
+                "collaboration": deepcopy(
+                    source.get("collaboration") if isinstance(source.get("collaboration"), dict) else {}
+                ),
+                "recordVersion": deepcopy(
+                    source.get("record_version") if isinstance(source.get("record_version"), dict) else {}
+                ),
+                "dataSources": deepcopy(
+                    source.get("data_sources") if isinstance(source.get("data_sources"), dict) else {}
+                ),
+                "businessOperationProfile": deepcopy(
+                    source.get("business_operation_profile")
+                    if isinstance(source.get("business_operation_profile"), dict)
+                    else {}
+                ),
+                "visibleFields": deepcopy(
+                    source.get("visible_fields") if isinstance(source.get("visible_fields"), list) else []
+                ),
+                "fieldGroups": deepcopy(
+                    source.get("field_groups") if isinstance(source.get("field_groups"), list) else []
+                ),
+                "formStructureContract": deepcopy(
+                    source.get("formStructureContract")
+                    if isinstance(source.get("formStructureContract"), dict)
+                    else source.get("form_structure_contract")
+                    if isinstance(source.get("form_structure_contract"), dict)
+                    else {}
+                ),
+                "intakeAutosave": deepcopy(
+                    form_view.get("autosave") if isinstance(form_view.get("autosave"), dict) else {}
+                ),
+                "fieldSemantics": deepcopy(
+                    source.get("field_semantics") if isinstance(source.get("field_semantics"), dict) else {}
+                ),
+                "validationRules": deepcopy(
+                    source.get("validation_rules") if isinstance(source.get("validation_rules"), list) else []
+                ),
+                "governance": deepcopy(
+                    source.get("governance") if isinstance(source.get("governance"), dict) else {}
+                ),
+            },
+        })
 
     def _envelope(self, result: Any) -> dict[str, Any]:
         return _adapters.envelope(result)
