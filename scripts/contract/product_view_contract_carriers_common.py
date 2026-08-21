@@ -23,6 +23,11 @@ TYPE_REQUIRED_KEYS = {
     "dashboard": ("dashboard",),
 }
 
+FINAL_FORM_CARRIER_SELECTORS = (
+    "/data/actionContract/actionRuleList",
+    "/data/statusContract/buttonStatus",
+)
+
 
 def canonical_bytes(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -92,6 +97,20 @@ def expected_normalized_selectors(view_type: str) -> tuple[str, ...]:
         raise ValueError(f"unsupported canonical view type: {view_type}")
     primary = f"/data/views/{view_type}"
     return (primary, "/data/search") if view_type == "search" else (primary,)
+
+
+def expected_final_contract_selectors(view_type: str) -> tuple[str, ...]:
+    return FINAL_FORM_CARRIER_SELECTORS if view_type == "form" else ()
+
+
+def final_contract_value_errors(source_selector: str, value: Any) -> list[str]:
+    if source_selector not in FINAL_FORM_CARRIER_SELECTORS:
+        return ["invalid final contract source selector"]
+    if not isinstance(value, list):
+        return ["final contract carrier must be an array"]
+    if any(not isinstance(row, dict) for row in value):
+        return ["final contract carrier rows must be objects"]
+    return []
 
 
 def normalized_value_errors(view_type: str, model: str, selector: str, value: Any) -> list[str]:

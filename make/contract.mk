@@ -150,7 +150,7 @@ verify.contract.native_view_frontend_map_candidate: verify.contract.view_carrier
 	  --structure "$(VIEW_STRUCTURE_CANDIDATE)" --taxonomy "$(VIEW_CAPABILITY_TAXONOMY)" \
 	  --frontend-map "$(VIEW_FRONTEND_CAPABILITY_MAP)" --reasons "$(VIEW_CAPABILITY_REASONS)"
 
-contract.view_capability_ledger.export:
+contract.view_capability_ledger.export: verify.frontend.canonical_form_presenter.unit
 	@rm -f "$(VIEW_CAPABILITY_LEDGER_CANDIDATE)" "$(VIEW_CAPABILITY_LEDGER_CANDIDATE).tmp"
 	@$(MAKE) --no-print-directory gate.contract.native_view_normalized_map verify.contract.native_view_frontend_map_candidate || { \
 	  rm -f "$(VIEW_CAPABILITY_LEDGER_CANDIDATE)" "$(VIEW_CAPABILITY_LEDGER_CANDIDATE).tmp"; exit 1; }

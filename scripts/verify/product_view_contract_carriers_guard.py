@@ -14,8 +14,10 @@ from jsonschema import Draft202012Validator
 
 from scripts.contract.complete_worktree_fingerprint import build_fingerprint, validate_fingerprint
 from scripts.contract.product_view_contract_carriers_common import (
+    expected_final_contract_selectors,
     expected_normalized_selectors,
     file_sha256,
+    final_contract_value_errors,
     normalized_value_errors,
     pointer_get,
     sha256_json,
@@ -95,6 +97,7 @@ def validate_carriers(
     runtime_constants = {
         "runtime_profile": "local.clean", "compose_project": "sc-local-clean", "database": "sc_clean", "database_filter": "^sc_clean$", "demo_data": False,
         "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler", "capture_mode": "final_response_rollback_sandbox", "force_refresh": True,
+        "final_handler": "odoo.addons.smart_core.handlers.ui_contract_v2.UiContractV2Handler",
         "external_contract_service_absent": True, "capture_transaction_strategy": "dedicated_cursor_rollback", "exporter_version": "product_view_contract_carriers/v1",
     }
     for key, expected in runtime_constants.items():
@@ -111,6 +114,9 @@ def validate_carriers(
     normalized_count = 0
     semantic_count = 0
     complete_count = 0
+    final_complete_count = 0
+    final_not_applicable_count = 0
+    final_carrier_count = 0
     for index, entry in enumerate(entries):
         ref = entry.get("contract_ref")
         surface = surface_by_ref.get(ref)
@@ -185,6 +191,52 @@ def validate_carriers(
         elif outcome.get("status") == "normalized_only":
             if entry.get("semantic_carriers") or outcome.get("reason_code") != "CAPABILITY_SEMANTIC_CARRIER_MISSING":
                 errors.append(f"{ref} normalized-only outcome mismatch")
+        final_capture = entry.get("final_contract_capture", {})
+        final_carriers = final_capture.get("carriers") if isinstance(final_capture.get("carriers"), list) else []
+        actual_final_selectors = tuple(row.get("source_selector") for row in final_carriers if isinstance(row, dict))
+        expected_final_selectors = expected_final_contract_selectors(entry.get("view_type"))
+        if actual_final_selectors != expected_final_selectors:
+            errors.append(f"{ref} final contract selector set mismatch")
+        if entry.get("view_type") == "form":
+            final_complete_count += 1
+            if final_capture.get("status") != "complete" or final_capture.get("reason_code") != "":
+                errors.append(f"{ref} final contract completion mismatch")
+            final_request = final_capture.get("request", {})
+            expected_request = {
+                "menu_id": binding.get("menu_id"), "action_id": binding.get("action_id"),
+                "model": entry.get("model"), "view_type": "form", "view_id": binding.get("requested_view_id"),
+                "source_type": "ui.contract", "client_type": "web_pc", "delivery_profile": "full", "force_refresh": True,
+            }
+            if final_request != expected_request:
+                errors.append(f"{ref} final contract request mismatch")
+            final_response = final_capture.get("response", {})
+            expected_response = {
+                "ok": True, "intent": "ui.contract.v2", "client_type": "web_pc", "delivery_profile": "full",
+                "model": entry.get("model"), "view_type": "form",
+            }
+            for key, expected in expected_response.items():
+                if final_response.get(key) != expected:
+                    errors.append(f"{ref} final contract response {key} mismatch")
+            if not str(final_response.get("contract_version") or ""):
+                errors.append(f"{ref} final contract response version missing")
+        else:
+            final_not_applicable_count += 1
+            if final_capture != {"status": "not_applicable", "reason_code": "FINAL_CONTRACT_FORM_ONLY", "request": {}, "response": {}, "carriers": []}:
+                errors.append(f"{ref} non-form final contract capture mismatch")
+        for carrier_index, carrier in enumerate(final_carriers):
+            final_carrier_count += 1
+            expected_pointer = f"/entries/{index}/final_contract_capture/carriers/{carrier_index}/value"
+            if carrier.get("artifact_selector") != expected_pointer or carrier.get("source_authority") != "ui_contract_v2_final_response":
+                errors.append(f"{ref} final contract carrier authority mismatch")
+            try:
+                selected = pointer_get(artifact, expected_pointer)
+            except (KeyError, IndexError, ValueError) as exc:
+                errors.append(f"{ref} final contract selector failed: {exc}")
+                continue
+            if selected != carrier.get("value") or carrier.get("value_hash") != sha256_json(selected):
+                errors.append(f"{ref} final contract carrier hash mismatch")
+            for error in final_contract_value_errors(carrier.get("source_selector"), selected):
+                errors.append(f"{ref} {error}")
     summary = artifact.get("summary", {})
     expected_summary = {
         "formal_menu_count": structure.get("summary", {}).get("formal_menu_count"),
@@ -195,6 +247,9 @@ def validate_carriers(
         "error_count": 0,
         "normalized_carrier_count": normalized_count,
         "semantic_carrier_count": semantic_count,
+        "final_contract_complete_count": final_complete_count,
+        "final_contract_not_applicable_count": final_not_applicable_count,
+        "final_contract_carrier_count": final_carrier_count,
         "view_type_counts": dict(sorted(Counter(row.get("view_type") for row in entries).items())),
     }
     if summary != expected_summary:

@@ -61,6 +61,7 @@ ACTION_IDENTITY_FIELDS = {
     "action.id": "id",
     "action.help": "help",
 }
+READY_FINAL_ACTION_CAPABILITIES = {"action.identity", "action.label", "action.type"}
 
 
 def static_boolean_value(value: Any) -> bool | None:
@@ -194,6 +195,77 @@ def match_normalized_atom(
                     "semantic_selector": f"{base}/modifiers/{_pointer_escape(attribute)}",
                     "semantic_value": modifiers[attribute],
                 })
+    return matches
+
+
+def match_final_object_action(atom: dict[str, Any], carrier_entry: dict[str, Any]) -> list[dict[str, Any]]:
+    """Match one native form action to its sealed V2 rule and button status."""
+    key = str(atom.get("capability_key") or "")
+    if atom.get("view_type") != "form" or key not in READY_FINAL_ACTION_CAPABILITIES:
+        return []
+    if key == "action.type" and atom.get("canonical_value") != "object":
+        return []
+    final_capture = carrier_entry.get("final_contract_capture")
+    if not isinstance(final_capture, dict) or final_capture.get("status") != "complete":
+        return []
+    carriers = final_capture.get("carriers") if isinstance(final_capture.get("carriers"), list) else []
+    rule_carrier = next((row for row in carriers if row.get("source_selector") == "/data/actionContract/actionRuleList"), None)
+    status_carrier = next((row for row in carriers if row.get("source_selector") == "/data/statusContract/buttonStatus"), None)
+    rules = rule_carrier.get("value") if isinstance(rule_carrier, dict) and isinstance(rule_carrier.get("value"), list) else []
+    statuses = status_carrier.get("value") if isinstance(status_carrier, dict) and isinstance(status_carrier.get("value"), list) else []
+    matches: list[dict[str, Any]] = []
+    for rule_index, rule in enumerate(rules):
+        if not isinstance(rule, dict):
+            continue
+        native = rule.get("nativeIdentity")
+        button = rule.get("button")
+        if not isinstance(native, dict) or not isinstance(button, dict) or native.get("authoritative") is not True:
+            continue
+        native_locator = str(native.get("native_locator") or "")
+        occurrence = native.get("occurrence_index")
+        native_type = str(native.get("type") or "").strip().lower()
+        native_name = str(native.get("name") or "").strip()
+        if native_locator != atom.get("native_locator") or occurrence != atom.get("occurrence_index"):
+            continue
+        if native_type != "object" or str(button.get("type") or "").strip().lower() != native_type:
+            continue
+        if not native_name or str(button.get("name") or "").strip() != native_name:
+            continue
+        backend_identity = f"native_button:{native_type}:{native_name}:{native_locator}:{occurrence}"
+        action_id = str(rule.get("actionId") or "").strip()
+        action_key = str(rule.get("actionKey") or "").strip()
+        if not action_id or not action_key or rule.get("backendIdentity") != backend_identity:
+            continue
+        semantic_values = {
+            "action.identity": native_name,
+            "action.label": rule.get("label"),
+            "action.type": native_type,
+        }
+        if semantic_values[key] != atom.get("canonical_value"):
+            continue
+        status_matches = [
+            (index, status)
+            for index, status in enumerate(statuses)
+            if isinstance(status, dict)
+            and status.get("btnId") == f"btn.{action_key}"
+            and status.get("backendIdentity") == backend_identity
+            and isinstance(status.get("visible"), bool)
+            and isinstance(status.get("disabled"), bool)
+        ]
+        if len(status_matches) != 1:
+            continue
+        status_index, status = status_matches[0]
+        rule_base = str(rule_carrier.get("artifact_selector") or "").removesuffix("/value") + f"/value/{rule_index}"
+        status_base = str(status_carrier.get("artifact_selector") or "").removesuffix("/value") + f"/value/{status_index}"
+        semantic_field = {"action.identity": "button/name", "action.label": "label", "action.type": "button/type"}[key]
+        matches.append({
+            "semantic_selector": f"{rule_base}/{semantic_field}",
+            "semantic_value": semantic_values[key],
+            "interaction_selector": status_base,
+            "interaction_value": status,
+            "rule_selector": rule_base,
+            "rule": rule,
+        })
     return matches
 
 

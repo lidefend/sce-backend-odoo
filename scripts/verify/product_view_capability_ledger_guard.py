@@ -13,8 +13,8 @@ import jsonschema
 
 from scripts.contract.complete_worktree_fingerprint import build_fingerprint, validate_fingerprint
 from scripts.contract.product_view_capability_ledger_common import (
-    READY_FORM_BEHAVIORS, STATIC_FORM_MODIFIERS, classify_structure, load_yaml,
-    match_normalized_atom, static_boolean_value,
+    READY_FINAL_ACTION_CAPABILITIES, READY_FORM_BEHAVIORS, STATIC_FORM_MODIFIERS, classify_structure, load_yaml,
+    match_final_object_action, match_normalized_atom, static_boolean_value,
 )
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
 from scripts.verify.native_view_frontend_capability_map_guard import validate_frontend_map
@@ -27,6 +27,8 @@ NORMALIZED_REASON = "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN"
 NATIVE_ORIGIN_REASON = "CAPABILITY_NATIVE_OCCURRENCE_ORIGIN_UNPROVEN"
 NORMALIZED_MISSING_REASON = "CAPABILITY_NORMALIZED_CARRIER_MISSING"
 DYNAMIC_REASON = "CAPABILITY_DYNAMIC_VERDICT_NOT_EVALUATED"
+INTERACTION_EVIDENCE_PATH = Path("frontend/apps/web/scripts/canonical_form_presenter_test.ts")
+INTERACTION_EVIDENCE_SYMBOL = "validateCanonicalFormActionExecutors"
 
 
 def _pointer_get(value: Any, pointer: str) -> Any:
@@ -49,7 +51,9 @@ def _pointer_get(value: Any, pointer: str) -> Any:
 def _load_evidence(path: Path) -> Any:
     if path.suffix in {".yaml", ".yml"}:
         return load_yaml(path)
-    return json.loads(path.read_text(encoding="utf-8"))
+    if path.suffix == ".json":
+        return json.loads(path.read_text(encoding="utf-8"))
+    return path.read_text(encoding="utf-8")
 
 
 def validate_evidence_ref(
@@ -75,8 +79,14 @@ def validate_evidence_ref(
     if ref.get("candidate_fingerprint") != fingerprint_digest:
         errors.append("evidence candidate fingerprint mismatch")
     selector = str(ref.get("selector") or "")
+    if selector.startswith("symbol:"):
+        symbol = selector.removeprefix("symbol:").strip()
+        if not symbol or not isinstance(document, str) or symbol not in document:
+            errors.append("evidence symbol is not resolvable")
+            return errors, None
+        return errors, symbol
     if not selector.startswith("json-pointer:"):
-        return errors + ["evidence selector is not a JSON pointer"], None
+        return errors + ["evidence selector is unsupported"], None
     try:
         selected = _pointer_get(document, selector.removeprefix("json-pointer:"))
     except (ValueError, KeyError, json.JSONDecodeError) as exc:
@@ -180,6 +190,7 @@ def validate_ledger(
     terminal_counts: Counter[str] = Counter()
     evidence_cache: dict[Path, tuple[str, Any]] = {}
     path_hashes = {name: file_sha256(root / path) for name, path in paths.items()}
+    interaction_evidence_sha256 = file_sha256(root / INTERACTION_EVIDENCE_PATH)
     for entry in artifact.get("entries", []):
         contract_ref = entry.get("contract_ref")
         if not contract_ref or contract_ref in seen_refs:
@@ -230,12 +241,18 @@ def validate_ledger(
             if len(exact_matches) > 1:
                 errors.append(f"normalized occurrence is ambiguous: {atom_id}")
             exact = exact_matches[0] if len(exact_matches) == 1 else None
+            final_matches = match_final_object_action(expected, carrier_entry) if exact else []
+            if len(final_matches) > 1:
+                errors.append(f"final action occurrence is ambiguous: {atom_id}")
+            final_match = final_matches[0] if len(final_matches) == 1 else None
             expected_normalized = (
                 {"status": "present", "count": 1, "carrier_refs": [exact["raw_selector"]], "value_hash": sha256_json(exact["raw_value"]), "source_authority": "normalized_contract"}
                 if exact else
                 {"status": "unproven" if normalized_mapping.get("mapping_status") != "proven" else "missing", "count": 0, "carrier_refs": expected_carrier_refs, "value_hash": "", "source_authority": "normalized_contract"}
             )
             expected_semantic = (
+                {"status": "present", "count": 1, "carrier_refs": [final_match["semantic_selector"]], "value_hash": sha256_json(final_match["semantic_value"]), "source_authority": "ui_contract_v2_final_response"}
+                if final_match else
                 {"status": "present", "count": 1, "carrier_refs": [exact["semantic_selector"]], "value_hash": sha256_json(exact["semantic_value"]), "source_authority": "normalized_contract"}
                 if exact else
                 {"status": "missing", "count": 0, "carrier_refs": [], "value_hash": "", "source_authority": "none"}
@@ -257,18 +274,31 @@ def validate_ledger(
             }
             if atom.get("frontend") != expected_frontend:
                 errors.append(f"frontend stage mismatch: {atom_id}")
+            frontend_ready = (
+                frontend_mapping.get("frontend_status") == "present"
+                and all(str(frontend_mapping.get(key) or "").strip() for key in ("consumer_symbol", "renderer_key", "interaction_symbol"))
+            )
             if origin_status == "unproven":
                 status, reason_code = "unsupported", NATIVE_ORIGIN_REASON
             elif normalized_mapping.get("mapping_status") != "proven":
                 status, reason_code = "unsupported", NORMALIZED_REASON
             elif exact is None:
                 status, reason_code = "unsupported", NORMALIZED_MISSING_REASON
-            elif origin_status == "proven" and frontend_mapping.get("frontend_status") == "present" and (
+            elif origin_status == "proven" and frontend_ready and (
                 (
                     expected["capability_key"] in STATIC_FORM_MODIFIERS
                     and static_boolean_value(expected["canonical_value"]) is not None
                 )
                 or expected["capability_key"] in READY_FORM_BEHAVIORS
+            ):
+                status, reason_code = "ready", ""
+            elif (
+                origin_status == "proven"
+                and exact is not None
+                and expected["capability_key"] in READY_FINAL_ACTION_CAPABILITIES
+                and (expected["capability_key"] != "action.type" or expected["canonical_value"] == "object")
+                and final_match is not None
+                and frontend_ready
             ):
                 status, reason_code = "ready", ""
             elif expected["capability_key"] == "form.delete":
@@ -289,8 +319,12 @@ def validate_ledger(
             frontend_index = frontend_map.get("mappings", []).index(frontend_mapping) if frontend_mapping else -1
             expected_carrier_evidence = (
                 [
-                    {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": stage, "selector": f"json-pointer:{selector}"}
-                    for stage, selector in (("normalized", exact["raw_selector"]), ("semantic", exact["semantic_selector"]))
+                    {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:{exact['raw_selector']}"},
+                    {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "semantic", "selector": f"json-pointer:{final_match['semantic_selector'] if final_match else exact['semantic_selector']}"},
+                    *([
+                        {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "interaction", "selector": f"json-pointer:{final_match['interaction_selector']}"},
+                        {"path": str(INTERACTION_EVIDENCE_PATH), "sha256": interaction_evidence_sha256, "candidate_fingerprint": fingerprint["digest"], "stage": "interaction", "selector": f"symbol:{INTERACTION_EVIDENCE_SYMBOL}"},
+                    ] if status == "ready" and final_match else []),
                 ] if exact else [
                     {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:{item['artifact_selector']}"}
                     for item in carrier_entry.get("normalized_carriers", [])
@@ -315,7 +349,10 @@ def validate_ledger(
                     if not equivalent:
                         errors.append(f"native evidence value mismatch: {atom_id}")
                 if exact and ref.get("path") == str(paths["carrier"]):
-                    expected_value = exact["raw_value"] if ref.get("stage") == "normalized" else exact["semantic_value"]
+                    expected_value = exact["raw_value"] if ref.get("stage") == "normalized" else (
+                        final_match["interaction_value"] if ref.get("stage") == "interaction" and final_match else
+                        final_match["semantic_value"] if final_match else exact["semantic_value"]
+                    )
                     if selected != expected_value:
                         errors.append(f"carrier evidence value mismatch: {atom_id}")
 

@@ -138,7 +138,14 @@ class ViewOrchestrator:
                 action_id=action_id,
                 view_id=view_id,
                 excluded_field_names=business_config_form_fields,
-                allow_layout_append=not semantic_entry_surface_applied,
+                # An explicit Odoo form view is the structural authority.  A
+                # legacy field policy may annotate or hide parsed occurrences,
+                # but it must not manufacture name-level nodes that have no
+                # native locator/occurrence identity.
+                allow_layout_append=(
+                    not semantic_entry_surface_applied
+                    and not bool(view_id)
+                ),
             )
             legacy_policy_applied = legacy_policy_applied or out != before
 

@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from scripts.contract.product_view_capability_ledger_common import (
-    READY_FORM_BEHAVIORS, STATIC_FORM_MODIFIERS, classify_structure, load_yaml,
-    match_normalized_atom, static_boolean_value,
+    READY_FINAL_ACTION_CAPABILITIES, READY_FORM_BEHAVIORS, STATIC_FORM_MODIFIERS, classify_structure, load_yaml,
+    match_final_object_action, match_normalized_atom, static_boolean_value,
 )
 from scripts.contract.product_view_contract_carriers_common import atomic_write_json, with_manifest
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
@@ -19,6 +19,8 @@ from scripts.contract.product_view_structure_common import file_sha256, sha256_j
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = "product_view_capability_ledger/v1"
+INTERACTION_EVIDENCE_PATH = Path("frontend/apps/web/scripts/canonical_form_presenter_test.ts")
+INTERACTION_EVIDENCE_SYMBOL = "validateCanonicalFormActionExecutors"
 
 
 def _mapping(atom: dict[str, Any], mappings: list[dict[str, Any]]) -> tuple[int, dict[str, Any]]:
@@ -55,6 +57,7 @@ def build_ledger(
     normalized_map: dict[str, Any], frontend_map: dict[str, Any], reasons: dict[str, Any], paths: dict[str, Path],
 ) -> dict[str, Any]:
     path_hashes = {name: file_sha256(ROOT / path) for name, path in paths.items()}
+    interaction_evidence_sha256 = file_sha256(ROOT / INTERACTION_EVIDENCE_PATH)
     if structure["authority"]["candidate_fingerprint"]["digest"] != fingerprint["digest"]:
         raise ValueError("structure fingerprint mismatch")
     if carrier["authority"]["candidate_fingerprint"]["digest"] != fingerprint["digest"]:
@@ -92,19 +95,36 @@ def build_ledger(
                 if len(exact_matches) > 1:
                     raise ValueError(f"{atom['atom_id']}: normalized occurrence match is ambiguous")
                 exact = exact_matches[0] if exact_matches else None
+                final_matches = match_final_object_action(atom, carrier_entry) if exact else []
+                if len(final_matches) > 1:
+                    raise ValueError(f"{atom['atom_id']}: final action match is ambiguous")
+                final_match = final_matches[0] if len(final_matches) == 1 else None
                 static_value = static_boolean_value(atom["canonical_value"])
+                frontend_ready = (
+                    frontend_mapping.get("frontend_status") == "present"
+                    and all(str(frontend_mapping.get(key) or "").strip() for key in ("consumer_symbol", "renderer_key", "interaction_symbol"))
+                )
                 if origin_status == "unproven":
                     terminal_status, reason_code = "unsupported", "CAPABILITY_NATIVE_OCCURRENCE_ORIGIN_UNPROVEN"
                 elif normalized_mapping.get("mapping_status") != "proven":
                     terminal_status, reason_code = "unsupported", "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN"
                 elif exact is None:
                     terminal_status, reason_code = "unsupported", "CAPABILITY_NORMALIZED_CARRIER_MISSING"
-                elif origin_status == "proven" and frontend_mapping.get("frontend_status") == "present" and (
+                elif origin_status == "proven" and frontend_ready and (
                     (
                         atom["capability_key"] in STATIC_FORM_MODIFIERS
                         and static_value is not None
                     )
                     or atom["capability_key"] in READY_FORM_BEHAVIORS
+                ):
+                    terminal_status, reason_code = "ready", ""
+                elif (
+                    origin_status == "proven"
+                    and exact is not None
+                    and atom["capability_key"] in READY_FINAL_ACTION_CAPABILITIES
+                    and (atom["capability_key"] != "action.type" or atom["canonical_value"] == "object")
+                    and final_match is not None
+                    and frontend_ready
                 ):
                     terminal_status, reason_code = "ready", ""
                 elif atom["capability_key"] == "form.delete":
@@ -123,14 +143,20 @@ def build_ledger(
                     {"status": "unproven" if normalized_mapping.get("mapping_status") != "proven" else "missing", "count": 0, "carrier_refs": normalized_refs, "value_hash": "", "source_authority": "normalized_contract"}
                 )
                 semantic_stage = (
+                    {"status": "present", "count": 1, "carrier_refs": [final_match["semantic_selector"]], "value_hash": sha256_json(final_match["semantic_value"]), "source_authority": "ui_contract_v2_final_response"}
+                    if final_match else
                     {"status": "present", "count": 1, "carrier_refs": [exact["semantic_selector"]], "value_hash": sha256_json(exact["semantic_value"]), "source_authority": "normalized_contract"}
                     if exact else
                     {"status": "missing", "count": 0, "carrier_refs": [], "value_hash": "", "source_authority": "none"}
                 )
                 exact_carrier_evidence = (
                     [
-                        {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": stage, "selector": f"json-pointer:{selector}"}
-                        for stage, selector in (("normalized", exact["raw_selector"]), ("semantic", exact["semantic_selector"]))
+                        {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:{exact['raw_selector']}"},
+                        {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "semantic", "selector": f"json-pointer:{final_match['semantic_selector'] if final_match else exact['semantic_selector']}"},
+                        *([
+                            {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "interaction", "selector": f"json-pointer:{final_match['interaction_selector']}"},
+                            {"path": str(INTERACTION_EVIDENCE_PATH), "sha256": interaction_evidence_sha256, "candidate_fingerprint": fingerprint["digest"], "stage": "interaction", "selector": f"symbol:{INTERACTION_EVIDENCE_SYMBOL}"},
+                        ] if terminal_status == "ready" and final_match else []),
                     ] if exact else [
                         {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:{item['artifact_selector']}"}
                         for item in carrier_entry["normalized_carriers"]

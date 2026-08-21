@@ -1733,6 +1733,62 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         for source in sources:
             self.assertTrue(source.get("no_business_fact_authority"))
 
+    def test_readonly_native_form_parser_failure_does_not_enter_compatibility_fallback(self):
+        class _Parser:
+            def parse_odoo_view(self, *args, **kwargs):
+                raise RuntimeError("native parser unavailable")
+
+        class _Env:
+            context = {"contract_projection_readonly": True}
+
+            def __getitem__(self, name):
+                self.assert_name = name
+                return _Parser()
+
+        class _Owner:
+            env = _Env()
+
+            @staticmethod
+            def _model_exists(name):
+                return name == "app.view.parser"
+
+            @staticmethod
+            def _looks_like_parser_wrapper(value):
+                return False
+
+        with self.assertRaisesRegex(ValueError, "compatibility fallback cannot satisfy native authority"):
+            NativeParseService(_Owner()).parse_with_primary_parser(
+                "account.account", "form", view_data={"arch": "<form/>"}
+            )
+
+    def test_non_native_readonly_parse_failure_remains_eligible_for_fallback(self):
+        class _Parser:
+            def parse_odoo_view(self, *args, **kwargs):
+                raise RuntimeError("native parser unavailable")
+
+        class _Env:
+            context = {"contract_projection_readonly": True}
+
+            def __getitem__(self, name):
+                return _Parser()
+
+        class _Owner:
+            env = _Env()
+
+            @staticmethod
+            def _model_exists(name):
+                return name == "app.view.parser"
+
+            @staticmethod
+            def _looks_like_parser_wrapper(value):
+                return False
+
+        self.assertIsNone(
+            NativeParseService(_Owner()).parse_with_primary_parser(
+                "account.account", "tree", view_data={"arch": "<tree/>"}
+            )
+        )
+
     def test_semantic_bridge_scene_runtime_and_identity_sources_are_not_business_facts(self):
         sources = (
             orchestration_semantics.source_authority_contract(),

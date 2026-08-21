@@ -12,6 +12,7 @@ from typing import Any
 
 from odoo import SUPERUSER_ID
 from odoo.addons.smart_core.handlers.load_contract import LoadContractHandler
+from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 
 try:
     ROOT = Path(__file__).resolve().parents[2]
@@ -25,7 +26,9 @@ from product_view_contract_carriers_common import (  # noqa: E402
     assert_system_identity,
     atomic_write_json,
     expected_normalized_selectors,
+    expected_final_contract_selectors,
     file_sha256,
+    final_contract_value_errors,
     normalized_value_errors,
     sha256_json,
     stable_selector_payload,
@@ -99,6 +102,7 @@ def _runtime_authority(runtime_env: Any, structure: dict[str, Any], fingerprint:
         "language": source["language"],
         "group_profile": group_profile,
         "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler",
+        "final_handler": "odoo.addons.smart_core.handlers.ui_contract_v2.UiContractV2Handler",
         "capture_mode": "final_response_rollback_sandbox",
         "force_refresh": True,
         "external_contract_service_absent": True,
@@ -115,6 +119,89 @@ def _carrier(source_selector: str, artifact_selector: str, source_authority: str
         "value": value,
         "value_hash": sha256_json(value),
     }
+
+
+def _capture_final_contract(
+    runtime_env: Any,
+    surface: dict[str, Any],
+    *,
+    menu_id: int,
+    action_id: int,
+    requested_view_id: int,
+    entry_index: int,
+) -> dict[str, Any]:
+    if surface["view_type"] != "form":
+        return {
+            "status": "not_applicable",
+            "reason_code": "FINAL_CONTRACT_FORM_ONLY",
+            "request": {},
+            "response": {},
+            "carriers": [],
+        }
+    request = {
+        "menu_id": menu_id,
+        "action_id": action_id,
+        "model": surface["model"],
+        "view_type": "form",
+        "view_id": requested_view_id,
+        "source_type": "ui.contract",
+        "client_type": "web_pc",
+        "delivery_profile": "full",
+        "force_refresh": True,
+    }
+    result = UiContractV2Handler(env=runtime_env, payload={"params": request}).handle(
+        payload={"params": request},
+        ctx=dict(runtime_env.context or {}),
+    )
+    envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+    if not isinstance(envelope, dict) or envelope.get("ok") is not True or not isinstance(envelope.get("data"), dict):
+        raise ValueError(f"{surface['contract_ref']} final ui.contract.v2 response failed")
+    data = envelope["data"]
+    meta = envelope.get("meta") if isinstance(envelope.get("meta"), dict) else {}
+    page_info = data.get("pageInfo") if isinstance(data.get("pageInfo"), dict) else {}
+    response = {
+        "ok": True,
+        "intent": str(meta.get("intent") or ""),
+        "contract_version": str(meta.get("contract_version") or ""),
+        "client_type": str(meta.get("client_type") or ""),
+        "delivery_profile": str(meta.get("delivery_profile") or ""),
+        "model": str(page_info.get("model") or ""),
+        "view_type": str(page_info.get("viewType") or ""),
+    }
+    expected_response = {
+        "intent": "ui.contract.v2",
+        "client_type": "web_pc",
+        "delivery_profile": "full",
+        "model": surface["model"],
+        "view_type": "form",
+    }
+    for key, expected in expected_response.items():
+        if response.get(key) != expected:
+            raise ValueError(f"{surface['contract_ref']} final response {key} mismatch")
+    if not response["contract_version"]:
+        raise ValueError(f"{surface['contract_ref']} final response contract_version missing")
+    action_contract = data.get("actionContract") if isinstance(data.get("actionContract"), dict) else {}
+    status_contract = data.get("statusContract") if isinstance(data.get("statusContract"), dict) else {}
+    values = [
+        ("/data/actionContract/actionRuleList", action_contract.get("actionRuleList")),
+        ("/data/statusContract/buttonStatus", status_contract.get("buttonStatus")),
+    ]
+    if tuple(selector for selector, _value in values) != expected_final_contract_selectors("form"):
+        raise ValueError(f"{surface['contract_ref']} final selector set mismatch")
+    carriers = []
+    for offset, (selector, value) in enumerate(values):
+        errors = final_contract_value_errors(selector, value)
+        if errors:
+            raise ValueError(f"{surface['contract_ref']} {'; '.join(errors)}")
+        carriers.append(
+            _carrier(
+                selector,
+                f"/entries/{entry_index}/final_contract_capture/carriers/{offset}/value",
+                "ui_contract_v2_final_response",
+                value,
+            )
+        )
+    return {"status": "complete", "reason_code": "", "request": request, "response": response, "carriers": carriers}
 
 
 def _capture_surface(runtime_env: Any, surface: dict[str, Any], authority: dict[str, Any], index: int) -> dict[str, Any]:
@@ -190,6 +277,14 @@ def _capture_surface(runtime_env: Any, surface: dict[str, Any], authority: dict[
         outcome = {"status": "complete", "reason_code": ""}
 
     metadata = result.get("meta") if isinstance(result.get("meta"), dict) else {}
+    final_contract_capture = _capture_final_contract(
+        runtime_env,
+        surface,
+        menu_id=menu_id,
+        action_id=action_id,
+        requested_view_id=requested_view_id,
+        entry_index=index,
+    )
     entry = {
         "contract_ref": surface["contract_ref"],
         "menu_xmlid": surface["menu_xmlid"],
@@ -211,6 +306,7 @@ def _capture_surface(runtime_env: Any, surface: dict[str, Any], authority: dict[
         },
         "normalized_carriers": normalized,
         "semantic_carriers": semantic_values,
+        "final_contract_capture": final_contract_capture,
         "capture_outcome": outcome,
     }
     entry["runtime_binding"]["selector_sha256"] = sha256_json(stable_selector_payload(entry, authority))
@@ -236,6 +332,8 @@ def capture(runtime_env: Any, structure_path: Path, fingerprint_path: Path) -> d
     entries = [_capture_surface(runtime_env, surface, authority, index) for index, surface in enumerate(surfaces)]
     view_type_counts = dict(sorted(Counter(row["view_type"] for row in entries).items()))
     complete_count = sum(row["capture_outcome"]["status"] == "complete" for row in entries)
+    final_contract_complete_count = sum(row["final_contract_capture"]["status"] == "complete" for row in entries)
+    final_contract_not_applicable_count = len(entries) - final_contract_complete_count
     payload = {
         "schema": SCHEMA,
         "authority": authority,
@@ -258,6 +356,9 @@ def capture(runtime_env: Any, structure_path: Path, fingerprint_path: Path) -> d
             "error_count": 0,
             "normalized_carrier_count": sum(len(row["normalized_carriers"]) for row in entries),
             "semantic_carrier_count": sum(len(row["semantic_carriers"]) for row in entries),
+            "final_contract_complete_count": final_contract_complete_count,
+            "final_contract_not_applicable_count": final_contract_not_applicable_count,
+            "final_contract_carrier_count": sum(len(row["final_contract_capture"]["carriers"]) for row in entries),
             "view_type_counts": view_type_counts,
         },
         "entries": entries,

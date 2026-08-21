@@ -142,6 +142,41 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertIs(merged["no_create"], True)
         self.assertIs(merged["delete"], False)
 
+    def test_native_form_occurrence_is_structural_authority(self):
+        data = {
+            "views": {
+                "form": {
+                    "layout": [{
+                        "type": "sheet",
+                        "children": [{
+                            "type": "field",
+                            "name": "name",
+                            "native_locator": "/form[1]/sheet[1]/field[1]",
+                            "occurrence_index": 1,
+                            "source_position": 0,
+                        }],
+                    }],
+                },
+            },
+        }
+
+        self.assertTrue(self.assembler._has_authoritative_native_form_layout(data))
+
+    def test_name_level_policy_layout_is_not_native_authority(self):
+        data = {
+            "views": {
+                "form": {
+                    "layout": [{
+                        "type": "sheet",
+                        "name": "business_category_form_sheet",
+                        "children": [{"type": "field", "name": "name"}],
+                    }],
+                },
+            },
+        }
+
+        self.assertFalse(self.assembler._has_authoritative_native_form_layout(data))
+
     def test_append_view_version_token_adds_search_orchestration_version(self):
         versions = {"view": "12:native", "search": 4}
 

@@ -53,10 +53,12 @@ class ProductViewContractCarriersTests(unittest.TestCase):
         self.authority = {
             "branch": "feature/test", "candidate_fingerprint": fp, "runtime_profile": "local.clean", "compose_project": "sc-local-clean", "database": "sc_clean", "database_filter": "^sc_clean$", "demo_data": False,
             "module_set": module_set, "module_set_sha256": sha256_json(module_set), "user": "__system__", "company": "base.main_company", "language": "en_US", "group_profile": ["base.group_system"],
-            "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler", "capture_mode": "final_response_rollback_sandbox", "force_refresh": True, "external_contract_service_absent": True, "exporter_version": "product_view_contract_carriers/v1",
+            "handler": "odoo.addons.smart_core.handlers.load_contract.LoadContractHandler", "final_handler": "odoo.addons.smart_core.handlers.ui_contract_v2.UiContractV2Handler", "capture_mode": "final_response_rollback_sandbox", "force_refresh": True, "external_contract_service_absent": True, "exporter_version": "product_view_contract_carriers/v1",
             "capture_transaction_strategy": "dedicated_cursor_rollback",
         }
         value = {"model": "x.model", "view_type": "form", "layout": {}, "statusbar": {}, "header_buttons": [], "field_modifiers": {}, "subviews": {}, "capabilities": {}}
+        action_rows = [{"actionId": "native.action", "actionKey": "native.action", "backendIdentity": "native_button:object:do_it:/form[1]/button[1]:1"}]
+        status_rows = [{"btnId": "btn.native.action", "backendIdentity": action_rows[0]["backendIdentity"], "visible": True, "disabled": False}]
         entry = {
             **self.surface,
             "runtime_binding": {"menu_id": 1, "action_id": 2, "requested_view_id": 3, "selector_sha256": ""},
@@ -64,6 +66,15 @@ class ProductViewContractCarriersTests(unittest.TestCase):
             "response": {"status": "success", "code": 200, "source_authority": "load_contract_final_response", "etag": "", "degraded": False, "warnings": []},
             "normalized_carriers": [{"source_selector": "/data/views/form", "artifact_selector": "/entries/0/normalized_carriers/0/value", "source_authority": "normalized_contract", "value": value, "value_hash": sha256_json(value)}],
             "semantic_carriers": [],
+            "final_contract_capture": {
+                "status": "complete", "reason_code": "",
+                "request": {"menu_id": 1, "action_id": 2, "model": "x.model", "view_type": "form", "view_id": 3, "source_type": "ui.contract", "client_type": "web_pc", "delivery_profile": "full", "force_refresh": True},
+                "response": {"ok": True, "intent": "ui.contract.v2", "contract_version": "2.2.0", "client_type": "web_pc", "delivery_profile": "full", "model": "x.model", "view_type": "form"},
+                "carriers": [
+                    {"source_selector": "/data/actionContract/actionRuleList", "artifact_selector": "/entries/0/final_contract_capture/carriers/0/value", "source_authority": "ui_contract_v2_final_response", "value": action_rows, "value_hash": sha256_json(action_rows)},
+                    {"source_selector": "/data/statusContract/buttonStatus", "artifact_selector": "/entries/0/final_contract_capture/carriers/1/value", "source_authority": "ui_contract_v2_final_response", "value": status_rows, "value_hash": sha256_json(status_rows)},
+                ],
+            },
             "capture_outcome": {"status": "normalized_only", "reason_code": "CAPABILITY_SEMANTIC_CARRIER_MISSING"},
         }
         entry["runtime_binding"]["selector_sha256"] = sha256_json(stable_selector_payload(entry, self.authority))
@@ -71,7 +82,7 @@ class ProductViewContractCarriersTests(unittest.TestCase):
             "schema": "product_view_contract_carriers/v1",
             "authority": self.authority,
             "structure_input": {"path": "artifacts/contract/product_view_structure_contract.json", "sha256": "a" * 64, "manifest_sha256": self.structure["manifest_sha256"], "candidate_fingerprint": fp, "formal_menu_policy_sha256": "b" * 64, "expected_formal_menu_count": 1, "expected_model_count": 1, "expected_surface_count": 1},
-            "summary": {"formal_menu_count": 1, "model_count": 1, "surface_count": 1, "complete_count": 0, "normalized_only_count": 1, "error_count": 0, "normalized_carrier_count": 1, "semantic_carrier_count": 0, "view_type_counts": {"form": 1}},
+            "summary": {"formal_menu_count": 1, "model_count": 1, "surface_count": 1, "complete_count": 0, "normalized_only_count": 1, "error_count": 0, "normalized_carrier_count": 1, "semantic_carrier_count": 0, "final_contract_complete_count": 1, "final_contract_not_applicable_count": 0, "final_contract_carrier_count": 2, "view_type_counts": {"form": 1}},
             "entries": [entry],
         })
         self.schema = yaml.safe_load((ROOT / "contracts/schemas/product-view-contract-carriers-v1.yaml").read_text(encoding="utf-8"))
@@ -81,6 +92,25 @@ class ProductViewContractCarriersTests(unittest.TestCase):
 
     def test_minimal_normalized_only_carrier_is_valid(self) -> None:
         self.assertEqual(self.errors(), [])
+
+    def test_final_contract_status_missing_fails(self) -> None:
+        value = deepcopy(self.artifact)
+        value["entries"][0]["final_contract_capture"]["carriers"].pop()
+        value["summary"]["final_contract_carrier_count"] = 1
+        value = with_manifest(value)
+        self.assertTrue(any("final contract" in error or "schema:" in error for error in self.errors(value)))
+
+    def test_final_contract_hash_mismatch_fails(self) -> None:
+        value = deepcopy(self.artifact)
+        value["entries"][0]["final_contract_capture"]["carriers"][0]["value_hash"] = "f" * 64
+        value = with_manifest(value)
+        self.assertTrue(any("final contract carrier hash mismatch" in error for error in self.errors(value)))
+
+    def test_final_contract_response_identity_mismatch_fails(self) -> None:
+        value = deepcopy(self.artifact)
+        value["entries"][0]["final_contract_capture"]["response"]["model"] = "other.model"
+        value = with_manifest(value)
+        self.assertTrue(any("final contract response model mismatch" in error for error in self.errors(value)))
 
     def test_manifest_drift_fails(self) -> None:
         value = deepcopy(self.artifact)
@@ -170,6 +200,7 @@ class ProductViewContractCarriersTests(unittest.TestCase):
         entry["source_kind"] = "synthetic_default_view"
         entry["runtime_binding"]["requested_view_id"] = 0
         entry["request"]["context"] = {}
+        entry["final_contract_capture"]["request"]["view_id"] = 0
         value = with_manifest(value)
         structure = deepcopy(self.structure)
         structure["entries"][0]["surfaces"][0]["source_kind"] = "synthetic_default_view"

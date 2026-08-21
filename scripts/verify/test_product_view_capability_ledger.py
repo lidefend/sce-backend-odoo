@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from scripts.contract.product_view_capability_ledger_common import classify_structure, match_normalized_atom, static_boolean_value
+from scripts.contract.product_view_capability_ledger_common import classify_structure, match_final_object_action, match_normalized_atom, static_boolean_value
 from scripts.contract.product_view_contract_carriers_common import with_manifest
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
 from scripts.verify.product_view_capability_ledger_guard import (
@@ -70,6 +70,9 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
             path = root / "contracts/schemas" / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("{}\n", encoding="utf-8")
+        interaction_path = root / "frontend/apps/web/scripts/canonical_form_presenter_test.ts"
+        interaction_path.parent.mkdir(parents=True, exist_ok=True)
+        interaction_path.write_text("validateCanonicalFormActionExecutors();\n", encoding="utf-8")
         paths = {
             "structure": Path("structure.json"), "carrier": Path("carrier.json"), "fingerprint": Path("fingerprint.json"),
             "taxonomy": Path("taxonomy.yaml"), "normalized_map": Path("normalized.yaml"),
@@ -192,6 +195,34 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         carrier["normalized_carriers"][0]["value"]["header_buttons"][0]["native_identity"]["occurrence_index"] = 1
         self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
 
+    def test_final_object_action_match_requires_exact_rule_and_status(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "action.identity", "attribute": "name",
+            "native_locator": "/form[1]/header[1]/button[2]", "occurrence_index": 2,
+            "canonical_value": "action_approve",
+        }
+        backend_identity = "native_button:object:action_approve:/form[1]/header[1]/button[2]:2"
+        carrier = {"final_contract_capture": {"status": "complete", "carriers": [
+            {"source_selector": "/data/actionContract/actionRuleList", "artifact_selector": "/entries/0/final_contract_capture/carriers/0/value", "value": [{
+                "actionId": "action.approve", "actionKey": "action.approve", "label": "Approve",
+                "backendIdentity": backend_identity,
+                "button": {"name": "action_approve", "type": "object"},
+                "nativeIdentity": {"authoritative": True, "native_locator": atom["native_locator"], "occurrence_index": 2, "name": "action_approve", "type": "object"},
+            }]},
+            {"source_selector": "/data/statusContract/buttonStatus", "artifact_selector": "/entries/0/final_contract_capture/carriers/1/value", "value": [{
+                "btnId": "btn.action.approve", "backendIdentity": backend_identity, "visible": True, "disabled": False,
+            }]},
+        ]}}
+        matches = match_final_object_action(atom, carrier)
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["semantic_value"], "action_approve")
+        carrier["final_contract_capture"]["carriers"][1]["value"][0]["backendIdentity"] = "wrong"
+        self.assertEqual(match_final_object_action(atom, carrier), [])
+
+    def test_final_action_type_only_promotes_object(self) -> None:
+        atom = {"view_type": "form", "capability_key": "action.type", "canonical_value": "action"}
+        self.assertEqual(match_final_object_action(atom, {"final_contract_capture": {"status": "complete", "carriers": []}}), [])
+
     def test_native_source_selector_resolves_exact_occurrence(self) -> None:
         structure = {"entries": [{"surfaces": [{"contract_ref": "m::form", "view_ref": "v", "view_type": "form", "resolved_structure": {"tag": "form", "children": [{"tag": "field", "attrs": {"name": "x", "a/b": "value"}}]}}]}]}
         taxonomy = {"node_rules": [{"id": "nodes", "tags": "*", "capability_key_template": "node.{tag}"}], "attribute_rules": [{"id": "attrs", "tags": "*", "attribute_prefixes": [""], "capability_key_template": "attr.{attribute}"}]}
@@ -217,6 +248,16 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             errors, _ = validate_evidence_ref({"path": "../outside", "sha256": "", "candidate_fingerprint": "f", "selector": "json-pointer:"}, "f", Path(directory))
             self.assertEqual(errors, ["evidence path is not a governed file"])
+
+    def test_symbol_evidence_requires_exact_identifier(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "fixture.ts"
+            path.write_text("function validateCanonicalFormActionExecutors() {}\n", encoding="utf-8")
+            ref = {"path": "fixture.ts", "sha256": file_sha256(path), "candidate_fingerprint": "f", "selector": "symbol:validateCanonicalFormActionExecutors"}
+            self.assertEqual(validate_evidence_ref(ref, "f", root), ([], "validateCanonicalFormActionExecutors"))
+            ref["selector"] = "symbol:missingExecutor"
+            self.assertIn("evidence symbol is not resolvable", validate_evidence_ref(ref, "f", root)[0])
 
     def test_complete_ledger_and_mutations_are_fail_closed(self) -> None:
         with TemporaryDirectory() as directory:

@@ -1696,6 +1696,38 @@ class PageAssembler:
 
         return visit(layout)
 
+    @staticmethod
+    def _has_authoritative_native_form_layout(data: dict) -> bool:
+        """Return whether the form already carries parsed native occurrences.
+
+        Business-category policy is semantic metadata.  It may describe fields
+        and groups, but it must not replace an Odoo-native layout or manufacture
+        field nodes without native occurrence identity.
+        """
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        form = views.get("form") if isinstance(views.get("form"), dict) else {}
+        layout = form.get("layout")
+
+        def visit(node):
+            if isinstance(node, dict):
+                if str(node.get("type") or "").strip().lower() == "field":
+                    locator = str(
+                        node.get("native_locator")
+                        or node.get("nativeLocator")
+                        or ""
+                    ).strip()
+                    occurrence = node.get("occurrence_index")
+                    if occurrence is None:
+                        occurrence = node.get("occurrenceIndex")
+                    if locator and isinstance(occurrence, int) and not isinstance(occurrence, bool) and occurrence > 0:
+                        return True
+                return any(visit(value) for value in node.values())
+            if isinstance(node, list):
+                return any(visit(item) for item in node)
+            return False
+
+        return visit(layout)
+
     def _inject_business_category_form_policy(self, data: dict, *, model_name: str, render_profile: str = "") -> None:
         if not isinstance(data, dict) or not model_name:
             return
@@ -1855,7 +1887,10 @@ class PageAssembler:
         if layout_children:
             views = data.get("views") if isinstance(data.get("views"), dict) else {}
             form = views.get("form") if isinstance(views.get("form"), dict) else {}
-            if not self._has_explicit_user_form_layout(data):
+            if not (
+                self._has_explicit_user_form_layout(data)
+                or self._has_authoritative_native_form_layout(data)
+            ):
                 form["layout"] = [{
                     "type": "sheet",
                     "name": "business_category_form_sheet",

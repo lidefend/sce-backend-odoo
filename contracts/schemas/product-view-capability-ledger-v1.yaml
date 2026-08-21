@@ -203,7 +203,7 @@ $defs:
             reason_code: {$ref: '#/$defs/text'}
   terminal_status: {enum: [ready, fallback, unsupported]}
   stage_status: {enum: [present, reduced, missing, not_applicable, unproven]}
-  source_authority: {enum: [native_view, normalized_contract, semantic_page, scene_contract, route_state, compatibility_projection, runtime_default, none]}
+  source_authority: {enum: [native_view, normalized_contract, semantic_page, ui_contract_v2_final_response, scene_contract, route_state, compatibility_projection, runtime_default, none]}
   native_stage:
     type: object
     additionalProperties: false
@@ -235,7 +235,7 @@ $defs:
           count: {type: integer, minimum: 1}
           carrier_refs: {minItems: 1}
           value_hash: {$ref: '#/$defs/sha256'}
-          source_authority: {enum: [normalized_contract, semantic_page]}
+          source_authority: {enum: [normalized_contract, semantic_page, ui_contract_v2_final_response]}
   frontend_stage:
     type: object
     additionalProperties: false

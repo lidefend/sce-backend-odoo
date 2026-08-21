@@ -978,10 +978,11 @@ def _assemble_native_form_projection(
         raise ValueError("native form projection headerButtons must be an array")
     field_names = set(field_descriptors)
 
-    def validate_occurrences(nodes: list[Any]) -> None:
-        for raw in nodes:
+    def validate_occurrences(nodes: list[Any], *, parent_path: str = "layout") -> None:
+        for node_index, raw in enumerate(nodes):
+            node_path = f"{parent_path}[{node_index}]"
             if not isinstance(raw, dict):
-                raise ValueError("native form projection layout nodes must be objects")
+                raise ValueError(f"native form projection {node_path} must be an object")
             node_type = _text(raw.get("type") or raw.get("kind")).lower()
             if node_type == "field":
                 field_name = _text(raw.get("name") or raw.get("field"))
@@ -996,14 +997,24 @@ def _assemble_native_form_projection(
                     else raw.get("sourcePosition")
                 )
                 if not field_name or field_name not in field_names:
-                    raise ValueError("native form projection field descriptor identity mismatch")
+                    raise ValueError(
+                        f"native form projection {node_path} field descriptor identity mismatch: "
+                        f"field={field_name!r}"
+                    )
                 if not native_locator or occurrence_index <= 0:
-                    raise ValueError("native form projection field occurrence identity is incomplete")
+                    raise ValueError(
+                        f"native form projection {node_path} field occurrence identity is incomplete: "
+                        f"field={field_name!r} locator={native_locator!r} "
+                        f"occurrence_index={occurrence_index!r} source_position={source_position!r}"
+                    )
                 if not isinstance(source_position, int) or isinstance(source_position, bool) or source_position < 0:
-                    raise ValueError("native form projection field source_position is invalid")
+                    raise ValueError(
+                        f"native form projection {node_path} field source_position is invalid: "
+                        f"field={field_name!r} source_position={source_position!r}"
+                    )
             children = raw.get("children")
             if isinstance(children, list):
-                validate_occurrences(children)
+                validate_occurrences(children, parent_path=f"{node_path}.children")
 
     validate_occurrences(layout)
     page = _dict(marker.get("page"))

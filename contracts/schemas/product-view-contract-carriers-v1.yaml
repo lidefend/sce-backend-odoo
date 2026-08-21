@@ -32,7 +32,7 @@ $defs:
   authority:
     type: object
     additionalProperties: false
-    required: [branch, candidate_fingerprint, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, handler, capture_mode, force_refresh, external_contract_service_absent, capture_transaction_strategy, exporter_version]
+    required: [branch, candidate_fingerprint, runtime_profile, compose_project, database, database_filter, demo_data, module_set, module_set_sha256, user, company, language, group_profile, handler, final_handler, capture_mode, force_refresh, external_contract_service_absent, capture_transaction_strategy, exporter_version]
     properties:
       branch: {$ref: '#/$defs/text'}
       candidate_fingerprint: {$ref: '#/$defs/candidate_fingerprint'}
@@ -58,6 +58,7 @@ $defs:
       language: {$ref: '#/$defs/text'}
       group_profile: {type: array, minItems: 1, uniqueItems: true, items: {$ref: '#/$defs/text'}}
       handler: {const: odoo.addons.smart_core.handlers.load_contract.LoadContractHandler}
+      final_handler: {const: odoo.addons.smart_core.handlers.ui_contract_v2.UiContractV2Handler}
       capture_mode: {const: final_response_rollback_sandbox}
       force_refresh: {const: true}
       external_contract_service_absent: {const: true}
@@ -79,7 +80,7 @@ $defs:
   summary:
     type: object
     additionalProperties: false
-    required: [formal_menu_count, model_count, surface_count, complete_count, normalized_only_count, error_count, normalized_carrier_count, semantic_carrier_count, view_type_counts]
+    required: [formal_menu_count, model_count, surface_count, complete_count, normalized_only_count, error_count, normalized_carrier_count, semantic_carrier_count, final_contract_complete_count, final_contract_not_applicable_count, final_contract_carrier_count, view_type_counts]
     properties:
       formal_menu_count: {type: integer, minimum: 1}
       model_count: {type: integer, minimum: 1}
@@ -89,11 +90,14 @@ $defs:
       error_count: {const: 0}
       normalized_carrier_count: {type: integer, minimum: 1}
       semantic_carrier_count: {type: integer, minimum: 0}
+      final_contract_complete_count: {type: integer, minimum: 0}
+      final_contract_not_applicable_count: {type: integer, minimum: 0}
+      final_contract_carrier_count: {type: integer, minimum: 0}
       view_type_counts: {type: object, minProperties: 1, additionalProperties: {type: integer, minimum: 1}}
   entry:
     type: object
     additionalProperties: false
-    required: [contract_ref, menu_xmlid, action_xmlid, model, view_type, view_ref, source_kind, hashes, runtime_binding, request, response, normalized_carriers, semantic_carriers, capture_outcome]
+    required: [contract_ref, menu_xmlid, action_xmlid, model, view_type, view_ref, source_kind, hashes, runtime_binding, request, response, normalized_carriers, semantic_carriers, final_contract_capture, capture_outcome]
     properties:
       contract_ref: {$ref: '#/$defs/text'}
       menu_xmlid: {$ref: '#/$defs/text'}
@@ -156,6 +160,7 @@ $defs:
         maxItems: 1
         uniqueItems: true
         items: {$ref: '#/$defs/semantic_carrier'}
+      final_contract_capture: {$ref: '#/$defs/final_contract_capture'}
       capture_outcome:
         type: object
         additionalProperties: false
@@ -187,6 +192,27 @@ $defs:
             request:
               properties:
                 context: {maxProperties: 0}
+      - if:
+          properties:
+            view_type: {const: form}
+        then:
+          properties:
+            final_contract_capture:
+              properties:
+                status: {const: complete}
+                reason_code: {const: ''}
+                request: {required: [menu_id, action_id, model, view_type, view_id, source_type, client_type, delivery_profile, force_refresh]}
+                response: {required: [ok, intent, contract_version, client_type, delivery_profile, model, view_type]}
+                carriers: {minItems: 2, maxItems: 2}
+        else:
+          properties:
+            final_contract_capture:
+              properties:
+                status: {const: not_applicable}
+                reason_code: {const: FINAL_CONTRACT_FORM_ONLY}
+                request: {maxProperties: 0}
+                response: {maxProperties: 0}
+                carriers: {maxItems: 0}
   carrier_base:
     type: object
     additionalProperties: false
@@ -194,7 +220,7 @@ $defs:
     properties:
       source_selector: {$ref: '#/$defs/json_pointer'}
       artifact_selector: {$ref: '#/$defs/json_pointer'}
-      source_authority: {enum: [normalized_contract, semantic_page]}
+      source_authority: {enum: [normalized_contract, semantic_page, ui_contract_v2_final_response]}
       value: {}
       value_hash: {$ref: '#/$defs/sha256'}
   normalized_carrier:
@@ -209,3 +235,45 @@ $defs:
           source_selector: {const: /data/semantic_page}
           source_authority: {const: semantic_page}
           value: {type: object}
+  final_contract_carrier:
+    allOf:
+      - {$ref: '#/$defs/carrier_base'}
+      - properties:
+          source_selector: {enum: [/data/actionContract/actionRuleList, /data/statusContract/buttonStatus]}
+          source_authority: {const: ui_contract_v2_final_response}
+          value: {type: array, items: {type: object}}
+  final_contract_capture:
+    type: object
+    additionalProperties: false
+    required: [status, reason_code, request, response, carriers]
+    properties:
+      status: {enum: [complete, not_applicable]}
+      reason_code: {type: string}
+      request:
+        type: object
+        additionalProperties: false
+        properties:
+          menu_id: {type: integer, minimum: 1}
+          action_id: {type: integer, minimum: 1}
+          model: {$ref: '#/$defs/text'}
+          view_type: {const: form}
+          view_id: {type: integer, minimum: 0}
+          source_type: {const: ui.contract}
+          client_type: {const: web_pc}
+          delivery_profile: {const: full}
+          force_refresh: {const: true}
+      response:
+        type: object
+        additionalProperties: false
+        properties:
+          ok: {const: true}
+          intent: {const: ui.contract.v2}
+          contract_version: {$ref: '#/$defs/text'}
+          client_type: {const: web_pc}
+          delivery_profile: {const: full}
+          model: {$ref: '#/$defs/text'}
+          view_type: {const: form}
+      carriers:
+        type: array
+        uniqueItems: true
+        items: {$ref: '#/$defs/final_contract_carrier'}
