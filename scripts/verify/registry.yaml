@@ -210,6 +210,12 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: native_view_capability_taxonomy_guard.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-20'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: navigation_contract_boundary_guard.py
   status: orphan
   owner: platform-team
@@ -390,10 +396,46 @@ entries:
   date: '2026-08-07'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_native_view_capability_taxonomy.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-20'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_native_view_frontend_capability_map.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-20'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_native_view_normalized_capability_map.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-21'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_p1_payment_request_field_completeness_guard.py
   status: orphan
   owner: platform-team
   date: '2026-08-16'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_product_view_capability_ledger.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-21'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_product_view_capability_ledger_schema.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-20'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_product_view_contract_carriers.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-21'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_product_view_structure_contract.py
