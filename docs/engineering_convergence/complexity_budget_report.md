@@ -126,7 +126,7 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 815 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
-| 518 | YAML workflow | `scripts/verify/registry.yaml` |
+| 560 | YAML workflow | `scripts/verify/registry.yaml` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
 | 418 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
