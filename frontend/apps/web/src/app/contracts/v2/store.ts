@@ -360,7 +360,9 @@ export function resolveContractV2FieldDescriptorMap(
       ...(typeof (config.invisible ?? descriptor.invisible) === 'boolean' ? { invisible: Boolean(config.invisible ?? descriptor.invisible) } : {}),
       ...(relation ? { relation } : {}),
       ...(relationField ? { relationField } : {}),
-      ...(selectionPairs(config.selection) ? { selection: selectionPairs(config.selection) } : {}),
+      ...(selectionPairs(config.selection ?? descriptor.selection)
+        ? { selection: selectionPairs(config.selection ?? descriptor.selection) }
+        : {}),
       ...(Object.prototype.hasOwnProperty.call(config, 'domain') ? { domain: config.domain } : {}),
       ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context } : {}),
       ...(Object.keys(relationEntry).length ? { relationEntry } : {}),

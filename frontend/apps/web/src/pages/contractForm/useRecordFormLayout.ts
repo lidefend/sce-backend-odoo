@@ -144,9 +144,42 @@ export function useRecordFormLayout(context: {
   const showNativeDefaultSectionTitle=computed(()=>useNativeFormTree.value&&nativeVisibleFieldNames.value.size>0&&!nativeVisibleSectionTitles.value.length);
   const resolveNativeButtonLabel=(node:NativeFormLayoutNode)=>resolveNativeButtonLabelFromNode(node as NativeLayoutLikeNode,(field)=>context.formData[field]);
   const nativeFavoriteFieldNames=computed(()=>{const names=new Set<string>();collectNativeFavoriteFieldNames(rawNativeFormLayoutNodes.value,names);return names;});
+  const canonicalNativeStatusbar=computed(()=>{
+    const queue=[...(resolveContractV2ContainerTree(context.v2ContractStore.value) as NativeFormLayoutNode[])];
+    while(queue.length){
+      const node=queue.shift() as NativeFormLayoutNode;
+      const source=node as Record<string,unknown>;
+      const attrs=source.attributes&&typeof source.attributes==='object'&&!Array.isArray(source.attributes)
+        ? source.attributes as Record<string,unknown>:{};
+      const fieldInfo=source.fieldInfo&&typeof source.fieldInfo==='object'&&!Array.isArray(source.fieldInfo)
+        ? source.fieldInfo as Record<string,unknown>:{};
+      const field=String(source.name||source.fieldCode||attrs.name||fieldInfo.name||'').trim();
+      if(field&&String(attrs.widget||source.widget||fieldInfo.widget||'').trim()==='statusbar'){
+        const visible=String(attrs.statusbar_visible||source.statusbarVisible||source.statusbar_visible||fieldInfo.statusbar_visible||'')
+          .split(',').map(item=>item.trim()).filter(Boolean);
+        const descriptor=formFields.value[field];
+        const selection=Array.isArray(descriptor?.selection)
+          ? descriptor.selection
+          : Array.isArray(fieldInfo.selection) ? fieldInfo.selection as Array<[string,string]> : [];
+        const states=(visible.length?visible:selection.map(item=>String(item[0]??'')))
+          .map(value=>{const match=selection.find(item=>String(item[0]??'')===value);return {value,label:String(match?.[1]??value)};});
+        return {field,states};
+      }
+      for(const key of ['children','pages','tabs','nodes','items'] as const){
+        const children=source[key];if(Array.isArray(children))queue.push(...children as NativeFormLayoutNode[]);
+      }
+    }
+    const fallback=Object.entries(formFields.value).find(([,descriptor])=>String(descriptor.widget||'').trim()==='statusbar');
+    if(fallback){
+      const [field,descriptor]=fallback;
+      const selection=Array.isArray(descriptor.selection)?descriptor.selection:[];
+      return {field,states:selection.map(item=>({value:String(item[0]??''),label:String(item[1]??item[0]??'')}))};
+    }
+    return {field:'',states:[] as Array<{value:string;label:string}>};
+  });
   const nativeStatusbar=computed<NativeStatusbarVm>(()=>{
     const main=resolveContractV2MainData(context.v2ContractStore.value);
-    return normalizeNativeFormStatusbar({recordId:context.recordId.value,formView:undefined,
+    return normalizeNativeFormStatusbar({recordId:context.recordId.value,formView:{statusbar:canonicalNativeStatusbar.value},
       fields:formFields.value,formData:context.formData,mainData:main,fieldReadonly:(field)=>runtimeState(field).readonly,
       readonly:context.renderProfile.value==='readonly'||(context.recordId.value?!context.rights.value.write:!context.rights.value.create),
       fallback:{visible:false,field:'',current:'',states:[],reachedValues:[],readonly:true}});

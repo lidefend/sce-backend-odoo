@@ -43,8 +43,10 @@ function relationValue(value: unknown): CanonicalRelationValue | null {
 
 function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
   const config = asRecord(field.componentConfig);
+  const canonicalDescriptor = asRecord(field.fieldDescriptor);
   const selection = selectionOptions(config.selection).map((option) => [option.value, option.label] as [string, string]);
   return {
+    ...canonicalDescriptor,
     name: field.fieldCode,
     string: field.label,
     type: field.fieldType,
@@ -54,12 +56,17 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
     ...(selection.length ? { selection } : {}),
     ...(text(config.relation || config.relationModel || config.relation_model)
       ? { relation: text(config.relation || config.relationModel || config.relation_model) }
+      : text(canonicalDescriptor.relation)
+        ? { relation: text(canonicalDescriptor.relation) }
       : {}),
     ...(text(config.filename) ? { filename: text(config.filename) } : {}),
     ...(normalizeMonetaryDigits(config.digits) ? { digits: normalizeMonetaryDigits(config.digits) } : {}),
     ...(text(config.currencyField || config.currency_field)
       ? { currency_field: text(config.currencyField || config.currency_field) }
       : {}),
+    ...(canonicalDescriptor.subview ? { subview: canonicalDescriptor.subview } : {}),
+    ...(canonicalDescriptor.relation_entry ? { relation_entry: canonicalDescriptor.relation_entry } : {}),
+    ...(canonicalDescriptor.widget_options ? { widget_options: canonicalDescriptor.widget_options } : {}),
   };
 }
 

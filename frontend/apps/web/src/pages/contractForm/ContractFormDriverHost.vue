@@ -27,23 +27,26 @@
     <SceneUiProvider :kit="activeKit" fallback-kit="sc-native" density="compact">
       <article class="sc-native-contract-page" data-native-contract-structure>
         <main class="sc-native-contract-tree" data-canonical-zone="primary">
-          <CanonicalFormNodeRenderer
-            v-for="node in primaryNodes"
-            :key="node.nodeId"
-            :node="node"
+          <NativeFormTreeRenderer
+            v-if="nativeBridge"
+            :nodes="nativeBridge.primaryNodes"
+            :field-schemas-for-nodes="nativeBridge.fieldSchemasForNodes"
+            :is-node-visible="nativeBridge.nodeVisible"
             :relation-adapter="relationAdapter"
+            :native-action-handler="runNativeCanonicalAction"
+            :native-action-state-resolver="nativeBridge.actionStateForNode"
             @field-change="emit('field-change', $event)"
-            @action-ref="emit('action-ref', $event)"
           />
         </main>
-        <section v-if="subordinateNodes.length" class="sc-native-contract-subordinate" data-canonical-zone="subordinate">
-          <CanonicalFormNodeRenderer
-            v-for="node in subordinateNodes"
-            :key="node.nodeId"
-            :node="node"
+        <section v-if="nativeBridge?.subordinateNodes.length" class="sc-native-contract-subordinate" data-canonical-zone="subordinate">
+          <NativeFormTreeRenderer
+            :nodes="nativeBridge.subordinateNodes"
+            :field-schemas-for-nodes="nativeBridge.fieldSchemasForNodes"
+            :is-node-visible="nativeBridge.nodeVisible"
             :relation-adapter="relationAdapter"
+            :native-action-handler="runNativeCanonicalAction"
+            :native-action-state-resolver="nativeBridge.actionStateForNode"
             @field-change="emit('field-change', $event)"
-            @action-ref="emit('action-ref', $event)"
           />
         </section>
         <section v-if="showCollaborationPanel && hasCollaborationNode" class="sc-native-contract-collaboration">
@@ -102,10 +105,11 @@ import { computed } from 'vue';
 import { SCENE_UI_KITS, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalFormAction, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
+import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
-import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
+import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
 import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,
@@ -150,10 +154,8 @@ const allowUserOverride = computed(() => (
 const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
 const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
-const primaryNodes = computed(() => props.renderModel?.zones.primary || []);
-const subordinateNodes = computed(() => (props.renderModel?.zones.subordinate || [])
-  .filter((node) => !collaborationKind(node.kind)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
+const nativeBridge = computed(() => props.renderModel ? buildCanonicalNativeFormBridge(props.renderModel) : null);
 
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
@@ -162,6 +164,11 @@ function collaborationKind(kind: string) {
 function actionDanger(action: CanonicalFormAction) {
   const classification = String(action.safety.classification || action.safety.level || '').trim().toLowerCase();
   return classification === 'danger' || action.safety.destructive === true;
+}
+
+function runNativeCanonicalAction(payload: Record<string, unknown>) {
+  const action = nativeBridge.value?.actionForPayload(payload);
+  if (action) emit('action-ref', action);
 }
 
 function kitLabel(kit: SceneUiKitId) {

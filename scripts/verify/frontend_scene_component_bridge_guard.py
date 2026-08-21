@@ -55,6 +55,7 @@ form_host = (WEB_SRC / "pages/contractForm/ContractFormDriverHost.vue").read_tex
 web_index = (ROOT / "frontend/apps/web/index.html").read_text(encoding="utf-8")
 object_task_page = (WEB_SRC / "pages/contractForm/ObjectTaskPage.vue").read_text(encoding="utf-8")
 form_floorplan = (WEB_SRC / "app/presentation/canonicalFormFloorplan.ts").read_text(encoding="utf-8")
+canonical_native_bridge = (WEB_SRC / "pages/contractForm/canonicalNativeFormBridge.ts").read_text(encoding="utf-8")
 action_executor = (WEB_SRC / "pages/contractForm/canonicalFormActionExecutor.ts").read_text(encoding="utf-8")
 presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
 v2_assembler = (ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py").read_text(encoding="utf-8")
@@ -63,19 +64,30 @@ v2_projection = (ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py
 require("from '@sc/ui/form'" in form_host, "form driver host must use narrow form export")
 require(
     "SceneUiProvider" in form_host
-    and "CanonicalFormNodeRenderer" in form_host
+    and "NativeFormTreeRenderer" in form_host
+    and "buildCanonicalNativeFormBridge" in form_host
     and "data-native-contract-structure" in form_host,
-    "form driver does not directly render the normalized native structure",
+    "form driver does not render the canonical contract through the governed native structure renderer",
 )
 require(
     "composeCanonicalFormFloorplan" not in form_host
-    and "renderModel?.zones.primary" in form_host
-    and "renderModel?.zones.subordinate" in form_host,
+    and "nativeBridge.primaryNodes" in form_host
+    and "nativeBridge.subordinateNodes" in form_host,
     "form driver still routes native structure through a frontend floorplan policy",
+)
+require(
+    "renderModel.zones.primary.map(mapNode)" in canonical_native_bridge
+    and "renderModel.zones.subordinate" in canonical_native_bridge
+    and "canonicalFieldToFormSection(field)" in canonical_native_bridge
+    and "name: field.widgetId" in canonical_native_bridge
+    and "name: field.fieldCode" in canonical_native_bridge,
+    "canonical native bridge does not preserve normalized hierarchy and field occurrence identity",
 )
 for forbidden_floorplan_fact in ("payment.request", "sc.payment.execution", "付款申请", "财务经理"):
     require(
-        forbidden_floorplan_fact not in form_floorplan and forbidden_floorplan_fact not in object_task_page,
+        forbidden_floorplan_fact not in form_floorplan
+        and forbidden_floorplan_fact not in object_task_page
+        and forbidden_floorplan_fact not in canonical_native_bridge,
         f"generic object-task floorplan contains business inference: {forbidden_floorplan_fact}",
     )
 require("SceneObjectPageContract" not in form_host, "ContractForm driver host must not consume the UI-internal SceneObjectPage DTO")
@@ -161,8 +173,6 @@ for forbidden_action_inference in ("actionRef.label", "candidate.methodName", "c
 for legacy_structure_input in (
     "ContractFormNativeCanvas",
     "layoutNodes",
-    "fieldSchemasForNodes",
-    "nativeActionStateResolver",
     "isNodeVisible",
     'v-bind="$attrs"',
 ):

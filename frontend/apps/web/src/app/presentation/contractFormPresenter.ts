@@ -137,6 +137,7 @@ function fieldFromWidget(
     reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
     semanticRole: fieldSemanticRole(widget, container),
     componentConfig: Object.freeze({ ...widget.componentConfig }),
+    fieldDescriptor: Object.freeze({ ...(widget.fieldDescriptor || {}) }),
   };
 }
 
@@ -201,6 +202,7 @@ function presentNode(
   ancestorDisabled: boolean,
   claimedWidgetIds: Set<string>,
   actionsByIdentity: ReadonlyMap<string, CanonicalFormAction>,
+  actionsByNativeOccurrence: ReadonlyMap<string, CanonicalFormAction>,
   ancestorTitle = '',
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
@@ -232,6 +234,11 @@ function presentNode(
   const title = rawTitle && rawTitle === ancestorTitle ? '' : rawTitle;
   const nodeAction = asDict(container.action);
   const actionIdentity = text(nodeAction.backendIdentity);
+  const nativeIdentity = asDict(nodeAction.native_identity || nodeAction.nativeIdentity);
+  const nativeActionKey = [
+    text(nativeIdentity.type), text(nativeIdentity.name), text(nativeIdentity.native_locator || nativeIdentity.nativeLocator),
+    String(Number(nativeIdentity.occurrence_index || nativeIdentity.occurrenceIndex || 0)),
+  ].join('|');
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
     kind: nodeKind,
@@ -244,13 +251,16 @@ function presentNode(
     disabled,
     reasonCode: text(status?.reasonCode),
     semanticRole: semanticRole(container.formStructureRole),
-    action: actionIdentity ? actionsByIdentity.get(actionIdentity) || null : null,
+    action: (actionIdentity ? actionsByIdentity.get(actionIdentity) : undefined)
+      || actionsByNativeOccurrence.get(nativeActionKey)
+      || null,
     nativeWidget: nodeKind === 'widget' ? text(container.widget || container.name) : '',
     fields: widgets,
     children: childCollections(container).map((child, childIndex) => (
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
-        mode, pageCanEdit, visible, disabled, claimedWidgetIds, actionsByIdentity, rawTitle || ancestorTitle,
+        mode, pageCanEdit, visible, disabled, claimedWidgetIds, actionsByIdentity, actionsByNativeOccurrence,
+        rawTitle || ancestorTitle,
       )
     )),
   };
@@ -327,10 +337,19 @@ export function presentContractV2Form(
     presentAction(action, actionStatus(store, action), mode)
   ));
   const actionsByIdentity = new Map(allActions.map((action) => [text(action.actionRef.backendIdentity), action]));
+  const actionsByNativeOccurrence = new Map(allActions.flatMap((action) => {
+    const nativeIdentity = asDict(action.actionRef.nativeIdentity);
+    const key = [
+      text(nativeIdentity.type), text(nativeIdentity.name),
+      text(nativeIdentity.nativeLocator || nativeIdentity.native_locator),
+      String(Number(nativeIdentity.occurrenceIndex || nativeIdentity.occurrence_index || 0)),
+    ].join('|');
+    return key !== '|||0' ? [[key, action] as const] : [];
+  }));
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, zoneRole(container), index, store, contractValues, runtimeValues, mode, pageCanEdit,
-      pageVisible, pageAuth === 'none', claimedWidgetIds, actionsByIdentity,
+      pageVisible, pageAuth === 'none', claimedWidgetIds, actionsByIdentity, actionsByNativeOccurrence,
     )
   ));
   const actions = allActions.filter((action) => isFormActionBarAction(action.actionRef));

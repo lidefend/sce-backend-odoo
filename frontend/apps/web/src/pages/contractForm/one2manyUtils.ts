@@ -54,6 +54,12 @@ export function one2manyColumnsFromSubview(
     : {};
   const occurrences = treeRecord.column_occurrences;
   const businessColumns = Array.isArray(treeRecord.columns) ? treeRecord.columns : [];
+  const businessColumnsByName = new Map(businessColumns.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const row = item as Record<string, unknown>;
+    const name = String(row.name || '').trim();
+    return name ? [[name, row] as const] : [];
+  }));
   const businessNames = new Set(businessColumns.map((item) => String(
     item && typeof item === 'object' && !Array.isArray(item)
       ? (item as Record<string, unknown>).name
@@ -84,6 +90,7 @@ export function one2manyColumnsFromSubview(
       const row = item as Record<string, unknown>;
       const colName = String(row.name || '').trim();
       if (!colName) return;
+      const businessColumn = businessColumnsByName.get(colName) || {};
       const descriptor = resolveDescriptor(colName);
       const attributes = row.attributes && typeof row.attributes === 'object' && !Array.isArray(row.attributes)
         ? row.attributes as Record<string, unknown>
@@ -103,7 +110,10 @@ export function one2manyColumnsFromSubview(
       out.push({
         key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
         name: colName,
-        label: one2manyColumnLabel(attributes.string || row.label || row.string || descriptor?.string, colName),
+        label: one2manyColumnLabel(
+          attributes.string || row.label || row.string || businessColumn.label || businessColumn.string || descriptor?.string,
+          colName,
+        ),
         ttype,
         required: required ?? Boolean(descriptor?.required),
         readonly: relationValueRequiresSelector || (readonly ?? Boolean(descriptor?.readonly)),

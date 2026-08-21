@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
-import { createContractV2Store, resolveContractV2EffectiveFormCapabilities } from '../src/app/contracts/v2/store';
+import {
+  createContractV2Store, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
+} from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
@@ -18,6 +20,7 @@ import {
 import type { ContractAction } from '../src/pages/contractForm/types';
 import { contractActionConfirmationPrompt } from '../src/pages/contractForm/actionContract';
 import { canonicalFormActionIconClass } from '../src/pages/contractForm/canonicalFormActionIcon';
+import { buildCanonicalNativeFormBridge } from '../src/pages/contractForm/canonicalNativeFormBridge';
 import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
 import {
   formatMonetaryDisplayValue,
@@ -151,6 +154,15 @@ assert.deepEqual(resolveContractV2EffectiveFormCapabilities(store), {
   read: true, write: true, create: true, unlink: true, duplicate: true,
 });
 assert.equal(store.snapshot.statusContract.globalStatus.effectiveRenderProfile, 'edit');
+const descriptorSelectionSnapshot = snapshot();
+descriptorSelectionSnapshot.layoutContract.containerTree[0].children[1].widgetList[0].fieldDescriptor = {
+  name: 'state', type: 'selection', widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']],
+};
+assert.deepEqual(
+  resolveContractV2FieldDescriptorMap(createContractV2Store(descriptorSelectionSnapshot)).state?.selection,
+  [['draft', 'Draft'], ['done', 'Done']],
+  'native fieldDescriptor selection must remain available to statusbar rendering',
+);
 const model = presentContractV2Form(store, 'edit');
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
@@ -189,6 +201,46 @@ const bodyActionNode = bodyActionModel.zones.primary[0].children.find((node) => 
 assert.equal(bodyActionNode?.action?.actionRef.backendIdentity, 'window_action:91');
 assert.equal(canonicalNodeHasContent(bodyActionNode!), true);
 assert.deepEqual(bodyActionModel.actionBar.map((action) => action.key), ['action_submit']);
+const nativeBridge = buildCanonicalNativeFormBridge(bodyActionModel);
+assert.deepEqual(
+  nativeBridge.subordinateNodes.map((node) => node.type),
+  ['notebook', 'container'],
+  'canonical native bridge must keep notebook/attachment structure while collaboration stays in its governed panel',
+);
+const notebookPage = nativeBridge.subordinateNodes[0].children?.[0];
+assert.equal(notebookPage?.type, 'page', 'a native notebook without explicit pages must retain its children in a stable default page');
+assert.deepEqual(
+  nativeBridge.fieldSchemasForNodes(notebookPage?.children || []).map((field) => [field.key, field.name]),
+  [['field.line_ids', 'line_ids']],
+  'canonical widget occurrence identity and record field name must remain separate through the native renderer bridge',
+);
+const bridgedBodyAction = nativeBridge.primaryNodes[0].children?.find((node) => node.type === 'button');
+assert.equal(
+  nativeBridge.actionForPayload(bridgedBodyAction?.action || {})?.backendIdentity,
+  'window_action:91',
+  'body action execution must resolve through the same canonical backend identity after native structure rendering',
+);
+assert.deepEqual(
+  nativeBridge.actionStateForNode(bridgedBodyAction || {} as never),
+  { disabled: false, title: '' },
+  'canonical button status must remain authoritative when the native renderer asks for interaction state',
+);
+
+const nativeOccurrenceActionSnapshot = structuredClone(snapshot());
+nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'button.native.submit', containerType: 'button', type: 'button', title: 'Submit Native', span: 24,
+  action: { native_identity: { type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1 } },
+  children: [], widgetList: [],
+});
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity = {
+  type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1,
+};
+const nativeOccurrenceModel = presentContractV2Form(createContractV2Store(nativeOccurrenceActionSnapshot), 'edit');
+assert.equal(
+  nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
+  'button:object:action_submit',
+  'native snake-case occurrence identity must resolve to the canonical action rule',
+);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
 const editFloorplan = composeCanonicalFormFloorplan(model);
@@ -893,4 +945,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=51');
+console.log('[canonical_form_presenter_test] PASS cases=52');

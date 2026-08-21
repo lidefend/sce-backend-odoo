@@ -39,6 +39,7 @@ export type CanonicalFormField = {
   reasonCode: string;
   semanticRole: CanonicalFormSemanticRole | '';
   componentConfig: Readonly<Record<string, unknown>>;
+  fieldDescriptor: Readonly<Record<string, unknown>>;
 };
 
 export type CanonicalFormNode = {

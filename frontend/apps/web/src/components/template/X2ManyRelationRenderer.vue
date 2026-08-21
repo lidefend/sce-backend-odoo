@@ -88,7 +88,7 @@
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
     <div class="o2m-toolbar">
       <button
-        v-if="adapter.one2manyCanCreate(field.name)"
+        v-if="!field.readonly && adapter.one2manyCanCreate(field.name)"
         class="chip-btn"
         type="button"
         :disabled="adapter.busy"
@@ -123,14 +123,14 @@
               v-if="column.ttype === 'boolean'"
               class="input-checkbox"
               type="checkbox"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="field.readonly || column.readonly || adapter.busy"
               :checked="Boolean(row.values[column.name])"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).checked)"
             />
             <select
               v-else-if="column.ttype === 'selection'"
               class="input"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="field.readonly || column.readonly || adapter.busy"
               :value="String(row.values[column.name] ?? '')"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLSelectElement).value)"
             >
@@ -143,7 +143,7 @@
               v-else
               class="input"
               :type="adapter.one2manyColumnInputType(column)"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="field.readonly || column.readonly || adapter.busy"
               :value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
               :placeholder="column.label"
               @input="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).value)"
@@ -154,7 +154,7 @@
           class="ghost o2m-row-remove"
           type="button"
           :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
-          :disabled="adapter.busy"
+          :disabled="field.readonly || adapter.busy"
           @click="adapter.removeOne2manyRow(field.name, row.key)"
         >移除本条</button>
         <p v-if="adapter.showOne2manyErrors && adapter.one2manyRowErrors(field.name, row.key).length" class="o2m-row-error">
