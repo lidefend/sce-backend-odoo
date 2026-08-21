@@ -68,11 +68,18 @@ def normalize_post_projected_container_tree(
             node["containerId"] = container_id
             node["containerType"] = formal_type
             node.setdefault("type", node_type)
-            label = str(
-                node.get("title")
-                or node.get("string")
-                or node.get("label")
-            ).strip()
+            label = next(
+                (
+                    value.strip()
+                    for value in (
+                        node.get("title"),
+                        node.get("string"),
+                        node.get("label"),
+                    )
+                    if isinstance(value, str) and value.strip()
+                ),
+                "",
+            )
             node["title"] = label
             span = node.get("span")
             node["span"] = span if isinstance(span, int) and not isinstance(span, bool) and 1 <= span <= 24 else 24
@@ -94,6 +101,15 @@ def normalize_post_projected_container_tree(
     status_contract["containerStatus"] = container_status
     contract["statusContract"] = status_contract
     return normalized
+
+
+def normalize_final_layout_contract(contract: dict[str, Any]) -> None:
+    """Normalize and persist the final layout through the projection boundary."""
+    if not isinstance(contract, dict):
+        return
+    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
+    container_tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
+    set_v2_container_tree(contract, normalize_post_projected_container_tree(contract, container_tree))
 
 
 def set_v2_container_tree(contract: dict[str, Any], container_tree: list[Any]) -> None:

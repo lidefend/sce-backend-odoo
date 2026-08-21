@@ -9,6 +9,28 @@
   "meta_fields": [
     {
       "domain": null,
+      "help": "用户确认验收口径的金额大写；用于历史数据延续和后续业务办理。",
+      "name": "accepted_amount_uppercase",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "用户确认金额大写",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "active",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "有效",
+      "ttype": "boolean"
+    },
+    {
+      "domain": null,
       "help": null,
       "name": "activity_date_deadline",
       "readonly": true,
@@ -131,6 +153,39 @@
     {
       "domain": null,
       "help": null,
+      "name": "actual_paid_amount_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "实际付款金额",
+      "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": "付款申请自身确认的实际收款单位；历史迁移数据来自用户验收面。",
+      "name": "actual_payee_unit",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "实际收款单位",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "actual_payee_unit_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "实际收款单位",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
       "name": "amount",
       "readonly": false,
       "relation": null,
@@ -138,6 +193,50 @@
       "selection": null,
       "string": "申请金额",
       "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "amount_uppercase",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "金额大写",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "amount_uppercase_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "金额大写",
+      "ttype": "char"
+    },
+    {
+      "domain": [],
+      "help": null,
+      "name": "attachment_ids",
+      "readonly": false,
+      "relation": "ir.attachment",
+      "required": false,
+      "selection": null,
+      "string": "附件",
+      "ttype": "many2many"
+    },
+    {
+      "domain": "[('target_model', '=', 'payment.request')]",
+      "help": null,
+      "name": "business_category_id",
+      "readonly": false,
+      "relation": "sc.business.category",
+      "required": false,
+      "selection": null,
+      "string": "业务分类",
+      "ttype": "many2one"
     },
     {
       "domain": null,
@@ -151,6 +250,89 @@
       "ttype": "boolean"
     },
     {
+      "domain": null,
+      "help": null,
+      "name": "company_contractor_arrival_over_processed_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "到款超处理金额",
+      "ttype": "float"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "company_contractor_arrival_unprocessed_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "到款可处理余额",
+      "ttype": "float"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "company_contractor_responsibility_notice",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "责任提示",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "company_contractor_responsibility_state",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": [
+        [
+          "open",
+          "到款待处理"
+        ],
+        [
+          "over_processed",
+          "到款超处理"
+        ],
+        [
+          "self_funding_open",
+          "自筹未退"
+        ],
+        [
+          "settled",
+          "已平衡"
+        ]
+      ],
+      "string": "责任状态",
+      "ttype": "selection"
+    },
+    {
+      "domain": [],
+      "help": null,
+      "name": "company_contractor_responsibility_summary_id",
+      "readonly": true,
+      "relation": "sc.company.contractor.responsibility.summary",
+      "required": false,
+      "selection": null,
+      "string": "公司-承包人责任余额",
+      "ttype": "many2one"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "company_contractor_self_funding_balance",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "自筹未退余额",
+      "ttype": "float"
+    },
+    {
       "domain": [],
       "help": null,
       "name": "company_id",
@@ -162,6 +344,39 @@
       "ttype": "many2one"
     },
     {
+      "domain": null,
+      "help": null,
+      "name": "contract_change_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "合同累计变更",
+      "ttype": "monetary"
+    },
+    {
+      "domain": [],
+      "help": null,
+      "name": "contract_currency_id",
+      "readonly": true,
+      "relation": "res.currency",
+      "required": false,
+      "selection": null,
+      "string": "合同币种",
+      "ttype": "many2one"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "contract_final_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "最终合同价",
+      "ttype": "monetary"
+    },
+    {
       "domain": "[('project_id', '=', project_id)]",
       "help": null,
       "name": "contract_id",
@@ -171,6 +386,83 @@
       "selection": null,
       "string": "合同",
       "ttype": "many2one"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "contract_invoice_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "合同累计开票",
+      "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "contract_paid_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "合同累计付款",
+      "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "contract_payment_terms",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "合同付款条件",
+      "ttype": "text"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "contract_settlement_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "合同累计结算",
+      "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "contract_unpaid_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "合同未付余额",
+      "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "cost_category_name",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "成本分类名称",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "cost_type_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "类型（成本）",
+      "ttype": "char"
     },
     {
       "domain": null,
@@ -195,6 +487,28 @@
       "ttype": "many2one"
     },
     {
+      "domain": null,
+      "help": null,
+      "name": "created_time",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史录入时间",
+      "ttype": "datetime"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "creator_name",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史录入人",
+      "ttype": "char"
+    },
+    {
       "domain": [],
       "help": null,
       "name": "currency_id",
@@ -213,7 +527,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "申请日期",
+      "string": "单据日期",
       "ttype": "date"
     },
     {
@@ -226,6 +540,28 @@
       "selection": null,
       "string": "Display Name",
       "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "document_status_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "单据状态",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "has_active_payment_execution",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "已有有效付款登记",
+      "ttype": "boolean"
     },
     {
       "domain": null,
@@ -303,6 +639,160 @@
       "selection": null,
       "string": "付款记录",
       "ttype": "one2many"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_document_state",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史单据状态",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_payee_account_name",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史收款户名",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_payee_account_no",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史收款账号",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_payee_bank_name",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史收款开户行",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_payment_account_name",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史付款户名",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_payment_account_no",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史付款账号",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_record_id",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史记录ID",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_relation_count",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史关联依据数",
+      "ttype": "integer"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_relation_summary",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史关联依据",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legacy_source_table",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "历史来源表",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "legal_next_action_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "下一步办理",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "line_settlement_count",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "明细结算单数",
+      "ttype": "integer"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "line_settlement_summary",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "明细结算依据",
+      "ttype": "char"
+    },
+    {
+      "domain": "[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
+      "help": null,
+      "name": "material_settlement_id",
+      "readonly": false,
+      "relation": "sc.material.settlement",
+      "required": false,
+      "selection": null,
+      "string": "材料结算单",
+      "ttype": "many2one"
     },
     {
       "domain": null,
@@ -437,7 +927,7 @@
           "收款"
         ]
       ],
-      "string": "单据类型(兼容)",
+      "string": "单据类型",
       "ttype": "selection"
     },
     {
@@ -498,6 +988,48 @@
     {
       "domain": null,
       "help": null,
+      "name": "note_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "备注",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": "公司隔离之后的项目级全局经营策略维度，用于直营/联营业务事实切换、筛选和统计。",
+      "name": "operation_strategy",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": [
+        [
+          "direct",
+          "公司直营"
+        ],
+        [
+          "joint",
+          "联营项目"
+        ]
+      ],
+      "string": "经营方式",
+      "ttype": "selection"
+    },
+    {
+      "domain": [],
+      "help": null,
+      "name": "outflow_line_ids",
+      "readonly": false,
+      "relation": "payment.request.line",
+      "required": false,
+      "selection": null,
+      "string": "付款申请明细",
+      "ttype": "one2many"
+    },
+    {
+      "domain": null,
+      "help": null,
       "name": "paid_amount_total",
       "readonly": true,
       "relation": null,
@@ -505,6 +1037,39 @@
       "selection": null,
       "string": "已付款合计",
       "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "partner_account_name",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "往来单位默认户名",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "partner_bank_account",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "往来单位默认账号",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "partner_bank_name",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "往来单位默认开户行",
+      "ttype": "char"
     },
     {
       "domain": [],
@@ -518,6 +1083,339 @@
       "ttype": "many2one"
     },
     {
+      "domain": null,
+      "help": "由档案启用状态和客商风险级别统一判定，供付款申请等新业务办理复用。",
+      "name": "partner_transaction_eligibility",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": [
+        [
+          "eligible",
+          "可办理"
+        ],
+        [
+          "review_required",
+          "需风险复核"
+        ],
+        [
+          "blocked",
+          "禁止新业务"
+        ]
+      ],
+      "string": "往来单位可办理性",
+      "ttype": "selection"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "partner_transaction_eligibility_reason",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "往来单位办理提示",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payee_account_completeness",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": [
+        [
+          "complete",
+          "账户信息完整"
+        ],
+        [
+          "incomplete",
+          "账户信息待补充"
+        ]
+      ],
+      "string": "收款账户完整度",
+      "ttype": "selection"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payee_account_name_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "户名",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payee_account_no_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "账号",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payee_account_source_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "收款账户来源",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payee_bank_name_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "开户行",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payee_unit_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "收款单位",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": "付款申请自身确认的付款单位；历史迁移数据来自用户验收面。",
+      "name": "payer_unit",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "付款单位",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payer_unit_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "付款单位",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": "付款申请自身确认的收款户名；不覆盖往来单位主数据。",
+      "name": "payment_account_name",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "收款户名",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": "付款申请自身确认的收款账号；不覆盖往来单位主数据。",
+      "name": "payment_account_no",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "收款账号",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_account_no_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "付款账号",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": "付款申请自身确认的收款开户行；不覆盖往来单位主数据。",
+      "name": "payment_bank_name",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "收款开户行",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_basis_type",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": [
+        [
+          "standard_settlement",
+          "标准结算单"
+        ],
+        [
+          "line_settlement",
+          "明细结算单"
+        ],
+        [
+          "material_settlement",
+          "材料结算单"
+        ],
+        [
+          "contract",
+          "合同依据"
+        ],
+        [
+          "legacy_relation",
+          "历史关联依据"
+        ],
+        [
+          "none",
+          "无可解释依据"
+        ]
+      ],
+      "string": "依据口径",
+      "ttype": "selection"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_blocking_reason_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "办理阻断与修复",
+      "ttype": "char"
+    },
+    {
+      "domain": [],
+      "help": null,
+      "name": "payment_execution_ids",
+      "readonly": true,
+      "relation": "sc.payment.execution",
+      "required": false,
+      "selection": null,
+      "string": "付款登记",
+      "ttype": "one2many"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_execution_status_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "付款执行状态",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_flow_label",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "办理事项",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_request_account_holder_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "户名",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_request_account_no_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "账号",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_request_attachment_text_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "附件",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_request_bank_name_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "开户行",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_request_cost_type_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "成本分类名称",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_request_has_related_document_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "是否关联单据",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "payment_request_payment_account_no_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "付款账号",
+      "ttype": "char"
+    },
+    {
       "domain": [],
       "help": null,
       "name": "project_id",
@@ -527,6 +1425,17 @@
       "selection": null,
       "string": "项目",
       "ttype": "many2one"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "project_name_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "项目名称",
+      "ttype": "char"
     },
     {
       "domain": [
@@ -544,6 +1453,39 @@
       "selection": null,
       "string": "Ratings",
       "ttype": "one2many"
+    },
+    {
+      "domain": [],
+      "help": null,
+      "name": "receipt_invoice_line_ids",
+      "readonly": false,
+      "relation": "sc.receipt.invoice.line",
+      "required": false,
+      "selection": null,
+      "string": "收款发票明细",
+      "ttype": "one2many"
+    },
+    {
+      "domain": null,
+      "help": "收款申请的产品登记类型。",
+      "name": "receipt_type",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "登记类型",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": "仅保留当前待修正的驳回原因；历次原因以不可变审计记录为准。",
+      "name": "reject_reason",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "当前驳回原因",
+      "ttype": "text"
     },
     {
       "domain": null,
@@ -566,6 +1508,28 @@
       "selection": null,
       "string": "Rejected Message",
       "ttype": "html"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "related_document_text",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "是否关联单据",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "request_amount_display",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "申请付款金额",
+      "ttype": "monetary"
     },
     {
       "domain": [
@@ -631,6 +1595,17 @@
     {
       "domain": null,
       "help": null,
+      "name": "settlement_approved_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "结算审定金额",
+      "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
       "name": "settlement_compliance_message",
       "readonly": true,
       "relation": null,
@@ -664,6 +1639,28 @@
       "ttype": "selection"
     },
     {
+      "domain": null,
+      "help": null,
+      "name": "settlement_contract_source_model",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "结算来源合同模型",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "settlement_contract_source_res_id",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "结算来源合同记录ID",
+      "ttype": "integer"
+    },
+    {
       "domain": [],
       "help": null,
       "name": "settlement_currency_id",
@@ -673,6 +1670,17 @@
       "selection": null,
       "string": "结算币种",
       "ttype": "many2one"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "settlement_deduction_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "结算扣款金额",
+      "ttype": "monetary"
     },
     {
       "domain": "[('project_id', '=', project_id), ('state', '=', 'approve')]",
@@ -721,6 +1729,28 @@
     {
       "domain": null,
       "help": null,
+      "name": "settlement_period_end",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "结算期间结束",
+      "ttype": "date"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "settlement_period_start",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "结算期间开始",
+      "ttype": "date"
+    },
+    {
+      "domain": null,
+      "help": null,
       "name": "settlement_remaining_amount",
       "readonly": true,
       "relation": null,
@@ -728,6 +1758,39 @@
       "selection": null,
       "string": "剩余额度",
       "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "settlement_submitted_amount",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "结算送审金额",
+      "ttype": "monetary"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "source_created_at",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "录入时间",
+      "ttype": "datetime"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "source_created_by",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "录入人",
+      "ttype": "char"
     },
     {
       "domain": null,
@@ -921,7 +1984,7 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {},
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

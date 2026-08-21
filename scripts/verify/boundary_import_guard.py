@@ -47,8 +47,20 @@ def _to_str_set(items) -> set[str]:
     return out
 
 
-def _parse_manifest_depends(module_name: str) -> list[str]:
-    path = ROOT / "addons" / module_name / "__manifest__.py"
+def _find_manifest_paths(
+    module_name: str,
+    module_roots: list[str],
+    *,
+    root: Path = ROOT,
+) -> list[Path]:
+    return sorted(
+        path
+        for module_root in module_roots
+        if (path := root / module_root / module_name / "__manifest__.py").is_file()
+    )
+
+
+def _parse_manifest_depends(path: Path) -> list[str]:
     if not path.is_file():
         return []
     text = path.read_text(encoding="utf-8", errors="ignore")
@@ -69,12 +81,19 @@ def _parse_manifest_depends(module_name: str) -> list[str]:
 def main() -> int:
     baseline = _load_json(BASELINE_JSON)
     source_roots = [str(item).strip() for item in baseline.get("source_roots", []) if str(item).strip()]
+    module_roots = [str(item).strip() for item in baseline.get("module_roots", []) if str(item).strip()]
+    optional_tracked_modules = _to_str_set(baseline.get("optional_tracked_modules"))
     import_policy_raw = baseline.get("forbidden_imports", {})
     manifest_policy_raw = baseline.get("forbidden_manifest_depends", {})
     required_manifest_depends_raw = baseline.get("required_manifest_depends", {})
     tracked_modules = [str(item).strip() for item in baseline.get("tracked_modules", []) if str(item).strip()]
 
-    if not source_roots or not isinstance(import_policy_raw, dict) or not isinstance(manifest_policy_raw, dict):
+    if (
+        not source_roots
+        or not module_roots
+        or not isinstance(import_policy_raw, dict)
+        or not isinstance(manifest_policy_raw, dict)
+    ):
         print("[boundary_import_guard] FAIL")
         print("invalid or missing policy baseline: scripts/verify/baselines/boundary_import_guard.json")
         return 1
@@ -115,18 +134,36 @@ def main() -> int:
 
     modules_for_manifest = sorted(set(tracked_modules) | set(forbidden_manifest_depends.keys()) | set(required_manifest_depends.keys()))
     manifest_observed: dict[str, list[str]] = {}
+    manifest_paths: dict[str, str] = {}
     for module in modules_for_manifest:
-        depends = _parse_manifest_depends(module)
-        if not depends:
-            warnings.append(f"manifest depends missing or empty: addons/{module}/__manifest__.py")
+        candidates = _find_manifest_paths(module, module_roots)
+        if len(candidates) > 1:
+            rel_paths = [path.relative_to(ROOT).as_posix() for path in candidates]
+            violations.append(f"{module}: ambiguous module manifests -> {', '.join(rel_paths)}")
+            depends = []
+            manifest_path = ""
+        elif candidates:
+            path = candidates[0]
+            manifest_path = path.relative_to(ROOT).as_posix()
+            depends = _parse_manifest_depends(path)
+            if not depends:
+                warnings.append(f"manifest depends missing or empty: {manifest_path}")
+        else:
+            manifest_path = ""
+            depends = []
+            if module not in optional_tracked_modules:
+                roots = ", ".join(module_roots)
+                warnings.append(f"module manifest missing: {module} (searched: {roots})")
         manifest_observed[module] = depends
+        manifest_paths[module] = manifest_path
         forbidden_depends = forbidden_manifest_depends.get(module) or set()
         required_depends = required_manifest_depends.get(module) or set()
+        display_path = manifest_path or f"{module}/__manifest__.py"
         for dep in sorted(set(depends) & forbidden_depends):
             manifest_hit_count += 1
-            violations.append(f"addons/{module}/__manifest__.py: forbidden depends -> {dep}")
+            violations.append(f"{display_path}: forbidden depends -> {dep}")
         for dep in sorted(required_depends - set(depends)):
-            violations.append(f"addons/{module}/__manifest__.py: required depends missing -> {dep}")
+            violations.append(f"{display_path}: required depends missing -> {dep}")
 
     payload = {
         "ok": len(violations) == 0,
@@ -139,6 +176,7 @@ def main() -> int:
             "violation_count": len(violations),
         },
         "manifest_depends": manifest_observed,
+        "manifest_paths": manifest_paths,
         "violations": violations,
         "warnings": warnings,
     }

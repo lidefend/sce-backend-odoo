@@ -1,0 +1,13 @@
+events:
+  - type: batch_started
+    at: "2026-08-20T14:00:00+08:00"
+    detail: Preserve least privilege and correct the positive evidence actor.
+  - type: implementation_completed
+    at: "2026-08-20T14:01:00+08:00"
+    detail: payment.request.available_actions now runs as the governed sc_fx_finance fixture.
+  - type: validation_failed
+    at: "2026-08-20T14:03:00+08:00"
+    detail: sc_fx_finance is not registered in local.dev and was silently resolved to admin by the exporter.
+  - type: implementation_corrected
+    at: "2026-08-20T14:05:00+08:00"
+    detail: Restored the explicit admin actor, registered its expected permission error, and removed missing-user fallback.

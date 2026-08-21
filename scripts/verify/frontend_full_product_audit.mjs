@@ -111,7 +111,7 @@ function flattenLeaves(nodes, ancestors = []) {
 function navigationFromPayload(payload) {
   const values = [payload, payload?.result, payload?.data, payload?.result?.data];
   for (const value of values) {
-    if (Array.isArray(value?.navigation_v1?.nav)) return value.navigation_v1.nav;
+    if (Array.isArray(value?.navigation?.nav)) return value.navigation.nav;
   }
   return null;
 }
@@ -496,7 +496,7 @@ const report = {
   baseline: '2ae5dd9ff99f54db66e80bf1e9855a3d59ee090e',
   environment: redactedEnvironmentEvidence(acceptance),
   served_identity: servedIdentity,
-  discovery: { source: 'authenticated navigation_v1', roles: ROLE_BINDINGS, menu_leaves: discovered.length, smoke_viewports: SMOKE_VIEWPORTS, deep_viewports: DEEP_VIEWPORTS },
+  discovery: { source: 'authenticated navigation', roles: ROLE_BINDINGS, menu_leaves: discovered.length, smoke_viewports: SMOKE_VIEWPORTS, deep_viewports: DEEP_VIEWPORTS },
   coverage,
   representatives,
   templates,

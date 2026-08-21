@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 FORM_PATHS = [
     ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts',
     ROOT / 'frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts',
     ROOT / 'frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts',
     ROOT / 'frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts',

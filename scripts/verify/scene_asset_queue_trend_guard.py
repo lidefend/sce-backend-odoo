@@ -64,7 +64,7 @@ def _fetch_asset_queue() -> dict:
     require_ok(status, init_resp, "system.init")
 
     data = init_resp.get("data") if isinstance(init_resp.get("data"), dict) else {}
-    governance = data.get("scene_governance_v1") if isinstance(data.get("scene_governance_v1"), dict) else {}
+    governance = data.get("scene_governance") if isinstance(data.get("scene_governance"), dict) else {}
     asset_queue = governance.get("asset_queue") if isinstance(governance.get("asset_queue"), dict) else {}
     return {
         "queue_size": _safe_int(asset_queue.get("queue_size"), 0),

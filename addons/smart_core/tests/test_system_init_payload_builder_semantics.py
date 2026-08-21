@@ -34,13 +34,13 @@ target = _load_module(
 
 
 class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
-    def test_layered_contract_exposes_runtime_product_identity(self):
+    def test_product_identity_is_exposed_without_legacy_section_aliases(self):
         source_revision = "a" * 40
         original = os.environ.get("SC_SOURCE_REVISION")
         os.environ["SC_SOURCE_REVISION"] = source_revision
         try:
             payload = {"role_surface": {}}
-            target.SystemInitPayloadBuilder.attach_layered_contract(payload)
+            target.SystemInitPayloadBuilder.attach_product_identity(payload)
         finally:
             if original is None:
                 os.environ.pop("SC_SOURCE_REVISION", None)
@@ -50,6 +50,8 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
         expected_version = (Path(__file__).resolve().parents[3] / "VERSION").read_text(encoding="utf-8").strip()
         self.assertEqual(payload["product_version"], expected_version)
         self.assertEqual(payload["source_revision"], source_revision)
+        self.assertNotIn("system_init_sections_v1", payload)
+        self.assertNotIn("init_contract_v1", payload)
 
     def test_startup_payload_builder_declares_projection_source(self):
         source = target.SystemInitPayloadBuilder.source_authority_contract()
@@ -368,7 +370,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
                     }
                 ],
                 "nav_meta": {
-                    "nav_source": "scene_contract_v1",
+                    "nav_source": "scene_contract",
                     "semantic_scene_key": "workspace.home",
                     "semantic_source_view": "kanban",
                     "semantic_view_type": "kanban",
@@ -420,7 +422,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
                     "validation_surface": {"required_fields": ["name"]},
                     "debug_blob": {"drop_me": True},
                 },
-                "scene_ready_contract_v1": {
+                "scene_ready_contract": {
                     "contract_version": "v1",
                     "scene_channel": "portal",
                     "scenes": [
@@ -530,7 +532,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
         self.assertEqual(((payload.get("released_scene_semantic_surface") or {}).get("search_surface") or {}).get("mode"), "faceted")
         self.assertEqual(((payload.get("released_scene_semantic_surface") or {}).get("permission_surface") or {}).get("reason_code"), "missing_capability")
         self.assertNotIn("debug_blob", payload.get("released_scene_semantic_surface") or {})
-        scene = ((payload.get("scene_ready_contract_v1") or {}).get("scenes") or [])[0]
+        scene = ((payload.get("scene_ready_contract") or {}).get("scenes") or [])[0]
         self.assertEqual(scene.get("view_type"), "kanban")
         self.assertIn("parser_semantic_surface", scene)
         self.assertEqual(((scene.get("search_surface") or {}).get("mode")), "faceted")
@@ -565,7 +567,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
                         "fallback_strategy": {"type": "native_menu_compat"},
                         "next_scene": "contracts.workspace",
                         "next_scene_route": "/s/contracts.workspace",
-                        "delivery_handoff_v1": {
+                        "delivery_handoff": {
                             "family": "contracts",
                             "final_scene": "contract.center",
                         },
@@ -587,7 +589,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
         self.assertEqual(((scene.get("primary_action") or {}).get("route")), "/s/contract.center")
         self.assertEqual(((scene.get("fallback_strategy") or {}).get("type")), "native_menu_compat")
         self.assertEqual(scene.get("next_scene"), "contracts.workspace")
-        self.assertEqual(((scene.get("delivery_handoff_v1") or {}).get("family")), "contracts")
+        self.assertEqual(((scene.get("delivery_handoff") or {}).get("family")), "contracts")
         self.assertEqual(((scene.get("runtime_handoff_surface") or {}).get("family")), "contracts")
         self.assertEqual(((scene.get("product_delivery_surface") or {}).get("delivery_mode")), "direct_delivery")
 
@@ -651,8 +653,8 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
                                 {"key": "projects.universal.kanban", "kind": "kanban_board", "title": "看板"},
                             ],
                         },
-                        "view_orchestration_contract_v1": {
-                            "schema_version": "view_orchestration_v1",
+                        "view_orchestration_contract": {
+                            "schema_version": "2.0.0",
                             "scene_key": "projects.universal",
                             "views": {
                                 "list": {"sections": [{"key": "projects.universal.shell", "kind": "page_shell"}]},
@@ -667,7 +669,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
         self.assertEqual(((((blocks_by_view.get("list") or [])[0]) or {}).get("kind")), "list_view")
         self.assertEqual(((((blocks_by_view.get("form") or [])[0]) or {}).get("kind")), "body")
         self.assertEqual(((((blocks_by_view.get("kanban") or [])[0]) or {}).get("kind")), "kanban_board")
-        self.assertEqual(((scene.get("view_orchestration_contract_v1") or {}).get("schema_version")), "view_orchestration_v1")
+        self.assertEqual(((scene.get("view_orchestration_contract") or {}).get("schema_version")), "2.0.0")
 
 
 if __name__ == "__main__":

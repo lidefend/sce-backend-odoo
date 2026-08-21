@@ -204,45 +204,49 @@ function assert(condition, message, errors) {
 function summarizeContractPayload(payload) {
   const findContract = (value, depth = 0) => {
     if (!value || typeof value !== 'object' || Array.isArray(value) || depth > 5) return {};
-    if (value.views && typeof value.views === 'object') return value;
-    for (const key of ['data', 'result', 'payload', 'rawBody', 'body']) {
+    if (value.pageInfo && value.layoutContract && value.dataContract) return value;
+    for (const key of ['data', 'result', 'payload', 'body']) {
       const found = findContract(value[key], depth + 1);
-      if (found && found.views && typeof found.views === 'object') return found;
+      if (found && found.pageInfo && found.layoutContract) return found;
     }
-    const v2 = value.__unified_page_contract_v2;
-    const foundV2 = findContract(v2, depth + 1);
-    if (foundV2 && foundV2.views && typeof foundV2.views === 'object') return foundV2;
     return {};
   };
   const data = findContract(payload);
-  const views = data && typeof data === 'object' ? data.views || {} : {};
+  const pageInfo = data.pageInfo || {};
+  const layout = data.layoutContract || {};
+  const widgets = [];
+  const walk = (rows) => (Array.isArray(rows) ? rows : []).forEach((row) => {
+    if (!row || typeof row !== 'object') return;
+    if (Array.isArray(row.widgetList)) widgets.push(...row.widgetList);
+    for (const key of ['children', 'pages', 'tabs', 'nodes', 'items']) walk(row[key]);
+  });
+  walk(layout.containerTree);
+  const viewType = String(pageInfo.viewType || '').trim();
   const summarizeView = (key) => {
-    const view = views && typeof views === 'object' ? views[key] || {} : {};
     const labels = {};
-    ['fields', 'columns', 'columns_schema', 'measures', 'dimensions'].forEach((slot) => {
-      const rows = Array.isArray(view[slot]) ? view[slot] : [];
-      rows.forEach((row) => {
-        if (!row || typeof row !== 'object') return;
-        const name = String(row.name || row.field || row.field_name || '').trim();
-        const label = String(row.label || row.string || row.display_label || '').trim();
-        if (name && label) labels[name] = label;
-      });
+    const fields = [];
+    widgets.forEach((row) => {
+      const name = String(row?.fieldCode || '').trim();
+      const label = String(row?.label || name).trim();
+      if (name && label) labels[name] = label;
+      if (name) fields.push(name);
     });
     return {
-      present: Boolean(view && typeof view === 'object' && Object.keys(view).length),
+      present: viewType === key || (key === 'tree' && viewType === 'list'),
       labels,
-      fields: Array.isArray(view.fields) ? view.fields.map((row) => typeof row === 'string' ? row : row && row.name).filter(Boolean) : [],
-      columns: Array.isArray(view.columns) ? view.columns.map((row) => typeof row === 'string' ? row : row && row.name).filter(Boolean) : [],
-      profile: view.kanban_profile || null,
+      fields,
+      columns: fields,
+      profile: layout.listProfile || null,
     };
   };
+  const search = data.searchContract || {};
   return {
-    view_type: data?.head?.view_type || data?.view_type || '',
-    view_keys: Object.keys(views || {}),
+    view_type: viewType,
+    view_keys: viewType ? [viewType] : [],
     tree: summarizeView('tree'),
     kanban: summarizeView('kanban'),
-    search_filters: Array.isArray(data?.search?.filters) ? data.search.filters.map((row) => ({ key: row.key, name: row.name, label: row.label })) : [],
-    search_group_by: Array.isArray(data?.search?.group_by) ? data.search.group_by.map((row) => ({ field: row.field, name: row.name, label: row.label })) : [],
+    search_filters: Array.isArray(search.filters) ? search.filters.map((row) => ({ key: row.key, name: row.name, label: row.label })) : [],
+    search_group_by: Array.isArray(search.group_by) ? search.group_by.map((row) => ({ field: row.field, name: row.name, label: row.label })) : [],
   };
 }
 

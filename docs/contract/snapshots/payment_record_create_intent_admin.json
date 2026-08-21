@@ -2,7 +2,11 @@
   "action": null,
   "case": "payment_record_create_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": "PROJECT_CONTEXT_MISSING",
+    "message": "缺少 project_id，无法创建付款记录",
+    "suggested_action": "fix_input"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,11 +17,30 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
+    "error": {
+      "code": "PROJECT_CONTEXT_MISSING",
+      "message": "缺少 project_id，无法创建付款记录",
+      "suggested_action": "fix_input"
+    },
+    "meta": {
+      "elapsed_ms": 0,
       "intent": "payment.record.create",
-      "runtime_snapshot": false
-    }
+      "source_authority": {
+        "authorities": [
+          "payment.request",
+          "project.project",
+          "res.partner",
+          "ir.model.access",
+          "ir.rule",
+          "odoo.orm"
+        ],
+        "kind": "payment_slice_odoo_orm_write_proxy",
+        "projection_only": false,
+        "runtime_authority": "odoo.orm",
+        "write_authority": "payment.request.create"
+      }
+    },
+    "ok": false
   },
   "user": "admin",
   "user_fallback": null,

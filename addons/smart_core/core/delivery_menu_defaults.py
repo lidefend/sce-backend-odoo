@@ -8,7 +8,7 @@ from .navigation_entry_target import normalize_entry_target
 from .source_authority import build_source_authority_contract
 
 SOURCE_KIND = "delivery_menu_default_projection"
-SOURCE_AUTHORITIES = ("delivery_engine_v1", "release_surface_menu_payload")
+SOURCE_AUTHORITIES = ("delivery_engine", "release_surface_menu_payload")
 NO_BUSINESS_FACT_AUTHORITY = True
 _CURRENT_RECORD_SCOPE_MODELS: set[str] = set()
 _CURRENT_PROJECT_SCOPE_MODELS = _CURRENT_RECORD_SCOPE_MODELS
@@ -88,7 +88,7 @@ def build_delivery_menu_child(menu: Dict[str, Any]) -> Dict[str, Any] | None:
         "menu_key": key,
         "product_key": str(menu.get("product_key") or "").strip(),
         "capability_key": str(menu.get("capability_key") or "").strip(),
-        "source": "delivery_engine_v1",
+        "source": "delivery_engine",
         "default_source_authority": source_authority_contract(),
     }
     if route:
@@ -222,7 +222,7 @@ def build_delivery_menu_group(
     target = dict(target or {})
     meta = {
         "group_key": group_key,
-        "source": "delivery_engine_v1",
+        "source": "delivery_engine",
         "default_source_authority": source_authority_contract(),
         "synthetic": True,
         "node_kind": "navigation_group",
@@ -267,7 +267,7 @@ def build_delivery_menu_root(group_nodes: list[dict], role_code: str) -> Dict[st
         "menu_id": synthetic_menu_id("root:delivery_engine", base=880_000_000, span=10_000_000),
         "children": group_nodes,
         "meta": {
-            "source": "delivery_engine_v1",
+            "source": "delivery_engine",
             "role_code": role_code,
             "default_source_authority": source_authority_contract(),
             "synthetic": True,

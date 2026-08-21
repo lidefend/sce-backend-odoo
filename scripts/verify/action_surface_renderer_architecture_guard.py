@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = ROOT / "frontend/apps/web/src/app/renderers/actionSurfaceRendererRegistry.ts"
 HOST = ROOT / "frontend/apps/web/src/components/action/ActionSurfaceRendererHost.vue"
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
+ACTION_DRIVER = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewSceneComponentDriverRuntime.ts"
 V2_TYPES = ROOT / "frontend/apps/web/src/app/contracts/v2/types.ts"
 V2_SCHEMA = ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts"
 V2_ASSEMBLER = ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py"
@@ -14,6 +15,7 @@ def main() -> int:
     registry = REGISTRY.read_text(encoding="utf-8")
     host = HOST.read_text(encoding="utf-8")
     action_view = ACTION_VIEW.read_text(encoding="utf-8")
+    action_driver = ACTION_DRIVER.read_text(encoding="utf-8")
     v2_types = V2_TYPES.read_text(encoding="utf-8")
     v2_schema = V2_SCHEMA.read_text(encoding="utf-8")
     v2_assembler = V2_ASSEMBLER.read_text(encoding="utf-8")
@@ -42,7 +44,12 @@ def main() -> int:
         ("ActionSurfaceRendererHost", "ActionView must delegate surface selection to the renderer host"),
         ("surfaceRendererDescriptor", "ActionView must consume the centralized renderer descriptor"),
     ):
-        target = host if needle in {"ACTION_SURFACE_RENDERER_COMPONENTS", ':is="rendererComponent"', "data-renderer-status"} else action_view
+        if needle in {"ACTION_SURFACE_RENDERER_COMPONENTS", ':is="rendererComponent"', "data-renderer-status"}:
+            target = host
+        elif needle == "resolveActionSurfaceRenderer":
+            target = action_driver
+        else:
+            target = action_view
         if needle not in target:
             errors.append(message)
     for forbidden, message in (

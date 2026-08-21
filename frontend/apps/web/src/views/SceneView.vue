@@ -184,7 +184,7 @@ const route = useRoute();
 const router = useRouter();
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
 const session = useSessionStore();
-const pageContract = usePageContract('scene', { allowSceneContractFallback: true });
+const pageContract = usePageContract('scene');
 const pageText = pageContract.text;
 const pageSectionEnabled = pageContract.sectionEnabled;
 const pageSectionStyle = pageContract.sectionStyle;
@@ -572,10 +572,10 @@ async function hydrateSceneReadyForCurrentScene(sceneKey: string) {
       },
       meta: { startup_chain_bypass: true },
     });
-    const contract = result.scene_ready_contract_v1;
+    const contract = result.scene_ready_contract;
     if (contract && typeof contract === 'object' && Array.isArray((contract as Record<string, unknown>).scenes)) {
       const readyContract = contract as Record<string, unknown>;
-      session.sceneReadyContractV1 = readyContract as never;
+      session.sceneReadyContract = readyContract as never;
       setSceneRegistryFromSceneReadyContract(readyContract as never);
       return true;
     }
@@ -763,7 +763,7 @@ function resolveRecordId(targetRecord: unknown) {
 function resolveVisibleActionTarget(target: SceneTarget, sceneKey = '') {
   const isSceneContractNav = (() => {
     const navMeta = (session.initMeta as Record<string, unknown> | null)?.nav_meta as Record<string, unknown> | undefined;
-    if (String(navMeta?.nav_source || '') === 'scene_contract_v1') {
+    if (String(navMeta?.nav_source || '') === 'scene_contract') {
       return true;
     }
     const walk = (nodes: NavNode[]): boolean => {
@@ -893,7 +893,7 @@ function fallbackSceneFromSceneReady(sceneKey: string): Scene | null {
   if (!key) {
     return null;
   }
-  const contract = session.sceneReadyContractV1;
+  const contract = session.sceneReadyContract;
   const rows = Array.isArray(contract?.scenes) ? contract.scenes : [];
   for (const item of rows) {
     if (!item || typeof item !== 'object') continue;

@@ -1,5 +1,5 @@
-import { resolveUnifiedPageContractV2 } from './unifiedPageContractV2';
-import { resolveUnifiedPageContractV2ListProfile } from './unifiedPageContractV2';
+import { resolveContractV2ListProfile } from './v2/store';
+import type { ContractV2NormalizedStore } from './v2/types';
 
 type Dict = Record<string, unknown>;
 
@@ -51,7 +51,7 @@ function parseViewModes(raw: unknown): string[] {
   return out;
 }
 
-function collectContractViewModes(contract: Dict | null): string[] {
+function collectContractViewModes(contract: ContractV2NormalizedStore | null): string[] {
   if (!contract) return [];
   const out: string[] = [];
   const seen = new Set<string>();
@@ -65,22 +65,7 @@ function collectContractViewModes(contract: Dict | null): string[] {
     parseViewModes(raw).forEach((mode) => addMode(mode));
   };
 
-  const v2 = resolveUnifiedPageContractV2(contract);
-  addModes(v2?.pageInfo?.viewType);
-
-  const head = asDict(contract.head);
-  addModes(head.view_type);
-  addModes(contract.view_type);
-
-  const views = asDict(contract.views);
-  if (views.tree || views.list) addMode('tree');
-  if (views.kanban) addMode('kanban');
-  if (views.pivot) addMode('pivot');
-  if (views.graph) addMode('graph');
-  if (views.calendar) addMode('calendar');
-  if (views.gantt) addMode('gantt');
-  if (views.activity) addMode('activity');
-  if (views.dashboard) addMode('dashboard');
+  addModes(contract?.snapshot.pageInfo.viewType);
   return out;
 }
 
@@ -100,12 +85,12 @@ export type ActionCollectionPresentation = {
 };
 
 export function resolveActionCollectionPresentation(
-  contract: Dict | null,
+  contract: ContractV2NormalizedStore | null,
   modeRaw: unknown,
 ): ActionCollectionPresentation {
   const mode = normalizeActionViewMode(modeRaw);
   if (mode === 'tree') {
-    const listProfile = resolveUnifiedPageContractV2ListProfile(contract);
+    const listProfile = resolveContractV2ListProfile(contract);
     const formalPresentation = asDict(listProfile.collection_presentation);
     const formalSemantic = String(formalPresentation.semantic || '').trim();
     if (['hierarchy_browser', 'hierarchy_planner', 'hierarchical_worksheet'].includes(formalSemantic)
@@ -121,21 +106,18 @@ export function resolveActionCollectionPresentation(
     return { semantic: 'table', label: '表格', groupField: '', groupedLanes: false, config: {} };
   }
   if (['pivot', 'graph', 'calendar', 'gantt', 'activity', 'dashboard'].includes(mode)) {
-    const views = asDict(contract?.views);
     return {
       semantic: mode as ActionCollectionPresentation['semantic'],
       label: String(modeRaw || ''),
       groupField: '',
       groupedLanes: false,
-      config: asDict(views[mode]),
+      config: {},
     };
   }
   if (mode !== 'kanban') {
     return { semantic: 'card', label: String(modeRaw || ''), groupField: '', groupedLanes: false, config: {} };
   }
-  const views = asDict(contract?.views);
-  const kanban = asDict(views.kanban);
-  const presentation = asDict(kanban.collection_presentation);
+  const presentation = asDict(resolveContractV2ListProfile(contract).collection_presentation);
   const capabilities = asDict(presentation.capabilities);
   const semantic = String(presentation.semantic || '').trim().toLowerCase();
   const groupField = String(presentation.group_field || '').trim();
@@ -171,7 +153,7 @@ export function resolveActionViewAvailableModes(options: {
   contractViewTypeRaw: unknown;
   metaViewModesRaw: unknown;
   metaViewsRaw?: unknown;
-  contract: Dict | null;
+  contract: ContractV2NormalizedStore | null;
 }): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
@@ -203,7 +185,7 @@ export function resolveActionViewModeLabel(options: {
   strictContractMode: boolean;
   strictLabelMap: Record<string, string>;
   pageText: (key: string, fallback: string) => string;
-  contract?: Dict | null;
+  contract?: ContractV2NormalizedStore | null;
 }): string {
   const normalized = normalizeActionViewMode(options.mode);
   if (normalized === 'tree' || normalized === 'kanban') {

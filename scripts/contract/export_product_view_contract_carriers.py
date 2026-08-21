@@ -34,7 +34,7 @@ from product_view_contract_carriers_common import (  # noqa: E402
 
 
 SCHEMA = "product_view_contract_carriers/v1"
-STRUCTURE_SCHEMA = "product_view_structure_contract/v1"
+STRUCTURE_SCHEMA = "product_view_structure_contract/1.0.0"
 EXPECTED_DB = "sc_clean"
 def _required_path(name: str) -> Path:
     value = os.environ.get(name, "").strip()

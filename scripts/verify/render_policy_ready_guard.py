@@ -13,7 +13,7 @@ GOV_MODULES = (
 )
 FORM = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
 FORM_MODULES = ROOT / "frontend/apps/web/src/pages/contractForm"
-POLICY = ROOT / "frontend/apps/web/src/app/contractPolicies.ts"
+RETIRED_POLICY = ROOT / "frontend/apps/web/src/app/contractPolicies.ts"
 REPORT_JSON = ROOT / "artifacts/backend/render_policy_ready_report.json"
 REPORT_MD = ROOT / "docs/audit/render_policy_ready_report.md"
 
@@ -26,12 +26,13 @@ def main() -> int:
     gov_text = "\n".join(_read(path) for path in (GOV, *GOV_MODULES))
     form_sources = [FORM, *FORM_MODULES.rglob("*.vue"), *FORM_MODULES.rglob("*.ts")]
     form_text = "\n".join(_read(path) for path in form_sources)
-    policy_text = _read(POLICY)
     errors: list[str] = []
 
-    for path, text in ((GOV, gov_text), (FORM, form_text), (POLICY, policy_text)):
+    for path, text in ((GOV, gov_text), (FORM, form_text)):
         if not text:
             errors.append(f"missing file: {path.relative_to(ROOT).as_posix()}")
+    if RETIRED_POLICY.exists():
+        errors.append("retired frontend ActionContract policy evaluator must not exist")
 
     governance_tokens = [
         'data["field_policies"] = _build_form_field_policies(data)',
@@ -50,40 +51,18 @@ def main() -> int:
         if token not in gov_text:
             errors.append(f"contract_governance missing token: {token}")
 
-    policy_tokens = [
-        "export function evaluateFieldPolicy(",
-        "export function evaluateActionPolicy(",
-        "export function collectPolicyValidationErrors(",
-        "function evaluateConditionExpr(",
-        "required_fields",
-        "required_capabilities",
-        "required_roles",
-        "conditions",
-        "condition_expr",
-        "lifecycle",
-        "visible_profiles",
-        "required_profiles",
-        "readonly_profiles",
-    ]
-    for token in policy_tokens:
-        if token not in policy_text:
-            errors.append(f"contractPolicies missing token: {token}")
-
     form_tokens = [
-        "evaluateFieldPolicy(",
-        "evaluateActionPolicy(params.contract, key, params.policyContext)",
-        "collectPolicyValidationErrors(contract.value, policyContext.value)",
-        "capabilities: runtimeCapabilities.value",
-        "roleCode: runtimeRoleCode.value",
+        "resolveContractV2FieldDescriptorMap",
+        "resolveContractV2ActionRules",
+        "collectContractV2ButtonStatusById",
+        "resolveContractV2GlobalStatus",
+        "resolveContractV2EffectiveFormCapabilities",
         "contractVisibleFields",
     ]
     for token in form_tokens:
         if token not in form_text:
             errors.append(f"ContractFormPage missing token: {token}")
 
-    for token in ("required_groups", "userGroups"):
-        if token in policy_text:
-            errors.append(f"contractPolicies must not evaluate backend group authority: {token}")
     if "runtimeUserGroups" in form_text:
         errors.append("ContractFormPage must not reconstruct backend group authority: runtimeUserGroups")
 
@@ -91,7 +70,7 @@ def main() -> int:
         "ok": len(errors) == 0,
         "summary": {
             "backend_policy_contract": all(t in gov_text for t in governance_tokens),
-            "frontend_policy_engine": all(t in policy_text for t in policy_tokens),
+            "frontend_policy_engine_retired": not RETIRED_POLICY.exists(),
             "frontend_policy_consumption": all(t in form_text for t in form_tokens),
         },
         "errors": errors,
@@ -105,7 +84,7 @@ def main() -> int:
         "",
         f"- ok: `{report['ok']}`",
         f"- backend_policy_contract: `{report['summary']['backend_policy_contract']}`",
-        f"- frontend_policy_engine: `{report['summary']['frontend_policy_engine']}`",
+        f"- frontend_policy_engine_retired: `{report['summary']['frontend_policy_engine_retired']}`",
         f"- frontend_policy_consumption: `{report['summary']['frontend_policy_consumption']}`",
     ]
     if errors:

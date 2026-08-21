@@ -2683,7 +2683,7 @@ class TestMenuConfigurationAudit(unittest.TestCase):
                 {
                     "menu_id": 304,
                     "name": "系统菜单",
-                    "meta": {"source": "delivery_engine_v1"},
+                    "meta": {"source": "delivery_engine"},
                     "children": [{"menu_id": 682, "name": "收入合同", "children": []}],
                 }
             ],

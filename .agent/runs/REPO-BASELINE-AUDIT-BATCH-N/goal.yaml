@@ -1,0 +1,7 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-N
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Bind PM snapshots to the governed project-manager fixture
+status: completed
+formal_product_layer: P4
+layer_target: docs/contract/cases.yml
+reason: Governed Make acceptance uses demo_role_pm; the unregistered pm alias was silently executing as admin.

@@ -1,3 +1,5 @@
+import type { ContractV2NormalizedStore } from '../contracts/v2';
+
 type UseActionViewModeRuntimeOptions = {
   strictContractMode: { value: boolean };
   strictViewModeLabelMap: { value: Record<string, string> };
@@ -10,9 +12,9 @@ type UseActionViewModeRuntimeOptions = {
     strictContractMode: boolean;
     strictLabelMap: Record<string, string>;
     pageText: (key: string, fallback: string) => string;
-    contract?: Record<string, unknown> | null;
+    contract?: ContractV2NormalizedStore | null;
   }) => string;
-  contract: { value: Record<string, unknown> | null };
+  contract: { value: ContractV2NormalizedStore | null };
   persistMode?: (mode: string) => void;
   load: () => Promise<void>;
 };

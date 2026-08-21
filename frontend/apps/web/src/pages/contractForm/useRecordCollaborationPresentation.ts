@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, type ComputedRef, type Ref } from 'vue';
-import type { ContractV2NormalizedStore } from '../../app/contracts/v2';
+import { resolveContractV2Collaboration, type ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeChatterAction } from './types';
 import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
 import type { PendingNativeAttachment } from './useNativeAttachmentRuntime';
@@ -18,7 +18,6 @@ import {
   nativeCollaborationUnavailableMessage as nativeCollaborationUnavailableMessageFromState,
   resolveNativeAttachmentContract,
   resolveNativeChatterContract,
-  resolveRuntimeCollaborationContract,
 } from './collaborationContract';
 
 type MutableRef<T = unknown> = Ref<T>;
@@ -62,16 +61,13 @@ export function useRecordCollaborationPresentation(context: {
   updateNativeActivity: (...args: any[]) => unknown;
   loadMoreNativeChatterTimeline: (...args: any[]) => unknown;
 }) {
-  const runtimeCollaborationContract = computed(() => resolveRuntimeCollaborationContract(
-    context.v2ContractStore.value?.snapshot?.runtimeContract,
-    null,
-  ));
+  const runtimeCollaborationContract = computed(() => resolveContractV2Collaboration(context.v2ContractStore.value));
   const nativeChatterContract = computed(() => resolveNativeChatterContract(
-    null,
+    undefined,
     runtimeCollaborationContract.value,
   ));
   const nativeAttachmentContract = computed(() => resolveNativeAttachmentContract(
-    null,
+    undefined,
     runtimeCollaborationContract.value,
   ));
   const nativeChatterActions = computed<NativeChatterAction[]>(() => nativeChatterActionsFromContract(nativeChatterContract.value, {

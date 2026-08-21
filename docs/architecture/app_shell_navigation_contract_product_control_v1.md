@@ -24,7 +24,7 @@
    - 角色策略（`role_surface`）
    - 交付策略（delivery policy）
    - 行业导航产品策略（group mapping/label/order/visibility）
-3. 导航契约属于 **Shell 级场景编排产物**，不属于单页 `scene_contract_v1`。
+3. 导航契约属于 **Shell 级场景编排产物**，不属于单页 `scene_contract`。
 4. 单页契约允许输出轻量 `nav_ref`，禁止输出全量导航树。
 
 ---
@@ -102,7 +102,7 @@
 
 前端计算侧边栏 active menu 时，推荐优先级如下：
 1. 路由显式 `menu_id`
-2. 页面契约 `scene_contract_v1.nav_ref.active_menu_id`
+2. 页面契约 `scene_contract.nav_ref.active_menu_id`
 3. 按 `active_scene_key` 在 `app.init.nav` 中反查 menu
 
 该规则用于保证“壳层导航事实”与“页面语义契约”联动一致。

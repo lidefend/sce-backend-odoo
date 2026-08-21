@@ -49,7 +49,6 @@ assert.equal(
 
 function normalizedContract(actions: Array<Record<string, unknown>> = []) {
   return {
-    __unified_page_contract_v2: {
       pageInfo: {
         pageId: 'page.department.list',
         sceneKey: 'organization.directory',
@@ -99,7 +98,6 @@ function normalizedContract(actions: Array<Record<string, unknown>> = []) {
       dataContract: {},
       runtimeContract: {},
       meta: {},
-    },
   };
 }
 

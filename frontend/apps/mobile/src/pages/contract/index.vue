@@ -925,7 +925,7 @@ function buildTargetParams(): Dict {
   }
   const sceneKey = asText(query.scene_key || query.sceneKey);
   if (sceneKey) {
-    return { source_type: 'scene_contract_v1', scene_key: sceneKey };
+    return { source_type: 'scene_contract', scene_key: sceneKey };
   }
   return { source_type: 'ui.contract', op: 'model', model: TARGET_MODEL, view_type: TARGET_VIEW_TYPE };
 }

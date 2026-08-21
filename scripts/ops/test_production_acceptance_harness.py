@@ -142,10 +142,10 @@ class ProductionAcceptanceHarnessTest(unittest.TestCase):
         self.assertNotIn("generate_" + "token(", source)
         self.assertNotIn("odoo " + "shell", source)
 
-    def test_navigation_uses_canonical_navigation_v1_contract(self) -> None:
+    def test_navigation_uses_canonical_navigation_contract(self) -> None:
         paths = harness.navigation_from_init(
             {
-                "navigation_v1": {
+                "navigation": {
                     "nav": [
                         {
                             "label": "智慧施工管理平台",

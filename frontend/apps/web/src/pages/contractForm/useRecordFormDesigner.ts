@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, reactive, ref } from 'vue';
 import type { FieldDescriptor } from '@sc/schema';
+import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type {
   FormConfigAuditResult,
@@ -14,16 +15,7 @@ type DesignerDependencies = Record<string, any>;
 
 /** Owns the administrator-only form design state and operations. */
 export function useRecordFormDesigner(dependencies: DesignerDependencies) {
-  const { BUSINESS_CONFIG_INTENTS, BUSINESS_CONFIG_MODES, BUSINESS_CONFIG_ROUTE_FLAGS, FORM_FIELD_CONFIG_INTENTS, actionId, activeContractMode, applyClientMode, applyPageStatusEvent, buildCurrentFormGroupOptions, buildFormConfigFieldLabelReplacementEntries, buildFormDesignerGroupNavigatorItems, buildFormDesignerSearchableFieldRows, buildFormFieldConfigScope, buildLowCodeViewOrchestrationFromDraft, busy, busyKind, changedFieldGroupFromDrafts, changedFieldVisibilityFromDrafts, collectLowCodeLayoutFromViewOrchestration, collectNativeFieldStructureGroups, collectNativeLayoutGroupTitles, contractActionRuleClientMode, contractActionRuleControl, contractActionRuleKey, contractFieldLabel, contractFieldSequence, contractModeFeedback, contractV2ActionRules, currentBusinessCategoryLabel, effectiveFieldGroupTitleFromDrafts, ensureFieldOrderDraftStartsFromCurrentLayout, errorMessage, extractLowCodeFormFieldDraftState, extractLowCodeLayoutDraftState, filterFormDesignerFieldRows, formSettingsActiveTab, formatFormConfigAuditSummary, formatFormConfigOperationSummaryText, inferLowCodeLayoutColumns, intentRequest, isBusinessConfigRuntimeModel, isReadableFieldGroupTitle, isSuggestedInternalFormField, layoutHasReadableFieldGroups, lowCodeApplyBaseParams, lowCodeFormSpecFromViews, lowCodeLayoutFieldLabelFromNodes, lowCodeLayoutFromFormSpec, lowCodeScopedContractName, lowCodeViewsFromContractResponse, mergeLowCodeLayoutWithRuntimeGroupShells, model, nativeFormLayoutNodes, normalizeConfigPageLabel, normalizeContractV2ContainersForNativeFormFromTree, normalizeFieldGroupTitle, normalizeFormConfigAuditResult, normalizeLowCodeContractListRows, pageDisplayTitle, parseMaybeJsonRecord, rawNativeFormLayoutNodes, readableFallbackFieldLabel, reload, resolveContractV2ContainerTree, resolveFormDesignFieldLabel, resolveSelectedFormSettingsFieldGroupTitle, resolveUnifiedPageContractV2, route, routeQueryText, runtimeNativeFormLayoutNodes, session, showHud, status, useContractModeActionRuntime, useFieldOrderDragRuntime, useFieldOrderMutationRuntime, useFieldVisibilityDraftRuntime, useFormConfigOperationLog, useFormConfigSaveRuntime, useFormSettingsGroupRuntime, useFormSettingsLayoutRuntime, useInlineFieldPolicyRuntime, useLowCodeFieldCreateRuntime, v2ContractStore } = dependencies;
-  const strictDesignerFields = () => {
-    const fields: Record<string, FieldDescriptor> = {};
-    for (const widget of v2ContractStore.value?.widgetsById.values() || []) {
-      const key = String(widget.fieldCode || '').trim();
-      if (!key || !widget.fieldDescriptor || fields[key]) continue;
-      fields[key] = widget.fieldDescriptor as FieldDescriptor;
-    }
-    return fields;
-  };
+  const { BUSINESS_CONFIG_INTENTS, BUSINESS_CONFIG_MODES, BUSINESS_CONFIG_ROUTE_FLAGS, FORM_FIELD_CONFIG_INTENTS, actionId, activeContractMode, applyClientMode, applyPageStatusEvent, buildCurrentFormGroupOptions, buildFormConfigFieldLabelReplacementEntries, buildFormDesignerGroupNavigatorItems, buildFormDesignerSearchableFieldRows, buildFormFieldConfigScope, buildLowCodeViewOrchestrationFromDraft, busy, busyKind, changedFieldGroupFromDrafts, changedFieldVisibilityFromDrafts, collectLowCodeLayoutFromViewOrchestration, collectNativeFieldStructureGroups, collectNativeLayoutGroupTitles, contract, contractActionRuleClientMode, contractActionRuleControl, contractActionRuleKey, contractFieldLabel, contractFieldSequence, contractModeFeedback, contractV2ActionRules, currentBusinessCategoryLabel, effectiveFieldGroupTitleFromDrafts, ensureFieldOrderDraftStartsFromCurrentLayout, errorMessage, extractLowCodeFormFieldDraftState, extractLowCodeLayoutDraftState, filterFormDesignerFieldRows, formSettingsActiveTab, formatFormConfigAuditSummary, formatFormConfigOperationSummaryText, inferLowCodeLayoutColumns, intentRequest, isBusinessConfigRuntimeModel, isReadableFieldGroupTitle, isSuggestedInternalFormField, layoutHasReadableFieldGroups, lowCodeApplyBaseParams, lowCodeFormSpecFromViews, lowCodeLayoutFieldLabelFromNodes, lowCodeLayoutFromFormSpec, lowCodeScopedContractName, lowCodeViewsFromContractResponse, mergeLowCodeLayoutWithRuntimeGroupShells, model, nativeFormLayoutNodes, normalizeConfigPageLabel, normalizeContractV2ContainersForNativeFormFromTree, normalizeFieldGroupTitle, normalizeFormConfigAuditResult, normalizeLowCodeContractListRows, pageDisplayTitle, parseMaybeJsonRecord, rawNativeFormLayoutNodes, readableFallbackFieldLabel, reload, resolveContractV2ContainerTree, resolveFormDesignFieldLabel, resolveSelectedFormSettingsFieldGroupTitle, resolveUnifiedPageContractV2, route, routeQueryText, runtimeNativeFormLayoutNodes, session, showHud, status, useContractModeActionRuntime, useFieldOrderDragRuntime, useFieldOrderMutationRuntime, useFieldVisibilityDraftRuntime, useFormConfigOperationLog, useFormConfigSaveRuntime, useFormSettingsGroupRuntime, useFormSettingsLayoutRuntime, useInlineFieldPolicyRuntime, useLowCodeFieldCreateRuntime, v2ContractStore } = dependencies;
   const requestIntent = intentRequest as <T = unknown>(payload: Record<string, unknown>) => Promise<T>;
   const fieldOrderDraft = ref<string[]>([]);
   const fieldOrderPreviewActive = ref(false);
@@ -149,7 +141,7 @@ export function useRecordFormDesigner(dependencies: DesignerDependencies) {
   } = useFormSettingsGroupRuntime({
     busy: () => busy.value,
     nativeFormLayoutNodes: () => nativeFormLayoutNodes.value,
-    contractFields: strictDesignerFields,
+    contractFields: () => resolveContractV2FormFieldMap(v2ContractStore.value) as Record<string, FieldDescriptor>,
     currentOrderedFieldKeys: () => currentFormOrderedFieldKeys.value,
     effectiveFieldGroupTitle: (fieldKey) => effectiveFieldGroupTitleForDraft(fieldKey),
     formDesignFieldLabel: (fieldKey) => formDesignFieldLabel(fieldKey),
@@ -337,7 +329,7 @@ export function useRecordFormDesigner(dependencies: DesignerDependencies) {
     rememberFormConfigFieldLabel, suggestedHiddenFieldRows, changedFieldVisibilityDraft, changedFieldGroupDraft, effectiveFieldGroupTitleForDraft,
   } = useRecordFormDesignerPresentation({
     activeContractMode, applyRuntimeInferredFormColumns: () => applyRuntimeInferredFormColumns(), buildFormConfigFieldLabelReplacementEntries, busy,
-    changedFieldGroupFromDrafts, changedFieldVisibilityFromDrafts, contractActionRuleClientMode,
+    changedFieldGroupFromDrafts, changedFieldVisibilityFromDrafts, contract, contractActionRuleClientMode,
     contractActionRuleControl, contractActionRuleKey, contractFieldLabel, contractV2ActionRules,
     effectiveFieldGroupTitleFromDrafts, fieldGroupBase, fieldGroupDraft, fieldGroupSavedBase,
     fieldLayoutDirtyKeys, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive,
@@ -364,7 +356,7 @@ export function useRecordFormDesigner(dependencies: DesignerDependencies) {
     BUSINESS_CONFIG_INTENTS, BUSINESS_CONFIG_MODES, activeContractMode, activeContractModeFieldRows,
     applyPageStatusEvent, buildCurrentFormGroupOptions, buildFormDesignerGroupNavigatorItems, buildFormDesignerSearchableFieldRows,
     buildFormFieldConfigScope, buildLowCodeViewOrchestrationFromDraft, busy, busyKind,
-    collectLowCodeLayoutFromViewOrchestration, collectNativeFieldStructureGroups, collectNativeLayoutGroupTitles,
+    collectLowCodeLayoutFromViewOrchestration, collectNativeFieldStructureGroups, collectNativeLayoutGroupTitles, contract,
     contractFieldLabel, contractModeFeedback, currentBusinessCategoryLabel, currentFormDesignFieldKeys,
     currentFormOrderedFieldKeys, effectiveFieldGroupTitleForDraft, effectiveFieldSize, effectiveGroupColumns,
     effectiveGroupVisible, extractLowCodeFormFieldDraftState, extractLowCodeLayoutDraftState, fieldGroupBase,

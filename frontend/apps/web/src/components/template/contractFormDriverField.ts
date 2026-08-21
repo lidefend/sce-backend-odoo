@@ -41,5 +41,5 @@ export function toContractFormDriverFieldChange(
   field: FormSectionFieldSchema,
   value: FormSectionFieldChange['value'],
 ): FormSectionFieldChange {
-  return { occurrenceKey: field.key, name: field.name, type: field.type, widget: field.widget, value, descriptor: field.descriptor };
+  return { name: field.name, type: field.type, widget: field.widget, value, descriptor: field.descriptor };
 }

@@ -25,9 +25,6 @@ export type FormSectionFieldSchema = {
   type: TemplateFieldType;
   widget?: string;
   widgetSemantics?: Record<string, unknown>;
-  digits?: [number, number];
-  currencyField?: string;
-  currencyLabel?: string;
   required: boolean;
   readonly: boolean;
   invalid?: boolean;
@@ -77,10 +74,12 @@ export type FormSectionFieldSchema = {
   many2oneInlineCreateLabel?: string;
   descriptor?: FieldDescriptor;
   fileName?: string;
+  digits?: [number, number];
+  currencyField?: string;
+  currencyLabel?: string;
 };
 
 export type FormSectionFieldChange = {
-  occurrenceKey?: string;
   name: string;
   type: TemplateFieldType;
   widget?: string;

@@ -37,7 +37,7 @@ function attachRuntime(page, state) {
     if (url.includes('/api/v1/intent') && response.status() === 200) {
       try {
         const body = JSON.parse(response.body());
-        const contract = body?.data?.scene_ready_contract_v1;
+        const contract = body?.data?.scene_ready_contract;
         if (contract && Array.isArray(contract.scenes)) {
           for (const row of contract.scenes) {
             const key = row?.scene?.key || row?.key || '';

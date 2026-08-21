@@ -859,7 +859,7 @@ def _build_scene_blocks(compiled: Dict[str, Any], scene_type_override: str | Non
     return blocks
 
 
-def _build_view_orchestration_contract_v1(
+def _build_view_orchestration_contract(
     *,
     scene_key: str,
     scene_blocks_by_view: Dict[str, Any],
@@ -886,7 +886,7 @@ def _build_view_orchestration_contract_v1(
         return out
 
     return {
-        "schema_version": "view_orchestration_v1",
+        "schema_version": "2.0.0",
         "scene_key": scene_key,
         "views": {
             "form": {"sections": _section_defs("form")},
@@ -1286,7 +1286,7 @@ def _scene_ready_entry(
             "primary_action",
             "next_action",
             "fallback_strategy",
-            "delivery_handoff_v1",
+            "delivery_handoff",
             "next_scene",
             "next_scene_key",
             "next_scene_route",
@@ -1364,7 +1364,7 @@ def _scene_ready_entry(
         "primary_action",
         "next_action",
         "fallback_strategy",
-        "delivery_handoff_v1",
+        "delivery_handoff",
         "handling_entry_catalog",
         "extensions",
     ):
@@ -1374,6 +1374,20 @@ def _scene_ready_entry(
         if source_value in (None, {}, []):
             continue
         compiled[field] = source_value
+    target_view_mode = _text(_as_dict(item.get("target")).get("view_mode"))
+    if target_view_mode:
+        compiled_view_modes = [
+            row for row in _as_list(compiled.get("view_modes"))
+            if isinstance(row, dict) and _text(row.get("key"))
+        ]
+        preferred = next(
+            (row for row in compiled_view_modes if _text(row.get("key")) == target_view_mode),
+            {"key": target_view_mode, "label": {"form": "表单", "tree": "列表", "kanban": "看板"}.get(target_view_mode, target_view_mode), "enabled": True},
+        )
+        compiled["view_modes"] = [
+            preferred,
+            *[row for row in compiled_view_modes if _text(row.get("key")) != target_view_mode],
+        ]
     compiled_action_surface = _as_dict(compiled.get("action_surface"))
     seeded_action_surface = _as_dict(scene_payload.get("action_surface"))
     if seeded_action_surface:
@@ -1561,7 +1575,7 @@ def _scene_ready_entry(
             scene_blocks_by_view[mode] = blocks
     if scene_blocks_by_view:
         compiled["scene_blocks_by_view"] = scene_blocks_by_view
-        compiled["view_orchestration_contract_v1"] = _build_view_orchestration_contract_v1(
+        compiled["view_orchestration_contract"] = _build_view_orchestration_contract(
             scene_key=scene_key,
             scene_blocks_by_view=scene_blocks_by_view,
         )
@@ -1569,7 +1583,7 @@ def _scene_ready_entry(
     return compiled
 
 
-def build_scene_ready_contract_v1(
+def build_scene_ready_contract(
     *,
     scenes: List[Dict[str, Any]] | None,
     role_surface: Dict[str, Any] | None = None,
@@ -1615,8 +1629,8 @@ def build_scene_ready_contract_v1(
             compile_issue_scene_count += 1
 
     return {
-        "contract_version": "v1",
-        "schema_version": "scene_ready_contract_v1",
+        "contract_version": "2.0.0",
+        "schema_version": "2.0.0",
         "scene_version": _text(scene_version),
         "source_schema_version": _text(schema_version),
         "scene_channel": _text(scene_channel),

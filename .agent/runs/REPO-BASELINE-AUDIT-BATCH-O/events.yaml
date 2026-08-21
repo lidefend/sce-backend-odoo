@@ -1,0 +1,13 @@
+events:
+  - type: batch_started
+    at: "2026-08-20T14:40:00+08:00"
+    detail: Expose existing selectors through Make and close selector validation gaps.
+  - type: implementation_completed
+    at: "2026-08-20T14:44:00+08:00"
+    detail: Added explicit resume/exact-case variables, unknown-case failure, tests, and operator documentation.
+  - type: focused_resume_verified
+    at: "2026-08-20T14:46:00+08:00"
+    detail: Three selector tests passed and governed execution resumed directly at cost_tracking_record_create_intent_admin.
+  - type: batch_completed
+    at: "2026-08-20T15:45:00+08:00"
+    detail: Resume diagnostics and the final full export both passed.

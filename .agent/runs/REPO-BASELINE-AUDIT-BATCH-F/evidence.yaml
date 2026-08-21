@@ -1,0 +1,17 @@
+evidence:
+  semantic_sources:
+    project_list_view: user_id_project_owner_manager_id_project_manager
+    project_action_domain: user_id_and_manager_id_are_distinct_membership_paths
+    project_form_view: manager_id_is_required_project_manager
+
+  verification:
+    project_layout_guard:
+      status: passed_after_batch_g
+      failure: obsolete_field_user_id_source_token
+    responsibility_map_guard:
+      status: passed
+    generated_reports_guard:
+      status: passed
+
+  completion:
+    status: completed

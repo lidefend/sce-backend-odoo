@@ -4,21 +4,21 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1184`
+- Total assets: `1197`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `170`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `789`
+- PR dedupe candidates: `802`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 453 |
-| contract | 330 |
-| unit | 201 |
+| governance | 454 |
+| contract | 340 |
+| unit | 203 |
 | odoo_integration | 101 |
 | e2e | 44 |
 | security | 27 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1008 |
+| pr_candidate | 1021 |
 | integration_candidate | 125 |
 | release_candidate | 42 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 789 |
+| deduplicate_before_required | 802 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 124 |
 | keep_release_only | 42 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1010 |
+| <5m | 1023 |
 | 10-30m | 126 |
 | 30-60m | 44 |
 | unknown | 3 |
@@ -152,9 +152,9 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 453 |
-| platform owner | 330 |
-| test owner | 202 |
+| architecture owner | 454 |
+| platform owner | 340 |
+| test owner | 204 |
 | backend owner | 101 |
 | qa owner | 44 |
 | security owner | 27 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1054 |
+| scripts/verify | 1067 |
 | scripts/ops | 67 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 14 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-190 | governance | `scripts/verify/business_shape_assembly_guard.py` | architecture owner |
 | T-ASSET-191 | contract | `scripts/verify/capability_core_health_report_schema_guard.py` | platform owner |
 | T-ASSET-192 | governance | `scripts/verify/capability_dormant_explain_guard.py` | architecture owner |
-| ... | ... | 709 more | ... |
+| ... | ... | 722 more | ... |
 
 ## Dedupe Hotspots
 
@@ -285,6 +285,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/construction_core_extension` | 12 |
 | `scripts/verify/test_frontend_release` | 7 |
 | `scripts/verify/contract_governance_form` | 5 |
+| `scripts/verify/test_contract_snapshot` | 5 |
 | `scripts/verify/backend_contract_lifecycle` | 3 |
 | `scripts/verify/frontend_acceptance_environment` | 3 |
 | `scripts/verify/frontend_financial_workspace` | 3 |
@@ -311,7 +312,6 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/ui_contract_v2` | 2 |
 | `frontend/apps/web/scripts/business_form_all` | 1 |
 | `frontend/apps/web/scripts/business_form_frontend` | 1 |
-| `frontend/apps/web/scripts/frontend_core_journeys` | 1 |
 
 ## Residual Dedupe Hotspot Disposition
 
@@ -320,6 +320,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/construction_core_extension` | 12 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_release` | 7 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/contract_governance_form` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_contract_snapshot` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/backend_contract_lifecycle` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/frontend_acceptance_environment` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/frontend_financial_workspace` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |

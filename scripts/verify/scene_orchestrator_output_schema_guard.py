@@ -43,11 +43,12 @@ def main() -> int:
         _assert(key in compiler_text, f"scene_compile output missing key mapping: {key}", errors)
 
     ready_text = READY_BUILDER_PATH.read_text(encoding="utf-8")
-    _assert('"schema_version": "scene_ready_contract_v1"' in ready_text, "scene_ready schema_version missing", errors)
+    _assert('"contract_version": "2.0.0"' in ready_text, "scene_ready contract_version missing", errors)
+    _assert('"schema_version": "2.0.0"' in ready_text, "scene_ready schema_version missing", errors)
     _assert('"scenes": entries' in ready_text, "scene_ready scenes payload missing", errors)
 
     init_text = SYSTEM_INIT_PATH.read_text(encoding="utf-8")
-    _assert('data["scene_ready_contract_v1"]' in init_text, "system_init missing scene_ready_contract_v1 assignment", errors)
+    _assert('data["scene_ready_contract"]' in init_text, "system_init missing scene_ready_contract assignment", errors)
 
     if errors:
         print("[scene_orchestrator_output_schema_guard] FAIL")

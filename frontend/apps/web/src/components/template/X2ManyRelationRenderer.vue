@@ -102,8 +102,8 @@
       <span class="o2m-header-cell">状态</span>
       <span class="o2m-header-fields">
         <span
-          v-for="column in adapter.visibleOne2manyColumns(field.name)"
-          :key="`${field.name}-header-${column.key || column.name}`"
+          v-for="column in adapter.one2manyColumns(field.name)"
+          :key="`${field.name}-header-${column.name}`"
           class="o2m-header-cell"
         >{{ column.label }}</span>
       </span>
@@ -114,24 +114,23 @@
         <p class="o2m-row-state">{{ adapter.one2manyRowStateLabel(row) }}</p>
         <div class="o2m-fields">
           <label
-            v-for="column in adapter.visibleOne2manyColumns(field.name)"
-            :key="`${row.key}-${column.key || column.name}`"
+            v-for="column in adapter.one2manyColumns(field.name)"
+            :key="`${row.key}-${column.name}`"
             class="o2m-field"
-            :class="{ 'o2m-field--invisible': adapter.one2manyRowColumnBehavior(field.name, row, column).invisible }"
           >
             <span class="meta">{{ column.label }}</span>
             <input
               v-if="column.ttype === 'boolean'"
               class="input-checkbox"
               type="checkbox"
-              :disabled="adapter.one2manyRowColumnBehavior(field.name, row, column).readonly || adapter.busy"
+              :disabled="column.readonly || adapter.busy"
               :checked="Boolean(row.values[column.name])"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).checked)"
             />
             <select
               v-else-if="column.ttype === 'selection'"
               class="input"
-              :disabled="adapter.one2manyRowColumnBehavior(field.name, row, column).readonly || adapter.busy"
+              :disabled="column.readonly || adapter.busy"
               :value="String(row.values[column.name] ?? '')"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLSelectElement).value)"
             >
@@ -144,21 +143,13 @@
               v-else
               class="input"
               :type="adapter.one2manyColumnInputType(column)"
-              :disabled="adapter.one2manyRowColumnBehavior(field.name, row, column).readonly || adapter.busy"
+              :disabled="column.readonly || adapter.busy"
               :value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
               :placeholder="column.label"
               @input="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).value)"
             />
           </label>
         </div>
-        <button
-          v-for="action in adapter.one2manyRowActions(field.name)"
-          :key="`${row.key}-${action.key}`"
-          class="ghost o2m-row-action"
-          type="button"
-          :disabled="adapter.busy || !Number.isInteger(Number(row.id)) || Number(row.id) <= 0 || row.isNew || row.removed || !action.enabled"
-          @click="adapter.runOne2manyRowAction(field.name, row, action)"
-        >{{ action.label }}</button>
         <button
           class="ghost o2m-row-remove"
           type="button"
@@ -540,11 +531,6 @@ function tagColorStyle(color: unknown) {
 .o2m-field {
   display: grid;
   min-width: 0;
-}
-
-.o2m-field--invisible {
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .o2m-field .meta {

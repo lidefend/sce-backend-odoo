@@ -1,0 +1,19 @@
+events:
+  - type: batch_started
+    at: "2026-08-20T13:30:00+08:00"
+    detail: Keep the fix in the P4 exporter and preserve P0/P1 permissions and semantics.
+  - type: implementation_completed
+    at: "2026-08-20T13:35:00+08:00"
+    detail: Added bounded layout/native-view field selection with an id-only terminal fallback.
+  - type: validation_failed
+    at: "2026-08-20T13:36:00+08:00"
+    detail: Container wrapper import omitted the script directory from sys.path; existing snapshots remained preserved.
+  - type: fix_applied
+    at: "2026-08-20T13:37:00+08:00"
+    detail: Bound the helper import path to snapshot_export.py's own directory.
+  - type: validation_failed
+    at: "2026-08-20T13:38:00+08:00"
+    detail: The governed wrapper streams one Python file into the container, so sibling modules are unavailable.
+  - type: fix_applied
+    at: "2026-08-20T13:39:00+08:00"
+    detail: Kept snapshot_export.py self-contained and made the unit test execute its exact AST-extracted helpers.

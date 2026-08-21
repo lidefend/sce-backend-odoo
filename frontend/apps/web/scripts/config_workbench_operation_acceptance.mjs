@@ -92,7 +92,7 @@ async function resolveRuntimeMenuId(page, actionId, pageLabel) {
     if (!response.ok || body.ok === false) throw new Error(JSON.stringify(body.error || body).slice(0, 700));
     return body.data || body;
   }, { tokenValue: token, dbName: DB_NAME, rootMenuXmlid: ROOT_MENU_XMLID });
-  const authority = init?.delivery_engine_v1?.route_authority_v1 || init?.route_authority_v1 || {};
+  const authority = init?.delivery_engine?.route_authority || init?.route_authority || {};
   const routes = [
     ...(authority.primary_actions || []),
     ...(authority.role_home_actions || []),

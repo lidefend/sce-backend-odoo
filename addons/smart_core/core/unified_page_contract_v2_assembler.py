@@ -191,18 +191,18 @@ def _fingerprint(value: Any) -> str:
 def _resolve_source_type(source: dict[str, Any], explicit: str = "") -> str:
     if explicit:
         return explicit
-    if _dict(source.get("scene_contract_v1")):
-        return "scene_contract_v1"
-    if _dict(source.get("page_orchestration_v1")):
-        return "page_orchestration_v1"
+    if _dict(source.get("scene_contract")):
+        return "scene_contract"
+    if _dict(source.get("page_orchestration")):
+        return "page_orchestration"
     if "meta_fields" in source or source.get("view_type"):
         return "ui.contract"
-    if source.get("schema_version") == "v1" and ("patch" in source or "modifiers_patch" in source):
+    if "patch" in source or "modifiers_patch" in source:
         return "api.onchange"
     if _dict(source.get("page")) and _list(source.get("zones")):
-        return "page_orchestration_v1"
+        return "page_orchestration"
     if _dict(source.get("identity")) and _dict(source.get("page")):
-        return "scene_contract_v1"
+        return "scene_contract"
     return "unknown"
 
 
@@ -366,9 +366,9 @@ def assemble_unified_page_contract_v2(
     source = _dict(source_contract)
     resolved = _resolve_source_type(source, source_type)
     payload = _extract_source_payload(source, resolved)
-    if resolved == "scene_contract_v1":
+    if resolved == "scene_contract":
         contract = _assemble_scene_contract(payload, client_type=client_type, request_id=request_id)
-    elif resolved == "page_orchestration_v1":
+    elif resolved == "page_orchestration":
         contract = _assemble_page_orchestration(payload, client_type=client_type, request_id=request_id)
     elif resolved == "ui.contract":
         contract = _assemble_ui_contract(
@@ -456,10 +456,10 @@ def assemble_unified_page_patch_v2(
 
 
 def _extract_source_payload(source: dict[str, Any], source_type: str) -> dict[str, Any]:
-    if source_type == "scene_contract_v1":
-        return _dict(source.get("scene_contract_v1")) or source
-    if source_type == "page_orchestration_v1":
-        return _dict(source.get("page_orchestration_v1")) or source
+    if source_type == "scene_contract":
+        return _dict(source.get("scene_contract")) or source
+    if source_type == "page_orchestration":
+        return _dict(source.get("page_orchestration")) or source
     return source
 
 
@@ -477,7 +477,7 @@ def _assemble_scene_contract(source: dict[str, Any], *, client_type: str, reques
         view_type="combine",
         layout_type="combine",
         client_type=client_type,
-        source_type="scene_contract_v1",
+        source_type="scene_contract",
         source_payload=source,
         request_id=request_id,
     )
@@ -543,7 +543,7 @@ def _assemble_page_orchestration(source: dict[str, Any], *, client_type: str, re
         view_type="combine",
         layout_type="combine",
         client_type=client_type,
-        source_type="page_orchestration_v1",
+        source_type="page_orchestration",
         source_payload=source,
         request_id=request_id,
     )
@@ -876,7 +876,6 @@ def _assemble_ui_contract(
         contract["statusContract"]["globalStatus"]["reasonCode"] = "FORM_CREATE_NOT_ALLOWED"
     if source_context:
         contract["dataContract"]["dataMeta"]["sourceContext"] = deepcopy(source_context)
-        contract["runtimeContract"]["sourceContext"] = deepcopy(source_context)
         contract["statusContract"]["globalStatus"]["pageAuth"] = _ui_contract_page_auth(
             _dict(source),
             _dict(ui),
@@ -902,7 +901,6 @@ def _assemble_ui_contract(
     search_contract = _ui_search_contract(source, ui)
     if search_contract:
         contract["searchContract"] = search_contract
-        contract["dataContract"]["search"] = deepcopy(search_contract)
     business_operation_profile = _dict(source.get("business_operation_profile"))
     if business_operation_profile:
         profile_projection = deepcopy(business_operation_profile)
@@ -1104,14 +1102,43 @@ def _ui_search_contract(source: dict[str, Any], ui: dict[str, Any]) -> dict[str,
         value = search.get(key)
         if _text(value):
             out[key] = deepcopy(value)
-    for key in ("filters", "saved_filters", "group_by", "fields"):
+    for key in ("filters", "saved_filters"):
         value = search.get(key)
         if isinstance(value, list):
-            out[key] = deepcopy(value)
-    for key in ("search_panel", "searchpanel", "favorites", "custom", "ui_labels", "defaults"):
+            rows = []
+            for item in value:
+                if not isinstance(item, dict):
+                    continue
+                row = deepcopy(item)
+                if key == "filters" and not _text(row.get("key")) and _text(row.get("name")):
+                    row["key"] = _text(row.get("name"))
+                rows.append(row)
+            if rows:
+                out[key] = rows
+    raw_groups = search.get("group_by_fields") or search.get("group_by")
+    if isinstance(raw_groups, list):
+        groups = []
+        for item in raw_groups:
+            if isinstance(item, dict):
+                groups.append(deepcopy(item))
+                continue
+            field = _text(item)
+            if field:
+                groups.append({"key": field, "field": field, "label": field})
+        if groups:
+            out["group_by"] = groups
+    raw_fields = search.get("fields") or search.get("search_fields")
+    if isinstance(raw_fields, list):
+        fields = [deepcopy(item) for item in raw_fields if isinstance(item, dict)]
+        if fields:
+            out["fields"] = fields
+    for key in ("favorites", "custom", "ui_labels", "defaults"):
         value = search.get(key)
         if isinstance(value, dict):
             out[key] = deepcopy(value)
+    search_panel = search.get("search_panel") or search.get("searchpanel")
+    if isinstance(search_panel, dict):
+        out["search_panel"] = deepcopy(search_panel)
     return out
 
 
@@ -1385,7 +1412,6 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
         out["nativeLocator"] = native_locator
         out["occurrenceIndex"] = _positive_int(field_source.get("occurrence_index"), 0)
         out["sourcePosition"] = field_source.get("source_position")
-    out.setdefault("field_info", field_info)
     return out
 
 
@@ -1457,11 +1483,28 @@ def _normalize_native_layout_nodes(
             continue
         node_path = f"{path}.{index}"
         node = deepcopy(row)
+        alias_pairs = (
+            ("field_info", "fieldInfo"),
+            ("attrs", "attributes"),
+            ("field_size", "fieldSize"),
+            ("source_authority", "sourceAuthority"),
+            ("form_structure", "formStructure"),
+            ("form_structure_role", "formStructureRole"),
+            ("button_type", "buttonType"),
+            ("container_id", "containerId"),
+            ("container_type", "containerType"),
+            ("widget_id", "widgetId"),
+        )
+        for alias, canonical in alias_pairs:
+            if alias in node and canonical not in node:
+                node[canonical] = deepcopy(node.get(alias))
         node_type = _text(node.get("type") or node.get("kind"), "group").lower()
         node["type"] = node_type
         node_name = _text(node.get("name") or node.get("field"))
         if node_name:
             node["name"] = node_name
+        for alias in ("kind", "field", *(pair[0] for pair in alias_pairs)):
+            node.pop(alias, None)
         label = _text(node.get("string") or node.get("label") or node.get("title"))
         if label:
             node["string"] = label
@@ -1481,7 +1524,6 @@ def _normalize_native_layout_nodes(
                     field_info = _dict(normalized.get("fieldInfo"))
                     field_info["subview"] = deepcopy(subview)
                     normalized["fieldInfo"] = field_info
-                    normalized["field_info"] = deepcopy(field_info)
             widget_source = _field_source_with_node_info(normalized, field, fallback_name=node_name or _text(field.get("name")))
             widget = _field_widget(widget_source, layout_type=layout_type)
             container_id = widget["widgetId"]
@@ -2525,7 +2567,16 @@ def _ui_data_source_extra_params(source: dict[str, Any], ui: dict[str, Any]) -> 
 
 
 def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:
-    out = _ui_data_source_extra_params(source, ui)
+    transport = _ui_data_source_extra_params(source, ui)
+    out = {
+        key: deepcopy(value)
+        for key, value in transport.items()
+        if key in {"context", "domain", "order", "limit"}
+    }
+    if _text(transport.get("context_raw")):
+        out["contextRaw"] = _text(transport.get("context_raw"))
+    if _text(transport.get("domain_raw")):
+        out["domainRaw"] = _text(transport.get("domain_raw"))
     source_meta = _dict(source.get("source_meta"))
     action = _dict(ui.get("action"))
     head = _dict(ui.get("head"))
@@ -2646,7 +2697,7 @@ def _append_standard_form_save_action(
         "allowed": True,
         "enabled": True,
         "disabled": False,
-        "entitlement_evaluated": True,
+        "entitlementEvaluated": True,
         "sourceTrace": [{
             "actionId": action_id,
             "sourceActionKey": action_id,
@@ -2898,7 +2949,7 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("enabled", "enabled"),
             ("disabled", "disabled"),
             ("permission_constraints", "permissionConstraints"),
-            ("entitlement_evaluated", "entitlement_evaluated"),
+            ("entitlement_evaluated", "entitlementEvaluated"),
         ):
             if row.get(source_key) is not None:
                 action_rule[target_key] = deepcopy(row.get(source_key))
@@ -3228,7 +3279,7 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
         for source, targets in graph.items()
     }
     action_contract["identityPolicy"] = {
-        "version": "backend_action_identity.v1",
+        "version": "2.0.0",
         "object": "button_type_and_backend_method",
         "window": "action_id",
         "url": "absolute_url_or_route",

@@ -396,7 +396,7 @@ class UiContractV2Handler(BaseIntentHandler):
         client_type = resolve_client_type(self._headers(), params)
         delivery_profile = resolve_delivery_profile(client_type, params)
         source_type = str(params.get("source_type") or params.get("sourceType") or "ui.contract").strip()
-        if source_type == "scene_contract_v1":
+        if source_type == "scene_contract":
             return self._handle_scene_contract(
                 params,
                 client_type=client_type,
@@ -855,6 +855,7 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if isinstance(hook_payload, dict):
             contract_v2 = dict(hook_payload)
+        self._normalize_final_layout_contract(contract_v2)
         finalize_hook_at = time.monotonic()
         contract_v2 = project_runtime_business_actions(contract_v2)
         runtime_actions_projected_at = time.monotonic()
@@ -1136,7 +1137,14 @@ class UiContractV2Handler(BaseIntentHandler):
         if changed:
             layout["componentRegistry"] = {
                 **(layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}),
-                "sc.table.data": {"componentKey": "sc.table.data"},
+                "sc.table.data": {
+                    "version": "1.0",
+                    "adapter": {
+                        "web_pc": "ElTable",
+                        "wx_mini": "WxTable",
+                        "harmony_h5": "H5Table",
+                    },
+                },
             }
             self._set_v2_data_meta(contract_v2, {"fieldCount": len(columns)})
 
@@ -1145,6 +1153,10 @@ class UiContractV2Handler(BaseIntentHandler):
 
     def _ensure_native_layout_widget_status_visible(self, contract_v2: dict[str, Any]) -> None:
         _projection.ensure_native_layout_widget_status_visible(contract_v2)
+
+    def _normalize_final_layout_contract(self, contract_v2: dict[str, Any]) -> None:
+        """Restore canonical container facts after every late extension hook."""
+        _projection.normalize_final_layout_contract(contract_v2)
 
     def _inject_action_window_contract(
         self,
@@ -3638,7 +3650,7 @@ class UiContractV2Handler(BaseIntentHandler):
     def _handle_scene_contract(self, params: dict[str, Any], *, client_type: str, delivery_profile: str):
         scene_key = str(params.get("scene_key") or params.get("sceneKey") or "").strip()
         if not scene_key:
-            return self._err(400, "missing scene_key for scene_contract_v1")
+            return self._err(400, "missing scene_key for scene_contract")
         limit_params, limit_error = self._trim_limit_params(params)
         if limit_error:
             return self._err(400, f"{limit_error} 无效")
@@ -3646,8 +3658,8 @@ class UiContractV2Handler(BaseIntentHandler):
         trace_id = _authority.resolve_trace_id(self.context)
         request_id = str(params.get("request_id") or params.get("requestId") or trace_id or f"ui.contract.v2.scene.{scene_key}")
         contract_v2 = assemble_unified_page_contract_v2(
-            {"scene_contract_v1": source_contract},
-            source_type="scene_contract_v1",
+            {"scene_contract": source_contract},
+            source_type="scene_contract",
             client_type=client_type,
             request_id=request_id,
             trace_id=trace_id,
@@ -3659,7 +3671,7 @@ class UiContractV2Handler(BaseIntentHandler):
             **limit_params,
         )
         contract_v2 = _authority.seal_runtime_contract(
-            self, contract_v2, source_contract, "scene_contract_v1", request_id, trace_id, client_type
+            self, contract_v2, source_contract, "scene_contract", request_id, trace_id, client_type
         )
         return IntentExecutionResult(
             ok=True,
@@ -3670,7 +3682,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "contract_version": CONTRACT_VERSION,
                 "client_type": client_type,
                 "delivery_profile": delivery_profile,
-                "source_type": "scene_contract_v1",
+                "source_type": "scene_contract",
                 "source_kind": self.SOURCE_KIND,
                 "source_authorities": list(self.SOURCE_AUTHORITIES),
                 "source_authority": self.source_authority_contract(),
@@ -3708,7 +3720,8 @@ class UiContractV2Handler(BaseIntentHandler):
                 ]
             }
         return {
-            "contract_version": "scene_contract_standard_v1",
+            "contract_version": "2.0.0",
+            "schema_version": "2.0.0",
             "identity": {
                 "scene_key": scene_key,
                 "title": title,

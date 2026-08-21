@@ -9,8 +9,10 @@
   "meta_fields": null,
   "model": "project.project",
   "op": "model",
-  "record": null,
-  "record_error": "You are not allowed to access '项目合同' (construction.contract) records.\n\nThis operation is allowed for the following groups:\n\t- Smart Construction/SC 能力 - 合同中心只读\n\t- Smart Construction/SC 能力 - 合同中心审批\n\t- Smart Construction/SC 能力 - 合同中心经办\n\t- Smart Construction/SC 能力 - 财务中心只读\n\t- Smart Construction/SC 能力 - 财务中心审批\n\t- Smart Construction/SC 能力 - 财务中心经办\n\t- Smart Construction/合同中心-只读\n\t- Smart Construction/合同中心-审批\n\t- Smart Construction/合同中心-经办\n\nContact your administrator to request access if necessary.",
+  "record": {
+    "id": 1
+  },
+  "record_error": null,
   "ui_contract": {
     "chatter": {},
     "headerButtons": [],
@@ -22,7 +24,7 @@
     "view_type": "form"
   },
   "ui_contract_raw": {},
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": "form"
 }

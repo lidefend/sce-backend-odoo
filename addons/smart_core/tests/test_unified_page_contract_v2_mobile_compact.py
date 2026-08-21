@@ -195,6 +195,11 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "view_type": "form",
             "head": {
                 "render_profile": "create",
+                "permissions": {
+                    "read": True,
+                    "write": True,
+                    "create": True,
+                },
                 "context": {
                     "default_manager_id": 43,
                     "default_user_id": 43,
@@ -230,7 +235,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(data_contract["mainData"]["manager_id"], 43)
         self.assertEqual(data_contract["mainData"]["user_id"], 43)
         self.assertEqual(data_contract["mainData"]["phase_key"], "initiation")
-        self.assertEqual(trimmed["statusContract"]["globalStatus"]["pageAuth"], "none")
+        self.assertEqual(trimmed["statusContract"]["globalStatus"]["pageAuth"], "edit")
 
     def test_ui_contract_v2_edit_form_page_auth_follows_write_permission(self):
         source = {
@@ -266,7 +271,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         save = next(row for row in full["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
         self.assertEqual(save["backendIdentity"], "contract_action:form.save")
         self.assertEqual(save["visibleProfiles"], ["edit"])
-        self.assertTrue(save["entitlement_evaluated"])
+        self.assertTrue(save["entitlementEvaluated"])
+        self.assertNotIn("entitlement_evaluated", save)
 
     def test_ui_contract_v2_create_form_publishes_save_only_from_explicit_create_right(self):
         base = {
@@ -2809,7 +2815,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(full["searchContract"]["filters"][0]["key"], "filter_my_projects")
         self.assertEqual(full["searchContract"]["saved_filters"][0]["name"], "用户收藏")
         self.assertEqual(full["searchContract"]["group_by"][0]["field"], "manager_id")
-        self.assertEqual(full["dataContract"]["search"]["default_sort"], "write_date desc")
+        self.assertEqual(full["searchContract"]["default_sort"], "write_date desc")
+        self.assertNotIn("search", full["dataContract"])
 
     def test_activity_projection_requires_complete_native_carrier(self):
         occurrence = {

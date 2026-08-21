@@ -1,0 +1,41 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-C
+  goal: REPO-BASELINE-AUDIT
+  workflow: governance-change
+  capability: governance
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P4
+    layer_target: ci_static_guard_compatibility
+    module: scripts/ci_and_scripts/verify
+    standard_vs_user_specific: repository_governance_standard
+    why_here: failures_are_in_ci_fixture_registry_and_static_test_assumptions
+    why_not_elsewhere: product_runtime_behavior_does_not_own_ci_test_isolation
+    blast_radius: personal_data_scan_cutover_test_runtime_boundary_test_and_generated_reports
+
+  batch:
+    id: Batch-C
+    objective: close_ci_static_failures_and_generated_report_consistency
+    scope:
+      - scripts/ci/personal_data_false_positives.json
+      - scripts/verify/test_controlled_main_cutover.py
+      - scripts/verify/test_external_customer_addons_runtime_boundary.py
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-C/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-C/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-C/evidence.yaml
+    exclusions:
+      - product_runtime_implementation
+      - contract_snapshots
+      - database_state
+
+  rollback:
+    method: revert_only_batch_c_scope_files_and_regenerate_reports_from_previous_candidate
+    preserves_product_changes: true

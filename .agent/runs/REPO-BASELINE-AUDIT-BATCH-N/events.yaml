@@ -1,0 +1,103 @@
+events:
+  - type: batch_started
+    at: "2026-08-20T14:12:00+08:00"
+    detail: Replace the unregistered PM alias without creating new fixture infrastructure.
+  - type: implementation_completed
+    at: "2026-08-20T14:13:00+08:00"
+    detail: All PM snapshot cases now use demo_role_pm and a regression guard rejects the old alias.
+  - type: expected_denial_registered
+    at: "2026-08-20T14:16:00+08:00"
+    detail: api_data_batch_pm explicitly accepts the real PM actor's res.partner write denial.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:20:00+08:00"
+    detail: business_evidence_trace_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:24:00+08:00"
+    detail: chatter_activity_schedule_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:28:00+08:00"
+    detail: chatter_activity_update_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:33:00+08:00"
+    detail: cost_tracking_block_fetch_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:47:00+08:00"
+    detail: cost_tracking_record_create_intent_admin explicitly snapshots its missing project context response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:49:00+08:00"
+    detail: global_message_send_intent_admin explicitly snapshots its empty-message validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:51:00+08:00"
+    detail: payment_block_fetch_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:53:00+08:00"
+    detail: payment_enter_intent_admin explicitly snapshots its missing-project response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:54:00+08:00"
+    detail: payment_record_create_intent_admin explicitly snapshots its missing project context response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:56:00+08:00"
+    detail: project_connection_transition_intent_admin explicitly snapshots its invalid transition input response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T14:58:00+08:00"
+    detail: project_dashboard_block_fetch_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:00:00+08:00"
+    detail: project_execution_advance_intent_admin explicitly snapshots its missing project context response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:02:00+08:00"
+    detail: project_execution_block_fetch_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:04:00+08:00"
+    detail: project_execution_enter_intent_admin explicitly snapshots its missing-project response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:06:00+08:00"
+    detail: project_initiation_enter_intent_admin explicitly snapshots its missing-name response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:08:00+08:00"
+    detail: project_plan_bootstrap_block_fetch_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:10:00+08:00"
+    detail: project_plan_bootstrap_enter_intent_admin explicitly snapshots its missing project context response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:13:00+08:00"
+    detail: release_operator_approve_intent_admin explicitly snapshots its missing action_id exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:15:00+08:00"
+    detail: release_operator_freeze_intent_admin explicitly snapshots its missing product_key exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:17:00+08:00"
+    detail: release_operator_promote_intent_admin explicitly snapshots its missing snapshot_id exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:19:00+08:00"
+    detail: release_operator_rollback_intent_admin explicitly snapshots its missing target_snapshot_id exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:21:00+08:00"
+    detail: release_operator_runtime_probe_intent_admin explicitly snapshots its missing product_key exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:23:00+08:00"
+    detail: release_operator_set_page_enabled_intent_admin explicitly snapshots its missing product_key exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:25:00+08:00"
+    detail: release_operator_sync_policy_intent_admin explicitly snapshots its missing product_key exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:27:00+08:00"
+    detail: release_operator_update_page_policy_intent_admin explicitly snapshots its missing product_key exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:29:00+08:00"
+    detail: release_operator_update_policy_intent_admin explicitly snapshots its missing product_key exception.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:31:00+08:00"
+    detail: search_favorite_set_intent_admin explicitly snapshots its invalid-model response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:33:00+08:00"
+    detail: settlement_block_fetch_intent_admin explicitly snapshots its empty-input validation response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:35:00+08:00"
+    detail: settlement_enter_intent_admin explicitly snapshots its missing-project response.
+  - type: expected_validation_error_registered
+    at: "2026-08-20T15:37:00+08:00"
+    detail: ui_contract_v2_intent_admin explicitly snapshots its missing-subject response.
+  - type: full_export_completed
+    at: "2026-08-20T15:45:00+08:00"
+    detail: Governed local.dev full contract snapshot export completed for every registered case.

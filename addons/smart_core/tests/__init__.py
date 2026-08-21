@@ -41,3 +41,5 @@ from . import test_localized_display
 from . import test_user_activation
 from . import test_authentication_compatibility
 from . import test_auth_credential_framework
+from . import test_intent_smoke
+from . import test_scene_runtime_contract_chain

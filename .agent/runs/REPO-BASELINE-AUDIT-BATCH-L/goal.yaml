@@ -1,0 +1,7 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-L
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Align governed contract case with canonical project action
+status: completed
+formal_product_layer: P4
+layer_target: docs/contract/cases.yml
+reason: The governed P1 migration deletes the legacy lifecycle action and redirects consumers to action_sc_project_list.

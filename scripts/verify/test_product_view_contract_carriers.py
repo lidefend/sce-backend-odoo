@@ -45,7 +45,7 @@ class ProductViewContractCarriersTests(unittest.TestCase):
         }
         module_set = [{"name": "base", "installed_version": "17.0"}]
         self.structure = with_manifest({
-            "schema": "product_view_structure_contract/v1",
+            "schema": "product_view_structure_contract/1.0.0",
             "authority": {"candidate_fingerprint": fp, "formal_menu_policy_sha256": "b" * 64, "module_set_sha256": sha256_json(module_set), "user": "__system__", "company": "base.main_company", "language": "en_US", "group_profile": ["base.group_system"]},
             "summary": {"formal_menu_count": 1, "model_count": 1, "resolved_surface_count": 1},
             "entries": [{"surfaces": [self.surface]}],

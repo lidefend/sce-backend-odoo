@@ -3,13 +3,13 @@
 ## App Shell Contract（壳层）
 
 - 输入：`system.init` 的全局聚合结果。
-- 输出：全局导航与会话上下文（`nav`、`default_route`、`capabilities`、`role_surface`、`scene_governance_v1`）。
+- 输出：全局导航与会话上下文（`nav`、`default_route`、`capabilities`、`role_surface`、`scene_governance`）。
 - 前端用途：启动、路由守卫、导航树、角色信息、治理监控。
 - 不承载：页面字段布局、列表列、表单必填、动作编排。
 
 ## Page Scene Contract（页面场景）
 
-- 输入：`scene_ready_contract_v1.scenes[*]` 的场景级条目。
+- 输入：`scene_ready_contract.scenes[*]` 的场景级条目。
 - 输出：场景渲染负载（`page.zones`、`blocks`、`actions`、`search_surface`、`permission_surface`、`validation_surface`、`workflow_surface`）。
 - 前端用途：页面渲染与交互。
 - 不承载：登录身份、壳层导航树。

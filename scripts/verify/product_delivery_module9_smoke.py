@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MODULE_SOURCE_PATH = ROOT / "docs" / "product" / "delivery" / "v1" / "module_scene_capability_source_v1.json"
 ROLE_SOURCE_PATH = ROOT / "docs" / "product" / "delivery" / "v1" / "role_package_source_v1.json"
-STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_v1_field_schema_state.json"
+STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_field_schema_state.json"
 REPORT_JSON = ROOT / "artifacts" / "backend" / "product_delivery_module9_smoke_report.json"
 REPORT_MD = ROOT / "docs" / "ops" / "audit" / "product_delivery_module9_smoke_report.md"
 
@@ -53,7 +53,7 @@ def main() -> int:
         if _norm(item)
     }
 
-    contract = _as_dict(state.get("scene_ready_contract_v1"))
+    contract = _as_dict(state.get("scene_ready_contract"))
     scene_rows = _as_list(contract.get("scenes"))
     scene_keys = set()
     for row in scene_rows:

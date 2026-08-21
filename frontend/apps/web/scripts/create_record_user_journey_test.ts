@@ -64,7 +64,7 @@ assert.equal(relationKeywords.owner_id, 'Owner A');
 formData.amount = 80;
 const payload = buildSaveRecordPayload({
   comparableFieldValue: (_name, value) => value,
-  fieldDescriptors,
+  formFields: fieldDescriptors as never,
   dirtyFieldSet: new Set(['amount']),
   editableMap: { ...formData },
   formData,
@@ -102,7 +102,7 @@ assert.equal(relationKeywords.owner_id, 'Owner A');
 reopened.title = 'Draft A revised';
 const editPayload = buildSaveRecordPayload({
   comparableFieldValue: (_name, value) => value,
-  fieldDescriptors,
+  formFields: fieldDescriptors as never,
   dirtyFieldSet: new Set(['title']),
   editableMap: { ...reopened },
   formData: reopened,

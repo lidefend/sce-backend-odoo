@@ -106,10 +106,10 @@ async function loginAndDiscover(page) {
     if (!response.ok || body.ok === false) throw new Error(JSON.stringify(body.error || body));
     return body.data || body;
   }, { dbName, rootXmlid: 'smart_construction_core.menu_sc_root' });
-  const navigation = init.navigation_v1 && typeof init.navigation_v1 === 'object' ? init.navigation_v1 : {};
+  const navigation = init.navigation && typeof init.navigation === 'object' ? init.navigation : {};
   return {
     entries: uniqueEntries(flattenNav(navigation.nav || init.nav || [])),
-    authorityEntries: flattenRouteAuthority(navigation.route_authority_v1 || {}),
+    authorityEntries: flattenRouteAuthority(navigation.route_authority || {}),
     sessionEntries,
   };
 }
@@ -298,7 +298,7 @@ async function main() {
       || discovered.authorityEntries.find((entry) => entry.actionId === targetActionId)
     : null;
   if (targetActionId && !governedTarget) {
-    throw new Error(`target action ${targetActionId} is absent from navigation_v1 route authority`);
+    throw new Error(`target action ${targetActionId} is absent from canonical navigation route authority`);
   }
   const entries = targetActionId
     ? [{ ...governedTarget, label: 'Governed Activity surface', menuPath: 'Governed Activity surface' }]

@@ -1,9 +1,10 @@
 import type { Ref } from 'vue';
-import type { ContractV2NormalizedStore } from '../../app/contracts/v2';
+import type { ContractV2Snapshot } from '../../app/contracts/v2/types';
 
 export function useContractDebugExportRuntime(params: {
   actionId: () => number;
-  store: Ref<ContractV2NormalizedStore | null>;
+  contract: Ref<ContractV2Snapshot | null>;
+  contractMeta: Ref<Record<string, unknown> | null>;
   modelName: () => string;
 }) {
   function contractDebugPayload() {
@@ -11,8 +12,8 @@ export function useContractDebugExportRuntime(params: {
       {
         action_id: params.actionId(),
         model: params.modelName(),
-        contract: params.store.value?.snapshot || null,
-        meta: params.store.value?.snapshot.meta || {},
+        contract: params.contract.value,
+        meta: params.contractMeta.value || {},
       },
       null,
       2,
@@ -20,7 +21,7 @@ export function useContractDebugExportRuntime(params: {
   }
 
   async function copyContractJson() {
-    if (!params.store.value) return;
+    if (!params.contract.value) return;
     try {
       await navigator.clipboard.writeText(contractDebugPayload());
     } catch {
@@ -29,7 +30,7 @@ export function useContractDebugExportRuntime(params: {
   }
 
   function exportContractJson() {
-    if (!params.store.value) return;
+    if (!params.contract.value) return;
     const blob = new Blob([contractDebugPayload()], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');

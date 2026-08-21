@@ -1,9 +1,6 @@
 import type {
   ContractV2ActionContract,
   ContractV2ActionRule,
-  ContractV2ActivityNode,
-  ContractV2ActivityNodeOccurrence,
-  ContractV2ActivityProfile,
   ContractV2Auth,
   ContractV2ButtonStatus,
   ContractV2AdaptMode,
@@ -26,6 +23,7 @@ import type {
   ContractV2PatchStrategy,
   ContractV2SelectorStatus,
   ContractV2Snapshot,
+  ContractV2SourceContext,
   ContractV2StatusContract,
   ContractV2RefreshMode,
   ContractV2RenderStrategy,
@@ -98,6 +96,40 @@ function requiredDisplayString(source: ContractV2Dictionary, key: string, path: 
 
 function optionalString(source: ContractV2Dictionary, key: string): string | undefined {
   return asString(source[key]) || undefined;
+}
+
+function optionalRecord(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2Dictionary | undefined {
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
+  if (isRecord(source[key])) return source[key] as ContractV2Dictionary;
+  issues.push({ path: `${path}.${key}`, message: 'must be an object' });
+  return undefined;
+}
+
+function optionalRecordArray(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2Dictionary[] | undefined {
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
+  if (!Array.isArray(source[key])) {
+    issues.push({ path: `${path}.${key}`, message: 'must be an array' });
+    return undefined;
+  }
+  const decoded: ContractV2Dictionary[] = [];
+  (source[key] as unknown[]).forEach((item, index) => {
+    if (!isRecord(item)) {
+      issues.push({ path: `${path}.${key}[${index}]`, message: 'must be an object' });
+      return;
+    }
+    decoded.push(item);
+  });
+  return decoded;
 }
 
 function readAliasedObject(
@@ -304,12 +336,12 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
 
 function structuralContainerText(raw: ContractV2Dictionary, key: 'containerId' | 'containerType' | 'title'): string {
   if (key === 'containerId') {
-    return asString(raw.containerId || raw.container_id || raw.widgetId || raw.widget_id || raw.name);
+    return asString(raw.containerId || raw.widgetId || raw.name);
   }
-  if (key === 'containerType') return asString(raw.containerType || raw.container_type || raw.type);
+  if (key === 'containerType') return asString(raw.containerType || raw.type);
   // Structural identity is never user-facing copy. Native nodes commonly carry
   // only `name`/`widgetId`; neither is a display title.
-  if (asString(raw.type || raw.containerType || raw.container_type).toLowerCase() === 'field') {
+  if (asString(raw.type || raw.containerType).toLowerCase() === 'field') {
     return asString(raw.title);
   }
   return asString(raw.title || raw.label || raw.string);
@@ -356,13 +388,14 @@ function decodeContainer(
   const nodes = decodeNodeList('nodes');
   const items = decodeNodeList('items');
   const attributes = asRecord(raw.attributes);
-  const fieldInfo = asRecord(raw.fieldInfo || raw.field_info);
+  const fieldInfo = asRecord(raw.fieldInfo);
   const action = asRecord(raw.action);
   const modifiers = asRecord(raw.modifiers);
-  const formStructure = asRecord(raw.formStructure || raw.form_structure);
-  const formStructureRole = asRecord(raw.formStructureRole || raw.form_structure_role);
-  const sourceAuthority = asRecord(raw.sourceAuthority || raw.source_authority);
-  const fieldCode = asString(raw.fieldCode || raw.field_code || raw.name);
+  const formStructure = asRecord(raw.formStructure);
+  const formStructureRole = asRecord(raw.formStructureRole);
+  const sourceAuthority = asRecord(raw.sourceAuthority);
+  const componentConfig = asRecord(raw.componentConfig);
+  const fieldCode = asString(raw.fieldCode || raw.name);
   const widgetId = asString(raw.widgetId);
   const nativeLocator = asString(raw.nativeLocator);
   const occurrenceIndex = Number(raw.occurrenceIndex);
@@ -396,9 +429,11 @@ function decodeContainer(
     ...(nativeLocator ? { nativeLocator } : {}),
     ...(Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
     ...(Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
+    ...(asString(raw.componentKey) ? { componentKey: asString(raw.componentKey) } : {}),
+    ...(Object.keys(componentConfig).length ? { componentConfig } : {}),
     ...(Object.keys(attributes).length ? { attributes } : {}),
-    ...(Object.keys(fieldInfo).length ? { fieldInfo, field_info: fieldInfo } : {}),
-    ...(asString(raw.buttonType || raw.button_type) ? { buttonType: asString(raw.buttonType || raw.button_type) } : {}),
+    ...(Object.keys(fieldInfo).length ? { fieldInfo } : {}),
+    ...(asString(raw.buttonType) ? { buttonType: asString(raw.buttonType) } : {}),
     ...(Object.keys(action).length ? { action } : {}),
     ...(Object.keys(modifiers).length ? { modifiers } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'invisible') ? { invisible: raw.invisible } : {}),
@@ -413,141 +448,6 @@ function decodeContainer(
     ...(nodes.length ? { nodes } : {}),
     ...(items.length ? { items } : {}),
     widgetList,
-  };
-}
-
-function decodeActivityNode(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ActivityNode | null {
-  if (!isRecord(raw)) {
-    issues.push({ path, message: 'activity node must be an object' });
-    return null;
-  }
-  const tag = requiredString(raw, 'tag', path, issues);
-  const nativeLocator = requiredString(raw, 'native_locator', path, issues);
-  const occurrenceIndex = Number(raw.occurrence_index);
-  const sourcePosition = Number(raw.source_position);
-  if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrence_index`, message: 'must be a positive integer' });
-  if (!Number.isInteger(sourcePosition) || sourcePosition < 0) issues.push({ path: `${path}.source_position`, message: 'must be a non-negative integer' });
-  const childrenRaw = requiredArray(raw, 'children', path, issues);
-  const children = childrenRaw
-    .map((child, index) => decodeActivityNode(child, `${path}.children[${index}]`, issues))
-    .filter((child): child is ContractV2ActivityNode => Boolean(child));
-  if (!tag || !nativeLocator) return null;
-  return {
-    tag,
-    native_locator: nativeLocator,
-    occurrence_index: occurrenceIndex,
-    source_position: sourcePosition,
-    attributes: requiredRecord(raw, 'attributes', path, issues),
-    ...(optionalString(raw, 'text') ? { text: optionalString(raw, 'text') } : {}),
-    ...(optionalString(raw, 'tail') ? { tail: optionalString(raw, 'tail') } : {}),
-    children,
-  };
-}
-
-function decodeActivityNodeOccurrence(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ActivityNodeOccurrence | null {
-  if (!isRecord(raw)) {
-    issues.push({ path, message: 'activity node occurrence must be an object' });
-    return null;
-  }
-  const tag = requiredString(raw, 'tag', path, issues);
-  const nativeLocator = requiredString(raw, 'native_locator', path, issues);
-  const occurrenceIndex = Number(raw.occurrence_index);
-  const sourcePosition = Number(raw.source_position);
-  if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrence_index`, message: 'must be a positive integer' });
-  if (!Number.isInteger(sourcePosition) || sourcePosition < 0) issues.push({ path: `${path}.source_position`, message: 'must be a non-negative integer' });
-  if (!tag || !nativeLocator) return null;
-  return {
-    tag,
-    native_locator: nativeLocator,
-    occurrence_index: occurrenceIndex,
-    source_position: sourcePosition,
-    attributes: requiredRecord(raw, 'attributes', path, issues),
-    ...(optionalString(raw, 'text') ? { text: optionalString(raw, 'text') } : {}),
-    ...(optionalString(raw, 'tail') ? { tail: optionalString(raw, 'tail') } : {}),
-  };
-}
-
-function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2ActivityProfile | undefined {
-  if (raw === undefined || raw === null) return undefined;
-  if (!isRecord(raw)) {
-    issues.push({ path: 'layoutContract.activityProfile', message: 'must be an object' });
-    return undefined;
-  }
-  const path = 'layoutContract.activityProfile';
-  const authority = requiredRecord(raw, 'sourceAuthority', path, issues);
-  if (asString(authority.kind) !== 'native_activity_view_projection') {
-    issues.push({ path: `${path}.sourceAuthority.kind`, message: 'must be native_activity_view_projection' });
-  }
-  const authorityNames = asStringArray(authority.authorities).sort();
-  if (JSON.stringify(authorityNames) !== JSON.stringify(['ir.actions.act_window', 'ir.model.fields', 'ir.ui.view'])) {
-    issues.push({ path: `${path}.sourceAuthority.authorities`, message: 'must identify the governed native authorities' });
-  }
-  if (asString(authority.runtime_carrier) !== 'ui.contract.v2.layoutContract.activityProfile') {
-    issues.push({ path: `${path}.sourceAuthority.runtime_carrier`, message: 'must identify the activity profile runtime carrier' });
-  }
-  if (authority.projection_only !== true || authority.no_business_fact_authority !== true) {
-    issues.push({ path: `${path}.sourceAuthority`, message: 'must remain projection-only without business fact authority' });
-  }
-  const fieldOccurrences = requiredArray(raw, 'fieldOccurrences', path, issues).map((item, index) => {
-    const itemPath = `${path}.fieldOccurrences[${index}]`;
-    if (!isRecord(item)) {
-      issues.push({ path: itemPath, message: 'must be an object' });
-      return null;
-    }
-    const occurrenceIndex = Number(item.occurrence_index);
-    const sourcePosition = Number(item.source_position);
-    if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${itemPath}.occurrence_index`, message: 'must be a positive integer' });
-    if (!Number.isInteger(sourcePosition) || sourcePosition < 0) issues.push({ path: `${itemPath}.source_position`, message: 'must be a non-negative integer' });
-    const digits = Array.isArray(item.digits) && item.digits.length === 2
-      ? [Number(item.digits[0]), Number(item.digits[1])] as [number, number]
-      : undefined;
-    if (digits && (!digits.every((value) => Number.isInteger(value) && value >= 0) || digits[1] > digits[0])) {
-      issues.push({ path: `${itemPath}.digits`, message: 'must contain valid precision and scale integers' });
-    }
-    return {
-      name: requiredString(item, 'name', itemPath, issues),
-      label: requiredString(item, 'label', itemPath, issues),
-      widget: typeof item.widget === 'string' ? item.widget : '',
-      native_locator: requiredString(item, 'native_locator', itemPath, issues),
-      occurrence_index: occurrenceIndex,
-      source_position: sourcePosition,
-      attributes: requiredRecord(item, 'attributes', itemPath, issues),
-      ...(optionalString(item, 'text') ? { text: optionalString(item, 'text') } : {}),
-      ...(optionalString(item, 'tail') ? { tail: optionalString(item, 'tail') } : {}),
-      modifiers: item.modifiers,
-      decorations: requiredArray(item, 'decorations', itemPath, issues).filter(isRecord),
-      ...(optionalString(item, 'field_type') ? { field_type: optionalString(item, 'field_type') } : {}),
-      ...(optionalString(item, 'currency_field') ? { currency_field: optionalString(item, 'currency_field') } : {}),
-      ...(digits ? { digits } : {}),
-    };
-  }).filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const templateRaw = requiredRecord(raw, 'template', path, issues);
-  const templateNodes = requiredArray(templateRaw, 'nodes', `${path}.template`, issues)
-    .map((item, index) => decodeActivityNode(item, `${path}.template.nodes[${index}]`, issues))
-    .filter((item): item is ContractV2ActivityNode => Boolean(item));
-  const actions = requiredArray(raw, 'actions', path, issues).filter(isRecord);
-  const actionCount = Number(raw.actionCount);
-  if (!Number.isInteger(actionCount) || actionCount < 0) issues.push({ path: `${path}.actionCount`, message: 'must be a non-negative integer' });
-  if (Number.isInteger(actionCount) && actionCount !== actions.length) issues.push({ path: `${path}.actionCount`, message: 'must equal actions length' });
-  return {
-    activityTypeSlots: requiredRecord(raw, 'activityTypeSlots', path, issues),
-    deadlineSlots: requiredRecord(raw, 'deadlineSlots', path, issues),
-    assigneeSlots: requiredRecord(raw, 'assigneeSlots', path, issues),
-    fieldOccurrences,
-    nativeAttrs: requiredRecord(raw, 'nativeAttrs', path, issues),
-    nodeOccurrences: requiredArray(raw, 'nodeOccurrences', path, issues)
-      .map((item, index) => decodeActivityNodeOccurrence(item, `${path}.nodeOccurrences[${index}]`, issues))
-      .filter((item): item is ContractV2ActivityNodeOccurrence => Boolean(item)),
-    template: {
-      native_locator: requiredString(templateRaw, 'native_locator', `${path}.template`, issues),
-      occurrence_index: requiredInteger(templateRaw, 'occurrence_index', `${path}.template`, issues),
-      names: asStringArray(templateRaw.names),
-      nodes: templateNodes,
-    },
-    templateQwebPresent: requiredBoolean(raw, 'templateQwebPresent', path, issues, false),
-    actions,
-    actionCount,
-    sourceAuthority: authority,
   };
 }
 
@@ -569,9 +469,6 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
     ...(Object.keys(asRecord(source.listProfile)).length
       ? { listProfile: asRecord(source.listProfile) }
       : {}),
-    ...(source.activityProfile !== undefined
-      ? { activityProfile: decodeActivityProfile(source.activityProfile, issues) }
-      : {}),
   };
 }
 
@@ -590,12 +487,18 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   const actionSafety = asRecord(raw.actionSafety);
   const submitPolicy = asRecord(raw.submitPolicy);
   const tracePolicy = asRecord(raw.tracePolicy);
+  const sourceTrace = Array.isArray(raw.sourceTrace)
+    ? raw.sourceTrace.map((item) => asRecord(item)).filter((item) => Object.keys(item).length > 0)
+    : [];
+  const permissionConstraints = asRecord(raw.permissionConstraints);
+  const nativeIdentity = asRecord(raw.nativeIdentity);
   const allowed = optionalBoolean(raw.allowed);
   const enabled = optionalBoolean(raw.enabled);
   const disabled = optionalBoolean(raw.disabled);
   return {
     actionId,
     ...(optionalString(raw, 'backendIdentity') ? { backendIdentity: optionalString(raw, 'backendIdentity') } : {}),
+    ...(Object.keys(nativeIdentity).length ? { nativeIdentity } : {}),
     triggerType: decodeTriggerType(requiredString(raw, 'triggerType', path, issues), `${path}.triggerType`, issues),
     sourceWidgetId: requiredString(raw, 'sourceWidgetId', path, issues),
     targetIds: asStringArray(raw.targetIds),
@@ -618,6 +521,14 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
     ...(Object.keys(actionSafety).length ? { actionSafety } : {}),
     ...(Object.keys(submitPolicy).length ? { submitPolicy } : {}),
     ...(Object.keys(tracePolicy).length ? { tracePolicy } : {}),
+    ...(sourceTrace.length ? { sourceTrace } : {}),
+    ...(optionalString(raw, 'presentationAuthority') ? { presentationAuthority: optionalString(raw, 'presentationAuthority') } : {}),
+    ...(Number.isInteger(raw.presentationPriority) ? { presentationPriority: Number(raw.presentationPriority) } : {}),
+    ...(optionalString(raw, 'sourceActionKey') ? { sourceActionKey: optionalString(raw, 'sourceActionKey') } : {}),
+    ...(optionalString(raw, 'sourceChannel') ? { sourceChannel: optionalString(raw, 'sourceChannel') } : {}),
+    ...(Object.keys(permissionConstraints).length ? { permissionConstraints } : {}),
+    ...(optionalString(raw, 'reasonCode') ? { reasonCode: optionalString(raw, 'reasonCode') } : {}),
+    ...(optionalBoolean(raw.entitlementEvaluated) !== undefined ? { entitlementEvaluated: optionalBoolean(raw.entitlementEvaluated) } : {}),
   };
 }
 
@@ -644,6 +555,9 @@ function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[
   return {
     actionRuleList,
     dependencyGraph,
+    ...(Object.keys(asRecord(source.identityPolicy)).length
+      ? { identityPolicy: asRecord(source.identityPolicy) }
+      : {}),
     ...(Object.keys(asRecord(source.deletePolicy)).length
       ? { deletePolicy: asRecord(source.deletePolicy) }
       : {}),
@@ -704,9 +618,50 @@ function decodeFieldGroups(value: unknown, path: string, issues: DecodeIssue[]):
   };
 }
 
+function decodeSourceContext(value: unknown, issues: DecodeIssue[]): ContractV2SourceContext | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext', message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  const allowed = new Set(['context', 'domain', 'contextRaw', 'domainRaw', 'renderProfile', 'order', 'limit']);
+  Object.keys(row).filter((key) => !allowed.has(key)).forEach((key) => {
+    issues.push({ path: `dataContract.dataMeta.sourceContext.${key}`, message: 'is not allowed' });
+  });
+  const context = optionalRecord(row, 'context', 'dataContract.dataMeta.sourceContext', issues);
+  const domain = row.domain;
+  if (domain !== undefined && !Array.isArray(domain)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext.domain', message: 'must be an array' });
+  }
+  for (const key of ['contextRaw', 'domainRaw', 'order'] as const) {
+    if (row[key] !== undefined && typeof row[key] !== 'string') {
+      issues.push({ path: `dataContract.dataMeta.sourceContext.${key}`, message: 'must be a string' });
+    }
+  }
+  const renderProfile = asString(row.renderProfile);
+  if (row.renderProfile !== undefined && !['create', 'edit', 'readonly'].includes(renderProfile)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext.renderProfile', message: 'must be create, edit, or readonly' });
+  }
+  const limit = Number(row.limit);
+  if (row.limit !== undefined && (!Number.isInteger(limit) || limit < 1)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext.limit', message: 'must be a positive integer' });
+  }
+  return {
+    ...(context ? { context } : {}),
+    ...(Array.isArray(domain) ? { domain } : {}),
+    ...(typeof row.contextRaw === 'string' ? { contextRaw: row.contextRaw } : {}),
+    ...(typeof row.domainRaw === 'string' ? { domainRaw: row.domainRaw } : {}),
+    ...(['create', 'edit', 'readonly'].includes(renderProfile) ? { renderProfile: renderProfile as 'create' | 'edit' | 'readonly' } : {}),
+    ...(typeof row.order === 'string' ? { order: row.order } : {}),
+    ...(Number.isInteger(limit) && limit >= 1 ? { limit } : {}),
+  };
+}
+
 function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMeta {
   const row = asRecord(value);
   const businessOperationProfile = asRecord(row.businessOperationProfile);
+  const sourceContext = decodeSourceContext(row.sourceContext, issues);
   const forbiddenKeys = [
     'business_operation_profile',
     'visible_fields',
@@ -726,6 +681,7 @@ function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMe
     ...(Object.keys(businessOperationProfile).length ? { businessOperationProfile } : {}),
     ...(visibleFields ? { visibleFields } : {}),
     ...(fieldGroups ? { fieldGroups } : {}),
+    ...(sourceContext ? { sourceContext } : {}),
   };
 }
 
@@ -765,6 +721,8 @@ function decodeGlobalStatus(source: ContractV2Dictionary): ContractV2GlobalStatu
     ...(optionalString(source, 'effectiveRenderProfile')
       ? { effectiveRenderProfile: optionalString(source, 'effectiveRenderProfile') }
       : {}),
+    ...(optionalString(source, 'workflowPhase') ? { workflowPhase: optionalString(source, 'workflowPhase') } : {}),
+    ...(optionalString(source, 'approvalPhase') ? { approvalPhase: optionalString(source, 'approvalPhase') } : {}),
   };
 }
 
@@ -793,6 +751,7 @@ function decodeButtonStatus(raw: unknown): ContractV2ButtonStatus | null {
   if (!btnId) return null;
   return {
     btnId,
+    ...(asString(raw.backendIdentity) ? { backendIdentity: asString(raw.backendIdentity) } : {}),
     visible: optionalBoolean(raw.visible),
     disabled: optionalBoolean(raw.disabled),
     ...(optionalString(raw, 'reasonCode')
@@ -923,8 +882,7 @@ function validateFormOccurrenceAuthority(
     if (count !== 1) {
       issues.push({ path: 'statusContract.widgetStatus', message: `form occurrence ${widgetId} requires exactly one status; found ${count}` });
     }
-    const statuses = statusContract.widgetStatus.filter((status) => status.widgetId === widgetId);
-    statuses.forEach((status) => {
+    statusContract.widgetStatus.filter((status) => status.widgetId === widgetId).forEach((status) => {
       for (const key of ['visible', 'readonly', 'required', 'disabled'] as const) {
         if (typeof status[key] !== 'boolean') {
           issues.push({ path: `statusContract.widgetStatus.${widgetId}.${key}`, message: 'form occurrence status boolean is required' });
@@ -953,6 +911,9 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
       .map((item, index) => decodePatchOperation(asString(item), `runtimeContract.patchOperations[${index}]`, issues))
       .filter((item): item is ContractV2PatchOperation => Boolean(item))
     : [];
+  const collaboration = optionalRecord(source, 'collaboration', 'runtimeContract', issues);
+  const businessWorkspace = optionalRecord(source, 'businessWorkspace', 'runtimeContract', issues);
+  const businessActions = optionalRecordArray(source, 'businessActions', 'runtimeContract', issues);
   return {
     patchStrategy: decodePatchStrategy(requiredString(source, 'patchStrategy', 'runtimeContract', issues), 'runtimeContract.patchStrategy', issues),
     cachePolicy: decodeCachePolicy(requiredString(source, 'cachePolicy', 'runtimeContract', issues), 'runtimeContract.cachePolicy', issues),
@@ -968,15 +929,9 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     ...(isRecord(source.aiEnvelope) ? { aiEnvelope: source.aiEnvelope } : {}),
     ...(asString(source.interactionMode) ? { interactionMode: asString(source.interactionMode) } : {}),
     ...(asString(source.actionTarget) ? { actionTarget: asString(source.actionTarget) } : {}),
-    ...(isRecord(source.recordVersionPolicy) ? { recordVersionPolicy: source.recordVersionPolicy } : {}),
-    ...(isRecord(source.collaboration) ? { collaboration: source.collaboration } : {}),
-    ...(isRecord(source.intakeAutosave) ? { intakeAutosave: source.intakeAutosave } : {}),
-    ...(isRecord(source.fieldSemantics) ? { fieldSemantics: source.fieldSemantics } : {}),
-    ...(Array.isArray(source.validationRules)
-      ? { validationRules: source.validationRules.filter(isRecord) }
-      : {}),
-    ...(isRecord(source.governance) ? { governance: source.governance } : {}),
-    ...(isRecord(source.sceneFormAugmentations) ? { sceneFormAugmentations: source.sceneFormAugmentations } : {}),
+    ...(collaboration ? { collaboration } : {}),
+    ...(businessWorkspace ? { businessWorkspace } : {}),
+    ...(businessActions ? { businessActions } : {}),
   };
 }
 
@@ -1023,6 +978,40 @@ function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): Contra
   };
 }
 
+function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2Dictionary | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path: '$.searchContract', message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  const allowed = new Set([
+    'default_sort', 'default_order', 'mode', 'filters', 'saved_filters', 'group_by', 'fields',
+    'search_panel', 'favorites', 'custom', 'ui_labels', 'defaults',
+  ]);
+  Object.keys(row).filter((key) => !allowed.has(key)).forEach((key) => {
+    issues.push({ path: `$.searchContract.${key}`, message: 'is not allowed' });
+  });
+  const out: ContractV2Dictionary = {};
+  for (const key of ['default_sort', 'default_order', 'mode'] as const) {
+    if (row[key] === undefined) continue;
+    if (typeof row[key] !== 'string') {
+      issues.push({ path: `$.searchContract.${key}`, message: 'must be a string' });
+    } else {
+      out[key] = row[key];
+    }
+  }
+  for (const key of ['filters', 'saved_filters', 'group_by', 'fields'] as const) {
+    const decoded = optionalRecordArray(row, key, '$.searchContract', issues);
+    if (decoded) out[key] = decoded;
+  }
+  for (const key of ['search_panel', 'favorites', 'custom', 'ui_labels', 'defaults'] as const) {
+    const decoded = optionalRecord(row, key, '$.searchContract', issues);
+    if (decoded) out[key] = decoded;
+  }
+  return out;
+}
+
 export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const root = asRecord(value);
   const issues: DecodeIssue[] = [];
@@ -1033,6 +1022,9 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
   const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);
   const meta = decodeMeta(readAliasedObject(root, 'meta', [], '$', issues), issues);
+  const formStructureContract = optionalRecord(root, 'formStructureContract', '$', issues);
+  const searchContract = decodeSearchContract(root.searchContract, issues);
+  const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
   if (issues.length) {
     throw new ContractV2DecodeError(issues);
@@ -1045,8 +1037,8 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
     dataContract,
     runtimeContract,
     meta,
-    ...(isRecord(root.formStructureContract)
-      ? { formStructureContract: asRecord(root.formStructureContract) }
-      : {}),
+    ...(formStructureContract ? { formStructureContract } : {}),
+    ...(searchContract ? { searchContract } : {}),
+    ...(workflowContract ? { workflowContract } : {}),
   };
 }

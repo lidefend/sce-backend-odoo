@@ -10,7 +10,7 @@ from typing import Any, Iterable
 from xml.etree import ElementTree as ET
 
 
-SCHEMA = "product_view_structure_contract/v1"
+SCHEMA = "product_view_structure_contract/1.0.0"
 FINGERPRINT_SCHEMA = "codex_complete_worktree_fingerprint/v1"
 CANONICAL_VIEW_TYPES = {
     "form", "tree", "search", "kanban", "pivot", "graph", "calendar",

@@ -24,6 +24,16 @@ class _NoOrmEnvironment:
 class TestDemoShowcaseGate(TransactionCase):
     """Prevent demo filters from leaking into core business entries."""
 
+    def test_demo_project_seed_closes_showroom_boq_coverage(self):
+        demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        seed_path = os.path.join(demo_root, "seed", "steps", "step_20_projects_demo.py")
+        with open(seed_path, "r", encoding="utf-8") as handle:
+            source = handle.read()
+
+        showroom_tail = source.split("showroom_projects = _get_showroom_projects(env)", 1)[1]
+        self.assertIn('Boq.search_count([("project_id", "=", project.id)]) == 0', showroom_tail)
+        self.assertIn("_ensure_boq(env, project, code_prefix, uom_unit)", showroom_tail)
+
     def test_no_demo_showcase_filters_in_core(self):
         demo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
         addons_root = os.path.abspath(os.path.join(demo_root, os.pardir))

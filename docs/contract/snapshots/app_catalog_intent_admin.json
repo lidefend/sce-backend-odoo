@@ -16,20 +16,69 @@
     "apps": [
       {
         "badges": {
-          "todo": 0
+          "count": 0
         },
         "icon": null,
         "key": "app:workspace",
-        "label": "工作台",
+        "label": "角色首页",
         "meta": {
           "app_id": "workspace",
           "category": "platform",
-          "fallback": true
+          "fallback": true,
+          "primary_scene": "workspace.home",
+          "sequence": 0
+        }
+      },
+      {
+        "badges": {
+          "count": 0
+        },
+        "icon": null,
+        "key": "app:release_management",
+        "label": "产品发布",
+        "meta": {
+          "action_xmlid": "smart_core.action_sc_product_policy",
+          "admin_only": true,
+          "app_id": "release_management",
+          "category": "platform_admin",
+          "menu_xmlid": "smart_core.menu_smart_core_release_root",
+          "sequence": -20
+        }
+      },
+      {
+        "badges": {
+          "count": 0
+        },
+        "icon": null,
+        "key": "app:company_access",
+        "label": "公司访问",
+        "meta": {
+          "action_xmlid": "smart_core.action_sc_subscription_plan",
+          "admin_only": true,
+          "app_id": "company_access",
+          "category": "platform_admin",
+          "menu_xmlid": "smart_core.menu_smart_core_company_access_root",
+          "sequence": -10
+        }
+      },
+      {
+        "badges": {
+          "count": 1
+        },
+        "icon": null,
+        "key": "app:config",
+        "label": "业务配置",
+        "meta": {
+          "app_id": "config",
+          "category": "platform",
+          "primary_scene": "config.center",
+          "sequence": 210,
+          "source": "native_odoo_menu_fallback"
         }
       }
     ],
     "meta": {
-      "fingerprint": "f2a4e65a08719ed379e8a0fd920846d4",
+      "fingerprint": "fb4696b6f41cd8d0a70bb9b637e8cf4a",
       "scene": "web"
     }
   },

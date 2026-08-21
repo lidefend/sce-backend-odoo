@@ -92,7 +92,7 @@ class TestSceneReadySemanticOrchestrationBridge(unittest.TestCase):
     def test_bridge_normalizes_direct_runtime_handoff_surface(self):
         payload = {
             "scene": {"key": "projects.list"},
-            "delivery_handoff_v1": {
+            "delivery_handoff": {
                 "family": "projects",
                 "runtime_entry_type": "governed_user_flow",
                 "runtime_consumer": "family_runtime_consumer",
@@ -118,7 +118,7 @@ class TestSceneReadySemanticOrchestrationBridge(unittest.TestCase):
     def test_bridge_marks_payment_handoff_as_advisory_consume(self):
         payload = {
             "scene": {"key": "payments.approval"},
-            "delivery_handoff_v1": {
+            "delivery_handoff": {
                 "family": "payment_approval",
                 "runtime_entry_type": "governed_user_flow",
                 "runtime_consumer": "family_runtime_consumer",
@@ -143,7 +143,7 @@ class TestSceneReadySemanticOrchestrationBridge(unittest.TestCase):
     def test_bridge_builds_product_delivery_surface_for_direct_family(self):
         payload = {
             "scene": {"key": "projects.list"},
-            "delivery_handoff_v1": {
+            "delivery_handoff": {
                 "family": "projects",
                 "runtime_entry_type": "governed_user_flow",
                 "runtime_consumer": "family_runtime_consumer",
@@ -169,7 +169,7 @@ class TestSceneReadySemanticOrchestrationBridge(unittest.TestCase):
     def test_bridge_builds_product_delivery_surface_for_advisory_family(self):
         payload = {
             "scene": {"key": "payments.approval"},
-            "delivery_handoff_v1": {
+            "delivery_handoff": {
                 "family": "payment_approval",
                 "runtime_entry_type": "governed_user_flow",
                 "runtime_consumer": "family_runtime_consumer",

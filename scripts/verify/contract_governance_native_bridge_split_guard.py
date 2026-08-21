@@ -44,7 +44,7 @@ def main() -> int:
             "def _load_native_bridge_module()",
             "contract_governance_native_bridge.py",
             "_native_bridge._USER_SURFACE_ACTION_MAX = _USER_SURFACE_ACTION_MAX",
-            "_native_bridge.ensure_scene_contract_v1_envelope(data)",
+            "_native_bridge.ensure_scene_contract_envelope(data)",
         ]:
             if token not in governance_text:
                 errors.append(f"contract_governance.py missing native bridge split token: {token}")
@@ -55,7 +55,7 @@ def main() -> int:
             "def normalize_scene_semantic_surface(",
             "def search_surface_from_contract(",
             "def scene_actions_from_contract(",
-            "def ensure_scene_contract_v1_envelope(",
+            "def ensure_scene_contract_envelope(",
         ]:
             if token not in bridge_text:
                 errors.append(f"native bridge module missing token: {token}")
@@ -78,10 +78,12 @@ def main() -> int:
                 "status_field": "state",
             },
         }
-        governance._ensure_scene_contract_v1_envelope(data)
-        scene_contract = data.get("scene_contract_v1") or {}
-        if scene_contract.get("contract_version") != "v1":
-            errors.append("scene contract envelope must set version v1")
+        governance._ensure_scene_contract_envelope(data)
+        scene_contract = data.get("scene_contract") or {}
+        if scene_contract.get("contract_version") != "2.0.0":
+            errors.append("scene contract envelope must set version 2.0.0")
+        if scene_contract.get("schema_version") != "2.0.0":
+            errors.append("scene contract envelope must set schema version 2.0.0")
         if not (scene_contract.get("search_surface") or {}).get("filters"):
             errors.append("scene contract envelope must derive search_surface filters")
         if not (scene_contract.get("actions") or {}).get("primary_actions"):

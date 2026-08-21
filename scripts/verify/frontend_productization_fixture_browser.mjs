@@ -147,9 +147,9 @@ async function main() {
       try {
         const body = await response.json();
         const data = body?.result || body?.data || body;
-        const canonical = data?.navigation_v1?.nav;
+        const canonical = data?.navigation?.nav;
         if (Array.isArray(canonical)) financeNav = canonical;
-        process.stderr.write(`[system-init-wire] status=${response.status()} navigation_v1=${Array.isArray(canonical) ? canonical.length : 'missing'}\n`);
+        process.stderr.write(`[system-init-wire] status=${response.status()} navigation=${Array.isArray(canonical) ? canonical.length : 'missing'}\n`);
       } catch {}
     });
     finance.on('console', (msg) => { if (msg.type() === 'error') financeErrors.push(msg.text()); });
@@ -206,7 +206,7 @@ async function main() {
       try {
         const body = await response.json();
         const data = body?.result || body?.data || body;
-        const nav = data?.navigation_v1?.nav;
+        const nav = data?.navigation?.nav;
         if (Array.isArray(nav)) memberNav = nav;
       } catch {}
     });

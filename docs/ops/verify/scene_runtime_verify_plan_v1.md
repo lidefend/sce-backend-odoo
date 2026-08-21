@@ -10,7 +10,7 @@
 
 1. 请求 `intent=system.init`。
 2. 验证服务端存在 `ui_base_orchestrator_input`（scene meta）。
-3. 验证 Scene Orchestrator 输出 `scene_ready_contract_v1`。
+3. 验证 Scene Orchestrator 输出 `scene_ready_contract`。
 4. 验证前端页面通过 `sceneReadyResolver` 消费 `scene_ready` 子结构。
 
 ## 样板场景验收
@@ -27,6 +27,6 @@
 
 ## 验证证据建议
 
-- 后端：`scene_ready_contract_v1.scenes[*].meta.compile_pipeline`
+- 后端：`scene_ready_contract.scenes[*].meta.compile_pipeline`
 - 前端：`ActionView.vue` 与 `ContractFormPage.vue` 的 resolver 调用路径
 

@@ -800,7 +800,7 @@ export function isNativeFieldVisible(input: NativeFieldVisibilityInput) {
 
 export function isNativeLayoutNodeVisible(input: NativeLayoutNodeVisibilityInput) {
   const nodeRaw = input.node;
-  if (resolveNativeOccurrenceBehavior(nodeRaw, input.evaluateModifier).invisible) return false;
+  if (input.evaluateModifier(nativeModifierValue(nodeRaw, 'invisible'))) return false;
   const node = nodeRaw as Record<string, unknown>;
   const nodeType = String(node.type || '').trim().toLowerCase();
   if (node.visible === false && !(input.editable && nodeType === 'group')) return false;
@@ -986,12 +986,7 @@ export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (
   const field = String(row.field || '').trim();
   if (!field) return false;
   if (kind === 'field_truthy') return Boolean(resolveFieldValue(field));
-  if (kind === 'field_compare') {
-    const expected = String(row.value_field || '').trim()
-      ? resolveFieldValue(String(row.value_field))
-      : row.value;
-    return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), expected);
-  }
+  if (kind === 'field_compare') return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), row.value);
   return false;
 }
 
@@ -1245,18 +1240,5 @@ export function collectNativeLayoutBadgeCountFieldNames(nodes: NativeLayoutLikeN
       const children = node?.[key];
       if (Array.isArray(children)) collectNativeLayoutBadgeCountFieldNames(children as NativeLayoutLikeNode[], out);
     });
-  });
-}
-
-export function collectContractActionBadgeCountFieldNames(actions: unknown, out: Set<string>) {
-  if (!Array.isArray(actions)) return;
-  actions.forEach((row) => {
-    if (!row || typeof row !== 'object' || Array.isArray(row)) return;
-    const action = row as Record<string, unknown>;
-    const badge = action.badge && typeof action.badge === 'object' && !Array.isArray(action.badge)
-      ? action.badge as Record<string, unknown>
-      : {};
-    const fieldName = String(badge.count_field || badge.field || '').trim();
-    if (fieldName) out.add(fieldName);
   });
 }

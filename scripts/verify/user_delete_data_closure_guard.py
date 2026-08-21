@@ -59,16 +59,24 @@ def _probe_backend_unlink(errors: list[str]) -> None:
 
 
 def _probe_business_delete_policy_scope(errors: list[str]) -> None:
-    source = _read("addons/smart_construction_core/core_extension.py")
+    source = _read("addons/smart_construction_core/core_extension_policy_maps.py")
+    policy_accessor_source = _read("addons/smart_construction_core/core_extension_policy_accessors.py")
     tree = ast.parse(source)
     policy_models: set[str] = set()
     for node in tree.body:
         if not isinstance(node, ast.Assign):
             continue
-        if not any(isinstance(target, ast.Name) and target.id == "API_DATA_UNLINK_POLICIES" for target in node.targets):
+        if not any(
+            isinstance(target, ast.Name)
+            and target.id in {"API_DATA_UNLINK_POLICIES", "API_DATA_DRAFT_UNLINK_POLICIES"}
+            for target in node.targets
+        ):
             continue
-        policies = ast.literal_eval(node.value)
-        policy_models = {str(model) for model in policies}
+        if not isinstance(node.value, ast.Dict):
+            continue
+        for key in node.value.keys:
+            if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                policy_models.add(key.value)
     required_physical_delete_models = {
         "construction.contract",
         "construction.contract.income",
@@ -143,14 +151,14 @@ def _probe_business_delete_policy_scope(errors: list[str]) -> None:
     )
     _assert("project.project" not in policy_models, "project.project must not be in static all-user physical delete policy", errors)
     _assert(
-        '"project.project"' in source
-        and '"PROJECT_MASTER_DELETE_ALLOWED"' in source
-        and '"dependency_guard": "project.project._raise_project_unlink_blockers"' in source,
+        '"project.project"' in policy_accessor_source
+        and '"PROJECT_MASTER_DELETE_ALLOWED"' in policy_accessor_source
+        and '"dependency_guard": "project.project._raise_project_unlink_blockers"' in policy_accessor_source,
         "project.project delete policy must be dynamically exposed and keep dependency guard metadata",
         errors,
     )
     _assert(
-        '"requires_group": "smart_construction_core.group_sc_cap_business_config_admin"' not in source,
+        '"requires_group": "smart_construction_core.group_sc_cap_business_config_admin"' not in policy_accessor_source,
         "project.project delete policy must not add a group gate beyond ACL and record rules",
         errors,
     )
@@ -166,8 +174,8 @@ def _probe_frontend_delete_flow(errors: list[str]) -> None:
     action_view = _read("frontend/apps/web/src/views/ActionView.vue")
     list_page = _read("frontend/apps/web/src/pages/ListPage.vue")
     shape_runtime = _read("frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts")
-    v2_adapter = _read("frontend/apps/web/src/app/runtime/unifiedPageContractV2CompatProjection.ts")
-    v2_handler = _read("addons/smart_core/handlers/ui_contract_v2.py")
+    v2_store = _read("frontend/apps/web/src/app/contracts/v2/store.ts")
+    v2_projection = _read("addons/smart_core/handlers/ui_contract_v2_projection.py")
     _assert("dryRun?: boolean;" in api and "dry_run: Boolean(params.dryRun)" in api, "unlinkRecord must expose dryRun to api.data.unlink", errors)
     _assert("dryRunIdempotencyKey" in flow and "'delete.dry_run'" in flow, "batch delete must use a distinct dry-run idempotency key", errors)
     _assert("dryRun: true" in action_view, "ActionView batch delete must preflight with dryRun", errors)
@@ -176,7 +184,7 @@ def _probe_frontend_delete_flow(errors: list[str]) -> None:
     _assert(':selection-enabled="listProfile?.selection_policy?.enabled !== false"' in action_view, "ActionView must consume backend selection policy", errors)
     _assert(
         "Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0" in action_view
-        and "actionContract.value?.surface_policies?.batch_policy || profilePolicy || {}" in action_view,
+        and "resolveUnifiedPageContractV2SurfacePolicies(actionContract.value)" in action_view,
         "ActionView batch policy must fall back to surface policy when list_profile has no executable actions",
         errors,
     )
@@ -186,9 +194,8 @@ def _probe_frontend_delete_flow(errors: list[str]) -> None:
         "list_profile extraction must not synthesize an empty batch_policy that shadows surface policy",
         errors,
     )
-    _assert("contract_v2[\"surface_policies\"]" in v2_handler, "ui.contract.v2 must carry governed surface batch policy", errors)
-    _assert("const sourceSurfacePolicies = asDict(v2Contract.surface_policies);" in v2_adapter, "V2 adapter must consume backend surface policies", errors)
-    _assert("sourceBatchPolicy.available_actions" in v2_adapter, "V2 adapter must prefer backend batch available_actions", errors)
+    _assert('action_contract["surfacePolicies"]' in v2_projection, "ui.contract.v2 must carry governed surface batch policy", errors)
+    _assert("resolveContractV2SurfacePolicies" in v2_store, "V2 store must expose backend surface policies", errors)
 
 
 def _probe_domain_action_binding(errors: list[str]) -> None:

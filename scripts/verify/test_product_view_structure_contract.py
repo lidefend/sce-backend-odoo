@@ -12,6 +12,12 @@ from scripts.verify.product_view_structure_contract_guard import validate_manife
 
 
 class ProductViewStructureContractTests(unittest.TestCase):
+    def test_schema_uses_semantic_version_and_has_no_v1_alias(self):
+        from scripts.contract.product_view_structure_common import SCHEMA
+
+        self.assertEqual(SCHEMA, "product_view_structure_contract/1.0.0")
+        self.assertNotIn("/v1", SCHEMA)
+
     def setUp(self):
         self.policy = {"products": [{"capabilities": [{"enabled": True, "release_state": "released", "menu_xmlid": "x.menu", "res_model": "x.model"}]}]}
         entries = [{"path": "x", "tracked": True, "mode": "100644", "index_blob": "a" * 40, "worktree_kind": "file", "worktree_sha256": "1" * 64}]
@@ -23,8 +29,8 @@ class ProductViewStructureContractTests(unittest.TestCase):
         graph_body = {"root_ref": "x.view", "contributors": [{"view_ref": "x.view", "inherit_ref": "", "mode": "primary", "priority": 16, "active": True, "groups": [], "arch_sha256": "4" * 64, "applicability": "applied"}], "edges": [], "application_order": ["x.view"]}
         graph = {**graph_body, "graph_sha256": sha256_json(graph_body)}
         surface = {"contract_ref": "x.menu::form", "menu_xmlid": "x.menu", "action_xmlid": "x.action", "model": "x.model", "view_type": "form", "view_ref": "x.view", "source_kind": "database_view", "hashes": {"source_graph_sha256": graph["graph_sha256"], "resolved_arch_sha256": sha256_json(resolved), "semantic_structure_sha256": sha256_json(semantic)}, "source_graph": graph, "parse_outcome": {"primary": "success", "fallback": "inactive"}, "references": collect_references(occurrences), "occurrences": occurrences, "resolved_structure": resolved, "semantic_structure": semantic}
-        authority = {"branch": "feature/x", "candidate_fingerprint": {key: self.fingerprint[key] for key in ("algorithm", "git_head", "baseline_sha", "scope_manifest_sha256", "digest")}, "database_policy_path": "docs/governance/database_architecture_policy.md", "database_policy_sha256": "6" * 64, "formal_menu_policy_path": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json", "formal_menu_policy_sha256": "5" * 64, "runtime_profile": "local.clean", "compose_project": "sc-local-clean", "database": "sc_clean", "database_filter": "^sc_clean$", "demo_data": False, "module_set": [{"name": "base", "installed_version": "1"}], "module_set_sha256": sha256_json([{"name": "base", "installed_version": "1"}]), "user": "admin", "company": "base.main_company", "language": "en_US", "group_profile": ["base.group_user"], "exporter_version": "product_view_structure_contract/v1", "runtime_source": "odoo.get_view_resolved_arch_and_native_inheritance_engine"}
-        self.manifest = {"schema": "product_view_structure_contract/v1", "authority": authority, "summary": {"formal_menu_count": 1, "resolved_view_action_count": 1, "non_view_action_count": 0, "error_count": 0, "resolved_surface_count": 1, "model_count": 1, "view_type_counts": {"form": 1}}, "entries": [{"menu_xmlid": "x.menu", "res_model": "x.model", "status": "resolved_view_action", "declared_view_types": ["form"], "surfaces": [surface]}]}
+        authority = {"branch": "feature/x", "candidate_fingerprint": {key: self.fingerprint[key] for key in ("algorithm", "git_head", "baseline_sha", "scope_manifest_sha256", "digest")}, "database_policy_path": "docs/governance/database_architecture_policy.md", "database_policy_sha256": "6" * 64, "formal_menu_policy_path": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json", "formal_menu_policy_sha256": "5" * 64, "runtime_profile": "local.clean", "compose_project": "sc-local-clean", "database": "sc_clean", "database_filter": "^sc_clean$", "demo_data": False, "module_set": [{"name": "base", "installed_version": "1"}], "module_set_sha256": sha256_json([{"name": "base", "installed_version": "1"}]), "user": "admin", "company": "base.main_company", "language": "en_US", "group_profile": ["base.group_user"], "exporter_version": "product_view_structure_contract/1.0.0", "runtime_source": "odoo.get_view_resolved_arch_and_native_inheritance_engine"}
+        self.manifest = {"schema": "product_view_structure_contract/1.0.0", "authority": authority, "summary": {"formal_menu_count": 1, "resolved_view_action_count": 1, "non_view_action_count": 0, "error_count": 0, "resolved_surface_count": 1, "model_count": 1, "view_type_counts": {"form": 1}}, "entries": [{"menu_xmlid": "x.menu", "res_model": "x.model", "status": "resolved_view_action", "declared_view_types": ["form"], "surfaces": [surface]}]}
         self.manifest["manifest_sha256"] = content_digest(self.manifest, "manifest_sha256")
 
     def errors(self, manifest=None):

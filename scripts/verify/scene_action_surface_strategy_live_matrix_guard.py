@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import build_intent_url, extract_login_token, get_base_url, http_post_json
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,18 +43,18 @@ def _load_compiler_module():
 
 def _fetch_live_strategy(strategy_inject: dict) -> dict:
     base_url = get_base_url()
-    intent_url = f"{base_url}/api/v1/intent"
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
+    intent_url = build_intent_url(base_url, db_name)
     login = os.getenv("E2E_LOGIN") or "admin"
     password = os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin"
 
     status, login_resp = http_post_json(
         intent_url,
         {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
+        headers={"X-Anonymous-Intent": "1", "X-Odoo-DB": db_name},
     )
     require_ok(status, login_resp, "login")
-    token = _text(_as_dict(login_resp.get("data")).get("token"))
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 
@@ -67,7 +67,7 @@ def _fetch_live_strategy(strategy_inject: dict) -> dict:
                 "scene_action_surface_strategy": strategy_inject,
             },
         },
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
     )
     require_ok(status, init_resp, "system.init")
     return _as_dict(_as_dict(init_resp.get("data")).get("scene_action_surface_strategy"))

@@ -1,24 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
+import { resolveContractV2FormFieldMap } from '../../app/contracts/v2/store';
 
 type NavigationDependencies = Record<string, any>;
 
 export function useRecordRelationshipNavigation(dependencies: NavigationDependencies) {
-  const { actionId, createContractFormRecord, fetchRelationOptions, formData, loadModelFormContractV2Bundle, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
+  const { actionId, createContractFormRecord, fetchRelationOptions, formData, loadModelContractV2, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
   async function ensureRelationFieldDescriptors(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
     if (relationFieldDescriptors.value[relation]) return;
     try {
-      const response = await loadModelFormContractV2Bundle(relation, {
+      const response = await loadModelContractV2(relation, {
         viewType: 'form',
         renderProfile: 'edit',
       });
-      const fields = Array.from(response.snapshot.layoutContract.containerTree).flatMap((root:any)=>root.widgetList||[]).reduce<Record<string,FieldDescriptor>>((output:any,widget:any)=>{if(widget.fieldCode&&widget.fieldDescriptor)output[widget.fieldCode]=widget.fieldDescriptor;return output;},{});
+      const fields = resolveContractV2FormFieldMap(response.store) as Record<string, FieldDescriptor>;
       if (Object.keys(fields).length) {
         relationFieldDescriptors.value = {
           ...relationFieldDescriptors.value,
-          [relation]: fields,
+          [relation]: fields as Record<string, FieldDescriptor>,
         };
       }
     } catch {
@@ -92,26 +93,13 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     return Number.isFinite(id) && id > 0 ? Math.trunc(id) : 0;
   }
 
-  function nativeRelationWriteAllowed(descriptor?: FieldDescriptor) {
-    const nativeActions = (descriptor as Record<string, unknown> | undefined)?.native_relation_active_actions;
-    if (!nativeActions || typeof nativeActions !== 'object' || Array.isArray(nativeActions)) return true;
-    return (nativeActions as Record<string, unknown>).write !== false;
-  }
-
   function canOpenRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
     const relation = relationModel(fieldName);
     const entry = relationEntry(descriptor);
-    return Boolean(
-      nativeRelationWriteAllowed(descriptor)
-      && relation
-      && currentRelationRecordId(fieldName) > 0
-      && entry?.canRead !== false
-      && entry?.canOpen !== false,
-    );
+    return Boolean(relation && currentRelationRecordId(fieldName) > 0 && entry?.canRead !== false && entry?.canOpen !== false);
   }
 
   async function openRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
-    if (!nativeRelationWriteAllowed(descriptor)) return;
     const relation = relationModel(fieldName);
     const recordId = currentRelationRecordId(fieldName);
     const entry = relationEntry(descriptor);

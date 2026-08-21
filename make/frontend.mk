@@ -81,7 +81,7 @@ verify.frontend.scene_component_bridge.browser: guard.prod.forbid check-compose-
 	SCENE_COMPONENT_DRIVER_TARGETS_JSON="$$targets_json" DB_NAME=sc_frontend_acceptance FRONTEND_URL=http://127.0.0.1:5175 ODOO_URL=http://127.0.0.1:18082 GIT_SHA="$$(git rev-parse HEAD)" \
 	  node scripts/verify/frontend_scene_component_driver_readonly_browser.mjs
 
-verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard
+verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard
 
 verify.frontend.release.unit: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard
 

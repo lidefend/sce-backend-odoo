@@ -141,7 +141,7 @@ class ProductPolicyService:
             authorities=("sc.product.policy", "ir.config_parameter:smart_core.platform_release_db"),
             no_business_fact_authority=cls.NO_BUSINESS_FACT_AUTHORITY,
             platform_db=str(platform_db or "").strip(),
-            runtime_carrier="delivery_engine_v1.product_policy",
+            runtime_carrier="delivery_engine.product_policy",
         )
 
     def _platform_policy_db(self) -> str:

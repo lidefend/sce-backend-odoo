@@ -93,7 +93,7 @@ def _fetch_live_snapshot() -> dict:
     if not allowed_company_ids and effective_company_id > 0:
         allowed_company_ids = [effective_company_id]
     nav_meta = _as_dict(data.get("nav_meta"))
-    scene_ready = _as_dict(data.get("scene_ready_contract_v1"))
+    scene_ready = _as_dict(data.get("scene_ready_contract"))
     scene_meta = _as_dict(scene_ready.get("meta"))
     scenes = _as_list(scene_ready.get("scenes"))
 
@@ -141,7 +141,7 @@ def _fetch_live_snapshot() -> dict:
     }
 
     return {
-        "runtime_env": _text(_as_dict(_as_dict(data.get("scene_governance_v1")).get("delivery_policy")).get("runtime_env")) or _text(os.getenv("ENV") or "dev"),
+        "runtime_env": _text(_as_dict(_as_dict(data.get("scene_governance")).get("delivery_policy")).get("runtime_env")) or _text(os.getenv("ENV") or "dev"),
         "role_code": _text(nav_meta.get("role_surface_code")) or "unknown",
         "company_id": effective_company_id,
         "allowed_company_ids": allowed_company_ids,

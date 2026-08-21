@@ -8,7 +8,7 @@
 ```text
 版本化产品发布策略
   ∩ Odoo 动作/模型/菜单组/ACL/记录规则事实
-  → system.init.navigation_v1 + route_authority_v1
+  → system.init.navigation + route_authority
   → 前端纯渲染
 ```
 

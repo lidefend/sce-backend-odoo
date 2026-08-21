@@ -1,0 +1,13 @@
+events:
+  - type: inventory.completed
+    result: repository_structure_and_governance_entries_identified
+  - type: boundary.frozen
+    result: p4_agent_only_scope_with_preexisting_changes_excluded
+  - type: change.completed
+    result: agent_governance_baseline_written
+  - type: verification.completed
+    result: agent_context_lint_and_context_verify_passed
+
+next_exact_step:
+  command: freeze_batch_b_preflight_and_documentation_alignment_scope
+  requires_explicit_validation_authorization: false

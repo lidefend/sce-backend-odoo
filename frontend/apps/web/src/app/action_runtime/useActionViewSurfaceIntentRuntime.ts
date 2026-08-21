@@ -1,16 +1,11 @@
 import { computed, type Ref } from 'vue';
-import { resolveUnifiedPageContractV2SurfacePolicies } from '../contracts/unifiedPageContractV2';
+import { resolveContractV2SurfacePolicies } from '../contracts/v2/store';
+import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
 
-type ActionContractLike = {
-  surface_policies?: {
-    intent_profile?: unknown;
-  };
-};
-
 type UseActionViewSurfaceIntentRuntimeOptions = {
-  actionContract: Ref<ActionContractLike | null>;
+  actionContract: Ref<ContractV2NormalizedStore | null>;
   strictContractMode: Ref<boolean>;
   strictSurfaceContract: Ref<Dict>;
   pageText: (key: string, fallback?: string) => string;
@@ -19,7 +14,7 @@ type UseActionViewSurfaceIntentRuntimeOptions = {
 
 export function useActionViewSurfaceIntentRuntime(options: UseActionViewSurfaceIntentRuntimeOptions) {
   const contractSurfaceIntent = computed<Dict>(() => {
-    const surfacePolicies = resolveUnifiedPageContractV2SurfacePolicies(options.actionContract.value);
+    const surfacePolicies = resolveContractV2SurfacePolicies(options.actionContract.value);
     const fromSurfacePolicies = surfacePolicies.intent_profile;
     if (fromSurfacePolicies && typeof fromSurfacePolicies === 'object' && !Array.isArray(fromSurfacePolicies)) {
       return fromSurfacePolicies as Dict;

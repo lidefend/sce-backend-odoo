@@ -70,13 +70,13 @@
       "phase1Use": "reference_only"
     },
     {
-      "key": "scene_contract_v1",
+      "key": "scene_contract",
       "path": "addons/smart_core/core/scene_contract_builder.py",
       "role": "compat_scene_source",
       "phase1Use": "compat_input_only"
     },
     {
-      "key": "page_orchestration_v1",
+      "key": "page_orchestration",
       "path": "addons/smart_core/core/page_contracts_builder.py",
       "role": "compat_orchestration_source",
       "phase1Use": "compat_input_only"

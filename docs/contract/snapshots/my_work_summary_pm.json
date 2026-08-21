@@ -14,14 +14,39 @@
   "ui_contract": null,
   "ui_contract_raw": {
     "facets": {
-      "priority_counts": [],
-      "reason_code_counts": [],
-      "section_counts": [],
-      "section_counts_filtered": [],
-      "source_counts": []
+      "priority_counts": [
+        {
+          "count": 4,
+          "key": "high"
+        }
+      ],
+      "reason_code_counts": [
+        {
+          "count": 4,
+          "key": "TIER_REVIEW_PENDING"
+        }
+      ],
+      "section_counts": [
+        {
+          "count": 4,
+          "key": "todo"
+        }
+      ],
+      "section_counts_filtered": [
+        {
+          "count": 4,
+          "key": "todo"
+        }
+      ],
+      "source_counts": [
+        {
+          "count": 4,
+          "key": "tier.review"
+        }
+      ]
     },
     "filters": {
-      "filtered_count": 0,
+      "filtered_count": 4,
       "page": 1,
       "page_size": 10,
       "reason_code": "all",
@@ -30,10 +55,170 @@
       "sort_by": "id",
       "sort_dir": "desc",
       "source": "all",
-      "total_before_filter": 0,
+      "total_before_filter": 4,
       "total_pages": 1
     },
-    "items": [],
+    "items": [
+      {
+        "action_key": "tier.review.approve",
+        "action_label": "审批处理",
+        "action_summary": "审批处理",
+        "can_complete": false,
+        "deadline": "",
+        "id": 15,
+        "model": "sc.settlement.order",
+        "priority": "high",
+        "project_name": "",
+        "reason_code": "TIER_REVIEW_PENDING",
+        "record_id": 12,
+        "scene_key": "settlement",
+        "section": "todo",
+        "section_label": "待我处理",
+        "source": "tier.review",
+        "source_label": "审批复核",
+        "target": {
+          "action_id": 691,
+          "kind": "record",
+          "model": "sc.settlement.order",
+          "record_id": 12,
+          "scene_key": "settlement"
+        },
+        "title": "sc.settlement.order#12"
+      },
+      {
+        "action_key": "tier.review.approve",
+        "action_label": "审批处理",
+        "action_summary": "审批处理",
+        "can_complete": false,
+        "deadline": "",
+        "id": 11,
+        "model": "sc.settlement.order",
+        "priority": "high",
+        "project_name": "",
+        "reason_code": "TIER_REVIEW_PENDING",
+        "record_id": 11,
+        "scene_key": "settlement",
+        "section": "todo",
+        "section_label": "待我处理",
+        "source": "tier.review",
+        "source_label": "审批复核",
+        "target": {
+          "action_id": 691,
+          "kind": "record",
+          "model": "sc.settlement.order",
+          "record_id": 11,
+          "scene_key": "settlement"
+        },
+        "title": "sc.settlement.order#11"
+      },
+      {
+        "action_key": "tier.review.approve",
+        "action_label": "审批处理",
+        "action_summary": "审批处理",
+        "can_complete": false,
+        "deadline": "",
+        "id": 7,
+        "model": "sc.settlement.order",
+        "priority": "high",
+        "project_name": "",
+        "reason_code": "TIER_REVIEW_PENDING",
+        "record_id": 10,
+        "scene_key": "settlement",
+        "section": "todo",
+        "section_label": "待我处理",
+        "source": "tier.review",
+        "source_label": "审批复核",
+        "target": {
+          "action_id": 691,
+          "kind": "record",
+          "model": "sc.settlement.order",
+          "record_id": 10,
+          "scene_key": "settlement"
+        },
+        "title": "sc.settlement.order#10"
+      },
+      {
+        "action_key": "tier.review.approve",
+        "action_label": "审批处理",
+        "action_summary": "审批处理",
+        "can_complete": false,
+        "deadline": "",
+        "id": 3,
+        "model": "sc.settlement.order",
+        "priority": "high",
+        "project_name": "",
+        "reason_code": "TIER_REVIEW_PENDING",
+        "record_id": 9,
+        "scene_key": "settlement",
+        "section": "todo",
+        "section_label": "待我处理",
+        "source": "tier.review",
+        "source_label": "审批复核",
+        "target": {
+          "action_id": 691,
+          "kind": "record",
+          "model": "sc.settlement.order",
+          "record_id": 9,
+          "scene_key": "settlement"
+        },
+        "title": "sc.settlement.order#9"
+      }
+    ],
+    "product_workspace": {
+      "completed_unavailable_reason": "FINANCE_CAPABILITY_NOT_AVAILABLE",
+      "counts": {
+        "initiated": 0,
+        "todo": 0
+      },
+      "presentation": {
+        "default_sort": "updated_desc",
+        "description": "只展示当前账号和当前业务范围内可处理的事项。",
+        "quick_links": [],
+        "search_label": "查找工作事项",
+        "search_placeholder": "输入业务编号或关键信息",
+        "sort_options": [
+          {
+            "key": "updated_desc",
+            "kind": "text_desc",
+            "label": "最近更新"
+          },
+          {
+            "key": "amount_desc",
+            "kind": "number_desc",
+            "label": "金额从高到低"
+          },
+          {
+            "key": "amount_asc",
+            "kind": "number_asc",
+            "label": "金额从低到高"
+          }
+        ]
+      },
+      "query_scope": {
+        "company_ids": [
+          1
+        ],
+        "project_id": 0,
+        "user_id": 41
+      },
+      "sections": [
+        {
+          "count": 0,
+          "items": [],
+          "key": "todo",
+          "label": "待我处理"
+        },
+        {
+          "count": 0,
+          "items": [],
+          "key": "initiated",
+          "label": "我发起的"
+        }
+      ],
+      "source_authority": "finance capability boundary + current-user ACL/rules",
+      "total": 0,
+      "version": "payment-request-workspace-v1"
+    },
     "sections": [
       {
         "key": "todo",
@@ -56,15 +241,44 @@
         "scene_key": "projects.list"
       }
     ],
+    "source_authority": {
+      "historical_todo_authorities": [
+        "sc.workflow.workitem"
+      ],
+      "primary_todo": "mail.activity",
+      "section_authorities": {
+        "following": [
+          "mail.followers"
+        ],
+        "mentions": [
+          "mail.message"
+        ],
+        "owned": [
+          "project.project"
+        ],
+        "todo": [
+          "mail.activity",
+          "tier.review",
+          "project.task",
+          "project.project"
+        ]
+      },
+      "section_semantics": {
+        "following": "subscription_signal",
+        "mentions": "collaboration_signal",
+        "owned": "responsibility_scope",
+        "todo": "actionable_work"
+      }
+    },
     "status": {
-      "hint": "可稍后刷新，或切换到其他场景创建/关注事项。",
-      "message": "当前没有待处理事项",
-      "reason_code": "NO_WORK_ITEMS",
-      "state": "EMPTY"
+      "hint": "",
+      "message": "",
+      "reason_code": "OK",
+      "state": "READY"
     },
     "summary": [
       {
-        "count": 0,
+        "count": 4,
         "key": "todo",
         "label": "待我处理",
         "scene_key": "projects.list"
@@ -93,11 +307,6 @@
       "partial_data_hidden": true,
       "restricted_sources": [
         {
-          "model": "construction.contract",
-          "readable": false,
-          "reason": "READ_ACCESS_DENIED"
-        },
-        {
           "model": "payment.request",
           "readable": false,
           "reason": "READ_ACCESS_DENIED"
@@ -105,7 +314,7 @@
       ]
     }
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

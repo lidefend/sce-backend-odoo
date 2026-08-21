@@ -114,6 +114,45 @@ class SceneCompanyAccessPreflightProfilesTest(unittest.TestCase):
         self.assertEqual(result, 1)
         self.assertIn("invalid profile config", output.getvalue())
 
+    def test_derived_target_uses_requested_non_primary_company(self) -> None:
+        override = [
+            {
+                "key": "secondary",
+                "target_company_id": 0,
+                "derive_target_from_state": True,
+                "exclude_company_ids": [1],
+                "state_file": "artifacts/backend/secondary.json",
+            }
+        ]
+        baseline = {**self.baseline, "min_reachable_count_target": 1}
+        writes: list[tuple[object, str]] = []
+        with mock.patch.dict(
+            os.environ,
+            {guard.PROFILES_JSON_ENV: json.dumps(override)},
+            clear=False,
+        ), mock.patch.object(
+            guard,
+            "_load_json",
+            side_effect=[
+                baseline,
+                {
+                    "company_id": 5,
+                    "allowed_company_ids": [1, 5],
+                    "login_company_id_requested": 5,
+                },
+            ],
+        ), mock.patch.object(
+            guard,
+            "_write",
+            side_effect=lambda path, content: writes.append((path, content)),
+        ):
+            result = guard.main()
+
+        self.assertEqual(result, 0)
+        report = json.loads(writes[0][1])
+        self.assertEqual(report["profiles"][0]["target_company_id"], 5)
+        self.assertTrue(report["profiles"][0]["reachable"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

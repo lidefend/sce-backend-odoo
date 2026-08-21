@@ -4,7 +4,6 @@ import { createContractV2Store, resolveContractV2EffectiveFormCapabilities } fro
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
-import { adaptUnifiedPageContractV2Raw } from '../src/app/runtime/unifiedPageContractV2CompatProjection';
 import {
   canonicalFieldToFormSection,
   canonicalNodeHasContent,
@@ -850,28 +849,4 @@ assert.deepEqual(
   'an executable action without an exact unified executor adapter must block canonical cutover',
 );
 
-const implicitStateSnapshot = snapshot();
-const implicitStateProjection = adaptUnifiedPageContractV2Raw(
-  { ok: true, data: implicitStateSnapshot } as never,
-  { view_type: 'form' },
-);
-assert.equal(
-  implicitStateProjection.data?.views?.form?.statusbar,
-  undefined,
-  'a state selection without an explicit native statusbar widget must not fabricate a statusbar',
-);
-const explicitStatusbarSnapshot = snapshot();
-const explicitStatusbarField = explicitStatusbarSnapshot.layoutContract.containerTree[0]?.children[1] as unknown as Record<string, unknown>;
-explicitStatusbarField.widget = 'statusbar';
-explicitStatusbarField.fieldInfo = { widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']] };
-const explicitStatusbarProjection = adaptUnifiedPageContractV2Raw(
-  { ok: true, data: explicitStatusbarSnapshot } as never,
-  { view_type: 'form' },
-);
-assert.deepEqual(
-  explicitStatusbarProjection.data?.views?.form?.statusbar,
-  { field: 'state', states: [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }] },
-  'an explicit native statusbar widget must remain available to the compatibility renderer',
-);
-
-console.log('[canonical_form_presenter_test] PASS cases=51');
+console.log('[canonical_form_presenter_test] PASS cases=49');

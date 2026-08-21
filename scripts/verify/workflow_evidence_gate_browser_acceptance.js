@@ -104,19 +104,10 @@ async function main() {
     try {
       const body = await response.json();
       const data = body && body.data && typeof body.data === 'object' ? body.data : {};
-      const rawV2 = data.__unified_page_contract_v2 && typeof data.__unified_page_contract_v2 === 'object'
-        ? data.__unified_page_contract_v2
-        : {};
-      const workflow = data.workflowContract
-        || (data.runtimeContract && data.runtimeContract.workflowContract)
-        || rawV2.workflowContract
-        || (rawV2.runtimeContract && rawV2.runtimeContract.workflowContract)
-        || null;
+      const workflow = data.workflowContract || null;
       const pageInfo = data.pageInfo && typeof data.pageInfo === 'object'
         ? data.pageInfo
-        : rawV2.pageInfo && typeof rawV2.pageInfo === 'object'
-          ? rawV2.pageInfo
-          : {};
+        : {};
       intentResponses.push({
         status: response.status(),
         intent: body && body.meta ? body.meta.intent : '',
@@ -127,11 +118,7 @@ async function main() {
         workflowModel: workflow && workflow.model || '',
         workflowRecordId: workflow && workflow.record_id || '',
         dataKeys: Object.keys(data).slice(0, 30),
-        rawV2Keys: Object.keys(rawV2).slice(0, 30),
         hasDataWorkflowContract: Boolean(data.workflowContract),
-        hasDataRuntimeWorkflowContract: Boolean(data.runtimeContract && data.runtimeContract.workflowContract),
-        hasRawWorkflowContract: Boolean(rawV2.workflowContract),
-        hasRawRuntimeWorkflowContract: Boolean(rawV2.runtimeContract && rawV2.runtimeContract.workflowContract),
         hasWorkflowContract: Boolean(workflow),
         evidenceCount: workflow && Array.isArray(workflow.evidenceGate) ? workflow.evidenceGate.length : 0,
         evidenceReasonCodes: workflow && Array.isArray(workflow.evidenceGate)

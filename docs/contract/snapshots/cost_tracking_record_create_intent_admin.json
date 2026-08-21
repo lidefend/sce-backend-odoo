@@ -2,7 +2,11 @@
   "action": null,
   "case": "cost_tracking_record_create_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": "PROJECT_CONTEXT_MISSING",
+    "message": "缺少 project_id，无法创建成本记录",
+    "suggested_action": "fix_input"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,11 +17,33 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
+    "error": {
+      "code": "PROJECT_CONTEXT_MISSING",
+      "message": "缺少 project_id，无法创建成本记录",
+      "suggested_action": "fix_input"
+    },
+    "meta": {
+      "elapsed_ms": 0,
       "intent": "cost.tracking.record.create",
-      "runtime_snapshot": false
-    }
+      "source_authority": {
+        "authorities": [
+          "account.move",
+          "account.move.line",
+          "account.journal",
+          "account.account",
+          "project.project",
+          "project.cost.code",
+          "ir.model.access",
+          "ir.rule",
+          "odoo.orm"
+        ],
+        "kind": "cost_tracking_odoo_orm_write_proxy",
+        "projection_only": false,
+        "runtime_authority": "odoo.orm",
+        "write_authority": "account.move.create"
+      }
+    },
+    "ok": false
   },
   "user": "admin",
   "user_fallback": null,

@@ -88,11 +88,35 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
 
     def test_one2many_hydration_honors_relation_read_contract(self):
         source = """
-        const entry = relationEntry(contract.value?.fields?.[name]);
+        const entry = relationEntry(formFields()[name]);
         if (entry?.canRead === false) return;
         await readContractFormRecord();
         """
         self.assertLess(source.index("canRead === false"), source.index("readContractFormRecord()"))
+
+    def test_v2_contract_client_builds_the_normalized_store_directly(self):
+        source = """
+        const response = await intentRequestRaw({ intent: 'ui.contract.v2', params });
+        const snapshot = decodeContractV2Snapshot(response.data);
+        return { snapshot, store: createContractV2Store(snapshot) };
+        """
+        self.assertIn("decodeContractV2Snapshot(response.data)", source)
+        self.assertIn("createContractV2Store(snapshot)", source)
+        self.assertNotIn("adaptUnifiedPageContractV2Raw", source)
+
+    def test_v2_create_contract_cache_is_context_scoped_and_store_safe(self):
+        source = """
+        const key = [session.sessionDb, session.token, currentContextEpoch(), JSON.stringify(params)].join('|');
+        if (renderProfile === 'create' && !recordId) return restoreCachedResult(cached.result);
+        function restoreCachedResult(result) {
+          const snapshot = cloneJson(result.snapshot);
+          return { snapshot, store: createContractV2Store(snapshot) };
+        }
+        """
+        self.assertIn("currentContextEpoch()", source)
+        self.assertIn("renderProfile === 'create'", source)
+        self.assertIn("createContractV2Store(snapshot)", source)
+        self.assertNotIn("adaptUnifiedPageContractV2Raw", source)
 
     def test_inactive_action_page_ignores_record_context_events(self):
         source = """

@@ -22,7 +22,7 @@
 ### Iteration B：后端编排主链
 
 - 范围：UI Base Adapter + Scene-ready 构建接入 + next scene 显式输出。
-- 验收：`scene_ready_contract_v1` 含 `ui_base_orchestrator_input` 与 `next_scene`。
+- 验收：`scene_ready_contract` 含 `ui_base_orchestrator_input` 与 `next_scene`。
 
 ### Iteration C：前端消费收口
 

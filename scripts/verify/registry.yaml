@@ -1,17 +1,5 @@
 version: 1
 entries:
-- script: agent_context_lint.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-18'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: agent_context_verify.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-18'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: auth_xpath_guard.sh
   status: retired
   owner: platform-team
@@ -306,10 +294,46 @@ entries:
   date: '2026-08-06'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_codex_preflight.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_export_resume.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_contract_probe_routing.py
   status: orphan
   owner: platform-team
   date: '2026-08-11'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_snapshot_case_actors.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_snapshot_export_fail_closed.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_snapshot_field_selection.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_snapshot_user_resolution.py
+  status: orphan
+  owner: platform-team
+  date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_daily_dev_customer_addons_runtime_guard.py
@@ -370,6 +394,12 @@ entries:
   status: orphan
   owner: platform-team
   date: '2026-08-16'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_product_view_structure_contract.py
+  status: orphan
+  owner: platform-team
+  date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_retired_p1_alias_view_cleanup_migration.py

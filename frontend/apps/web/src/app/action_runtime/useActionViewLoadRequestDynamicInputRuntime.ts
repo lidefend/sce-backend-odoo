@@ -2,7 +2,6 @@ type Dict = Record<string, unknown>;
 
 type BuildLoadRequestDynamicInputOptions = {
   contract: unknown;
-  typedContract: Dict;
   viewMode: string;
   resolvedModel: string;
   searchTerm: string;
@@ -24,7 +23,6 @@ export function useActionViewLoadRequestDynamicInputRuntime() {
   function buildLoadRequestDynamicInput(input: BuildLoadRequestDynamicInputOptions): Dict {
     return {
       contract: input.contract,
-      typedContract: input.typedContract,
       viewMode: input.viewMode,
       resolvedModel: input.resolvedModel,
       searchTerm: input.searchTerm,

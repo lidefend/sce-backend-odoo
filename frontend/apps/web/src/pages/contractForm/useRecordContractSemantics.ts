@@ -1,14 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { computed, nextTick, type ComputedRef, type Ref } from 'vue';
-import type { ContractV2NormalizedStore } from '../../app/contracts/v2';
+import { computed, nextTick, ref, watch, type ComputedRef, type Ref } from 'vue';
+import {
+  resolveContractV2FieldDescriptorMap,
+  resolveContractV2FieldGroups,
+  resolveContractV2FormFieldMap,
+  resolveContractV2RequiredFieldCodes,
+  resolveContractV2VisibleFieldCodes,
+  type ContractV2NormalizedStore,
+} from '../../app/contracts/v2';
+import { intentRequest } from '../../api/intents';
+import { config } from '../../config';
 import { ErrorCodes } from '../../app/error_codes';
 import { findActionMeta } from '../../app/menu';
 import { resolveSceneValidationSuggestedAction } from '../../app/sceneValidationRecoveryStrategy';
-import { resolveFormSceneReady } from '../../app/resolvers/sceneReadyResolver';
+import { findSceneReadyEntry, resolveFormSceneReady } from '../../app/resolvers/sceneReadyResolver';
 import { isCoreSceneStrictMode } from '../../app/contractStrictMode';
-import { resolveUnifiedPageContractV2FieldGroups, resolveUnifiedPageContractV2VisibleFields } from '../../app/contracts/unifiedPageContractV2';
-import { collectPrimaryActionRequiredFields } from './contractRuntimeVm';
-import { dictOrEmpty } from './recordUtils';
 import {
   normalizeContractFieldSemantics,
   normalizeSemanticFieldGroups,
@@ -26,6 +32,7 @@ import {
 } from './sceneValidation';
 
 export function useRecordContractSemantics(context: {
+  contract: Ref<unknown>;
   v2ContractStore: Ref<ContractV2NormalizedStore | null>;
   route: any;
   session: any;
@@ -42,47 +49,43 @@ export function useRecordContractSemantics(context: {
   reload: () => Promise<unknown>;
   focusValidationError: (message: string, fields: Array<{ kind: string; name: string; label: string }>) => void;
 }) {
-  const strictFieldDescriptors = () => Array.from(context.v2ContractStore.value?.widgetsById.values() || [])
-    .reduce<Record<string, any>>((output, widget) => {
-      if (widget.fieldCode && widget.fieldDescriptor && !output[widget.fieldCode]) output[widget.fieldCode] = widget.fieldDescriptor;
-      return output;
-    }, {});
-  const strictSnapshot = () => dictOrEmpty(context.v2ContractStore.value?.snapshot);
   const semanticFieldGroups = computed<Record<string, SemanticFieldGroup>>(() => {
-    const raw = resolveUnifiedPageContractV2FieldGroups(strictSnapshot());
-    return normalizeSemanticFieldGroups(raw, undefined);
+    return normalizeSemanticFieldGroups(resolveContractV2FieldGroups(context.v2ContractStore.value), undefined);
   });
+  const fieldDescriptors = computed(() => resolveContractV2FieldDescriptorMap(context.v2ContractStore.value));
+  const formFields = computed(() => resolveContractV2FormFieldMap(context.v2ContractStore.value));
   const contractFieldSemantics = computed<Record<string, FieldSemanticMeta>>(() => normalizeContractFieldSemantics(
-    dictOrEmpty(strictSnapshot().runtimeContract).fieldSemantics,
+    Object.fromEntries(Object.entries(fieldDescriptors.value).map(([fieldCode, row]) => [fieldCode, {
+      semantic_type: row.semanticType,
+      surface_role: row.surfaceRole,
+      technical: row.technical,
+    }])),
   ));
   const fieldSemanticMeta = (name: string) => resolveFieldSemanticMeta(
     name,
     contractFieldSemantics.value,
-    strictFieldDescriptors()[name],
+    formFields.value[name],
   );
   const coreFieldNames = computed(() => semanticFieldNamesBySurfaceRole(
-    strictFieldDescriptors(), contractFieldSemantics.value, semanticFieldGroups.value, 'core',
+    formFields.value, contractFieldSemantics.value, semanticFieldGroups.value, 'core',
   ));
   const advancedFieldNames = computed(() => semanticFieldNamesBySurfaceRole(
-    strictFieldDescriptors(), contractFieldSemantics.value, semanticFieldGroups.value, 'advanced',
+    formFields.value, contractFieldSemantics.value, semanticFieldGroups.value, 'advanced',
   ));
   const hasAdvancedFields = computed(() => advancedFieldNames.value.length > 0);
-  const policyRequiredFields = computed(() => collectPrimaryActionRequiredFields(
-    dictOrEmpty(strictSnapshot().actionContract).actionPolicies,
-  ));
+  const policyRequiredFields = computed(() => resolveContractV2RequiredFieldCodes(context.v2ContractStore.value));
   const sceneReadySceneKey = computed(() => String(
     context.route.query.scene_key || context.route.params.sceneKey
     || findActionMeta(context.session.menuTree, context.actionId.value)?.scene_key
     || findActionMeta(context.session.menuTree, context.actionId.value)?.sceneKey
     || context.session.currentAction?.scene_key || context.session.currentAction?.sceneKey || '',
   ).trim());
+  const sceneReadyHydrateRequested = ref(false);
+  const useSceneFormAugmentations = computed(() => context.isIntakeCreateMode.value || Boolean(sceneReadySceneKey.value));
   const sceneReadyEntry = computed<Record<string, unknown> | null>(() => {
-    const entry = dictOrEmpty(strictSnapshot().runtimeContract).sceneFormAugmentations;
-    return entry && typeof entry === 'object' && !Array.isArray(entry)
-      ? entry as Record<string, unknown>
-      : null;
+    if (!useSceneFormAugmentations.value) return null;
+    return sceneReadySceneKey.value ? findSceneReadyEntry(context.session.sceneReadyContract, sceneReadySceneKey.value) : null;
   });
-  const useSceneFormAugmentations = computed(() => Boolean(sceneReadyEntry.value));
   const strictContractMode = computed(() => isCoreSceneStrictMode(sceneReadySceneKey.value, sceneReadyEntry.value));
   const strictContractGuard = computed<Record<string, unknown>>(() => strictContractGuardFromSceneReadyEntry(sceneReadyEntry.value));
   const strictContractMissingSummary = computed(() => strictContractMissingSummaryFromGuard(strictContractMode.value, strictContractGuard.value));
@@ -90,18 +93,25 @@ export function useRecordContractSemantics(context: {
   const sceneValidationRequiredFields = computed(() => useSceneFormAugmentations.value
     ? resolveFormSceneReady(sceneReadyEntry.value).requiredFields : []);
   const sceneReadyFormSurface = computed(() => resolveFormSceneReady(useSceneFormAugmentations.value ? sceneReadyEntry.value : null));
+  watch(() => [sceneReadySceneKey.value, sceneReadyFormSurface.value.sceneBlocks.length], async ([sceneKey, blockCount]) => {
+    if (!sceneKey || Number(blockCount || 0) > 0 || sceneReadyHydrateRequested.value) return;
+    sceneReadyHydrateRequested.value = true;
+    try {
+      const result = await intentRequest<Record<string, unknown>>({
+        intent: 'system.init',
+        params: { scene: 'web', with_preload: false, scene_ready_mode: 'full', with: ['workspace_home'],
+          ...(config.startupRootXmlid ? { root_xmlid: config.startupRootXmlid } : {}), scene_key: sceneKey },
+        meta: { startup_chain_bypass: true },
+      });
+      const readyContract = result.scene_ready_contract;
+      if (readyContract && typeof readyContract === 'object' && Array.isArray((readyContract as Record<string, unknown>).scenes)) {
+        context.session.sceneReadyContract = readyContract;
+      }
+    } catch { /* The base form remains usable without optional scene hydration. */ }
+  }, { immediate: true });
   const validationRequiredFields = computed(() => {
     const fields = new Set<string>();
-    const runtime = dictOrEmpty(strictSnapshot().runtimeContract);
-    const rules = Array.isArray(runtime.validationRules) ? runtime.validationRules : [];
-    rules.forEach((rule) => {
-      if (!rule || typeof rule !== 'object') return;
-      const item = rule as Record<string, unknown>;
-      if (String(item.code || '').trim().toUpperCase() !== 'REQUIRED') return;
-      const field = String(item.field || '').trim();
-      const profiles = Array.isArray(item.when_profiles) ? item.when_profiles.map((value) => String(value || '').trim().toLowerCase()) : [];
-      if (field && (!profiles.length || profiles.includes(context.renderProfile.value))) fields.add(field);
-    });
+    policyRequiredFields.value.forEach((field) => fields.add(field));
     sceneValidationRequiredFields.value.forEach((field) => fields.add(field));
     return fields;
   });
@@ -131,9 +141,7 @@ export function useRecordContractSemantics(context: {
     context.formConflict.value = false;
     await context.reload();
   };
-  const contractVisibleFields = computed(() => {
-    return resolveUnifiedPageContractV2VisibleFields(strictSnapshot());
-  });
+  const contractVisibleFields = computed(() => resolveContractV2VisibleFieldCodes(context.v2ContractStore.value));
   return {
     advancedFieldNames, contractVisibleFields, coreFieldNames, fieldSemanticMeta, focusFirstValidationError,
     focusValidationError, hasAdvancedFields, nonSceneValidationErrors, policyRequiredFields, reloadLatestRecord, sceneReadyFormSurface,

@@ -1,0 +1,32 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-G
+  goal: REPO-BASELINE-AUDIT
+  workflow: governance-change
+  capability: governance
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P1
+    layer_target: project_layout_static_guard
+    module: scripts/verify
+    standard_vs_user_specific: construction_product_guard
+    why_here: obsolete_source_token_locked_removed_user_id_suppression_implementation
+    why_not_elsewhere: product_semantics_were_already_frozen_in_batch_f
+    blast_radius: one_static_source_token_assertion
+
+  batch:
+    id: Batch-G
+    objective: remove_obsolete_project_user_id_guard_token
+    scope:
+      - scripts/verify/construction_core_extension_project_layout_split_guard.py
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-F/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-F/evidence.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-G/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-G/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-G/evidence.yaml
+
+  rollback:
+    method: restore_obsolete_token_only_if_user_id_suppression_semantics_are_restored

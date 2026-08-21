@@ -1,6 +1,5 @@
 import { normalizeActionViewMode, resolveActionViewAvailableModes } from '../contracts/actionViewSurfaceContract';
-
-type Dict = Record<string, unknown>;
+import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type SavedFilterChip = { key: string; isDefault?: boolean };
 type GroupByChip = { field: string; isDefault?: boolean };
@@ -9,7 +8,7 @@ export function resolvePreferredActionViewMode(options: {
   contractViewTypeRaw: unknown;
   metaViewModesRaw: unknown;
   metaViewsRaw?: unknown;
-  contract: Dict;
+  contract: ContractV2NormalizedStore;
   routeViewModeRaw: unknown;
   currentPreferredViewModeRaw: unknown;
 }): string {

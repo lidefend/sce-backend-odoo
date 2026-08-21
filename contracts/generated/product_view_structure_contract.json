@@ -4,9 +4,9 @@
     "candidate_fingerprint": {
       "algorithm": "codex_complete_worktree_fingerprint/v1",
       "baseline_sha": "35f31407ab34ffff1d43de264e51de5f858a2596",
-      "digest": "a04945dd8bf4de1e76c5b13f69c20048d5f1eb11a8c8bcb9173c149be2b9dfb8",
-      "git_head": "114661e1445863ada1857357cecc21ddc64a6943",
-      "scope_manifest_sha256": "c8c2870b19dcc5f0c9787d8be751abfc9621a4910befa1c9e1b66db7ee51a87a"
+      "digest": "c640d764ca87c7032d0520c25e9352855504ae0356e22e6704813024bf59bdd3",
+      "git_head": "dc69fe43bafcb351c17647d4fedd894b5fb21283",
+      "scope_manifest_sha256": "dcfd7bb6e9ae1a32cc21b1ecbf743cbbfd8f31a003355476b419f72d7e06460b"
     },
     "company": "base.main_company",
     "compose_project": "sc-local-clean",
@@ -15,7 +15,7 @@
     "database_policy_path": "docs/governance/database_architecture_policy.md",
     "database_policy_sha256": "ca1bc71f61c8b2dedc74f999fa8b4a325265e40e3026e22bb423f5f10987584b",
     "demo_data": false,
-    "exporter_version": "product_view_structure_contract/v1",
+    "exporter_version": "product_view_structure_contract/1.0.0",
     "formal_menu_policy_path": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
     "formal_menu_policy_sha256": "80b5c7d5bbfe69dc5bd26588cbea4f40dbed1a205f9831d890bb8394e8a1ad24",
     "group_profile": [
@@ -232460,8 +232460,8 @@
       "visible_menu_path": "智慧施工管理平台 / 产品配置 / 字段管理"
     }
   ],
-  "manifest_sha256": "97c48a8458433b0206c55406db19a6f0f729fe6f758b310a00484506db003591",
-  "schema": "product_view_structure_contract/v1",
+  "manifest_sha256": "21b432d971f6ce46711ef7851cb81de420687458b3cae3117059cd9892661a20",
+  "schema": "product_view_structure_contract/1.0.0",
   "summary": {
     "error_count": 0,
     "formal_menu_count": 89,

@@ -37,7 +37,10 @@ const fieldClasses = computed(() => {
   field.decorations.forEach((decoration) => {
     const tone = String(decoration.class || '').trim();
     if (!tone) return;
-    classes[`activity-template-field--${tone}`] = evaluateNativeModifierValue(decoration.expr, props.record);
+    classes[`activity-template-field--${tone}`] = evaluateNativeModifierValue(
+      decoration.expr,
+      (fieldName) => props.record[fieldName],
+    );
   });
   return classes;
 });

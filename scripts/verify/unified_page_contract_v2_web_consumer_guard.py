@@ -37,7 +37,6 @@ def main() -> int:
     contract_source = read("app/contracts/unifiedPageContractV2.ts")
     action_view_source = read("views/ActionView.vue")
     action_status_runtime_source = read("app/runtime/actionViewContractActionRuntime.ts")
-    record_runtime_source = read("app/contractRecordRuntime.ts")
     action_runtime_source = read("app/contractActionRuntime.ts")
     action_presentation_source = read("app/action_runtime/useActionViewActionPresentationRuntime.ts")
     load_request_source = read("app/action_runtime/useActionViewLoadRequestRuntime.ts")
@@ -48,13 +47,12 @@ def main() -> int:
     navigation_runtime_source = read("app/action_runtime/useActionViewNavigationRuntime.ts")
     shape_runtime_source = read("app/action_runtime/useActionViewContractShapeRuntime.ts")
     contract_form_source = read("pages/ContractFormPage.vue")
+    form_shadow_diagnostics_source = read("pages/contractForm/useContractV2ShadowDiagnostics.ts")
 
     require_tokens(errors, contract_source, "web v2 contract resolver", (
         "export type UnifiedPageContractV2ClientType = 'web_pc' | 'wx_mini' | 'harmony_h5'",
         "export function isUnifiedPageContractV2",
         "asText(pageInfo.contractVersion).startsWith('2.')",
-        "root.__unified_page_contract_v2",
-        "rawBody.unified_page_contract_v2",
         "collectUnifiedPageContractV2FieldWidgets",
         "collectUnifiedPageContractV2WidgetStatus",
         "collectUnifiedPageContractV2ButtonStatus",
@@ -70,35 +68,22 @@ def main() -> int:
         "surfacePolicies?: Record<string, unknown>",
         "listProfile?: Record<string, unknown>",
     ))
-    require_tokens(errors, record_runtime_source, "web v2 record runtime", (
-        "resolveUnifiedPageContractV2(contract)",
-        "resolveUnifiedPageContractV2GlobalStatus(contract)",
-        "collectUnifiedPageContractV2FieldWidgets(contract)",
-        "collectUnifiedPageContractV2FieldStatus(contract)",
-        "collectUnifiedPageContractV2FieldContainerStatus(contract)",
-        "buildV2Fields",
-        "hasV2Form",
-        "mapV2ActionButton",
-        "collectUnifiedPageContractV2ButtonStatus(contract)",
-        "status?.disabled === true",
-    ))
     require_tokens(errors, action_runtime_source, "web v2 access runtime", (
-        "resolveUnifiedPageContractV2(contract)",
-        "v2?.pageInfo?.viewType",
-        "resolveUnifiedPageContractV2GlobalStatus(contract)",
+        "store?.snapshot.pageInfo.viewType",
+        "resolveContractV2GlobalStatus(store)",
         "pageAuth === 'none'",
         "UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN",
     ))
     require_tokens(errors, action_presentation_source, "web v2 action presentation", (
         "normalizeV2ActionRows",
-        "v2.actionContract.actionRuleList",
+        "resolveContractV2ActionRules(store)",
         "resolveV2RefreshPolicy(action.refreshMode)",
         "unified_page_contract_v2_action_id",
         "unified_page_contract_v2_source_widget_id",
         "unified_page_contract_v2_refresh_mode",
     ))
     require_tokens(errors, action_view_source, "web ActionView v2 status bridge", (
-        "collectUnifiedPageContractV2ButtonStatus",
+        "collectContractV2ButtonStatusById",
         "applyActionViewV2ButtonStatus",
         "toContractActionButton: (row, dedup) => applyActionViewV2ButtonStatus(",
     ))
@@ -109,7 +94,7 @@ def main() -> int:
         "disabled_by_status_contract",
     ))
     require_tokens(errors, load_request_source, "web v2 load request", (
-        "resolveUnifiedPageContractV2PrimaryDataSource(options.contract)",
+        "resolveContractV2PrimaryDataSource(options.contract",
         "sourceDomainRaw",
         "requestPayload.domain_raw = sourceDomainRaw",
         "sourceContextRaw",
@@ -118,43 +103,37 @@ def main() -> int:
         "requestPayload.context = {",
     ))
     require_tokens(errors, load_preflight_source, "web v2 load preflight", (
-        "resolveUnifiedPageContractV2PrimaryDataSource(contract)",
+        "resolveContractV2PrimaryDataSource(contract)",
         "v2PrimaryParams.order || searchDefaults?.order",
         "v2PrimaryParams.limit || searchDefaults?.limit",
     ))
     require_tokens(errors, filter_runtime_source, "web v2 selector status", (
-        "resolveUnifiedPageContractV2SelectorStatus",
+        "resolveContractV2SelectorStatus",
         "isSelectorEnabled",
         "status?.visible !== false && status?.disabled !== true",
         "selectorTokens(`filter.${key}`, key)",
         "selectorTokens(`group.${field}`, field)",
     ))
     require_tokens(errors, surface_contract_source, "web v2 surface modes", (
-        "resolveUnifiedPageContractV2(contract)",
-        "addModes(v2?.pageInfo?.viewType)",
+        "contract?.snapshot.pageInfo.viewType",
+        "resolveContractV2ListProfile(contract)",
     ))
     require_tokens(errors, meta_runtime_source, "web v2 meta runtime", (
-        "resolveUnifiedPageContractV2(contract)",
-        "v2?.pageInfo?.viewType",
+        "contract?.snapshot.pageInfo.viewType",
     ))
     require_tokens(errors, navigation_runtime_source, "web v2 navigation runtime", (
-        "resolveUnifiedPageContractV2(contract)",
+        "resolveContractV2ActionRules(store)",
         "['list', 'tree', 'kanban'].includes(v2ViewType)",
     ))
     require_tokens(errors, shape_runtime_source, "web v2 shape runtime", (
-        "collectUnifiedPageContractV2FieldWidgets",
-        "collectUnifiedPageContractV2FieldStatus",
-        "resolveUnifiedPageContractV2",
-        "v2?.pageInfo?.model",
+        "resolveContractV2FieldWidgets",
+        "collectContractV2FieldStatusByCode",
+        "snapshot.pageInfo.model",
     ))
-    form_structure_consumer_source = "\n".join((
-        contract_form_source,
-        read("pages/contractForm/useContractV2Diagnostics.ts"),
-    ))
-    require_tokens(errors, form_structure_consumer_source, "web v2 form structure store selector", (
+    require_tokens(errors, form_shadow_diagnostics_source, "web v2 form structure store selector", (
         "resolveContractV2FormStructureContract",
-        "formV2FormStructureContract",
-        "formV2FormStructureSlotCount",
+        "v2ShadowFormStructureContract",
+        "v2ShadowFormStructureSlotCount",
     ))
     for token in FORBIDDEN_FRONTEND_STRUCTURE_TITLE_TOKENS:
         if token in contract_form_source or token in contract_source:

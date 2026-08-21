@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE_JSON = ROOT / "docs" / "product" / "delivery" / "v1" / "delivery_menu_tree_source_v1.json"
 MODULE_SOURCE_JSON = ROOT / "docs" / "product" / "delivery" / "v1" / "module_scene_capability_source_v1.json"
 SCENE_MAP_JSON = ROOT / "artifacts" / "backend" / "scene_domain_mapping.json"
-SCENE_CONTRACT_STATE_JSON = ROOT / "artifacts" / "backend" / "scene_contract_v1_field_schema_state.json"
+SCENE_CONTRACT_STATE_JSON = ROOT / "artifacts" / "backend" / "scene_contract_field_schema_state.json"
 REPORT_JSON = ROOT / "artifacts" / "product" / "delivery_menu_tree_v1.json"
 ENTRY_MODULE_INDEX_JSON = ROOT / "artifacts" / "product" / "menu_entry_module_index.json"
 REPORT_MD = ROOT / "docs" / "product" / "delivery" / "v1" / "delivery_menu_tree_v1.md"
@@ -59,8 +59,8 @@ def main() -> int:
     }
     if not valid_scenes:
         contract = (
-            scene_contract_state.get("scene_ready_contract_v1")
-            if isinstance(scene_contract_state.get("scene_ready_contract_v1"), dict)
+            scene_contract_state.get("scene_ready_contract")
+            if isinstance(scene_contract_state.get("scene_ready_contract"), dict)
             else {}
         )
         valid_scenes = {

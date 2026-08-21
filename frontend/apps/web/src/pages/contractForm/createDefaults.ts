@@ -1,7 +1,8 @@
 import {
-  resolveUnifiedPageContractV2MainData,
-  resolveUnifiedPageContractV2SourceContext,
-} from '../../app/contracts/unifiedPageContractV2';
+  resolveContractV2FormFieldMap,
+  resolveContractV2MainData,
+  resolveContractV2SourceContext,
+} from '../../app/contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2/types';
 import { normalizeRouteDefault } from './valueUtils';
 
@@ -18,7 +19,7 @@ function createDefaultsDictionary(value: unknown): Record<string, unknown> {
 }
 
 function createDefaultFieldType(store: ContractV2NormalizedStore | null, fieldName: string): string {
-  const descriptor = store?.widgetsByFieldCodeAll?.get(fieldName)?.find((widget) => widget.fieldDescriptor)?.fieldDescriptor;
+  const descriptor = resolveContractV2FormFieldMap(store)[fieldName] as Record<string, unknown> | undefined;
   return String(descriptor?.type || descriptor?.ttype || '').trim().toLowerCase();
 }
 
@@ -126,16 +127,14 @@ export async function loadAuthoritativeCreateDefaults(params: {
 export function formCreateContext(params: {
   v2ContractStore: ContractV2NormalizedStore | null;
 }) {
-  const storeContext = resolveUnifiedPageContractV2SourceContext(params.v2ContractStore?.snapshot);
-  return storeContext.context || {};
+  return resolveContractV2SourceContext(params.v2ContractStore).context || {};
 }
 
 export function resolveCreateDefaults(params: {
   routeQuery: Record<string, unknown>;
   v2ContractStore: ContractV2NormalizedStore | null;
 }) {
-  const storeMainData = resolveUnifiedPageContractV2MainData(params.v2ContractStore?.snapshot);
-  const defaults: Record<string, unknown> = { ...storeMainData };
+  const defaults: Record<string, unknown> = { ...resolveContractV2MainData(params.v2ContractStore) };
   Object.entries(params.routeQuery).forEach(([key, value]) => {
     if (!key.startsWith('default_')) return;
     const fieldName = routeDefaultFieldName(key);

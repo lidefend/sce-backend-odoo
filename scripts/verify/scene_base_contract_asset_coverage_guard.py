@@ -65,7 +65,7 @@ def _resolve_state_path(baseline: dict) -> Path:
 
 
 def _resolve_runtime_env(payload: dict) -> str:
-    governance = payload.get("scene_governance_v1") if isinstance(payload.get("scene_governance_v1"), dict) else {}
+    governance = payload.get("scene_governance") if isinstance(payload.get("scene_governance"), dict) else {}
     delivery_policy = governance.get("delivery_policy") if isinstance(governance.get("delivery_policy"), dict) else {}
     runtime_env = str(delivery_policy.get("runtime_env") or "").strip()
     if runtime_env:
@@ -175,33 +175,38 @@ def _validate_production_wiring(errors: list[str]) -> None:
 
 def _fetch_runtime_data() -> dict:
     from intent_smoke_utils import require_ok
-    from python_http_smoke_utils import get_base_url, http_post_json
+    from python_http_smoke_utils import (
+        build_intent_url,
+        extract_login_token,
+        get_base_url,
+        http_post_json,
+    )
 
     base_url = get_base_url()
-    intent_url = f"{base_url}/api/v1/intent"
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
+    intent_url = build_intent_url(base_url, db_name)
     login = os.getenv("E2E_LOGIN") or "admin"
     password = os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin"
 
     status, login_resp = http_post_json(
         intent_url,
         {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
+        headers={"X-Anonymous-Intent": "1", "X-Odoo-DB": db_name},
     )
     require_ok(status, login_resp, "login")
-    token = ((login_resp.get("data") or {}).get("token") or "")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 
     status, init_resp = http_post_json(
         intent_url,
         {"intent": "system.init", "params": {"contract_mode": "user"}},
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
     )
     require_ok(status, init_resp, "system.init")
     data = init_resp.get("data") if isinstance(init_resp.get("data"), dict) else {}
     nav_meta = data.get("nav_meta") if isinstance(data.get("nav_meta"), dict) else {}
-    scene_ready = data.get("scene_ready_contract_v1") if isinstance(data.get("scene_ready_contract_v1"), dict) else {}
+    scene_ready = data.get("scene_ready_contract") if isinstance(data.get("scene_ready_contract"), dict) else {}
     scene_meta = scene_ready.get("meta") if isinstance(scene_ready.get("meta"), dict) else {}
 
     role_code = str(nav_meta.get("role_surface_code") or "").strip() or "unknown"

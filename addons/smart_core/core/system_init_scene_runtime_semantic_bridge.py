@@ -68,7 +68,7 @@ def apply_system_init_scene_runtime_semantic_bridge(
     active_scene_key: str = "",
 ) -> Dict[str, Any]:
     out = dict(data or {})
-    scene_ready = _as_dict(out.get("scene_ready_contract_v1"))
+    scene_ready = _as_dict(out.get("scene_ready_contract"))
     rows = [row for row in _as_list(scene_ready.get("scenes")) if isinstance(row, dict)]
     if not rows:
         return out

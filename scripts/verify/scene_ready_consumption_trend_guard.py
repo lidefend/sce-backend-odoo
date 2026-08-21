@@ -8,7 +8,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import (
+    build_intent_url,
+    extract_login_token,
+    get_base_url,
+    http_post_json,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -48,18 +53,18 @@ def _resolve_state_path(baseline: dict) -> Path:
 
 def _fetch_consumption() -> dict:
     base_url = get_base_url()
-    intent_url = f"{base_url}/api/v1/intent"
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
+    intent_url = build_intent_url(base_url, db_name)
     login = os.getenv("E2E_LOGIN") or "admin"
     password = os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin"
 
     status, login_resp = http_post_json(
         intent_url,
         {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
+        headers={"X-Anonymous-Intent": "1", "X-Odoo-DB": db_name},
     )
     require_ok(status, login_resp, "login")
-    token = ((login_resp.get("data") or {}).get("token") or "")
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 
@@ -69,17 +74,17 @@ def _fetch_consumption() -> dict:
             "intent": "system.init",
             "params": {"contract_mode": "user", "build_mode": "debug"},
         },
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
     )
     require_ok(status, init_resp, "system.init")
 
     data = init_resp.get("data") if isinstance(init_resp.get("data"), dict) else {}
-    governance = data.get("scene_governance_v1") if isinstance(data.get("scene_governance_v1"), dict) else {}
+    governance = data.get("scene_governance") if isinstance(data.get("scene_governance"), dict) else {}
     if not governance:
         startup_inspect = data.get("startup_inspect") if isinstance(data.get("startup_inspect"), dict) else {}
         governance = (
-            startup_inspect.get("scene_governance_v1")
-            if isinstance(startup_inspect.get("scene_governance_v1"), dict)
+            startup_inspect.get("scene_governance")
+            if isinstance(startup_inspect.get("scene_governance"), dict)
             else {}
         )
     consumption = governance.get("scene_ready_consumption") if isinstance(governance.get("scene_ready_consumption"), dict) else {}

@@ -18,7 +18,7 @@
     "view_type": "list"
   },
   "ui_contract_raw": {},
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": "list"
 }

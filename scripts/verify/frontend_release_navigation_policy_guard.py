@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MANIFEST = ROOT / "config/frontend/authoritative_navigation_v1.json"
+MANIFEST = ROOT / "config/frontend/authoritative_navigation.json"
 POLICY = ROOT / "addons/smart_construction_core/core_extension_policy_maps.py"
 ROLE_MAP = {
     "finance": "finance",

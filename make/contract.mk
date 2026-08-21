@@ -27,6 +27,8 @@ INTENT_SURFACE_JSON ?= artifacts/intent_surface_report.json
 CONTRACT_PREFLIGHT_INTENT_SURFACE_MD ?= artifacts/intent_surface_report.md
 CONTRACT_PREFLIGHT_INTENT_SURFACE_JSON ?= artifacts/intent_surface_report.json
 CONTRACT_PREFLIGHT_CONTINUE_FROM_FAILURE ?= 0
+CONTRACT_START_CASE ?=
+CONTRACT_CASE_ONLY ?=
 
 contract.export:
 	@DB="$(DB_NAME)" scripts/contract/snapshot_export.sh \
@@ -40,7 +42,7 @@ contract.export:
 	  --outdir "$(CONTRACT_OUTDIR)"
 
 contract.export_all:
-	@SC_CONTRACT_STABLE=1 DB="$(DB_NAME)" CASES_FILE="docs/contract/cases.yml" OUTDIR="$(CONTRACT_OUTDIR)" CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" scripts/contract/export_all.sh
+	@SC_CONTRACT_STABLE=1 DB="$(DB_NAME)" CASES_FILE="docs/contract/cases.yml" OUTDIR="$(CONTRACT_OUTDIR)" CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" START_CASE="$(CONTRACT_START_CASE)" CASE_ONLY="$(CONTRACT_CASE_ONLY)" scripts/contract/export_all.sh
 
 contract.catalog.export:
 	@python3 scripts/contract/export_catalogs.py
@@ -166,6 +168,9 @@ gate.contract.view_capability_ledger: verify.contract.view_capability_ledger
 
 verify.contract.catalog: guard.prod.forbid
 	@python3 scripts/verify/intent_cases_integrity_guard.py --cases-file docs/contract/cases.yml
+	@python3 scripts/verify/test_contract_catalog_paths.py
+	@python3 scripts/verify/test_contract_snapshot_principal.py
+	@python3 scripts/verify/test_construction_intent_contribution_registry.py
 	@$(MAKE) --no-print-directory contract.catalog.export
 	@test -s docs/contract/exports/intent_catalog.json || (echo "❌ intent_catalog.json missing" && exit 2)
 	@test -s docs/contract/exports/scene_catalog.json || (echo "❌ scene_catalog.json missing" && exit 2)

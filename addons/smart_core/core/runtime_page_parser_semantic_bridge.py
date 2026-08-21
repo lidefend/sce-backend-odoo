@@ -33,7 +33,7 @@ def apply_runtime_page_parser_semantic_bridge(
     page_key: str = "",
 ) -> Dict[str, Any]:
     page = dict(page_payload or {})
-    orchestration = _as_dict(page.get("page_orchestration_v1"))
+    orchestration = _as_dict(page.get("page_orchestration"))
     meta = _as_dict(orchestration.get("meta"))
     surface = _as_dict(meta.get("parser_semantic_surface"))
     if not surface:
@@ -74,5 +74,5 @@ def apply_runtime_page_parser_semantic_bridge(
         page_node["context"] = page_ctx
     orchestration["page"] = page_node
 
-    page["page_orchestration_v1"] = orchestration
+    page["page_orchestration"] = orchestration
     return page

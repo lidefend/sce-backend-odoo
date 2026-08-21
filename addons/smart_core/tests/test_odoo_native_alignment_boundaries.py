@@ -530,7 +530,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
     def test_release_navigation_prefers_delivery_engine_payload(self):
         payload = release_navigation_contract_builder.build_release_navigation_contract(
             {
-                "delivery_engine_v1": {
+                "delivery_engine": {
                     "contract_version": "v1",
                     "role_code": "operator",
                     "product_key": "platform.standard",
@@ -540,7 +540,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             }
         )
 
-        self.assertEqual(payload.get("source"), "delivery_engine_v1")
+        self.assertEqual(payload.get("source"), "delivery_engine")
         self.assertFalse((payload.get("meta") or {}).get("fallback_used"))
         self.assertEqual((payload.get("nav") or [])[0].get("key"), "platform.home")
 

@@ -13,11 +13,14 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "user.view.preference.set",
-      "runtime_snapshot": false
-    }
+    "id": 1,
+    "preference": {
+      "column_order": [],
+      "column_widths": {},
+      "hidden_columns": [],
+      "visible_columns": []
+    },
+    "scope_key": "ui:list_columns:list:model:unknown"
   },
   "user": "admin",
   "user_fallback": null,
