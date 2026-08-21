@@ -1,5 +1,5 @@
 {
-  "contract_version": "page_orchestration_v1",
+  "contract_version": "page_orchestration",
   "scene_key": "workspace.home",
   "page": {
     "key": "home",

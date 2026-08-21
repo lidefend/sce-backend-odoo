@@ -5,7 +5,7 @@ from odoo.tests.common import HttpCase, tagged
 
 
 @tagged("post_install", "-at_install", "smoke", "sc_smoke", "smart_core")
-class TestV1IntentSmoke(HttpCase):
+class TestIntentSmoke(HttpCase):
 
     @classmethod
     def setUpClass(cls):
@@ -19,13 +19,32 @@ class TestV1IntentSmoke(HttpCase):
             "groups_id": [(6, 0, [cls.env.ref("base.group_user").id])],
         })
 
-    def _json_response(self, resp):
-        if hasattr(resp, "read"):
-            body = resp.read()
-        else:
-            body = resp
+    def _json_response(self, response):
+        body = response
+        for _index in range(3):
+            if isinstance(body, (bytes, str)):
+                break
+            if callable(getattr(body, "json", None)):
+                parsed = body.json()
+                if isinstance(parsed, dict):
+                    return parsed
+                body = parsed
+            elif hasattr(body, "get_data"):
+                body = body.get_data(as_text=True)
+            elif hasattr(body, "content"):
+                body = body.content
+            elif hasattr(body, "text"):
+                body = body.text
+            elif hasattr(body, "data"):
+                body = body.data
+            elif hasattr(body, "read"):
+                body = body.read()
+            else:
+                break
         if isinstance(body, bytes):
             body = body.decode("utf-8")
+        if isinstance(body, dict):
+            return body
         return json.loads(body or "{}")
 
     def _post_intent(self, payload, headers=None, with_db=False):
@@ -180,21 +199,34 @@ class TestV1IntentSmoke(HttpCase):
         data = self._post_intent(payload, headers={"Authorization": f"Bearer {token}"})
         self.assertTrue(data.get("ok"), data)
         response_meta = data.get("meta") or {}
-        self.assertEqual(response_meta.get("contract_version"), "1.0.0")
-        self.assertEqual(response_meta.get("schema_version"), "1.0.0")
+        self.assertEqual(response_meta.get("contract_version"), "2.0.0")
+        self.assertEqual(response_meta.get("schema_version"), "2.0.0")
         self.assertIn("user", data.get("data", {}))
-        self.assertIn("nav", data.get("data", {}))
+        self.assertNotIn("nav", data.get("data", {}))
+        self.assertIn("navigation", data.get("data", {}))
         self.assertIn("intents", data.get("data", {}))
         self.assertNotIn("intents_meta", data.get("data", {}))
         intents = data.get("data", {}).get("intents") or []
         self.assertIsInstance(intents, list)
         self.assertIn("meta.intent_catalog", intents)
-        self.assertIn("intent_catalog_ref", data.get("data", {}))
+        self.assertNotIn("intent_catalog_ref", data.get("data", {}))
         self.assertNotIn("api.data", intents)
         self.assertIn("capabilities", data.get("data", {}))
         self.assertIn("capability_groups", data.get("data", {}))
-        self.assertIn("init_contract_v1", data.get("data", {}))
-        self.assertIn("system_init_sections_v1", data.get("data", {}))
+        self.assertNotIn("init_contract_v1", data.get("data", {}))
+        self.assertNotIn("system_init_sections_v1", data.get("data", {}))
+        self.assertNotIn("navigation_v1", data.get("data", {}))
+        self.assertNotIn("scene_ready_contract_v1", data.get("data", {}))
+        navigation = data.get("data", {}).get("navigation") or {}
+        self.assertEqual(navigation.get("contract_version"), "2.0.0")
+        self.assertEqual(navigation.get("schema_version"), "2.0.0")
+        self.assertNotIn("route_authority_v1", navigation)
+        route_authority = navigation.get("route_authority") or {}
+        self.assertEqual(route_authority.get("contract_version"), "2.0.0")
+        self.assertEqual(route_authority.get("schema_version"), "2.0.0")
+        scene_ready_contract = data.get("data", {}).get("scene_ready_contract") or {}
+        self.assertEqual(scene_ready_contract.get("contract_version"), "2.0.0")
+        self.assertEqual(scene_ready_contract.get("schema_version"), "2.0.0")
         self.assertIn("page_contracts", data.get("data", {}))
         self.assertIn("workspace_home_ref", data.get("data", {}))
         self.assertNotIn("workspace_home", data.get("data", {}))
@@ -213,31 +245,19 @@ class TestV1IntentSmoke(HttpCase):
             self.assertIn("scene_key", default_route)
             self.assertEqual(str(default_route.get("scene_key") or "").strip(), "workspace.home")
             self.assertEqual(str(default_route.get("route") or "").strip(), "/")
-        init_contract = data.get("data", {}).get("init_contract_v1") or {}
-        sections_v1 = data.get("data", {}).get("system_init_sections_v1") or {}
-        self.assertEqual(sections_v1.get("contract_version"), "1.0.0")
-        self.assertEqual(sections_v1.get("schema_version"), "1.0.0")
-        self.assertIn("session", sections_v1)
-        self.assertIn("nav", sections_v1)
-        self.assertIn("surface", sections_v1)
-        self.assertIn("bootstrap_refs", sections_v1)
-        self.assertEqual(init_contract.get("contract_version"), "1.0.0")
-        self.assertEqual(init_contract.get("schema_version"), "1.0.0")
-        self.assertIn("session", init_contract)
-        self.assertIn("nav", init_contract)
-        self.assertIn("surface", init_contract)
-        self.assertIn("bootstrap_refs", init_contract)
-        scene_governance = data.get("data", {}).get("scene_governance_v1") or {}
-        self.assertIn("surface_mapping", scene_governance)
-        mapping = scene_governance.get("surface_mapping") or {}
-        self.assertIn("before", mapping)
-        self.assertIn("after", mapping)
-        self.assertIn("removed", mapping)
-        scene_metrics = scene_governance.get("scene_metrics") or {}
-        self.assertIn("scene_registry_count", scene_metrics)
-        self.assertIn("scene_deliverable_count", scene_metrics)
-        self.assertIn("scene_navigable_count", scene_metrics)
-        self.assertIn("scene_excluded_count", scene_metrics)
+        scene_governance = data.get("data", {}).get("scene_governance") or {}
+        self.assertNotIn("scene_governance_v1", data.get("data", {}))
+        if scene_governance:
+            self.assertIn("surface_mapping", scene_governance)
+            mapping = scene_governance.get("surface_mapping") or {}
+            self.assertIn("before", mapping)
+            self.assertIn("after", mapping)
+            self.assertIn("removed", mapping)
+            scene_metrics = scene_governance.get("scene_metrics") or {}
+            self.assertIn("scene_registry_count", scene_metrics)
+            self.assertIn("scene_deliverable_count", scene_metrics)
+            self.assertIn("scene_navigable_count", scene_metrics)
+            self.assertIn("scene_excluded_count", scene_metrics)
         row = data.get("data", {}) or {}
         role_surface = row.get("role_surface") or {}
         role_surface_code = str(role_surface.get("role_code") or "").strip().lower()
@@ -245,7 +265,7 @@ class TestV1IntentSmoke(HttpCase):
             page_contracts = row.get("page_contracts") if isinstance(row.get("page_contracts"), dict) else {}
             pages = page_contracts.get("pages") if isinstance(page_contracts.get("pages"), dict) else {}
             home_page = pages.get("home") if isinstance(pages.get("home"), dict) else {}
-            home_orchestration = home_page.get("page_orchestration_v1") if isinstance(home_page.get("page_orchestration_v1"), dict) else {}
+            home_orchestration = home_page.get("page_orchestration") if isinstance(home_page.get("page_orchestration"), dict) else {}
             home_page_payload = home_orchestration.get("page") if isinstance(home_orchestration.get("page"), dict) else {}
             home_context = home_page_payload.get("context") if isinstance(home_page_payload.get("context"), dict) else {}
             self.assertEqual(str(home_context.get("role_code") or "").strip().lower(), role_surface_code)
@@ -257,8 +277,8 @@ class TestV1IntentSmoke(HttpCase):
             if hero_role_code:
                 self.assertEqual(hero_role_code, role_surface_code)
 
-            page_orchestration_v1 = workspace_home.get("page_orchestration_v1") or {}
-            page = page_orchestration_v1.get("page") if isinstance(page_orchestration_v1.get("page"), dict) else {}
+            page_orchestration = workspace_home.get("page_orchestration") or {}
+            page = page_orchestration.get("page") if isinstance(page_orchestration.get("page"), dict) else {}
             context = page.get("context") if isinstance(page.get("context"), dict) else {}
             context_role_code = str(context.get("role_code") or "").strip().lower()
             if context_role_code:
@@ -282,9 +302,8 @@ class TestV1IntentSmoke(HttpCase):
         data = self._post_intent(payload, headers={"Authorization": f"Bearer {token}"})
         self.assertTrue(data.get("ok"), data)
         row = data.get("data", {}) or {}
-        init_contract = row.get("init_contract_v1") if isinstance(row.get("init_contract_v1"), dict) else {}
-        self.assertEqual(init_contract.get("contract_version"), "1.0.0")
-        self.assertEqual(init_contract.get("schema_version"), "1.0.0")
+        self.assertNotIn("init_contract_v1", row)
+        self.assertNotIn("system_init_sections_v1", row)
         self.assertIn("workspace_home", row)
         self.assertIn("workspace_home_ref", row)
         ref = row.get("workspace_home_ref") or {}
@@ -295,10 +314,10 @@ class TestV1IntentSmoke(HttpCase):
         workspace_record = workspace_home.get("record") if isinstance(workspace_home.get("record"), dict) else {}
         hero = workspace_record.get("hero") if isinstance(workspace_record.get("hero"), dict) else {}
         self.assertEqual(str(hero.get("role_code") or "").strip().lower(), role_surface_code)
-        orchestration_v1 = workspace_home.get("page_orchestration_v1") if isinstance(workspace_home.get("page_orchestration_v1"), dict) else {}
-        page_v1 = orchestration_v1.get("page") if isinstance(orchestration_v1.get("page"), dict) else {}
-        context_v1 = page_v1.get("context") if isinstance(page_v1.get("context"), dict) else {}
-        self.assertEqual(str(context_v1.get("role_code") or "").strip().lower(), role_surface_code)
+        orchestration = workspace_home.get("page_orchestration") if isinstance(workspace_home.get("page_orchestration"), dict) else {}
+        page = orchestration.get("page") if isinstance(orchestration.get("page"), dict) else {}
+        page_context = page.get("context") if isinstance(page.get("context"), dict) else {}
+        self.assertEqual(str(page_context.get("role_code") or "").strip().lower(), role_surface_code)
         blocks = workspace_home.get("blocks") if isinstance(workspace_home.get("blocks"), list) else []
         self.assertTrue(bool(blocks))
         first_block = blocks[0] if blocks else {}

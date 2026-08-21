@@ -1,5 +1,5 @@
 {
-  "contract_version": "scene_contract_standard_v1",
+  "contract_version": "2.0.0",
   "identity": {
     "scene_key": "projects.intake",
     "title": "Project Intake",

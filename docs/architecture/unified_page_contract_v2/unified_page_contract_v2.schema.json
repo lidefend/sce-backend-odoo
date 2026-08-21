@@ -35,6 +35,12 @@
     "formStructureContract": {
       "$ref": "#/$defs/formStructureContract"
     },
+    "searchContract": {
+      "$ref": "#/$defs/searchContract"
+    },
+    "workflowContract": {
+      "type": "object"
+    },
     "meta": {
       "$ref": "#/$defs/meta"
     }
@@ -44,6 +50,37 @@
       "type": "string",
       "minLength": 1,
       "pattern": "^[a-zA-Z][a-zA-Z0-9_.:-]*$"
+    },
+    "sourceContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "context": { "type": "object" },
+        "domain": { "type": "array" },
+        "contextRaw": { "type": "string" },
+        "domainRaw": { "type": "string" },
+        "renderProfile": { "enum": ["create", "edit", "readonly"] },
+        "order": { "type": "string" },
+        "limit": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "searchContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_sort": { "type": "string" },
+        "default_order": { "type": "string" },
+        "mode": { "type": "string" },
+        "filters": { "type": "array", "items": { "type": "object" } },
+        "saved_filters": { "type": "array", "items": { "type": "object" } },
+        "group_by": { "type": "array", "items": { "type": "object" } },
+        "fields": { "type": "array", "items": { "type": "object" } },
+        "search_panel": { "type": "object" },
+        "favorites": { "type": "object" },
+        "custom": { "type": "object" },
+        "ui_labels": { "type": "object" },
+        "defaults": { "type": "object" }
+      }
     },
     "pageInfo": {
       "type": "object",
@@ -160,7 +197,7 @@
         "containerTree": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/container"
+            "$ref": "#/$defs/layoutNode"
           }
         },
         "layoutHints": {
@@ -184,7 +221,6 @@
         "containerId",
         "containerType",
         "title",
-        "span",
         "children",
         "widgetList"
       ],
@@ -216,10 +252,22 @@
         "styleToken": {
           "type": "string"
         },
+        "type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "string": {
+          "type": "string"
+        },
         "children": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/container"
+            "$ref": "#/$defs/layoutNode"
           }
         },
         "widgetList": {
@@ -227,6 +275,93 @@
           "items": {
             "$ref": "#/$defs/widget"
           }
+        }
+      }
+    },
+    "layoutNode": {
+      "anyOf": [
+        {"$ref": "#/$defs/container"},
+        {"$ref": "#/$defs/nativeLayoutNode"}
+      ]
+    },
+    "nativeLayoutNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {"type": "string", "minLength": 1},
+        "name": {"type": "string"},
+        "string": {"type": "string"},
+        "label": {"type": "string"},
+        "title": {"type": "string"},
+        "text": {"type": "string"},
+        "displayLabel": {"type": "string"},
+        "semanticTitle": {"type": "string"},
+        "semanticAnchor": {"type": "string"},
+        "containerId": {"$ref": "#/$defs/id"},
+        "containerType": {"type": "string"},
+        "span": {"type": "integer", "minimum": 1, "maximum": 24},
+        "styleToken": {"type": "string"},
+        "widgetId": {"type": "string"},
+        "fieldCode": {"type": "string"},
+        "widget": {"type": "string"},
+        "componentKey": {"type": "string"},
+        "componentConfig": {"type": "object"},
+        "fieldInfo": {"type": "object"},
+        "filename": {"type": "string"},
+        "nolabel": {"type": "boolean"},
+        "attributes": {"type": "object"},
+        "modifiers": {"type": "object"},
+        "action": {"type": ["object", "null"]},
+        "badge": {"type": "object"},
+        "buttonType": {"type": "string"},
+        "readonly": {},
+        "required": {},
+        "invisible": {},
+        "column_invisible": {},
+        "domain": {},
+        "context": {},
+        "options": {},
+        "visible": {"type": "boolean"},
+        "cols": {"type": "integer", "minimum": 1},
+        "columns": {"type": "integer", "minimum": 1},
+        "col": {"type": ["integer", "string"]},
+        "class": {"type": "string"},
+        "className": {"type": "string"},
+        "fieldSize": {"type": "string"},
+        "size": {"type": "string"},
+        "formStructure": {"type": "object"},
+        "formStructureRole": {"$ref": "#/$defs/formStructureRole"},
+        "sourceAuthority": {"type": "object"},
+        "children": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "pages": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "tabs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "nodes": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "items": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "widgetList": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/widget"}
+        },
+        "fields": {
+          "type": "array",
+          "items": {"type": "string"}
         }
       }
     },
@@ -577,6 +712,9 @@
         },
         "reasonCode": {
           "type": "string"
+        },
+        "backendIdentity": {
+          "type": "string"
         }
       }
     },
@@ -634,6 +772,9 @@
           "type": "object"
         },
         "surfacePolicies": {
+          "type": "object"
+        },
+        "identityPolicy": {
           "type": "object"
         }
       }
@@ -740,6 +881,43 @@
         },
         "tracePolicy": {
           "type": "object"
+        },
+        "backendIdentity": {
+          "type": "string"
+        },
+        "sourceTrace": {
+          "type": "array",
+          "items": {"type": "object"}
+        },
+        "presentationAuthority": {
+          "type": "string"
+        },
+        "presentationPriority": {
+          "type": "integer"
+        },
+        "sourceActionKey": {
+          "type": "string"
+        },
+        "sourceChannel": {
+          "type": "string"
+        },
+        "permissionConstraints": {
+          "type": "object"
+        },
+        "entitlementEvaluated": {
+          "type": "boolean"
+        },
+        "allowed": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "reasonCode": {
+          "type": "string"
         }
       }
     },
@@ -808,6 +986,9 @@
         },
         "fieldGroups": {
           "$ref": "#/$defs/fieldGroups"
+        },
+        "sourceContext": {
+          "$ref": "#/$defs/sourceContext"
         }
       }
     },
@@ -1094,6 +1275,18 @@
         },
         "actionTarget": {
           "type": "string"
+        },
+        "collaboration": {
+          "type": "object"
+        },
+        "businessWorkspace": {
+          "type": "object"
+        },
+        "businessActions": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
         }
       }
     },

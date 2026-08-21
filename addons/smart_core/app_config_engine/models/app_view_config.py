@@ -134,8 +134,15 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 if not source_view_id:
                     for view_spec in (action.views or []):
                         if view_spec and len(view_spec) >= 2 and view_spec[1] == view_type:
-                            source_view_id = int(view_spec[0] or 0) or False
-                            break
+                            candidate_view_id = int(view_spec[0] or 0) or 0
+                            if candidate_view_id:
+                                source_view_id = candidate_view_id
+                                break
+                    if not source_view_id:
+                        action_view = action.view_id or False
+                        if action_view and action_view.exists():
+                            if action_view.type == view_type and action_view.model == model_name:
+                                source_view_id = int(action_view.id or 0) or False
                 return {
                     "action_id": action.id,
                     "source_view_id": source_view_id,

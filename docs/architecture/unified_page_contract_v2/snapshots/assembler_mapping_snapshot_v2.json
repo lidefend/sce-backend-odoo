@@ -1,15 +1,15 @@
 {
-  "snapshotVersion": "v1",
-  "contractVersion": "2.1.0",
+  "snapshotVersion": "v2",
+  "contractVersion": "2.2.0",
   "sources": {
-    "scene_contract_v1": {
-      "sourceType": "scene_contract_v1",
+    "scene_contract": {
+      "sourceType": "scene_contract",
       "minContainerCount": 1,
       "minWidgetStatusCount": 1,
       "minActionCount": 1
     },
-    "page_orchestration_v1": {
-      "sourceType": "page_orchestration_v1",
+    "page_orchestration": {
+      "sourceType": "page_orchestration",
       "minContainerCount": 1,
       "minWidgetStatusCount": 1,
       "minActionCount": 1

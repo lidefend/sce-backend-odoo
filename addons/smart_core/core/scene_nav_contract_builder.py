@@ -328,7 +328,7 @@ def build_scene_nav_contract(data: dict) -> dict:
     }
 
     return {
-        "source": "scene_contract_v1",
+        "source": "scene_contract",
         "nav": [root],
         "default_route": default_route,
         "meta": {

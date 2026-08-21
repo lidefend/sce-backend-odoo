@@ -932,7 +932,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         result = handler.handle(
             payload={
                 "params": {
-                    "source_type": "scene_contract_v1",
+                    "source_type": "scene_contract",
                     "scene_key": "workspace.home",
                     "max_containers": "bad",
                 }
@@ -3524,6 +3524,61 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         first = deepcopy(tree)
         handler._apply_business_config_form_groups_to_v2(contract, source_contract=source_contract)
         self.assertEqual(contract["layoutContract"]["containerTree"], first)
+
+    def test_final_layout_normalization_restores_root_container_invariants(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "layoutContract": {
+                "containerTree": [
+                    {
+                        "type": "header",
+                        "name": "status",
+                        "children": [],
+                        "widgetList": [],
+                    },
+                    {
+                        "type": "group",
+                        "name": "business_details",
+                        "string": "业务明细",
+                        "label": "业务明细",
+                        "children": [
+                            {
+                                "type": "field",
+                                "name": "name",
+                                "string": "名称",
+                                "widgetId": "field.name",
+                            },
+                        ],
+                        "widgetList": [],
+                    },
+                ],
+            },
+            "statusContract": {"containerStatus": []},
+        }
+
+        handler._normalize_final_layout_contract(contract)
+
+        header, group = contract["layoutContract"]["containerTree"]
+        self.assertEqual(header["containerId"], "status")
+        self.assertEqual(header["containerType"], "header")
+        self.assertEqual(header["title"], "")
+        self.assertEqual(header["span"], 24)
+        self.assertEqual(group["containerId"], "business_details")
+        self.assertEqual(group["containerType"], "group")
+        self.assertEqual(group["title"], "业务明细")
+        field = group["children"][0]
+        self.assertEqual(field["containerId"], "name")
+        self.assertEqual(field["containerType"], "field")
+        self.assertEqual(field["title"], "名称")
+        self.assertEqual(field["span"], 24)
+        self.assertEqual(
+            {row["containerId"] for row in contract["statusContract"]["containerStatus"]},
+            {"status", "business_details", "name"},
+        )
+
+        first = deepcopy(contract)
+        handler._normalize_final_layout_contract(contract)
+        self.assertEqual(contract, first)
 
     def test_published_semantic_contract_rebuilds_runtime_structure_authority(self):
         class _Config:

@@ -56,9 +56,9 @@ This means the contract is not only a static page description. It is a governed 
 
 It consolidates the current transition surfaces:
 
-- `scene_contract_v1`
-- `page_orchestration_v1`
-- `scene_ready_contract_v1`
+- `scene_contract`
+- `page_orchestration`
+- `scene_ready_contract`
 - selected `ui.contract` model/action output
 - `api.onchange` patch semantics
 
@@ -1135,12 +1135,12 @@ Frontend must not own:
 
 | Current Source | v2+ Target |
 | --- | --- |
-| `scene_contract_v1.scene/page` | `pageInfo` |
-| `scene_contract_v1.zones/blocks` | `layoutContract.containerList` |
-| `scene_contract_v1.permissions` | `statusContract.globalStatus` |
-| `page_orchestration_v1.zones` | `layoutContract.containerList` |
-| `page_orchestration_v1.action_schema` | `actionContract.actionRuleList` |
-| `page_orchestration_v1.data_sources` | `dataContract` |
+| `scene_contract.scene/page` | `pageInfo` |
+| `scene_contract.zones/blocks` | `layoutContract.containerList` |
+| `scene_contract.permissions` | `statusContract.globalStatus` |
+| `page_orchestration.zones` | `layoutContract.containerList` |
+| `page_orchestration.action_schema` | `actionContract.actionRuleList` |
+| `page_orchestration.data_sources` | `dataContract` |
 | `ui.contract.fields/views` | `layoutContract` + `dataContract.dictData` |
 | `ui.contract.field_policies` | `statusContract.widgetStatus` |
 | `ui.contract.action_policies` | `statusContract.buttonStatus` + `actionContract` |

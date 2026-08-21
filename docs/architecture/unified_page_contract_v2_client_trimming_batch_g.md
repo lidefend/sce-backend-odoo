@@ -10,7 +10,7 @@ Contract Governance / Client Trimming
 ## Module
 
 - `addons/smart_core/core/unified_page_contract_v2_client.py`
-- `docs/architecture/unified_page_contract_v2/snapshots/client_trimming_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/client_trimming_snapshot_v2.json`
 - `scripts/verify/unified_page_contract_v2_client_guard.py`
 - `Makefile`
 
@@ -95,7 +95,7 @@ Revert:
 
 - `addons/smart_core/core/unified_page_contract_v2_client.py`
 - `scripts/verify/unified_page_contract_v2_client_guard.py`
-- `docs/architecture/unified_page_contract_v2/snapshots/client_trimming_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/client_trimming_snapshot_v2.json`
 - `Makefile` client target changes
 
 No database rollback is required.

@@ -185,8 +185,11 @@ class AppMenuConfig(models.Model):
     def _get_or_generate_from_menus(self, model_name=None, scene='web', force=False):
         scene = self._normalize_scene(scene)
         if not force:
-            cfg = self.sudo().search(self._menu_config_domain(model_name=model_name, scene=scene), limit=1)
-            if cfg and not self._menu_metadata_changed_since(cfg):
+            cfg = self.sudo().with_context(active_test=False).search(
+                self._menu_config_domain(model_name=model_name, scene=scene),
+                limit=1,
+            )
+            if cfg and cfg.is_active and not self._menu_metadata_changed_since(cfg):
                 return cfg
             if cfg:
                 _logger.info(
@@ -318,7 +321,10 @@ class AppMenuConfig(models.Model):
             new_hash = self._hash(payload_for_hash)
             # 4) upsert 到 app.menu.config（唯一维度键）
             target_key = model_name or '__all__'
-            cfg = self.sudo().search(self._menu_config_domain(model_name=model_name, scene=scene), limit=1)
+            cfg = self.sudo().with_context(active_test=False).search(
+                self._menu_config_domain(model_name=model_name, scene=scene),
+                limit=1,
+            )
 
             vals = {
                 'target_model': target_key,
@@ -331,11 +337,13 @@ class AppMenuConfig(models.Model):
                 'etag': new_hash,                 # 运行态默认可用；真正响应会再叠加 filters 与 uid
                 'last_generated': fields.Datetime.now(),
                 'meta_info': {'roots': len(roots), 'kept_roots': kept_roots},
+                'is_active': True,
             }
 
             if cfg:
-                if cfg.config_hash != new_hash:
-                    vals['version'] = cfg.version + 1
+                hash_changed = cfg.config_hash != new_hash
+                if hash_changed or not cfg.is_active:
+                    vals['version'] = cfg.version + 1 if hash_changed else cfg.version
                     cfg.write(vals)
                     _logger.info("Menu config updated: %s/%s v%s", target_key, scene, cfg.version)
                 else:
@@ -350,7 +358,7 @@ class AppMenuConfig(models.Model):
                     # Another request may create the same company/lang cache after
                     # our initial search. Roll back only the create savepoint and
                     # consume the now-authoritative row instead of failing system.init.
-                    cfg = self.sudo().search(
+                    cfg = self.sudo().with_context(active_test=False).search(
                         self._menu_config_domain(model_name=model_name, scene=scene),
                         limit=1,
                     )

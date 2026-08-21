@@ -19,9 +19,9 @@ from odoo.addons.smart_core.core.scene_contract_semantic_orchestration_bridge im
 SCENE_CONTRACT_STANDARD_VERSION = "scene_contract_standard_v1"
 SOURCE_KIND = "release_surface_scene_contract_projection"
 SOURCE_AUTHORITIES = (
-    "delivery_engine_v1.scenes",
-    "scene_ready_contract_v1",
-    "page_orchestration_v1",
+    "delivery_engine.scenes",
+    "scene_ready_contract",
+    "page_orchestration",
 )
 NO_BUSINESS_FACT_AUTHORITY = True
 LEGACY_PRODUCT_TITLE_SOURCE_KIND = "legacy_release_product_title_projection"
@@ -312,7 +312,7 @@ def build_release_surface_scene_contract_from_delivery_entry(entry: dict[str, An
         trace_id=trace_id,
         policy_match=True,
         released=True,
-        diagnostics_ref="delivery_engine_v1.scenes",
+        diagnostics_ref="delivery_engine.scenes",
     )
     identity = _dict(contract.get("identity"))
     if row.get("description"):
@@ -386,7 +386,7 @@ def build_release_surface_scene_contract_from_page_contract(
     trace_id: str = "",
 ) -> dict[str, Any]:
     page_row = _dict(page_contract)
-    orchestration = _dict(page_row.get("page_orchestration_v1"))
+    orchestration = _dict(page_row.get("page_orchestration"))
     page_meta = _dict(orchestration.get("page"))
     zones = _list(orchestration.get("zones"))
     action_schema = _dict(orchestration.get("action_schema"))
