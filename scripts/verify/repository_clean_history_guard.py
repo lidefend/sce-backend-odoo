@@ -145,6 +145,41 @@ def load_personal_data_false_positives(
     return allowed
 
 
+def load_oversized_blob_exceptions(
+    root: Path,
+    rules: dict[str, object],
+) -> set[tuple[str, str, str, str]]:
+    relative = str(rules.get("oversized_blob_exception_registry") or "")
+    if not relative:
+        return set()
+    registry_path = Path(relative)
+    if registry_path.is_absolute() or ".." in registry_path.parts:
+        raise ValueError("oversized-blob exception registry path must be repository-relative")
+    payload = json.loads((root / registry_path).read_text(encoding="utf-8"))
+    if (
+        payload.get("schema_version") != "sce.repository_oversized_blob_exceptions.v1"
+        or not isinstance(payload.get("entries"), list)
+    ):
+        raise ValueError("oversized-blob exception registry schema is invalid")
+    allowed: set[tuple[str, str, str, str]] = set()
+    for entry in payload["entries"]:
+        rule_id = str(entry.get("rule_id") or "")
+        path = str(entry.get("path") or "")
+        blob_id = str(entry.get("blob_id") or "")
+        classification = str(entry.get("classification") or "")
+        reason = str(entry.get("reason") or "")
+        if not re.fullmatch(r"[0-9a-f]{40}", blob_id):
+            raise ValueError("oversized-blob exception blob_id must be a full SHA-1")
+        if not path or path.startswith("/") or ".." in Path(path).parts:
+            raise ValueError("oversized-blob exception path must be repository-relative")
+        if rule_id != "RH007" or classification != "OVERSIZED_BLOB" or not reason:
+            raise ValueError("oversized-blob exception entry is incomplete")
+        allowed.add((rule_id, path, blob_id, classification))
+    if len(allowed) != len(payload["entries"]):
+        raise ValueError("oversized-blob exception entries must be unique")
+    return allowed
+
+
 def object_rows(root: Path, revision_args: tuple[str, ...]) -> list[ObjectRow]:
     rev_list = git(root, "rev-list", "--objects", *revision_args, check=False)
     if not rev_list.strip():
@@ -234,8 +269,14 @@ def blob_findings(
     display = f"{row.path}@{row.object_id[:12]}"
     maximum = int(rules.get("maximum_blob_bytes", 0))
     if maximum and row.size > maximum:
-        findings.add(Finding("RH007", display, f"{rule_prefix}OVERSIZED_BLOB"))
-        return findings
+        exception = ("RH007", row.path, row.object_id, "OVERSIZED_BLOB")
+        exceptions = rules.get("_oversized_blob_exceptions", set())
+        if rule_prefix or exception not in exceptions:
+            findings.add(Finding("RH007", display, f"{rule_prefix}OVERSIZED_BLOB"))
+            return findings
+        used_exceptions = rules.get("_used_oversized_blob_exceptions")
+        if isinstance(used_exceptions, set):
+            used_exceptions.add(exception)
     data = read_blob(root, row.object_id)
     if b"\0" in data:
         return findings
@@ -379,6 +420,10 @@ def main(argv: list[str] | None = None) -> int:
         rules["_personal_data_false_positives"] = load_personal_data_false_positives(
             root, rules
         )
+        rules["_oversized_blob_exceptions"] = load_oversized_blob_exceptions(
+            root, rules
+        )
+        rules["_used_oversized_blob_exceptions"] = set()
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"[repository_clean_history_guard] FAIL rule=RH000 classification={type(exc).__name__}", file=sys.stderr)
         return 2
@@ -424,6 +469,20 @@ def main(argv: list[str] | None = None) -> int:
     for row in tree_rows(root, "HEAD"):
         errors.update(blob_findings(root, row, rules, scan_repository_identity=True))
 
+    oversized_exceptions = rules.get("_oversized_blob_exceptions", set())
+    used_oversized_exceptions = rules.get("_used_oversized_blob_exceptions", set())
+    if isinstance(oversized_exceptions, set) and isinstance(used_oversized_exceptions, set):
+        for _rule_id, path, object_id, _classification in sorted(
+            oversized_exceptions - used_oversized_exceptions
+        ):
+            errors.add(
+                Finding(
+                    "RH021",
+                    f"{path}@{object_id[:12]}",
+                    "STALE_OVERSIZED_BLOB_EXCEPTION",
+                )
+            )
+
     hygiene = {
         "reflog_only": 0,
         "unreachable": 0,
@@ -450,6 +509,7 @@ def main(argv: list[str] | None = None) -> int:
         f"unreachable={hygiene['unreachable']} tags={hygiene['tags']} "
         f"stash_refs={hygiene['stash_refs']} "
         f"stale_remote_refs={hygiene['stale_remote_refs']} sensitive_values_recorded=false"
+        f" oversized_exceptions={len(used_oversized_exceptions)}"
     )
     return 0
 
