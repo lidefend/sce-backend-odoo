@@ -37,6 +37,8 @@ make local.dev.up
 make local.dev.ps
 make local.dev.logs
 make local.dev.upgrade MODULE=smart_construction_core
+make local.dev.frontend
+make verify.local.dev.payment_request.native_parity.readonly
 make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestP1PaymentRequestCapability'
 make local.dev.sync_demo
 make local.dev.verify_demo

@@ -110,6 +110,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         )
         for target in (
             "local.dev.up",
+            "local.dev.frontend",
             "local.dev.down",
             "local.dev.logs",
             "local.dev.ps",
@@ -119,6 +120,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             "local.dev.contract_snapshot",
             "local.dev.rebuild_demo",
             "local.dev.verify_demo",
+            "verify.local.dev.payment_request.native_parity.readonly",
             "local.sample.prepare",
             "local.sample.up",
             "local.sample.down",
@@ -205,6 +207,11 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("local.sample.up: guard.prod.forbid local.sample.ready", make_text)
         self.assertIn("local.dev.up: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.health: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn("local.dev.frontend: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn(
+            "verify.local.dev.payment_request.native_parity.readonly: guard.prod.forbid local.dev.ready",
+            make_text,
+        )
         self.assertIn("local.dev.test: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.upgrade: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.snapshot: guard.prod.forbid local.dev.ready", make_text)
