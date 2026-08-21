@@ -214,6 +214,21 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "field_info",
     "form_structure",
     "form_structure_role",
+    "act_window",
+    "container_id",
+    "container_type",
+    "currency_field",
+    "field_code",
+    "field_type",
+    "native_activity_view_projection",
+    "native_locator",
+    "no_business_fact_authority",
+    "occurrence_index",
+    "projection_only",
+    "runtime_carrier",
+    "source_authority",
+    "source_position",
+    "widget_id",
 }
 
 FORBIDDEN_STRICT_ALIAS_HELPERS = (
@@ -359,9 +374,27 @@ ALLOWED_STRICT_SCHEMA_EXTENSION_FIELDS = {
         "tabs",
         "type",
         "widget",
+        "widgetId",
+        "nativeLocator",
+        "occurrenceIndex",
+        "sourcePosition",
+        "nolabel",
+        "sourceAuthority",
+        "text",
     },
     # These are display/runtime conveniences for current native-field widgets.
-    "ContractV2Widget": {"fieldType", "relation"},
+    "ContractV2Widget": {"fieldDescriptor", "fieldType", "relation"},
+    "ContractV2LayoutContract": {"activityProfile"},
+    "ContractV2ActionRule": {"allowed", "backendIdentity", "disabled", "enabled"},
+    "ContractV2RuntimeContract": {
+        "collaboration",
+        "fieldSemantics",
+        "governance",
+        "intakeAutosave",
+        "recordVersionPolicy",
+        "sceneFormAugmentations",
+        "validationRules",
+    },
     # Action presentation keeps UI/navigation metadata outside the formal rule
     # execution contract.
 }

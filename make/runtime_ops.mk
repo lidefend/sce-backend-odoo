@@ -1897,11 +1897,12 @@ verify.frontend.core_record_form.audit: guard.prod.forbid check-compose-project 
 verify.frontend.core_record_form.journeys: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory backend.acceptance.up; \
 	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
 	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_financial_workspace_runtime_ids.py 2>&1 )" || { printf '%s\n' "$$target_output"; exit 1; }; \
 	targets_line="$$(echo "$$target_output" | grep '^FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON=' | tail -1)"; test -n "$$targets_line" || { printf '%s\n' "$$target_output"; exit 2; }; export "$$targets_line"; \
-	$(MAKE) --no-print-directory frontend.acceptance.up; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ARTIFACTS_DIR=artifacts/frontend-professional/fe-pro-03/journeys FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON="$${FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON}" node scripts/verify/frontend_core_record_form_journeys.mjs
 
 verify.frontend.product_design_system.audit: guard.prod.forbid check-compose-project check-compose-env

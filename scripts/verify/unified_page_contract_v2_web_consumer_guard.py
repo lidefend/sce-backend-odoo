@@ -149,12 +149,12 @@ def main() -> int:
     ))
     form_structure_consumer_source = "\n".join((
         contract_form_source,
-        read("pages/contractForm/useContractV2ShadowDiagnostics.ts"),
+        read("pages/contractForm/useContractV2Diagnostics.ts"),
     ))
     require_tokens(errors, form_structure_consumer_source, "web v2 form structure store selector", (
         "resolveContractV2FormStructureContract",
-        "v2ShadowFormStructureContract",
-        "v2ShadowFormStructureSlotCount",
+        "formV2FormStructureContract",
+        "formV2FormStructureSlotCount",
     ))
     for token in FORBIDDEN_FRONTEND_STRUCTURE_TITLE_TOKENS:
         if token in contract_form_source or token in contract_source:

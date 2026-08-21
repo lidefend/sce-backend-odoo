@@ -273,15 +273,16 @@ REQUIRED_V2_BOUNDARY_FILES: dict[str, tuple[str, ...]] = {
     ),
 }
 
-REQUIRED_FORM_SHADOW_TOKENS: tuple[str, ...] = (
+REQUIRED_FORM_V2_AUTHORITY_TOKENS: tuple[str, ...] = (
     "decodeContractV2Snapshot",
     "createContractV2Store",
     "v2ContractStore",
-    "data-v2-shadow-store",
+    "data-form-v2-store",
 )
 
-REQUIRED_FORM_SHADOW_RUNTIME_TOKENS: tuple[tuple[str, str], ...] = (
-    ("pages/contractForm/useRecordPageLifecycle.ts", "syncContractV2ShadowStore(response.data)"),
+REQUIRED_FORM_V2_AUTHORITY_RUNTIME_TOKENS: tuple[tuple[str, str], ...] = (
+    ("pages/contractForm/useRecordPageLifecycle.ts", "strictSnapshot = bundle.snapshot"),
+    ("pages/contractForm/useRecordPageLifecycle.ts", "syncContractV2Store(strictSnapshot)"),
 )
 
 REQUIRED_FORM_STORE_SELECTOR_TOKENS: tuple[str, ...] = (
@@ -416,15 +417,37 @@ def validate_v2_boundary() -> list[str]:
     return errors
 
 
-def validate_form_shadow_host() -> list[str]:
+def validate_form_v2_authority_host() -> list[str]:
     errors: list[str] = []
     text = read(WEB_ROOT / "pages/ContractFormPage.vue")
-    for token in REQUIRED_FORM_SHADOW_TOKENS:
+    for token in REQUIRED_FORM_V2_AUTHORITY_TOKENS:
         if token not in text:
-            errors.append(f"ContractFormPage v2 shadow host missing token: {token}")
-    for relative_path, token in REQUIRED_FORM_SHADOW_RUNTIME_TOKENS:
+            errors.append(f"ContractFormPage V2 authority host missing token: {token}")
+    for relative_path, token in REQUIRED_FORM_V2_AUTHORITY_RUNTIME_TOKENS:
         if token not in read(WEB_ROOT / relative_path):
-            errors.append(f"form shadow runtime {relative_path} missing token: {token}")
+            errors.append(f"form V2 authority runtime {relative_path} missing token: {token}")
+    form_runtime = text + "\n" + "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted((WEB_ROOT / "pages/contractForm").glob("*.ts"))
+    )
+    for token in (
+        "ActionContract",
+        "sceneReadyContractV1",
+        "scene_ready_contract_v1",
+        "contract.value?.fields",
+        "contract.value?.views",
+        "requestLegacyProjectionFromUnifiedPageContractV2",
+    ):
+        if token in form_runtime:
+            errors.append(f"form V2 authority must not consume legacy token: {token}")
+    contract_api = read(WEB_ROOT / "api/contract.ts")
+    bundle_start = contract_api.find("async function requestFormContractV2Bundle")
+    bundle_end = contract_api.find("export async function loadActionUnifiedPageContractV2", bundle_start)
+    bundle_source = contract_api[bundle_start:bundle_end] if bundle_start >= 0 and bundle_end > bundle_start else ""
+    if "extractStrictUnifiedPageContractV2(result)" not in bundle_source:
+        errors.append("form V2 bundle must strict-decode the direct ui.contract.v2 payload")
+    if "adaptUnifiedPageContractV2Raw" in bundle_source or "requestLegacyProjection" in bundle_source:
+        errors.append("form V2 bundle must not invoke the compatibility projection")
     return errors
 
 
@@ -432,12 +455,12 @@ def validate_form_store_selector_boundary() -> list[str]:
     errors: list[str] = []
     page = read(WEB_ROOT / "pages/ContractFormPage.vue")
     store = read(WEB_ROOT / "app/contracts/v2/store.ts")
-    # The v2 shadow diagnostics pipeline extracted from the page lives in a
+    # The V2 authority diagnostics pipeline extracted from the page lives in a
     # dedicated composable module that ContractFormPage imports and consumes
-    # (useContractV2ShadowDiagnostics). The selector boundary therefore spans
+    # (useContractV2Diagnostics). The selector boundary therefore spans
     # the page plus that module; the forbidden local-selector ban applies to
     # the same combined surface so reimplementations cannot hide there.
-    diagnostics = read(WEB_ROOT / "pages/contractForm/useContractV2ShadowDiagnostics.ts")
+    diagnostics = read(WEB_ROOT / "pages/contractForm/useContractV2Diagnostics.ts")
     selector_surface = page + "\n" + diagnostics
     for token in REQUIRED_FORM_STORE_SELECTOR_TOKENS:
         if token not in store:
@@ -517,7 +540,7 @@ def main() -> int:
     errors.extend(validate_router())
     errors.extend(validate_docs())
     errors.extend(validate_v2_boundary())
-    errors.extend(validate_form_shadow_host())
+    errors.extend(validate_form_v2_authority_host())
     errors.extend(validate_form_store_selector_boundary())
     errors.extend(validate_workflow_contract_projection())
     errors.extend(validate_workflow_statusbar_contract())

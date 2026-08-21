@@ -54,7 +54,6 @@ def main() -> int:
         errors.append("web contract API must not request legacy ui.contract directly")
     for token in (
         "adaptUnifiedPageContractV2Raw",
-        "__unified_page_contract_v2",
         "delivery_profile: 'full'",
         "client_type: 'web_pc'",
         "loadActionUnifiedPageContractV2",
@@ -62,6 +61,10 @@ def main() -> int:
     ):
         if token not in source:
             errors.append(f"web contract API missing v2 compatibility token: {token}")
+    if "decodeContractV2Snapshot(result.data)" not in source:
+        errors.append("web strict V2 loader must decode the direct response snapshot")
+    if "__unified_page_contract_v2" in source or "data.unified_page_contract_v2" in source:
+        errors.append("web strict V2 loader must reject compatibility wrappers")
     for token in (
         "UnifiedPageContractV2",
         "resolveUnifiedPageContractV2",
@@ -121,14 +124,19 @@ def main() -> int:
         errors.append("web action surface contract must include v2 pageInfo view modes")
     if "collectUnifiedPageContractV2FieldStatus" not in form_page_source:
         errors.append("web contract form page must merge v2 widget status into runtime field states")
-    if "resolveUnifiedPageContractV2GlobalStatus" not in form_page_source or "pageAuth === 'read'" not in form_page_source:
-        errors.append("web contract form page must merge v2 globalStatus into form rights")
     if (
-        "collectUnifiedPageContractV2FieldContainerStatus" not in field_schema_source
-        or "containerStatus:collectUnifiedPageContractV2FieldContainerStatus(context.contract.value)" not in field_schema_source
-        or "containerStatus?.visible === false" not in native_layout_source
+        "resolveContractV2GlobalStatus(v2ContractStore.value)" not in form_page_source
+        or "globalStatus?.pageVisible === false" not in form_page_source
+        or "pageAuth === 'none'" not in form_page_source
     ):
-        errors.append("web contract form page must merge v2 containerStatus into layout field visibility/read state")
+        errors.append("web contract form page must consume direct v2 globalStatus for form access")
+    if (
+        "widgetStatusById.get(widgetId)" not in (
+            ROOT / "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts"
+        ).read_text(encoding="utf-8")
+        or "runtimeOccurrenceState(node)" not in field_schema_source
+    ):
+        errors.append("web contract form page must consume exact v2 occurrence widgetStatus")
     if "collectUnifiedPageContractV2ButtonStatus" not in form_page_source or "resolveV2ButtonStatus" not in form_page_source:
         errors.append("web contract form page must merge v2 buttonStatus into contract actions")
     if "collectUnifiedPageContractV2ButtonStatus" not in action_view_source or "applyActionViewV2ButtonStatus" not in action_view_source:
