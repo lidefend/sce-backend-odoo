@@ -556,6 +556,11 @@
       "content_hash": "ecdb2c62508a53f8",
       "path": "schemas/project-ref.yaml",
       "version": 1
+    },
+    {
+      "content_hash": "f10a05cce028f2bf",
+      "path": "schemas/system-init.yaml",
+      "version": 2
     }
   ],
   "state_machine_file": "addons/smart_construction_core/models/support/state_machine.py"

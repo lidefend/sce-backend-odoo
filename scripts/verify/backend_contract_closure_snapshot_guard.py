@@ -45,7 +45,7 @@ def _extract_meta_intent_payload_keys() -> list[str]:
 def _extract_scene_governance_keys() -> list[str]:
     tree = _load_ast(SCENE_GOV_BUILDER)
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == "build_scene_governance_payload_v1":
+        if isinstance(node, ast.FunctionDef) and node.name == "build_scene_governance_payload":
             for stmt in ast.walk(node):
                 if isinstance(stmt, ast.Return) and isinstance(stmt.value, ast.Dict):
                     return sorted(_dict_keys(stmt.value))
@@ -72,7 +72,7 @@ def _current_snapshot() -> dict[str, Any]:
         "meta_intent_catalog": {
             "payload_keys": _extract_meta_intent_payload_keys(),
         },
-        "scene_governance_v1": {
+        "scene_governance": {
             "payload_keys": _extract_scene_governance_keys(),
         },
     }

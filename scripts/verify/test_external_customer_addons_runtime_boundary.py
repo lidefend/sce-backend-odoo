@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import unittest
 from pathlib import Path
@@ -10,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
     def _make_compose_files(self, *assignments: str) -> str:
+        make_env = os.environ.copy()
+        make_env.pop("COMPOSE_FILES", None)
         result = subprocess.run(
             [
                 "make",
@@ -20,6 +23,7 @@ class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
                 "env.print.compose_files",
             ],
             cwd=ROOT,
+            env=make_env,
             text=True,
             capture_output=True,
             check=False,

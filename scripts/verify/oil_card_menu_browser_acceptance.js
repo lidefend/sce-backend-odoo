@@ -69,7 +69,7 @@ function diagnosticNode(node) {
 
 function navigationCandidates(payload) {
   return [
-    { source: 'navigation_v1.nav', nodes: payload?.navigation_v1?.nav },
+    { source: 'navigation.nav', nodes: payload?.navigation?.nav },
   ].filter((candidate) => Array.isArray(candidate.nodes));
 }
 
@@ -164,7 +164,7 @@ async function login(page) {
       const expectedMenuId = Number(navNode.menu_id || navNode.id || 0);
       const expectedActionId = actionIdFromNode(navNode);
       assert(expectedMenuId > 0 && expectedActionId > 0, `${target.label} navigation target is incomplete`);
-      const authorityFound = authorityHasPair(matchedInit.navigation_v1?.route_authority_v1, expectedMenuId, expectedActionId);
+      const authorityFound = authorityHasPair(matchedInit.navigation?.route_authority, expectedMenuId, expectedActionId);
       const search = page.locator('.primary-navigation__search input');
       await search.fill(target.label);
       const button = page.locator('[data-component="SidebarNav"] .node button.label').filter({ hasText: target.label });

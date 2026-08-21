@@ -15,6 +15,6 @@
   "required_meta_keys": [
     "ui_base_contract_source"
   ],
-  "report_json": "artifacts/backend/scene_contract_v1_field_schema_report.json",
-  "report_md": "artifacts/backend/scene_contract_v1_field_schema_report.md"
+  "report_json": "artifacts/backend/scene_contract_field_schema_report.json",
+  "report_md": "artifacts/backend/scene_contract_field_schema_report.md"
 }

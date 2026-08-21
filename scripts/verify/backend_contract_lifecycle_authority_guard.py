@@ -20,6 +20,7 @@ CORE_DIR = ROOT / "addons/smart_core/core"
 LIFECYCLE_PATH = CORE_DIR / "contract_lifecycle.py"
 ASSEMBLER_PATH = CORE_DIR / "unified_page_contract_v2_assembler.py"
 HANDLER_PATH = ROOT / "addons/smart_core/handlers/ui_contract_v2.py"
+HANDLER_AUTHORITY_PATH = ROOT / "addons/smart_core/handlers/ui_contract_v2_authority.py"
 MODEL_PATH = ROOT / "addons/smart_core/model/ui_business_config_contract.py"
 MIGRATION_PATH = ROOT / "addons/smart_core/migrations/17.0.1.1.9/post-migration.py"
 FRONTEND_TYPES_PATH = ROOT / "frontend/apps/web/src/app/contracts/v2/types.ts"
@@ -202,12 +203,13 @@ def check_publication() -> dict[str, Any]:
 def check_runtime() -> dict[str, Any]:
     text = HANDLER_PATH.read_text(encoding="utf-8")
     trim_positions = [index for index in range(len(text)) if text.startswith("contract_v2 = trim_unified_page_contract_v2(", index)]
-    seal_positions = [index for index in range(len(text)) if text.startswith("contract_v2 = seal_unified_page_contract(", index)]
+    seal_positions = [index for index in range(len(text)) if text.startswith("contract_v2 = _authority.seal_runtime_contract(", index)]
     if len(trim_positions) < 2 or len(seal_positions) < 2:
         raise AssertionError("runtime full-contract paths must trim then reseal")
     if any(not any(seal > trim for seal in seal_positions) for trim in trim_positions):
         raise AssertionError("a runtime trim path is not followed by lifecycle sealing")
-    require_tokens(text, ('stage="runtime_delivery"', "trace_id=trace_id"), "runtime delivery")
+    authority_text = HANDLER_AUTHORITY_PATH.read_text(encoding="utf-8")
+    require_tokens(authority_text, ('stage="runtime_delivery"', "trace_id=trace_id"), "runtime delivery authority")
     return {"trimPaths": len(trim_positions), "resealPaths": len(seal_positions)}
 
 

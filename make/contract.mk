@@ -1,7 +1,13 @@
 # ======================================================
 # ================== Contract ==========================
 # ======================================================
-.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock
+.PHONY: contract.export contract.export_all contract.catalog.export contract.evidence.export contract.registry.export verify.contract.catalog verify.scene.contract.shape verify.contract.evidence gate.contract gate.contract.bootstrap gate.contract.bootstrap-pass verify.contract.lint contract.structure.fingerprint verify.contract.structure_lock contract.view_structure.export contract.view_structure.baseline verify.contract.view_structure gate.contract.view_structure
+
+VIEW_STRUCTURE_POLICY ?= scripts/verify/baselines/formal_business_product_menu_policy_v1.json
+VIEW_STRUCTURE_BASELINE ?= contracts/generated/product_view_structure_contract.json
+VIEW_STRUCTURE_CANDIDATE ?= artifacts/contract/product_view_structure_contract.json
+VIEW_STRUCTURE_CONTAINER_CANDIDATE ?= /tmp/product_view_structure_contract.json
+VIEW_STRUCTURE_REPORT ?= artifacts/backend/product_view_structure_contract_guard.json
 
 verify.contract.lint:
 	@python3 scripts/verify/contracts_lint.py
@@ -15,6 +21,8 @@ INTENT_SURFACE_JSON ?= artifacts/intent_surface_report.json
 CONTRACT_PREFLIGHT_INTENT_SURFACE_MD ?= artifacts/intent_surface_report.md
 CONTRACT_PREFLIGHT_INTENT_SURFACE_JSON ?= artifacts/intent_surface_report.json
 CONTRACT_PREFLIGHT_CONTINUE_FROM_FAILURE ?= 0
+CONTRACT_START_CASE ?=
+CONTRACT_CASE_ONLY ?=
 
 contract.export:
 	@DB="$(DB_NAME)" scripts/contract/snapshot_export.sh \
@@ -28,7 +36,7 @@ contract.export:
 	  --outdir "$(CONTRACT_OUTDIR)"
 
 contract.export_all:
-	@SC_CONTRACT_STABLE=1 DB="$(DB_NAME)" CASES_FILE="docs/contract/cases.yml" OUTDIR="$(CONTRACT_OUTDIR)" CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" scripts/contract/export_all.sh
+	@SC_CONTRACT_STABLE=1 DB="$(DB_NAME)" CASES_FILE="docs/contract/cases.yml" OUTDIR="$(CONTRACT_OUTDIR)" CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" START_CASE="$(CONTRACT_START_CASE)" CASE_ONLY="$(CONTRACT_CASE_ONLY)" scripts/contract/export_all.sh
 
 contract.catalog.export:
 	@python3 scripts/contract/export_catalogs.py
@@ -36,8 +44,29 @@ contract.catalog.export:
 contract.evidence.export:
 	@python3 scripts/contract/export_evidence.py
 
+contract.view_structure.export: guard.prod.forbid check-compose-project check-compose-env
+	@mkdir -p "$$(dirname "$(VIEW_STRUCTURE_CANDIDATE)")"
+	@$(RUN_ENV) PRODUCT_VIEW_STRUCTURE_POLICY="$(VIEW_STRUCTURE_POLICY)" PRODUCT_VIEW_STRUCTURE_OUTPUT="$(VIEW_STRUCTURE_CONTAINER_CANDIDATE)" DB_NAME="$(DB_NAME)" bash scripts/ops/odoo_shell_exec.sh < scripts/contract/export_product_view_structure.py
+	@$(RUN_ENV) $(COMPOSE_BASE) exec -T $(ODOO_SERVICE) cat "$(VIEW_STRUCTURE_CONTAINER_CANDIDATE)" > "$(VIEW_STRUCTURE_CANDIDATE).tmp"
+	@mv "$(VIEW_STRUCTURE_CANDIDATE).tmp" "$(VIEW_STRUCTURE_CANDIDATE)"
+
+contract.view_structure.baseline: contract.view_structure.export
+	@python3 scripts/verify/product_view_structure_contract_guard.py --manifest "$(VIEW_STRUCTURE_CANDIDATE)" --policy "$(VIEW_STRUCTURE_POLICY)" --report "$(VIEW_STRUCTURE_REPORT)"
+	@mkdir -p "$$(dirname "$(VIEW_STRUCTURE_BASELINE)")"
+	@cp "$(VIEW_STRUCTURE_CANDIDATE)" "$(VIEW_STRUCTURE_BASELINE).tmp"
+	@mv "$(VIEW_STRUCTURE_BASELINE).tmp" "$(VIEW_STRUCTURE_BASELINE)"
+	@echo "[contract.view_structure.baseline] baseline=$(VIEW_STRUCTURE_BASELINE)"
+
+verify.contract.view_structure: guard.prod.forbid
+	@python3 scripts/verify/product_view_structure_contract_guard.py --manifest "$(VIEW_STRUCTURE_BASELINE)" --policy "$(VIEW_STRUCTURE_POLICY)" --report "$(VIEW_STRUCTURE_REPORT)"
+
+gate.contract.view_structure: contract.view_structure.export
+	@python3 scripts/verify/product_view_structure_contract_guard.py --manifest "$(VIEW_STRUCTURE_BASELINE)" --policy "$(VIEW_STRUCTURE_POLICY)" --candidate "$(VIEW_STRUCTURE_CANDIDATE)" --report "$(VIEW_STRUCTURE_REPORT)"
+
 verify.contract.catalog: guard.prod.forbid
 	@python3 scripts/verify/intent_cases_integrity_guard.py --cases-file docs/contract/cases.yml
+	@python3 scripts/verify/test_contract_snapshot_principal.py
+	@python3 scripts/verify/test_construction_intent_contribution_registry.py
 	@$(MAKE) --no-print-directory contract.catalog.export
 	@test -s docs/contract/exports/intent_catalog.json || (echo "❌ intent_catalog.json missing" && exit 2)
 	@test -s docs/contract/exports/scene_catalog.json || (echo "❌ scene_catalog.json missing" && exit 2)

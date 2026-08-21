@@ -7,13 +7,18 @@ import os
 from pathlib import Path
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import build_intent_url, get_base_url, http_post_json, obtain_runtime_probe_token
+from python_http_smoke_utils import (
+    build_intent_url,
+    extract_login_token,
+    get_base_url,
+    http_post_json,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
 REPORT_JSON = ROOT / "artifacts" / "backend" / "scene_ready_strict_gap_full_audit.json"
 REPORT_MD = ROOT / "docs" / "ops" / "audits" / "scene_ready_strict_gap_full_audit.md"
-DEFAULT_STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_v1_field_schema_state.json"
+DEFAULT_STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_field_schema_state.json"
 
 
 def _write(path: Path, content: str) -> None:
@@ -46,8 +51,8 @@ def _load_contract_from_state(path: Path) -> dict:
         return {}
     if not isinstance(payload, dict):
         return {}
-    if isinstance(payload.get("scene_ready_contract_v1"), dict):
-        return _as_dict(payload.get("scene_ready_contract_v1"))
+    if isinstance(payload.get("scene_ready_contract"), dict):
+        return _as_dict(payload.get("scene_ready_contract"))
     return payload if isinstance(payload.get("scenes"), list) else {}
 
 
@@ -61,38 +66,37 @@ def _scene_key_matches(scene_key: str, candidate: str) -> bool:
 
 def _missing_contract_paths(row: dict) -> list[str]:
     missing: list[str] = []
-    surface = _as_dict(row.get("surface"))
-    intent = _as_dict(surface.get("intent"))
-    view_modes = _as_list(row.get("view_modes"))
-    sections = _as_dict(row.get("sections"))
+    scene = _as_dict(row.get("scene"))
+    page = _as_dict(row.get("page"))
+    scene_blocks = row.get("scene_blocks")
+    page_zones = page.get("zones")
     action_surface = _as_dict(row.get("action_surface"))
-    projection = _as_dict(row.get("projection"))
-    group_summary = _as_dict(projection.get("group_summary"))
+    meta = _as_dict(row.get("meta"))
 
-    if not str(surface.get("kind") or "").strip():
-        missing.append("surface.kind")
-    if not str(intent.get("title") or "").strip():
-        missing.append("surface.intent.title")
-    if not str(intent.get("summary") or "").strip():
-        missing.append("surface.intent.summary")
-    if not view_modes:
-        missing.append("view_modes")
-    if not isinstance(sections.get("quick_actions"), dict):
-        missing.append("sections.quick_actions")
-    if not isinstance(sections.get("group_summary"), dict):
-        missing.append("sections.group_summary")
+    if not _text(scene.get("key")):
+        missing.append("scene.key")
+    if not _text(scene.get("title")):
+        missing.append("scene.title")
+    if not _text(page.get("scene_key")):
+        missing.append("page.scene_key")
+    if not (_text(page.get("route")) or _text(page.get("model"))):
+        missing.append("page.route|model")
+    if not isinstance(page_zones, list):
+        missing.append("page.zones")
+    if not isinstance(scene_blocks, list) or not scene_blocks:
+        missing.append("scene_blocks")
     if not isinstance(action_surface.get("primary_actions"), list):
         missing.append("action_surface.primary_actions")
     if not isinstance(action_surface.get("groups"), list):
         missing.append("action_surface.groups")
     if not str(action_surface.get("selection_mode") or "").strip():
         missing.append("action_surface.selection_mode")
-    if not isinstance(projection.get("summary_items"), list):
-        missing.append("projection.summary_items")
-    if not isinstance(projection.get("overview_strip"), list):
-        missing.append("projection.overview_strip")
-    if not isinstance(group_summary.get("items"), list):
-        missing.append("projection.group_summary.items")
+    if not isinstance(row.get("search_surface"), dict):
+        missing.append("search_surface")
+    if not isinstance(meta.get("compile_verdict"), dict):
+        missing.append("meta.compile_verdict")
+    if not isinstance(meta.get("ui_base_contract_source"), dict):
+        missing.append("meta.ui_base_contract_source")
     return missing
 
 
@@ -100,18 +104,38 @@ def _fetch_scene_ready_contract() -> dict:
     base_url = get_base_url()
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
     intent_url = build_intent_url(base_url, db_name)
-    token_ok, token, auth_source = obtain_runtime_probe_token(intent_url, db_name)
-    if not token_ok or not token:
-        raise RuntimeError(f"runtime probe authentication unavailable: source={auth_source}")
+    login = os.getenv("E2E_LOGIN") or os.getenv("ROLE_PM_LOGIN") or "demo_role_pm"
+    password = (
+        os.getenv("E2E_PASSWORD")
+        or os.getenv("ROLE_PM_PASSWORD")
+        or os.getenv("SC_DEMO_USER_PASSWORD")
+        or "demo"
+    )
+    status, login_resp = http_post_json(
+        intent_url,
+        {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
+        headers={"X-Anonymous-Intent": "1", "X-Odoo-DB": db_name},
+    )
+    require_ok(status, login_resp, "login")
+    token = extract_login_token(login_resp)
+    if not token:
+        raise RuntimeError("login response missing token")
 
     status, init_resp = http_post_json(
         intent_url,
-        {"intent": "system.init", "params": {"contract_mode": "user", "with_preload": True}},
-        headers={"Authorization": f"Bearer {token}"},
+        {
+            "intent": "system.init",
+            "params": {
+                "contract_mode": "user",
+                "with_preload": True,
+                "scene_ready_mode": "full",
+            },
+        },
+        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
     )
     require_ok(status, init_resp, "system.init")
     data = _as_dict(init_resp.get("data"))
-    return _as_dict(data.get("scene_ready_contract_v1"))
+    return _as_dict(data.get("scene_ready_contract"))
 
 
 def main() -> int:
@@ -131,7 +155,7 @@ def main() -> int:
             warnings.append(f"live fetch failed, fallback state file used: {exc}")
         else:
             print("[FAIL] scene_ready_strict_gap_full_audit")
-            print(f" - fetch scene_ready_contract_v1 failed: {exc}")
+            print(f" - fetch scene_ready_contract failed: {exc}")
             return 2
 
     scenes = _as_list(contract.get("scenes"))
@@ -144,7 +168,6 @@ def main() -> int:
     for row in scenes:
         if not isinstance(row, dict):
             continue
-        runtime_policy = _as_dict(row.get("runtime_policy"))
         meta = _as_dict(row.get("meta"))
         scene = _as_dict(row.get("scene"))
         scene_key = str(scene.get("key") or row.get("scene_key") or "").strip()
@@ -157,19 +180,24 @@ def main() -> int:
         if missing_paths:
             unresolved_all_rows.append(all_report)
 
-        strict_mode = bool(runtime_policy.get("strict_contract_mode"))
-        if not strict_mode:
-            strict_mode = bool(_as_dict(meta.get("runtime_policy")).get("strict_contract_mode"))
+        compile_verdict = _as_dict(meta.get("compile_verdict"))
+        strict_mode = bool(compile_verdict)
         if not strict_mode:
             continue
 
-        guard = _as_dict(row.get("contract_guard"))
-        if not guard:
-            guard = _as_dict(meta.get("contract_guard"))
-        missing = [str(item).strip() for item in _as_list(guard.get("missing")) if str(item).strip()]
-        source_missing = [str(item).strip() for item in _as_list(guard.get("source_missing")) if str(item).strip()]
-        defaults_applied = [str(item).strip() for item in _as_list(guard.get("defaults_applied")) if str(item).strip()]
-        contract_ready = bool(guard.get("contract_ready"))
+        missing = [
+            str(item).strip()
+            for key in ("grammar_issues", "semantic_issues")
+            for item in _as_list(compile_verdict.get(key))
+            if str(item).strip()
+        ]
+        source = _as_dict(meta.get("ui_base_contract_source"))
+        source_kind = _text(source.get("kind"))
+        source_missing = [] if source_kind and source_kind not in {"none", "runtime_fallback"} else ["ui_base_contract_source.kind"]
+        defaults_applied: list[str] = []
+        contract_ready = bool(compile_verdict.get("ok")) and bool(
+            compile_verdict.get("base_contract_bound")
+        )
 
         row_report = {
             "scene_key": scene_key,
@@ -194,7 +222,7 @@ def main() -> int:
 
     errors: list[str] = []
     if len(scenes) == 0:
-        errors.append("scene_ready_contract_v1.scenes is empty")
+        errors.append("scene_ready_contract.scenes is empty")
     if unresolved_all_rows:
         errors.append(f"unresolved full-scene contract gaps: {len(unresolved_all_rows)}")
     if len(strict_rows) == 0:

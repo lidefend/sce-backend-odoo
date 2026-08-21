@@ -8,12 +8,17 @@ from pathlib import Path
 from typing import Any
 
 from intent_smoke_utils import require_ok
-from python_http_smoke_utils import get_base_url, http_post_json
+from python_http_smoke_utils import (
+    build_intent_url,
+    extract_login_token,
+    get_base_url,
+    http_post_json,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
-BASELINE_PATH = ROOT / "scripts" / "verify" / "baselines" / "scene_contract_v1_field_schema_guard.json"
-DEFAULT_STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_v1_field_schema_state.json"
+BASELINE_PATH = ROOT / "scripts" / "verify" / "baselines" / "scene_contract_field_schema_guard.json"
+DEFAULT_STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_field_schema_state.json"
 DEFAULT_SNAPSHOT_STATE_PATH = ROOT / "artifacts" / "backend" / "scene_registry_asset_snapshot_state.json"
 
 
@@ -48,30 +53,38 @@ def _load_json(path: Path) -> dict:
 
 def _fetch_scene_ready_payload() -> dict:
     base_url = get_base_url()
-    intent_url = f"{base_url}/api/v1/intent"
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
-    login = os.getenv("E2E_LOGIN") or "admin"
-    password = os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin"
+    intent_url = build_intent_url(base_url, db_name)
+    login = os.getenv("E2E_LOGIN") or os.getenv("ROLE_PM_LOGIN") or "demo_role_pm"
+    password = (
+        os.getenv("E2E_PASSWORD")
+        or os.getenv("ROLE_PM_PASSWORD")
+        or os.getenv("SC_DEMO_USER_PASSWORD")
+        or "demo"
+    )
 
     status, login_resp = http_post_json(
         intent_url,
         {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
-        headers={"X-Anonymous-Intent": "1"},
+        headers={"X-Anonymous-Intent": "1", "X-Odoo-DB": db_name},
     )
     require_ok(status, login_resp, "login")
-    token = _text(_as_dict(login_resp.get("data")).get("token"))
+    token = extract_login_token(login_resp)
     if not token:
         raise RuntimeError("login response missing token")
 
     status, init_resp = http_post_json(
         intent_url,
-        {"intent": "system.init", "params": {"contract_mode": "user"}},
-        headers={"Authorization": f"Bearer {token}"},
+        {
+            "intent": "system.init",
+            "params": {"contract_mode": "user", "scene_ready_mode": "full"},
+        },
+        headers={"Authorization": f"Bearer {token}", "X-Odoo-DB": db_name},
     )
     require_ok(status, init_resp, "system.init")
 
     data = _as_dict(init_resp.get("data"))
-    return _as_dict(data.get("scene_ready_contract_v1"))
+    return _as_dict(data.get("scene_ready_contract"))
 
 
 def _missing_keys(payload: dict, required_keys: list[str]) -> list[str]:
@@ -86,8 +99,8 @@ def _load_payload_state(path: Path) -> dict:
     payload = _load_json(path)
     if not payload:
         return {}
-    if isinstance(payload.get("scene_ready_contract_v1"), dict):
-        return _as_dict(payload.get("scene_ready_contract_v1"))
+    if isinstance(payload.get("scene_ready_contract"), dict):
+        return _as_dict(payload.get("scene_ready_contract"))
     return payload if isinstance(payload.get("scenes"), list) else {}
 
 
@@ -133,7 +146,8 @@ def _build_payload_from_snapshot_state(path: Path) -> dict:
         )
 
     return {
-        "contract_version": "v1",
+        "contract_version": "2.0.0",
+        "schema_version": "2.0.0",
         "scenes": scenes,
         "meta": {
             "source": "snapshot_state_fallback",
@@ -146,15 +160,15 @@ def _build_payload_from_snapshot_state(path: Path) -> dict:
 def main() -> int:
     baseline = _load_json(BASELINE_PATH)
     if not baseline:
-        print("[scene_contract_v1_field_schema_guard] FAIL")
+        print("[scene_contract_field_schema_guard] FAIL")
         print(f" - missing or invalid baseline: {BASELINE_PATH.relative_to(ROOT).as_posix()}")
         return 1
 
     report_json = ROOT / _text(
-        baseline.get("report_json") or "artifacts/backend/scene_contract_v1_field_schema_report.json"
+        baseline.get("report_json") or "artifacts/backend/scene_contract_field_schema_report.json"
     )
     report_md = ROOT / _text(
-        baseline.get("report_md") or "artifacts/backend/scene_contract_v1_field_schema_report.md"
+        baseline.get("report_md") or "artifacts/backend/scene_contract_field_schema_report.md"
     )
 
     required_top_keys = [_text(item) for item in _as_list(baseline.get("required_top_keys")) if _text(item)]
@@ -168,19 +182,19 @@ def main() -> int:
     payload = {}
     payload_source = "live"
     state_path = ROOT / _text(
-        os.getenv("SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_STATE_FILE")
+        os.getenv("SC_SCENE_CONTRACT_FIELD_SCHEMA_STATE_FILE")
         or DEFAULT_STATE_PATH.relative_to(ROOT).as_posix()
     )
     snapshot_state_path = ROOT / _text(
-        os.getenv("SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_SNAPSHOT_STATE_FILE")
+        os.getenv("SC_SCENE_CONTRACT_FIELD_SCHEMA_SNAPSHOT_STATE_FILE")
         or DEFAULT_SNAPSHOT_STATE_PATH.relative_to(ROOT).as_posix()
     )
-    allow_fallback = _to_bool(os.getenv("SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL"))
+    allow_fallback = _to_bool(os.getenv("SC_SCENE_CONTRACT_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL"))
     try:
         payload = _fetch_scene_ready_payload()
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_path.write_text(
-            json.dumps({"scene_ready_contract_v1": payload}, ensure_ascii=False, indent=2),
+            json.dumps({"scene_ready_contract": payload}, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
     except Exception as exc:
@@ -200,7 +214,7 @@ def main() -> int:
     if payload:
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_path.write_text(
-            json.dumps({"scene_ready_contract_v1": payload}, ensure_ascii=False, indent=2),
+            json.dumps({"scene_ready_contract": payload}, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
 
@@ -266,7 +280,7 @@ def main() -> int:
     report_json.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     md_lines = [
-        "# Scene Contract v1 Field Schema Guard Report",
+        "# Scene Contract Field Schema Guard Report",
         "",
         f"- ok: `{report['ok']}`",
         f"- scene_error_count: `{len(scene_errors)}`",
@@ -279,7 +293,7 @@ def main() -> int:
     report_md.write_text("\n".join(md_lines) + "\n", encoding="utf-8")
 
     if errors:
-        print("[scene_contract_v1_field_schema_guard] FAIL")
+        print("[scene_contract_field_schema_guard] FAIL")
         for item in errors:
             print(f" - {item}")
         print(report_json)
@@ -288,7 +302,7 @@ def main() -> int:
 
     print(report_json)
     print(report_md)
-    print("[scene_contract_v1_field_schema_guard] PASS")
+    print("[scene_contract_field_schema_guard] PASS")
     return 0
 
 

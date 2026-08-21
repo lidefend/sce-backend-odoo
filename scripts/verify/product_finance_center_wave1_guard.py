@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 WAVE = ROOT / "addons/smart_construction_core/views/menu_product_finance_wave1.xml"
 MANIFEST = ROOT / "addons/smart_construction_core/__manifest__.py"
-NAVIGATION = ROOT / "config/frontend/authoritative_navigation_v1.json"
+NAVIGATION = ROOT / "config/frontend/authoritative_navigation.json"
 FORMAL_PAYMENT_MENU = "smart_construction_core.menu_sc_user_payment_apply"
 RETIRED_PAYMENT_MENU = "smart_construction_core.menu_sc_user_payment_apply_acceptance"
 EXPECTED = {

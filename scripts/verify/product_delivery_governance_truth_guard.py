@@ -19,7 +19,7 @@ REPORT_MD = ROOT / "docs" / "ops" / "audit" / "product_delivery_governance_truth
 
 REQUIRED_HARD_GAP_KEYS = {
     "gap.frontend.action_view_lint_strict",
-    "gap.scene_contract_v1_strict_schema",
+    "gap.scene_contract_strict_schema",
     "gap.backlog_empty_false_green",
     "gap.delivery_readiness_scoreboard",
 }

@@ -21,17 +21,7 @@ export function parseActionRoute(route) {
 
 export function extractUnifiedContract(envelope) {
   const body = asRecord(envelope);
-  const data = asRecord(body.data);
-  const rawBody = asRecord(body.rawBody);
-  return asRecord(
-    data.__unified_page_contract_v2
-    || data.unified_page_contract_v2
-    || rawBody.__unified_page_contract_v2
-    || rawBody.unified_page_contract_v2
-    || body.__unified_page_contract_v2
-    || body.unified_page_contract_v2
-    || data,
-  );
+  return asRecord(body.data);
 }
 
 function contractModel(contract) {

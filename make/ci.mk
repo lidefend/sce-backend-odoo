@@ -340,35 +340,35 @@ verify.unified_page_contract.v2.guard_inventory: guard.prod.forbid
 
 .PHONY: verify.unified_page_contract.v2.assembler
 verify.unified_page_contract.v2.assembler: guard.prod.forbid
-	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_assembler.py scripts/verify/unified_page_contract_v2_assembler_guard.py
-	@python3 scripts/verify/unified_page_contract_v2_assembler_guard.py --fixtures docs/architecture/unified_page_contract_v2/fixtures --snapshot docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v1.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
+	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_assembler.py addons/smart_construction_core/core_extension_project_layout.py scripts/verify/unified_page_contract_v2_assembler_guard.py
+	@python3 scripts/verify/unified_page_contract_v2_assembler_guard.py --fixtures docs/architecture/unified_page_contract_v2/fixtures --snapshot docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json
 
 .PHONY: verify.unified_page_contract.v2.status
 verify.unified_page_contract.v2.status: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_status.py scripts/verify/unified_page_contract_v2_status_guard.py
-	@python3 scripts/verify/unified_page_contract_v2_status_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/status_contract_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/status_contract_snapshot_v1.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
+	@python3 scripts/verify/unified_page_contract_v2_status_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/status_contract_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/status_contract_snapshot_v2.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
 
 .PHONY: verify.unified_page_contract.v2.action
 verify.unified_page_contract.v2.action: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_action.py scripts/verify/unified_page_contract_v2_action_guard.py
-	@python3 scripts/verify/unified_page_contract_v2_action_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/action_contract_source.json --patch-fixture docs/architecture/unified_page_contract_v2/fixtures/action_patch_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v1.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
+	@python3 scripts/verify/unified_page_contract_v2_action_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/action_contract_source.json --patch-fixture docs/architecture/unified_page_contract_v2/fixtures/action_patch_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v2.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
 
 .PHONY: verify.unified_page_contract.v2.data
 verify.unified_page_contract.v2.data: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_data.py scripts/verify/unified_page_contract_v2_data_guard.py
-	@python3 scripts/verify/unified_page_contract_v2_data_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/data_contract_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v1.json --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
+	@python3 scripts/verify/unified_page_contract_v2_data_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/data_contract_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v2.json --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
 
 .PHONY: verify.unified_page_contract.v2.runtime
 verify.unified_page_contract.v2.runtime: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_runtime.py scripts/verify/unified_page_contract_v2_runtime_guard.py addons/smart_core/tests/test_unified_page_contract_v2_runtime.py addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py
 	@python3 addons/smart_core/tests/test_unified_page_contract_v2_runtime.py
 	@python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py
-	@python3 scripts/verify/unified_page_contract_v2_runtime_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v1.json --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
+	@python3 scripts/verify/unified_page_contract_v2_runtime_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v2.json --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
 
 .PHONY: verify.unified_page_contract.v2.client
 verify.unified_page_contract.v2.client: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_client.py scripts/verify/unified_page_contract_v2_client_guard.py
-	@python3 scripts/verify/unified_page_contract_v2_client_guard.py --fixture docs/architecture/unified_page_contract_v2/examples/form_project.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/client_trimming_snapshot_v1.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
+	@python3 scripts/verify/unified_page_contract_v2_client_guard.py --fixture docs/architecture/unified_page_contract_v2/examples/form_project.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/client_trimming_snapshot_v2.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
 
 .PHONY: verify.unified_page_contract.v2.intent
 verify.unified_page_contract.v2.intent: guard.prod.forbid
@@ -445,7 +445,7 @@ verify.workflow_contract.browser.create_statusbar.host: guard.prod.forbid verify
 verify.workflow_contract.browser.host: verify.workflow_contract.browser.expense_claim.host verify.workflow_contract.browser.contract_close.host verify.workflow_contract.browser.create_statusbar.host
 
 .PHONY: verify.workflow_contract.frontend
-verify.workflow_contract.frontend: verify.frontend.typecheck.strict verify.unified_page_contract.v2.web_architecture verify.frontend.build
+verify.workflow_contract.frontend: verify.contract.page_v1_zero_residue.guard verify.frontend.typecheck.strict verify.unified_page_contract.v2.web_architecture verify.frontend.build
 	@python3 -m py_compile scripts/verify/web_unified_page_contract_v2_guard.py
 	@python3 scripts/verify/web_unified_page_contract_v2_guard.py
 
@@ -453,7 +453,7 @@ verify.workflow_contract.frontend: verify.frontend.typecheck.strict verify.unifi
 verify.workflow_contract: verify.workflow_contract.backend verify.workflow_contract.frontend verify.workflow_contract.browser.host
 
 .PHONY: verify.unified_page_contract.v2
-verify.unified_page_contract.v2: verify.unified_page_contract.v2.guard_inventory verify.unified_page_contract.v2.schema verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.status verify.unified_page_contract.v2.action verify.unified_page_contract.v2.data verify.unified_page_contract.v2.runtime verify.unified_page_contract.v2.client verify.unified_page_contract.v2.intent verify.unified_page_contract.v2.web_consumer verify.unified_page_contract.v2.web_architecture verify.unified_page_contract.v2.stable_projection verify.unified_page_contract.v2.frontend_static
+verify.unified_page_contract.v2: verify.contract.page_v1_zero_residue.guard verify.unified_page_contract.v2.guard_inventory verify.unified_page_contract.v2.schema verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.status verify.unified_page_contract.v2.action verify.unified_page_contract.v2.data verify.unified_page_contract.v2.runtime verify.unified_page_contract.v2.client verify.unified_page_contract.v2.intent verify.unified_page_contract.v2.web_consumer verify.unified_page_contract.v2.web_architecture verify.unified_page_contract.v2.stable_projection verify.unified_page_contract.v2.frontend_static
 
 .PHONY: verify.unified_page_contract.lite.api_onchange_interface verify.unified_page_contract.lite.api_onchange_intent.container verify.unified_page_contract.lite.startup_negative.container verify.unified_page_contract.lite.load_contract_negative.container verify.unified_page_contract.lite.load_contract_preview_interface verify.unified_page_contract.lite.load_contract_preview_intent.container verify.unified_page_contract.lite.load_contract_preview_matrix.container verify.unified_page_contract.lite.frontend_runtime_negative verify.unified_page_contract.lite.frontend_pilot_implementation verify.unified_page_contract.lite.frontend_pilot_browser.host verify.unified_page_contract.lite.all_tree_browser.host verify.unified_page_contract.lite.all_tree_legacy_browser.host verify.unified_page_contract.lite.all_tree_matrix_browser.host verify.unified_page_contract.lite.all_tree_acceptance_browser.host verify.unified_page_contract.lite.api_onchange_live_scope.container verify.unified_page_contract.lite.load_contract_live_scope.container verify.unified_page_contract.lite.runtime_scope_closure verify.unified_page_contract.lite.phase1_closure verify.unified_page_contract.lite.phase2_candidate_plan verify.unified_page_contract.lite.phase2_load_contract_gate verify.unified_page_contract.lite.phase3_ui_contract_risk verify.unified_page_contract.lite.frontend_pilot_readiness verify.unified_page_contract.lite.contract_freeze_v2_0 verify.unified_page_contract.lite.mainline_absorption verify.unified_page_contract.lite.rollout_switch verify.unified_page_contract.lite.mainline_readiness verify.unified_page_contract.lite.terminal_client_parity verify.unified_page_contract.lite.terminal_coverage_matrix verify.unified_page_contract.lite.terminal_consumer_boundary verify.unified_page_contract.lite.wx_mini_renderer_input_pilot.host verify.unified_page_contract.lite.harmony_h5_renderer_input_pilot.host verify.unified_page_contract.lite.wx_mini_ui_renderer_pilot.host verify.unified_page_contract.lite.harmony_h5_ui_renderer_pilot.host verify.unified_page_contract.lite.wx_mini_page_integration_pilot.host verify.unified_page_contract.lite.harmony_h5_page_integration_pilot.host verify.unified_page_contract.lite.wx_mini_runtime_mount_pilot.host verify.unified_page_contract.lite.harmony_h5_runtime_mount_pilot.host verify.unified_page_contract.lite.wx_mini_compile_pilot.host verify.unified_page_contract.lite.wx_mini_real_compile_pilot.host verify.unified_page_contract.lite.wx_mini_runtime_acceptance_pilot.host verify.unified_page_contract.lite.wx_mini_device_acceptance_pilot.host verify.unified_page_contract.lite.harmony_h5_compile_pilot.host verify.unified_page_contract.lite.harmony_h5_runtime_acceptance_pilot.host verify.unified_page_contract.lite.harmony_h5_device_acceptance_pilot.host verify.unified_page_contract.lite
 verify.unified_page_contract.lite.api_onchange_interface: guard.prod.forbid
@@ -686,13 +686,13 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 .PHONY: ci ci.professional.backend ci.local.quick ci.generated_reports.guard refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock
 
-ci: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.web_architecture test.unit test.frontend test.contract test.e2e.preflight
+ci: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 test.unit test.frontend test.contract test.e2e.preflight
 	@git diff --check
 	@echo "[OK] v1.1 PR quality gate passed"
 
 # Backend/static half of the professional gate. The required frontend workflow is
 # the single authority for frontend install, lint, typecheck, build and browsers.
-ci.professional.backend: guard.prod.forbid verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.web_architecture test.unit test.contract test.e2e.preflight
+ci.professional.backend: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 test.unit test.contract test.e2e.preflight
 	@git diff --check
 	@echo "[OK] professional backend/static quality gate passed"
 
@@ -742,7 +742,7 @@ ci.tenant.pro03.demo.dispatch: guard.prod.forbid
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	gh workflow run demo-ci.yml --ref "$$branch"
 
-ci.local.quick: guard.prod.forbid security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.web_architecture verify.menu_config_tree_editor.behavior
+ci.local.quick: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.formal_product_field_purity verify.tenant_extension_storage ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2 verify.menu_config_tree_editor.behavior
 	@python3 scripts/ci/verify_contract_form_split_evidence.py
 	@python3 scripts/verify/contract_form_runtime_state_protocol_guard.py
 	@scripts/verify/contract_form_runtime_state_behavior_guard.sh

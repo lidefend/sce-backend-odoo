@@ -25,6 +25,8 @@ TOP_LEVEL_KEYS = {
 }
 OPTIONAL_TOP_LEVEL_KEYS = {
     "formStructureContract",
+    "searchContract",
+    "workflowContract",
 }
 TOP_LEVEL_PROPERTIES = TOP_LEVEL_KEYS | OPTIONAL_TOP_LEVEL_KEYS
 
@@ -32,6 +34,8 @@ REQUIRED_DEFS = {
     "pageInfo",
     "layoutContract",
     "container",
+    "layoutNode",
+    "nativeLayoutNode",
     "widget",
     "statusContract",
     "actionContract",
@@ -55,6 +59,7 @@ REQUIRED_DEFS = {
 }
 
 REQUIRED_CLOSED_OBJECT_DEFS = {
+    "nativeLayoutNode",
     "containerStatus",
     "widgetStatus",
     "buttonStatus",
@@ -62,8 +67,8 @@ REQUIRED_CLOSED_OBJECT_DEFS = {
 }
 
 LEGACY_ROOT_KEYS = {
-    "scene_contract_v1",
-    "page_orchestration_v1",
+    "scene_contract",
+    "page_orchestration",
     "ui_contract",
     "ui.contract",
     "api.onchange",

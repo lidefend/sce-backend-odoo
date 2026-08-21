@@ -38,9 +38,14 @@ def main() -> int:
     if not payload:
         errors.append(f"missing or invalid json: {REPORT_JSON.relative_to(ROOT).as_posix()}")
     else:
-        for key in ("generated_at_utc", "branch", "commit_ref", "profile"):
+        for key in ("generated_at_utc", "branch", "commit_ref", "candidate_fingerprint_sha256", "profile"):
             if not isinstance(payload.get(key), str) or not payload.get(key):
                 errors.append(f"{key} must be non-empty string")
+        fingerprint = payload.get("candidate_fingerprint_sha256")
+        if isinstance(fingerprint, str) and (
+            len(fingerprint) != 64 or any(ch not in "0123456789abcdef" for ch in fingerprint)
+        ):
+            errors.append("candidate_fingerprint_sha256 must be lowercase sha256")
         if not isinstance(payload.get("ok"), bool):
             errors.append("ok must be bool")
 
@@ -66,6 +71,7 @@ def main() -> int:
             "- generated_at_utc:",
             "- branch:",
             "- commit_ref:",
+            "- candidate_fingerprint_sha256:",
             "| step | status |",
             "| governance_truth |",
         ):

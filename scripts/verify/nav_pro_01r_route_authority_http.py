@@ -55,10 +55,10 @@ def require_denied(result: tuple[int, dict], label: str) -> None:
 
 def authority(token: str) -> dict:
     data = require_ok(intent("system.init", {"contract_mode": "user", "with_preload": False}, token), "system.init")
-    navigation = data.get("navigation_v1") if isinstance(data.get("navigation_v1"), dict) else {}
-    contract = navigation.get("route_authority_v1") if isinstance(navigation.get("route_authority_v1"), dict) else {}
-    if contract.get("contract_version") != "route_authority.v1":
-        raise RuntimeError("route_authority_v1 missing or invalid")
+    navigation = data.get("navigation") if isinstance(data.get("navigation"), dict) else {}
+    contract = navigation.get("route_authority") if isinstance(navigation.get("route_authority"), dict) else {}
+    if contract.get("contract_version") != "2.0.0":
+        raise RuntimeError("route_authority missing or invalid")
     return contract
 
 
@@ -178,14 +178,14 @@ def main() -> int:
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps({
-        "contract_version": "route_authority.v1",
+        "contract_version": "2.0.0",
         "admin_action_id": int(config_action["action_id"]),
         "execution_action_id": int(execution["action_id"]),
         "legal_scope": scope,
         "admin_route_count": len(config_contract.get("admin_actions") or []),
     }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    print("ROUTE_AUTHORITY_CONTRACT_VERSION=route_authority.v1")
+    print("ROUTE_AUTHORITY_CONTRACT_VERSION=2.0.0")
     print("PRIMARY_NAV=31/31")
     print("CONTEXTUAL_CONTRACT=100/100")
     print(f"ADMIN_ROUTE_COUNT={len(config_contract.get('admin_actions') or [])}")

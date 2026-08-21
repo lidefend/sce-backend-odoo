@@ -1,0 +1,161 @@
+{
+  "manifestVersion": "1.0.0",
+  "scope": "page_contract_v1_retirement",
+  "canonicalPublicIntent": "ui.contract",
+  "canonicalContract": "UnifiedPageContract.v2",
+  "scanRoots": [
+    "addons/smart_core",
+    "addons/smart_construction_core",
+    "addons/smart_construction_scene",
+    "addons/smart_scene",
+    "frontend/apps/web/src",
+    "frontend/apps/web/scripts",
+    "frontend/apps/mobile/src",
+    "frontend/packages/schema/src",
+    "make",
+    "scripts/verify",
+    "scripts/dev",
+    "scripts/ops",
+    "scripts/release",
+    "docs/contract/cases.yml",
+    "docs/contract/snapshots",
+    "docs/architecture/unified_page_contract_v2/snapshots",
+    "docs/releases/current",
+    "docs/engineering_convergence/ui_contract_v2_responsibility_map.md",
+    "docs/audit/guard_registry/guard_registry.json"
+  ],
+  "forbiddenTokens": [
+    "system_init_sections_v1",
+    "init_contract_v1",
+    "navigation_v1",
+    "route_authority_v1",
+    "scene_ready_contract_v1",
+    "page_orchestration_v1",
+    "scene_contract_v1",
+    "scene_governance_v1",
+    "view_orchestration_contract_v1",
+    "view_orchestration_v1",
+    "delivery_handoff_v1",
+    "edition_runtime_v1",
+    "delivery_engine_v1"
+  ],
+  "allowlist": [
+    {
+      "token": "system_init_sections_v1",
+      "path": "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+      "classification": "negative_assertion",
+      "owner": "smart_core",
+      "reason": "Proves the retired alias is absent."
+    },
+    {
+      "token": "init_contract_v1",
+      "path": "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+      "classification": "negative_assertion",
+      "owner": "smart_core",
+      "reason": "Proves the retired alias is absent."
+    },
+    {
+      "token": "system_init_sections_v1",
+      "path": "addons/smart_core/tests/test_intent_smoke.py",
+      "classification": "negative_assertion",
+      "owner": "smart_core",
+      "reason": "HTTP smoke proves the retired alias is absent."
+    },
+    {
+      "token": "init_contract_v1",
+      "path": "addons/smart_core/tests/test_intent_smoke.py",
+      "classification": "negative_assertion",
+      "owner": "smart_core",
+      "reason": "HTTP smoke proves the retired alias is absent."
+    },
+    {
+      "token": "navigation_v1",
+      "path": "addons/smart_core/tests/test_intent_smoke.py",
+      "classification": "negative_assertion",
+      "owner": "smart_core",
+      "reason": "HTTP smoke proves the retired navigation carrier is absent."
+    },
+    {
+      "token": "scene_ready_contract_v1",
+      "path": "addons/smart_core/tests/test_intent_smoke.py",
+      "classification": "negative_assertion",
+      "owner": "smart_core",
+      "reason": "HTTP smoke proves the retired scene-ready carrier is absent."
+    },
+    {
+      "token": "route_authority_v1",
+      "path": "addons/smart_core/tests/test_intent_smoke.py",
+      "classification": "negative_assertion",
+      "owner": "smart_core",
+      "reason": "HTTP smoke proves the retired route-authority carrier is absent."
+    },
+    {
+      "token": "scene_governance_v1",
+      "path": "addons/smart_core/tests/test_intent_smoke.py",
+      "classification": "negative_assertion",
+      "owner": "smart_core",
+      "reason": "HTTP smoke proves the retired scene-governance carrier is absent."
+    },
+    {
+      "token": "page_orchestration_v1",
+      "path": "addons/smart_construction_core/tests/test_scene_block_schema_contract.py",
+      "classification": "negative_assertion",
+      "owner": "smart_construction_core",
+      "reason": "P1 projection test proves the retired carrier is absent."
+    },
+    {
+      "token": "scene_ready_contract_v1",
+      "path": "scripts/verify/frontend_scene_contract_consumption_guard.py",
+      "classification": "negative_guard",
+      "owner": "frontend_renderer",
+      "reason": "Canonical frontend guard rejects the retired key."
+    },
+    {
+      "token": "page_orchestration_v1",
+      "path": "scripts/verify/frontend_scene_contract_consumption_guard.py",
+      "classification": "negative_guard",
+      "owner": "frontend_renderer",
+      "reason": "Canonical frontend guard rejects the retired key."
+    },
+    {
+      "token": "page_orchestration_v1",
+      "path": "scripts/verify/frontend_page_contract_orchestration_consumption_guard.py",
+      "classification": "negative_guard",
+      "owner": "frontend_renderer",
+      "reason": "Canonical page guard rejects the retired key."
+    },
+    {
+      "token": "scene_contract_v1",
+      "path": "scripts/verify/frontend_page_contract_orchestration_consumption_guard.py",
+      "classification": "negative_guard",
+      "owner": "frontend_renderer",
+      "reason": "Canonical page guard rejects the retired fallback."
+    },
+    {
+      "token": "scene_contract_v1",
+      "path": "scripts/verify/frontend_scene_contract_consumption_guard.py",
+      "classification": "negative_guard",
+      "owner": "frontend_renderer",
+      "reason": "Canonical scene guard rejects the retired fallback."
+    }
+  ],
+  "requiredSnapshots": [
+    "docs/contract/snapshots/system_init_intent_admin.json",
+    "docs/contract/snapshots/ui_contract_v2_intent_admin.json"
+  ],
+  "requiredArchitectureSnapshots": [
+    {"path": "docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.2.0"},
+    {"path": "docs/architecture/unified_page_contract_v2/snapshots/status_contract_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.1.0"},
+    {"path": "docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.1.0"},
+    {"path": "docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.1.0"},
+    {"path": "docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.1.0"},
+    {"path": "docs/architecture/unified_page_contract_v2/snapshots/client_trimming_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.1.0"}
+  ],
+  "allowedSystemInitV1Values": [
+    "release_audit_trail_surface_v1",
+    "business_entry_disposition.v1",
+    "docs/product/delivery/v1/standard_delivery_package_v1.md",
+    "docs/product/delivery/v1/delivery_readiness_scoreboard_v1.md",
+    "docs/product/product_delivery_productization_audit_v1.md"
+  ]
+}

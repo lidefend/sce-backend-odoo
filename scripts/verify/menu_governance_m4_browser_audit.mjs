@@ -36,7 +36,7 @@ function payloadData(payload) {
 
 function navigationFromPayload(payload) {
   const data = payloadData(payload);
-  return Array.isArray(data?.navigation_v1?.nav) ? data.navigation_v1.nav : null;
+  return Array.isArray(data?.navigation?.nav) ? data.navigation.nav : null;
 }
 
 function sourceShaFromPayload(payload) {
