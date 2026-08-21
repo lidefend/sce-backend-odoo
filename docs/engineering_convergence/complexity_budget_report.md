@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3827`
+- Scanned files: `3829`
 - Files requiring split plan: `41`
 - Files above warning threshold: `77`
 
@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 4122 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4181 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4052 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4045 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4013 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
@@ -20,7 +20,7 @@ Generated from repository source files. This report is informational during the 
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3136 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 3207 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3055 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3016 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
@@ -140,7 +140,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 4122 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4181 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4052 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4045 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4013 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
@@ -148,7 +148,7 @@ Generated from repository source files. This report is informational during the 
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3136 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 3207 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3055 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3016 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
