@@ -86,7 +86,15 @@ export function buildContractFormActions(params: {
       const isHeaderAction = sourceWidgetId === 'page.header'
         || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope));
       const isFooterAction = targetScope === 'footer';
-      if (!isHeaderAction && !isFooterAction) return;
+      const nativeIdentity = parseMaybeJsonRecord(row.nativeIdentity || row.native_identity);
+      const canonicalRegion = String(nativeIdentity.canonical_region || nativeIdentity.canonicalRegion || '').trim().toLowerCase();
+      const level = isFooterAction
+        ? 'footer'
+        : isHeaderAction
+          ? 'header'
+          : canonicalRegion === 'stat_buttons'
+            ? 'smart'
+            : 'body';
       const buttonType = String(button.type || button.buttonType || '').trim();
       merged.push({
         key,
@@ -94,7 +102,7 @@ export function buildContractFormActions(params: {
         label: String(row.label || key).trim() || key,
         kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : buttonName ? 'object' : clientMode ? 'client' : 'open',
         intent: String(row.intent || '').trim(),
-        level: isFooterAction ? 'footer' : 'header',
+        level,
         selection: 'none',
         sourceWidgetId,
         target,

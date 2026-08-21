@@ -268,7 +268,11 @@ import NativeCollaborationPanel, {
 } from './contractForm/NativeCollaborationPanel.vue';
 import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
 import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
-import { resolveCanonicalFormActionExecution, validateCanonicalFormActionExecutors } from './contractForm/canonicalFormActionExecutor';
+import {
+  collectCanonicalFormActions,
+  resolveCanonicalFormActionExecution,
+  validateCanonicalFormActionExecutors,
+} from './contractForm/canonicalFormActionExecutor';
 import { shouldShowNativeCollaborationPanel } from './contractForm/collaborationPresentation';
 import RelationSearchDialog from './contractForm/RelationSearchDialog.vue';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
@@ -1578,7 +1582,7 @@ const {
 const canonicalActionExecutionError = computed(() => {
   const model = canonicalFormRenderState.value.model;
   if (!model) return '';
-  const failure = validateCanonicalFormActionExecutors(model.actionBar, contractActions.value);
+  const failure = validateCanonicalFormActionExecutors(collectCanonicalFormActions(model), contractActions.value);
   return failure ? `${failure.reasonCode}:${failure.actionId}:${failure.backendIdentity}` : '';
 });
 const canonicalFormDriverError = computed(() => (

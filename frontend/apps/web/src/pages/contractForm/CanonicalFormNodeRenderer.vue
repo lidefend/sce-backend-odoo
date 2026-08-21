@@ -38,6 +38,7 @@
       :node="child"
       :relation-adapter="relationAdapter"
       @field-change="emit('field-change', $event)"
+      @action-ref="emit('action-ref', $event)"
     />
   </section>
 </template>

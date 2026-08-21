@@ -10,7 +10,11 @@ import {
   canonicalSectionFields,
   visibleCanonicalChildren,
 } from '../src/pages/contractForm/canonicalFormRenderer';
-import { resolveCanonicalFormActionExecution, validateCanonicalFormActionExecutors } from '../src/pages/contractForm/canonicalFormActionExecutor';
+import {
+  collectCanonicalFormActions,
+  resolveCanonicalFormActionExecution,
+  validateCanonicalFormActionExecutors,
+} from '../src/pages/contractForm/canonicalFormActionExecutor';
 import type { ContractAction } from '../src/pages/contractForm/types';
 import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
 import {
@@ -849,4 +853,19 @@ assert.deepEqual(
   'an executable action without an exact unified executor adapter must block canonical cutover',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=49');
+assert.deepEqual(
+  collectCanonicalFormActions(bodyActionModel).map((action) => action.actionRef.backendIdentity),
+  ['button:object:action_submit', 'window_action:91'],
+  'body-node actions must join actionBar actions in exact executor validation',
+);
+assert.deepEqual(
+  validateCanonicalFormActionExecutors(collectCanonicalFormActions(bodyActionModel), [contractAction]),
+  {
+    reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING',
+    actionId: 'action.open_lines',
+    backendIdentity: 'window_action:91',
+  },
+  'an executable body-node action without an adapter must fail closed',
+);
+
+console.log('[canonical_form_presenter_test] PASS cases=51');

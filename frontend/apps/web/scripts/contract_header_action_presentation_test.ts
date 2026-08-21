@@ -141,8 +141,13 @@ const built = buildContractFormActions({
     rule('second-primary', 'page.root', 'header'),
     rule('root-header-url', 'page.root', 'header', { button: {}, target: { url: '/integration/status' } }),
     rule('root-page-submit', 'page.root', 'page'),
-    rule('root-body', 'page.root', 'body'),
-    rule('root-widget', 'page.root', 'widget'),
+    rule('root-body', 'page.root', 'body', {
+      backendIdentity: 'native_button:object:action_root_body:/form/sheet/button[1]:0',
+      nativeIdentity: { canonical_region: 'layout' },
+    }),
+    rule('root-widget', 'page.root', 'widget', {
+      nativeIdentity: { canonical_region: 'stat_buttons' },
+    }),
     rule('row-action', 'page.row', 'row'),
   ],
   policyContext: {} as never,
@@ -180,7 +185,17 @@ assert.deepEqual(resolvePrimaryBusinessActionState({
   quickSubmitDisabled: false,
 }), { show: true, disabled: true });
 
-assert.deepEqual(built.map((item) => item.key), ['normalized-root', 'root-header-url', 'root-page-submit', 'second-primary']);
+assert.deepEqual(built.map((item) => item.key), [
+  'root-body', 'row-action', 'normalized-root', 'root-header-url',
+  'root-page-submit', 'second-primary', 'root-widget',
+]);
+assert.equal(built.find((item) => item.key === 'root-body')?.level, 'body');
+assert.equal(
+  built.find((item) => item.key === 'root-body')?.backendIdentity,
+  'native_button:object:action_root_body:/form/sheet/button[1]:0',
+);
+assert.equal(built.find((item) => item.key === 'root-widget')?.level, 'smart');
+assert.equal(built.find((item) => item.key === 'row-action')?.level, 'body');
 assert.deepEqual(grouped.direct.map((item) => item.key), ['normalized-root', 'native-header']);
 assert.deepEqual(grouped.overflow.map((item) => item.key), ['root-header-url', 'root-page-submit', 'second-primary']);
 const presented = presentContractHeaderActions({ direct: grouped.direct, overflow: grouped.overflow, excludedKeys: new Set() });
@@ -486,4 +501,4 @@ const intake = groupContractHeaderActions({
 });
 assert.deepEqual(intake, { direct: [], overflow: [], configuration: [] });
 
-console.log('[contract_header_action_presentation_test] PASS real_builder_chain=1 normalized_authority=1 full_snapshot_decode=1 danger_decode=1 submit_true=1 native_fallback=1 root_header_page_object_url=4 body_widget_row_hidden=3 primary=1 config_primary=0 denied_io=0');
+console.log('[contract_header_action_presentation_test] PASS real_builder_chain=1 normalized_authority=1 full_snapshot_decode=1 danger_decode=1 submit_true=1 native_fallback=1 root_header_page_object_url=4 body_widget_row_adapters=3 primary=1 config_primary=0 denied_io=0');

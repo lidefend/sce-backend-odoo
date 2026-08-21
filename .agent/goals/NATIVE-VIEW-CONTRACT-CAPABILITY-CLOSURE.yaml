@@ -72,9 +72,14 @@ goal:
       title: modifiers_actions_permissions_closure
       status: active
       current_increment:
-        id: Q2-3
-        title: form_action_identity_capability_closure
+        id: Q2-4a
+        title: canonical_form_node_action_executor_closure
         status: verified
+        result:
+          - all_rendered_canonical_form_actions_are_validated
+          - body_widget_and_row_actions_have_exact_execution_adapters
+          - action_bar_placement_remains_contract_driven
+          - ledger_action_atoms_remain_fail_closed_pending_final_upc_interaction_evidence
         terminal_counts:
           ready: 381
           fallback: 1340

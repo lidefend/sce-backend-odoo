@@ -123,6 +123,14 @@ require(
     and "node.action.actionRef" in canonical_node_renderer,
     "native body action occurrences must reuse canonical action references",
 )
+recursive_node_call = canonical_node_renderer[
+    canonical_node_renderer.index("<CanonicalFormNodeRenderer"):
+    canonical_node_renderer.index("</section>")
+]
+require(
+    '@action-ref="emit(\'action-ref\', $event)"' in recursive_node_call,
+    "recursive canonical node actions do not reach the unified executor adapter",
+)
 require(
     'action_id = "form.save"' in v2_assembler
     and 'required_right = "create" if render_profile == "create" else "write"' in v2_assembler,
@@ -274,7 +282,8 @@ require(
 )
 require(
     "validateCanonicalFormActionExecutors(" in form_page
-    and "validateCanonicalFormActionExecutors(model.actionBar, contractActions.value)" in form_page,
+    and "collectCanonicalFormActions(model)" in form_page
+    and "validateCanonicalFormActionExecutors(collectCanonicalFormActions(model), contractActions.value)" in form_page,
     "canonical cutover does not validate every executable action reference",
 )
 require(
