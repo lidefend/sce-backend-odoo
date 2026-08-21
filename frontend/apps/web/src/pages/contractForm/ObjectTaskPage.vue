@@ -348,7 +348,7 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--sc-app-border);
     background: color-mix(in srgb, var(--sc-app-panel) 96%, transparent);
-    box-shadow: 0 -8px 24px rgb(15 35 55 / 10%);
+    box-shadow: var(--sc-app-shadow-popover);
     backdrop-filter: blur(10px);
   }
 }

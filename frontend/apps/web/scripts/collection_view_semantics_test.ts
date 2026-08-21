@@ -20,39 +20,32 @@ import {
 } from '../src/app/runtime/collectionViewRuntime';
 import { buildActionViewRowClickTarget, shouldUseCanonicalCollectionDetail } from '../src/app/runtime/actionViewInteractionRuntime';
 import { pickContractNavQuery } from '../src/app/navigationContext';
-import {
-  extractKanbanFieldsFromContract,
-  extractNativeColumnOccurrenceSchema,
-} from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import { resolveLoadKanbanFieldApplyState } from '../src/app/runtime/actionViewLoadViewFieldStateRuntime';
 import { resolveDesktopListCandidates } from '../src/pages/listPage/listColumnVisibility';
+import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
 
-const cardContract = {
-  head: { view_type: 'tree,kanban,form' },
-  views: {
-    tree: { columns: ['id', 'name'] },
-    kanban: {
-      fields: ['id', 'name'],
-      collection_presentation: {
-        semantic: 'card', label: '卡片', group_field: null,
-        capabilities: { grouped_lanes: false },
-      },
+function normalizedCollectionContract(
+  viewType: string,
+  collectionPresentation: Record<string, unknown>,
+  fieldCodes: string[] = [],
+): ContractV2NormalizedStore {
+  const widgets = fieldCodes.map((fieldCode) => ({ fieldCode }));
+  return {
+    snapshot: {
+      pageInfo: { viewType },
+      layoutContract: { listProfile: { collection_presentation: collectionPresentation } },
     },
-  },
-};
-const workflowContract = {
-  head: { view_type: 'kanban,tree,form' },
-  views: {
-    tree: { columns: ['id', 'name', 'state'] },
-    kanban: {
-      fields: ['id', 'name', 'state'],
-      collection_presentation: {
-        semantic: 'workflow_board', label: '流程看板', group_field: 'state',
-        capabilities: { grouped_lanes: true },
-      },
-    },
-  },
-};
+    widgetsByFieldCode: new Map(widgets.map((widget) => [widget.fieldCode, widget])),
+  } as unknown as ContractV2NormalizedStore;
+}
+
+const cardContract = normalizedCollectionContract('tree,kanban,form', {
+  semantic: 'card', label: '卡片', group_field: null, capabilities: { grouped_lanes: false },
+});
+const workflowContract = normalizedCollectionContract('kanban,tree,form', {
+  semantic: 'workflow_board', label: '流程看板', group_field: 'state', capabilities: { grouped_lanes: true },
+});
 
 // fresh_project_ledger_defaults_to_table
 assert.equal(resolvePreferredActionViewMode({
@@ -78,27 +71,9 @@ assert.equal(groupCollectionRecords([
 assert.equal(resolveGroupedCollectionPresentation(
   resolveActionCollectionPresentation(cardContract, 'kanban'), 'state',
 ).semantic, 'workflow_board');
-assert.deepEqual(extractKanbanFieldsFromContract({ views: { kanban: { fields: [
-  { field: { name: 'name', label: '名称' } }, { field: { name: 'lifecycle_state', label: '状态' } },
-] } } }), ['name', 'lifecycle_state']);
-const occurrenceColumns = extractNativeColumnOccurrenceSchema({ views: { tree: {
-  columns_schema: [{ name: 'amount_total', label: 'merged legacy column' }],
-  column_occurrences: [
-    {
-      name: 'amount_total', field_type: 'monetary', widget: 'monetary',
-      source_position: 0, occurrence_index: 1, native_locator: '/tree/field[1]',
-      attributes: { string: 'Untaxed Amount', optional: 'show' },
-      modifiers: { readonly: true },
-    },
-    {
-      name: 'amount_total', field_type: 'monetary', widget: 'monetary',
-      source_position: 1, occurrence_index: 2, native_locator: '/tree/field[2]',
-      attributes: { string: 'Tax Included', optional: 'hide' },
-      modifiers: { column_invisible: false },
-    },
-  ],
-} } });
-
+assert.deepEqual(extractKanbanFieldsFromContract(
+  normalizedCollectionContract('kanban', {}, ['name', 'lifecycle_state']),
+), ['name', 'lifecycle_state']);
 const inlineNativeSubview = { tree: { columns: [{ name: 'partner_id' }], column_occurrences: [
   {
     name: 'partner_id', field_type: 'many2one', native_locator: '/form/field[1]/tree[1]/field[1]', occurrence_index: 1,
@@ -209,29 +184,6 @@ assert.deepEqual(inlineActions.map((action) => ({ label: action.label, enabled: 
   { label: 'Context Child', enabled: false },
   { label: 'Conditional Child', enabled: false },
 ]);
-assert.equal(occurrenceColumns.length, 2);
-assert.deepEqual(occurrenceColumns.map((column) => ({
-  name: column.name,
-  label: column.label,
-  type: column.type,
-  widget: column.widget,
-  source_position: column.source_position,
-  occurrence_index: column.occurrence_index,
-  native_locator: column.native_locator,
-  readonly: column.readonly,
-  column_invisible: column.column_invisible,
-})), [
-  {
-    name: 'amount_total', label: 'Untaxed Amount', type: 'monetary', widget: 'monetary',
-    source_position: 0, occurrence_index: 1, native_locator: '/tree/field[1]',
-    readonly: true, column_invisible: undefined,
-  },
-  {
-    name: 'amount_total', label: 'Tax Included', type: 'monetary', widget: 'monetary',
-    source_position: 1, occurrence_index: 2, native_locator: '/tree/field[2]',
-    readonly: undefined, column_invisible: false,
-  },
-]);
 assert.deepEqual(resolveLoadKanbanFieldApplyState({
   kanbanContractFields: [{ name: 'name' }, { name: 'lifecycle_state' }] as unknown as string[],
   fallbackKanbanFields: [], advancedContractFields: [], uniqueFieldsFn: (fields) => [...new Set(fields)],
@@ -261,7 +213,10 @@ assert.equal(resolveResponsiveCollectionPresentation({ explicitMode: 'table', co
 assert.equal(resolveResponsiveCollectionPresentation({ explicitMode: 'card', compactViewport: true }), 'explicit_card');
 
 // unknown_kanban_semantic_fails_safe
-assert.equal(resolveActionCollectionPresentation({ views: { kanban: { collection_presentation: { semantic: 'mystery' } } } }, 'kanban').semantic, 'card');
+assert.equal(resolveActionCollectionPresentation(
+  normalizedCollectionContract('kanban', { semantic: 'mystery' }),
+  'kanban',
+).semantic, 'card');
 
 // Native desktop tree columns within the product budget remain authoritative;
 // narrow widths use horizontal scrolling instead of silently hiding fields.

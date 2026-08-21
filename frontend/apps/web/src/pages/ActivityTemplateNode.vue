@@ -48,14 +48,14 @@ const fieldClasses = computed(() => {
 
 <style scoped>
 .activity-template-container { display: grid; gap: 10px; min-width: 0; }
-.activity-template-text { color: #52635a; font-size: 12px; }
-.activity-template-tail { color: #52635a; font-size: 12px; }
+.activity-template-text { color: var(--sc-app-text-secondary); font-size: 12px; }
+.activity-template-tail { color: var(--sc-app-text-secondary); font-size: 12px; }
 .activity-template-container.d-flex { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .activity-template-field { display: inline-flex; gap: 6px; align-items: baseline; min-width: 0; }
-.activity-template-field__label { color: #66736c; font-size: 11px; }
+.activity-template-field__label { color: var(--sc-app-text-secondary); font-size: 11px; }
 .activity-template-field__value { overflow-wrap: anywhere; font-weight: 650; }
-.activity-template-field--badge .activity-template-field__value { padding: 3px 8px; border-radius: 999px; background: #e8ece8; font-size: 12px; }
-.activity-template-field--info .activity-template-field__value { background: #e3eef5; color: #24566f; }
-.activity-template-field--success .activity-template-field__value { background: #deeee4; color: #24613d; }
+.activity-template-field--badge .activity-template-field__value { padding: 3px 8px; border-radius: 999px; background: var(--sc-app-muted-bg); font-size: 12px; }
+.activity-template-field--info .activity-template-field__value { background: var(--sc-app-info-bg); color: var(--sc-app-info-text); }
+.activity-template-field--success .activity-template-field__value { background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }
 .activity-template-field--monetary .activity-template-field__value { font-variant-numeric: tabular-nums; }
 </style>

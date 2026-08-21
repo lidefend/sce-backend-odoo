@@ -991,14 +991,8 @@ const pageSectionStyle = pageContract.sectionStyle;
 const pageSectionTagIs = pageContract.sectionTagIs;
 let latestLoadGeneration = 0;
 let loadPageInvoker: (loadGeneration: number) => Promise<void> = async () => {};
-function requestLoadPage(): Promise<void> {
-  latestLoadGeneration += 1;
-  return loadPageInvoker(latestLoadGeneration);
-}
-
-function currentActionActivityRouteKey(): string {
-  return buildActionActivityRouteKey({ actionId: route.params.actionId, queryActionId: route.query.action_id, menuId: route.query.menu_id });
-}
+function requestLoadPage(): Promise<void> { latestLoadGeneration += 1; return loadPageInvoker(latestLoadGeneration); }
+function currentActionActivityRouteKey(): string { return buildActionActivityRouteKey({ actionId: route.params.actionId, queryActionId: route.query.action_id, menuId: route.query.menu_id }); }
 
 function resolveCurrentRouteActionId(): number {
   const fromParam = Number(route.params.actionId || 0);
@@ -1008,9 +1002,7 @@ function resolveCurrentRouteActionId(): number {
 }
 
 let clearSelectionInvoker: () => void = () => {};
-function clearSelection(): void {
-  clearSelectionInvoker();
-}
+function clearSelection(): void { clearSelectionInvoker(); }
 
 const { t } = useActionViewTextRuntime({ pageText });
 const pageActionIntent = pageContract.actionIntent;
@@ -1547,9 +1539,7 @@ const businessCategoryCreateOptions = computed<BusinessCategoryCreateOption[]>((
     .filter((row): row is BusinessCategoryCreateOption => Boolean(row));
 });
 
-function closeBusinessCategoryCreatePicker() {
-  businessCategoryCreatePickerVisible.value = false;
-}
+function closeBusinessCategoryCreatePicker() { businessCategoryCreatePickerVisible.value = false; }
 
 function createRouteQueryForBusinessCategory(categoryCode = '') {
   const code = String(categoryCode || '').trim();
@@ -1815,9 +1805,7 @@ const toolbarUiLabels = computed<Record<string, string>>(() => {
   }, {});
 });
 
-function toolbarUiLabel(key: string, fallback: string) {
-  return toolbarUiLabels.value[key] || fallback;
-}
+function toolbarUiLabel(key: string, fallback: string) { return toolbarUiLabels.value[key] || fallback; }
 const {
   toContractActionButton,
 } = useActionViewContractActionButtonRuntime({

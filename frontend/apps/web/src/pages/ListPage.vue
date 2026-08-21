@@ -2080,27 +2080,15 @@ function stopColumnResize() {
   emit('column-widths-change', { columnWidths: { ...draftColumnWidths.value } });
 }
 
-function columnLabel(col: string) {
-  const option = columnOption(col);
-  return option?.label || columnLabels.value[col] || contractColumnLabels.value[col] || col;
-}
+function columnLabel(col: string) { return columnOption(col)?.label || columnLabels.value[col] || contractColumnLabels.value[col] || col; }
 
 function columnOption(field: string) {
   return columnChoices.value.find((column) => column.name === field) || null;
 }
 
-function columnValueField(field: string) {
-  return resolveListDisplayField(field, columnOption(field));
-}
-
-function columnAggregationField(field: string) {
-  const option = columnOption(field);
-  return String(option?.aggregationField || option?.valueField || field).trim() || field;
-}
-
-function columnValue(row: Record<string, unknown>, field: string) {
-  return row[columnValueField(field)];
-}
+function columnValueField(field: string) { return resolveListDisplayField(field, columnOption(field)); }
+function columnAggregationField(field: string) { const option = columnOption(field); return String(option?.aggregationField || option?.valueField || field).trim() || field; }
+function columnValue(row: Record<string, unknown>, field: string) { return row[columnValueField(field)]; }
 
 function columnSemanticInput(field: string) {
   const option = columnOption(field);

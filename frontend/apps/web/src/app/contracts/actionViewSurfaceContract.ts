@@ -65,7 +65,7 @@ function collectContractViewModes(contract: ContractV2NormalizedStore | null): s
     parseViewModes(raw).forEach((mode) => addMode(mode));
   };
 
-  addModes(contract?.snapshot.pageInfo.viewType);
+  addModes(contract?.snapshot?.pageInfo?.viewType);
   return out;
 }
 

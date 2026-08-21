@@ -1571,7 +1571,7 @@ select.input {
 }
 
 .field-currency-label {
-  color: var(--sc-text-secondary, #596579);
+  color: var(--sc-app-text-secondary);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

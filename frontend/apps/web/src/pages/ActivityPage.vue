@@ -54,19 +54,19 @@ defineEmits<{ 'open-record': [record: Record<string, unknown>] }>();
 </script>
 
 <style scoped>
-.activity-page { display: grid; gap: 18px; padding: 22px; border: 1px solid #d8d3c8; border-radius: 18px; background: linear-gradient(145deg, #fffdf7, #f2efe6); }
+.activity-page { display: grid; gap: 18px; padding: 22px; border: 1px solid var(--sc-app-border); border-radius: 18px; background: linear-gradient(145deg, var(--sc-app-panel), var(--sc-app-muted-bg)); }
 .activity-page__head { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
-.activity-page__head h2 { margin: 2px 0 0; font-family: 'Noto Serif SC', serif; font-size: clamp(22px, 3vw, 34px); color: #24342d; }
-.activity-page__eyebrow { margin: 0; color: #8a5a2b; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-.activity-page__count { color: #52635a; font-size: 13px; }
+.activity-page__head h2 { margin: 2px 0 0; font-family: 'Noto Serif SC', serif; font-size: clamp(22px, 3vw, 34px); color: var(--sc-app-text-primary); }
+.activity-page__eyebrow { margin: 0; color: var(--sc-text-link); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.activity-page__count { color: var(--sc-app-text-secondary); font-size: 13px; }
 .activity-page__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
-.activity-card { display: grid; gap: 10px; padding: 16px; border: 1px solid #d5d9d2; border-radius: 14px; background: rgba(255,255,255,.82); color: #203129; text-align: left; cursor: pointer; box-shadow: 0 8px 24px rgba(46,59,50,.06); }
-.activity-card:hover { border-color: #a66a2c; transform: translateY(-1px); }
-.activity-card__identity { color: #8a5a2b; font-size: 12px; font-weight: 700; }
+.activity-card { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--sc-app-border); border-radius: 14px; background: var(--sc-app-panel); color: var(--sc-app-text-primary); text-align: left; cursor: pointer; box-shadow: var(--sc-app-shadow); }
+.activity-card:hover { border-color: var(--sc-app-selected-border); transform: translateY(-1px); }
+.activity-card__identity { color: var(--sc-text-link); font-size: 12px; font-weight: 700; }
 .activity-card__field { display: grid; grid-template-columns: minmax(90px, .7fr) 1.3fr; gap: 10px; align-items: baseline; }
-.activity-card__label { color: #66736c; font-size: 12px; }
+.activity-card__label { color: var(--sc-app-text-secondary); font-size: 12px; }
 .activity-card__value { overflow-wrap: anywhere; font-weight: 600; }
-.activity-page__state { display: grid; gap: 4px; min-height: 130px; place-content: center; text-align: center; color: #67736c; }
-.activity-page__state--error { color: #9a332b; }
+.activity-page__state { display: grid; gap: 4px; min-height: 130px; place-content: center; text-align: center; color: var(--sc-app-text-secondary); }
+.activity-page__state--error { color: var(--sc-app-danger-text); }
 @media (max-width: 680px) { .activity-page { padding: 16px; } .activity-page__grid { grid-template-columns: 1fr; } }
 </style>
