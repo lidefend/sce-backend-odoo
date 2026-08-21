@@ -104,6 +104,20 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("createContractV2Store(snapshot)", source)
         self.assertNotIn("adaptUnifiedPageContractV2Raw", source)
 
+    def test_v2_create_contract_cache_is_context_scoped_and_store_safe(self):
+        source = """
+        const key = [session.sessionDb, session.token, currentContextEpoch(), JSON.stringify(params)].join('|');
+        if (renderProfile === 'create' && !recordId) return restoreCachedResult(cached.result);
+        function restoreCachedResult(result) {
+          const snapshot = cloneJson(result.snapshot);
+          return { snapshot, store: createContractV2Store(snapshot) };
+        }
+        """
+        self.assertIn("currentContextEpoch()", source)
+        self.assertIn("renderProfile === 'create'", source)
+        self.assertIn("createContractV2Store(snapshot)", source)
+        self.assertNotIn("adaptUnifiedPageContractV2Raw", source)
+
     def test_inactive_action_page_ignores_record_context_events(self):
         source = """
         function handleRecordContextChanged(): void {

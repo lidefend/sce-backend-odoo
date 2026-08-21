@@ -184,7 +184,11 @@ require(
     "intent: 'ui.contract.v2'",
     "decodeContractV2Snapshot(response.data)",
     "createContractV2Store(snapshot)",
-    "if (options.renderProfile) params.render_profile = options.renderProfile;",
+    "CREATE_CONTRACT_CACHE_TTL_MS",
+    "currentContextEpoch()",
+    "resolveModelContractRenderProfile",
+    "renderProfile === 'create'",
+    "restoreCachedResult",
     "if (recordId) params.record_id = recordId;",
 )
 forbid(
