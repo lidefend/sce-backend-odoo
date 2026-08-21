@@ -444,7 +444,7 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Branch: `release/tenant-rc-01-product-image`
 - Starting product commit: `2d9d187d391cfe2c1c6e085a0a96ba6d27f20793`
 - Formal Product Layer: P0 generic route-authority transport/runtime enforcement, P1 construction role policy, shared frontend consumer, and P4 verification
-- Layer Target: one fail-closed `route_authority.v1` contract separating `PRIMARY_NAV`, `ROLE_HOME_ACTION`, `CONTEXTUAL_ROUTE`, `ADMIN_ROUTE`, and `DENIED`
+- Layer Target: one fail-closed `2.0.0` contract separating `PRIMARY_NAV`, `ROLE_HOME_ACTION`, `CONTEXTUAL_ROUTE`, `ADMIN_ROUTE`, and `DENIED`
 - Module: `smart_core` identity/delivery/intent handlers, `smart_construction_core` policy declarations, frontend session/router/shell, and NAV-PRO-01R verification tooling
 - Reason: backend execution permission alone does not authorize a frontend page; administrator-only and context-only pages require explicit, stable route authority without entering the business menu tree
 - Standard vs User-Specific: generic product mechanism plus standard construction role declarations; no customer model, payload, login identity, production record, attachment, or private module enters the contract
@@ -2245,7 +2245,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   unchanged; P2, P3, P4, database migrations, and backend ACLs are unaffected.
 - Blast Radius: frontend-only fail-closed initialization and navigation. An
   authoritative bootstrap clears the prior menu/action/scene/activity snapshot;
-  navigation becomes interactive only after `route_authority_v1` is ready; one
+  navigation becomes interactive only after `route_authority` is ready; one
   click freezes and validates one immutable menu/action/scene/route/authority
   tuple. No user, role, company, password, module, schema, or business-data
   write is introduced.

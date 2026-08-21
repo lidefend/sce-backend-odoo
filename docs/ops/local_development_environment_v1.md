@@ -40,6 +40,7 @@ make local.dev.upgrade MODULE=smart_construction_core
 make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestP1PaymentRequestCapability'
 make local.dev.sync_demo
 make local.dev.verify_demo
+make local.dev.contract_snapshot
 CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO make local.dev.rebuild_demo
 make local.dev.down
 make local.dev.snapshot
@@ -98,6 +99,10 @@ Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`h
 
 `local.dev.snapshot` 同时保存 PostgreSQL custom dump 与对应 filestore，并生成 SHA-256
 清单。产物位于 `artifacts/local-dev/snapshots/`，不进入 Git。
+
+`local.dev.contract_snapshot` 使用同一固定 `sc-local-dev / sc_dev_demo / ^sc_dev_demo$`
+身份调用既有 `contract.export_all`，用于功能迭代后的契约快照刷新。禁止通过通用
+`codex.snapshot` 手工覆盖 Compose project、数据库或凭据来替代该入口。
 
 ## 研发节奏
 

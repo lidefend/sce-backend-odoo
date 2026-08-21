@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- generated_at_utc: 2026-07-07T17:13:18Z
-- branch: `main`
-- commit_ref: `d2ec5df1b`
+- generated_at_utc: 2026-08-21T07:58:25Z
+- branch: `codex/fix-project-layout-container-normalize`
+- commit_ref: `3a3b20e3`
 - primary_gate: `make verify.scene.delivery.readiness.role_company_matrix`
 - gate_result: `PASS`
-- final_closeout_date: `2026-07-08`
+- final_closeout_date: `2026-08-21`
 
 ## System-Bound Evidence Summary
 
@@ -23,23 +23,23 @@
 | Company access preflight | PASS (strict) | `artifacts/backend/scene_company_access_preflight_report.json` |
 | Multi-company evidence accumulation | PASS (strict) | `artifacts/backend/scene_multi_company_evidence_report.json` |
 | No-action regression guard | PASS | `make verify.scene.no_action_scene.guard` |
-| CI restricted profile readiness | PASS (2026-07-07T17:13:17Z) | `CI_SCENE_DELIVERY_PROFILE=restricted make ci.scene.delivery.readiness` |
-| CI strict profile readiness | PASS (2026-06-30T07:05:38Z) | `CI_SCENE_DELIVERY_PROFILE=strict make ci.scene.delivery.readiness` |
+| CI restricted profile readiness | PASS (2026-08-21T07:58:23Z) | `CI_SCENE_DELIVERY_PROFILE=restricted make ci.scene.delivery.readiness` |
+| CI strict profile readiness | UNKNOWN | `CI_SCENE_DELIVERY_PROFILE=strict make ci.scene.delivery.readiness` |
 | Mainline one-command summary | PASS | `artifacts/backend/delivery_mainline_run_summary.json` |
 | Product delivery action closure smoke | PASS | `artifacts/backend/product_delivery_action_closure_report.json` |
 | Product delivery module capability smoke | PASS | `artifacts/backend/product_delivery_module9_smoke_report.json` |
-| Payment approval chain smoke | PASS | `artifacts/backend/payment_request_approval_chain_summary.json` |
-| Project task action smoke | PASS | `artifacts/backend/project_task_action_smoke.json` |
-| Project journey trace archive | PASS | `artifacts/backend/project_journey_trace_archive.json` |
-| Material action replay smoke | PASS | `artifacts/backend/material_action_replay_smoke.json` |
-| Material cross-document progress audit | PASS | `artifacts/backend/material_cross_document_progress_audit.json` |
-| Executive readonly smoke | PASS | `artifacts/backend/executive_readonly_smoke.json` |
-| Ledger snapshot smoke | PASS | `artifacts/backend/ledger_snapshot_smoke.json` |
-| Ledger reconciliation trend | PASS | `artifacts/backend/ledger_reconciliation_trend.json` |
-| Cost search pagination smoke | PASS | `artifacts/backend/cost_search_pagination_smoke.json` |
-| Quality safety closure smoke | PASS | `artifacts/backend/site_quality_safety_closure_audit.json` |
-| Lifecycle audit export | PASS | `artifacts/backend/lifecycle_audit_export.json` |
-| Default scene semantic monitor | PASS | `artifacts/backend/default_scene_semantic_monitor.json` |
+| Payment approval chain smoke | UNKNOWN | `artifacts/backend/payment_request_approval_chain_summary.json` |
+| Project task action smoke | UNKNOWN | `artifacts/backend/project_task_action_smoke.json` |
+| Project journey trace archive | UNKNOWN | `artifacts/backend/project_journey_trace_archive.json` |
+| Material action replay smoke | UNKNOWN | `artifacts/backend/material_action_replay_smoke.json` |
+| Material cross-document progress audit | UNKNOWN | `artifacts/backend/material_cross_document_progress_audit.json` |
+| Executive readonly smoke | UNKNOWN | `artifacts/backend/executive_readonly_smoke.json` |
+| Ledger snapshot smoke | UNKNOWN | `artifacts/backend/ledger_snapshot_smoke.json` |
+| Ledger reconciliation trend | UNKNOWN | `artifacts/backend/ledger_reconciliation_trend.json` |
+| Cost search pagination smoke | UNKNOWN | `artifacts/backend/cost_search_pagination_smoke.json` |
+| Quality safety closure smoke | UNKNOWN | `artifacts/backend/site_quality_safety_closure_audit.json` |
+| Lifecycle audit export | UNKNOWN | `artifacts/backend/lifecycle_audit_export.json` |
+| Default scene semantic monitor | UNKNOWN | `artifacts/backend/default_scene_semantic_monitor.json` |
 ## 10-Module Readiness Board
 
 | Module | Entry Scenes | Key Roles | Data Prerequisites | Smoke/Gate Status | Known Limits |
@@ -72,7 +72,7 @@
 4. Current release wording is fixed by `make verify.release.current_status.wording_closeout.guard`.
 5. Payment approval field consumer audit is green: `verify.portal.payment_request_approval_field_consumer_audit` with `unexpected_deprecated_refs=0`.
 6. Open backlog is Post-GA only: `gap.role_journey_longtail_coverage`; it is retained to keep governance truthful and is not a release blocker.
-7. CI profile posture: strict=PASS (2026-06-30T07:05:38Z), restricted=PASS (2026-07-07T17:13:17Z); release execution should use strict in live-enabled runners and restricted only for network-restricted evidence runs.
+7. CI profile posture: strict=UNKNOWN, restricted=PASS (2026-08-21T07:58:23Z); release execution should use strict in live-enabled runners and restricted only for network-restricted evidence runs.
 
 ## Repro Command Set (Default)
 

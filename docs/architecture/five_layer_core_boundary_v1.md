@@ -25,7 +25,7 @@
    - 禁止：直接解析 XML、直接读 parser 内部私有结构。
 
 ## 前端消费铁律
-- 前端直接消费对象是**场景编排结果契约**（例如 `page_orchestration_v1` 及其 action/data schema）。
+- 前端直接消费对象是**场景编排结果契约**（例如 `page_orchestration` 及其 action/data schema）。
 - `native_view/semantic_page` 是编排输入，不是前端直接决策源。
 - 前端不得以 `sceneKey/model` 硬编码决定页面结构。
 

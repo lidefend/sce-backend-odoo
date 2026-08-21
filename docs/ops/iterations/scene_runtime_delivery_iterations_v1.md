@@ -10,8 +10,8 @@
 ### Commit Unit 1：P0 边界与标准
 
 - 文件族：
-  - `docs/architecture/ui_base_vs_scene_ready_contract_v1.md`
-  - `docs/architecture/app_shell_vs_page_scene_contract_v1.md`
+  - `docs/architecture/ui_base_vs_scene_ready_contract.md`
+  - `docs/architecture/app_shell_vs_page_scene_contract.md`
   - `docs/contracts/ui_base_contract_schema_v1.md`
   - `docs/audit/current_response_contract_gap_audit_v1.md`
 

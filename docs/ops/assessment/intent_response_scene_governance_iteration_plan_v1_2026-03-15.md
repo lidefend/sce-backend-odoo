@@ -24,16 +24,16 @@
 | ID | 任务 | Layer Target | 状态 | 证据 |
 |---|---|---|---|---|
 | T1 | 修复前端类型检查基线（`.vue` 声明 + 类型断言） | Frontend | ✅ DONE | `frontend/apps/web/src/env.d.ts`、`frontend/apps/web/src/app/navigationRegistry.ts`；`pnpm -C frontend/apps/web exec tsc --noEmit` 通过 |
-| T2 | 后端输出 `scene_ready_contract_v1`（双轨） | Platform + Scene | ✅ DONE | `addons/smart_core/core/scene_ready_contract_builder.py`、`addons/smart_core/handlers/system_init.py` |
-| T3 | 前端消费 `scene_ready_contract_v1`（registry 优先） | Frontend | ✅ DONE | `frontend/apps/web/src/app/resolvers/sceneRegistry.ts`、`frontend/apps/web/src/stores/session.ts`、`frontend/apps/web/src/views/SceneView.vue` |
-| T4 | 后端输出 `scene_governance_v1`（治理汇总） | Platform + Scene | ✅ DONE | `addons/smart_core/core/scene_governance_payload_builder.py`、`addons/smart_core/handlers/system_init.py` |
-| T5 | 前端接收并持久化 `scene_governance_v1` | Frontend | ✅ DONE | `frontend/apps/web/src/stores/session.ts` |
-| T6 | 场景治理可视化（SceneHealth/调试面板） | Frontend | ✅ DONE | `frontend/apps/web/src/views/SceneHealthView.vue`：新增 governance runtime 区块展示 `scene_governance_v1.gates/reasons` |
-| T7 | 新增治理 guard（验证 `scene_governance_v1` 结构与关键 gates） | Governance/Verify | ✅ DONE | `scripts/verify/scene_governance_payload_guard.py` |
+| T2 | 后端输出 `scene_ready_contract`（双轨） | Platform + Scene | ✅ DONE | `addons/smart_core/core/scene_ready_contract_builder.py`、`addons/smart_core/handlers/system_init.py` |
+| T3 | 前端消费 `scene_ready_contract`（registry 优先） | Frontend | ✅ DONE | `frontend/apps/web/src/app/resolvers/sceneRegistry.ts`、`frontend/apps/web/src/stores/session.ts`、`frontend/apps/web/src/views/SceneView.vue` |
+| T4 | 后端输出 `scene_governance`（治理汇总） | Platform + Scene | ✅ DONE | `addons/smart_core/core/scene_governance_payload_builder.py`、`addons/smart_core/handlers/system_init.py` |
+| T5 | 前端接收并持久化 `scene_governance` | Frontend | ✅ DONE | `frontend/apps/web/src/stores/session.ts` |
+| T6 | 场景治理可视化（SceneHealth/调试面板） | Frontend | ✅ DONE | `frontend/apps/web/src/views/SceneHealthView.vue`：新增 governance runtime 区块展示 `scene_governance.gates/reasons` |
+| T7 | 新增治理 guard（验证 `scene_governance` 结构与关键 gates） | Governance/Verify | ✅ DONE | `scripts/verify/scene_governance_payload_guard.py` |
 | T8 | 将 guard 接入 Makefile 验证入口 | Governance/Verify | ✅ DONE | `Makefile`：`verify.scene.governance_payload.guard`，并纳入 `verify.scene.runtime_boundary.gate` 依赖 |
 | T9 | 建立 Scene DSL 编译流水线骨架（Parser/Validator/Binder/Compiler） | Scene + Platform | ✅ DONE | `addons/smart_core/core/scene_dsl_compiler.py` |
-| T10 | 将 `scene_ready_contract_v1` 切换为编译流水线产物（保留回退） | Scene + Platform | ✅ DONE | `addons/smart_core/core/scene_ready_contract_builder.py`（主路径改为 `scene_compile(...)`） |
-| T11 | 增加“原生契约绑定覆盖率”指标（scene 维度） | Governance/Verify | ✅ DONE | `scene_ready_contract_v1.meta.base_contract_bound_scene_count` + `compile_issue_scene_count` |
+| T10 | 将 `scene_ready_contract` 切换为编译流水线产物（保留回退） | Scene + Platform | ✅ DONE | `addons/smart_core/core/scene_ready_contract_builder.py`（主路径改为 `scene_compile(...)`） |
+| T11 | 增加“原生契约绑定覆盖率”指标（scene 维度） | Governance/Verify | ✅ DONE | `scene_ready_contract.meta.base_contract_bound_scene_count` + `compile_issue_scene_count` |
 | T12 | 建立原生契约后端资产模型与仓储（替代前端单次触发定位） | Platform | ✅ DONE | `addons/smart_core/models/ui_base_contract_asset.py`、`addons/smart_core/core/ui_base_contract_asset_repository.py`、`addons/smart_core/security/ir.model.access.csv` |
 | T13 | `system.init` 接入原生契约资产绑定并注入 scene 编译输入 | Platform + Scene | ✅ DONE | `addons/smart_core/handlers/system_init.py`：`bind_scene_assets(...)` + `nav_meta.ui_base_contract_*` |
 | T14 | 增加“原生契约资产覆盖率” guard 并接入运行时边界门禁 | Governance/Verify | ✅ DONE | `scripts/verify/scene_base_contract_asset_coverage_guard.py`、`Makefile`：`verify.scene.base_contract_asset_coverage.guard` 纳入 `verify.scene.runtime_boundary.gate` |
@@ -45,7 +45,7 @@
 | T20 | 落地 Scene Orchestrator schema/binding/interface guards 并接入 runtime gate | Governance/Verify | ✅ DONE | `scripts/verify/scene_orchestrator_*_guard.py`（4个）+ `Makefile` 接入 `verify.scene.runtime_boundary.gate` |
 | T21 | 增加前端“禁止直连 Base Contract”防回归 guard | Governance/Verify | ✅ DONE | `scripts/verify/frontend_no_base_contract_direct_consume_guard.py` + `Makefile` 接入 `verify.scene.runtime_boundary.gate` |
 | T22 | 固化 Orchestrator merge priority 门禁（spec + trace） | Governance/Verify | ✅ DONE | `scripts/verify/scene_orchestrator_merge_priority_guard.py` + `Makefile` 接入 `verify.scene.runtime_boundary.gate` |
-| T23 | 增加资产队列观测指标并接入 scene_governance_v1 | Platform + Governance/Verify | ✅ DONE | `addons/smart_core/core/ui_base_contract_asset_event_queue.py`、`addons/smart_core/core/scene_governance_payload_builder.py`、`addons/smart_core/handlers/system_init.py`、`scripts/verify/scene_governance_payload_guard.py` |
+| T23 | 增加资产队列观测指标并接入 scene_governance | Platform + Governance/Verify | ✅ DONE | `addons/smart_core/core/ui_base_contract_asset_event_queue.py`、`addons/smart_core/core/scene_governance_payload_builder.py`、`addons/smart_core/handlers/system_init.py`、`scripts/verify/scene_governance_payload_guard.py` |
 | T24 | 增加资产队列趋势基线 guard（上限+增长速率） | Governance/Verify | ✅ DONE | `scripts/verify/scene_asset_queue_trend_guard.py`、`scripts/verify/baselines/scene_asset_queue_trend_guard.json`、`Makefile` 接入 `verify.scene.runtime_boundary.gate` |
 | T25 | P1 编排内核硬化：接入 profile/policy/provider 执行阶段 | Scene + Platform | ✅ DONE | `addons/smart_core/core/scene_dsl_compiler.py`（`profile_apply/policy_apply/provider_merge/permission_workflow_gate`）、`addons/smart_core/core/scene_ready_contract_builder.py`（透传 `provider_registry`） |
 | T26 | P2 冲突裁决引擎代码化（独立 resolver + 冲突样例） | Scene + Platform + Governance/Verify | ✅ DONE | `addons/smart_core/core/scene_merge_resolver.py`、`addons/smart_core/core/scene_dsl_compiler.py`（阶段委托 resolver）、`scripts/verify/scene_orchestrator_merge_priority_guard.py`（冲突样例断言） |
@@ -274,10 +274,10 @@
 
 ## 增量更新记录
 
-- 2026-03-15：`AppShell` HUD 已加入 `scene_governance_v1` 可视化字段（`scene_channel/runtime_source/gates/reasons`），便于调试与运维核查。
+- 2026-03-15：`AppShell` HUD 已加入 `scene_governance` 可视化字段（`scene_channel/runtime_source/gates/reasons`），便于调试与运维核查。
 - 2026-03-15：已新增治理 payload 示例快照基线：`docs/ops/assessment/scene_governance_payload_snapshot_v1_2026-03-15.json`。
 - 2026-03-15：确认架构缺口——`scene_ready` 当前主要来源于 scene catalog，而非 UI Base Contract 编译主链；已立项 T9/T10/T11 修复。
-- 2026-03-15：已落地 Scene DSL 编译流水线骨架，并将 `scene_ready_contract_v1` 主路径切到编译器；新增绑定覆盖率指标用于度量“原生契约输入”真实使用率。
+- 2026-03-15：已落地 Scene DSL 编译流水线骨架，并将 `scene_ready_contract` 主路径切到编译器；新增绑定覆盖率指标用于度量“原生契约输入”真实使用率。
 - 2026-03-15：已将原生契约升级为后端资产模型 `sc.ui.base.contract.asset`，并在 `system.init` 中按 `scene_key + role + company` 绑定注入到 `ui_base_contract`，不再依赖前端 `ui.contract` 单次触发链路。
 - 2026-03-15：已新增 `scene_base_contract_asset_coverage_guard`，并纳入 `verify.scene.runtime_boundary.gate`，形成“资产绑定覆盖率”门禁。
 - 2026-03-15：已形成《UI Base Contract Asset Layer 设计说明 v1》，明确资产层定位为治理能力（snapshot/replay/cache/audit），不替代运行时实时生成主链。
@@ -290,7 +290,7 @@
 - 2026-03-15：已落地前端防回归守卫 `verify.frontend.no_base_contract_direct_consume.guard`，防止前端绕过 Scene-ready 直接消费 Base Contract。
 - 2026-03-15：已落地 `verify.scene.orchestrator.merge_priority.guard`，固化 platform/base/profile/policy/provider/permission 优先级规范与编译轨迹可见性。
 - 2026-03-15：已将 merge priority guard 升级为“静态规范 + 最小运行样例”双模校验，确保优先级顺序在运行样例中也可验证。
-- 2026-03-15：已将资产队列观测指标注入 `scene_governance_v1.asset_queue`（队列长度、最近更新、消费批次），并纳入治理 payload guard。
+- 2026-03-15：已将资产队列观测指标注入 `scene_governance.asset_queue`（队列长度、最近更新、消费批次），并纳入治理 payload guard。
 - 2026-03-15：已新增资产队列趋势基线门禁 `verify.scene.asset_queue_trend.guard`，按基线限制队列堆积上限与单次增长速度。
 - 2026-03-15：已完成 P1 最小内核落地：`profile_apply/policy_apply/provider_merge/permission_workflow_gate` 进入 `scene_compile` 主链，编排阶段不再只是轨迹占位。
 - 2026-03-15：已完成 P2 冲突裁决引擎代码化：新增独立 `scene_merge_resolver` 承接 profile/policy/provider/permission 合并逻辑，并在 merge-priority guard 中新增冲突样例（provider 覆盖 policy/base；permission 最终裁决清空 actions）。
@@ -319,14 +319,14 @@
 - 2026-03-15：已将 action surface runtime 策略上收至 `system.init` 统一下发链路：`params -> ext_facts -> ir.config_parameter`，并在 scene_ready 构建阶段注入 `runtime.role_code/company_id/action_surface_strategy`。
 - 2026-03-15：已为 action surface 策略补齐 schema baseline 与白名单守卫，固定顶层结构与策略 key，防止策略形态漂移引发运行时不可预期行为。
 - 2026-03-15：已新增 action surface 策略冲突优先级守卫，固定 `default -> by_company -> by_role -> by_company_role` 叠加顺序，确保同 key 冲突时输出可预测。
-- 2026-03-15：已为 `scene_ready_contract_v1` 增补按 `scene_type` 聚合的子契约消费率指标（base_fact_consumption_rate + surface_nonempty_rate），用于核心能力提升量化。
-- 2026-03-15：已将 `scene_ready_contract_v1` 的消费率指标摘要注入 `scene_governance_v1.scene_ready_consumption`，并在 `diagnostics.scene_ready_consumption_enabled` 暴露开关，便于运行时治理看板直接消费。
+- 2026-03-15：已为 `scene_ready_contract` 增补按 `scene_type` 聚合的子契约消费率指标（base_fact_consumption_rate + surface_nonempty_rate），用于核心能力提升量化。
+- 2026-03-15：已将 `scene_ready_contract` 的消费率指标摘要注入 `scene_governance.scene_ready_consumption`，并在 `diagnostics.scene_ready_consumption_enabled` 暴露开关，便于运行时治理看板直接消费。
 - 2026-03-15：已将 `scene_ready_consumption` 接入前端治理可视化：`AppShell HUD` 与 `SceneHealth` 均展示 scene_type 摘要，形成后端指标 -> 治理面板可见闭环。
 - 2026-03-15：已新增 `scene_ready_consumption` 趋势基线守卫，按聚合消费率下降阈值与 scene/type 最小覆盖进行持续门禁，防止能力回退。
 - 2026-03-15：已新增关键场景编译样例回归守卫，固定 `projects.list/projects.intake/workspace.home` 的“原生契约输入 -> scene-ready 输出”闭环断言（scene_type、base 绑定、search/workflow/validation/action surfaces、compile pipeline）。
 - 2026-03-15：已将 `scene_action_surface_strategy` 下发契约升级为“后端归一化 + payload baseline 门禁”：`system.init` 仅输出白名单 top keys 与 strategy keys，并以 live sample 对照基线防止策略形态漂移。
 - 2026-03-15：已新增 `scene_governance` 历史趋势报告门禁：将 `scene_asset_queue_trend_state` 与 `scene_ready_consumption_trend_state` 聚合为统一历史报告，纳入 runtime gate 做跨趋势策略对齐校验。
-- 2026-03-15：已新增关键场景真实快照回归守卫：从 `system.init -> scene_ready_contract_v1` 抽取 `scene_registry_asset_snapshot`，校验关键 scene 覆盖与 `base_contract_bound_scene_count`，并固化 state 便于后续版本对比。
+- 2026-03-15：已新增关键场景真实快照回归守卫：从 `system.init -> scene_ready_contract` 抽取 `scene_registry_asset_snapshot`，校验关键 scene 覆盖与 `base_contract_bound_scene_count`，并固化 state 便于后续版本对比。
 - 2026-03-15：已新增“样例编译 vs 真实快照”差异报告守卫：将 `scene_orchestrator_key_scene_compile` 样例基线与 `scene_registry_asset_snapshot_state` 做差异对照，输出结构化 diff 报告并纳入 runtime gate。
 - 2026-03-15：已新增 action surface strategy 冲突 live matrix 守卫，覆盖 `default/by_company/by_role/by_company_role` 多案例叠加冲突与 hide 结果，避免单案例优先级验证盲区。
 - 2026-03-15：已新增 `scene_governance_history_report` 版本化归档守卫：按 `commit+timestamp` 落盘历史样本，并输出与上一次样本的差异摘要，支撑版本间回归对比。
@@ -354,7 +354,7 @@
 - 2026-03-16：已完成 T84 覆盖口径校准：在 readiness 报告中显式区分 `catalog_non_pkg_scene_count=25` 与 `catalog_pkg_variant_scene_count=112`，避免把 `__pkg` 变体误判为必须交付面。
 - 2026-03-16：已完成 T85 原生契约前端出口收敛：`system.init` 在返回前统一剥离 `ui_base_contract/ui_base_contract_ref`，确保原生契约仅作为后端编排输入资产，不再作为意图接口直出载荷。
 - 2026-03-16：已完成 T86 原生契约意图收敛：`ui.contract` 对前端请求默认禁用 `model/view/action_open/menu` 原生 op（仅保留内部 `source_mode` 白名单），并移除 `/api/ui/contract` 的 `raw` 原始契约回传。
-- 2026-03-16：已完成 T87 导航入口收敛：`ui.contract` 对前端请求同步禁用 `nav` op，前端导航统一由 `system.init -> nav_contract(scene_contract_v1)` 交付，避免并行导航事实源。
+- 2026-03-16：已完成 T87 导航入口收敛：`ui.contract` 对前端请求同步禁用 `nav` op，前端导航统一由 `system.init -> nav_contract(scene_contract)` 交付，避免并行导航事实源。
 - 2026-03-16：已完成 T88 旧路由下线：`/api/ui/contract` 统一返回 `410 GONE`，提示迁移到 `/api/v1/intent` 的 `system.init` 场景契约链路；后端内部仍可通过 handler + `source_mode` 白名单使用原生能力。
 - 2026-03-16：已完成 T89 同类 `scene target unsupported` 清零兜底：后端在场景合并阶段统一补全 `target.action_id/menu_id`（由 `action_xmlid/menu_xmlid/menu.action` 解析），前端对“已在目标 route 且无 action/model”场景启用 idle 安全回退，避免误报错误页。
 - 2026-03-16：已完成 T90 侧边栏导航收敛：`scene_nav_contract` 默认仅展示 `role_surface.scene_candidates`（无候选时才回退展示 remaining 分组），防止交付面扩容后“其他场景”污染主导航；`meta.remaining_hidden` 暴露收敛状态。

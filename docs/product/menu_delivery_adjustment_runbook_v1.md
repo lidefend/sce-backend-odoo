@@ -18,16 +18,16 @@
    - 产品发布菜单事实。
    - 决定自定义前端产品菜单名称、业务域、合并策略、业务类型、`visible_menu_path`。
 4. `DeliveryEngine` / `MenuService`
-   - 把产品策略和 native nav 合成为 `delivery_engine_v1.nav`。
+   - 把产品策略和 native nav 合成为 `delivery_engine.nav`。
    - 产品策略是发布面权威来源；native nav 用于授权和补充。
 5. `system.init`
    - 只做运行时安全过滤和契约透传。
    - 允许处理：发布门禁、显式开启的用户验收投影、显式开启的用户菜单配置覆盖。
    - 不允许默认处理：业务菜单改名、搬家、解包、去重合并、业务排序。
-   - 最终写入 `release_navigation_v1.nav` 和顶层 `nav`。
+   - 最终写入 `navigation.nav`。
 6. 自定义前端
    - 登录后调用 `/api/v1/intent` 的 `system.init`。
-   - 优先消费 `release_navigation_v1.nav`，其次 `delivery_engine_v1.nav`，最后才是旧 `result.nav`。
+   - 只消费 `navigation.nav`，缺失时失败关闭。
 
 ## 职责边界
 
@@ -65,7 +65,7 @@
 - 按 `visible_menu_path` 生成前端层级。
 - 用 native nav 做授权校验和 action 补齐。
 - 生成合并入口、业务类型元数据、入口目标。
-- 输出可直接给前端使用的 `delivery_engine_v1.nav`。
+- 输出可直接给启动契约使用的 `delivery_engine.nav`。
 
 这里是产品菜单语义的最后加工层。
 
@@ -73,7 +73,7 @@
 
 负责登录初始化契约：
 
-- 生成 `edition_runtime_v1`、`release_navigation_v1`、`nav_meta` 等响应结构。
+- 生成 `edition_runtime`、`navigation`、`nav_meta` 等响应结构。
 - 在发布门禁启用时过滤未发布入口。
 - 在 `smart_core.nav.user_data_acceptance_only` 显式启用时投影用户验收菜单。
 - 在 `smart_core.nav.user_menu_config.enabled` 显式启用时应用用户菜单配置覆盖。

@@ -16,7 +16,7 @@
 ### 2) Scene-ready Contract
 
 - 输入方：`UI Base Contract Adapter` 输出的 `orchestrator_input` + scene profile/policy/provider。
-- 输出方：`scene_ready_contract_v1`（当前实现：`addons/smart_core/core/scene_ready_contract_builder.py`）。
+- 输出方：`scene_ready_contract`（当前实现：`addons/smart_core/core/scene_ready_contract_builder.py`）。
 - 可被谁消费：前端页面（list/form/workspace）、导航/动作/搜索/权限展示层。
 - 不可被谁消费：领域业务规则层（Domain）反向写入。
 
