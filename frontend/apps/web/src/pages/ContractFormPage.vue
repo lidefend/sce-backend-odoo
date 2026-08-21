@@ -267,6 +267,7 @@ import NativeCollaborationPanel, {
   type NativeCollaborationPanelProps,
 } from './contractForm/NativeCollaborationPanel.vue';
 import ContractFormDriverHost from './contractForm/ContractFormDriverHost.vue';
+import { composeCanonicalFormFloorplan } from '../app/presentation/canonicalFormFloorplan';
 import ContractFormNativeCanvas from './contractForm/ContractFormNativeCanvas.vue';
 import {
   collectCanonicalFormActions,
@@ -593,6 +594,7 @@ import {
   type RelationSearchColumn,
   type RelationSearchRow,
   type RelationUiLabels,
+  type SubmissionFeedback,
 } from './contractForm/types';
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import {
@@ -745,6 +747,9 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   renderProfile.value,
   formData,
 ));
+const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.model
+  ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)
+  : null);
 // Product routes have one rendering authority. Contract/driver failures stay in
 // the canonical host and must never reactivate the legacy product pipeline.
 const canonicalProductRendererActive = computed(() => !showCurrentFormFieldConfigScope.value);
@@ -1207,6 +1212,7 @@ const showContinueProcessing = computed(() => (
   route.name === 'record'
   && Boolean(recordId.value)
   && rights.value.write
+  && !(canonicalProductFloorplan.value?.decisionMode && canonicalProductFloorplan.value.effectivePrimaryKey)
 ));
 function continueProcessing() {
   if (!showContinueProcessing.value || !recordId.value) return;

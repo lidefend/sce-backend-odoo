@@ -11,7 +11,7 @@
   <section
     v-else
     class="sc-form-driver-host"
-    :data-contract-form-driver="activeKit"
+    :data-contract-form-driver="renderKit"
     :data-contract-form-driver-source="driverConfig?.resolutionSource || 'safe-default'"
     :data-contract-form-driver-reason="driverConfig?.reasonCode || ''"
     :data-source-contract-sha="renderModel.identity.sourceContractSha256"
@@ -24,8 +24,47 @@
         <option v-for="kit in allowedKits" :key="kit" :value="kit">{{ kitLabel(kit) }}</option>
       </select>
     </div>
-    <SceneUiProvider :kit="activeKit" fallback-kit="sc-native" density="compact">
-      <article class="sc-native-contract-page" data-native-contract-structure>
+    <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" density="compact">
+      <ObjectTaskPage
+        v-if="floorplan.decisionMode"
+        :summary-nodes="floorplan.summaryNodes"
+        :task-nodes="floorplan.taskNodes"
+        :context-nodes="floorplan.contextNodes"
+        :overflow-context-nodes="floorplan.overflowContextNodes"
+        :risk-nodes="floorplan.riskNodes"
+        :audit-nodes="floorplan.auditNodes"
+        :has-audit="floorplan.auditDeclared"
+        :relation-nodes="floorplan.relationNodes"
+        :subordinate-nodes="floorplanSubordinateNodes"
+        :decision-mode="true"
+        :relation-adapter="relationAdapter"
+        :has-collaboration="hasCollaboration"
+        @field-change="emit('field-change', $event)"
+      >
+        <template v-if="floorplan.blockedActions.length" #blocking>
+          <section class="canonical-form-blocking-notice" role="status" data-canonical-blocking-notice>
+            <strong>当前操作暂不可用</strong>
+            <span v-for="action in floorplan.blockedActions" :key="action.key">{{ action.label }}暂不可执行</span>
+          </section>
+        </template>
+        <template v-if="hasCollaboration" #collaboration>
+          <NativeCollaborationPanel
+            v-if="showCollaborationPanel"
+            v-bind="collaborationPanelProps"
+            v-on="collaborationPanelListeners"
+          />
+          <p v-else class="canonical-form-activity-empty">暂无活动记录</p>
+        </template>
+        <template v-if="floorplan.directActions.length || floorplan.overflowActions.length" #actions>
+          <CanonicalActionBar
+            :direct-actions="floorplan.directActions"
+            :overflow-actions="floorplan.overflowActions"
+            :effective-primary-key="floorplan.effectivePrimaryKey"
+            @action-ref="emit('action-ref', $event)"
+          />
+        </template>
+      </ObjectTaskPage>
+      <article v-else class="sc-native-contract-page" data-native-contract-structure>
         <main class="sc-native-contract-tree" data-canonical-zone="primary">
           <NativeFormTreeRenderer
             v-if="nativeBridge"
@@ -105,15 +144,19 @@ import { computed } from 'vue';
 import { SCENE_UI_KITS, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalFormAction, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
+import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
+import CanonicalActionBar from './CanonicalActionBar.vue';
 import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,
 } from './NativeCollaborationPanel.vue';
+import ObjectTaskPage from './ObjectTaskPage.vue';
+import { canonicalNodeHasContent } from './canonicalFormRenderer';
 
 const props = defineProps<{
   renderModel: CanonicalFormRenderModel | null;
@@ -144,10 +187,20 @@ function countFields(nodes: CanonicalFormNode[]): number {
 const fieldCount = computed(() => props.renderModel
   ? countFields([...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate])
   : 0);
-const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'sc-native');
-const allowedKits = computed<SceneUiKitId[]>(() => props.driverConfig?.allowedKits?.length ? props.driverConfig.allowedKits : ['sc-native']);
+const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'tdesign-modern');
+const emptyFloorplan: CanonicalFormFloorplan = {
+    summaryNodes: [], taskNodes: [], contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
+  relationNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [],
+  effectivePrimaryKey: '', decisionMode: false,
+};
+const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : emptyFloorplan);
+const renderKit = computed<SceneUiKitId>(() => floorplan.value.decisionMode ? 'tdesign-modern' : activeKit.value);
+const allowedKits = computed<SceneUiKitId[]>(() => (
+  props.driverConfig?.allowedKits?.length ? props.driverConfig.allowedKits : ['tdesign-modern', 'sc-native']
+));
 const allowUserOverride = computed(() => (
-  props.driverConfig?.showUserDriverChooser === true
+  !floorplan.value.decisionMode
+  && props.driverConfig?.showUserDriverChooser === true
   && props.driverConfig?.allowUserOverride === true
   && allowedKits.value.length > 1
 ));
@@ -155,7 +208,11 @@ const visibleActions = computed(() => props.renderModel?.actionBar.filter((actio
 const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
+const hasCollaboration = computed(() => props.showCollaborationPanel === true || hasCollaborationNode.value);
 const nativeBridge = computed(() => props.renderModel ? buildCanonicalNativeFormBridge(props.renderModel) : null);
+const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
+  .filter((node) => !collaborationKind(node.kind))
+  .filter(canonicalNodeHasContent));
 
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
@@ -202,6 +259,7 @@ function changeKit(event: Event) {
   background: var(--sc-app-warning-bg);
   color: var(--sc-app-warning-text);
 }
+.canonical-form-activity-empty { margin: 0; color: var(--sc-app-text-secondary); }
 .canonical-form-action-bar {
   display: flex;
   flex-wrap: wrap;

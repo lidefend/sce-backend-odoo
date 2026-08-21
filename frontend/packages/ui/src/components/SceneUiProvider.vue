@@ -87,8 +87,8 @@ provide(sceneUiKitKey, {
     <div v-if="!ready" class="scene-ui-provider__loading" role="status">正在加载组件驱动…</div>
     <template v-else>
       <div v-if="loadFailure" class="scene-ui-provider__fallback" role="alert" data-driver-fallback-notice>
-        <strong>已切换到安全组件</strong>
-        <span>{{ loadFailure.requestedKit }} 加载失败，当前使用 {{ loadFailure.fallbackKit }}。</span>
+        <strong>界面已自动恢复</strong>
+        <span>部分组件暂不可用，已切换到兼容模式。</span>
       </div>
       <slot />
     </template>

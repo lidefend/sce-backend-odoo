@@ -155,8 +155,8 @@ const decision = resolveSceneComponentDriverDecision({
 });
 assert.equal(decision.eligible, true);
 assert.equal(decision.targeted, true);
-assert.equal(decision.resolution.kit, 'ui5-horizon');
-assert.equal(decision.allowUserOverride, true);
+assert.equal(decision.resolution.kit, 'tdesign-modern');
+assert.equal(decision.allowUserOverride, false);
 
 const deniedMutation = resolveSceneComponentDriverDecision({
   featureFlag: enabledFlag, actionId: 77, model: 'hr.department', sceneKey: '', viewMode: 'tree', pageAuth: 'read',

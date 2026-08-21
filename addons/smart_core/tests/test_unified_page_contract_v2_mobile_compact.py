@@ -1496,6 +1496,81 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         }])
         self.assertNotIn("primaryResolution", contract["actionContract"])
 
+    def test_final_modifier_hydration_restores_authorized_action_after_dependency_arrives(self):
+        contract = {
+            "actionContract": {"actionRuleList": [{
+                "actionId": "action.submit",
+                "actionKey": "submit",
+                "backendIdentity": "button:object:action_submit",
+                "allowed": False,
+                "enabled": False,
+                "disabled": True,
+                "businessAvailable": False,
+                "entitlementEvaluated": True,
+                "sourceChannel": "native_form_header",
+                "button": {"name": "action_submit", "type": "object"},
+                "nativeIdentity": {"native_locator": "/form[1]/header[1]/button[1]"},
+                "sourceTrace": [{
+                    "entitlementEvaluated": True,
+                    "authorizationAllowed": True,
+                    "businessAvailable": False,
+                }],
+                "presentation": {"tier": "primary"},
+                "visible": {"attrs": {"invisible": {
+                    "kind": "field_compare",
+                    "field": "state",
+                    "operator": "not in",
+                    "value": ["draft", "rejected"],
+                }}},
+            }]},
+            "statusContract": {"buttonStatus": [{
+                "btnId": "btn.submit",
+                "visible": False,
+                "disabled": True,
+                "reasonCode": "ACTION_NOT_ALLOWED",
+            }]},
+            "dataContract": {"mainData": {"state": "draft"}},
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        action = contract["actionContract"]["actionRuleList"][0]
+        status = contract["statusContract"]["buttonStatus"][0]
+        self.assertTrue(action["businessAvailable"])
+        self.assertTrue(action["allowed"])
+        self.assertTrue(action["enabled"])
+        self.assertFalse(action["disabled"])
+        self.assertTrue(status["visible"])
+        self.assertFalse(status["disabled"])
+        self.assertNotIn("reasonCode", status)
+
+    def test_final_modifier_hydration_does_not_override_runtime_business_unavailability(self):
+        contract = {
+            "actionContract": {"actionRuleList": [{
+                "actionId": "action.payment_execution",
+                "actionKey": "payment_execution",
+                "sourceChannel": "runtime_business_action",
+                "button": {"name": "action_create_payment_execution", "type": "object"},
+                "allowed": False,
+                "enabled": False,
+                "disabled": True,
+                "businessAvailable": False,
+                "authorizationAllowed": True,
+                "entitlementEvaluated": True,
+                "visible": {"attrs": {"invisible": {"kind": "static", "value": False}}},
+            }]},
+            "statusContract": {"buttonStatus": []},
+            "dataContract": {"mainData": {"state": "approved"}},
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        action = contract["actionContract"]["actionRuleList"][0]
+        self.assertFalse(action["businessAvailable"])
+        self.assertFalse(action["allowed"])
+        self.assertFalse(action["enabled"])
+        self.assertTrue(action["disabled"])
+
     def test_form_field_modifiers_are_attached_to_native_field_status(self):
         contract = assembler.assemble_unified_page_contract_v2(
             {

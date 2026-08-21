@@ -1,0 +1,40 @@
+evidence:
+  baseline_commit: 58c3cfbdb3bf743f37806fec63d188fad948ade5
+  branch: codex/fix-project-layout-container-normalize
+  runtime_profile: local.dev
+  compose_project: sc-local-dev
+  database: sc_dev_demo
+  database_filter: ^sc_dev_demo$
+  business_mutation: false
+  governed_module_upgrade: passed
+  governed_demo_reset: passed
+  local_dev_snapshot: artifacts/local-dev/snapshots/20260821T183427Z
+  targeted_verification:
+    canonical_form_presenter: passed_52_cases
+    scene_component_bridge_guard: passed_63_checks
+    unified_page_contract_v2_mobile_compact: passed_69_tests
+    frontend_typecheck_strict: passed
+    frontend_build: passed
+    payment_request_floorplan_browser: passed
+    desktop_floorplan_regions: 10
+    enabled_primary_actions: 1
+    desktop_horizontal_overflow: 0
+    mobile_390_horizontal_overflow: 0
+    business_fingerprint: unchanged
+    second_model_reuse: passed_sc_payment_execution
+    home_navigation_identity: passed
+  closure_gate:
+    verify_restricted: failed_outside_batch_scope
+    first_failure: scene_role_matrix_scene_count_1_below_30
+    verify_backend_guard: failed_same_scene_baseline
+    full_snapshot_export: failed_pm_payment_request_access_baseline
+    targeted_product_gate: passed
+  artifacts:
+    - artifacts/playwright/local-dev-payment-request-floorplan/summary.json
+    - artifacts/playwright/local-dev-payment-request-floorplan/payment-request-desktop.png
+    - artifacts/playwright/local-dev-payment-request-floorplan/payment-request-390.png
+    - artifacts/playwright/local-dev-payment-request-floorplan/payment-execution-reuse-desktop.png
+    - artifacts/playwright/local-dev-payment-request-floorplan/workspace-home-desktop.png
+    - artifacts/local-dev/snapshots/20260821T183427Z
+  completion:
+    status: complete_with_independent_repository_gate_debt

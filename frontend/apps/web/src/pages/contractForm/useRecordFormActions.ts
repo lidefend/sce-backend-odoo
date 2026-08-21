@@ -551,10 +551,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       }
       const message = sanitizeUiErrorMessage(err instanceof Error ? err.message : err, fallback);
       validationErrors.value = [message];
-      submissionFeedback.value = {
-        kind: 'error',
-        message: message && message !== fallback ? message : fallback,
-      };
+      submissionFeedback.value = { kind: 'error', message: message && message !== fallback ? message : fallback };
       await focusFirstValidationError();
       return false;
     } finally {

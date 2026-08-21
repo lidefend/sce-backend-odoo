@@ -40,8 +40,8 @@ export type ContractFormComponentDriverContext = {
 };
 
 const SAFE_POLICY: SceneUiPreferencePolicy = Object.freeze({
-  allowedKits: ['sc-native' as SceneUiKitId],
-  systemDefaultKit: 'sc-native',
+  allowedKits: ['tdesign-modern' as SceneUiKitId, 'sc-native' as SceneUiKitId],
+  systemDefaultKit: 'tdesign-modern',
   allowUserOverride: false,
   allowPreviewOverride: false,
 });
@@ -75,7 +75,7 @@ function denied(reasonCode: string, targeted = false): SceneComponentDriverDecis
     targeted,
     reasonCode,
     policy: SAFE_POLICY,
-    resolution: { kit: 'sc-native', source: 'safe-default' },
+    resolution: { kit: 'tdesign-modern', source: 'safe-default' },
     allowUserOverride: false,
   };
 }
@@ -85,10 +85,12 @@ function resolvePolicy(flag: Dict): SceneUiPreferencePolicy | null {
   if (!allowedKits.length || !allowedKits.includes('sc-native')) return null;
   return {
     allowedKits,
-    systemDefaultKit: String(flag.system_default_kit || 'sc-native') as SceneUiKitId,
+    systemDefaultKit: String(flag.system_default_kit || (
+      allowedKits.includes('tdesign-modern') ? 'tdesign-modern' : 'sc-native'
+    )) as SceneUiKitId,
     organizationDefaultKit: String(flag.organization_default_kit || '') as SceneUiKitId || undefined,
     lockedKit: String(flag.locked_kit || '') as SceneUiKitId || undefined,
-    allowUserOverride: flag.allow_user_override === true,
+    allowUserOverride: false,
     allowPreviewOverride: flag.allow_preview_override === true,
   };
 }

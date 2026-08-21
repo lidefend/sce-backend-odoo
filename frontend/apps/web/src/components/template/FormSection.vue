@@ -86,7 +86,7 @@
             </button>
             <div class="field-control-main">
               <div
-                v-if="field.type === 'selection' && isRadioWidget(field)"
+                v-if="field.type === 'selection' && isRadioWidget(field) && !(preferReadonlyFacts && field.readonly)"
                 class="native-radio-group"
                 role="radiogroup"
                 :aria-label="field.label"
@@ -112,7 +112,7 @@
                 </label>
               </div>
               <SceneFieldControl
-                v-else-if="usesSceneFieldControl(field)"
+                v-else-if="usesSceneFieldControl(field) && !(preferReadonlyFacts && field.readonly)"
                 :field="sceneField(field)"
                 :model-value="contractFormDriverValue(field)"
                 @update:model-value="emitFieldChange(field, $event)"
@@ -393,6 +393,7 @@ const props = withDefaults(defineProps<{
   selectedFieldKey?: string;
   selectPlaceholder?: (label: string) => string;
   inputPlaceholder?: (label: string) => string;
+  preferReadonlyFacts?: boolean;
 }>(), {
   hint: '',
   columns: 2,
@@ -412,6 +413,7 @@ const props = withDefaults(defineProps<{
   selectedFieldKey: '',
   selectPlaceholder: (label: string) => resolveSelectPlaceholder(label),
   inputPlaceholder: (label: string) => resolveInputPlaceholder(label),
+  preferReadonlyFacts: false,
 });
 
 const many2oneFocusedField = ref('');

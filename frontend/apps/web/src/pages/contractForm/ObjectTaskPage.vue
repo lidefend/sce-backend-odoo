@@ -21,6 +21,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </section>
@@ -38,6 +39,7 @@
           :key="node.nodeId"
           :node="node"
           :relation-adapter="relationAdapter"
+          prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
         <div v-if="riskNodes.length" class="object-task-page__current-task-facts" data-floorplan-region="risk">
@@ -46,6 +48,7 @@
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
+            prefer-readonly-facts
             @field-change="emit('field-change', $event)"
           />
         </div>
@@ -67,6 +70,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </section>
@@ -78,6 +82,7 @@
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
+            prefer-readonly-facts
             @field-change="emit('field-change', $event)"
           />
         </template>
@@ -94,6 +99,7 @@
           :key="node.nodeId"
           :node="node"
           :relation-adapter="relationAdapter"
+          prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
       </aside>
@@ -109,6 +115,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </details>
@@ -124,6 +131,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </section>
@@ -139,6 +147,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </section>
@@ -149,7 +158,7 @@
       data-floorplan-region="activity"
       data-canonical-zone="subordinate"
     ><slot name="collaboration" /></section>
-    <details v-if="auditNodes.length" class="object-task-page__audit" data-floorplan-region="audit">
+    <details v-if="hasAudit || auditNodes.length" class="object-task-page__audit" data-floorplan-region="audit">
       <summary>审批与历史审计</summary>
       <div data-audit-content>
         <CanonicalFormNodeRenderer
@@ -157,8 +166,10 @@
           :key="node.nodeId"
           :node="node"
           :relation-adapter="relationAdapter"
+          prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
+        <p v-if="!auditNodes.length" class="object-task-page__empty-fact">暂无审批与审计记录</p>
       </div>
     </details>
     <footer v-if="!decisionMode && $slots.actions" class="object-task-page__actions" data-floorplan-region="action-bar">
@@ -184,6 +195,7 @@ defineProps<{
   subordinateNodes: CanonicalFormNode[];
   relationAdapter?: RelationFieldAdapter;
   hasCollaboration?: boolean;
+  hasAudit?: boolean;
   decisionMode?: boolean;
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>();

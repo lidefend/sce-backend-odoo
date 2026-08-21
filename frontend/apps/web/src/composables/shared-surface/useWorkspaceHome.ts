@@ -4,6 +4,7 @@ import type { NavNode } from '@sc/schema';
 import { fetchMyWorkSummary, type ProductMyWorkItem, type ProductMyWorkWorkspace } from '../../api/myWork';
 import { currentContextEpoch, isCurrentContextEpoch } from '../../app/contextEpoch';
 import { usePageContract } from '../../app/pageContract';
+import { mergeWorkspaceNavigationLinks, resolveWorkspaceNavigationLink } from '../../app/workspaceHomeNavigation';
 import { useSessionStore, type ActivityPage } from '../../stores/session';
 
 type SurfaceLink = { key: string; label: string; detail: string; route: string };
@@ -11,39 +12,6 @@ type SurfaceCount = { key: string; label: string; value: number };
 
 function text(value: unknown): string {
   return String(value ?? '').trim();
-}
-
-function nodeRoute(node: NavNode): string {
-  const source = node as NavNode & {
-    route?: string;
-    scene_key?: string;
-    sceneKey?: string;
-    action_id?: number;
-    actionId?: number;
-  };
-  const meta = node.meta && typeof node.meta === 'object' ? node.meta as Record<string, unknown> : {};
-  const route = text(source.route || meta.route);
-  if (route) return route;
-  const sceneKey = text(source.scene_key || source.sceneKey || meta.scene_key || meta.sceneKey);
-  if (sceneKey) return `/s/${encodeURIComponent(sceneKey)}`;
-  const actionId = Number(source.action_id || source.actionId || meta.action_id || meta.actionId || 0);
-  const menuId = Number(node.menu_id || meta.menu_id || meta.menuId || 0);
-  if (actionId > 0) return `/a/${actionId}${menuId > 0 ? `?menu_id=${menuId}&action_id=${actionId}` : ''}`;
-  if (menuId > 0 && !node.children?.length) return `/m/${menuId}`;
-  return '';
-}
-
-function nodeLabel(node: NavNode): string {
-  return text(node.title || node.name || node.label).replace(/\s*\(\d+\)\s*$/g, '');
-}
-
-function firstReachable(node: NavNode): NavNode | null {
-  if (nodeRoute(node)) return node;
-  for (const child of node.children || []) {
-    const reachable = firstReachable(child);
-    if (reachable) return reachable;
-  }
-  return null;
 }
 
 function topNodes(nodes: NavNode[]): NavNode[] {
@@ -93,16 +61,9 @@ export function useWorkspaceHome() {
       .filter((item) => text(item.route) && text(item.label))
       .map((item) => ({ key: text(item.key) || text(item.route), label: text(item.label), detail: text(item.detail), route: text(item.route) }));
     const navigationLinks = topNodes(session.menuTree)
-      .map((node) => ({ group: node, target: firstReachable(node) }))
-      .filter((item): item is { group: NavNode; target: NavNode } => Boolean(item.target))
-      .map(({ group, target }) => ({
-        key: `${text(group.key || group.id)}:${nodeRoute(target)}`,
-        label: nodeLabel(group) || nodeLabel(target),
-        detail: nodeLabel(target),
-        route: nodeRoute(target),
-      }));
-    return [...workspaceLinks, ...navigationLinks]
-      .filter((item, index, rows) => rows.findIndex((row) => row.route === item.route) === index)
+      .map(resolveWorkspaceNavigationLink)
+      .filter((item): item is SurfaceLink => Boolean(item));
+    return mergeWorkspaceNavigationLinks(navigationLinks, workspaceLinks)
       .slice(0, 7);
   });
   const recentItems = computed<SurfaceLink[]>(() => {

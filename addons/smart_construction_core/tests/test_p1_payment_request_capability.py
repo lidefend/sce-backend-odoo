@@ -1397,6 +1397,11 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(len(audit_sections), 1)
         self.assertEqual(audit_sections[0]["key"], "approval_audit")
         self.assertEqual(audit_sections[0]["title"], "审批与审计")
+        legacy_product_fields = {
+            "legacy_source_model", "legacy_source_table", "legacy_record_id",
+            "legacy_document_no", "legacy_document_state",
+        }
+        self.assertTrue(legacy_product_fields.isdisjoint(str(product_payload)))
         self.assertIn("validation_status", product_payload["sections"][0]["fields"])
         self.assertIn("reject_reason", product_payload["sections"][0]["fields"])
         self.assertEqual(product_payload["actions"][0]["name"], "action_create_payment_execution")
@@ -1410,13 +1415,34 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "smart_construction_core.business_config_contract_payment_execution_from_request_productized_form_v1"
         )
         execution_payload = execution_contract.contract_json["view_orchestration"]["views"]["form"]
+        execution_anchors = {
+            row["role"]: row["fields"]
+            for row in execution_payload["semantic_anchors"]
+        }
+        self.assertEqual(set(execution_anchors), {"summary", "task", "risk", "audit"})
+        self.assertEqual(
+            execution_anchors["summary"],
+            ["payment_request_id", "project_id", "partner_id", "state", "paid_amount", "currency_id"],
+        )
         self.assertEqual(
             [section["title"] for section in execution_payload["sections"]],
-            ["来源申请", "本次实付", "收款账户", "付款账户", "凭证与说明", "责任与追溯"],
+            ["来源申请", "本次实付", "收款账户", "付款账户", "凭证与说明", "责任与状态"],
         )
+        self.assertTrue(legacy_product_fields.isdisjoint(str(execution_payload)))
+        generated_execution_contract = self.env.ref(
+            "smart_construction_core.business_config_contract_sc_payment_execution_form_structure_generated"
+        )
+        self.assertFalse(generated_execution_contract.active)
         fields = {row["name"]: row for row in execution_payload["fields"]}
         for anchor in ("payment_request_id", "project_id", "partner_id", "contract_id"):
             self.assertTrue(fields[anchor]["readonly"])
+
+        receive_contract = self.env.ref(
+            "smart_construction_core.business_config_contract_payment_request_receive_productized_form_v1"
+        )
+        receive_payload = receive_contract.contract_json["view_orchestration"]["views"]["form"]
+        self.assertEqual(receive_payload["sections"][-1]["title"], "创建与审计")
+        self.assertTrue(legacy_product_fields.isdisjoint(str(receive_payload)))
 
         execution_policy = get_business_category_form_policy_templates()[
             "finance.payment.execution.partner"
@@ -1429,6 +1455,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             for section in execution_policy["sections"]
             for field_name in section["fields"]
         }
+        self.assertTrue(legacy_product_fields.isdisjoint(str(execution_policy)))
         self.assertIn("cancellation_kind", execution_policy_sections)
         self.assertIn("reversal_reason", execution_policy_sections)
         self.assertEqual(

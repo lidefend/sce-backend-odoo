@@ -285,6 +285,39 @@ assert.deepEqual(
 );
 assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
 assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
+const mixedRoleModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const mixedRoleParent = mixedRoleModel.zones.primary[0].children.find((node) => node.semanticRole === 'summary');
+assert.ok(mixedRoleParent, 'semantic summary parent is required for mixed-role projection coverage');
+const mixedRoleChild = structuredClone(mixedRoleParent);
+mixedRoleChild.nodeId = `${mixedRoleParent.nodeId}.audit-override`;
+mixedRoleChild.semanticRole = 'audit';
+mixedRoleChild.fields = mixedRoleChild.fields.map((field) => ({
+  ...field,
+  widgetId: `${field.widgetId}.audit-override`,
+  semanticRole: 'audit',
+}));
+mixedRoleChild.children = [];
+mixedRoleParent.children.push(mixedRoleChild);
+const mixedRoleFloorplan = composeCanonicalFormFloorplan(mixedRoleModel);
+assert.equal(
+  collectFields(mixedRoleFloorplan.summaryNodes).some((field) => field.widgetId.endsWith('.audit-override')),
+  false,
+  'a parent role must not absorb a descendant semantic override',
+);
+assert.equal(
+  collectFields(mixedRoleFloorplan.auditNodes).some((field) => field.widgetId.endsWith('.audit-override')),
+  true,
+  'a descendant semantic override must project into its declared Floorplan region',
+);
+const repeatedSummaryModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const repeatedSummaryRoot = structuredClone(repeatedSummaryModel.zones.primary[0]);
+repeatedSummaryRoot.nodeId = `${repeatedSummaryRoot.nodeId}.repeated-occurrence`;
+repeatedSummaryModel.zones.primary.push(repeatedSummaryRoot);
+assert.deepEqual(
+  collectFields(composeCanonicalFormFloorplan(repeatedSummaryModel).summaryNodes).map((field) => field.fieldCode),
+  ['name'],
+  'product summary must project one fact per canonical field even when the native layout repeats an occurrence',
+);
 
 const semanticContextSnapshot = structuredClone(semanticReadonlySnapshot);
 function addContextGroup(groupId: string, fieldCodes: string[]) {

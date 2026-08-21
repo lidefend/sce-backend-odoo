@@ -3521,6 +3521,37 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
             status["visible"] = False
             status["disabled"] = True
             status["reasonCode"] = "ACTION_VISIBILITY_UNRESOLVED"
+        else:
+            status["visible"] = True
+            evaluated_traces = [
+                trace for trace in _list(row.get("sourceTrace"))
+                if isinstance(trace, dict) and trace.get("entitlementEvaluated") is True
+            ]
+            authorization_results = [
+                trace.get("authorizationAllowed") for trace in evaluated_traces
+                if isinstance(trace.get("authorizationAllowed"), bool)
+            ]
+            entitlement_evaluated = row.get("entitlementEvaluated") is True or bool(evaluated_traces)
+            authorization_allowed = row.get("authorizationAllowed") is True or (
+                bool(authorization_results) and all(result is True for result in authorization_results)
+            )
+            modifier_authoritative = (
+                _text(row.get("sourceChannel")) == "native_form_header"
+                and _text(_dict(row.get("button")).get("type")) == "object"
+                and bool(_text(_dict(row.get("nativeIdentity")).get("native_locator")))
+            )
+            if modifier_authoritative and entitlement_evaluated and authorization_allowed:
+                row["businessAvailable"] = True
+                row["authorizationAllowed"] = True
+                row["entitlementEvaluated"] = True
+                row["allowed"] = True
+                row["enabled"] = True
+                row["disabled"] = False
+                status["disabled"] = False
+                if _text(status.get("reasonCode")) in {
+                    "ACTION_NOT_ALLOWED", "ACTION_NOT_VISIBLE_IN_STATE", "ACTION_VISIBILITY_UNRESOLVED",
+                }:
+                    status.pop("reasonCode", None)
     status_contract["buttonStatus"] = statuses
     contract["statusContract"] = status_contract
     _enforce_single_effective_primary_action(contract)

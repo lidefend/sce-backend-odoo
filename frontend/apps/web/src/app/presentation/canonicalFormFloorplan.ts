@@ -12,6 +12,7 @@ export type CanonicalFormFloorplan = {
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
   auditNodes: CanonicalFormNode[];
+  auditDeclared: boolean;
   relationNodes: CanonicalFormNode[];
   subordinateNodes: CanonicalFormNode[];
   blockedActions: CanonicalFormAction[];
@@ -68,34 +69,34 @@ function nodeHasSemanticRole(node: CanonicalFormNode): boolean {
     || node.children.some(nodeHasSemanticRole);
 }
 
+function nodeDeclaresRole(node: CanonicalFormNode, role: CanonicalFormSemanticRole): boolean {
+  return node.semanticRole === role
+    || node.fields.some((field) => field.semanticRole === role)
+    || node.children.some((child) => nodeDeclaresRole(child, role));
+}
+
 function projectNodeRoles(
   node: CanonicalFormNode,
   roles: ReadonlySet<CanonicalFormSemanticRole>,
   includeUnassigned = false,
   onlyPresentable = false,
   suppressTitles = false,
+  inheritedRole = '',
 ): CanonicalFormNode {
-  const nodeRoleMatches = roles.has(node.semanticRole as CanonicalFormSemanticRole);
-  const nodeRoleExcludes = Boolean(node.semanticRole) && !nodeRoleMatches;
-  if (nodeRoleMatches) {
-    return {
-      ...node,
-      ...(suppressTitles ? { title: '' } : {}),
-    };
-  }
-  if (nodeRoleExcludes) {
-    return { ...node, fields: [], children: [] };
-  }
+  const effectiveNodeRole = node.semanticRole || inheritedRole;
   return {
     ...node,
     ...(suppressTitles ? { title: '' } : {}),
-    fields: node.fields.filter((field) => (
-      (roles.has(field.semanticRole as CanonicalFormSemanticRole)
-        || (includeUnassigned && !field.semanticRole))
-      && (!onlyPresentable || hasPresentableValue(field))
-    )),
+    fields: node.fields.filter((field) => {
+      const effectiveFieldRole = field.semanticRole || effectiveNodeRole;
+      return (
+        (roles.has(effectiveFieldRole as CanonicalFormSemanticRole)
+          || (includeUnassigned && !effectiveFieldRole))
+        && (!onlyPresentable || hasPresentableValue(field))
+      );
+    }),
     children: node.children.map((child) => projectNodeRoles(
-      child, roles, includeUnassigned, onlyPresentable, suppressTitles,
+      child, roles, includeUnassigned, onlyPresentable, suppressTitles, effectiveNodeRole,
     )),
   };
 }
@@ -129,10 +130,52 @@ function nodeHasRelationCapability(node: CanonicalFormNode): boolean {
     || node.children.some(nodeHasRelationCapability);
 }
 
+function fieldHasRelationCapability(field: CanonicalFormNode['fields'][number]): boolean {
+  return field.semanticRole === 'relation'
+    || ['one2many', 'many2many'].includes(field.fieldType.trim().toLowerCase());
+}
+
+function projectRelationNode(node: CanonicalFormNode): CanonicalFormNode {
+  const directRelation = node.semanticRole === 'relation' || node.kind.trim().toLowerCase() === 'relation';
+  if (directRelation) return node;
+  return {
+    ...node,
+    fields: node.fields.filter(fieldHasRelationCapability),
+    children: node.children.map(projectRelationNode).filter(nodeHasContent),
+  };
+}
+
+function relationRoleNodes(nodes: CanonicalFormNode[]): CanonicalFormNode[] {
+  return nodes.map(projectRelationNode).filter(nodeHasContent);
+}
+
+function projectContextNode(node: CanonicalFormNode): CanonicalFormNode {
+  const nodeKind = node.kind.trim().toLowerCase();
+  if ((node.semanticRole && !['context', 'activity'].includes(node.semanticRole)) || nodeKind === 'relation') {
+    return { ...node, fields: [], children: [] };
+  }
+  return {
+    ...node,
+    fields: node.fields.filter((field) => (
+      !fieldHasRelationCapability(field)
+      && (!field.semanticRole || ['context', 'activity'].includes(field.semanticRole))
+    )),
+    children: node.children.map(projectContextNode),
+  };
+}
+
+function contextRoleNodes(nodes: CanonicalFormNode[]): CanonicalFormNode[] {
+  return nodes.map(projectContextNode).filter(nodeHasContent);
+}
+
 function flattenPresentableFields(nodes: CanonicalFormNode[], region: string): CanonicalFormNode[] {
   const projected: CanonicalFormNode[] = [];
+  const seenFields = new Set<string>();
   function visit(node: CanonicalFormNode) {
     node.fields.filter((field) => field.visible && hasPresentableValue(field)).forEach((field) => {
+      const fieldIdentity = String(field.fieldCode || field.widgetId).trim();
+      if (fieldIdentity && seenFields.has(fieldIdentity)) return;
+      if (fieldIdentity) seenFields.add(fieldIdentity);
       projected.push({
         ...node,
         nodeId: `${node.nodeId}.${region}.${field.widgetId}`,
@@ -171,6 +214,14 @@ function partitionContextBlocks(nodes: CanonicalFormNode[], limit: number) {
   return { direct, overflow };
 }
 
+function splitOversizedContextBlocks(nodes: CanonicalFormNode[], limit: number): CanonicalFormNode[] {
+  return nodes.flatMap((node) => {
+    const ownVisibleFields = node.fields.some((field) => field.visible);
+    if (visibleFieldCount(node) <= limit || ownVisibleFields || !node.children.length) return [node];
+    return splitOversizedContextBlocks(node.children.filter(nodeHasContent), limit);
+  });
+}
+
 function visibleNodes(nodes: CanonicalFormNode[], mode: CanonicalFormRenderModel['identity']['mode']): CanonicalFormNode[] {
   return nodes
     .map((node) => mode === 'create' ? createReadyNode(node) : node)
@@ -192,17 +243,17 @@ export function composeCanonicalFormFloorplan(
     : [];
   const riskNodes = semanticReadonly ? roleNodes(primaryNodes, ['risk'], false, true, true) : [];
   const auditNodes = semanticReadonly ? roleNodes(primaryNodes, ['audit'], false, false, true) : [];
+  const auditDeclared = semanticReadonly && primaryNodes.some((node) => nodeDeclaresRole(node, 'audit'));
   const taskNodes = semanticReadonly
     ? roleNodes(primaryNodes, ['task'], false, true, true)
     : (editableNodes.length ? editableNodes : primaryNodes);
   const taskIds = new Set(taskNodes.map((node) => node.nodeId));
   const subordinateNodes = visibleNodes(renderModel.zones.subordinate, renderModel.identity.mode);
-  const primaryRelationNodes = semanticReadonly ? primaryNodes.filter(nodeHasRelationCapability) : [];
-  const subordinateRelationNodes = semanticReadonly ? subordinateNodes.filter(nodeHasRelationCapability) : [];
+  const primaryRelationNodes = semanticReadonly ? relationRoleNodes(primaryNodes.filter(nodeHasRelationCapability)) : [];
+  const subordinateRelationNodes = semanticReadonly ? relationRoleNodes(subordinateNodes.filter(nodeHasRelationCapability)) : [];
   const relationNodes = [...primaryRelationNodes, ...subordinateRelationNodes];
-  const relationIds = new Set(primaryRelationNodes.map((node) => node.nodeId));
   const allContextNodes = semanticReadonly
-    ? roleNodes(primaryNodes.filter((node) => !relationIds.has(node.nodeId)), ['context', 'activity'], true)
+    ? contextRoleNodes(primaryNodes)
     : primaryNodes.filter((node) => !taskIds.has(node.nodeId));
   const emptySemanticNodes = semanticReadonly
     ? roleNodes(primaryNodes, ['summary', 'task', 'risk'], false, false, true)
@@ -220,7 +271,7 @@ export function composeCanonicalFormFloorplan(
       .filter(nodeHasContent)
     : [];
   const contextPartition = semanticReadonly
-    ? partitionContextBlocks(allContextNodes, 24)
+    ? partitionContextBlocks(splitOversizedContextBlocks(allContextNodes, 24), 24)
     : { direct: allContextNodes, overflow: [] };
   const visibleActions = renderModel.actionBar.filter((action) => action.visible);
   const canonicalPrimary = visibleActions.find((action) => action.tier === 'primary');
@@ -244,6 +295,7 @@ export function composeCanonicalFormFloorplan(
     overflowContextNodes: [...contextPartition.overflow, ...emptySemanticNodes],
     riskNodes,
     auditNodes,
+    auditDeclared,
     relationNodes,
     subordinateNodes: semanticReadonly
       ? subordinateNodes.filter((node) => !nodeHasRelationCapability(node))

@@ -765,7 +765,7 @@ import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composa
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
-import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
+import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
 import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, resolveListColumnBudgetWidth, type ListColumnLayoutRole } from './listPage/listColumnWidth';
 import {
   resolveDesktopListCandidates,
@@ -2090,7 +2090,7 @@ function columnOption(field: string) {
 }
 
 function columnValueField(field: string) {
-  return String(columnOption(field)?.valueField || field).trim() || field;
+  return resolveListDisplayField(field, columnOption(field));
 }
 
 function columnAggregationField(field: string) {
