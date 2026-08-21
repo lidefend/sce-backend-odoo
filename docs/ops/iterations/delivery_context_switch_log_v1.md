@@ -4969,3 +4969,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius / validation: 89 formal search surfaces; model unit tests,
   governed incremental `smart_core` upgrade, product view gates and
   fingerprint-bound independent review.
+
+## Native capability Q2 continuation on PR #276 (2026-08-21)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `c2968fb6`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / native
+  modifier-action-permission capability evidence / `smart_core`, canonical
+  contract tooling and generic frontend consumer verification.
+- Reason: continue the existing native-view product result without waiting for
+  PR merge; promote only native atoms whose normalized and frontend paths are
+  occurrence-preserving and evidence-backed.
+- Why Here / Why Not Elsewhere: generic Odoo native-view normalization belongs
+  to P0. No construction semantics, customer preferences, frontend inference,
+  new runtime identity or professional page layout is allowed in this batch.
+- Blast radius: formal product form behavior atoms only; `login -> system.init
+  -> ui.contract`, routes, business records and visible professional layout are
+  unchanged. Existing `local.clean/sc_clean` remains the serialized authority.
+- Q2-1 outcome: the first occurrence-preserving static modifier increment is
+  verified without waiting for PR merge. The governed ledger reports `358`
+  ready, `433` fallback, `25,740` unsupported and `0` silent loss across all
+  `26,531` atoms. Dynamic modifiers, actions and permissions were deliberately
+  not promoted by this increment.

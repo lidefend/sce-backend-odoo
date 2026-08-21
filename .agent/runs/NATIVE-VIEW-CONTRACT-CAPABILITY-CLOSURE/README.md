@@ -3,10 +3,10 @@
 ## Q0 topic bootstrap
 
 - Status: completed
-- Branch: `feature/native-view-contract-capability-closure-v1`
+- Branch: `codex/fix-project-layout-container-normalize`
 - Baseline: `35f31407ab34ffff1d43de264e51de5f858a2596`
 - Baseline authority: `origin/main`
-- Worktree: `/home/lidefend/workspace/sce-backend-odoo-native-view-contract-capability`
+- Worktree: `/home/lidefend/workspace/sce-backend-odoo`
 - Formal Product Layer: P0 platform kernel product
 - Supporting layer: P4 verification and delivery tooling
 - Runtime authority: existing `local.clean` profile only
@@ -121,3 +121,34 @@
 - Dynamic verdicts require governed user, company, record, and mode evidence;
   the `local.clean/system/main` carrier cannot be generalized to other
   contexts.
+
+## Q2 PR-worktree continuation (2026-08-21)
+
+- The completed native-view closure commits were integrated into PR #276 at
+  `c2968fb6a29e74335eb2ed0c16d9187578aada4b` without merging `main`.
+- The current PR worktree is the only writer for Q2. The existing
+  `local.clean` profile remains the sole runtime authority and must be rebound
+  through governed `make local.clean.*` targets before new runtime evidence is
+  accepted.
+- Q2 continues with one objective: promote only occurrence-preserving native
+  modifier, action, permission and root-behavior atoms from explicit
+  unsupported status to evidence-backed terminal outcomes. Professional page
+  layout and construction-specific semantics remain excluded.
+
+## Q2-1 static form modifier occurrence closure (2026-08-21)
+
+- Scope: only static boolean `readonly`, `required`, `invisible`, and
+  `column_invisible` form occurrences. Dynamic expressions, actions,
+  permissions and root behaviors remain fail-closed for later Q2 increments.
+- Evidence rule: one applied native contributor, exact numeric native locator
+  and occurrence index, exact raw normalized value, explicit parsed semantic
+  value, and the production `runtimeOccurrenceState` frontend consumer.
+- Governed result: `26,531` atoms conserved; `358` ready, `433` fallback,
+  `25,740` unsupported, `0` unclassified, `0` ambiguous, and `0` silent loss.
+- Validation: `26` capability/map unit tests, the fingerprint-bound
+  `make local.clean.view_capability_ledger_gate`, Web UPC V2 guard, and the
+  canonical form presenter `49`-case suite passed.
+- Infrastructure correction: contract exporters now copy governed fingerprint
+  and structure inputs into the registered Odoo container before execution;
+  evidence validation accepts the repository's governed `artifacts` symlink
+  while still rejecting absolute paths and `..` traversal.

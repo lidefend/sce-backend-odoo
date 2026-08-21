@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from scripts.contract.product_view_capability_ledger_common import classify_structure
+from scripts.contract.product_view_capability_ledger_common import classify_structure, match_normalized_atom, static_boolean_value
 from scripts.contract.product_view_contract_carriers_common import with_manifest
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
 from scripts.verify.product_view_capability_ledger_guard import (
@@ -91,7 +91,7 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
                 "source_graph": structure["entries"][0]["surfaces"][0]["source_graph"], "parse_outcome": {"status": "success"},
                 "atoms": [{
                     "atom_id": atom["atom_id"], "capability_key": atom["capability_key"],
-                    "native": {"occurrence_index": 1, "resolved_view_ref": "view", "origin_view_ref": "view", "origin_status": "proven", "locator": atom["locator"], "canonical_value": atom["canonical_value"], "value_hash": atom["value_hash"]},
+                    "native": {"occurrence_index": 1, "resolved_view_ref": "view", "origin_view_ref": "view", "origin_status": "proven", "locator": atom["locator"], "native_locator": atom["native_locator"], "canonical_value": atom["canonical_value"], "value_hash": atom["value_hash"]},
                     "normalized": {"status": "unproven", "count": 0, "carrier_refs": ["/data/views/form"], "value_hash": "", "source_authority": "normalized_contract"},
                     "semantic": {"status": "missing", "count": 0, "carrier_refs": [], "value_hash": "", "source_authority": "none"},
                     "frontend": {"status": "unproven", "canonical_atom_ref": atom["atom_id"], "projection_atom_ref": "", "consumer_symbol": "consumer", "renderer_key": "renderer", "interaction_symbol": "interaction", "value_hash": sha256_json(frontend_mapping), "source_authority": "compatibility_projection", "source_count": 1},
@@ -117,12 +117,33 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             _pointer_get({}, "/missing")
 
+    def test_static_modifier_match_is_occurrence_and_value_exact(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "modifier.readonly", "attribute": "readonly",
+            "native_locator": "/form[1]/field[1]", "occurrence_index": 1, "canonical_value": "1",
+        }
+        mapping = {
+            "mapping_status": "proven", "matcher": "recursive_native_occurrence",
+            "source_selectors": ["/data/views/form"], "value_regions": ["/layout"],
+        }
+        carrier = {"normalized_carriers": [{
+            "source_selector": "/data/views/form", "artifact_selector": "/entries/0/normalized_carriers/0/value",
+            "value": {"layout": [{"native_locator": "/form[1]/field[1]", "occurrence_index": 1, "attributes": {"readonly": "1"}, "modifiers": {"readonly": True}}]},
+        }]}
+        matches = match_normalized_atom(atom, mapping, carrier)
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["semantic_value"], True)
+        self.assertEqual(static_boolean_value(atom["canonical_value"]), True)
+        carrier["normalized_carriers"][0]["value"]["layout"][0]["occurrence_index"] = 2
+        self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
+
     def test_native_source_selector_resolves_exact_occurrence(self) -> None:
         structure = {"entries": [{"surfaces": [{"contract_ref": "m::form", "view_ref": "v", "view_type": "form", "resolved_structure": {"tag": "form", "children": [{"tag": "field", "attrs": {"name": "x", "a/b": "value"}}]}}]}]}
         taxonomy = {"node_rules": [{"id": "nodes", "tags": "*", "capability_key_template": "node.{tag}"}], "attribute_rules": [{"id": "attrs", "tags": "*", "attribute_prefixes": [""], "capability_key_template": "attr.{attribute}"}]}
         classified = classify_structure(structure, taxonomy)
         atom = next(item for item in classified["atoms"] if item["attribute"] == "a/b")
         self.assertEqual(atom["source_selector"], "/entries/0/surfaces/0/resolved_structure/children/0/attrs/a~1b")
+        self.assertEqual(atom["native_locator"], "/form[1]/field[1]")
         self.assertEqual(_pointer_get(structure, atom["source_selector"]), "value")
 
     def test_evidence_checks_hash_fingerprint_and_selector(self) -> None:

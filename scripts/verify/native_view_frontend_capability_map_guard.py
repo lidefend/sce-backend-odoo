@@ -32,8 +32,8 @@ def validate_frontend_map(
         errors.append("frontend map authority mismatch")
     if frontend_map.get("unknown_capability_policy") != "fail_closed":
         errors.append("frontend map must fail closed")
-    if frontend_map.get("static_ready_allowed") is not False:
-        errors.append("static ready must be disabled")
+    if frontend_map.get("static_ready_allowed") is not True:
+        errors.append("static ready must be explicitly enabled")
 
     symbols = frontend_map.get("symbols") if isinstance(frontend_map.get("symbols"), dict) else {}
     for symbol_id, symbol in symbols.items():

@@ -9,7 +9,9 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from scripts.contract.product_view_capability_ledger_common import classify_structure, load_yaml
+from scripts.contract.product_view_capability_ledger_common import (
+    STATIC_FORM_MODIFIERS, classify_structure, load_yaml, match_normalized_atom, static_boolean_value,
+)
 from scripts.contract.product_view_contract_carriers_common import atomic_write_json, with_manifest
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
 
@@ -78,8 +80,6 @@ def build_ledger(
             surface_atoms = []
             for atom in atoms_by_ref.get(contract_ref, []):
                 normalized_index, normalized_mapping = _mapping(atom, normalized_map["mappings"])
-                if normalized_mapping.get("mapping_status") != "mapping_unproven":
-                    raise ValueError("ledger v1 does not accept an unimplemented proven matcher")
                 frontend_index, frontend_mapping = _frontend_mapping(atom, frontend_map["mappings"])
                 if synthetic:
                     origin_status, origin_ref = "synthetic_default", ""
@@ -87,38 +87,71 @@ def build_ledger(
                     origin_status, origin_ref = "proven", contributors[0]["view_ref"]
                 else:
                     origin_status, origin_ref = "unproven", ""
-                terminal_status = "unsupported"
-                reason_code = (
-                    "CAPABILITY_NATIVE_OCCURRENCE_ORIGIN_UNPROVEN"
-                    if origin_status == "unproven"
-                    else "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN"
-                )
-                if reason_code not in reason_codes:
+                exact_matches = match_normalized_atom(atom, normalized_mapping, carrier_entry)
+                if len(exact_matches) > 1:
+                    raise ValueError(f"{atom['atom_id']}: normalized occurrence match is ambiguous")
+                exact = exact_matches[0] if exact_matches else None
+                static_value = static_boolean_value(atom["canonical_value"])
+                if origin_status == "unproven":
+                    terminal_status, reason_code = "unsupported", "CAPABILITY_NATIVE_OCCURRENCE_ORIGIN_UNPROVEN"
+                elif normalized_mapping.get("mapping_status") != "proven":
+                    terminal_status, reason_code = "unsupported", "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN"
+                elif exact is None:
+                    terminal_status, reason_code = "unsupported", "CAPABILITY_NORMALIZED_CARRIER_MISSING"
+                elif (
+                    origin_status == "proven"
+                    and atom["capability_key"] in STATIC_FORM_MODIFIERS
+                    and static_value is not None
+                    and frontend_mapping.get("frontend_status") == "present"
+                ):
+                    terminal_status, reason_code = "ready", ""
+                else:
+                    terminal_status, reason_code = "fallback", "CAPABILITY_DYNAMIC_VERDICT_NOT_EVALUATED"
+                if reason_code and reason_code not in reason_codes:
                     raise ValueError(f"unregistered reason: {reason_code}")
                 terminal_counts[terminal_status] += 1
                 normalized_refs = [item["source_selector"] for item in carrier_entry["normalized_carriers"]]
+                normalized_stage = (
+                    {"status": "present", "count": 1, "carrier_refs": [exact["raw_selector"]], "value_hash": sha256_json(exact["raw_value"]), "source_authority": "normalized_contract"}
+                    if exact else
+                    {"status": "unproven" if normalized_mapping.get("mapping_status") != "proven" else "missing", "count": 0, "carrier_refs": normalized_refs, "value_hash": "", "source_authority": "normalized_contract"}
+                )
+                semantic_stage = (
+                    {"status": "present", "count": 1, "carrier_refs": [exact["semantic_selector"]], "value_hash": sha256_json(exact["semantic_value"]), "source_authority": "normalized_contract"}
+                    if exact else
+                    {"status": "missing", "count": 0, "carrier_refs": [], "value_hash": "", "source_authority": "none"}
+                )
+                exact_carrier_evidence = (
+                    [
+                        {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": stage, "selector": f"json-pointer:{selector}"}
+                        for stage, selector in (("normalized", exact["raw_selector"]), ("semantic", exact["semantic_selector"]))
+                    ] if exact else [
+                        {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:{item['artifact_selector']}"}
+                        for item in carrier_entry["normalized_carriers"]
+                    ]
+                )
                 surface_atoms.append({
                     "atom_id": atom["atom_id"], "capability_key": atom["capability_key"],
                     "native": {
                         "occurrence_index": atom["occurrence_index"], "resolved_view_ref": atom["resolved_view_ref"],
                         "origin_view_ref": origin_ref, "origin_status": origin_status, "locator": atom["locator"],
+                        "native_locator": atom["native_locator"],
                         "canonical_value": atom["canonical_value"], "value_hash": atom["value_hash"],
                     },
-                    "normalized": {"status": "unproven", "count": 0, "carrier_refs": normalized_refs, "value_hash": "", "source_authority": "normalized_contract"},
-                    "semantic": {"status": "missing", "count": 0, "carrier_refs": [], "value_hash": "", "source_authority": "none"},
+                    "normalized": normalized_stage,
+                    "semantic": semantic_stage,
                     "frontend": {
                         "status": frontend_mapping["frontend_status"], "canonical_atom_ref": atom["atom_id"],
                         "projection_atom_ref": "", "consumer_symbol": frontend_mapping["consumer_symbol"],
                         "renderer_key": frontend_mapping["renderer_key"], "interaction_symbol": frontend_mapping["interaction_symbol"],
-                        "value_hash": sha256_json(frontend_mapping), "source_authority": "compatibility_projection", "source_count": 1,
+                        "value_hash": sha256_json(frontend_mapping),
+                        "source_authority": "normalized_contract" if frontend_mapping["frontend_status"] == "present" else "compatibility_projection",
+                        "source_count": 1,
                     },
                     "terminal_status": terminal_status, "reason_code": reason_code,
                     "evidence_refs": [
                         {"path": str(paths["structure"]), "sha256": path_hashes["structure"], "candidate_fingerprint": fingerprint["digest"], "stage": "native", "selector": f"json-pointer:{atom['source_selector']}"},
-                        *[
-                            {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:{item['artifact_selector']}"}
-                            for item in carrier_entry["normalized_carriers"]
-                        ],
+                        *exact_carrier_evidence,
                         {"path": str(paths["normalized_map"]), "sha256": path_hashes["normalized_map"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:/mappings/{normalized_index}"},
                         {"path": str(paths["frontend_map"]), "sha256": path_hashes["frontend_map"], "candidate_fingerprint": fingerprint["digest"], "stage": "frontend", "selector": f"json-pointer:/mappings/{frontend_index}"},
                     ],
@@ -150,7 +183,7 @@ def build_ledger(
         "summary": {
             "formal_menu_count": summary_source["formal_menu_count"], "model_count": summary_source["model_count"], "resolved_surface_count": summary_source["resolved_surface_count"],
             "native_candidate_count": len(classified["atoms"]), "classified_atom_count": len(classified["atoms"]), "excluded_native_count": 0, "unclassified_native_count": 0, "ambiguous_native_count": 0,
-            "capability_atom_count": len(classified["atoms"]), "ready_count": 0, "fallback_count": terminal_counts["fallback"], "unsupported_count": terminal_counts["unsupported"], "silent_loss_count": 0,
+            "capability_atom_count": len(classified["atoms"]), "ready_count": terminal_counts["ready"], "fallback_count": terminal_counts["fallback"], "unsupported_count": terminal_counts["unsupported"], "silent_loss_count": 0,
             "view_type_counts": summary_source["view_type_counts"],
         }, "entries": entries,
     })

@@ -207,13 +207,14 @@ $defs:
   native_stage:
     type: object
     additionalProperties: false
-    required: [occurrence_index, resolved_view_ref, origin_view_ref, origin_status, locator, canonical_value, value_hash]
+    required: [occurrence_index, resolved_view_ref, origin_view_ref, origin_status, locator, native_locator, canonical_value, value_hash]
     properties:
       occurrence_index: {type: integer, minimum: 1}
       resolved_view_ref: {$ref: '#/$defs/text'}
       origin_view_ref: {type: string}
       origin_status: {enum: [proven, unproven, synthetic_default]}
       locator: {$ref: '#/$defs/text'}
+      native_locator: {$ref: '#/$defs/text'}
       canonical_value: {}
       value_hash: {$ref: '#/$defs/sha256'}
   contract_stage:

@@ -8,7 +8,7 @@ properties:
   schema: {const: native_view_frontend_capability_map/v1}
   authority: {const: p4_evidence_classification_only}
   unknown_capability_policy: {const: fail_closed}
-  static_ready_allowed: {const: false}
+  static_ready_allowed: {const: true}
   symbols:
     type: object
     minProperties: 1

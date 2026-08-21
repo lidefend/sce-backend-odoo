@@ -12,7 +12,7 @@ from typing import Any
 import jsonschema
 
 from scripts.contract.complete_worktree_fingerprint import build_fingerprint
-from scripts.contract.product_view_capability_ledger_common import classify_structure, load_yaml
+from scripts.contract.product_view_capability_ledger_common import classify_structure, load_yaml, match_normalized_atom
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
 from scripts.verify.product_view_contract_carriers_guard import validate_carriers
 
@@ -166,8 +166,12 @@ def validate_normalized_map(
                 errors.append(f"mapping {mapping_id} {field} is not registered")
             elif reason.get("stage") != "normalized" or reason.get("status") != expected_status or reason.get("gate_effect") != "classified_gap":
                 errors.append(f"mapping {mapping_id} {field} has incompatible reason semantics")
-        if mapping.get("mapping_status") == "proven":
-            errors.append(f"mapping {mapping_id} claims proven without an implemented occurrence and value-equivalence matcher")
+        if mapping.get("mapping_status") == "proven" and (
+            mapping_id != "form_modifier"
+            or mapping.get("matcher") != "recursive_native_occurrence"
+            or mapping.get("cardinality_policy") != "exactly_one"
+        ):
+            errors.append(f"mapping {mapping_id} claims proven without the governed occurrence and value-equivalence matcher")
         if mapping.get("mapping_status") == "mapping_unproven" and mapping.get("unproven_reason_code") != "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN":
             errors.append(f"mapping {mapping_id} lacks the normalized mapping gap reason")
 
@@ -212,6 +216,18 @@ def validate_normalized_map(
                         _pointer_get(matched_carriers[0].get("value"), str(region))
                     except (KeyError, ValueError):
                         errors.append(f"mapping {mapping_id} value region is not resolvable: {contract_ref}:{region}")
+    proven_match_count = 0
+    for atom in classified["atoms"]:
+        atom_mappings = [mapping for mapping in mappings if _matches(atom, mapping)]
+        if len(atom_mappings) != 1 or atom_mappings[0].get("mapping_status") != "proven":
+            continue
+        entry = carrier_entries.get(atom["contract_ref"], {})
+        matches = match_normalized_atom(atom, atom_mappings[0], entry)
+        if len(matches) > 1:
+            errors.append(f"proven mapping is ambiguous: {atom['atom_id']}")
+        proven_match_count += int(len(matches) == 1)
+    if any(mapping.get("mapping_status") == "proven" for mapping in mappings) and proven_match_count == 0:
+        errors.append("proven mappings have no exact occurrence and value-equivalence matches")
     summary = {
         "classified_atom_count": len(classified["atoms"]),
         "unmapped_atom_count": missing,

@@ -5,7 +5,7 @@ import unittest
 from copy import deepcopy
 from pathlib import Path
 
-from scripts.contract.product_view_capability_ledger_common import load_yaml
+from scripts.contract.product_view_capability_ledger_common import STATIC_FORM_MODIFIERS, classify_structure, load_yaml
 from scripts.verify.native_view_normalized_capability_map_guard import _pointer_get, validate_normalized_map
 
 
@@ -48,6 +48,17 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
             "structure_input": {"candidate_fingerprint": fingerprint},
             "entries": entries,
         }
+        static_atom = next(
+            atom for atom in classify_structure(cls.structure, cls.taxonomy)["atoms"]
+            if atom["view_type"] == "form" and atom["capability_key"] in STATIC_FORM_MODIFIERS
+        )
+        carrier_entry = next(item for item in entries if item["contract_ref"] == static_atom["contract_ref"])
+        form_carrier = next(item for item in carrier_entry["normalized_carriers"] if item["source_selector"] == "/data/views/form")
+        form_carrier["value"]["layout"] = [{
+            "native_locator": static_atom["native_locator"], "occurrence_index": static_atom["occurrence_index"],
+            "attributes": {static_atom["attribute"]: static_atom["canonical_value"]},
+            "modifiers": {static_atom["attribute"]: True},
+        }]
 
     def errors(self, normalized_map=None, reasons=None, carrier=None):
         return validate_normalized_map(
@@ -61,7 +72,7 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
         self.assertEqual(summary["classified_atom_count"], 26531)
         self.assertEqual(summary["unmapped_atom_count"], 0)
         self.assertEqual(summary["ambiguous_atom_count"], 0)
-        self.assertEqual(summary["proven_mapping_count"], 0)
+        self.assertEqual(summary["proven_mapping_count"], 1)
 
     def test_missing_mapping_fails_closed(self) -> None:
         value = deepcopy(self.normalized_map)

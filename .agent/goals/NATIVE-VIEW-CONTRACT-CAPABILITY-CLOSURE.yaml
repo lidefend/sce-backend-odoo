@@ -5,10 +5,10 @@ goal:
   objective: close_native_view_capability_loss_across_contract_and_renderer_layers
 
   baseline:
-    branch: feature/native-view-contract-capability-closure-v1
+    branch: codex/fix-project-layout-container-normalize
     full_sha: 35f31407ab34ffff1d43de264e51de5f858a2596
     source: origin/main
-    worktree: /home/lidefend/workspace/sce-backend-odoo-native-view-contract-capability
+    worktree: /home/lidefend/workspace/sce-backend-odoo
 
   product_boundary:
     formal_product_layer: P0
@@ -71,6 +71,15 @@ goal:
     - id: Q2
       title: modifiers_actions_permissions_closure
       status: active
+      current_increment:
+        id: Q2-1
+        title: static_form_modifier_occurrence_closure
+        status: verified
+        terminal_counts:
+          ready: 358
+          fallback: 433
+          unsupported: 25740
+          silent_loss: 0
     - id: Q3
       title: form_tree_search_kanban_semantic_closure
       status: planned

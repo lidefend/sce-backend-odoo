@@ -19,6 +19,7 @@ class NativeCandidate:
     tag: str
     attribute: str
     locator: str
+    native_locator: str
     occurrence_index: int
     resolved_view_ref: str
     ancestors: tuple[str, ...]
@@ -37,6 +38,94 @@ def _pointer_escape(value: str) -> str:
     return value.replace("~", "~0").replace("/", "~1")
 
 
+STATIC_FORM_MODIFIERS = {
+    "modifier.readonly", "modifier.required", "modifier.invisible", "modifier.column_invisible",
+}
+
+
+def static_boolean_value(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true"}:
+            return True
+        if normalized in {"0", "false"}:
+            return False
+    return None
+
+
+def _walk_json(value: Any, pointer: str = "") -> Iterator[tuple[str, Any]]:
+    yield pointer, value
+    if isinstance(value, dict):
+        for key, child in value.items():
+            yield from _walk_json(child, f"{pointer}/{_pointer_escape(str(key))}")
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from _walk_json(child, f"{pointer}/{index}")
+
+
+def match_normalized_atom(
+    atom: dict[str, Any], mapping: dict[str, Any], carrier_entry: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Return exact occurrence/value matches for implemented normalized mappings."""
+    if mapping.get("mapping_status") != "proven" or mapping.get("matcher") != "recursive_native_occurrence":
+        return []
+    if atom.get("capability_key") not in STATIC_FORM_MODIFIERS or atom.get("view_type") != "form":
+        return []
+    attribute = str(atom.get("attribute") or "")
+    matches: list[dict[str, Any]] = []
+    for carrier in carrier_entry.get("normalized_carriers", []):
+        if carrier.get("source_selector") not in mapping.get("source_selectors", []):
+            continue
+        value = carrier.get("value")
+        for region in mapping.get("value_regions", []):
+            try:
+                region_value = pointer_get(value, str(region))
+            except (KeyError, ValueError):
+                continue
+            for relative_pointer, row in _walk_json(region_value, str(region)):
+                if not isinstance(row, dict):
+                    continue
+                if row.get("native_locator") != atom.get("native_locator"):
+                    continue
+                if row.get("occurrence_index") != atom.get("occurrence_index"):
+                    continue
+                attributes = row.get("attributes") if isinstance(row.get("attributes"), dict) else {}
+                modifiers = row.get("modifiers") if isinstance(row.get("modifiers"), dict) else {}
+                if attribute not in attributes or attributes[attribute] != atom.get("canonical_value"):
+                    continue
+                if attribute not in modifiers:
+                    continue
+                base = str(carrier.get("artifact_selector") or "") + relative_pointer
+                matches.append({
+                    "raw_selector": f"{base}/attributes/{_pointer_escape(attribute)}",
+                    "raw_value": attributes[attribute],
+                    "semantic_selector": f"{base}/modifiers/{_pointer_escape(attribute)}",
+                    "semantic_value": modifiers[attribute],
+                })
+    return matches
+
+
+def pointer_get(value: Any, pointer: str) -> Any:
+    if pointer == "":
+        return value
+    if not pointer.startswith("/"):
+        raise ValueError("RFC 6901 pointer must be empty or start with slash")
+    current = value
+    for raw in pointer[1:].split("/"):
+        token = raw.replace("~1", "/").replace("~0", "~")
+        if isinstance(current, dict) and token in current:
+            current = current[token]
+        elif isinstance(current, list) and token.isdigit() and int(token) < len(current):
+            current = current[int(token)]
+        else:
+            raise KeyError(pointer)
+    return current
+
+
 def iter_native_candidates(surface: dict[str, Any]) -> Iterator[NativeCandidate]:
     structure = surface.get("resolved_structure")
     if not isinstance(structure, dict):
@@ -44,16 +133,19 @@ def iter_native_candidates(surface: dict[str, Any]) -> Iterator[NativeCandidate]
     view_ref = str(surface.get("view_ref") or "")
     view_type = str(surface.get("view_type") or "")
 
-    def emit(node: dict[str, Any], locator: str, occurrence: int, ancestors: tuple[str, ...], pointer: str):
+    def emit(
+        node: dict[str, Any], locator: str, native_locator: str, occurrence: int,
+        ancestors: tuple[str, ...], pointer: str,
+    ):
         tag = str(node.get("tag") or "")
         node_value = {"tag": tag}
         if "text" in node:
             node_value["text"] = node["text"]
-        yield NativeCandidate("node", view_type, tag, "", locator, occurrence, view_ref, ancestors, node_value, pointer)
+        yield NativeCandidate("node", view_type, tag, "", locator, native_locator, occurrence, view_ref, ancestors, node_value, pointer)
         attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
         for attribute, value in sorted(attrs.items()):
             yield NativeCandidate(
-                "attribute", view_type, tag, str(attribute), f"{locator}/@{attribute}",
+                "attribute", view_type, tag, str(attribute), f"{locator}/@{attribute}", native_locator,
                 occurrence, view_ref, ancestors, value, f"{pointer}/attrs/{_pointer_escape(str(attribute))}",
             )
         children = [child for child in node.get("children") or [] if isinstance(child, dict)]
@@ -62,14 +154,21 @@ def iter_native_candidates(surface: dict[str, Any]) -> Iterator[NativeCandidate]
             base = structure_segment(child)
             totals[base] = totals.get(base, 0) + 1
         seen: dict[str, int] = {}
+        tag_seen: dict[str, int] = {}
         for child_index, child in enumerate(children):
             base = structure_segment(child)
             seen[base] = seen.get(base, 0) + 1
+            child_tag = str(child.get("tag") or "")
+            tag_seen[child_tag] = tag_seen.get(child_tag, 0) + 1
             suffix = f"#{seen[base]}" if totals[base] > 1 else ""
-            yield from emit(child, f"{locator}/{base}{suffix}", seen[base], ancestors + (tag,), f"{pointer}/children/{child_index}")
+            yield from emit(
+                child, f"{locator}/{base}{suffix}", f"{native_locator}/{child_tag}[{tag_seen[child_tag]}]",
+                seen[base], ancestors + (tag,), f"{pointer}/children/{child_index}",
+            )
 
     root_locator = f"resolved:{view_ref}/{structure_segment(structure)}"
-    yield from emit(structure, root_locator, 1, (), "/resolved_structure")
+    root_tag = str(structure.get("tag") or "")
+    yield from emit(structure, root_locator, f"/{root_tag}[1]", 1, (), "/resolved_structure")
 
 
 def _tags(rule: dict[str, Any], taxonomy: dict[str, Any]) -> set[str] | None:
@@ -155,6 +254,7 @@ def classify_structure(structure: dict[str, Any], taxonomy: dict[str, Any]) -> d
                     "capability_key": capability_key, "rule_id": matches[0]["rule_id"],
                     "view_type": candidate.view_type, "tag": candidate.tag,
                     "attribute": candidate.attribute, "locator": candidate.locator,
+                    "native_locator": candidate.native_locator,
                     "occurrence_index": candidate.occurrence_index,
                     "resolved_view_ref": candidate.resolved_view_ref,
                     "canonical_value": candidate.canonical_value,

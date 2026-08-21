@@ -12,7 +12,9 @@ from typing import Any
 import jsonschema
 
 from scripts.contract.complete_worktree_fingerprint import build_fingerprint, validate_fingerprint
-from scripts.contract.product_view_capability_ledger_common import classify_structure, load_yaml
+from scripts.contract.product_view_capability_ledger_common import (
+    STATIC_FORM_MODIFIERS, classify_structure, load_yaml, match_normalized_atom, static_boolean_value,
+)
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
 from scripts.verify.native_view_frontend_capability_map_guard import validate_frontend_map
 from scripts.verify.native_view_normalized_capability_map_guard import validate_normalized_map
@@ -22,6 +24,8 @@ from scripts.verify.product_view_contract_carriers_guard import validate_carrier
 ROOT = Path(__file__).resolve().parents[2]
 NORMALIZED_REASON = "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN"
 NATIVE_ORIGIN_REASON = "CAPABILITY_NATIVE_OCCURRENCE_ORIGIN_UNPROVEN"
+NORMALIZED_MISSING_REASON = "CAPABILITY_NORMALIZED_CARRIER_MISSING"
+DYNAMIC_REASON = "CAPABILITY_DYNAMIC_VERDICT_NOT_EVALUATED"
 
 
 def _pointer_get(value: Any, pointer: str) -> Any:
@@ -53,8 +57,13 @@ def validate_evidence_ref(
 ) -> tuple[list[str], Any]:
     errors: list[str] = []
     relative = Path(str(ref.get("path") or ""))
-    path = (root / relative).resolve()
-    if not str(relative) or not path.is_relative_to(root.resolve()) or not path.is_file():
+    path = root / relative
+    if (
+        not str(relative)
+        or relative.is_absolute()
+        or ".." in relative.parts
+        or not path.is_file()
+    ):
         return ["evidence path is not a governed file"], None
     evidence_cache = cache if cache is not None else {}
     if path not in evidence_cache:
@@ -204,55 +213,91 @@ def validate_ledger(
             expected_native = {
                 "occurrence_index": expected["occurrence_index"], "resolved_view_ref": expected["resolved_view_ref"],
                 "origin_view_ref": origin_ref, "origin_status": origin_status, "locator": expected["locator"],
+                "native_locator": expected["native_locator"],
                 "canonical_value": expected["canonical_value"], "value_hash": expected["value_hash"],
             }
             if native != expected_native:
                 errors.append(f"native occurrence mismatch: {atom_id}")
             normalized_matches = _mapping(expected, normalized_map.get("mappings", []))
             frontend_matches = _frontend_mapping(expected, frontend_map.get("mappings", []))
-            if len(normalized_matches) != 1 or normalized_matches[0].get("mapping_status") != "mapping_unproven":
-                errors.append(f"normalized mapping is not uniquely unproven: {atom_id}")
+            if len(normalized_matches) != 1:
+                errors.append(f"normalized mapping is not unique: {atom_id}")
             if len(frontend_matches) != 1:
                 errors.append(f"frontend mapping is not unique: {atom_id}")
+            normalized_mapping = normalized_matches[0] if len(normalized_matches) == 1 else {}
+            exact_matches = match_normalized_atom(expected, normalized_mapping, carrier_entry)
+            if len(exact_matches) > 1:
+                errors.append(f"normalized occurrence is ambiguous: {atom_id}")
+            exact = exact_matches[0] if len(exact_matches) == 1 else None
+            expected_normalized = (
+                {"status": "present", "count": 1, "carrier_refs": [exact["raw_selector"]], "value_hash": sha256_json(exact["raw_value"]), "source_authority": "normalized_contract"}
+                if exact else
+                {"status": "unproven" if normalized_mapping.get("mapping_status") != "proven" else "missing", "count": 0, "carrier_refs": expected_carrier_refs, "value_hash": "", "source_authority": "normalized_contract"}
+            )
+            expected_semantic = (
+                {"status": "present", "count": 1, "carrier_refs": [exact["semantic_selector"]], "value_hash": sha256_json(exact["semantic_value"]), "source_authority": "normalized_contract"}
+                if exact else
+                {"status": "missing", "count": 0, "carrier_refs": [], "value_hash": "", "source_authority": "none"}
+            )
             normalized = atom.get("normalized", {})
             semantic = atom.get("semantic", {})
-            if normalized != {"status": "unproven", "count": 0, "carrier_refs": expected_carrier_refs, "value_hash": "", "source_authority": "normalized_contract"}:
+            if normalized != expected_normalized:
                 errors.append(f"normalized stage mismatch: {atom_id}")
-            if semantic != {"status": "missing", "count": 0, "carrier_refs": [], "value_hash": "", "source_authority": "none"}:
+            if semantic != expected_semantic:
                 errors.append(f"semantic stage mismatch: {atom_id}")
             frontend_mapping = frontend_matches[0] if len(frontend_matches) == 1 else {}
             expected_frontend = {
                 "status": frontend_mapping.get("frontend_status"), "canonical_atom_ref": atom_id,
                 "projection_atom_ref": "", "consumer_symbol": frontend_mapping.get("consumer_symbol"),
                 "renderer_key": frontend_mapping.get("renderer_key"), "interaction_symbol": frontend_mapping.get("interaction_symbol"),
-                "value_hash": sha256_json(frontend_mapping), "source_authority": "compatibility_projection", "source_count": 1,
+                "value_hash": sha256_json(frontend_mapping),
+                "source_authority": "normalized_contract" if frontend_mapping.get("frontend_status") == "present" else "compatibility_projection",
+                "source_count": 1,
             }
             if atom.get("frontend") != expected_frontend:
                 errors.append(f"frontend stage mismatch: {atom_id}")
-            status = "unsupported"
-            reason_code = NATIVE_ORIGIN_REASON if origin_status == "unproven" else NORMALIZED_REASON
+            if origin_status == "unproven":
+                status, reason_code = "unsupported", NATIVE_ORIGIN_REASON
+            elif normalized_mapping.get("mapping_status") != "proven":
+                status, reason_code = "unsupported", NORMALIZED_REASON
+            elif exact is None:
+                status, reason_code = "unsupported", NORMALIZED_MISSING_REASON
+            elif (
+                origin_status == "proven"
+                and expected["capability_key"] in STATIC_FORM_MODIFIERS
+                and static_boolean_value(expected["canonical_value"]) is not None
+                and frontend_mapping.get("frontend_status") == "present"
+            ):
+                status, reason_code = "ready", ""
+            else:
+                status, reason_code = "fallback", DYNAMIC_REASON
             if atom.get("terminal_status") != status or atom.get("reason_code") != reason_code:
                 errors.append(f"terminal stage mismatch: {atom_id}")
-            reason = reason_by_code.get(reason_code)
-            expected_reason_stage = "native" if origin_status == "unproven" else "normalized"
-            if not reason or reason.get("stage") != expected_reason_stage or reason.get("status") != status or reason.get("gate_effect") != "classified_gap" or not reason.get("exit_condition"):
-                errors.append(f"terminal reason semantics mismatch: {atom_id}")
+            if reason_code:
+                reason = reason_by_code.get(reason_code)
+                if not reason or reason.get("status") != status or reason.get("gate_effect") != "classified_gap" or not reason.get("exit_condition"):
+                    errors.append(f"terminal reason semantics mismatch: {atom_id}")
             terminal_counts[status] += 1
 
             normalized_index = normalized_map.get("mappings", []).index(normalized_matches[0]) if len(normalized_matches) == 1 else -1
             frontend_index = frontend_map.get("mappings", []).index(frontend_mapping) if frontend_mapping else -1
-            expected_evidence = [
-                {"path": str(paths["structure"]), "sha256": path_hashes["structure"], "candidate_fingerprint": fingerprint["digest"], "stage": "native", "selector": f"json-pointer:{expected['source_selector']}"},
-                *[
+            expected_carrier_evidence = (
+                [
+                    {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": stage, "selector": f"json-pointer:{selector}"}
+                    for stage, selector in (("normalized", exact["raw_selector"]), ("semantic", exact["semantic_selector"]))
+                ] if exact else [
                     {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:{item['artifact_selector']}"}
                     for item in carrier_entry.get("normalized_carriers", [])
-                ],
+                ]
+            )
+            expected_evidence = [
+                {"path": str(paths["structure"]), "sha256": path_hashes["structure"], "candidate_fingerprint": fingerprint["digest"], "stage": "native", "selector": f"json-pointer:{expected['source_selector']}"},
+                *expected_carrier_evidence,
                 {"path": str(paths["normalized_map"]), "sha256": path_hashes["normalized_map"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:/mappings/{normalized_index}"},
                 {"path": str(paths["frontend_map"]), "sha256": path_hashes["frontend_map"], "candidate_fingerprint": fingerprint["digest"], "stage": "frontend", "selector": f"json-pointer:/mappings/{frontend_index}"},
             ]
             if atom.get("evidence_refs") != expected_evidence:
                 errors.append(f"evidence set mismatch: {atom_id}")
-            carrier_values = {f"json-pointer:{item['artifact_selector']}": item.get("value") for item in carrier_entry.get("normalized_carriers", [])}
             for ref in atom.get("evidence_refs", []):
                 ref_errors, selected = validate_evidence_ref(ref, fingerprint.get("digest", ""), root, evidence_cache)
                 errors.extend(f"evidence {atom_id}: {item}" for item in ref_errors)
@@ -263,8 +308,9 @@ def validate_ledger(
                         equivalent = isinstance(selected, dict) and {key: selected[key] for key in ("tag", "text") if key in selected} == expected["canonical_value"]
                     if not equivalent:
                         errors.append(f"native evidence value mismatch: {atom_id}")
-                if ref.get("stage") == "normalized" and ref.get("path") == str(paths["carrier"]):
-                    if ref.get("selector") not in carrier_values or selected != carrier_values.get(ref.get("selector")):
+                if exact and ref.get("path") == str(paths["carrier"]):
+                    expected_value = exact["raw_value"] if ref.get("stage") == "normalized" else exact["semantic_value"]
+                    if selected != expected_value:
                         errors.append(f"carrier evidence value mismatch: {atom_id}")
 
     if seen_atoms != set(expected_atoms):
@@ -274,13 +320,13 @@ def validate_ledger(
         "formal_menu_count": source_summary.get("formal_menu_count"), "model_count": source_summary.get("model_count"),
         "resolved_surface_count": source_summary.get("resolved_surface_count"), "native_candidate_count": len(expected_atoms),
         "classified_atom_count": len(expected_atoms), "excluded_native_count": 0, "unclassified_native_count": 0,
-        "ambiguous_native_count": 0, "capability_atom_count": len(expected_atoms), "ready_count": 0,
-        "fallback_count": 0, "unsupported_count": len(expected_atoms), "silent_loss_count": 0,
+        "ambiguous_native_count": 0, "capability_atom_count": len(expected_atoms), "ready_count": terminal_counts["ready"],
+        "fallback_count": terminal_counts["fallback"], "unsupported_count": terminal_counts["unsupported"], "silent_loss_count": 0,
         "view_type_counts": source_summary.get("view_type_counts"),
     }
     if artifact.get("summary") != expected_summary:
         errors.append("ledger summary mismatch")
-    if terminal_counts != Counter({"unsupported": len(expected_atoms)}):
+    if sum(terminal_counts.values()) != len(expected_atoms):
         errors.append("terminal entry conservation failed")
     body = dict(artifact)
     manifest = body.pop("manifest_sha256", None)
