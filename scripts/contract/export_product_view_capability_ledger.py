@@ -23,6 +23,14 @@ INTERACTION_EVIDENCE_PATH = Path("frontend/apps/web/scripts/canonical_form_prese
 INTERACTION_EVIDENCE_SYMBOL = "validateCanonicalFormActionExecutors"
 
 
+def _interaction_evidence_symbol(capability_key: str) -> str:
+    return (
+        "contractActionConfirmationPrompt"
+        if capability_key == "action.confirm"
+        else INTERACTION_EVIDENCE_SYMBOL
+    )
+
+
 def _mapping(atom: dict[str, Any], mappings: list[dict[str, Any]]) -> tuple[int, dict[str, Any]]:
     matches = []
     for index, mapping in enumerate(mappings):
@@ -155,7 +163,7 @@ def build_ledger(
                         {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "semantic", "selector": f"json-pointer:{final_match['semantic_selector'] if final_match else exact['semantic_selector']}"},
                         *([
                             {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "interaction", "selector": f"json-pointer:{final_match['interaction_selector']}"},
-                            {"path": str(INTERACTION_EVIDENCE_PATH), "sha256": interaction_evidence_sha256, "candidate_fingerprint": fingerprint["digest"], "stage": "interaction", "selector": f"symbol:{INTERACTION_EVIDENCE_SYMBOL}"},
+                            {"path": str(INTERACTION_EVIDENCE_PATH), "sha256": interaction_evidence_sha256, "candidate_fingerprint": fingerprint["digest"], "stage": "interaction", "selector": f"symbol:{_interaction_evidence_symbol(atom['capability_key'])}"},
                         ] if terminal_status == "ready" and final_match else []),
                     ] if exact else [
                         {"path": str(paths["carrier"]), "sha256": path_hashes["carrier"], "candidate_fingerprint": fingerprint["digest"], "stage": "normalized", "selector": f"json-pointer:{item['artifact_selector']}"}

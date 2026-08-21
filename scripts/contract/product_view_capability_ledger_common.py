@@ -61,7 +61,7 @@ ACTION_IDENTITY_FIELDS = {
     "action.id": "id",
     "action.help": "help",
 }
-READY_FINAL_ACTION_CAPABILITIES = {"action.identity", "action.label", "action.type"}
+READY_FINAL_ACTION_CAPABILITIES = {"action.confirm", "action.identity", "action.label", "action.type"}
 
 
 def static_boolean_value(value: Any) -> bool | None:
@@ -237,12 +237,23 @@ def match_final_object_action(atom: dict[str, Any], carrier_entry: dict[str, Any
         if not action_id or not action_key or rule.get("backendIdentity") != backend_identity:
             continue
         semantic_values = {
+            "action.confirm": str(native.get("confirm_raw") or "").strip(),
             "action.identity": native_name,
             "action.label": rule.get("label"),
             "action.type": native_type,
         }
         if semantic_values[key] != atom.get("canonical_value"):
             continue
+        if key == "action.confirm":
+            safety = rule.get("actionSafety")
+            if not isinstance(safety, dict):
+                continue
+            if (
+                safety.get("classification") != "danger"
+                or safety.get("requires_confirm") is not True
+                or str(safety.get("confirm_message") or "").strip() != semantic_values[key]
+            ):
+                continue
         status_matches = [
             (index, status)
             for index, status in enumerate(statuses)
@@ -257,7 +268,12 @@ def match_final_object_action(atom: dict[str, Any], carrier_entry: dict[str, Any
         status_index, status = status_matches[0]
         rule_base = str(rule_carrier.get("artifact_selector") or "").removesuffix("/value") + f"/value/{rule_index}"
         status_base = str(status_carrier.get("artifact_selector") or "").removesuffix("/value") + f"/value/{status_index}"
-        semantic_field = {"action.identity": "button/name", "action.label": "label", "action.type": "button/type"}[key]
+        semantic_field = {
+            "action.confirm": "actionSafety/confirm_message",
+            "action.identity": "button/name",
+            "action.label": "label",
+            "action.type": "button/type",
+        }[key]
         matches.append({
             "semantic_selector": f"{rule_base}/{semantic_field}",
             "semantic_value": semantic_values[key],

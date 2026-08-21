@@ -34,6 +34,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     comparableFieldValue,
     contract,
     contractActionRuleKey,
+    contractActionConfirmationPrompt,
     contractFieldSequenceFromOrder,
     contractModeFeedback,
     contractV2ActionRules,
@@ -138,15 +139,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   });
 
   async function confirmActionSafety(action: ContractAction) {
-    const safety = action.actionSafety;
-    if (!safety || safety.classification !== 'danger' || !safety.requiresConfirm) return true;
+    const prompt = contractActionConfirmationPrompt(action);
+    if (!prompt) return true;
     return (
-      intentConfirmationRef.value?.confirm({
-        actionLabel: String(action.label || '操作'),
-        message: String(
-          safety.confirmMessage || action.hint || '该操作执行后将立即生效，请确认是否继续。',
-        ),
-      }) ?? false
+      intentConfirmationRef.value?.confirm(prompt) ?? false
     );
   }
 

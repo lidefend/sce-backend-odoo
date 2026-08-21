@@ -494,6 +494,18 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(action["native_identity"]["canonical_region"], "layout")
         self.assertTrue(action["native_identity"]["authoritative"])
 
+    def test_button_help_does_not_manufacture_native_confirmation(self):
+        element = _parse_test_xml(
+            '<button type="object" name="action_open_help" string="Help" help="Descriptive help only"/>'
+        )
+
+        action = self.tree_form_parser._button_to_action(element, level="header")
+
+        self.assertEqual(action["native_identity"]["help"], "Descriptive help only")
+        self.assertIsNone(action["native_identity"]["confirm_raw"])
+        self.assertFalse(action["action_safety"]["requires_confirm"])
+        self.assertEqual(action["payload"]["confirm"], "")
+
     def test_smart_button_projects_to_authoritative_stat_region(self):
         element = _parse_test_xml(
             '<button class="oe_stat_button" type="object" name="action_open_lines" string="Lines"/>'

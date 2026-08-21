@@ -16,6 +16,7 @@ import {
   validateCanonicalFormActionExecutors,
 } from '../src/pages/contractForm/canonicalFormActionExecutor';
 import type { ContractAction } from '../src/pages/contractForm/types';
+import { contractActionConfirmationPrompt } from '../src/pages/contractForm/actionContract';
 import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
 import {
   formatMonetaryDisplayValue,
@@ -788,6 +789,24 @@ duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visib
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
 const normalizedAction = snapshot().actionContract.actionRuleList[0];
+assert.deepEqual(
+  contractActionConfirmationPrompt({
+    key: 'action_submit', label: 'Submit', hint: '',
+    actionSafety: {
+      classification: 'danger', requiresConfirm: true,
+      confirmMessage: 'Submit this document?', reasonCode: 'NATIVE_BUTTON_DANGEROUS_ACTION',
+    },
+  } as never),
+  { actionLabel: 'Submit', message: 'Submit this document?' },
+  'native confirm message must reach the confirmation interaction unchanged',
+);
+assert.equal(
+  contractActionConfirmationPrompt({
+    key: 'action_help', label: 'Help', hint: 'Descriptive help only',
+  } as never),
+  null,
+  'button help must never manufacture a confirmation prompt',
+);
 const readonlySaveSnapshot = snapshot();
 readonlySaveSnapshot.actionContract.actionRuleList = [{
   ...readonlySaveSnapshot.actionContract.actionRuleList[0],

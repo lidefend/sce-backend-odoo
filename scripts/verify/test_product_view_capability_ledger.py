@@ -223,6 +223,39 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         atom = {"view_type": "form", "capability_key": "action.type", "canonical_value": "action"}
         self.assertEqual(match_final_object_action(atom, {"final_contract_capture": {"status": "complete", "carriers": []}}), [])
 
+    def test_final_object_action_preserves_explicit_confirm(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "action.confirm", "attribute": "confirm",
+            "native_locator": "/form[1]/header[1]/button[2]", "occurrence_index": 2,
+            "canonical_value": "Submit this document?",
+        }
+        backend_identity = "native_button:object:action_approve:/form[1]/header[1]/button[2]:2"
+        rule = {
+            "actionId": "action.approve", "actionKey": "action.approve", "label": "Approve",
+            "backendIdentity": backend_identity,
+            "button": {"name": "action_approve", "type": "object"},
+            "nativeIdentity": {
+                "authoritative": True, "native_locator": atom["native_locator"],
+                "occurrence_index": 2, "name": "action_approve", "type": "object",
+                "confirm_raw": "Submit this document?",
+            },
+            "actionSafety": {
+                "classification": "danger", "requires_confirm": True,
+                "confirm_message": "Submit this document?",
+            },
+        }
+        carrier = {"final_contract_capture": {"status": "complete", "carriers": [
+            {"source_selector": "/data/actionContract/actionRuleList", "artifact_selector": "/entries/0/final_contract_capture/carriers/0/value", "value": [rule]},
+            {"source_selector": "/data/statusContract/buttonStatus", "artifact_selector": "/entries/0/final_contract_capture/carriers/1/value", "value": [{
+                "btnId": "btn.action.approve", "backendIdentity": backend_identity,
+                "visible": True, "disabled": False,
+            }]},
+        ]}}
+
+        self.assertEqual(len(match_final_object_action(atom, carrier)), 1)
+        rule["actionSafety"]["confirm_message"] = "Different message"
+        self.assertEqual(match_final_object_action(atom, carrier), [])
+
     def test_native_source_selector_resolves_exact_occurrence(self) -> None:
         structure = {"entries": [{"surfaces": [{"contract_ref": "m::form", "view_ref": "v", "view_type": "form", "resolved_structure": {"tag": "form", "children": [{"tag": "field", "attrs": {"name": "x", "a/b": "value"}}]}}]}]}
         taxonomy = {"node_rules": [{"id": "nodes", "tags": "*", "capability_key_template": "node.{tag}"}], "attribute_rules": [{"id": "attrs", "tags": "*", "attribute_prefixes": [""], "capability_key_template": "attr.{attribute}"}]}

@@ -709,7 +709,9 @@ class _TreeFormParserMixin:
             label    = self._resolve_action_label(btn_node, name_raw)
             classes  = [c.strip() for c in (btn_node.get('class') or '').split() if c.strip()]
             states   = [s.strip() for s in (btn_node.get('states') or '').split(',') if s and s.strip()]
-            confirm  = btn_node.get('confirm') or btn_node.get('help') or ''
+            # ``help`` and ``confirm`` are independent Odoo capabilities.
+            # Descriptive help must never manufacture a destructive prompt.
+            confirm  = btn_node.get('confirm') or ''
             icon     = btn_node.get('icon') or next((c for c in classes if c.startswith('fa-') or c.startswith('oi-')), '')
             options_raw = btn_node.get('options')
             domain_raw  = btn_node.get('domain')
