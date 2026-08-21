@@ -147,6 +147,10 @@ function collectFields(nodes: ReturnType<typeof presentContractV2Form>['zones'][
   return nodes.flatMap((node): typeof node.fields => [...node.fields, ...collectFields(node.children)]);
 }
 
+function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['primary']): string[] {
+  return nodes.flatMap((node) => [node.text, ...collectTexts(node.children)]).filter(Boolean);
+}
+
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
@@ -285,6 +289,18 @@ assert.deepEqual(
 );
 assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
 assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
+const mixedSemanticTextModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const mixedSemanticTextRoot = mixedSemanticTextModel.zones.primary[0];
+mixedSemanticTextRoot.text = 'unassigned native guidance';
+const taskProjectionChild = mixedSemanticTextRoot.children.find((node) => node.semanticRole === 'summary')!;
+taskProjectionChild.semanticRole = 'task';
+taskProjectionChild.fields = taskProjectionChild.fields.map((field) => ({ ...field, semanticRole: 'task' }));
+const mixedSemanticTextFloorplan = composeCanonicalFormFloorplan(mixedSemanticTextModel);
+assert.deepEqual(
+  collectTexts([...mixedSemanticTextFloorplan.taskNodes, ...mixedSemanticTextFloorplan.riskNodes]),
+  [],
+  'unassigned native text must not duplicate across semantic Floorplan projections',
+);
 const mixedRoleModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
 const mixedRoleParent = mixedRoleModel.zones.primary[0].children.find((node) => node.semanticRole === 'summary');
 assert.ok(mixedRoleParent, 'semantic summary parent is required for mixed-role projection coverage');

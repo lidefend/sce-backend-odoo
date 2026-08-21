@@ -84,9 +84,12 @@ function projectNodeRoles(
   inheritedRole = '',
 ): CanonicalFormNode {
   const effectiveNodeRole = node.semanticRole || inheritedRole;
+  const nodeTextBelongsToProjection = roles.has(effectiveNodeRole as CanonicalFormSemanticRole)
+    || (includeUnassigned && !effectiveNodeRole);
   return {
     ...node,
     ...(suppressTitles ? { title: '' } : {}),
+    text: nodeTextBelongsToProjection ? node.text : '',
     fields: node.fields.filter((field) => {
       const effectiveFieldRole = field.semanticRole || effectiveNodeRole;
       return (
