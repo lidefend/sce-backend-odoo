@@ -72,13 +72,13 @@ goal:
       title: modifiers_actions_permissions_closure
       status: active
       current_increment:
-        id: Q2-1
-        title: static_form_modifier_occurrence_closure
+        id: Q2-2
+        title: form_root_create_edit_capability_closure
         status: verified
         terminal_counts:
-          ready: 358
-          fallback: 433
-          unsupported: 25740
+          ready: 381
+          fallback: 451
+          unsupported: 25699
           silent_loss: 0
     - id: Q3
       title: form_tree_search_kanban_semantic_closure

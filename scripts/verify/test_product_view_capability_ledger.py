@@ -137,6 +137,29 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         carrier["normalized_carriers"][0]["value"]["layout"][0]["occurrence_index"] = 2
         self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
 
+    def test_form_root_capability_match_preserves_raw_and_semantic_values(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "form.edit", "attribute": "edit",
+            "native_locator": "/form[1]", "occurrence_index": 1, "canonical_value": "0",
+        }
+        mapping = {
+            "mapping_status": "proven", "matcher": "surface_identity",
+            "source_selectors": ["/data/views/form"], "value_regions": ["/capabilities"],
+        }
+        carrier = {"normalized_carriers": [{
+            "source_selector": "/data/views/form", "artifact_selector": "/entries/0/normalized_carriers/0/value",
+            "value": {"capabilities": {"native_root_attributes": {"edit": "0"}, "can_write": False}},
+        }]}
+        matches = match_normalized_atom(atom, mapping, carrier)
+        self.assertEqual(matches, [{
+            "raw_selector": "/entries/0/normalized_carriers/0/value/capabilities/native_root_attributes/edit",
+            "raw_value": "0",
+            "semantic_selector": "/entries/0/normalized_carriers/0/value/capabilities/can_write",
+            "semantic_value": False,
+        }])
+        carrier["normalized_carriers"][0]["value"]["capabilities"]["can_write"] = True
+        self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
+
     def test_native_source_selector_resolves_exact_occurrence(self) -> None:
         structure = {"entries": [{"surfaces": [{"contract_ref": "m::form", "view_ref": "v", "view_type": "form", "resolved_structure": {"tag": "form", "children": [{"tag": "field", "attrs": {"name": "x", "a/b": "value"}}]}}]}]}
         taxonomy = {"node_rules": [{"id": "nodes", "tags": "*", "capability_key_template": "node.{tag}"}], "attribute_rules": [{"id": "attrs", "tags": "*", "attribute_prefixes": [""], "capability_key_template": "attr.{attribute}"}]}

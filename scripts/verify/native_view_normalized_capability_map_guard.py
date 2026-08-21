@@ -166,10 +166,12 @@ def validate_normalized_map(
                 errors.append(f"mapping {mapping_id} {field} is not registered")
             elif reason.get("stage") != "normalized" or reason.get("status") != expected_status or reason.get("gate_effect") != "classified_gap":
                 errors.append(f"mapping {mapping_id} {field} has incompatible reason semantics")
+        proven_shapes = {
+            "form_modifier": ("recursive_native_occurrence", "exactly_one"),
+            "form_behavior": ("surface_identity", "exactly_one"),
+        }
         if mapping.get("mapping_status") == "proven" and (
-            mapping_id != "form_modifier"
-            or mapping.get("matcher") != "recursive_native_occurrence"
-            or mapping.get("cardinality_policy") != "exactly_one"
+            proven_shapes.get(mapping_id) != (mapping.get("matcher"), mapping.get("cardinality_policy"))
         ):
             errors.append(f"mapping {mapping_id} claims proven without the governed occurrence and value-equivalence matcher")
         if mapping.get("mapping_status") == "mapping_unproven" and mapping.get("unproven_reason_code") != "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN":
@@ -216,7 +218,10 @@ def validate_normalized_map(
                         _pointer_get(matched_carriers[0].get("value"), str(region))
                     except (KeyError, ValueError):
                         errors.append(f"mapping {mapping_id} value region is not resolvable: {contract_ref}:{region}")
-    proven_match_count = 0
+    proven_match_counts = {
+        str(mapping.get("id") or ""): 0
+        for mapping in mappings if mapping.get("mapping_status") == "proven"
+    }
     for atom in classified["atoms"]:
         atom_mappings = [mapping for mapping in mappings if _matches(atom, mapping)]
         if len(atom_mappings) != 1 or atom_mappings[0].get("mapping_status") != "proven":
@@ -225,9 +230,11 @@ def validate_normalized_map(
         matches = match_normalized_atom(atom, atom_mappings[0], entry)
         if len(matches) > 1:
             errors.append(f"proven mapping is ambiguous: {atom['atom_id']}")
-        proven_match_count += int(len(matches) == 1)
-    if any(mapping.get("mapping_status") == "proven" for mapping in mappings) and proven_match_count == 0:
-        errors.append("proven mappings have no exact occurrence and value-equivalence matches")
+        if len(matches) == 1:
+            proven_match_counts[str(atom_mappings[0].get("id") or "")] += 1
+    for mapping_id, match_count in proven_match_counts.items():
+        if match_count == 0:
+            errors.append(f"proven mapping has no exact occurrence and value-equivalence matches: {mapping_id}")
     summary = {
         "classified_atom_count": len(classified["atoms"]),
         "unmapped_atom_count": missing,

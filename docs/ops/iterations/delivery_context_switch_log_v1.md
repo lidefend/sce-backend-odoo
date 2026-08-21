@@ -4990,3 +4990,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   ready, `433` fallback, `25,740` unsupported and `0` silent loss across all
   `26,531` atoms. Dynamic modifiers, actions and permissions were deliberately
   not promoted by this increment.
+- Q2-2 outcome: explicit form-root CRUD attributes now retain raw native
+  evidence alongside normalized capability booleans. `create/edit` add `23`
+  ready atoms; `delete` adds `18` classified fallbacks pending dedicated
+  interaction evidence. The total is `381` ready, `451` fallback, `25,699`
+  unsupported and `0` silent loss. No page layout or business permission rule
+  changed.

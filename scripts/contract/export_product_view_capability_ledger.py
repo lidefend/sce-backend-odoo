@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from scripts.contract.product_view_capability_ledger_common import (
-    STATIC_FORM_MODIFIERS, classify_structure, load_yaml, match_normalized_atom, static_boolean_value,
+    READY_FORM_BEHAVIORS, STATIC_FORM_MODIFIERS, classify_structure, load_yaml,
+    match_normalized_atom, static_boolean_value,
 )
 from scripts.contract.product_view_contract_carriers_common import atomic_write_json, with_manifest
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
@@ -98,13 +99,16 @@ def build_ledger(
                     terminal_status, reason_code = "unsupported", "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN"
                 elif exact is None:
                     terminal_status, reason_code = "unsupported", "CAPABILITY_NORMALIZED_CARRIER_MISSING"
-                elif (
-                    origin_status == "proven"
-                    and atom["capability_key"] in STATIC_FORM_MODIFIERS
-                    and static_value is not None
-                    and frontend_mapping.get("frontend_status") == "present"
+                elif origin_status == "proven" and frontend_mapping.get("frontend_status") == "present" and (
+                    (
+                        atom["capability_key"] in STATIC_FORM_MODIFIERS
+                        and static_value is not None
+                    )
+                    or atom["capability_key"] in READY_FORM_BEHAVIORS
                 ):
                     terminal_status, reason_code = "ready", ""
+                elif atom["capability_key"] == "form.delete":
+                    terminal_status, reason_code = "fallback", "CAPABILITY_INTERACTION_EVIDENCE_MISSING"
                 else:
                     terminal_status, reason_code = "fallback", "CAPABILITY_DYNAMIC_VERDICT_NOT_EVALUATED"
                 if reason_code and reason_code not in reason_codes:

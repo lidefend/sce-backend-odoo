@@ -359,6 +359,23 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual([row["occurrence_index"] for row in fields], [1, 2])
         self.assertNotEqual(fields[0]["native_locator"], fields[1]["native_locator"])
 
+    def test_form_parser_preserves_explicit_root_capability_attributes(self):
+        arch = '<form create="0" edit="false" delete="1"><sheet><field name="name"/></sheet></form>'
+        result = self.tree_form_parser._parse_form_view(
+            arch,
+            {"name": {"type": "char", "string": "Name"}},
+            "x.model",
+            root=_parse_test_xml(arch),
+            parsed_structure={},
+        )
+
+        self.assertEqual(result["capabilities"]["native_root_attributes"], {
+            "create": "0", "edit": "false", "delete": "1",
+        })
+        self.assertIs(result["capabilities"]["can_create"], False)
+        self.assertIs(result["capabilities"]["can_write"], False)
+        self.assertIs(result["capabilities"]["can_delete"], True)
+
     def test_tree_parser_preserves_duplicate_field_behavior_occurrences(self):
         result = self.tree_form_parser._parse_tree_view(
             """

@@ -59,6 +59,16 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
             "attributes": {static_atom["attribute"]: static_atom["canonical_value"]},
             "modifiers": {static_atom["attribute"]: True},
         }]
+        behavior_atom = next(
+            atom for atom in classify_structure(cls.structure, cls.taxonomy)["atoms"]
+            if atom["view_type"] == "form" and atom["capability_key"] == "form.create"
+        )
+        behavior_entry = next(item for item in entries if item["contract_ref"] == behavior_atom["contract_ref"])
+        behavior_carrier = next(item for item in behavior_entry["normalized_carriers"] if item["source_selector"] == "/data/views/form")
+        behavior_carrier["value"]["capabilities"] = {
+            "native_root_attributes": {"create": behavior_atom["canonical_value"]},
+            "can_create": str(behavior_atom["canonical_value"]).strip().lower() not in {"0", "false"},
+        }
 
     def errors(self, normalized_map=None, reasons=None, carrier=None):
         return validate_normalized_map(
@@ -72,7 +82,7 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
         self.assertEqual(summary["classified_atom_count"], 26531)
         self.assertEqual(summary["unmapped_atom_count"], 0)
         self.assertEqual(summary["ambiguous_atom_count"], 0)
-        self.assertEqual(summary["proven_mapping_count"], 1)
+        self.assertEqual(summary["proven_mapping_count"], 2)
 
     def test_missing_mapping_fails_closed(self) -> None:
         value = deepcopy(self.normalized_map)
@@ -130,6 +140,16 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
         carrier["entries"] = carrier["entries"][1:]
         errors, _ = self.errors(carrier=carrier)
         self.assertTrue(any("contract_ref sets differ" in error for error in errors))
+
+    def test_proven_form_behavior_requires_exact_raw_and_semantic_evidence(self) -> None:
+        carrier = deepcopy(self.carrier)
+        for entry in carrier["entries"]:
+            for row in entry["normalized_carriers"]:
+                capabilities = row.get("value", {}).get("capabilities")
+                if isinstance(capabilities, dict):
+                    capabilities.pop("native_root_attributes", None)
+        errors, _ = self.errors(carrier=carrier)
+        self.assertTrue(any("form_behavior" in error and "no exact" in error for error in errors))
 
     def test_canonical_view_type_drift_fails_closed(self) -> None:
         value = deepcopy(self.normalized_map)

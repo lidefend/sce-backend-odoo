@@ -41,6 +41,13 @@ def _pointer_escape(value: str) -> str:
 STATIC_FORM_MODIFIERS = {
     "modifier.readonly", "modifier.required", "modifier.invisible", "modifier.column_invisible",
 }
+STATIC_FORM_BEHAVIORS = {"form.create", "form.edit", "form.delete"}
+READY_FORM_BEHAVIORS = {"form.create", "form.edit"}
+FORM_BEHAVIOR_FIELDS = {
+    "form.create": ("create", "can_create"),
+    "form.edit": ("edit", "can_write"),
+    "form.delete": ("delete", "can_delete"),
+}
 
 
 def static_boolean_value(value: Any) -> bool | None:
@@ -71,7 +78,34 @@ def match_normalized_atom(
     atom: dict[str, Any], mapping: dict[str, Any], carrier_entry: dict[str, Any],
 ) -> list[dict[str, Any]]:
     """Return exact occurrence/value matches for implemented normalized mappings."""
-    if mapping.get("mapping_status") != "proven" or mapping.get("matcher") != "recursive_native_occurrence":
+    if mapping.get("mapping_status") != "proven":
+        return []
+    if mapping.get("matcher") == "surface_identity" and atom.get("capability_key") in STATIC_FORM_BEHAVIORS:
+        raw_key, semantic_key = FORM_BEHAVIOR_FIELDS[atom["capability_key"]]
+        for carrier in carrier_entry.get("normalized_carriers", []):
+            if carrier.get("source_selector") not in mapping.get("source_selectors", []):
+                continue
+            try:
+                capabilities = pointer_get(carrier.get("value"), "/capabilities")
+            except (KeyError, ValueError):
+                continue
+            raw = capabilities.get("native_root_attributes") if isinstance(capabilities, dict) else None
+            if not isinstance(raw, dict) or raw.get(raw_key) != atom.get("canonical_value"):
+                continue
+            if semantic_key not in capabilities:
+                continue
+            expected_semantic = static_boolean_value(atom.get("canonical_value"))
+            if expected_semantic is None or capabilities[semantic_key] is not expected_semantic:
+                continue
+            base = str(carrier.get("artifact_selector") or "") + "/capabilities"
+            return [{
+                "raw_selector": f"{base}/native_root_attributes/{raw_key}",
+                "raw_value": raw[raw_key],
+                "semantic_selector": f"{base}/{semantic_key}",
+                "semantic_value": capabilities[semantic_key],
+            }]
+        return []
+    if mapping.get("matcher") != "recursive_native_occurrence":
         return []
     if atom.get("capability_key") not in STATIC_FORM_MODIFIERS or atom.get("view_type") != "form":
         return []

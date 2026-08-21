@@ -152,3 +152,23 @@
   and structure inputs into the registered Odoo container before execution;
   evidence validation accepts the repository's governed `artifacts` symlink
   while still rejecting absolute paths and `..` traversal.
+
+## Q2-2 form root capability closure (2026-08-21)
+
+- Scope: explicit native form-root `create`, `edit`, and `delete` attributes.
+  Relation permissions, buttons, dynamic expressions and `js_class` remain
+  outside this increment.
+- Carrier: `capabilities.native_root_attributes` preserves only explicitly
+  declared XML values; `can_create`, `can_write`, and `can_delete` retain the
+  normalized boolean semantics. The existing effective permission intersection
+  and public UPC V2 shape remain unchanged.
+- Terminal policy: `23` proven `create/edit` atoms are ready because the
+  canonical store drives save and readonly behavior. The `18` proven delete
+  atoms move to classified fallback until a dedicated delete interaction is
+  independently verified.
+- Governed result: `381` ready, `451` fallback, `25,699` unsupported and `0`
+  silent loss across the conserved `26,531` atoms.
+- Validation: `28` capability/map tests, `20` parser tests, governed
+  `local.clean` `smart_core` upgrade and capability-ledger gate, Web UPC V2
+  guard, canonical presenter `49` cases, readonly capability `14` cases, and
+  form-render split guard passed.

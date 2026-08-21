@@ -13,7 +13,8 @@ import jsonschema
 
 from scripts.contract.complete_worktree_fingerprint import build_fingerprint, validate_fingerprint
 from scripts.contract.product_view_capability_ledger_common import (
-    STATIC_FORM_MODIFIERS, classify_structure, load_yaml, match_normalized_atom, static_boolean_value,
+    READY_FORM_BEHAVIORS, STATIC_FORM_MODIFIERS, classify_structure, load_yaml,
+    match_normalized_atom, static_boolean_value,
 )
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
 from scripts.verify.native_view_frontend_capability_map_guard import validate_frontend_map
@@ -262,13 +263,16 @@ def validate_ledger(
                 status, reason_code = "unsupported", NORMALIZED_REASON
             elif exact is None:
                 status, reason_code = "unsupported", NORMALIZED_MISSING_REASON
-            elif (
-                origin_status == "proven"
-                and expected["capability_key"] in STATIC_FORM_MODIFIERS
-                and static_boolean_value(expected["canonical_value"]) is not None
-                and frontend_mapping.get("frontend_status") == "present"
+            elif origin_status == "proven" and frontend_mapping.get("frontend_status") == "present" and (
+                (
+                    expected["capability_key"] in STATIC_FORM_MODIFIERS
+                    and static_boolean_value(expected["canonical_value"]) is not None
+                )
+                or expected["capability_key"] in READY_FORM_BEHAVIORS
             ):
                 status, reason_code = "ready", ""
+            elif expected["capability_key"] == "form.delete":
+                status, reason_code = "fallback", "CAPABILITY_INTERACTION_EVIDENCE_MISSING"
             else:
                 status, reason_code = "fallback", DYNAMIC_REASON
             if atom.get("terminal_status") != status or atom.get("reason_code") != reason_code:

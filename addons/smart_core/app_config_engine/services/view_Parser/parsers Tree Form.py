@@ -631,6 +631,11 @@ class _TreeFormParserMixin:
             "can_write": self._view_bool_attr(root, "edit", True),
             "can_delete": self._view_bool_attr(root, "delete", True),
             "can_duplicate": self._view_bool_attr(root, "duplicate", True),
+            "native_root_attributes": {
+                key: root.get(key)
+                for key in ("create", "edit", "delete", "duplicate")
+                if root is not None and root.get(key) is not None
+            },
         }
 
         # 1) DOM 优先解析真实布局（避免 lossless 未还原导致空表单）
