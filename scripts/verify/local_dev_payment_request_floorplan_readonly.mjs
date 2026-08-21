@@ -239,9 +239,37 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(300);
   const mobile = await page.evaluate(() => ({ width: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }));
-  report.mobile = { ...mobile, overflow: mobile.scrollWidth - mobile.width };
+  const mobileActionSurface = page.locator('[data-mobile-action-surface]').first();
+  const mobilePrimary = mobileActionSurface.locator('[data-action-tier="primary"][data-action-enabled="true"]');
+  const mobileActionMetrics = await mobileActionSurface.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const style = getComputedStyle(node);
+    return {
+      position: style.position,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      left: rect.left,
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+    };
+  });
+  report.mobile = {
+    ...mobile,
+    overflow: mobile.scrollWidth - mobile.width,
+    enabledPrimary: await mobilePrimary.count(),
+    actionSurface: mobileActionMetrics,
+  };
   check(report.mobile.overflow <= 0, '390px viewport has horizontal overflow', report.mobile);
-  await page.screenshot({ path: path.join(outputDir, 'payment-request-390.png'), fullPage: true });
+  check(report.mobile.enabledPrimary === 1, '390px action surface must expose exactly one enabled primary action', report.mobile);
+  check(mobileActionMetrics.position === 'fixed', '390px action surface is not fixed to the viewport', report.mobile);
+  check(mobileActionMetrics.left >= -1 && mobileActionMetrics.right <= mobileActionMetrics.viewportWidth + 1,
+    '390px action surface exceeds the viewport width', report.mobile);
+  check(Math.abs(mobileActionMetrics.bottom - mobileActionMetrics.viewportHeight) <= 1,
+    '390px action surface is not anchored to the viewport bottom', report.mobile);
+  await mobilePrimary.waitFor({ state: 'visible', timeout: 5000 });
+  await page.screenshot({ path: path.join(outputDir, 'payment-request-390.png') });
+  await page.screenshot({ path: path.join(outputDir, 'payment-request-390-full.png'), fullPage: true });
 
   const reuseTarget = target.reuse_target || {};
   check(Number(reuseTarget.action_id || 0) > 0 && Number(reuseTarget.record_id || 0) > 0,

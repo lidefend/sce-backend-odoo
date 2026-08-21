@@ -14,3 +14,6 @@ events:
   - type: product_scope_completed
     at: "2026-08-22T02:35:00+08:00"
     detail: Governed upgrade, demo reset, snapshot, two-model readonly journey, home navigation alignment and TDesign default all passed; independent Scene baseline debt remains recorded.
+  - type: mobile_primary_action_closed
+    at: "2026-08-22T04:40:00+08:00"
+    detail: Final visual review moved the canonical primary action to a fixed 390px viewport bottom surface and added browser assertions for position, uniqueness and containment.

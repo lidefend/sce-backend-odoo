@@ -20,6 +20,8 @@ evidence:
     enabled_primary_actions: 1
     desktop_horizontal_overflow: 0
     mobile_390_horizontal_overflow: 0
+    mobile_390_primary_action_surface: passed_fixed_bottom
+    mobile_390_enabled_primary_actions: 1
     business_fingerprint: unchanged
     second_model_reuse: passed_sc_payment_execution
     home_navigation_identity: passed
@@ -33,6 +35,7 @@ evidence:
     - artifacts/playwright/local-dev-payment-request-floorplan/summary.json
     - artifacts/playwright/local-dev-payment-request-floorplan/payment-request-desktop.png
     - artifacts/playwright/local-dev-payment-request-floorplan/payment-request-390.png
+    - artifacts/playwright/local-dev-payment-request-floorplan/payment-request-390-full.png
     - artifacts/playwright/local-dev-payment-request-floorplan/payment-execution-reuse-desktop.png
     - artifacts/playwright/local-dev-payment-request-floorplan/workspace-home-desktop.png
     - artifacts/local-dev/snapshots/20260821T183427Z

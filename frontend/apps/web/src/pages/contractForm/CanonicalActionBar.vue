@@ -76,8 +76,36 @@ const emit = defineEmits<{ 'action-ref': [action: ContractV2ActionRule] }>();
   box-shadow: var(--sc-app-shadow-popover);
 }
 @media (max-width: 560px) {
-  .canonical-action-bar { display: grid; grid-template-columns: minmax(0, 1fr); }
-  .canonical-action-bar :deep(button) { width: 100%; }
-  .canonical-action-bar__overflow-panel { position: static; min-width: 0; margin-top: 8px; }
+  .canonical-action-bar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%;
+  }
+  .canonical-action-bar :deep(button) {
+    width: auto;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  .canonical-action-bar :deep(button[data-action-tier='primary']) {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  .canonical-action-bar__overflow > summary {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    white-space: nowrap;
+  }
+  .canonical-action-bar__overflow-panel {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    width: min(320px, calc(100vw - 24px));
+    min-width: 0;
+    max-height: min(60vh, 420px);
+    overflow-y: auto;
+  }
+  .canonical-action-bar__overflow-panel :deep(button) { width: 100%; }
 }
 </style>

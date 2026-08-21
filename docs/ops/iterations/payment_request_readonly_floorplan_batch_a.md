@@ -9,6 +9,7 @@
   - `sc.payment.execution` 使用同一 Floorplan/TDesign 链路完成第二模型复用验证；过期的 generated form contract 通过 `17.0.0.132` 幂等迁移归档。
   - 首页快捷入口以菜单树的真实目标身份覆盖同路由旧标题，消除目录标题与后代页面目标错配。
   - TDesign 成为正式默认，Native 仅作加载失败和非语义页面兼容回退；普通用户不再看到或选择 kit/driver。
+  - 390px 下唯一主动作固定投影到视口底部，次动作与更多操作保持次级；正文保留安全底部空间，不遮挡业务事实。
   - 用户界面移除 `runtime_status`、`payment_entry`、`direct delivery`、legacy ID 和 kit 名称等技术文本。
 - 未完成：仓库级 Scene 角色矩阵基线仍独立失败，四个角色的 `scene_count=1`，低于既有阈值 30；不属于本专题，未通过扩契约或修改 Scene 基线掩盖。
 
@@ -43,7 +44,7 @@
 - `make local.dev.test ...test_payment_form_exposes_controls_and_task_sections`：PASS，1 selected test，0 failed。
 - `make local.dev.sync_demo` / `make local.dev.verify_demo`：PASS。
 - `make local.dev.health`：PASS，project=`sc-local-dev`，DB=`sc_dev_demo`，dbfilter=`^sc_dev_demo$`。
-- `make verify.local.dev.payment_request.floorplan.readonly`：PASS；10 个语义区、1 个 enabled primary、390px overflow=0、第二模型复用通过、业务指纹不变。
+- `make verify.local.dev.payment_request.floorplan.readonly`：PASS；10 个语义区、1 个 enabled primary、390px overflow=0，且浏览器断言主动作固定在视口底部、宽度受控并保持唯一；第二模型复用通过、业务指纹不变。
 - `make verify.restricted`：FAIL（独立既有门禁）；首个失败为 Scene 四角色 `scene_count 1 < 30`。此前 Contract V2、前端 typecheck/build 均 PASS。
 - `make codex.snapshot.export`：FAIL（独立既有快照账号基线）；`demo_role_pm` 无 `payment.request` 读取权限，失败导出的部分生成物已撤回，旧目标快照由工具保留。
 - `make verify.backend.guard`：FAIL（同一 Scene 基线，`scene count 1 < 4`）；此前边界、controller、frontend intent 等守卫均 PASS。
@@ -51,7 +52,7 @@
 ## 5. 产物
 
 - E2E：`artifacts/playwright/local-dev-payment-request-floorplan/summary.json`。
-- 截图：同目录下 `workspace-home-desktop.png`、`payment-request-list-desktop.png`、`payment-request-list-empty-desktop.png`、`payment-request-desktop.png`、`payment-request-390.png`、`payment-execution-reuse-desktop.png`。
+- 截图：同目录下 `workspace-home-desktop.png`、`payment-request-list-desktop.png`、`payment-request-list-empty-desktop.png`、`payment-request-desktop.png`、`payment-request-390.png`、`payment-request-390-full.png`、`payment-execution-reuse-desktop.png`。
 - 可恢复快照：`artifacts/local-dev/snapshots/20260821T183427Z/`。
 - Restricted 失败证据：`artifacts/backend/scene_base_contract_source_mix_role_matrix_report.json`。
 - Backend guard 失败证据：`artifacts/backend/scene_contract_field_schema_report.json`。

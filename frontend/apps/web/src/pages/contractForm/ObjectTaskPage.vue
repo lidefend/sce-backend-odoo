@@ -53,7 +53,12 @@
           />
         </div>
       </div>
-      <div v-if="$slots.actions" class="object-task-page__current-task-actions" data-floorplan-region="action-bar">
+      <div
+        v-if="$slots.actions"
+        class="object-task-page__current-task-actions"
+        data-floorplan-region="action-bar"
+        data-mobile-action-surface
+      >
         <slot name="actions" />
       </div>
     </section>
@@ -329,6 +334,22 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   }
 }
 @media (max-width: 560px) {
+  .object-task-page--decision {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
   .object-task-page__summary { grid-template-columns: minmax(0, 1fr); }
+  .object-task-page__current-task-actions {
+    position: fixed;
+    z-index: 40;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    min-width: 0;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--sc-app-border);
+    background: color-mix(in srgb, var(--sc-app-panel) 96%, transparent);
+    box-shadow: 0 -8px 24px rgb(15 35 55 / 10%);
+    backdrop-filter: blur(10px);
+  }
 }
 </style>
