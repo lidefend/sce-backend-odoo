@@ -96,7 +96,12 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(field_names.count("collaborator_ids"), 1)
         self.assertIn("responsibility_ids", widget_names)
         self.assertIn("collaborator_ids", widget_names)
-        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.table.data"]["componentKey"], "sc.table.data")
+        self.assertTrue(all("field_info" not in row for row in field_nodes))
+        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.table.data"]["version"], "1.0")
+        self.assertIn(
+            "sc_project_responsibility_collaboration",
+            {row["containerId"] for row in projected["statusContract"]["containerStatus"]},
+        )
 
         second_field_nodes = self._field_nodes(projected_again["layoutContract"]["containerTree"], include_widget_list=False)
         second_field_names = [

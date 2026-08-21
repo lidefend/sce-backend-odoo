@@ -22,9 +22,6 @@ def sc_set_project_label(node: dict, field_name: str, label: str) -> None:
     field_info["label"] = label
     field_info["string"] = label
     node["fieldInfo"] = field_info
-    if isinstance(node.get("field_info"), dict):
-        node["field_info"]["label"] = label
-        node["field_info"]["string"] = label
     component_config = node.get("componentConfig") if isinstance(node.get("componentConfig"), dict) else {}
     relation_entry = component_config.get("relationEntry") if isinstance(component_config.get("relationEntry"), dict) else {}
     ui_labels = relation_entry.get("ui_labels") if isinstance(relation_entry.get("ui_labels"), dict) else {}
@@ -45,10 +42,9 @@ def sc_prune_and_label_project_nodes(value):
         return out
     if not isinstance(value, dict):
         return value
-    if sc_field_code(value) == "user_id" or sc_text(value.get("widgetId")) == "field.user_id":
-        return None
     node = dict(value)
     for field_name, label in {
+        "user_id": "项目负责人",
         "partner_id": "业主单位",
         "owner_id": "业主单位",
         "manager_id": "项目经理",
@@ -86,14 +82,6 @@ def sc_project_field_node(field_name: str, label: str, field_type: str, *, relat
         "string": label,
         "label": label,
         "fieldInfo": {
-            "name": field_name,
-            "label": label,
-            "string": label,
-            "type": field_type,
-            "relation": relation,
-            "widget": widget["widgetType"],
-        },
-        "field_info": {
             "name": field_name,
             "label": label,
             "string": label,
@@ -155,11 +143,21 @@ def sc_append_project_responsibility_group(contract: dict, *, include_collaborat
         tree.append(group)
     layout["containerTree"] = tree
     registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
-    registry["sc.table.data"] = {"componentKey": "sc.table.data"}
+    registry["sc.table.data"] = {
+        "version": "1.0",
+        "adapter": {
+            "web_pc": "ElTable",
+            "wx_mini": "WxTable",
+            "harmony_h5": "H5Table",
+        },
+    }
     layout["componentRegistry"] = registry
     contract["layoutContract"] = layout
     status = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
-    widget_status = [row for row in status.get("widgetStatus", []) if isinstance(row, dict) and sc_text(row.get("widgetId")) != "field.user_id"]
+    widget_status = [row for row in status.get("widgetStatus", []) if isinstance(row, dict)]
+    container_status = [row for row in status.get("containerStatus", []) if isinstance(row, dict)]
+    if not any(sc_text(row.get("containerId")) == group["containerId"] for row in container_status):
+        container_status.append({"containerId": group["containerId"], "visible": True, "disabled": False})
     field_names = ["responsibility_ids"]
     if include_collaborators:
         field_names.append("collaborator_ids")
@@ -168,4 +166,5 @@ def sc_append_project_responsibility_group(contract: dict, *, include_collaborat
         if not any(sc_text(row.get("widgetId")) == widget_id for row in widget_status):
             widget_status.append({"widgetId": widget_id, "visible": True, "readonly": False, "required": False, "disabled": False, "auth": "edit"})
     status["widgetStatus"] = widget_status
+    status["containerStatus"] = container_status
     contract["statusContract"] = status

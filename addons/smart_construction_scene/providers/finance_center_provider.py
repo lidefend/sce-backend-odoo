@@ -43,7 +43,7 @@ def build(scene_key: str = "finance.center", runtime: dict | None = None, contex
         },
         "next_scene": "finance.workspace",
         "next_scene_route": "/s/finance.workspace",
-        "delivery_handoff_v1": build_direct_runtime_handoff(
+        "delivery_handoff": build_direct_runtime_handoff(
             family="finance_center",
             user_entry="menu:smart_construction_core.menu_sc_finance_center",
             final_scene="finance.center",

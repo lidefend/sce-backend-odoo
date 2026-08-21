@@ -35,7 +35,7 @@ def build(scene_key: str = "contract.center", runtime: dict | None = None, conte
         },
         "next_scene": "contracts.workspace",
         "next_scene_route": "/s/contracts.workspace",
-        "delivery_handoff_v1": build_direct_runtime_handoff(
+        "delivery_handoff": build_direct_runtime_handoff(
             family="contracts",
             user_entry="menu:smart_construction_core.menu_sc_contract_center",
             final_scene="contract.center",

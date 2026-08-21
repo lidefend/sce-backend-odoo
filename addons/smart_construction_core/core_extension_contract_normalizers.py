@@ -107,7 +107,7 @@ def normalize_construction_diary_form(contract: dict[str, Any], source_contract:
                 "readonly": name in readonly,
                 "required": name in required,
                 "disabled": name in readonly,
-                "auth": "readonly" if name in readonly else "edit",
+                "auth": "read" if name in readonly else "edit",
             }
             for name in ["state"] + ordered_fields
         ],
@@ -340,7 +340,7 @@ def normalize_general_contract_company_form(contract: dict[str, Any], source_con
             "readonly": name in readonly,
             "required": name in required,
             "disabled": name in readonly,
-            "auth": "readonly" if name in readonly else "edit",
+            "auth": "read" if name in readonly else "edit",
         }
         for name in ["state"] + ordered_fields
         if name == "state" or name in visible
