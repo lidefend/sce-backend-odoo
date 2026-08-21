@@ -222,10 +222,13 @@ try {
   for (const region of ['summary', 'current-task', 'business-context', 'relation', 'activity', 'audit']) {
     check(regions.includes(region), `floorplan region missing: ${region}`, regions);
   }
-  check(enabledPrimary === 1, 'the governed actionable record must expose exactly one canonical primary action', enabledPrimary);
+  check(enabledPrimary === 0, 'the governed blocked record exposed a false executable primary action', enabledPrimary);
+  check(continueProcessing === 1, 'the governed blocked record must expose one path to complete missing facts', continueProcessing);
   check(enabledPrimary + continueProcessing === 1, 'more than one product primary action is visible', { enabledPrimary, continueProcessing });
   check(report.desktop.overflow <= 0, 'desktop has horizontal overflow', report.desktop);
   check(await page.locator('[data-contract-form-driver-chooser]').count() === 0, 'component supplier chooser reached product surface');
+  check(await page.locator('.workflow-evidence-block').count() === 0,
+    'legacy workflow evidence block is still competing with the decision Floorplan');
   check(await page.locator('[data-floorplan-region="summary"] input:disabled, [data-floorplan-region="summary"] textarea:disabled').count() === 0,
     'readonly summary was rendered as disabled form controls');
   const summaryLabels = await page.locator('[data-floorplan-region="summary"] .field-label').allTextContents();
@@ -234,6 +237,15 @@ try {
   for (const forbidden of ['runtime_status', 'direct delivery', 'payment_entry', 'legacy_source_table', 'legacy_record_id', 'tdesign-modern', 'sc-native', 'ui5-horizon']) {
     check(!bodyText.toLowerCase().includes(forbidden), `technical product text is visible: ${forbidden}`);
   }
+  check(bodyText.includes('缺少合同或结算依据'), 'authoritative blocker is not visible before the action surface', bodyText);
+  const submitRules = (findKey(formContract, 'actionRuleList') || []).filter((rule) => (
+    rule?.button?.name === 'action_submit'
+  ));
+  const nativeSubmit = submitRules.find((rule) => String(rule?.backendIdentity || '').startsWith('native_button:'));
+  check(nativeSubmit && nativeSubmit.allowed === false && nativeSubmit.enabled === false && nativeSubmit.disabled === true,
+    'runtime business unavailability did not govern the native submit occurrence', submitRules);
+  check(nativeSubmit?.actionSafety?.requires_confirm === true,
+    'runtime business safety did not govern the native submit occurrence', nativeSubmit);
   await page.screenshot({ path: path.join(outputDir, 'payment-request-desktop.png'), fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -261,13 +273,12 @@ try {
     actionSurface: mobileActionMetrics,
   };
   check(report.mobile.overflow <= 0, '390px viewport has horizontal overflow', report.mobile);
-  check(report.mobile.enabledPrimary === 1, '390px action surface must expose exactly one enabled primary action', report.mobile);
+  check(report.mobile.enabledPrimary === 0, '390px action surface exposed a false executable primary action', report.mobile);
   check(mobileActionMetrics.position === 'fixed', '390px action surface is not fixed to the viewport', report.mobile);
   check(mobileActionMetrics.left >= -1 && mobileActionMetrics.right <= mobileActionMetrics.viewportWidth + 1,
     '390px action surface exceeds the viewport width', report.mobile);
   check(Math.abs(mobileActionMetrics.bottom - mobileActionMetrics.viewportHeight) <= 1,
     '390px action surface is not anchored to the viewport bottom', report.mobile);
-  await mobilePrimary.waitFor({ state: 'visible', timeout: 5000 });
   await page.screenshot({ path: path.join(outputDir, 'payment-request-390.png') });
   await page.screenshot({ path: path.join(outputDir, 'payment-request-390-full.png'), fullPage: true });
 
@@ -312,7 +323,7 @@ try {
   check(mutations.length === 0, 'readonly journey attempted a business mutation', mutations);
   report.pass = true;
   fs.writeFileSync(path.join(outputDir, 'summary.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`[local.dev.payment.floorplan] PASS regions=${regions.length} primary=${enabledPrimary} mobile_overflow=${report.mobile.overflow}`);
+  console.log(`[local.dev.payment.floorplan] PASS regions=${regions.length} blocked_primary=${enabledPrimary} mobile_overflow=${report.mobile.overflow}`);
 } catch (error) {
   report.errors = errors;
   report.mutations = mutations;

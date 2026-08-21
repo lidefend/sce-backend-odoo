@@ -3,6 +3,10 @@
 import hashlib
 import json
 
+from odoo.addons.smart_construction_core.services.financial_workspace_contract import (
+    build_financial_form_business_actions,
+)
+
 
 def xmlid(record):
     return record.get_external_id().get(record.id, "")
@@ -41,8 +45,14 @@ if view.model != "payment.request" or view.type != "form":
 candidate_rows = []
 for item in payment_env.search([("type", "=", "pay")], order="id"):
     item_xmlid = xmlid(item)
-    if not item_xmlid.startswith("smart_construction_demo."):
+    if not item_xmlid.startswith("smart_construction_demo.") and not str(item.name or "").startswith("DEMO-PR-"):
         continue
+    business_projection = build_financial_form_business_actions(payment_env.env, item._name, item.id) or {}
+    submit_actions = [
+        action for action in business_projection.get("actions", [])
+        if action.get("action_key") == "submit" and action.get("method") == "action_submit"
+    ]
+    submit_action = submit_actions[0] if submit_actions else {}
     candidate_rows.append({
         "id": int(item.id),
         "xmlid": item_xmlid,
@@ -54,6 +64,12 @@ for item in payment_env.search([("type", "=", "pay")], order="id"):
         "has_active_payment_execution": bool(item.has_active_payment_execution),
         "legal_next_action": str(item.legal_next_action_display or ""),
         "blocking_reason": str(item.payment_blocking_reason_display or ""),
+        "has_contract": bool(item.contract_id),
+        "has_settlement": bool(item.settlement_id),
+        "submit_business_available": bool(submit_action.get("business_available")),
+        "submit_authorization_allowed": bool(submit_action.get("authorization_allowed")),
+        "submit_enabled": bool(submit_action.get("enabled")),
+        "submit_reason_code": str(submit_action.get("reason_code") or ""),
     })
 
 fingerprint_payload = {

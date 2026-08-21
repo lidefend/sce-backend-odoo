@@ -3500,9 +3500,45 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
         for status in statuses
         if isinstance(status, dict) and _text(status.get("backendIdentity"))
     }
+    runtime_business_by_button: dict[tuple[str, str], dict[str, Any]] = {}
+    for candidate in rows:
+        if not isinstance(candidate, dict):
+            continue
+        source_channels = {
+            _text(candidate.get("sourceChannel")),
+            *(
+                _text(trace.get("sourceChannel"))
+                for trace in _list(candidate.get("sourceTrace"))
+                if isinstance(trace, dict)
+            ),
+        }
+        if "runtime_business_action" not in source_channels:
+            continue
+        button = _dict(candidate.get("button"))
+        button_name = _text(button.get("name") or button.get("method"))
+        if not button_name:
+            continue
+        button_type = _text(button.get("type") or button.get("buttonType"), "object").lower()
+        runtime_business_by_button[(button_type, button_name)] = candidate
     for row in rows:
         if not isinstance(row, dict):
             continue
+        button = _dict(row.get("button"))
+        button_name = _text(button.get("name") or button.get("method"))
+        button_type = _text(button.get("type") or button.get("buttonType"), "object").lower()
+        runtime_business = runtime_business_by_button.get((button_type, button_name)) if button_name else None
+        if runtime_business is not None and runtime_business is not row:
+            for field_name in (
+                "businessAvailable", "authorizationAllowed", "entitlementEvaluated",
+                "allowed", "enabled", "disabled",
+            ):
+                value = runtime_business.get(field_name)
+                if isinstance(value, bool):
+                    row[field_name] = value
+            if _dict(runtime_business.get("actionSafety")):
+                row["actionSafety"] = deepcopy(runtime_business.get("actionSafety"))
+            if _text(runtime_business.get("reasonCode")):
+                row["reasonCode"] = runtime_business.get("reasonCode")
         invisible = _action_invisible_constraint(row)
         if invisible is None:
             continue
@@ -3540,7 +3576,12 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                 and _text(_dict(row.get("button")).get("type")) == "object"
                 and bool(_text(_dict(row.get("nativeIdentity")).get("native_locator")))
             )
-            if modifier_authoritative and entitlement_evaluated and authorization_allowed:
+            if (
+                runtime_business is None
+                and modifier_authoritative
+                and entitlement_evaluated
+                and authorization_allowed
+            ):
                 row["businessAvailable"] = True
                 row["authorizationAllowed"] = True
                 row["entitlementEvaluated"] = True
@@ -3549,6 +3590,19 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                 row["disabled"] = False
                 status["disabled"] = False
                 if _text(status.get("reasonCode")) in {
+                    "ACTION_NOT_ALLOWED", "ACTION_NOT_VISIBLE_IN_STATE", "ACTION_VISIBILITY_UNRESOLVED",
+                }:
+                    status.pop("reasonCode", None)
+            elif runtime_business is not None:
+                denied = (
+                    row.get("allowed") is False
+                    or row.get("enabled") is False
+                    or row.get("disabled") is True
+                )
+                status["disabled"] = denied
+                if denied:
+                    status["reasonCode"] = _text(row.get("reasonCode"), "ACTION_NOT_ALLOWED")
+                elif _text(status.get("reasonCode")) in {
                     "ACTION_NOT_ALLOWED", "ACTION_NOT_VISIBLE_IN_STATE", "ACTION_VISIBILITY_UNRESOLVED",
                 }:
                     status.pop("reasonCode", None)

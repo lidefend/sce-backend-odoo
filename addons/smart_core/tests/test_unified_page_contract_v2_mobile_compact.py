@@ -1571,6 +1571,75 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertFalse(action["enabled"])
         self.assertTrue(action["disabled"])
 
+    def test_final_modifier_hydration_applies_runtime_business_authority_to_native_occurrence(self):
+        contract = {
+            "actionContract": {"actionRuleList": [
+                {
+                    "actionId": "action.native_submit",
+                    "actionKey": "native_submit",
+                    "backendIdentity": "native_button:object:action_submit:/form[1]/header[1]/button[1]:1",
+                    "sourceChannel": "native_form_header",
+                    "button": {"name": "action_submit", "type": "object"},
+                    "nativeIdentity": {"native_locator": "/form[1]/header[1]/button[1]"},
+                    "allowed": False,
+                    "enabled": False,
+                    "disabled": True,
+                    "businessAvailable": False,
+                    "authorizationAllowed": True,
+                    "entitlementEvaluated": True,
+                    "sourceTrace": [{
+                        "entitlementEvaluated": True,
+                        "authorizationAllowed": True,
+                        "businessAvailable": False,
+                    }],
+                    "visible": {"attrs": {"invisible": {
+                        "kind": "field_compare",
+                        "field": "state",
+                        "operator": "not in",
+                        "value": ["draft", "rejected"],
+                    }}},
+                },
+                {
+                    "actionId": "action.business_submit",
+                    "actionKey": "business_submit",
+                    "backendIdentity": "button:object:action_submit",
+                    "sourceChannel": "runtime_business_action",
+                    "button": {"name": "action_submit", "type": "object"},
+                    "allowed": False,
+                    "enabled": False,
+                    "disabled": True,
+                    "businessAvailable": False,
+                    "authorizationAllowed": True,
+                    "entitlementEvaluated": True,
+                    "actionSafety": {
+                        "classification": "danger",
+                        "requires_confirm": True,
+                        "confirm_message": "确认提交？",
+                    },
+                },
+            ]},
+            "statusContract": {"buttonStatus": [{
+                "btnId": "btn.native_submit",
+                "backendIdentity": "native_button:object:action_submit:/form[1]/header[1]/button[1]:1",
+                "visible": False,
+                "disabled": True,
+                "reasonCode": "ACTION_NOT_ALLOWED",
+            }]},
+            "dataContract": {"mainData": {"state": "draft"}},
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        native_action = contract["actionContract"]["actionRuleList"][0]
+        native_status = contract["statusContract"]["buttonStatus"][0]
+        self.assertTrue(native_status["visible"])
+        self.assertTrue(native_status["disabled"])
+        self.assertFalse(native_action["businessAvailable"])
+        self.assertFalse(native_action["allowed"])
+        self.assertFalse(native_action["enabled"])
+        self.assertTrue(native_action["disabled"])
+        self.assertEqual(native_action["actionSafety"]["confirm_message"], "确认提交？")
+
     def test_form_field_modifiers_are_attached_to_native_field_status(self):
         contract = assembler.assemble_unified_page_contract_v2(
             {
