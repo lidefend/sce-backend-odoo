@@ -4996,3 +4996,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   interaction evidence. The total is `381` ready, `451` fallback, `25,699`
   unsupported and `0` silent loss. No page layout or business permission rule
   changed.
+- Q2-3 outcome: form button identity is now occurrence-preserving across the
+  native parser, normalized carrier and UPC V2 action contract. The previous
+  `smart -> smart` projection bug is closed as `smart -> stat_buttons`, all
+  `37` governed stat buttons are authoritative, and the assembler consumes the
+  canonical stat region exactly once. `889` exact action attributes move to
+  `CAPABILITY_ACTION_IDENTITY_REDUCED` fallback; totals are `381` ready,
+  `1,340` fallback, `24,810` unsupported and `0` silent loss. This batch does
+  not change form layout, business action semantics or public intents.

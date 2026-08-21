@@ -172,3 +172,28 @@
   `local.clean` `smart_core` upgrade and capability-ledger gate, Web UPC V2
   guard, canonical presenter `49` cases, readonly capability `14` cases, and
   form-render split guard passed.
+
+## Q2-3 form action identity capability closure (2026-08-21)
+
+- Scope: exact native form button attributes carried by authoritative
+  `layout`, `header_buttons`, or `stat_buttons` occurrences. Button structure
+  nodes, nested subview actions, business action semantics and action layout
+  remain outside this increment.
+- Parser and assembler correction: `level=smart` now maps to canonical
+  `stat_buttons`, and the UPC V2 assembler consumes that canonical region.
+  All `37` governed stat buttons are authoritative; the non-authoritative
+  layout copy remains filtered so each backend identity is emitted once.
+- Evidence rule: locator, occurrence index, authoritative flag, capability
+  key and raw value must all match `native_identity`. Any drift fails closed.
+  The frontend evidence binds the existing canonical
+  `resolveCanonicalFormActionExecution`; no page fallback or label inference
+  was introduced.
+- Terminal policy: `889` exact form action attributes move from unsupported to
+  `CAPABILITY_ACTION_IDENTITY_REDUCED` fallback. None are promoted to ready
+  until final interaction/value equivalence is independently proven.
+- Governed result: `381` ready, `1,340` fallback, `24,810` unsupported and `0`
+  silent loss across the conserved `26,531` atoms.
+- Validation: `25` ledger/map tests, `21` parser tests, `66` UPC runtime tests,
+  governed `local.clean` `smart_core` upgrade and capability-ledger gate,
+  canonical presenter `49` cases, header action presentation, UPC V2 action,
+  Web consumer/architecture guards and strict TypeScript passed.

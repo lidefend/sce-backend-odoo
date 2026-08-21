@@ -69,6 +69,22 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
             "native_root_attributes": {"create": behavior_atom["canonical_value"]},
             "can_create": str(behavior_atom["canonical_value"]).strip().lower() not in {"0", "false"},
         }
+        action_atom = next(
+            atom for atom in classify_structure(cls.structure, cls.taxonomy)["atoms"]
+            if atom["view_type"] == "form"
+            and atom["capability_key"] == "action.identity"
+            and "/header[" in atom["native_locator"]
+        )
+        action_entry = next(item for item in entries if item["contract_ref"] == action_atom["contract_ref"])
+        action_carrier = next(item for item in action_entry["normalized_carriers"] if item["source_selector"] == "/data/views/form")
+        action_carrier["value"]["header_buttons"] = [{
+            "native_identity": {
+                "native_locator": action_atom["native_locator"],
+                "occurrence_index": action_atom["occurrence_index"],
+                "authoritative": True,
+                "name": action_atom["canonical_value"],
+            },
+        }]
 
     def errors(self, normalized_map=None, reasons=None, carrier=None):
         return validate_normalized_map(
@@ -82,7 +98,7 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
         self.assertEqual(summary["classified_atom_count"], 26531)
         self.assertEqual(summary["unmapped_atom_count"], 0)
         self.assertEqual(summary["ambiguous_atom_count"], 0)
-        self.assertEqual(summary["proven_mapping_count"], 2)
+        self.assertEqual(summary["proven_mapping_count"], 3)
 
     def test_missing_mapping_fails_closed(self) -> None:
         value = deepcopy(self.normalized_map)
@@ -150,6 +166,17 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
                     capabilities.pop("native_root_attributes", None)
         errors, _ = self.errors(carrier=carrier)
         self.assertTrue(any("form_behavior" in error and "no exact" in error for error in errors))
+
+    def test_proven_form_action_requires_authoritative_identity(self) -> None:
+        carrier = deepcopy(self.carrier)
+        for entry in carrier["entries"]:
+            for row in entry["normalized_carriers"]:
+                for action in row.get("value", {}).get("header_buttons") or []:
+                    identity = action.get("native_identity") if isinstance(action, dict) else None
+                    if isinstance(identity, dict):
+                        identity["authoritative"] = False
+        errors, _ = self.errors(carrier=carrier)
+        self.assertTrue(any("form_action" in error and "no exact" in error for error in errors))
 
     def test_canonical_view_type_drift_fails_closed(self) -> None:
         value = deepcopy(self.normalized_map)

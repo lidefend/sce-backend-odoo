@@ -48,6 +48,19 @@ FORM_BEHAVIOR_FIELDS = {
     "form.edit": ("edit", "can_write"),
     "form.delete": ("delete", "can_delete"),
 }
+ACTION_IDENTITY_FIELDS = {
+    "action.identity": "name",
+    "action.type": "type",
+    "action.label": "string",
+    "action.context": "context_raw",
+    "action.domain": "domain_raw",
+    "action.confirm": "confirm_raw",
+    "action.icon": "icon",
+    "action.data-hotkey": "data_hotkey",
+    "action.special": "special",
+    "action.id": "id",
+    "action.help": "help",
+}
 
 
 def static_boolean_value(value: Any) -> bool | None:
@@ -105,6 +118,47 @@ def match_normalized_atom(
                 "semantic_value": capabilities[semantic_key],
             }]
         return []
+    if mapping.get("matcher") == "native_action_identity":
+        if atom.get("view_type") != "form" or not atom.get("attribute"):
+            return []
+        identity_key = ACTION_IDENTITY_FIELDS.get(str(atom.get("capability_key") or ""))
+        if not identity_key:
+            return []
+        matches: list[dict[str, Any]] = []
+        for carrier in carrier_entry.get("normalized_carriers", []):
+            if carrier.get("source_selector") not in mapping.get("source_selectors", []):
+                continue
+            value = carrier.get("value")
+            for region in mapping.get("value_regions", []):
+                try:
+                    region_value = pointer_get(value, str(region))
+                except (KeyError, ValueError):
+                    continue
+                for relative_pointer, row in _walk_json(region_value, str(region)):
+                    if not isinstance(row, dict):
+                        continue
+                    native_identity = row.get("native_identity")
+                    if not isinstance(native_identity, dict) or native_identity.get("authoritative") is not True:
+                        continue
+                    if native_identity.get("native_locator") != atom.get("native_locator"):
+                        continue
+                    if native_identity.get("occurrence_index") != atom.get("occurrence_index"):
+                        continue
+                    if identity_key not in native_identity or native_identity[identity_key] != atom.get("canonical_value"):
+                        continue
+                    selector = (
+                        str(carrier.get("artifact_selector") or "")
+                        + relative_pointer
+                        + "/native_identity/"
+                        + _pointer_escape(identity_key)
+                    )
+                    matches.append({
+                        "raw_selector": selector,
+                        "raw_value": native_identity[identity_key],
+                        "semantic_selector": selector,
+                        "semantic_value": native_identity[identity_key],
+                    })
+        return matches
     if mapping.get("matcher") != "recursive_native_occurrence":
         return []
     if atom.get("capability_key") not in STATIC_FORM_MODIFIERS or atom.get("view_type") != "form":

@@ -109,6 +109,8 @@ def build_ledger(
                     terminal_status, reason_code = "ready", ""
                 elif atom["capability_key"] == "form.delete":
                     terminal_status, reason_code = "fallback", "CAPABILITY_INTERACTION_EVIDENCE_MISSING"
+                elif atom["capability_key"].startswith("action."):
+                    terminal_status, reason_code = "fallback", "CAPABILITY_ACTION_IDENTITY_REDUCED"
                 else:
                     terminal_status, reason_code = "fallback", "CAPABILITY_DYNAMIC_VERDICT_NOT_EVALUATED"
                 if reason_code and reason_code not in reason_codes:

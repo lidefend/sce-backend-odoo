@@ -428,6 +428,57 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(action_rule["targetScope"], "page")
         self.assertNotIn(action_rule["targetScope"], {"header", "toolbar", "smart", "row"})
 
+    def test_authoritative_stat_button_reaches_action_contract_once(self):
+        locator = "/form[1]/sheet[1]/div[1]/button[1]"
+        native_identity = {
+            "type": "object",
+            "name": "action_open_lines",
+            "string": "Lines",
+            "native_locator": locator,
+            "occurrence_index": 1,
+            "canonical_region": "stat_buttons",
+            "projection_region": "stat_buttons",
+            "authoritative": True,
+        }
+        source = {
+            "model": "x.record",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {"form": {
+                "layout": [{
+                    "type": "button",
+                    "name": "action_open_lines",
+                    "action": {
+                        "name": "action_open_lines",
+                        "kind": "object",
+                        "payload": {"method": "action_open_lines", "type": "object"},
+                        "native_identity": {**native_identity, "projection_region": "layout", "authoritative": False},
+                    },
+                }],
+                "stat_buttons": [{
+                    "name": "action_open_lines",
+                    "label": "Lines",
+                    "kind": "object",
+                    "payload": {"method": "action_open_lines", "type": "object"},
+                    "native_identity": native_identity,
+                }],
+            }},
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.form.stat.button.identity",
+        )
+
+        rules = [
+            row for row in full["actionContract"]["actionRuleList"]
+            if row.get("backendIdentity") == f"native_button:object:action_open_lines:{locator}:1"
+        ]
+        self.assertEqual(len(rules), 1)
+        self.assertEqual(rules[0]["label"], "Lines")
+
     def test_object_button_payload_method_is_preserved_in_v2_action_contract(self):
         source = {
             "model": "sc.norm.import.wizard",

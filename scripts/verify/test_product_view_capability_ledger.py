@@ -160,6 +160,38 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         carrier["normalized_carriers"][0]["value"]["capabilities"]["can_write"] = True
         self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
 
+    def test_form_action_match_requires_exact_authoritative_occurrence_and_value(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "action.identity", "attribute": "name",
+            "native_locator": "/form[1]/header[1]/button[2]", "occurrence_index": 2,
+            "canonical_value": "action_approve",
+        }
+        mapping = {
+            "mapping_status": "proven", "matcher": "native_action_identity",
+            "source_selectors": ["/data/views/form"],
+            "value_regions": ["/layout", "/header_buttons", "/stat_buttons"],
+        }
+        carrier = {"normalized_carriers": [{
+            "source_selector": "/data/views/form",
+            "artifact_selector": "/entries/0/normalized_carriers/0/value",
+            "value": {"layout": [], "stat_buttons": [], "header_buttons": [{
+                "native_identity": {
+                    "native_locator": atom["native_locator"], "occurrence_index": 2,
+                    "authoritative": True, "name": "action_approve",
+                },
+            }]},
+        }]}
+
+        matches = match_normalized_atom(atom, mapping, carrier)
+
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["raw_value"], "action_approve")
+        carrier["normalized_carriers"][0]["value"]["header_buttons"][0]["native_identity"]["authoritative"] = False
+        self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
+        carrier["normalized_carriers"][0]["value"]["header_buttons"][0]["native_identity"]["authoritative"] = True
+        carrier["normalized_carriers"][0]["value"]["header_buttons"][0]["native_identity"]["occurrence_index"] = 1
+        self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
+
     def test_native_source_selector_resolves_exact_occurrence(self) -> None:
         structure = {"entries": [{"surfaces": [{"contract_ref": "m::form", "view_ref": "v", "view_type": "form", "resolved_structure": {"tag": "form", "children": [{"tag": "field", "attrs": {"name": "x", "a/b": "value"}}]}}]}]}
         taxonomy = {"node_rules": [{"id": "nodes", "tags": "*", "capability_key_template": "node.{tag}"}], "attribute_rules": [{"id": "attrs", "tags": "*", "attribute_prefixes": [""], "capability_key_template": "attr.{attribute}"}]}

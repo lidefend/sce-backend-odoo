@@ -3680,6 +3680,14 @@ def _append_ui_contract_actions(
                     "target_scope": _text(row.get("target_scope"), "header"),
                     "_source_channel": source_channel,
                 })
+    for row in _list(form_view.get("stat_buttons")):
+        if isinstance(row, dict):
+            rows.append({
+                **row,
+                "level": _text(row.get("level"), "smart"),
+                "target_scope": _text(row.get("target_scope"), "page"),
+                "_source_channel": "native_form_stat",
+            })
     active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
     if active_view_type == "list":
         active_view_type = "tree"

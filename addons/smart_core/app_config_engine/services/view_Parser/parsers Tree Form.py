@@ -822,6 +822,7 @@ class _TreeFormParserMixin:
                 "row": "row_actions",
                 "header": "header_buttons",
                 "stat": "stat_buttons",
+                "smart": "stat_buttons",
                 "body": "layout",
             }.get(level, str(level or "layout"))
             native_scope["canonical_region"] = canonical_region

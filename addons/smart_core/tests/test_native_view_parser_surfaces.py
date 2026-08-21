@@ -494,6 +494,18 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(action["native_identity"]["canonical_region"], "layout")
         self.assertTrue(action["native_identity"]["authoritative"])
 
+    def test_smart_button_projects_to_authoritative_stat_region(self):
+        element = _parse_test_xml(
+            '<button class="oe_stat_button" type="object" name="action_open_lines" string="Lines"/>'
+        )
+
+        action = self.tree_form_parser._button_to_action(element, level="smart")
+
+        identity = action["native_identity"]
+        self.assertEqual(identity["canonical_region"], "stat_buttons")
+        self.assertEqual(identity["projection_region"], "stat_buttons")
+        self.assertTrue(identity["authoritative"])
+
 
     def test_x2many_inline_tree_reuses_occurrence_aware_parser(self):
         relation_fields = {

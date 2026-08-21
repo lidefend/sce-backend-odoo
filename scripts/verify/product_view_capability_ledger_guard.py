@@ -273,6 +273,8 @@ def validate_ledger(
                 status, reason_code = "ready", ""
             elif expected["capability_key"] == "form.delete":
                 status, reason_code = "fallback", "CAPABILITY_INTERACTION_EVIDENCE_MISSING"
+            elif expected["capability_key"].startswith("action."):
+                status, reason_code = "fallback", "CAPABILITY_ACTION_IDENTITY_REDUCED"
             else:
                 status, reason_code = "fallback", DYNAMIC_REASON
             if atom.get("terminal_status") != status or atom.get("reason_code") != reason_code:
