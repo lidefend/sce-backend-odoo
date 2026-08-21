@@ -180,12 +180,19 @@ require(
     "DELIVERY_HARDENING_SKIP_PERF=1",
 )
 require(
+    "frontend/apps/web/src/app/contracts/v2/client.ts",
+    "intent: 'ui.contract.v2'",
+    "decodeContractV2Snapshot(response.data)",
+    "createContractV2Store(snapshot)",
+    "if (options.renderProfile) params.render_profile = options.renderProfile;",
+    "if (recordId) params.record_id = recordId;",
+)
+forbid(
     "frontend/apps/web/src/api/contract.ts",
     "CREATE_CONTRACT_CACHE_TTL_MS",
-    "currentContextEpoch()",
-    "resolveModelContractRenderProfile",
-    "params.render_profile === 'create'",
-    "!Number(params.record_id || 0)",
+    "adaptUnifiedPageContractV2Raw",
+    "requestProjectedFormContractRaw",
+    "loadModelContractRaw",
 )
 require(
     "frontend/apps/web/src/api/modelContractProfile.ts",
@@ -222,7 +229,7 @@ forbid(
 )
 require(
     "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
-    "const entry = relationEntry(contract.value?.fields?.[name]);",
+    "const entry = relationEntry(formFields()[name]);",
     "if (entry?.canRead === false)",
     "if (deniedRelationModels.has(relation)) return;",
 )
