@@ -1,8 +1,6 @@
 import { normalizeActionViewMode, resolveActionViewAvailableModes } from '../contracts/actionViewSurfaceContract';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
-type Dict = Record<string, unknown>;
-
 type SavedFilterChip = { key: string; isDefault?: boolean };
 type GroupByChip = { field: string; isDefault?: boolean };
 
