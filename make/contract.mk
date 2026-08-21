@@ -9,10 +9,13 @@ VIEW_STRUCTURE_BASELINE ?= contracts/generated/product_view_structure_contract.j
 VIEW_STRUCTURE_CANDIDATE ?= artifacts/contract/product_view_structure_contract.json
 VIEW_STRUCTURE_CONTAINER_CANDIDATE ?= /tmp/product_view_structure_contract.json
 VIEW_STRUCTURE_FINGERPRINT ?= artifacts/contract/product_view_candidate_fingerprint.json
+VIEW_STRUCTURE_CONTAINER_FINGERPRINT ?= /tmp/product_view_candidate_fingerprint.json
 VIEW_STRUCTURE_REPORT ?= artifacts/backend/product_view_structure_contract_guard.json
 VIEW_STRUCTURE_BASELINE_SHA ?= $(shell git merge-base HEAD origin/main)
 VIEW_CARRIER_CANDIDATE ?= artifacts/contract/product_view_contract_carriers_candidate.json
 VIEW_CARRIER_CONTAINER_CANDIDATE ?= /tmp/product_view_contract_carriers_candidate.json
+VIEW_CARRIER_CONTAINER_STRUCTURE_INPUT ?= /tmp/product_view_structure_contract_input.json
+VIEW_CARRIER_CONTAINER_FINGERPRINT ?= /tmp/product_view_candidate_fingerprint_input.json
 VIEW_CARRIER_SCHEMA ?= contracts/schemas/product-view-contract-carriers-v1.yaml
 
 verify.contract.lint:
@@ -58,10 +61,11 @@ contract.view_structure.fingerprint: guard.prod.forbid
 
 contract.view_structure.export: guard.prod.forbid check-compose-project check-compose-env contract.view_structure.fingerprint
 	@mkdir -p "$$(dirname "$(VIEW_STRUCTURE_CANDIDATE)")"
+	@$(RUN_ENV) $(COMPOSE_BASE) cp "$(VIEW_STRUCTURE_FINGERPRINT)" "$(ODOO_SERVICE):$(VIEW_STRUCTURE_CONTAINER_FINGERPRINT)" >/dev/null
 	@$(RUN_ENV) \
 	  PRODUCT_VIEW_STRUCTURE_POLICY="$(VIEW_STRUCTURE_POLICY)" \
 	  PRODUCT_VIEW_DATABASE_POLICY="$(VIEW_STRUCTURE_DATABASE_POLICY)" \
-	  PRODUCT_VIEW_CANDIDATE_FINGERPRINT="$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  PRODUCT_VIEW_CANDIDATE_FINGERPRINT="$(VIEW_STRUCTURE_CONTAINER_FINGERPRINT)" \
 	  PRODUCT_VIEW_STRUCTURE_OUTPUT="$(VIEW_STRUCTURE_CONTAINER_CANDIDATE)" \
 	  DB_NAME="$(DB_NAME)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/contract/export_product_view_structure.py
@@ -100,9 +104,11 @@ contract.view_carrier.export: guard.prod.forbid check-compose-project check-comp
 	@mkdir -p "$$(dirname "$(VIEW_CARRIER_CANDIDATE)")"
 	@rm -f "$(VIEW_CARRIER_CANDIDATE)" "$(VIEW_CARRIER_CANDIDATE).tmp"
 	@$(RUN_ENV) $(COMPOSE_BASE) exec -T $(ODOO_SERVICE) rm -f "$(VIEW_CARRIER_CONTAINER_CANDIDATE)"
+	@$(RUN_ENV) $(COMPOSE_BASE) cp "$(VIEW_STRUCTURE_CANDIDATE)" "$(ODOO_SERVICE):$(VIEW_CARRIER_CONTAINER_STRUCTURE_INPUT)" >/dev/null
+	@$(RUN_ENV) $(COMPOSE_BASE) cp "$(VIEW_STRUCTURE_FINGERPRINT)" "$(ODOO_SERVICE):$(VIEW_CARRIER_CONTAINER_FINGERPRINT)" >/dev/null
 	@$(RUN_ENV) \
-	  PRODUCT_VIEW_CARRIER_STRUCTURE_INPUT="$(VIEW_STRUCTURE_CANDIDATE)" \
-	  PRODUCT_VIEW_CARRIER_FINGERPRINT="$(VIEW_STRUCTURE_FINGERPRINT)" \
+	  PRODUCT_VIEW_CARRIER_STRUCTURE_INPUT="$(VIEW_CARRIER_CONTAINER_STRUCTURE_INPUT)" \
+	  PRODUCT_VIEW_CARRIER_FINGERPRINT="$(VIEW_CARRIER_CONTAINER_FINGERPRINT)" \
 	  PRODUCT_VIEW_CARRIER_OUTPUT="$(VIEW_CARRIER_CONTAINER_CANDIDATE)" \
 	  DB_NAME="$(DB_NAME)" \
 	  bash scripts/ops/odoo_shell_exec.sh < scripts/contract/export_product_view_contract_carriers.py
