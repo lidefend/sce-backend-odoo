@@ -72,14 +72,14 @@ goal:
       title: modifiers_actions_permissions_closure
       status: active
       current_increment:
-        id: Q2-4a
-        title: canonical_form_node_action_executor_closure
+        id: Q2-4b
+        title: professional_field_driver_occurrence_event_closure
         status: verified
         result:
-          - all_rendered_canonical_form_actions_are_validated
-          - body_widget_and_row_actions_have_exact_execution_adapters
-          - action_bar_placement_remains_contract_driven
-          - ledger_action_atoms_remain_fail_closed_pending_final_upc_interaction_evidence
+          - canonical_widget_id_is_preserved_as_field_change_occurrence_key
+          - professional_driver_change_query_commit_and_binary_events_preserve_occurrence
+          - record_value_mutation_remains_field_name_driven
+          - no_model_label_or_business_semantic_inference_added
         terminal_counts:
           ready: 381
           fallback: 1340

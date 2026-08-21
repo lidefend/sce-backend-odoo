@@ -678,6 +678,7 @@ function emitBinaryFieldChange(field: FormSectionFieldSchema, event: Event) {
     const result = String(reader.result || '');
     const separatorIndex = result.indexOf(',');
     emit('field-change', {
+      occurrenceKey: field.key,
       name: field.name,
       type: field.type,
       widget: field.widget,
@@ -710,6 +711,7 @@ function emitMany2oneAction(field: FormSectionFieldSchema, value: string | numbe
 function emitMany2oneQuery(field: FormSectionFieldSchema, value: string) {
   many2oneActiveIndex.value[field.name] = -1;
   emit('field-change', {
+    occurrenceKey: field.key,
     name: field.name,
     type: field.type,
     widget: field.widget,
@@ -778,6 +780,7 @@ function handleMany2oneKeydown(field: FormSectionFieldSchema, event: KeyboardEve
 
 function emitMany2oneCommit(field: FormSectionFieldSchema, value: string) {
   emit('field-change', {
+    occurrenceKey: field.key,
     name: field.name,
     type: field.type,
     widget: field.widget,

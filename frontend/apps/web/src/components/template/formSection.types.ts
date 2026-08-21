@@ -80,6 +80,7 @@ export type FormSectionFieldSchema = {
 };
 
 export type FormSectionFieldChange = {
+  occurrenceKey?: string;
   name: string;
   type: TemplateFieldType;
   widget?: string;
