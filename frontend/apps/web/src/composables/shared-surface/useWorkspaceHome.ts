@@ -77,7 +77,7 @@ export function useWorkspaceHome() {
   const workWorkspace = ref<ProductMyWorkWorkspace | null>(null);
   let loadRequestSequence = 0;
 
-  const pageProfile = computed(() => pageContract.contract.value?.page_orchestration_v1?.page || {});
+  const pageProfile = computed(() => pageContract.contract.value?.page_orchestration?.page || {});
   const title = computed(() => text(pageProfile.value.title) || pageContract.text('title', '首页'));
   const subtitle = computed(() => text(pageProfile.value.subtitle) || pageContract.text('subtitle', '查看当前账号可处理的事项和可用入口。'));
   const taskSection = computed(() => workWorkspace.value?.sections.find((section) => section.key === 'todo') || null);

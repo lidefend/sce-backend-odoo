@@ -4,29 +4,40 @@ import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/
 import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHydration';
 import { buildSaveRecordPayload } from '../src/pages/contractForm/saveRecordHelpers';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
+import { createContractV2Store } from '../src/app/contracts/v2/store';
 
-const contract = {
-  fields: {
-    amount: { type: 'float' },
-    owner_id: { type: 'many2one' },
-    title: { type: 'char' },
-  },
-  __unified_page_contract_v2: {
+const fields = {
+  amount: { type: 'float' },
+  owner_id: { type: 'many2one' },
+  title: { type: 'char' },
+};
+const v2ContractStore = createContractV2Store({
     pageInfo: { contractVersion: '2.2.0', pageId: 'x.document.create', clientType: 'web' },
-    layoutContract: { containerTree: [] },
+    layoutContract: {
+      pageId: 'x.document.create', layoutType: 'form', adaptMode: 'desktop', layoutHints: {}, componentRegistry: {},
+      containerTree: [{
+        containerId: 'form.root', containerType: 'form', title: 'Document', span: 24, children: [],
+        widgetList: Object.entries(fields).map(([fieldCode, descriptor]) => ({
+          widgetId: `field.${fieldCode}`, widgetType: descriptor.type, fieldCode, label: fieldCode,
+          span: 24, componentKey: 'sc.form.field', capabilities: [], componentConfig: { fieldType: descriptor.type }, fieldType: descriptor.type,
+        })),
+      }],
+    },
     actionContract: { actionRuleList: [] },
+    statusContract: { globalStatus: {}, widgetStatus: [], containerStatus: [], buttonStatus: [], selectorStatus: [] },
     dataContract: {
+      dataSource: { primary: {} },
       mainData: { amount: 0, owner_id: false, title: '' },
       dataMeta: { sourceContext: { context: {} } },
     },
-  },
-} as never;
+    runtimeContract: {}, formStructureContract: {}, meta: {},
+} as never);
 const query = {
   default_owner_id: '17',
   default_owner_id_label: 'Owner A',
   default_title: 'Draft A',
 };
-const defaults = resolveCreateDefaults({ contract, routeQuery: query, v2ContractStore: null });
+const defaults = resolveCreateDefaults({ routeQuery: query, v2ContractStore });
 const formData: Record<string, unknown> = {};
 const relationOptions: Record<string, Array<{ id: number; label: string }>> = {};
 const relationKeywords: Record<string, string> = {};
@@ -34,15 +45,15 @@ const upsertRelationOption = (name: string, option: { id: number; label: string 
   if (!option) return;
   relationOptions[name] = [option];
 };
-for (const name of Object.keys(contract.fields)) {
+for (const name of Object.keys(fields)) {
   applyIncomingFormFieldValue({
     fieldName: name,
-    descriptor: contract.fields[name as keyof typeof contract.fields] as never,
+    descriptor: fields[name as keyof typeof fields] as never,
     incoming: name in defaults ? defaults[name] : '',
     target: { formData, relationOptions, relationKeywords, upsertRelationOption, initOne2manyRows: () => undefined },
   });
 }
-for (const [name, label] of Object.entries(resolveCreateRouteRelationLabels(contract, query, defaults))) {
+for (const [name, label] of Object.entries(resolveCreateRouteRelationLabels(v2ContractStore, query, defaults))) {
   const id = Number(formData[name] || 0);
   upsertRelationOption(name, { id, label });
   relationKeywords[name] = label;
@@ -53,7 +64,7 @@ assert.equal(relationKeywords.owner_id, 'Owner A');
 formData.amount = 80;
 const payload = buildSaveRecordPayload({
   comparableFieldValue: (_name, value) => value,
-  contract,
+  formFields: fields as never,
   dirtyFieldSet: new Set(['amount']),
   editableMap: { ...formData },
   formData,
@@ -75,11 +86,11 @@ const action = {
 } as never;
 
 const reopened: Record<string, unknown> = {};
-for (const name of Object.keys(contract.fields)) {
+for (const name of Object.keys(fields)) {
   const incoming = name === 'owner_id' ? [stored.owner_id, 'Owner A'] : stored[name];
   applyIncomingFormFieldValue({
     fieldName: name,
-    descriptor: contract.fields[name as keyof typeof contract.fields] as never,
+    descriptor: fields[name as keyof typeof fields] as never,
     incoming,
     target: { formData: reopened, relationOptions, relationKeywords, upsertRelationOption, initOne2manyRows: () => undefined },
   });
@@ -91,7 +102,7 @@ assert.equal(relationKeywords.owner_id, 'Owner A');
 reopened.title = 'Draft A revised';
 const editPayload = buildSaveRecordPayload({
   comparableFieldValue: (_name, value) => value,
-  contract,
+  formFields: fields as never,
   dirtyFieldSet: new Set(['title']),
   editableMap: { ...reopened },
   formData: reopened,

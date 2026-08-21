@@ -240,12 +240,9 @@ export function isUnifiedPageContractV2(value: unknown): value is UnifiedPageCon
 
 export function resolveUnifiedPageContractV2(contract: unknown): UnifiedPageContractV2 | null {
   const root = asDict(contract);
-  const direct = root.__unified_page_contract_v2;
-  if (isUnifiedPageContractV2(direct)) return direct;
-  if (isUnifiedPageContractV2(contract)) return contract;
-  const rawBody = asDict(root.rawBody);
-  const raw = rawBody.unified_page_contract_v2;
-  return isUnifiedPageContractV2(raw) ? raw : null;
+  const snapshot = root.snapshot;
+  if (isUnifiedPageContractV2(snapshot)) return snapshot;
+  return isUnifiedPageContractV2(contract) ? contract : null;
 }
 
 export function collectUnifiedPageContractV2Widgets(contract: unknown): UnifiedPageContractV2Widget[] {
@@ -389,16 +386,15 @@ export function resolveUnifiedPageContractV2GlobalStatus(contract: unknown): Uni
 export function resolveUnifiedPageContractV2SourceContext(contract: unknown): UnifiedPageContractV2SourceContext {
   const v2 = resolveUnifiedPageContractV2(contract);
   if (!v2) return {};
-  const data = readDictAlias(asDict(v2), 'dataContract', 'data_contract');
-  const dataMeta = readDictAlias(data, 'dataMeta', 'data_meta');
-  const runtime = readDictAlias(asDict(v2), 'runtimeContract', 'runtime_contract');
-  const source = asDict(dataMeta.sourceContext || dataMeta.source_context || runtime.sourceContext || runtime.source_context);
+  const data = asDict(asDict(v2).dataContract);
+  const dataMeta = asDict(data.dataMeta);
+  const source = asDict(dataMeta.sourceContext);
   if (!Object.keys(source).length) return {};
   const context = asDict(source.context);
   const domain = asList(source.domain);
-  const contextRaw = asText(source.context_raw || source.contextRaw);
-  const domainRaw = asText(source.domain_raw || source.domainRaw);
-  const renderProfile = asText(source.renderProfile || source.render_profile).toLowerCase();
+  const contextRaw = asText(source.contextRaw);
+  const domainRaw = asText(source.domainRaw);
+  const renderProfile = asText(source.renderProfile).toLowerCase();
   return {
     ...(Object.keys(context).length ? { context } : {}),
     ...(domain.length ? { domain } : {}),

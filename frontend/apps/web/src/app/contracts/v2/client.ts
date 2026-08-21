@@ -4,6 +4,10 @@ import { createContractV2Store } from './store';
 import type { ContractV2Dictionary, ContractV2NormalizedStore, ContractV2Snapshot } from './types';
 
 export interface ContractV2LoadOptions {
+  actionId?: number | null;
+  sceneKey?: string | null;
+  menuId?: number | null;
+  viewId?: number | null;
   recordId?: number;
   viewType?: string;
   renderProfile?: 'create' | 'edit' | 'readonly';
@@ -11,6 +15,8 @@ export interface ContractV2LoadOptions {
   sourceMode?: string;
   context?: ContractV2Dictionary;
   contextRaw?: string;
+  previewToken?: string | null;
+  previewRoleKey?: string | null;
 }
 
 export interface ContractV2LoadResult {
@@ -25,23 +31,6 @@ function normalizedRecordId(value: unknown): number {
   return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
 }
 
-function asRecord(value: unknown): ContractV2Dictionary {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
-}
-
-function extractContractV2FromIntentResponse(response: { data?: unknown; rawBody?: unknown }): unknown {
-  const data = asRecord(response.data);
-  const rawBody = asRecord(response.rawBody);
-  return (
-    data.unified_page_contract_v2 ||
-    data.__unified_page_contract_v2 ||
-    rawBody.unified_page_contract_v2 ||
-    rawBody.__unified_page_contract_v2 ||
-    response.data ||
-    response.rawBody
-  );
-}
-
 function applyCommonOptions(params: ContractV2Dictionary, options: ContractV2LoadOptions = {}): ContractV2Dictionary {
   const recordId = normalizedRecordId(options.recordId);
   if (recordId) params.record_id = recordId;
@@ -53,8 +42,13 @@ function applyCommonOptions(params: ContractV2Dictionary, options: ContractV2Loa
     params.context = options.context;
   }
   if (options.contextRaw) params.context_raw = options.contextRaw;
-  params.contractVersion = '2.0.0';
-  params.clientType = 'web_pc';
+  if (options.sceneKey) params.scene_key = options.sceneKey;
+  if (normalizedRecordId(options.menuId)) params.menu_id = normalizedRecordId(options.menuId);
+  if (normalizedRecordId(options.viewId)) params.view_id = normalizedRecordId(options.viewId);
+  if (options.previewToken) params.preview_token = options.previewToken;
+  if (options.previewRoleKey) params.preview_role_key = options.previewRoleKey;
+  params.delivery_profile = 'full';
+  params.client_type = 'web_pc';
   params.accepted_contract_versions = ['2.0.x'];
   params.client_contract_capabilities = [
     'container_tree.v2',
@@ -68,10 +62,10 @@ function applyCommonOptions(params: ContractV2Dictionary, options: ContractV2Loa
 
 async function loadContractV2(params: ContractV2Dictionary): Promise<ContractV2LoadResult> {
   const response = await intentRequestRaw<ContractV2Dictionary>({
-    intent: 'load_contract',
+    intent: 'ui.contract.v2',
     params,
   });
-  const snapshot = decodeContractV2Snapshot(extractContractV2FromIntentResponse(response));
+  const snapshot = decodeContractV2Snapshot(response.data);
   return {
     snapshot,
     store: createContractV2Store(snapshot),
@@ -88,9 +82,12 @@ export function loadActionContractV2(actionId: number, options: ContractV2LoadOp
 }
 
 export function loadModelContractV2(model: string, options: ContractV2LoadOptions = {}): Promise<ContractV2LoadResult> {
-  return loadContractV2(applyCommonOptions({
+  const params = applyCommonOptions({
     op: 'model',
     model: String(model || '').trim(),
     view_type: options.viewType || 'form',
-  }, options));
+  }, options);
+  const actionId = normalizedRecordId(options.actionId);
+  if (actionId) params.action_id = actionId;
+  return loadContractV2(params);
 }

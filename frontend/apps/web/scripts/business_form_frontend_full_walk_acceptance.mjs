@@ -254,7 +254,7 @@ async function main() {
     with: ["workspace_home"],
     root_xmlid: "smart_construction_core.menu_sc_root",
   });
-  const nav = init?.delivery_engine_v1?.nav || init?.nav || [];
+  const nav = init?.delivery_engine?.nav || init?.nav || [];
   const entries = collectHandlingEntries(nav);
   const results = [];
   for (const entry of entries) {

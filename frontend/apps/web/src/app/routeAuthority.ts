@@ -32,7 +32,8 @@ export interface RouteAuthorityEntry {
 }
 
 export interface RouteAuthorityContract {
-  contract_version: 'route_authority.v1';
+  contract_version: '2.0.0';
+  schema_version: '2.0.0';
   source: string;
   principal_scope: { user_id: number; company_id: number; role_code: string };
   primary_actions: RouteAuthorityEntry[];
@@ -85,13 +86,15 @@ function normalizeEntry(value: unknown, expectedKind: RouteAuthorityKind, allowC
 
 export function normalizeRouteAuthorityContract(value: unknown): RouteAuthorityContract | null {
   const row = record(value);
-  if (String(row.contract_version || '') !== 'route_authority.v1') return null;
+  if (String(row.contract_version || '') !== '2.0.0') return null;
+  if (String(row.schema_version || '') !== '2.0.0') return null;
   const scope = record(row.principal_scope);
   const normalizeBucket = (key: string, kind: RouteAuthorityKind) => (
     Array.isArray(row[key]) ? row[key].map((item) => normalizeEntry(item, kind)).filter(Boolean) as RouteAuthorityEntry[] : []
   );
   return {
-    contract_version: 'route_authority.v1',
+    contract_version: '2.0.0',
+    schema_version: '2.0.0',
     source: String(row.source || '').trim(),
     principal_scope: {
       user_id: positiveInteger(scope.user_id),

@@ -4,6 +4,9 @@ import type {
   ContractV2Container,
   ContractV2ContainerStatus,
   ContractV2Dictionary,
+  ContractV2FieldDescriptor,
+  ContractV2FieldDescriptorMap,
+  ContractV2FormFieldDescriptor,
   ContractV2NormalizedStore,
   ContractV2Snapshot,
   ContractV2UnsupportedFeature,
@@ -81,7 +84,7 @@ function spanValue(value: unknown): number {
 function synthesizeWidgetFromContainer(container: ContractV2Container): ContractV2Widget | null {
   const type = asText(container.type || container.containerType).toLowerCase();
   if (type !== 'field') return null;
-  const fieldInfo = asDict(container.fieldInfo || container.field_info);
+  const fieldInfo = asDict(container.fieldInfo);
   const attributes = asDict(container.attributes);
   const fieldCode = asText(container.name || fieldInfo.name || attributes.name);
   if (!fieldCode) return null;
@@ -187,6 +190,66 @@ export function resolveContractV2FormStructureContract(store: ContractV2Normaliz
   return asDict(store.snapshot.formStructureContract);
 }
 
+export function resolveContractV2SearchContract(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  if (!store) return {};
+  return asDict(store.snapshot.searchContract);
+}
+
+export function resolveContractV2WorkflowContract(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  if (!store) return {};
+  return asDict(store.snapshot.workflowContract);
+}
+
+export function resolveContractV2Collaboration(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  if (!store) return {};
+  return asDict(store.snapshot.runtimeContract.collaboration);
+}
+
+export function resolveContractV2BusinessWorkspace(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  if (!store) return {};
+  return asDict(store.snapshot.runtimeContract.businessWorkspace);
+}
+
+export function resolveContractV2BusinessActions(store: ContractV2NormalizedStore | null): ContractV2Dictionary[] {
+  if (!store) return [];
+  return Array.isArray(store.snapshot.runtimeContract.businessActions)
+    ? store.snapshot.runtimeContract.businessActions
+    : [];
+}
+
+export function resolveContractV2ActionRules(store: ContractV2NormalizedStore | null): ContractV2ActionRule[] {
+  return store ? store.snapshot.actionContract.actionRuleList : [];
+}
+
+export function resolveContractV2FieldWidgets(store: ContractV2NormalizedStore | null): ContractV2Widget[] {
+  return store ? Array.from(store.widgetsByFieldCode.values()) : [];
+}
+
+export function resolveContractV2SelectorStatus(store: ContractV2NormalizedStore | null, selectors: string[]) {
+  if (!store) return null;
+  const normalized = selectors.map(asText).filter(Boolean);
+  if (!normalized.length) return null;
+  return store.snapshot.statusContract.selectorStatus.find((row) => normalized.some((selector) => (
+    row.selector === selector || (row.selector.endsWith('.*') && selector.startsWith(row.selector.slice(0, -1)))
+  ))) || null;
+}
+
+export function resolveContractV2RuntimeContract(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  return store ? asDict(store.snapshot.runtimeContract) : {};
+}
+
+export function resolveContractV2ListProfile(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  return store ? asDict(store.snapshot.layoutContract.listProfile) : {};
+}
+
+export function resolveContractV2SurfacePolicies(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  return store ? asDict(store.snapshot.actionContract.surfacePolicies) : {};
+}
+
+export function resolveContractV2DeletePolicy(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  return store ? asDict(store.snapshot.actionContract.deletePolicy) : {};
+}
+
 export function resolveContractV2GlobalStatus(store: ContractV2NormalizedStore | null) {
   if (!store) return null;
   const row = store.snapshot.statusContract.globalStatus || {};
@@ -211,6 +274,10 @@ export function resolveContractV2MainData(store: ContractV2NormalizedStore | nul
   return asDict(store.snapshot.dataContract.mainData);
 }
 
+export function resolveContractV2PrimaryDataSource(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  return store?.primaryDataSource ? { ...store.primaryDataSource } : {};
+}
+
 export function resolveContractV2ValueSource(store: ContractV2NormalizedStore | null): ContractV2ValueSource {
   if (!store) return { kind: 'none', values: {} };
   const fieldCodes = Array.from(store.widgetsByFieldCode.keys());
@@ -229,14 +296,13 @@ export function resolveContractV2ValueSource(store: ContractV2NormalizedStore | 
 export function resolveContractV2SourceContext(store: ContractV2NormalizedStore | null): ContractV2SourceContext {
   if (!store) return {};
   const dataMeta = asDict(store.snapshot.dataContract.dataMeta);
-  const runtime = asDict(store.snapshot.runtimeContract);
-  const source = asDict(dataMeta.sourceContext || dataMeta.source_context || runtime.sourceContext || runtime.source_context);
+  const source = asDict(dataMeta.sourceContext);
   if (!Object.keys(source).length) return {};
   const context = asDict(source.context);
   const domain = asList(source.domain);
-  const contextRaw = asText(source.context_raw || source.contextRaw);
-  const domainRaw = asText(source.domain_raw || source.domainRaw);
-  const renderProfile = asText(source.renderProfile || source.render_profile).toLowerCase();
+  const contextRaw = asText(source.contextRaw);
+  const domainRaw = asText(source.domainRaw);
+  const renderProfile = asText(source.renderProfile).toLowerCase();
   return {
     ...(Object.keys(context).length ? { context } : {}),
     ...(domain.length ? { domain } : {}),
@@ -244,6 +310,132 @@ export function resolveContractV2SourceContext(store: ContractV2NormalizedStore 
     ...(domainRaw ? { domainRaw } : {}),
     ...(renderProfile ? { renderProfile } : {}),
   };
+}
+
+function selectionPairs(value: unknown): Array<[string, string]> | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rows = value.flatMap((item) => (
+    Array.isArray(item) && item.length >= 2
+      ? [[String(item[0] ?? ''), String(item[1] ?? '')] as [string, string]]
+      : []
+  ));
+  return rows.length ? rows : undefined;
+}
+
+export function resolveContractV2FieldDescriptorMap(
+  store: ContractV2NormalizedStore | null,
+): ContractV2FieldDescriptorMap {
+  const out: ContractV2FieldDescriptorMap = {};
+  if (!store) return out;
+  store.widgetsByFieldCode.forEach((widget, fieldCode) => {
+    const code = asText(fieldCode);
+    if (!code) return;
+    const config = asDict(widget.componentConfig);
+    const fieldType = asText(widget.fieldType || config.fieldType);
+    const relation = asText(widget.relation || config.relation);
+    const relationField = asText(config.relationField);
+    const relationEntry = asDict(config.relationEntry);
+    const widgetOptions = asDict(config.widgetOptions);
+    const subview = asDict(config.subview);
+    const formStructureRole = asDict(widget.formStructureRole || config.formStructureRole);
+    out[code] = {
+      fieldCode: code,
+      label: asText(widget.label) || code,
+      fieldType,
+      widgetType: asText(widget.widgetType),
+      componentKey: asText(widget.componentKey),
+      ...(typeof config.required === 'boolean' ? { required: config.required } : {}),
+      ...(typeof config.readonly === 'boolean' ? { readonly: config.readonly } : {}),
+      ...(typeof config.invisible === 'boolean' ? { invisible: config.invisible } : {}),
+      ...(relation ? { relation } : {}),
+      ...(relationField ? { relationField } : {}),
+      ...(selectionPairs(config.selection) ? { selection: selectionPairs(config.selection) } : {}),
+      ...(Object.prototype.hasOwnProperty.call(config, 'domain') ? { domain: config.domain } : {}),
+      ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context } : {}),
+      ...(Object.keys(relationEntry).length ? { relationEntry } : {}),
+      ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
+      ...(Object.keys(subview).length ? { subview } : {}),
+      ...(asText(config.filename) ? { filename: asText(config.filename) } : {}),
+      ...(asText(config.semanticType) ? { semanticType: asText(config.semanticType) } : {}),
+      ...(asText(config.surfaceRole) ? { surfaceRole: asText(config.surfaceRole) } : {}),
+      ...(typeof config.technical === 'boolean' ? { technical: config.technical } : {}),
+      ...(Object.keys(formStructureRole).length ? { formStructureRole } : {}),
+    };
+  });
+  return out;
+}
+
+export function toContractV2FormFieldDescriptor(row: ContractV2FieldDescriptor): ContractV2FormFieldDescriptor {
+  return {
+    name: row.fieldCode,
+    string: row.label,
+    type: row.fieldType,
+    ttype: row.fieldType,
+    widget: row.widgetType,
+    ...(typeof row.required === 'boolean' ? { required: row.required } : {}),
+    ...(typeof row.readonly === 'boolean' ? { readonly: row.readonly } : {}),
+    ...(typeof row.invisible === 'boolean' ? { invisible: row.invisible } : {}),
+    ...(row.relation ? { relation: row.relation } : {}),
+    ...(row.relationField ? { relation_field: row.relationField } : {}),
+    ...(row.selection ? { selection: row.selection } : {}),
+    ...(row.relationEntry ? { relation_entry: row.relationEntry } : {}),
+    ...(row.widgetOptions ? { widget_options: row.widgetOptions } : {}),
+    ...(row.subview ? { subview: row.subview } : {}),
+    ...(row.filename ? { filename: row.filename } : {}),
+    ...(row.domain !== undefined ? { domain: row.domain } : {}),
+    ...(row.context !== undefined ? { context: row.context } : {}),
+  };
+}
+
+export function resolveContractV2FormFieldMap(
+  store: ContractV2NormalizedStore | null,
+): Record<string, ContractV2FormFieldDescriptor> {
+  return Object.fromEntries(Object.entries(resolveContractV2FieldDescriptorMap(store)).map(
+    ([fieldCode, row]) => [fieldCode, toContractV2FormFieldDescriptor(row)],
+  ));
+}
+
+export function resolveContractV2VisibleFieldCodes(store: ContractV2NormalizedStore | null): string[] {
+  return store ? asList(store.snapshot.dataContract.dataMeta.visibleFields?.fields).map(asText).filter(Boolean) : [];
+}
+
+export function resolveContractV2FieldGroups(store: ContractV2NormalizedStore | null): ContractV2Dictionary[] {
+  return store ? asList(store.snapshot.dataContract.dataMeta.fieldGroups?.groups).map(asDict).filter((row) => Object.keys(row).length) : [];
+}
+
+export function collectContractV2FieldContainerStatusByCode(store: ContractV2NormalizedStore | null): ContractV2FieldStatusByCode {
+  const out: ContractV2FieldStatusByCode = {};
+  if (!store) return out;
+  walkContainers(store.snapshot.layoutContract.containerTree, (container) => {
+    const type = asText(container.type || container.containerType).toLowerCase();
+    const fieldInfo = asDict(container.fieldInfo);
+    const fieldCode = asText(container.name || fieldInfo.name);
+    if (type !== 'field' || !fieldCode) return;
+    const status = store.containerStatusById.get(container.containerId);
+    if (!status) return;
+    out[fieldCode] = {
+      ...(typeof status.visible === 'boolean' ? { visible: status.visible } : {}),
+      ...(typeof status.disabled === 'boolean' ? { disabled: status.disabled } : {}),
+      ...(status.reasonCode ? { reasonCode: status.reasonCode } : {}),
+    };
+  });
+  return out;
+}
+
+export function resolveContractV2RequiredFieldCodes(store: ContractV2NormalizedStore | null): string[] {
+  if (!store) return [];
+  const required = new Set<string>();
+  Object.values(resolveContractV2FieldDescriptorMap(store)).forEach((row) => {
+    if (row.required) required.add(row.fieldCode);
+  });
+  Object.entries(collectContractV2FieldStatusByCode(store)).forEach(([fieldCode, status]) => {
+    if (status.required) required.add(fieldCode);
+  });
+  store.snapshot.actionContract.actionRuleList.forEach((rule) => {
+    const submitPolicy = asDict(rule.submitPolicy);
+    asList(submitPolicy.requiredFields).map(asText).filter(Boolean).forEach((field) => required.add(field));
+  });
+  return Array.from(required);
 }
 
 export interface ContractV2EffectiveFormCapabilities {

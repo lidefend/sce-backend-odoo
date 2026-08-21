@@ -40,6 +40,50 @@ export interface ContractV2Widget {
   formStructureRole?: ContractV2Dictionary;
 }
 
+export interface ContractV2FieldDescriptor {
+  fieldCode: string;
+  label: string;
+  fieldType: string;
+  widgetType: string;
+  componentKey: string;
+  required?: boolean;
+  readonly?: boolean;
+  invisible?: boolean;
+  relation?: string;
+  relationField?: string;
+  selection?: Array<[string, string]>;
+  domain?: unknown;
+  context?: unknown;
+  relationEntry?: ContractV2Dictionary;
+  widgetOptions?: ContractV2Dictionary;
+  subview?: ContractV2Dictionary;
+  filename?: string;
+  semanticType?: string;
+  surfaceRole?: string;
+  technical?: boolean;
+  formStructureRole?: ContractV2Dictionary;
+}
+
+export type ContractV2FieldDescriptorMap = Record<string, ContractV2FieldDescriptor>;
+
+export interface ContractV2FormFieldDescriptor extends ContractV2Dictionary {
+  name: string;
+  string: string;
+  type: string;
+  ttype: string;
+  widget: string;
+  required?: boolean;
+  readonly?: boolean;
+  invisible?: boolean;
+  relation?: string;
+  relation_field?: string;
+  selection?: Array<[string, string]>;
+  relation_entry?: ContractV2Dictionary;
+  widget_options?: ContractV2Dictionary;
+  subview?: ContractV2Dictionary;
+  filename?: string;
+}
+
 export interface ContractV2Container {
   containerId: string;
   containerType: string;
@@ -55,9 +99,11 @@ export interface ContractV2Container {
   cols?: number;
   columns?: number;
   widget?: string;
+  widgetId?: string;
+  componentKey?: string;
+  componentConfig?: ContractV2Dictionary;
   attributes?: ContractV2Dictionary;
   fieldInfo?: ContractV2Dictionary;
-  field_info?: ContractV2Dictionary;
   buttonType?: string;
   action?: ContractV2Dictionary | null;
   modifiers?: ContractV2Dictionary;
@@ -110,6 +156,14 @@ export interface ContractV2ActionRule {
   actionSafety?: ContractV2Dictionary;
   submitPolicy?: ContractV2Dictionary;
   tracePolicy?: ContractV2Dictionary;
+  sourceTrace?: ContractV2Dictionary[];
+  presentationAuthority?: string;
+  presentationPriority?: number;
+  sourceActionKey?: string;
+  sourceChannel?: string;
+  permissionConstraints?: ContractV2Dictionary;
+  reasonCode?: string;
+  entitlementEvaluated?: boolean;
 }
 
 export interface ContractV2ActionContract {
@@ -117,6 +171,7 @@ export interface ContractV2ActionContract {
   dependencyGraph: Record<string, string[]>;
   deletePolicy?: ContractV2Dictionary;
   surfacePolicies?: ContractV2Dictionary;
+  identityPolicy?: ContractV2Dictionary;
 }
 
 export interface ContractV2VisibleFields {
@@ -129,10 +184,21 @@ export interface ContractV2FieldGroups {
   sourceAuthority?: ContractV2Dictionary;
 }
 
+export interface ContractV2SourceContext {
+  context?: ContractV2Dictionary;
+  domain?: unknown[];
+  contextRaw?: string;
+  domainRaw?: string;
+  renderProfile?: 'create' | 'edit' | 'readonly';
+  order?: string;
+  limit?: number;
+}
+
 export interface ContractV2DataMeta extends ContractV2Dictionary {
   businessOperationProfile?: ContractV2Dictionary;
   visibleFields?: ContractV2VisibleFields;
   fieldGroups?: ContractV2FieldGroups;
+  sourceContext?: ContractV2SourceContext;
 }
 
 export interface ContractV2DataContract {
@@ -157,6 +223,8 @@ export interface ContractV2GlobalStatus {
   entryCapabilities?: ContractV2Dictionary;
   effectiveRecordCapabilities?: ContractV2Dictionary;
   effectiveRenderProfile?: 'create' | 'edit' | 'readonly' | string;
+  workflowPhase?: string;
+  approvalPhase?: string;
 }
 
 export interface ContractV2WidgetStatus {
@@ -172,6 +240,7 @@ export interface ContractV2WidgetStatus {
 
 export interface ContractV2ButtonStatus {
   btnId: string;
+  backendIdentity?: string;
   visible?: boolean;
   disabled?: boolean;
   reasonCode?: string;
@@ -216,6 +285,9 @@ export interface ContractV2RuntimeContract {
   aiEnvelope?: ContractV2Dictionary;
   interactionMode?: string;
   actionTarget?: string;
+  collaboration?: ContractV2Dictionary;
+  businessWorkspace?: ContractV2Dictionary;
+  businessActions?: ContractV2Dictionary[];
 }
 
 export interface ContractV2Lifecycle {
@@ -265,6 +337,8 @@ export interface ContractV2Snapshot {
   runtimeContract: ContractV2RuntimeContract;
   meta: ContractV2Meta;
   formStructureContract?: ContractV2Dictionary;
+  searchContract?: ContractV2Dictionary;
+  workflowContract?: ContractV2Dictionary;
 }
 
 export interface ContractV2UnsupportedFeature {

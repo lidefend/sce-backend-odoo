@@ -16,32 +16,20 @@ import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useAc
 import { resolveLoadKanbanFieldApplyState } from '../src/app/runtime/actionViewLoadViewFieldStateRuntime';
 import { resolveDesktopListCandidates } from '../src/pages/listPage/listColumnVisibility';
 
-const cardContract = {
-  head: { view_type: 'tree,kanban,form' },
-  views: {
-    tree: { columns: ['id', 'name'] },
-    kanban: {
-      fields: ['id', 'name'],
-      collection_presentation: {
-        semantic: 'card', label: '卡片', group_field: null,
-        capabilities: { grouped_lanes: false },
-      },
-    },
+const collectionStore = (viewType: string, collectionPresentation: Record<string, unknown>) => ({
+  snapshot: {
+    pageInfo: { viewType },
+    layoutContract: { listProfile: { collection_presentation: collectionPresentation } },
   },
-};
-const workflowContract = {
-  head: { view_type: 'kanban,tree,form' },
-  views: {
-    tree: { columns: ['id', 'name', 'state'] },
-    kanban: {
-      fields: ['id', 'name', 'state'],
-      collection_presentation: {
-        semantic: 'workflow_board', label: '流程看板', group_field: 'state',
-        capabilities: { grouped_lanes: true },
-      },
-    },
-  },
-};
+}) as Parameters<typeof resolveActionCollectionPresentation>[0];
+const cardContract = collectionStore('kanban', {
+  semantic: 'card', label: '卡片', group_field: null,
+  capabilities: { grouped_lanes: false },
+});
+const workflowContract = collectionStore('kanban', {
+  semantic: 'workflow_board', label: '流程看板', group_field: 'state',
+  capabilities: { grouped_lanes: true },
+});
 
 // fresh_project_ledger_defaults_to_table
 assert.equal(resolvePreferredActionViewMode({
@@ -67,9 +55,14 @@ assert.equal(groupCollectionRecords([
 assert.equal(resolveGroupedCollectionPresentation(
   resolveActionCollectionPresentation(cardContract, 'kanban'), 'state',
 ).semantic, 'workflow_board');
-assert.deepEqual(extractKanbanFieldsFromContract({ views: { kanban: { fields: [
-  { field: { name: 'name', label: '名称' } }, { field: { name: 'lifecycle_state', label: '状态' } },
-] } } }), ['name', 'lifecycle_state']);
+const canonicalKanbanStore = {
+  snapshot: { pageInfo: { viewType: 'kanban' } },
+  widgetsByFieldCode: new Map([
+    ['name', { fieldCode: 'name' }],
+    ['lifecycle_state', { fieldCode: 'lifecycle_state' }],
+  ]),
+} as Parameters<typeof extractKanbanFieldsFromContract>[0];
+assert.deepEqual(extractKanbanFieldsFromContract(canonicalKanbanStore), ['name', 'lifecycle_state']);
 assert.deepEqual(resolveLoadKanbanFieldApplyState({
   kanbanContractFields: [{ name: 'name' }, { name: 'lifecycle_state' }] as unknown as string[],
   fallbackKanbanFields: [], advancedContractFields: [], uniqueFieldsFn: (fields) => [...new Set(fields)],
@@ -99,7 +92,7 @@ assert.equal(resolveResponsiveCollectionPresentation({ explicitMode: 'table', co
 assert.equal(resolveResponsiveCollectionPresentation({ explicitMode: 'card', compactViewport: true }), 'explicit_card');
 
 // unknown_kanban_semantic_fails_safe
-assert.equal(resolveActionCollectionPresentation({ views: { kanban: { collection_presentation: { semantic: 'mystery' } } } }, 'kanban').semantic, 'card');
+assert.equal(resolveActionCollectionPresentation(collectionStore('kanban', { semantic: 'mystery' }), 'kanban').semantic, 'card');
 
 // Native desktop tree columns within the product budget remain authoritative;
 // narrow widths use horizontal scrolling instead of silently hiding fields.

@@ -156,7 +156,7 @@ function descendantWidgetIds(container: ContractV2Container, store: ContractV2No
     child.widgetList.forEach((widget) => ids.add(widget.widgetId));
     const kind = text(child.type || child.containerType).toLowerCase();
     if (kind === 'field') {
-      const fieldInfo = asDict(child.fieldInfo || child.field_info);
+      const fieldInfo = asDict(child.fieldInfo);
       const fieldCode = text(child.name || fieldInfo.name || child.attributes?.name);
       const synthesized = store.widgetsByFieldCode.get(fieldCode);
       if (synthesized) ids.add(synthesized.widgetId);
@@ -175,7 +175,7 @@ function widgetsOwnedByContainer(
   if (direct.length) return direct;
   const kind = text(container.type || container.containerType).toLowerCase();
   if (kind !== 'field') return [];
-  const fieldInfo = asDict(container.fieldInfo || container.field_info);
+  const fieldInfo = asDict(container.fieldInfo);
   const fieldCode = text(container.name || fieldInfo.name || container.attributes?.name);
   const widget = store.widgetsByFieldCode.get(fieldCode);
   return widget ? [widget] : [];

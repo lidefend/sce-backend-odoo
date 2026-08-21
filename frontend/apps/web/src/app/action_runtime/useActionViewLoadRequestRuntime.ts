@@ -1,4 +1,5 @@
-import { resolveUnifiedPageContractV2PrimaryDataSource } from '../contracts/unifiedPageContractV2';
+import { resolveContractV2PrimaryDataSource } from '../contracts/v2/store';
+import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 import { extractListFieldSemanticsFromContract } from './useActionViewContractShapeRuntime';
 
 type Dict = Record<string, unknown>;
@@ -6,9 +7,6 @@ type StatusInput = { error: string; recordsLength: number };
 
 type ExecuteLoadDataRequestOptions = {
   contract: unknown;
-  typedContract: {
-    fields?: Record<string, unknown>;
-  };
   viewMode: string;
   sceneReadyColumns: string[];
   listProfile: unknown;
@@ -35,7 +33,7 @@ type ExecuteLoadDataRequestOptions = {
   sceneFiltersRaw: unknown;
   metaContextRaw: unknown;
   extractColumnsFromContract: (contract: unknown, fallbackColumns: string[]) => string[];
-  convergeColumnsForSurface: (rawColumns: string[], fields: Record<string, unknown>) => string[];
+  convergeColumnsForSurface: (rawColumns: string[]) => string[];
   extractKanbanFields: (contract: unknown) => string[];
   extractKanbanProfile: (contract: unknown) => Record<string, unknown>;
   extractAdvancedViewFields: (contract: unknown, viewMode: string) => string[];
@@ -112,7 +110,6 @@ export function useActionViewLoadRequestRuntime() {
       : [];
     const contractColumns = options.convergeColumnsForSurface(
       options.extractColumnsFromContract(options.contract, profileColumns),
-      options.typedContract.fields || {},
     );
     const kanbanContractFields = options.extractKanbanFields(options.contract);
     const kanbanProfile = options.extractKanbanProfile(options.contract);
@@ -217,7 +214,7 @@ export function useActionViewLoadRequestRuntime() {
       order: options.sortLabel,
       fieldSemantics,
     });
-    const v2PrimarySource = resolveUnifiedPageContractV2PrimaryDataSource(options.contract);
+    const v2PrimarySource = resolveContractV2PrimaryDataSource(options.contract as ContractV2NormalizedStore);
     const v2PrimaryParams = (v2PrimarySource.params && typeof v2PrimarySource.params === 'object' && !Array.isArray(v2PrimarySource.params))
       ? v2PrimarySource.params as Dict
       : {};

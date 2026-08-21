@@ -582,7 +582,7 @@
 import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorCaptured, onMounted, ref, watch, type Ref } from 'vue';
 import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
-import type { ActionContract } from '@sc/schema';
+import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
@@ -591,7 +591,7 @@ import { executeButton } from '../api/executeButton';
 import { trackUsageEvent } from '../api/usage';
 import { resolveAction } from '../app/resolvers/actionResolver';
 import { resolveMenuAction } from '../app/resolvers/menuResolver';
-import { loadActionContract } from '../api/contract';
+import { loadActionContractStore } from '../api/contract';
 import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { useSessionStore } from '../stores/session';
@@ -874,10 +874,12 @@ import {
   type SurfaceIntentContract,
 } from '../app/contracts/actionViewSurfaceContract';
 import {
-  collectUnifiedPageContractV2ButtonStatus,
-  resolveUnifiedPageContractV2GlobalStatus,
-  resolveUnifiedPageContractV2SurfacePolicies,
-} from '../app/contracts/unifiedPageContractV2';
+  collectContractV2ButtonStatusById,
+  resolveContractV2ActionRules,
+  resolveContractV2EffectiveFormCapabilities,
+  resolveContractV2GlobalStatus,
+  resolveContractV2SurfacePolicies,
+} from '../app/contracts/v2';
 import {
   mapProjectionMetricItems,
 } from '../app/contracts/actionViewProjectionContract';
@@ -1054,64 +1056,7 @@ type ContractViewBlock = {
   model?: string;
   order?: string;
 };
-type ActionViewRuntimeContract = ActionContract & {
-  head?: {
-    model?: string;
-    view_type?: string;
-    context?: unknown;
-    res_id?: number | string;
-    permissions?: {
-      read?: boolean;
-      write?: boolean;
-      create?: boolean;
-      unlink?: boolean;
-    };
-  };
-  views?: {
-    tree?: ContractViewBlock;
-    list?: ContractViewBlock;
-    kanban?: ContractViewBlock;
-    form?: ContractViewBlock;
-  };
-  fields?: Record<string, unknown>;
-  buttons?: Array<Record<string, unknown>>;
-  action_groups?: ContractActionGroupRaw[];
-  toolbar?: {
-    header?: Array<Record<string, unknown>>;
-    sidebar?: Array<Record<string, unknown>>;
-    footer?: Array<Record<string, unknown>>;
-  };
-  surface_policies?: {
-    filters_primary_max?: number;
-    actions_primary_max?: number;
-    filters_max?: number;
-    actions_max?: number;
-    kind?: string;
-    delete_mode?: string;
-    batch_policy?: SceneListProfile['batch_policy'];
-    intent_profile?: SurfaceIntentContract;
-    empty_reason?: string;
-  };
-  model?: string;
-  data?: {
-    type?: string;
-    url?: string;
-    target?: string;
-  };
-  warnings?: Array<string | Record<string, unknown>>;
-  degraded?: boolean;
-  permissions?: {
-    effective?: {
-      rights?: {
-        read?: boolean;
-        write?: boolean;
-        create?: boolean;
-        unlink?: boolean;
-      };
-    };
-  };
-  __unified_page_contract_v2?: Record<string, unknown>;
-};
+type ActionViewRuntimeContract = ContractV2NormalizedStore;
 type ContractActionSelection = 'none' | 'single' | 'multi';
 type ContractActionButton = {
   key: string;
@@ -1187,7 +1132,7 @@ const batchPolicy = computed<ActionBatchPolicy>(() => {
   if (profilePolicy && Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0) {
     return profilePolicy;
   }
-  const surfacePolicies = resolveUnifiedPageContractV2SurfacePolicies(actionContract.value);
+  const surfacePolicies = resolveContractV2SurfacePolicies(actionContract.value);
   return (surfacePolicies.batch_policy as ActionBatchPolicy | undefined) || profilePolicy || {};
 });
 const activeField = computed(() => String(batchPolicy.value.active_field || '').trim());
@@ -1213,7 +1158,7 @@ const listColumnPreferenceScope = computed(() => {
 });
 const sceneReadyEntry = computed<Record<string, unknown> | null>(() => {
   if (!sceneContextEnabled.value || !sceneKey.value) return null;
-  return findSceneReadyEntry(session.sceneReadyContractV1, sceneKey.value);
+  return findSceneReadyEntry(session.sceneReadyContract, sceneKey.value);
 });
 const sceneReadyCollectionMode = computed<'list' | 'kanban'>(() => {
   const raw = String(route.query.view_mode || '').trim().toLowerCase();
@@ -1268,9 +1213,9 @@ watch(
         },
         meta: { startup_chain_bypass: true },
       });
-      const contract = result.scene_ready_contract_v1;
+      const contract = result.scene_ready_contract;
       if (contract && typeof contract === 'object' && Array.isArray((contract as Record<string, unknown>).scenes)) {
-        session.sceneReadyContractV1 = contract as never;
+        session.sceneReadyContract = contract as never;
       }
     } catch (err) {
       void err;
@@ -1332,22 +1277,17 @@ const {
 });
 
 function resolveCreateRight(contract: ActionViewRuntimeContract | null): boolean {
-  const head = contract?.head?.permissions?.create;
-  if (typeof head === 'boolean') return head;
-  const effective = contract?.permissions?.effective?.rights?.create;
-  if (typeof effective === 'boolean') return effective;
-  const globalStatus = resolveUnifiedPageContractV2GlobalStatus(contract?.__unified_page_contract_v2);
+  const capabilities = resolveContractV2EffectiveFormCapabilities(contract);
+  if (capabilities) return capabilities.create;
+  const globalStatus = resolveContractV2GlobalStatus(contract);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
-  if (pageAuth === 'read') return false;
-  return true;
+  return ['edit', 'write', 'manage'].includes(pageAuth);
 }
 
 function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean {
-  const head = contract?.head?.permissions?.write;
-  if (typeof head === 'boolean') return head;
-  const effective = contract?.permissions?.effective?.rights?.write;
-  if (typeof effective === 'boolean') return effective;
-  const globalStatus = resolveUnifiedPageContractV2GlobalStatus(contract?.__unified_page_contract_v2);
+  const capabilities = resolveContractV2EffectiveFormCapabilities(contract);
+  if (capabilities) return capabilities.write;
+  const globalStatus = resolveContractV2GlobalStatus(contract);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
   return ['edit', 'write', 'manage'].includes(pageAuth);
 }
@@ -1371,7 +1311,7 @@ const showViewSwitch = computed(() =>
 );
 const toolbarViewModeLabels = computed(() =>
   vm.value.page.availableViewModes.reduce<Record<string, string>>((acc, mode) => {
-    acc[mode] = mode === 'kanban' ? resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(actionContract.value as Record<string, unknown> | null, mode), route.query.group_by).label : viewModeLabel(mode);
+    acc[mode] = mode === 'kanban' ? resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(actionContract.value, mode), route.query.group_by).label : viewModeLabel(mode);
     return acc;
   }, {}),
 );
@@ -1561,13 +1501,13 @@ async function openCreateRecord() {
 }
 const availableViewModes = computed(() => resolveActionViewAvailableModes({ contractViewTypeRaw: contractViewType.value,
   metaViewModesRaw: (actionMeta.value as { view_modes?: unknown } | null)?.view_modes,
-  contract: actionContract.value as Record<string, unknown> | null }));
+  contract: actionContract.value }));
 const viewMode = computed(() => {
   const fallbackMode = resolvedModelRef.value || Number(route.query.action_id || 0) > 0 ? 'tree' : '';
   return resolveRenderableActionViewMode(preferredViewMode.value, availableViewModes.value, fallbackMode);
 });
 const collectionPresentation = computed(() => resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(
-  actionContract.value as Record<string, unknown> | null, viewMode.value), route.query.group_by));
+  actionContract.value, viewMode.value), route.query.group_by));
 const {
   viewModeLabel,
   switchViewMode,
@@ -1708,7 +1648,7 @@ const {
 });
 const actionIdentityInput = computed(() => buildActionPageIdentity({
     action: actionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
-    actionContractTitle: actionContract.value?.head?.title || actionMetaName.value,
+    actionContractTitle: actionContract.value?.snapshot.pageInfo.pageName || actionMetaName.value,
     legacyTitle: legacyPageTitle.value, menuName: currentMenuTitle.value,
     modelName: resolvedModelRef.value || model.value, status: status.value, subtitle: subtitle.value,
 }));
@@ -1720,16 +1660,7 @@ function resolveContractActionCountForHud() {
   const contract = actionContract.value;
   if (!contract) return 0;
 
-  const buttons = Array.isArray(contract.buttons) ? contract.buttons : [];
-  if (buttons.length) return buttons.length;
-
-  const toolbar = typeof contract.toolbar === 'object' && contract.toolbar
-    ? (contract.toolbar as Record<string, unknown>)
-    : {};
-  const header = Array.isArray(toolbar.header) ? toolbar.header.length : 0;
-  const sidebar = Array.isArray(toolbar.sidebar) ? toolbar.sidebar.length : 0;
-  const footer = Array.isArray(toolbar.footer) ? toolbar.footer.length : 0;
-  return header + sidebar + footer;
+  return resolveContractV2ActionRules(contract).length;
 }
 
 const { buildHudEntriesInput } = useActionViewHudEntriesInputRuntime({
@@ -1832,7 +1763,7 @@ const {
   strictContractMode,
   toContractActionButton: (row, dedup) => applyActionViewV2ButtonStatus(
     toContractActionButton(row, dedup) as ContractActionButton | null,
-    collectUnifiedPageContractV2ButtonStatus(actionContract.value),
+    collectContractV2ButtonStatusById(actionContract.value),
   ),
   resolveContractActionPresentation,
   pageText,
@@ -2258,10 +2189,10 @@ async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; 
     is_default: payload.isDefault === true,
     is_shared: payload.isShared === true,
   });
-  actionContract.value = await loadActionContract(actionId.value, {
+  actionContract.value = await loadActionContractStore(actionId.value, {
     sceneKey: sceneKey.value || undefined,
     menuId: menuId.value || undefined,
-  }) as ActionViewRuntimeContract;
+  });
   await requestLoadPage();
 }
 
@@ -2410,7 +2341,7 @@ const { runContractAction } = useActionViewActionRuntime({
   resolveActionContextRecordId: () => {
     const fromRoute = toPositiveInt(route.query.res_id);
     if (fromRoute) return fromRoute;
-    const fromContract = toPositiveInt(actionContract.value?.head?.res_id);
+    const fromContract = toPositiveInt(actionContract.value?.snapshot.dataContract.mainData.id);
     if (fromContract) return fromContract;
     return null;
   },

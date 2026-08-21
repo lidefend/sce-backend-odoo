@@ -192,20 +192,6 @@ assert.deepEqual(normalizedWinner[0]?.actionSafety, {
   confirmMessage: 'Confirm normalized action', reasonCode: 'DANGER_ACTION',
 });
 
-const legacyFallback = buildContractFormActions({
-  contract: null,
-  model: 'res.partner',
-  recordId: 7,
-  renderProfile: 'edit',
-  sceneReadyActions: [],
-  v2ButtonStatus: {},
-  workflowActionRows: [{ key: 'legacy-only', label: 'Legacy only', kind: 'object', level: 'header' }],
-  policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
-});
-assert.equal(legacyFallback[0]?.key, 'legacy-only');
-
 const normalizedRecordHandoff = buildContractFormActions({
   contract: null,
   model: 'x.document',

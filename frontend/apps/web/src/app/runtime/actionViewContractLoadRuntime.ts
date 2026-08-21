@@ -1,4 +1,5 @@
 import { normalizeActionViewMode, resolveActionViewAvailableModes } from '../contracts/actionViewSurfaceContract';
+import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
 
@@ -9,7 +10,7 @@ export function resolvePreferredActionViewMode(options: {
   contractViewTypeRaw: unknown;
   metaViewModesRaw: unknown;
   metaViewsRaw?: unknown;
-  contract: Dict;
+  contract: ContractV2NormalizedStore;
   routeViewModeRaw: unknown;
   currentPreferredViewModeRaw: unknown;
 }): string {

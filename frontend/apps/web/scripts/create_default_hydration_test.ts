@@ -8,21 +8,27 @@ import {
   resolveCreateRouteRelationLabels,
   shouldHydrateCreateDefaults,
 } from '../src/pages/contractForm/createDefaults';
+import { createContractV2Store } from '../src/app/contracts/v2/store';
 
-const contract = {
-  fields: {
-    archived: { type: 'boolean' },
-    category_id: { type: 'many2one' },
-    owner_id: { type: 'many2one' },
-    partner_id: { type: 'many2one' },
-    priority: { type: 'integer' },
-    title: { type: 'char' },
-  },
-  __unified_page_contract_v2: {
+const v2ContractStore = createContractV2Store({
     pageInfo: { contractVersion: '2.2.0', pageId: 'x.document.create', clientType: 'web' },
-    layoutContract: { containerTree: [] },
+    layoutContract: {
+      pageId: 'x.document.create', layoutType: 'form', adaptMode: 'desktop', layoutHints: {}, componentRegistry: {},
+      containerTree: [{
+        containerId: 'form.root', containerType: 'form', title: 'Document', span: 24, children: [],
+        widgetList: [
+          ['archived', 'boolean'], ['category_id', 'many2one'], ['owner_id', 'many2one'],
+          ['partner_id', 'many2one'], ['priority', 'integer'], ['title', 'char'],
+        ].map(([fieldCode, fieldType]) => ({
+          widgetId: `field.${fieldCode}`, widgetType: fieldType, fieldCode, label: fieldCode,
+          span: 24, componentKey: 'sc.form.field', capabilities: [], componentConfig: { fieldType }, fieldType,
+        })),
+      }],
+    },
     actionContract: { actionRuleList: [] },
+    statusContract: { globalStatus: {}, widgetStatus: [], containerStatus: [], buttonStatus: [], selectorStatus: [] },
     dataContract: {
+      dataSource: { primary: {} },
       mainData: {
         owner_id: false,
         category_id: 41,
@@ -33,8 +39,10 @@ const contract = {
         sourceContext: { context: { default_department_id: 31 } },
       },
     },
-  },
-} as never;
+    runtimeContract: {},
+    formStructureContract: {},
+    meta: {},
+} as never);
 const routeQuery = {
   default_owner_id: '17',
   default_owner_id_label: 'Owner A',
@@ -48,7 +56,7 @@ const routeQuery = {
   default_archived: 'true',
 };
 
-const defaults = resolveCreateDefaults({ contract, routeQuery, v2ContractStore: null });
+const defaults = resolveCreateDefaults({ routeQuery, v2ContractStore });
 assert.equal(defaults.owner_id, 17, 'a route default fills an empty contract value');
 assert.equal(defaults.partner_id, 23, 'multiple route relation defaults are applied');
 assert.equal(defaults.priority, 3, 'a scalar route default is hydrated without becoming a relation option');
@@ -57,7 +65,7 @@ assert.equal(defaults.title, 'Contract title', 'an explicit scalar contract valu
 assert.equal(defaults.archived, false, 'an explicit boolean false remains authoritative');
 assert.equal(defaults.department_id, 31, 'context fills a value absent from contract and route defaults');
 assert.equal('owner_id_label' in defaults, false, 'display labels never become business fields');
-assert.deepEqual(resolveCreateRouteRelationLabels(contract, routeQuery, defaults), {
+assert.deepEqual(resolveCreateRouteRelationLabels(v2ContractStore, routeQuery, defaults), {
   owner_id: 'Owner A',
   partner_id: 'Partner B',
 }, 'route labels hydrate only matching many2one defaults, never scalar fields');

@@ -23,6 +23,7 @@ import type {
   ContractV2PatchStrategy,
   ContractV2SelectorStatus,
   ContractV2Snapshot,
+  ContractV2SourceContext,
   ContractV2StatusContract,
   ContractV2RefreshMode,
   ContractV2RenderStrategy,
@@ -95,6 +96,40 @@ function requiredDisplayString(source: ContractV2Dictionary, key: string, path: 
 
 function optionalString(source: ContractV2Dictionary, key: string): string | undefined {
   return asString(source[key]) || undefined;
+}
+
+function optionalRecord(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2Dictionary | undefined {
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
+  if (isRecord(source[key])) return source[key] as ContractV2Dictionary;
+  issues.push({ path: `${path}.${key}`, message: 'must be an object' });
+  return undefined;
+}
+
+function optionalRecordArray(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2Dictionary[] | undefined {
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
+  if (!Array.isArray(source[key])) {
+    issues.push({ path: `${path}.${key}`, message: 'must be an array' });
+    return undefined;
+  }
+  const decoded: ContractV2Dictionary[] = [];
+  (source[key] as unknown[]).forEach((item, index) => {
+    if (!isRecord(item)) {
+      issues.push({ path: `${path}.${key}[${index}]`, message: 'must be an object' });
+      return;
+    }
+    decoded.push(item);
+  });
+  return decoded;
 }
 
 function readAliasedObject(
@@ -300,12 +335,12 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
 
 function structuralContainerText(raw: ContractV2Dictionary, key: 'containerId' | 'containerType' | 'title'): string {
   if (key === 'containerId') {
-    return asString(raw.containerId || raw.container_id || raw.widgetId || raw.widget_id || raw.name);
+    return asString(raw.containerId || raw.widgetId || raw.name);
   }
-  if (key === 'containerType') return asString(raw.containerType || raw.container_type || raw.type);
+  if (key === 'containerType') return asString(raw.containerType || raw.type);
   // Structural identity is never user-facing copy. Native nodes commonly carry
   // only `name`/`widgetId`; neither is a display title.
-  if (asString(raw.type || raw.containerType || raw.container_type).toLowerCase() === 'field') {
+  if (asString(raw.type || raw.containerType).toLowerCase() === 'field') {
     return asString(raw.title);
   }
   return asString(raw.title || raw.label || raw.string);
@@ -352,12 +387,13 @@ function decodeContainer(
   const nodes = decodeNodeList('nodes');
   const items = decodeNodeList('items');
   const attributes = asRecord(raw.attributes);
-  const fieldInfo = asRecord(raw.fieldInfo || raw.field_info);
+  const fieldInfo = asRecord(raw.fieldInfo);
   const action = asRecord(raw.action);
   const modifiers = asRecord(raw.modifiers);
-  const formStructure = asRecord(raw.formStructure || raw.form_structure);
-  const formStructureRole = asRecord(raw.formStructureRole || raw.form_structure_role);
-  const sourceAuthority = asRecord(raw.sourceAuthority || raw.source_authority);
+  const formStructure = asRecord(raw.formStructure);
+  const formStructureRole = asRecord(raw.formStructureRole);
+  const sourceAuthority = asRecord(raw.sourceAuthority);
+  const componentConfig = asRecord(raw.componentConfig);
   return {
     containerId,
     containerType,
@@ -377,9 +413,12 @@ function decodeContainer(
     ...(Number(raw.cols || raw.col) ? { cols: Number(raw.cols || raw.col) } : {}),
     ...(Number(raw.columns) ? { columns: Number(raw.columns) } : {}),
     ...(asString(raw.widget) ? { widget: asString(raw.widget) } : {}),
+    ...(asString(raw.widgetId) ? { widgetId: asString(raw.widgetId) } : {}),
+    ...(asString(raw.componentKey) ? { componentKey: asString(raw.componentKey) } : {}),
+    ...(Object.keys(componentConfig).length ? { componentConfig } : {}),
     ...(Object.keys(attributes).length ? { attributes } : {}),
-    ...(Object.keys(fieldInfo).length ? { fieldInfo, field_info: fieldInfo } : {}),
-    ...(asString(raw.buttonType || raw.button_type) ? { buttonType: asString(raw.buttonType || raw.button_type) } : {}),
+    ...(Object.keys(fieldInfo).length ? { fieldInfo } : {}),
+    ...(asString(raw.buttonType) ? { buttonType: asString(raw.buttonType) } : {}),
     ...(Object.keys(action).length ? { action } : {}),
     ...(Object.keys(modifiers).length ? { modifiers } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'invisible') ? { invisible: raw.invisible } : {}),
@@ -433,6 +472,10 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   const actionSafety = asRecord(raw.actionSafety);
   const submitPolicy = asRecord(raw.submitPolicy);
   const tracePolicy = asRecord(raw.tracePolicy);
+  const sourceTrace = Array.isArray(raw.sourceTrace)
+    ? raw.sourceTrace.map((item) => asRecord(item)).filter((item) => Object.keys(item).length > 0)
+    : [];
+  const permissionConstraints = asRecord(raw.permissionConstraints);
   const allowed = optionalBoolean(raw.allowed);
   const enabled = optionalBoolean(raw.enabled);
   const disabled = optionalBoolean(raw.disabled);
@@ -461,6 +504,14 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
     ...(Object.keys(actionSafety).length ? { actionSafety } : {}),
     ...(Object.keys(submitPolicy).length ? { submitPolicy } : {}),
     ...(Object.keys(tracePolicy).length ? { tracePolicy } : {}),
+    ...(sourceTrace.length ? { sourceTrace } : {}),
+    ...(optionalString(raw, 'presentationAuthority') ? { presentationAuthority: optionalString(raw, 'presentationAuthority') } : {}),
+    ...(Number.isInteger(raw.presentationPriority) ? { presentationPriority: Number(raw.presentationPriority) } : {}),
+    ...(optionalString(raw, 'sourceActionKey') ? { sourceActionKey: optionalString(raw, 'sourceActionKey') } : {}),
+    ...(optionalString(raw, 'sourceChannel') ? { sourceChannel: optionalString(raw, 'sourceChannel') } : {}),
+    ...(Object.keys(permissionConstraints).length ? { permissionConstraints } : {}),
+    ...(optionalString(raw, 'reasonCode') ? { reasonCode: optionalString(raw, 'reasonCode') } : {}),
+    ...(optionalBoolean(raw.entitlementEvaluated) !== undefined ? { entitlementEvaluated: optionalBoolean(raw.entitlementEvaluated) } : {}),
   };
 }
 
@@ -487,6 +538,9 @@ function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[
   return {
     actionRuleList,
     dependencyGraph,
+    ...(Object.keys(asRecord(source.identityPolicy)).length
+      ? { identityPolicy: asRecord(source.identityPolicy) }
+      : {}),
     ...(Object.keys(asRecord(source.deletePolicy)).length
       ? { deletePolicy: asRecord(source.deletePolicy) }
       : {}),
@@ -547,9 +601,50 @@ function decodeFieldGroups(value: unknown, path: string, issues: DecodeIssue[]):
   };
 }
 
+function decodeSourceContext(value: unknown, issues: DecodeIssue[]): ContractV2SourceContext | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext', message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  const allowed = new Set(['context', 'domain', 'contextRaw', 'domainRaw', 'renderProfile', 'order', 'limit']);
+  Object.keys(row).filter((key) => !allowed.has(key)).forEach((key) => {
+    issues.push({ path: `dataContract.dataMeta.sourceContext.${key}`, message: 'is not allowed' });
+  });
+  const context = optionalRecord(row, 'context', 'dataContract.dataMeta.sourceContext', issues);
+  const domain = row.domain;
+  if (domain !== undefined && !Array.isArray(domain)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext.domain', message: 'must be an array' });
+  }
+  for (const key of ['contextRaw', 'domainRaw', 'order'] as const) {
+    if (row[key] !== undefined && typeof row[key] !== 'string') {
+      issues.push({ path: `dataContract.dataMeta.sourceContext.${key}`, message: 'must be a string' });
+    }
+  }
+  const renderProfile = asString(row.renderProfile);
+  if (row.renderProfile !== undefined && !['create', 'edit', 'readonly'].includes(renderProfile)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext.renderProfile', message: 'must be create, edit, or readonly' });
+  }
+  const limit = Number(row.limit);
+  if (row.limit !== undefined && (!Number.isInteger(limit) || limit < 1)) {
+    issues.push({ path: 'dataContract.dataMeta.sourceContext.limit', message: 'must be a positive integer' });
+  }
+  return {
+    ...(context ? { context } : {}),
+    ...(Array.isArray(domain) ? { domain } : {}),
+    ...(typeof row.contextRaw === 'string' ? { contextRaw: row.contextRaw } : {}),
+    ...(typeof row.domainRaw === 'string' ? { domainRaw: row.domainRaw } : {}),
+    ...(['create', 'edit', 'readonly'].includes(renderProfile) ? { renderProfile: renderProfile as 'create' | 'edit' | 'readonly' } : {}),
+    ...(typeof row.order === 'string' ? { order: row.order } : {}),
+    ...(Number.isInteger(limit) && limit >= 1 ? { limit } : {}),
+  };
+}
+
 function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMeta {
   const row = asRecord(value);
   const businessOperationProfile = asRecord(row.businessOperationProfile);
+  const sourceContext = decodeSourceContext(row.sourceContext, issues);
   const forbiddenKeys = [
     'business_operation_profile',
     'visible_fields',
@@ -569,6 +664,7 @@ function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMe
     ...(Object.keys(businessOperationProfile).length ? { businessOperationProfile } : {}),
     ...(visibleFields ? { visibleFields } : {}),
     ...(fieldGroups ? { fieldGroups } : {}),
+    ...(sourceContext ? { sourceContext } : {}),
   };
 }
 
@@ -608,6 +704,8 @@ function decodeGlobalStatus(source: ContractV2Dictionary): ContractV2GlobalStatu
     ...(optionalString(source, 'effectiveRenderProfile')
       ? { effectiveRenderProfile: optionalString(source, 'effectiveRenderProfile') }
       : {}),
+    ...(optionalString(source, 'workflowPhase') ? { workflowPhase: optionalString(source, 'workflowPhase') } : {}),
+    ...(optionalString(source, 'approvalPhase') ? { approvalPhase: optionalString(source, 'approvalPhase') } : {}),
   };
 }
 
@@ -636,6 +734,7 @@ function decodeButtonStatus(raw: unknown): ContractV2ButtonStatus | null {
   if (!btnId) return null;
   return {
     btnId,
+    ...(asString(raw.backendIdentity) ? { backendIdentity: asString(raw.backendIdentity) } : {}),
     visible: optionalBoolean(raw.visible),
     disabled: optionalBoolean(raw.disabled),
     ...(optionalString(raw, 'reasonCode')
@@ -699,6 +798,9 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
       .map((item, index) => decodePatchOperation(asString(item), `runtimeContract.patchOperations[${index}]`, issues))
       .filter((item): item is ContractV2PatchOperation => Boolean(item))
     : [];
+  const collaboration = optionalRecord(source, 'collaboration', 'runtimeContract', issues);
+  const businessWorkspace = optionalRecord(source, 'businessWorkspace', 'runtimeContract', issues);
+  const businessActions = optionalRecordArray(source, 'businessActions', 'runtimeContract', issues);
   return {
     patchStrategy: decodePatchStrategy(requiredString(source, 'patchStrategy', 'runtimeContract', issues), 'runtimeContract.patchStrategy', issues),
     cachePolicy: decodeCachePolicy(requiredString(source, 'cachePolicy', 'runtimeContract', issues), 'runtimeContract.cachePolicy', issues),
@@ -714,6 +816,9 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     ...(isRecord(source.aiEnvelope) ? { aiEnvelope: source.aiEnvelope } : {}),
     ...(asString(source.interactionMode) ? { interactionMode: asString(source.interactionMode) } : {}),
     ...(asString(source.actionTarget) ? { actionTarget: asString(source.actionTarget) } : {}),
+    ...(collaboration ? { collaboration } : {}),
+    ...(businessWorkspace ? { businessWorkspace } : {}),
+    ...(businessActions ? { businessActions } : {}),
   };
 }
 
@@ -760,6 +865,40 @@ function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): Contra
   };
 }
 
+function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2Dictionary | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path: '$.searchContract', message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  const allowed = new Set([
+    'default_sort', 'default_order', 'mode', 'filters', 'saved_filters', 'group_by', 'fields',
+    'search_panel', 'favorites', 'custom', 'ui_labels', 'defaults',
+  ]);
+  Object.keys(row).filter((key) => !allowed.has(key)).forEach((key) => {
+    issues.push({ path: `$.searchContract.${key}`, message: 'is not allowed' });
+  });
+  const out: ContractV2Dictionary = {};
+  for (const key of ['default_sort', 'default_order', 'mode'] as const) {
+    if (row[key] === undefined) continue;
+    if (typeof row[key] !== 'string') {
+      issues.push({ path: `$.searchContract.${key}`, message: 'must be a string' });
+    } else {
+      out[key] = row[key];
+    }
+  }
+  for (const key of ['filters', 'saved_filters', 'group_by', 'fields'] as const) {
+    const decoded = optionalRecordArray(row, key, '$.searchContract', issues);
+    if (decoded) out[key] = decoded;
+  }
+  for (const key of ['search_panel', 'favorites', 'custom', 'ui_labels', 'defaults'] as const) {
+    const decoded = optionalRecord(row, key, '$.searchContract', issues);
+    if (decoded) out[key] = decoded;
+  }
+  return out;
+}
+
 export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const root = asRecord(value);
   const issues: DecodeIssue[] = [];
@@ -770,6 +909,9 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
   const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);
   const meta = decodeMeta(readAliasedObject(root, 'meta', [], '$', issues), issues);
+  const formStructureContract = optionalRecord(root, 'formStructureContract', '$', issues);
+  const searchContract = decodeSearchContract(root.searchContract, issues);
+  const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
   if (issues.length) {
     throw new ContractV2DecodeError(issues);
   }
@@ -781,8 +923,8 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
     dataContract,
     runtimeContract,
     meta,
-    ...(isRecord(root.formStructureContract)
-      ? { formStructureContract: asRecord(root.formStructureContract) }
-      : {}),
+    ...(formStructureContract ? { formStructureContract } : {}),
+    ...(searchContract ? { searchContract } : {}),
+    ...(workflowContract ? { workflowContract } : {}),
   };
 }
