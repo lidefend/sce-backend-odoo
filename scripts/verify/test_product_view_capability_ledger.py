@@ -223,6 +223,38 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         atom = {"view_type": "form", "capability_key": "action.type", "canonical_value": "action"}
         self.assertEqual(match_final_object_action(atom, {"final_contract_capture": {"status": "complete", "carriers": []}}), [])
 
+    def test_final_object_action_preserves_supported_native_icon(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "action.icon", "attribute": "icon",
+            "native_locator": "/form[1]/header[1]/button[2]", "occurrence_index": 2,
+            "canonical_value": "fa-check",
+        }
+        backend_identity = "native_button:object:action_approve:/form[1]/header[1]/button[2]:2"
+        rule = {
+            "actionId": "action.approve", "actionKey": "action.approve", "label": "Approve",
+            "backendIdentity": backend_identity,
+            "button": {"name": "action_approve", "type": "object"},
+            "nativeIdentity": {
+                "authoritative": True, "native_locator": atom["native_locator"],
+                "occurrence_index": 2, "name": "action_approve", "type": "object", "icon": "fa-check",
+            },
+            "presentation": {"tier": "primary", "icon": "fa-check"},
+        }
+        carrier = {"final_contract_capture": {"status": "complete", "carriers": [
+            {"source_selector": "/data/actionContract/actionRuleList", "artifact_selector": "/entries/0/final_contract_capture/carriers/0/value", "value": [rule]},
+            {"source_selector": "/data/statusContract/buttonStatus", "artifact_selector": "/entries/0/final_contract_capture/carriers/1/value", "value": [{
+                "btnId": "btn.action.approve", "backendIdentity": backend_identity,
+                "visible": True, "disabled": False,
+            }]},
+        ]}}
+
+        self.assertEqual(len(match_final_object_action(atom, carrier)), 1)
+        rule["presentation"]["icon"] = "fa-times"
+        self.assertEqual(match_final_object_action(atom, carrier), [])
+        atom["canonical_value"] = "oi-check"
+        rule["presentation"]["icon"] = "oi-check"
+        self.assertEqual(match_final_object_action(atom, carrier), [])
+
     def test_final_object_action_preserves_explicit_confirm(self) -> None:
         atom = {
             "view_type": "form", "capability_key": "action.confirm", "attribute": "confirm",

@@ -66,7 +66,10 @@
               :data-normalized-action-tier="action.tier"
               :data-action-enabled="String(action.enabled)"
               @click="action.enabled && emit('action-ref', action.actionRef)"
-            >{{ action.label }}</button>
+            >
+              <span v-if="canonicalFormActionIconClass(action.icon)" :class="['canonical-form-action-icon', canonicalFormActionIconClass(action.icon)]" aria-hidden="true" />
+              <span>{{ action.label }}</span>
+            </button>
             <details v-if="overflowActions.length" class="canonical-form-action-overflow">
               <summary>更多操作</summary>
               <div class="canonical-form-action-overflow-panel">
@@ -82,7 +85,10 @@
                   :data-action-tier="action.tier"
                   :data-action-enabled="String(action.enabled)"
                   @click="action.enabled && emit('action-ref', action.actionRef)"
-                >{{ action.label }}</button>
+                >
+                  <span v-if="canonicalFormActionIconClass(action.icon)" :class="['canonical-form-action-icon', canonicalFormActionIconClass(action.icon)]" aria-hidden="true" />
+                  <span>{{ action.label }}</span>
+                </button>
               </div>
             </details>
         </nav>
@@ -98,6 +104,7 @@ import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalFormAction, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
+import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
@@ -178,6 +185,7 @@ function changeKit(event: Event) {
   color: var(--sc-app-danger-text);
 }
 .sc-form-driver-host { min-width: 0; }
+.canonical-form-action-icon { inline-size: 1em; text-align: center; }
 .canonical-form-blocking-notice {
   display: grid;
   gap: 4px;

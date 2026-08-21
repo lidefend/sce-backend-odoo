@@ -3260,7 +3260,11 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
         if _action_presentation_priority(row) > _action_presentation_priority(current):
             current["label"] = _text(row.get("label"), _text(current.get("label")))
             if _dict(row.get("presentation")):
-                current["presentation"] = deepcopy(row.get("presentation"))
+                incoming_presentation = deepcopy(_dict(row.get("presentation")))
+                native_icon = _text(_dict(current.get("presentation")).get("icon"))
+                if native_icon and not _text(incoming_presentation.get("icon")):
+                    incoming_presentation["icon"] = native_icon
+                current["presentation"] = incoming_presentation
             current["presentationAuthority"] = _text(row.get("presentationAuthority"), "product_contract")
             current["presentationPriority"] = _action_presentation_priority(row)
         elif not _dict(current.get("presentation")) and _dict(row.get("presentation")):

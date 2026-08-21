@@ -778,6 +778,7 @@ class _TreeFormParserMixin:
                 ),
                 "presentation": {
                     "tier": "primary" if ("btn-primary" in classes or "oe_highlight" in classes) else "overflow",
+                    **({"icon": icon} if icon else {}),
                 },
                 "badge": badge or None,
                 "native_identity": {

@@ -405,6 +405,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                     "label": "提交",
                     "kind": "object",
                     "payload": {"method": "action_submit", "type": "object"},
+                    "presentation": {"tier": "primary", "icon": "fa-check"},
                 }
             ],
         }
@@ -425,6 +426,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         action_rule = full["actionContract"]["actionRuleList"][0]
         self.assertEqual(action_rule["actionKey"], "action_submit")
         self.assertEqual(action_rule["button"], {"name": "action_submit", "type": "object"})
+        self.assertEqual(action_rule["presentation"]["icon"], "fa-check")
         self.assertEqual(action_rule["targetScope"], "page")
         self.assertNotIn(action_rule["targetScope"], {"header", "toolbar", "smart", "row"})
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Any, Iterator
 
 import yaml
@@ -61,7 +62,8 @@ ACTION_IDENTITY_FIELDS = {
     "action.id": "id",
     "action.help": "help",
 }
-READY_FINAL_ACTION_CAPABILITIES = {"action.confirm", "action.identity", "action.label", "action.type"}
+READY_FINAL_ACTION_CAPABILITIES = {"action.confirm", "action.icon", "action.identity", "action.label", "action.type"}
+NATIVE_FONT_AWESOME_ICON = re.compile(r"^fa-[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def static_boolean_value(value: Any) -> bool | None:
@@ -205,6 +207,8 @@ def match_final_object_action(atom: dict[str, Any], carrier_entry: dict[str, Any
         return []
     if key == "action.type" and atom.get("canonical_value") != "object":
         return []
+    if key == "action.icon" and not NATIVE_FONT_AWESOME_ICON.fullmatch(str(atom.get("canonical_value") or "").strip().lower()):
+        return []
     final_capture = carrier_entry.get("final_contract_capture")
     if not isinstance(final_capture, dict) or final_capture.get("status") != "complete":
         return []
@@ -236,8 +240,10 @@ def match_final_object_action(atom: dict[str, Any], carrier_entry: dict[str, Any
         action_key = str(rule.get("actionKey") or "").strip()
         if not action_id or not action_key or rule.get("backendIdentity") != backend_identity:
             continue
+        presentation = rule.get("presentation") if isinstance(rule.get("presentation"), dict) else {}
         semantic_values = {
             "action.confirm": str(native.get("confirm_raw") or "").strip(),
+            "action.icon": str(presentation.get("icon") or "").strip(),
             "action.identity": native_name,
             "action.label": rule.get("label"),
             "action.type": native_type,
@@ -270,6 +276,7 @@ def match_final_object_action(atom: dict[str, Any], carrier_entry: dict[str, Any
         status_base = str(status_carrier.get("artifact_selector") or "").removesuffix("/value") + f"/value/{status_index}"
         semantic_field = {
             "action.confirm": "actionSafety/confirm_message",
+            "action.icon": "presentation/icon",
             "action.identity": "button/name",
             "action.label": "label",
             "action.type": "button/type",

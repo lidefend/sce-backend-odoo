@@ -296,6 +296,7 @@ function presentAction(
   return {
     key: action.actionKey || action.actionId,
     label: text(action.label || action.actionKey || action.actionId),
+    icon: text(action.presentation?.icon),
     tier: actionTier(action),
     visible: profiles.includes(mode)
       && status?.visible !== false

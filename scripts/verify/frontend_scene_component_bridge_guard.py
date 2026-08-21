@@ -52,9 +52,11 @@ require(exports.get("./form") == "./src/form.ts", "form export missing")
 wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRenderer.vue").read_text(encoding="utf-8")
 require("from '@sc/ui/collection'" in wrapper, "renderer must use narrow collection export")
 form_host = (WEB_SRC / "pages/contractForm/ContractFormDriverHost.vue").read_text(encoding="utf-8")
+web_index = (ROOT / "frontend/apps/web/index.html").read_text(encoding="utf-8")
 object_task_page = (WEB_SRC / "pages/contractForm/ObjectTaskPage.vue").read_text(encoding="utf-8")
 form_floorplan = (WEB_SRC / "app/presentation/canonicalFormFloorplan.ts").read_text(encoding="utf-8")
 action_executor = (WEB_SRC / "pages/contractForm/canonicalFormActionExecutor.ts").read_text(encoding="utf-8")
+presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
 v2_assembler = (ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py").read_text(encoding="utf-8")
 v2_handler = (ROOT / "addons/smart_core/handlers/ui_contract_v2.py").read_text(encoding="utf-8")
 v2_projection = (ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py").read_text(encoding="utf-8")
@@ -94,12 +96,21 @@ require(
     "form driver does not mechanically preserve normalized action tiers",
 )
 require(
+    "canonicalFormActionIconClass(action.icon)" in form_host
+    and "canonical-form-action-icon" in form_host
+    and "action.presentation?.icon" in presenter,
+    "form driver does not mechanically render the normalized native action icon",
+)
+require(
+    '/web/static/lib/fontawesome/css/font-awesome.css' in web_index,
+    "canonical action icons do not load the Odoo native Font Awesome asset",
+)
+require(
     "var(--sc-semantic-surface-interactive)" in form_host
     and "var(--sc-semantic-text-on-interactive) !important" in form_host,
     "primary action does not consume the registered interactive contrast tokens",
 )
 require("actionId === 'form.save'" in action_executor, "canonical form.save is not bridged to the unified save executor")
-presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
 canonical_node_renderer = (WEB_SRC / "pages/contractForm/CanonicalFormNodeRenderer.vue").read_text(encoding="utf-8")
 require(
     "mode === 'readonly' && action.actionId === 'form.save'" in presenter,

@@ -5004,3 +5004,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `CAPABILITY_ACTION_IDENTITY_REDUCED` fallback; totals are `381` ready,
   `1,340` fallback, `24,810` unsupported and `0` silent loss. This batch does
   not change form layout, business action semantics or public intents.
+
+## Native form action icon presentation closure (2026-08-21)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `aff09540`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / native
+  action presentation carrier and generic canonical form renderer / `smart_core`
+  and `frontend/apps/web`.
+- Reason / boundary: preserve the existing Odoo `fa-*` button icon atom through
+  `actionRule.presentation.icon` and render it with the native Font Awesome
+  asset while retaining the accessible text label. Unknown icon dialects fail
+  closed. No business-page semantics, field ordering or action behavior changed.
+- Blast radius / validation: canonical form actions only; parser and UPC V2
+  units, canonical presenter, action presentation, strict TypeScript and scene
+  bridge guards passed. This small capability batch is intentionally closed
+  without using it to claim professional form structure completion.

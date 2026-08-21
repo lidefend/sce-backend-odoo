@@ -13,6 +13,7 @@ export type CanonicalRelationValue = {
 export type CanonicalFormAction = {
   key: string;
   label: string;
+  icon: string;
   tier: 'primary' | 'secondary' | 'overflow' | 'configuration';
   visible: boolean;
   enabled: boolean;

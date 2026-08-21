@@ -17,6 +17,7 @@ import {
 } from '../src/pages/contractForm/canonicalFormActionExecutor';
 import type { ContractAction } from '../src/pages/contractForm/types';
 import { contractActionConfirmationPrompt } from '../src/pages/contractForm/actionContract';
+import { canonicalFormActionIconClass } from '../src/pages/contractForm/canonicalFormActionIcon';
 import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
 import {
   formatMonetaryDisplayValue,
@@ -94,7 +95,7 @@ function snapshot(): ContractV2Snapshot {
         actionId: 'action.submit', backendIdentity: 'button:object:action_submit', triggerType: 'click',
         sourceWidgetId: 'page.root', targetIds: [], dispatchMode: 'serverBlocking', targetScope: 'page',
         refreshMode: 'full', actionKey: 'action_submit', label: 'Submit', allowed: true, enabled: true,
-        disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'primary' },
+        disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'primary', icon: 'fa-check' },
         actionSafety: { level: 'danger', requiresConfirmation: true },
       }], dependencyGraph: { 'action.submit': ['field.name'] },
     },
@@ -164,6 +165,10 @@ assert.equal(fields.find((field) => field.fieldCode === 'state')?.visible, false
 assert.equal(model.actionBar[0]?.actionRef, store.snapshot.actionContract.actionRuleList[0]);
 assert.deepEqual(model.actionBar[0]?.actionRef, source.actionContract.actionRuleList[0]);
 assert.equal(model.actionBar[0]?.enabled, true);
+assert.equal(model.actionBar[0]?.icon, 'fa-check');
+assert.equal(canonicalFormActionIconClass(model.actionBar[0]?.icon || ''), 'fa fa-check');
+assert.equal(canonicalFormActionIconClass('fa-check injected-class'), '');
+assert.equal(canonicalFormActionIconClass('oi-check'), '');
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
 
 const bodyActionSnapshot = structuredClone(snapshot());
@@ -768,6 +773,7 @@ assert.deepEqual(
   disabledSecondaryPrimaryModel.actionBar.find((action) => action.key === 'action_blocked'),
   {
     key: 'action_blocked', label: 'Submit', tier: 'primary', visible: true, enabled: false,
+    icon: 'fa-check',
     reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE', visibleProfiles: ['edit', 'readonly'],
     safety: { level: 'danger', requiresConfirmation: true },
     actionRef: disabledSecondaryPrimary.actionContract.actionRuleList[1],

@@ -35,6 +35,8 @@ def _interaction_evidence_symbol(capability_key: str) -> str:
     return (
         "contractActionConfirmationPrompt"
         if capability_key == "action.confirm"
+        else "canonicalFormActionIconClass"
+        if capability_key == "action.icon"
         else INTERACTION_EVIDENCE_SYMBOL
     )
 

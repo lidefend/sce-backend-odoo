@@ -490,6 +490,8 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(action["native_identity"]["data_hotkey"], "a")
         self.assertEqual(action["native_identity"]["special"], "save")
         self.assertEqual(action["native_identity"]["confirm_raw"], "Confirm")
+        self.assertEqual(action["native_identity"]["icon"], "fa-check")
+        self.assertEqual(action["presentation"]["icon"], "fa-check")
         self.assertEqual(action["native_identity"]["occurrence_index"], 1)
         self.assertEqual(action["native_identity"]["canonical_region"], "layout")
         self.assertTrue(action["native_identity"]["authoritative"])
