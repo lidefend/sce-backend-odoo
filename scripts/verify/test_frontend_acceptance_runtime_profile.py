@@ -92,6 +92,14 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         ):
             self.assertIn(marker, runtime)
 
+    def test_release_static_server_proxies_odoo_web_assets_before_spa_fallback(self):
+        server = (ROOT / "scripts/release/release_static_server.mjs").read_text(
+            encoding="utf-8"
+        )
+        backend_route = "requestPath === '/web' || requestPath.startsWith('/web/')"
+        self.assertIn(backend_route, server)
+        self.assertLess(server.index("if (isBackendRoute)"), server.index("const raw ="))
+
     def test_runtime_mutators_validate_existing_resource_identity_before_change(self):
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
             encoding="utf-8"

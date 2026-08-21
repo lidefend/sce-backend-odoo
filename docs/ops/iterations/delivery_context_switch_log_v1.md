@@ -5019,3 +5019,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   units, canonical presenter, action presentation, strict TypeScript and scene
   bridge guards passed. This small capability batch is intentionally closed
   without using it to claim professional form structure completion.
+
+## Payment request release static parity closure (2026-08-22)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `0bbf570e`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling / frontend
+  release static-server parity / `scripts/release` and its existing runtime test.
+- Reason / boundary: PR #276 reached the production page-identity journey, but
+  every otherwise valid page failed because the isolated release server sent
+  SPA HTML for the Odoo Font Awesome stylesheet. The production Nginx topology
+  already proxies `/web`; the governed release server now mirrors that route.
+- Why Here / Why Not Elsewhere: this is an acceptance carrier defect, not a
+  Contract V2, Floorplan, semantic-component, TDesign, Native, UI5, P1, or P2
+  behavior gap. No product rule or business inference is introduced.
+- Blast radius / validation: `/api/` behavior is unchanged; only exact `/web`
+  and `/web/*` requests join the existing backend proxy path before SPA
+  fallback. Existing runtime unit tests, scene bridge guard, production build,
+  governed page identity and the authoritative frontend release gate provide
+  containment evidence.
