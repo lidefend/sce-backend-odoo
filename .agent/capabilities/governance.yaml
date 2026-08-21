@@ -1,0 +1,39 @@
+capability:
+  id: governance
+  purpose: repository_execution_governance
+  formal_product_layer: P4
+
+  provides:
+    - repository_inventory
+    - agent_context_maintenance
+    - batch_boundary_freeze
+    - candidate_fingerprint_management
+    - governed_workflow_definition
+    - evidence_index_maintenance
+
+  constraints:
+    allowed:
+      - read_only_repository_inspection
+      - agent_metadata_change
+      - governance_document_change
+      - governed_guard_change
+    forbidden:
+      - product_semantic_change
+      - manual_runtime_identity_creation
+      - manual_database_or_compose_assembly
+      - bypass_make_for_remote_or_runtime_write
+      - overwrite_unowned_dirty_change
+
+  approval_required:
+    new_runtime_profile: true
+    new_database_identity: true
+    new_external_dependency: true
+    production_write: true
+
+  evidence_required:
+    - preflight_result
+    - formal_layer_declaration
+    - batch_scope
+    - excluded_dirty_paths
+    - verification_result
+    - rollback_path

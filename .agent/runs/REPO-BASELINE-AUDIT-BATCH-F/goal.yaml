@@ -1,0 +1,44 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-F
+  goal: REPO-BASELINE-AUDIT
+  workflow: backend-feature
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P1
+    layer_target: smart_construction_core_project_form_standard_layout
+    module: smart_construction_core
+    standard_vs_user_specific: construction_industry_standard
+    why_here: project_owner_and_project_manager_are_distinct_industry_product_fields
+    why_not_elsewhere: frontend_must_render_backend_layout_semantics_without_field_suppression_or_relabel_inference
+    blast_radius: project_form_user_id_manager_id_labels_and_projection_guard
+
+  semantics:
+    user_id: project_owner
+    manager_id: project_manager
+    preserve_both_fields: true
+
+  batch:
+    id: Batch-F
+    objective: align_project_owner_and_manager_layout_semantics
+    scope:
+      - addons/smart_construction_core/core_extension_project_layout.py
+      - scripts/verify/construction_core_extension_project_layout_split_guard.py
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/evidence.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-F/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-F/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-F/evidence.yaml
+    exclusions:
+      - model_fields
+      - access_rules
+      - action_domains
+      - frontend
+
+  rollback:
+    method: restore_previous_project_layout_helper_and_guard_semantics

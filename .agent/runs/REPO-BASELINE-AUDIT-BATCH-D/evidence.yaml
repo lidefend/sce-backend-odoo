@@ -1,0 +1,45 @@
+evidence:
+  database_identity:
+    target_database_role: platform_internal_development_demo_tenant
+    target_tenant_id: internal_demo
+    target_environment_id: local_dev_persistent
+    database: sc_dev_demo
+    exact_database_filter: ^sc_dev_demo$
+    compose_project: sc-local-dev
+    volume_identity: sc_local_dev
+    is_platform_control_database: false
+    is_industry_catalog_database: false
+    is_customer_tenant_database: false
+    is_isolated_rehearsal_database: false
+    customer_business_data_allowed: false
+    fixture_allowed: true
+    status: resolved
+
+  environment_inventory:
+    command: make local.env.status
+    local_dev: passed
+    local_sample: passed_not_authoritative
+    local_clean: not_prepared_not_required_for_batch
+    aggregate_status: nonzero_due_to_unrequired_local_clean_profile
+
+  snapshots:
+    project_form_pm:
+      status: invalid_permission_failure
+    project_action_open_858:
+      status: invalid_empty_file
+
+  verification:
+    static_guards:
+      status: passed_after_batches_e_f_g
+      upstream_fix_batch: Batch-E
+      failure: project_layout_guard_expected_user_id_removal
+    targeted_module_tests:
+      status: not_run
+      tests_collected: 0
+    module_upgrade:
+      status: not_run
+    contract_snapshot:
+      status: pending_governed_entry_batch_h
+
+  completion:
+    status: verification_pending

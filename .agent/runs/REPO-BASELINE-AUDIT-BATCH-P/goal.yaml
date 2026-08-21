@@ -1,0 +1,27 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-P
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Establish the product view-structure authority without a v1 alias
+status: verification_pending
+formal_product_layer: P0
+layer_target: product view-structure contract with P4 export and gate tooling
+reason: Resolved Odoo views require reproducible evidence with one semantic-versioned schema identity.
+
+scope:
+  include:
+    - contracts/generated/product_view_structure_contract.json
+    - docs/contract/product_view_structure_contract.md
+    - make/contract.mk
+    - make/dev.mk
+    - scripts/contract/export_product_view_structure.py
+    - scripts/contract/product_view_structure_common.py
+    - scripts/verify/product_view_structure_contract_guard.py
+    - scripts/verify/test_product_view_structure_contract.py
+  exclude:
+    - public_intents
+    - startup_chain
+    - business_models
+    - formal_menu_policy_version
+    - runtime_configuration
+
+rollback:
+  method: remove_batch_p_untracked_assets_and_revert_only_batch_p_make_targets

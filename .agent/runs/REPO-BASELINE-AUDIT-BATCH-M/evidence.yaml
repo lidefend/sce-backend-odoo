@@ -1,0 +1,10 @@
+evidence:
+  baseline_commit: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  layer_target: governed contract snapshot actor and expected-error registry
+  standard_vs_user_specific: explicit platform-admin denial evidence
+  why_here: The snapshot actor lacks business ACLs and the exporter previously hid missing actor identities.
+  why_not_elsewhere: Granting finance access to admin or creating an unregistered fixture would violate baseline governance.
+  blast_radius: Missing snapshot users now fail closed; one admin permission-denial case is explicitly accepted.
+  validation_status: passed

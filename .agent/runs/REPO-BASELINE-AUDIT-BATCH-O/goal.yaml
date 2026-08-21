@@ -1,0 +1,7 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-O
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Add fail-closed contract snapshot resume controls
+status: completed
+formal_product_layer: P4
+layer_target: governed contract export orchestration
+reason: Repeating the complete registry after each late failure wastes time and obscures focused diagnosis.

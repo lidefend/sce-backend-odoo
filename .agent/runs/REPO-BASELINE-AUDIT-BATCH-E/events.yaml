@@ -1,0 +1,11 @@
+events:
+  - type: boundary.frozen
+    result: exact_guard_allowlist_only
+  - type: change.completed
+    result: intentional_native_container_and_action_projection_extensions_registered
+  - type: verification.completed
+    result: stable_projection_and_generated_report_guards_passed
+
+next_exact_step:
+  command: resume_batch_d_from_project_layout_static_guards
+  requires_explicit_validation_authorization: false
