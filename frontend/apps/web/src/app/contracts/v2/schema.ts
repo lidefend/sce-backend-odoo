@@ -295,6 +295,7 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     componentKey,
     capabilities: asStringArray(raw.capabilities),
     componentConfig,
+    ...(isRecord(raw.fieldDescriptor) ? { fieldDescriptor: raw.fieldDescriptor } : {}),
     ...(asString(raw.fieldType || raw.field_type) ? { fieldType: asString(raw.fieldType || raw.field_type) } : {}),
     ...(asString(raw.relation) ? { relation: asString(raw.relation) } : {}),
     ...(isRecord(raw.formStructureRole) ? { formStructureRole: raw.formStructureRole } : {}),
@@ -361,11 +362,22 @@ function decodeContainer(
   const formStructure = asRecord(raw.formStructure || raw.form_structure);
   const formStructureRole = asRecord(raw.formStructureRole || raw.form_structure_role);
   const sourceAuthority = asRecord(raw.sourceAuthority || raw.source_authority);
+  const fieldCode = asString(raw.fieldCode || raw.field_code || raw.name);
+  const widgetId = asString(raw.widgetId);
+  const nativeLocator = asString(raw.nativeLocator);
+  const occurrenceIndex = Number(raw.occurrenceIndex);
+  const sourcePosition = Number(raw.sourcePosition);
+  if (nestedNativeNode && containerType.toLowerCase() === 'field' && widgetId.includes('.occ.')) {
+    if (!nativeLocator) issues.push({ path: `${path}.nativeLocator`, message: 'form field occurrence requires nativeLocator' });
+    if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
+    if (!Number.isInteger(sourcePosition) || sourcePosition < 0) issues.push({ path: `${path}.sourcePosition`, message: 'must be a non-negative integer' });
+  }
   return {
     containerId,
     containerType,
     type: asString(raw.type) || containerType,
     ...(asString(raw.name) ? { name: asString(raw.name) } : {}),
+    ...(fieldCode ? { fieldCode } : {}),
     ...(asString(raw.string) ? { string: asString(raw.string) } : {}),
     ...(asString(raw.label) ? { label: asString(raw.label) } : {}),
     ...(optionalBoolean(raw.nolabel) !== undefined ? { nolabel: optionalBoolean(raw.nolabel) } : {}),
@@ -380,6 +392,10 @@ function decodeContainer(
     ...(Number(raw.cols || raw.col) ? { cols: Number(raw.cols || raw.col) } : {}),
     ...(Number(raw.columns) ? { columns: Number(raw.columns) } : {}),
     ...(asString(raw.widget) ? { widget: asString(raw.widget) } : {}),
+    ...(widgetId ? { widgetId } : {}),
+    ...(nativeLocator ? { nativeLocator } : {}),
+    ...(Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
+    ...(Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
     ...(Object.keys(attributes).length ? { attributes } : {}),
     ...(Object.keys(fieldInfo).length ? { fieldInfo, field_info: fieldInfo } : {}),
     ...(asString(raw.buttonType || raw.button_type) ? { buttonType: asString(raw.buttonType || raw.button_type) } : {}),
@@ -833,6 +849,103 @@ function decodeStatusContract(source: ContractV2Dictionary, issues: DecodeIssue[
   };
 }
 
+function validateFormOccurrenceAuthority(
+  layoutContract: ContractV2LayoutContract,
+  statusContract: ContractV2StatusContract,
+  issues: DecodeIssue[],
+): void {
+  const occurrenceContainers = new Map<string, ContractV2Container>();
+  const widgetsById = new Map<string, ContractV2Widget>();
+  const formFieldContainers: ContractV2Container[] = [];
+  const walk = (rows: ContractV2Container[]) => rows.forEach((row) => {
+    row.widgetList.forEach((widget) => widgetsById.set(widget.widgetId, widget));
+    if (row.containerType.toLowerCase() === 'field') formFieldContainers.push(row);
+    walk(row.children);
+    walk(row.pages || []);
+    walk(row.tabs || []);
+    walk(row.nodes || []);
+    walk(row.items || []);
+  });
+  walk(layoutContract.containerTree);
+
+  const fieldCodeCounts = new Map<string, number>();
+  formFieldContainers.forEach((row) => {
+    const fieldCode = String(row.fieldCode || '').trim();
+    if (fieldCode) fieldCodeCounts.set(fieldCode, (fieldCodeCounts.get(fieldCode) || 0) + 1);
+  });
+  formFieldContainers.forEach((row) => {
+    const fieldCode = String(row.fieldCode || '').trim();
+    const isOccurrence = Boolean(row.nativeLocator)
+      || Number.isInteger(row.occurrenceIndex)
+      || (fieldCodeCounts.get(fieldCode) || 0) > 1;
+    if (!isOccurrence) return;
+    if (!row.widgetId || !row.nativeLocator || !Number.isInteger(row.occurrenceIndex)
+      || Number(row.occurrenceIndex) < 1 || !Number.isInteger(row.sourcePosition)
+      || Number(row.sourcePosition) < 0) {
+      issues.push({ path: 'layoutContract.containerTree', message: `incomplete form occurrence identity ${fieldCode}` });
+      return;
+    }
+    if (occurrenceContainers.has(row.widgetId)) {
+      issues.push({ path: 'layoutContract.containerTree', message: `duplicate form occurrence widgetId ${row.widgetId}` });
+    } else {
+      occurrenceContainers.set(row.widgetId, row);
+    }
+    const widget = widgetsById.get(row.widgetId);
+    if (!widget || !isRecord(widget.fieldDescriptor) || !Object.keys(widget.fieldDescriptor).length) {
+      issues.push({ path: 'layoutContract.containerTree', message: `form occurrence ${row.widgetId} requires a strict field descriptor` });
+    } else {
+      const descriptorName = asString(widget.fieldDescriptor.name);
+      const descriptorType = asString(widget.fieldDescriptor.ttype || widget.fieldDescriptor.type);
+      if (descriptorName !== row.fieldCode) {
+        issues.push({ path: 'layoutContract.containerTree', message: `form occurrence ${row.widgetId} descriptor identity mismatch` });
+      }
+      if (!descriptorType) {
+        issues.push({ path: 'layoutContract.containerTree', message: `form occurrence ${row.widgetId} descriptor type is required` });
+      }
+      const config = isRecord(widget.componentConfig) ? widget.componentConfig : {};
+      const configLocator = asString(config.native_locator || config.nativeLocator);
+      const configOccurrence = Number(config.occurrence_index || config.occurrenceIndex);
+      const configPosition = Number(config.source_position ?? config.sourcePosition);
+      if (configLocator !== row.nativeLocator || configOccurrence !== row.occurrenceIndex
+        || configPosition !== row.sourcePosition) {
+        issues.push({ path: 'layoutContract.containerTree', message: `form occurrence ${row.widgetId} carrier identity mismatch` });
+      }
+    }
+  });
+
+  const statusCounts = new Map<string, number>();
+  statusContract.widgetStatus.forEach((status) => {
+    if (!occurrenceContainers.has(status.widgetId)) return;
+    statusCounts.set(status.widgetId, (statusCounts.get(status.widgetId) || 0) + 1);
+  });
+  occurrenceContainers.forEach((_container, widgetId) => {
+    const count = statusCounts.get(widgetId) || 0;
+    if (count !== 1) {
+      issues.push({ path: 'statusContract.widgetStatus', message: `form occurrence ${widgetId} requires exactly one status; found ${count}` });
+    }
+    const statuses = statusContract.widgetStatus.filter((status) => status.widgetId === widgetId);
+    statuses.forEach((status) => {
+      for (const key of ['visible', 'readonly', 'required', 'disabled'] as const) {
+        if (typeof status[key] !== 'boolean') {
+          issues.push({ path: `statusContract.widgetStatus.${widgetId}.${key}`, message: 'form occurrence status boolean is required' });
+        }
+      }
+      if (typeof status.auth !== 'string') {
+        issues.push({ path: `statusContract.widgetStatus.${widgetId}.auth`, message: 'form occurrence auth is required' });
+      } else if ((status.readonly === true || status.disabled === true) && status.auth === 'edit') {
+        issues.push({ path: `statusContract.widgetStatus.${widgetId}.auth`, message: 'editable auth conflicts with readonly occurrence status' });
+      }
+    });
+  });
+  statusContract.widgetStatus.forEach((status) => {
+    if (!status.widgetId || widgetsById.has(status.widgetId)) return;
+    issues.push({ path: 'statusContract.widgetStatus', message: `orphan form widget status ${status.widgetId}` });
+  });
+  statusCounts.forEach((count, widgetId) => {
+    if (count > 1) issues.push({ path: 'statusContract.widgetStatus', message: `duplicate form occurrence status ${widgetId}` });
+  });
+}
+
 function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2RuntimeContract {
   const renderStrategy = decodeRenderStrategy(asString(source.renderStrategy), 'runtimeContract.renderStrategy', issues);
   const patchOperations = Array.isArray(source.patchOperations)
@@ -855,6 +968,15 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     ...(isRecord(source.aiEnvelope) ? { aiEnvelope: source.aiEnvelope } : {}),
     ...(asString(source.interactionMode) ? { interactionMode: asString(source.interactionMode) } : {}),
     ...(asString(source.actionTarget) ? { actionTarget: asString(source.actionTarget) } : {}),
+    ...(isRecord(source.recordVersionPolicy) ? { recordVersionPolicy: source.recordVersionPolicy } : {}),
+    ...(isRecord(source.collaboration) ? { collaboration: source.collaboration } : {}),
+    ...(isRecord(source.intakeAutosave) ? { intakeAutosave: source.intakeAutosave } : {}),
+    ...(isRecord(source.fieldSemantics) ? { fieldSemantics: source.fieldSemantics } : {}),
+    ...(Array.isArray(source.validationRules)
+      ? { validationRules: source.validationRules.filter(isRecord) }
+      : {}),
+    ...(isRecord(source.governance) ? { governance: source.governance } : {}),
+    ...(isRecord(source.sceneFormAugmentations) ? { sceneFormAugmentations: source.sceneFormAugmentations } : {}),
   };
 }
 
@@ -911,6 +1033,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
   const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);
   const meta = decodeMeta(readAliasedObject(root, 'meta', [], '$', issues), issues);
+  validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
   if (issues.length) {
     throw new ContractV2DecodeError(issues);
   }

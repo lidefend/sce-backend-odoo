@@ -6,7 +6,12 @@ type ActionDependencies = Record<string, any>;
 
 /** Owns save, conflict recovery, form configuration, and projection refresh actions. */
 export function useRecordFormActions(dependencies: ActionDependencies) {
-  const { ApiError, BUSINESS_CONFIG_ACTION_KEYS, BUSINESS_CONFIG_MODES, BUSINESS_CONFIG_ROUTE_FLAGS, RECORD_CONTEXT_CHANGED_EVENT, actionId, activeContractMode, activeContractModeFieldRows, appendFormConfigOperation, buildFormRequestContext, buildLowCodeApplyBaseParams, buildLowCodePreviewQuery, buildLowCodeReturnQuery, buildSaveRecordPayload, busy, busyKind, canSave, clearIntakeAutosave, closeContractPromptAction, collectPolicyValidationErrors, collectSceneValidationPrecheckErrors, collectWritableValues, comparableFieldValue, contract, contractActionRuleKey, contractFieldSequenceFromOrder, contractModeFeedback, contractV2ActionRules, createContractFormRecord, currentFormDesignFieldKeys, currentFormOrderedFieldKeys, dirtyFieldSet, draggingFieldLabel, effectiveFieldGroupTitleForDraft, ensureFormInitialReload, executeProjectionRefresh, fieldGroupTitleMatches, fieldOrderDraft, fieldVisibilityBase, fieldVisibilityDirtyKeys, fieldVisibilityDraft, focusFirstValidationError, formConfigAuditResult, formConflict, formCreateContextFromState, formData, formDesignFieldLabel, formDesignerGroupNavigatorItems, formRouteIdentity, formSettingsActiveTab, formUiLabel, handleRecordContextChanged, hasChanges, hasCurrentFormFieldDraftChanges, instanceRouteIdentity, intentConfirmationRef, isBusinessConfigMode, isBusinessConfigRuntimeModel, isComponentActive, isContractFieldOrderEditable, isFormPageRouteOwner, isTierValidationActionHiddenFromState, isWritableFieldVisible, layoutNodes, model, moveFieldOrder, navigateCreatedRecord, normalizeFieldGroupTitle, normalizeFieldValue, onContractInlineGroupRename, onErrorCaptured, onFieldOrderDragEnd, onFieldOrderDragLeave, onFieldOrderDragOver, onFieldOrderDragStart, onFieldOrderDrop, onFieldOrderGroupDrop, onFieldOrderWindowDragOver, onFieldOrderWindowDragStop, onRelationDialogDocumentKeydown, one2manyValidation, originalValues, parseMaybeJsonRecord, policyContext, recordId, recordVersionPolicy, recordVersionToken, reload, rememberFormConfigFieldLabel, renderErrorMessage, resolvePendingInlineRelationCreates, resolvePendingMany2manyTagCreates, retainedRouteIdentity, route, router, runContractRuleAction, sanitizeUiErrorMessage, saveContractFieldOrder, sceneReadyFormSurface, selectedFormSettingsFieldGroupTitle, selectedFormSettingsFieldGroupTitleDraft, selectedFormSettingsFieldGroupTitleEdit, selectedFormSettingsFieldKey, selectedFormSettingsFieldLabel, selectedFormSettingsFieldRow, session, setInlineFieldPolicy, showOne2manyErrors, status, submissionFeedback, uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore, validateBeforeSaveRecord, validateContractFormData, validationErrors, writeContractFormRecord } = dependencies;
+  const { ApiError, BUSINESS_CONFIG_ACTION_KEYS, BUSINESS_CONFIG_MODES, BUSINESS_CONFIG_ROUTE_FLAGS, RECORD_CONTEXT_CHANGED_EVENT, actionId, activeContractMode, activeContractModeFieldRows, appendFormConfigOperation, buildFormRequestContext, buildLowCodeApplyBaseParams, buildLowCodePreviewQuery, buildLowCodeReturnQuery, buildSaveRecordPayload, busy, busyKind, canSave, clearIntakeAutosave, closeContractPromptAction, collectPolicyValidationErrors, collectWritableValues, nativeFieldAccess, comparableFieldValue, contractActionRuleKey, contractFieldSequenceFromOrder, contractModeFeedback, contractV2ActionRules, createContractFormRecord, currentFormDesignFieldKeys, currentFormOrderedFieldKeys, dirtyFieldSet, draggingFieldLabel, effectiveFieldGroupTitleForDraft, ensureFormInitialReload, executeProjectionRefresh, fieldGroupTitleMatches, fieldOrderDraft, fieldVisibilityBase, fieldVisibilityDirtyKeys, fieldVisibilityDraft, focusFirstValidationError, formConfigAuditResult, formConflict, formCreateContextFromState, formData, formDesignFieldLabel, formDesignerGroupNavigatorItems, formRouteIdentity, formSettingsActiveTab, formUiLabel, handleRecordContextChanged, hasChanges, hasCurrentFormFieldDraftChanges, instanceRouteIdentity, intentConfirmationRef, isBusinessConfigMode, isBusinessConfigRuntimeModel, isComponentActive, isContractFieldOrderEditable, isFormPageRouteOwner, isTierValidationActionHiddenFromState, isWritableFieldVisible, layoutNodes, model, moveFieldOrder, navigateCreatedRecord, normalizeFieldGroupTitle, normalizeFieldValue, onContractInlineGroupRename, onErrorCaptured, onFieldOrderDragEnd, onFieldOrderDragLeave, onFieldOrderDragOver, onFieldOrderDragStart, onFieldOrderDrop, onFieldOrderGroupDrop, onFieldOrderWindowDragOver, onFieldOrderWindowDragStop, onRelationDialogDocumentKeydown, one2manyValidation, originalValues, parseMaybeJsonRecord, policyContext, recordId, recordVersionPolicy, recordVersionToken, reload, rememberFormConfigFieldLabel, renderErrorMessage, resolvePendingInlineRelationCreates, resolvePendingMany2manyTagCreates, retainedRouteIdentity, route, router, runContractRuleAction, sanitizeUiErrorMessage, saveContractFieldOrder, sceneReadyFormSurface, selectedFormSettingsFieldGroupTitle, selectedFormSettingsFieldGroupTitleDraft, selectedFormSettingsFieldGroupTitleEdit, selectedFormSettingsFieldKey, selectedFormSettingsFieldLabel, selectedFormSettingsFieldRow, session, setInlineFieldPolicy, showOne2manyErrors, status, submissionFeedback, uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore, validateBeforeSaveRecord, validateContractFormData, validationErrors, writeContractFormRecord } = dependencies;
+  const strictFieldDescriptors = () => Array.from(v2ContractStore.value?.widgetsById.values() || [])
+    .reduce<Record<string, any>>((output, widget) => {
+      if (widget.fieldCode && widget.fieldDescriptor && !output[widget.fieldCode]) output[widget.fieldCode] = widget.fieldDescriptor;
+      return output;
+    }, {});
   async function discardChanges() {
     if (!hasChanges.value || busy.value) return;
     await reload();
@@ -289,17 +294,12 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationErrors.value = [];
     formConflict.value = false;
     const validation = await validateBeforeSaveRecord({
-      collectPolicyValidationErrors: (submittedFields) => [
-        ...collectPolicyValidationErrors(contract.value, policyContext.value),
-        ...collectPolicyValidationErrors(contract.value, {
-          ...policyContext.value,
-          submittedFields,
-        }),
-      ],
-      collectSceneValidationPrecheckErrors: (fieldLabels) => collectSceneValidationPrecheckErrors(fieldLabels),
+      collectPolicyValidationErrors: () => [],
+      collectSceneValidationPrecheckErrors: () => [],
       collectWritableValues: () => collectWritableValues(),
       formData,
       isWritableFieldVisible: (name) => isWritableFieldVisible(name),
+      nativeFieldAccess: (name) => nativeFieldAccess(name),
       layoutNodes: layoutNodes.value,
       layoutFieldLabels: () => (layoutNodes.value as LayoutNode[]).reduce<Record<string, string>>((acc, node) => {
         if (node.kind === 'field') acc[node.name] = node.label || node.name;
@@ -311,7 +311,11 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       resolvePendingInlineRelationCreates: () => resolvePendingInlineRelationCreates(),
       resolvePendingMany2manyTagCreates: () => resolvePendingMany2manyTagCreates(),
       validateContractFormData: (fieldLabels, values) => validateContractFormData({
-        contract: contract.value,
+        fieldDescriptors: strictFieldDescriptors(),
+        validationRules: Array.isArray(v2ContractStore.value?.snapshot.runtimeContract.validationRules)
+          ? v2ContractStore.value.snapshot.runtimeContract.validationRules
+          : [],
+        renderProfile: String(v2ContractStore.value?.snapshot.pageInfo.renderProfile || ''),
         fieldLabels,
         values,
       }).map((item) => item.message),
@@ -328,7 +332,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     try {
       const values = buildSaveRecordPayload({
         comparableFieldValue: (name, value) => comparableFieldValue(name, value),
-        contract: contract.value,
+        fieldDescriptors: strictFieldDescriptors(),
         dirtyFieldSet,
         editableMap,
         formData,
@@ -353,14 +357,14 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         await applyProjectionRefreshPolicy(refreshPolicy || { on_success: ['scene_projection'] });
         return true;
       }
-      const context = buildFormRequestContext(route.query, formCreateContextFromState({ contract: contract.value, v2ContractStore: v2ContractStore.value }));
+      const context = buildFormRequestContext(route.query, formCreateContextFromState({ v2ContractStore: v2ContractStore.value }));
       const created = await createContractFormRecord({ model: model.value, vals: values, context });
       if (created?.id) {
         const attachmentsUploaded = await uploadPendingNativeAttachments(Number(created.id));
         if (!attachmentsUploaded) {
           return false;
         }
-        const title = String(contract.value?.head?.title || '').trim();
+        const title = String(v2ContractStore.value?.snapshot.pageInfo.pageName || '').trim();
         submissionFeedback.value = { kind: 'success', message: `${title || '记录'}已创建` };
         clearIntakeAutosave();
         if (options.navigateAfterCreate === false) {
@@ -403,7 +407,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   }
 
   useFormPageLifecycleRuntime({
-    contract,
     formRouteIdentity: () => formRouteIdentity(),
     handleRecordContextChanged,
     instanceRouteIdentity,

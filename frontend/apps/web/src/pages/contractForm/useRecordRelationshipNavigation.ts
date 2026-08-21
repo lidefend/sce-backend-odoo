@@ -4,21 +4,21 @@ import type { FieldDescriptor } from '@sc/schema';
 type NavigationDependencies = Record<string, any>;
 
 export function useRecordRelationshipNavigation(dependencies: NavigationDependencies) {
-  const { actionId, createContractFormRecord, fetchRelationOptions, formData, loadModelContractRaw, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
+  const { actionId, createContractFormRecord, fetchRelationOptions, formData, loadModelFormContractV2Bundle, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
   async function ensureRelationFieldDescriptors(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
     if (relationFieldDescriptors.value[relation]) return;
     try {
-      const response = await loadModelContractRaw(relation, {
+      const response = await loadModelFormContractV2Bundle(relation, {
         viewType: 'form',
         renderProfile: 'edit',
       });
-      const fields = response?.data?.fields;
-      if (fields && typeof fields === 'object') {
+      const fields = Array.from(response.snapshot.layoutContract.containerTree).flatMap((root:any)=>root.widgetList||[]).reduce<Record<string,FieldDescriptor>>((output:any,widget:any)=>{if(widget.fieldCode&&widget.fieldDescriptor)output[widget.fieldCode]=widget.fieldDescriptor;return output;},{});
+      if (Object.keys(fields).length) {
         relationFieldDescriptors.value = {
           ...relationFieldDescriptors.value,
-          [relation]: fields as Record<string, FieldDescriptor>,
+          [relation]: fields,
         };
       }
     } catch {

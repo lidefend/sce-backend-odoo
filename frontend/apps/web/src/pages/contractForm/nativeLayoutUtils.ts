@@ -36,7 +36,6 @@ export type NativeFormDesignFields = {
 };
 
 export type FormDataFieldNameInput = {
-  contract: unknown;
   fields: Record<string, FieldDescriptor>;
   rawNativeLayoutNodes: NativeLayoutLikeNode[];
   layoutFieldNames: string[];
@@ -528,29 +527,10 @@ export function collectNativeVisibleFieldOrder(
 }
 
 export function collectFormDataFieldNames(input: FormDataFieldNameInput): string[] {
-  const contractRecord = input.contract && typeof input.contract === 'object' && !Array.isArray(input.contract)
-    ? input.contract as Record<string, unknown>
-    : {};
-  const toolbar = contractRecord.toolbar && typeof contractRecord.toolbar === 'object' && !Array.isArray(contractRecord.toolbar)
-    ? contractRecord.toolbar as Record<string, unknown>
-    : {};
-  const views = contractRecord.views && typeof contractRecord.views === 'object' && !Array.isArray(contractRecord.views)
-    ? contractRecord.views as Record<string, unknown>
-    : {};
-  const formView = views.form && typeof views.form === 'object' && !Array.isArray(views.form)
-    ? views.form as Record<string, unknown>
-    : {};
   const names = new Set<string>();
   const fieldMap = input.fields || {};
   collectNativeLayoutFieldNames(input.rawNativeLayoutNodes, names, (name) => Boolean(fieldMap[name]));
   collectNativeLayoutBadgeCountFieldNames(input.rawNativeLayoutNodes, names);
-  collectContractActionBadgeCountFieldNames(contractRecord.buttons, names);
-  collectContractActionBadgeCountFieldNames(toolbar.header, names);
-  collectContractActionBadgeCountFieldNames(toolbar.sidebar, names);
-  collectContractActionBadgeCountFieldNames(toolbar.footer, names);
-  collectContractActionBadgeCountFieldNames(formView.header_buttons, names);
-  collectContractActionBadgeCountFieldNames(formView.button_box, names);
-  collectContractActionBadgeCountFieldNames(formView.business_actions, names);
   input.layoutFieldNames.forEach((name) => {
     if (fieldMap[name]) names.add(name);
   });

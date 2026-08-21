@@ -1,7 +1,5 @@
-import type { ActionContract } from '@sc/schema';
 import type { ContractV2ButtonStatus } from '../../app/contracts/v2/types';
 import { detectObjectMethodFromActionKey, normalizeActionKind, parseMaybeJsonRecord, toPositiveInt } from '../../app/contractRuntime';
-import { resolveUnifiedPageContractV2 } from '../../app/contracts/unifiedPageContractV2';
 import { normalizeSceneActionProtocol } from '../../app/sceneActionProtocol';
 import { evaluateActionPolicy } from '../../app/contractPolicies';
 import {
@@ -10,98 +8,23 @@ import {
   normalizeRequiredParams,
   resolveV2ButtonStatus,
 } from './actionContract';
-import { selectAuthoritativeBusinessActionRows } from './authoritativeBusinessActionRows';
-import { workflowActionMethodAliases } from './workflowContract';
 import type { ContractAction } from './types';
 
 type ActionPolicy = { visible: boolean; enabled: boolean; reason: string; semantic: string };
 
 export function buildContractFormActions(params: {
-  contract: ActionContract | null;
   model: string;
   recordId: number;
   renderProfile: 'create' | 'edit' | 'readonly';
-  sceneReadyActions: Array<Record<string, unknown>>;
   v2ButtonStatus: Record<string, ContractV2ButtonStatus>;
-  workflowActionRows: Array<Record<string, unknown>>;
   v2ActionRuleList?: Array<Record<string, unknown>>;
   policyContext: Parameters<typeof evaluateActionPolicy>[2];
   evaluateNativeActionVisibility: (row: Record<string, unknown>) => boolean;
   isTierValidationActionHidden: (methodName: string) => boolean;
 }): ContractAction[] {
-  const mapSceneReadyAction = (row: Record<string, unknown>): ContractAction | null => {
-    const protocol = normalizeSceneActionProtocol(row);
-    const key = String(row.key || '').trim();
-    if (!key) return null;
-    const target = parseMaybeJsonRecord(row.target);
-    const intent = String(row.intent || '').trim().toLowerCase();
-    const presentation = parseMaybeJsonRecord(row.presentation);
-    const presentationTier = String(presentation.tier || row.tier || '').trim().toLowerCase();
-    const placement = String(row.placement || 'header').trim().toLowerCase();
-    const actionId = toPositiveInt(target.action_id) ?? toPositiveInt(target.ref);
-    const hasOpenTarget = Boolean(actionId || String(target.url || '').trim() || String(target.route || '').trim());
-    const kind = hasOpenTarget || intent === 'ui.contract' ? 'open' : 'object';
-    const requiresSavedRecord = ['object', 'server', 'mutation'].includes(kind) && !params.recordId;
-    return {
-      key,
-      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
-      label: String(row.label || key),
-      kind,
-      level: placement,
-      selection: 'none',
-      actionId,
-      methodName: detectObjectMethodFromActionKey(key, String(target.method || '').trim()),
-      targetModel: String(target.model || params.model || '').trim(),
-      context: parseMaybeJsonRecord(target.context_raw),
-      domainRaw: String(target.domain_raw || '').trim(),
-      target: String(target.target || '').trim(),
-      url: String(target.url || target.route || '').trim(),
-      enabled: !requiresSavedRecord,
-      authorizationAllowed: true,
-      requiresSavedRecord,
-      hint: requiresSavedRecord ? 'requires record id' : '',
-      intent,
-      semantic: presentationTier === 'primary' ? 'primary_action' : presentationTier === 'secondary' ? 'secondary_action' : '',
-      sourceWidgetId: String(row.sourceWidgetId || row.source_widget_id || '').trim(),
-      clientMode: String(target.mode || target.client_mode || row.clientMode || row.client_mode || '').trim(),
-      visibleProfiles: ['create', 'edit', 'readonly'],
-      requiredParams: normalizeRequiredParams(row.required_params),
-      requiresReason: row.requires_reason === true,
-      presentationTier,
-      destructive: presentation.semantic === 'destructive',
-      requiresConfirmation: presentation.requires_confirmation === true,
-      actionSafety: normalizeActionSafety(row.action_safety),
-      mutation: protocol?.mutation,
-      refreshPolicy: protocol?.refresh_policy,
-    };
-  };
-
-  const resolvedV2ActionContract = parseMaybeJsonRecord(resolveUnifiedPageContractV2(params.contract)?.actionContract);
-  const embeddedV2ActionRuleList = resolvedV2ActionContract.actionRuleList;
-  const hasV2ActionAuthority = Array.isArray(params.v2ActionRuleList) || Array.isArray(embeddedV2ActionRuleList);
-  const v2ActionRuleList = Array.isArray(params.v2ActionRuleList)
-    ? params.v2ActionRuleList
-    : Array.isArray(embeddedV2ActionRuleList)
-      ? embeddedV2ActionRuleList
-      : [];
-  const nativeFormContract = params.contract?.views?.form as Record<string, unknown> | undefined;
-  const { workflowRows, nativeRows } = hasV2ActionAuthority
-    ? { workflowRows: [], nativeRows: [] }
-    : selectAuthoritativeBusinessActionRows(nativeFormContract, params.workflowActionRows);
-  const workflowMethods = new Set<string>();
-  workflowRows.forEach((row) => {
-    const method = String(parseMaybeJsonRecord(row.payload).method || '').trim();
-    if (method) workflowMethods.add(method);
-    workflowActionMethodAliases(String(row.key || '').trim()).forEach((alias) => workflowMethods.add(alias));
-  });
-  const merged: Array<Record<string, unknown>> = [...workflowRows, ...nativeRows];
-  if (!hasV2ActionAuthority) {
-    if (Array.isArray(params.contract?.buttons)) merged.push(...params.contract.buttons as Array<Record<string, unknown>>);
-    if (Array.isArray(params.contract?.toolbar?.header)) merged.push(...params.contract.toolbar.header as Array<Record<string, unknown>>);
-    if (Array.isArray(params.contract?.toolbar?.sidebar)) merged.push(...params.contract.toolbar.sidebar as Array<Record<string, unknown>>);
-    if (Array.isArray(params.contract?.toolbar?.footer)) merged.push(...params.contract.toolbar.footer as Array<Record<string, unknown>>);
-  }
-  if (hasV2ActionAuthority) {
+  const v2ActionRuleList = Array.isArray(params.v2ActionRuleList) ? params.v2ActionRuleList : [];
+  const merged: Array<Record<string, unknown>> = [];
+  {
     v2ActionRuleList.forEach((raw) => {
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
       const row = raw as Record<string, unknown>;
@@ -162,25 +85,10 @@ export function buildContractFormActions(params: {
       });
     });
   }
-  if (!hasV2ActionAuthority) merged.push(...params.sceneReadyActions);
 
   const dedup = new Set<string>();
   const out: ContractAction[] = [];
   for (const row of merged) {
-    if (params.sceneReadyActions.includes(row) || (params.sceneReadyActions.length && !String(row.key || '').trim())) {
-      const mapped = mapSceneReadyAction(row);
-      if (!mapped || dedup.has(mapped.key)) continue;
-      const status = resolveV2ButtonStatus(mapped.key, params.v2ButtonStatus);
-      if (status?.visible === false) continue;
-      if (status?.disabled === true) {
-        mapped.enabled = false;
-        mapped.authorizationAllowed = false;
-        mapped.hint = status.reasonCode || mapped.hint || 'disabled_by_status_contract';
-      }
-      dedup.add(mapped.key);
-      out.push(mapped);
-      continue;
-    }
     const rowLabel = normalizeActionLabel(row.label);
     const backendIdentity = String(row.backendIdentity || row.backend_identity || '').trim();
     const rowActionKey = String(row.key || row.name || rowLabel || '').trim();
@@ -196,7 +104,6 @@ export function buildContractFormActions(params: {
     const level = String(row.level || 'body').trim().toLowerCase();
     const actionId = toPositiveInt(payload.action_id) ?? toPositiveInt(payload.ref) ?? toPositiveInt(row.actionId) ?? toPositiveInt(row.action_id);
     const methodName = detectObjectMethodFromActionKey(rowActionKey || key, String(payload.method || row.method || '').trim());
-    if (row.workflow_contract_action !== true && methodName && workflowMethods.has(methodName)) continue;
     if (params.isTierValidationActionHidden(methodName)) continue;
     const selectionRaw = String(row.selection || 'none').trim().toLowerCase();
     const selection = selectionRaw === 'single' || selectionRaw === 'multi' ? selectionRaw : 'none';
@@ -206,7 +113,7 @@ export function buildContractFormActions(params: {
     const requiredParams = normalizeRequiredParams(row.required_params);
     const presentation = parseMaybeJsonRecord(row.presentation);
     const presentationTier = String(presentation.tier || '').trim().toLowerCase();
-    const policy = evaluateActionPolicy(params.contract, key, params.policyContext) as ActionPolicy;
+    const policy = evaluateActionPolicy(null, key, params.policyContext) as ActionPolicy;
     if (!policy.visible || !params.evaluateNativeActionVisibility(row)) continue;
     const status = resolveV2ButtonStatus(key, params.v2ButtonStatus);
     if (status?.visible === false) continue;

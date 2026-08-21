@@ -246,7 +246,7 @@ assert.deepEqual(normalizedWinner[0]?.actionSafety, {
   confirmMessage: 'Confirm normalized action', reasonCode: 'DANGER_ACTION',
 });
 
-const legacyFallback = buildContractFormActions({
+const rejectedLegacyFallback = buildContractFormActions({
   contract: null,
   model: 'res.partner',
   recordId: 7,
@@ -258,7 +258,7 @@ const legacyFallback = buildContractFormActions({
   evaluateNativeActionVisibility: () => true,
   isTierValidationActionHidden: () => false,
 });
-assert.equal(legacyFallback[0]?.key, 'legacy-only');
+assert.equal(rejectedLegacyFallback.length, 0, 'V2 form action presentation must reject legacy-only action rows');
 
 const normalizedRecordHandoff = buildContractFormActions({
   contract: null,

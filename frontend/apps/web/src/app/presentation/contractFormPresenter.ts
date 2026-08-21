@@ -158,8 +158,12 @@ function descendantWidgetIds(container: ContractV2Container, store: ContractV2No
     if (kind === 'field') {
       const fieldInfo = asDict(child.fieldInfo || child.field_info);
       const fieldCode = text(child.name || fieldInfo.name || child.attributes?.name);
-      const synthesized = store.widgetsByFieldCode.get(fieldCode);
-      if (synthesized) ids.add(synthesized.widgetId);
+      const explicit = child.widgetId ? store.widgetsById.get(child.widgetId) : undefined;
+      if (explicit) ids.add(explicit.widgetId);
+      else {
+        const candidates = store.widgetsByFieldCodeAll.get(fieldCode) || [];
+        if (candidates.length === 1) ids.add(candidates[0].widgetId);
+      }
     }
     descendantWidgetIds(child, store).forEach((widgetId) => ids.add(widgetId));
   });
@@ -177,7 +181,10 @@ function widgetsOwnedByContainer(
   if (kind !== 'field') return [];
   const fieldInfo = asDict(container.fieldInfo || container.field_info);
   const fieldCode = text(container.name || fieldInfo.name || container.attributes?.name);
-  const widget = store.widgetsByFieldCode.get(fieldCode);
+  const widget = (container.widgetId ? store.widgetsById.get(container.widgetId) : undefined)
+    || ((store.widgetsByFieldCodeAll.get(fieldCode) || []).length === 1
+      ? (store.widgetsByFieldCodeAll.get(fieldCode) || [])[0]
+      : undefined);
   return widget ? [widget] : [];
 }
 

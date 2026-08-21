@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
-import type { ActionContract } from '@sc/schema';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
@@ -14,7 +13,7 @@ type LifecycleDependencies = Record<string, any>;
 
 /** Owns authoritative contract loading, record hydration, and stale-response isolation. */
 export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
-  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, buildRouteContractContext, changedFieldCount, changedFieldSet, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contract, contractAccessPolicy, contractActions, contractMeta, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, defaultContractFormRecord, dirtyFieldSet, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, isComponentActive, layoutNodes, loadActionContractRaw, loadError, loadModelContractRaw, menuId, mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData, resolveUnifiedPageContractV2PrimaryDataSource, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount, v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview, v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount, v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady, v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
+  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, buildRouteContractContext, changedFieldCount, changedFieldSet, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contractAccessPolicy, contractActions, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, defaultContractFormRecord, dirtyFieldSet, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, isComponentActive, layoutNodes, loadError, menuId, model, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, formV2ActionCount, formV2ButtonStatusCount, formV2FieldCodeCount, formV2GlobalSourceKind, formV2LayoutSourceKind, formV2AuthorityIssuePreview, formV2DescriptorCount, formV2MainDataFieldCount, formV2ReadonlyValueCount, formV2SourceContextKind, formV2StatusFieldCount, formV2StoreReady, formV2ValueFieldCount, formV2ValueSourceKind, formV2WidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
   let activeReloadToken = 0;
   let activeReloadIdentity = '';
   let activeReloadPromise: Promise<void> | null = null;
@@ -23,25 +22,24 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     return resolveNavigationUrlFromOrigin(url, window.location.origin);
   }
 
-  function syncContractV2ShadowStore(rawContract: unknown) {
+  function syncContractV2Store(snapshot: unknown) {
     v2ContractStore.value = null;
     v2ContractDecodeError.value = '';
     try {
-      const snapshot = decodeContractV2Snapshot(resolveUnifiedPageContractV2(rawContract) || rawContract);
-      v2ContractStore.value = createContractV2Store(snapshot);
+      v2ContractStore.value = createContractV2Store(decodeContractV2Snapshot(snapshot));
     } catch (err) {
       if (err instanceof ContractV2DecodeError) {
         v2ContractDecodeError.value = err.issues.slice(0, 4).map((issue) => `${issue.path} ${issue.message}`).join(' | ');
-        return;
+        throw err;
       }
       v2ContractDecodeError.value = err instanceof Error ? err.message : '表单配置解析失败';
+      throw err;
     }
   }
+  const strictFieldDescriptor=(name:string)=>{const key=String(name||'').trim();if(!key)return undefined;const widgets=v2ContractStore.value?.widgetsByFieldCodeAll.get(key)||[];return widgets.find((widget)=>widget.fieldDescriptor)?.fieldDescriptor;};
 
   const viewOrchestrationHudSummary = computed(() => {
-    const rootGovernance = contract.value && typeof contract.value === 'object'
-      ? (contract.value as Record<string, unknown>).governance
-      : undefined;
+    const rootGovernance = (v2ContractStore.value?.snapshot.runtimeContract as Record<string, unknown> | undefined)?.governance;
     const governance = rootGovernance && typeof rootGovernance === 'object' && !Array.isArray(rootGovernance)
       ? rootGovernance as Record<string, unknown>
       : {};
@@ -76,26 +74,26 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     { label: '业务对象', value: model.value || '-' },
     { label: '操作编号', value: actionId.value || '-' },
     { label: '记录编号', value: recordIdDisplay.value },
-    { label: '配置已加载', value: Boolean(contract.value) },
+    { label: '配置已加载', value: Boolean(v2ContractStore.value) },
     { label: '配置可用', value: contractReadiness.value.usable },
     { label: '配置问题数', value: contractReadiness.value.issues.length },
-    { label: '新版配置暂存可用', value: v2ShadowStoreReady.value },
-    { label: '新版配置组件数', value: v2ShadowWidgetCount.value },
-    { label: '新版配置操作数', value: v2ShadowActionCount.value },
-    { label: '新版配置按钮状态数', value: v2ShadowButtonStatusCount.value },
-    { label: '新版配置字段编码数', value: v2ShadowFieldCodeCount.value },
-    { label: '新版配置字段重叠数', value: v2ShadowLegacyFieldOverlapCount.value },
-    { label: '新版配置缺失字段', value: v2ShadowLegacyFieldMissingPreview.value },
-    { label: '新版配置布局来源', value: v2ShadowLayoutSourceKind.value },
-    { label: '新版配置全局来源', value: v2ShadowGlobalSourceKind.value },
-    { label: '新版配置上下文来源', value: v2ShadowSourceContextKind.value },
-    { label: '新版配置状态字段数', value: v2ShadowStatusFieldCount.value },
-    { label: '新版配置值字段数', value: v2ShadowValueFieldCount.value },
-    { label: '新版配置主数据字段数', value: v2ShadowMainDataFieldCount.value },
-    { label: '新版配置只读值数', value: v2ShadowReadonlyValueCount.value },
-    { label: '新版配置值来源', value: v2ShadowValueSourceKind.value },
+    { label: 'V2配置可用', value: formV2StoreReady.value },
+    { label: 'V2组件数', value: formV2WidgetCount.value },
+    { label: 'V2操作数', value: formV2ActionCount.value },
+    { label: 'V2按钮状态数', value: formV2ButtonStatusCount.value },
+    { label: 'V2字段描述数', value: formV2FieldCodeCount.value },
+    { label: 'V2字段描述数', value: formV2DescriptorCount.value },
+    { label: 'V2权威问题', value: formV2AuthorityIssuePreview.value },
+    { label: 'V2布局来源', value: formV2LayoutSourceKind.value },
+    { label: 'V2全局来源', value: formV2GlobalSourceKind.value },
+    { label: 'V2上下文来源', value: formV2SourceContextKind.value },
+    { label: 'V2状态字段数', value: formV2StatusFieldCount.value },
+    { label: 'V2值字段数', value: formV2ValueFieldCount.value },
+    { label: 'V2主数据字段数', value: formV2MainDataFieldCount.value },
+    { label: 'V2只读值数', value: formV2ReadonlyValueCount.value },
+    { label: 'V2值来源', value: formV2ValueSourceKind.value },
     { label: '配置解析问题', value: v2ContractDecodeError.value || '-' },
-    { label: '配置视图类型', value: contract.value?.head?.view_type || contract.value?.view_type || '-' },
+    { label: '配置视图类型', value: v2ContractStore.value?.snapshot.pageInfo.viewType || '-' },
     { label: '页面编排已应用', value: viewOrchestrationHudSummary.value.applied },
     { label: '页面编排责任层', value: viewOrchestrationHudSummary.value.owner },
     { label: '页面编排配置数', value: viewOrchestrationHudSummary.value.contractCount },
@@ -104,7 +102,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     { label: '跳过策略字段', value: viewOrchestrationHudSummary.value.skippedLegacyPolicyFields },
     { label: '历史策略覆盖', value: viewOrchestrationHudSummary.value.legacyOverlay },
     { label: '渲染档位', value: renderProfile.value },
-    { label: '字段数', value: Object.keys(contract.value?.fields || {}).length },
+    { label: '字段数', value: v2ContractStore.value?.widgetsByFieldCode.size || 0 },
     { label: '布局节点数', value: layoutNodes.value.length },
     { label: '可写字段数', value: writableFieldCount.value },
     { label: '已变更字段数', value: changedFieldCount.value },
@@ -114,7 +112,6 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     { label: '明细联动补丁数', value: onchangeLinePatches.value.length },
   ]);
   async function loadContract() {
-    contract.value = null;
     v2ContractStore.value = null;
     v2ContractDecodeError.value = '';
     const profileOptions = contractLoadProfileOptions(renderProfile.value);
@@ -123,10 +120,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     const contextRaw = String(route.query.context_raw || '').trim();
     const sceneKey = String(route.query.scene_key || route.query.scene || '').trim();
     const requestedViewId = toPositiveInt(route.query.view_id) || toPositiveInt(route.query.viewId) || 0;
-    let response: Awaited<ReturnType<typeof loadActionContractRaw>> | null = null;
+    let strictSnapshot: unknown = null;
     if (actionId.value && recordId.value) {
       try {
-        response = await loadActionContractRaw(actionId.value, {
+        const bundle = await dependencies.loadActionFormContractV2Bundle(actionId.value, {
           sceneKey: sceneKey || undefined,
           menuId: menuId.value || undefined,
           viewType: 'form',
@@ -140,17 +137,17 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           previewToken: String(route.query.preview_token || '').trim() || undefined,
           previewRoleKey: String(route.query.preview_role_key || '').trim() || undefined,
         });
-        const actionReadiness = analyzeFormContractReadiness(response?.data, { requirePureFormViewType: true });
-        const actionModel = contractModelName(response?.data);
-        if (!actionReadiness.usable || (currentModel && actionModel && actionModel !== currentModel)) {
-          response = null;
-        }
-      } catch {
-        response = null;
+        strictSnapshot = bundle.snapshot;
+        const actionModel = String(bundle.snapshot.pageInfo.model || '').trim();
+        if (currentModel && actionModel !== currentModel) throw new Error('strict V2 action model authority mismatch');
+      } catch (error) {
+        // Strict V2 authority failures must not silently switch from the
+        // requested action/view to a second model-scoped contract.
+        throw error;
       }
     }
-    if (!response && currentModel) {
-      response = await loadModelContractRaw(currentModel, {
+    if (!strictSnapshot && currentModel) {
+      const bundle = await dependencies.loadModelFormContractV2Bundle(currentModel, {
         sceneKey: sceneKey || undefined,
         actionId: actionId.value || undefined,
         menuId: menuId.value || undefined,
@@ -165,26 +162,12 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         previewToken: String(route.query.preview_token || '').trim() || undefined,
         previewRoleKey: String(route.query.preview_role_key || '').trim() || undefined,
       });
+      strictSnapshot = bundle.snapshot;
     }
-    if (!response?.data || typeof response.data !== 'object') {
-      throw new Error('表单配置返回为空');
+    syncContractV2Store(strictSnapshot);
+    if (!v2ContractStore.value || v2ContractStore.value.snapshot.pageInfo.viewType !== 'form') {
+      throw new Error('strict V2 form contract is required');
     }
-    const markerCheck = validateSurfaceMarkers(
-      response.data,
-      (response.meta as Record<string, unknown> | null) || null,
-      requestedSurface.value,
-    );
-    if (!markerCheck.ok) {
-      throw new Error(`表单配置标记不完整：${markerCheck.issues.slice(0, 4).join(' | ')}`);
-    }
-    const readiness = analyzeFormContractReadiness(response.data, { requirePureFormViewType: false });
-    if (!readiness.usable) {
-      throw new Error(`表单配置暂不可渲染：${readiness.issues.slice(0, 4).join(' | ')}`);
-    }
-    contract.value = response.data as ActionContract;
-    contractMeta.value = response.meta || null;
-    syncContractV2ShadowStore(response.data);
-    mergeNativeLayoutFieldDescriptorsIntoContract();
     const policy = contractAccessPolicy.value;
     if (policy.mode === 'block') {
       const message = policy.message || 'contract access policy blocked this page';
@@ -235,16 +218,16 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       initOne2manyRows,
     };
     if (shouldHydrateCreateDefaults(recordId.value, renderProfile.value)) {
-      const baseDefaults = resolveCreateDefaultsFromState({ contract: contract.value, routeQuery: route.query as Record<string, unknown>, v2ContractStore: v2ContractStore.value });
+      const baseDefaults = resolveCreateDefaultsFromState({ routeQuery: route.query as Record<string, unknown>, v2ContractStore: v2ContractStore.value });
       const defaults = await loadAuthoritativeCreateDefaults({
-        primaryDataSource: resolveUnifiedPageContractV2PrimaryDataSource(contract.value),
+        primaryDataSource: v2ContractStore.value?.primaryDataSource || null,
         model: model.value,
         fieldNames,
         baseDefaults,
         fetchDefaults: defaultContractFormRecord,
       });
       fieldNames.forEach((name) => {
-        const descriptor = contract.value?.fields?.[name];
+        const descriptor = strictFieldDescriptor(name);
         applyIncomingFormFieldValue({
           fieldName: name,
           descriptor,
@@ -252,7 +235,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           target: hydrationTarget,
         });
       });
-      Object.entries(resolveCreateRouteRelationLabels(contract.value, route.query as Record<string, unknown>, defaults)).forEach(([name, label]) => {
+      Object.entries(resolveCreateRouteRelationLabels(v2ContractStore.value, route.query as Record<string, unknown>, defaults)).forEach(([name, label]) => {
         if (!fieldNames.includes(name)) return;
         const id = Number(formData[name] || 0);
         if (!Number.isFinite(id) || id <= 0) return;
@@ -264,8 +247,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       restoreIntakeAutosave();
       return;
     }
-    const storeMainData = resolveContractV2MainData(v2ContractStore.value);
-    const contractMainData = Object.keys(storeMainData).length ? storeMainData : resolveUnifiedPageContractV2MainData(contract.value);
+    const contractMainData = resolveContractV2MainData(v2ContractStore.value);
     const canUseReadonlyMainData = readonlyMainDataCoversFields({
       renderProfile: renderProfile.value,
       fieldNames,
@@ -291,13 +273,13 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       recordVersionToken.value = String((row as Record<string, unknown>)[versionPolicy.tokenField] || '').trim();
     }
     fieldNames.forEach((name) => {
-      if (name === versionPolicy?.tokenField && !contract.value?.fields?.[name]) return;
+      if (name === versionPolicy?.tokenField && !strictFieldDescriptor(name)) return;
       const incoming = Object.prototype.hasOwnProperty.call(row, name)
         ? (row as Record<string, unknown>)[name]
         : (contractMainData[name] ?? '');
       applyIncomingFormFieldValue({
         fieldName: name,
-        descriptor: contract.value?.fields?.[name],
+        descriptor: strictFieldDescriptor(name),
         incoming,
         target: hydrationTarget,
       });
@@ -397,7 +379,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     const identity = formRouteIdentity();
     if (!identity) return;
     if (identity === retainedRouteIdentity.value && status.value === 'ok') return;
-    if (status.value === 'loading' || !contract.value) {
+    if (status.value === 'loading' || !v2ContractStore.value) {
       void reload();
     }
   }
@@ -424,7 +406,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
 
   return {
     resolveNavigationUrl,
-    syncContractV2ShadowStore,
+    syncContractV2Store,
     viewOrchestrationHudSummary,
     hudEntries,
     loadContract,

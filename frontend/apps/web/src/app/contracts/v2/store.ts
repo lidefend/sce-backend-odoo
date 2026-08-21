@@ -101,7 +101,7 @@ function synthesizeWidgetFromContainer(container: ContractV2Container): Contract
     ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
   };
   return {
-    widgetId: asText(attributes.widgetId || attributes.widget_id) || `field.${fieldCode}`,
+    widgetId: asText(container.widgetId || attributes.widgetId || attributes.widget_id) || `field.${fieldCode}`,
     widgetType: asText(container.widget || fieldInfo.widget || fieldType || container.containerType) || 'display',
     fieldCode,
     label: asText(container.label || container.string || fieldInfo.label || fieldInfo.string) || fieldCode,
@@ -131,10 +131,17 @@ function collectWidgets(snapshot: ContractV2Snapshot): ContractV2Widget[] {
 
 export function createContractV2Store(snapshot: ContractV2Snapshot): ContractV2NormalizedStore {
   const widgets = collectWidgets(snapshot);
+  const widgetsByFieldCodeAll = new Map<string, ContractV2Widget[]>();
+  widgets.forEach((widget) => {
+    const rows = widgetsByFieldCodeAll.get(widget.fieldCode) || [];
+    rows.push(widget);
+    widgetsByFieldCodeAll.set(widget.fieldCode, rows);
+  });
   return {
     snapshot,
     widgetsById: indexBy<ContractV2Widget>(widgets, (widget) => widget.widgetId),
     widgetsByFieldCode: indexBy<ContractV2Widget>(widgets, (widget) => widget.fieldCode),
+    widgetsByFieldCodeAll,
     actionsById: indexBy<ContractV2ActionRule>(snapshot.actionContract.actionRuleList, (action) => action.actionId),
     widgetStatusById: indexBy<ContractV2WidgetStatus>(snapshot.statusContract.widgetStatus, (status) => status.widgetId),
     buttonStatusById: indexBy<ContractV2ButtonStatus>(snapshot.statusContract.buttonStatus, (status) => status.btnId),
@@ -151,6 +158,7 @@ export function collectContractV2FieldStatusByCode(store: ContractV2NormalizedSt
     const widget = store.widgetsById.get(widgetId);
     const fieldCode = String(widget?.fieldCode || '').trim();
     if (!fieldCode) return;
+    if ((store.widgetsByFieldCodeAll.get(fieldCode) || []).length !== 1) return;
     out[fieldCode] = {
       ...(out[fieldCode] || {}),
       ...(typeof status.visible === 'boolean' ? { visible: status.visible } : {}),

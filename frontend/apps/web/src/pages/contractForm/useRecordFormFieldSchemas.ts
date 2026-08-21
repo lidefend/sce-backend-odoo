@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, prefer-const */
 import { computed, type ComputedRef, type Ref } from 'vue';
-import type { ActionContract, FieldDescriptor } from '@sc/schema';
+import type { FieldDescriptor } from '@sc/schema';
 import { resolveContractV2ValueSource, type ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
@@ -9,10 +9,9 @@ import { resolveInputPlaceholder } from '../../components/template/placeholder.m
 import { resolveFieldSpanClass } from '../../components/template/fieldSpan.mapper';
 import { mapDescriptorSelectionOptions, mapRelationOptions } from '../../components/template/option.mapper';
 import { evaluateFieldPolicy } from '../../app/contractPolicies';
-import { collectUnifiedPageContractV2FieldContainerStatus } from '../../app/contracts/unifiedPageContractV2';
 import {
-  applyReadonlyFieldValues, buildLegacyLayoutNodes, buildNativeFieldSchemas, nativeFieldPresentation,
-  resolveNativeOccurrenceBehavior, resolveNativeRelationActiveActions,
+  applyReadonlyFieldValues, buildNativeFieldSchemas, nativeFieldPresentation,
+  resolveNativeRelationActiveActions,
   nativeNodeFieldDescriptor as nativeNodeFieldDescriptorFromNode, nativeNodeWidget, nativeNodeWidgetSemantics,
   type NativeLayoutLikeNode,
 } from './nativeLayoutUtils';
@@ -20,7 +19,7 @@ import { fieldType } from './fieldUtils';
 import type { LayoutNode, LowCodeFieldSize } from './types';
 
 export function useRecordFormFieldSchemas(context: {
-  contract: Ref<ActionContract|null>; v2ContractStore: Ref<ContractV2NormalizedStore|null>;
+  v2ContractStore: Ref<ContractV2NormalizedStore|null>;
   nativeFormLayoutNodes: ComputedRef<NativeFormLayoutNode[]>; isNativeFieldVisible:(name:string,node?:NativeFormLayoutNode)=>boolean;
   isNativeLayoutNodeVisible:(node:NativeFormLayoutNode)=>boolean; runtimeState:(name:string)=>{readonly:boolean;required:boolean};
   recordId:ComputedRef<number|null>; rights:ComputedRef<{create:boolean;write:boolean}>;
@@ -37,24 +36,29 @@ export function useRecordFormFieldSchemas(context: {
   inputFieldValue:(name:string)=>string; many2oneValue:(name:string)=>string;
   toDateInputValue:(value:unknown)=>string; toDatetimeInputValue:(value:unknown)=>string;
   evaluateNativeModifierValue:(value:unknown)=>boolean;
+  runtimeOccurrenceState:(node:NativeFormLayoutNode)=>Record<string,unknown>;
 }) {
   const nativeNodeFieldDescriptor=(node:NativeFormLayoutNode,fallback?:FieldDescriptor)=>nativeNodeFieldDescriptorFromNode(node as NativeLayoutLikeNode,fallback,context.contractFieldLabel);
   const nativeLayoutNodeToFieldNode=(node:NativeFormLayoutNode,index:number):LayoutNode|null=>{
     const name=String(node?.name||'').trim(); if(!name||!context.isNativeFieldVisible(name,node))return null;
-    const descriptor=nativeNodeFieldDescriptor(node,context.contract.value?.fields?.[name]); if(!descriptor)return null;
-    const source=node as Record<string,unknown>; const state=context.runtimeState(name);
-    const nativeBehavior=resolveNativeOccurrenceBehavior(source,context.evaluateNativeModifierValue);
+    const source=node as Record<string,unknown>; const widgetId=String(source.widgetId||'').trim();
+    const strictDescriptor=context.v2ContractStore.value?.widgetsById.get(widgetId)?.fieldDescriptor as FieldDescriptor|undefined;
+    const nativeLocator=String(source.nativeLocator||source.native_locator||'').trim();
+    const occurrenceIndex=Number(source.occurrenceIndex||source.occurrence_index||0);
+    const isOccurrence=Boolean(nativeLocator&&Number.isInteger(occurrenceIndex)&&occurrenceIndex>0);
+    const descriptor=nativeNodeFieldDescriptor(node,strictDescriptor);
+    if(!descriptor||isOccurrence&&!strictDescriptor)return null;
+    const state=context.runtimeOccurrenceState(node);
     const nativeRelationActiveActions=resolveNativeRelationActiveActions(source,context.evaluateNativeModifierValue);
     const occurrenceDescriptor={...descriptor,native_relation_active_actions:nativeRelationActiveActions} as FieldDescriptor;
-    const resolved=evaluateFieldPolicy(context.contract.value,name,{required:Boolean(descriptor.required),readonly:Boolean(descriptor.readonly)},context.evaluatePolicyContext.value);
+    const resolved=evaluateFieldPolicy(null,name,{required:Boolean(descriptor.required),readonly:Boolean(descriptor.readonly)},context.evaluatePolicyContext.value);
     const presentation=nativeFieldPresentation({node:source,descriptor,resolveFieldLabel:context.contractFieldLabel,
       editable:context.isContractFieldOrderEditable.value,effectiveFieldSize:context.effectiveFieldSize});
     context.rememberFormConfigFieldLabel(name,presentation.label);
-    const nativeLocator=String(source.native_locator||'').trim(); const occurrenceIndex=Number(source.occurrence_index||0);
     const occurrenceKey=nativeLocator||`${name}[${occurrenceIndex>0?occurrenceIndex:index+1}]`;
-    return {key:`native_field:${occurrenceKey}`,kind:'field',name,label:presentation.label,
-      readonly:Boolean(nativeBehavior.readonly||resolved.readonly||state.readonly||(context.recordId.value?!context.rights.value.write:!context.rights.value.create)),
-      required:Boolean(nativeBehavior.required||resolved.required||state.required||descriptor.required),widget:nativeNodeWidget(source),
+    return {key:String(source.widgetId||'').trim()||`native_field:${occurrenceKey}`,kind:'field',name,label:presentation.label,
+      readonly:Boolean(resolved.readonly||state.readonly||(context.recordId.value?!context.rights.value.write:!context.rights.value.create)),
+      required:Boolean(state.required||resolved.required),widget:nativeNodeWidget(source),
       widgetSemantics:nativeNodeWidgetSemantics(source),spanClass:presentation.spanClass,descriptor:occurrenceDescriptor};
   };
   const v2FieldValue=(name:string)=>{const key=String(name||'').trim();if(!key||!context.v2ContractStore.value?.widgetsByFieldCode.has(key))return{found:false,value:undefined};
@@ -82,7 +86,8 @@ export function useRecordFormFieldSchemas(context: {
     favoriteActive:(name)=>Boolean(context.formData[name]),
     favoriteReadonly:(field)=>Boolean(field.readonly),
   });
-  const layoutNodes=computed<LayoutNode[]>(()=>buildLegacyLayoutNodes({fields:context.contract.value?.fields||{},order:context.contract.value?.views?.form?.layout||[],containerStatus:collectUnifiedPageContractV2FieldContainerStatus(context.contract.value),visibleFields:context.contractVisibleFields.value,fallbackFieldNames:[...context.coreFieldNames.value,...context.advancedFieldNames.value],isCreate:!context.recordId.value,readonly:context.recordId.value?!context.rights.value.write:!context.rights.value.create,resolveFieldLabel:context.contractFieldLabel,evaluatePolicy:(name,descriptor)=>evaluateFieldPolicy(context.contract.value,name,{required:Boolean(descriptor?.required),readonly:Boolean(descriptor?.readonly)},context.evaluatePolicyContext.value),runtimeState:(name)=>context.runtimeFieldStates.value[name]||{invisible:false,readonly:false,required:false}}));
+  const strictLayoutNodes=()=>{const output:LayoutNode[]=[];const visit=(nodes:NativeFormLayoutNode[])=>nodes.forEach((node,index)=>{const type=String(node.type||(node as any).containerType||'').toLowerCase();if(type==='field'){const mapped=nativeLayoutNodeToFieldNode(node,index);if(mapped)output.push(mapped);}for(const key of ['children','pages','tabs','nodes','items'] as const){const rows=(node as any)[key];if(Array.isArray(rows))visit(rows);}});visit(context.nativeFormLayoutNodes.value);return output;};
+  const layoutNodes=computed<LayoutNode[]>(strictLayoutNodes);
   buildSectionFieldSchemas=createFormSectionFieldSchemaBuilder({
     resolveFieldType:(descriptor)=>fieldType(descriptor)||'char',resolveRequired:(field)=>Boolean((field as LayoutNode).required),
     resolveSpanClass:(field)=>(field as LayoutNode).spanClass||resolveFieldSpanClass({fieldType:fieldType(field.descriptor)}),

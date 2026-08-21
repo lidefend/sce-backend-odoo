@@ -1,4 +1,4 @@
-import type { ActionContract } from '@sc/schema';
+import type { FieldDescriptor } from '@sc/schema';
 import { fieldType } from './fieldUtils';
 import { isRequiredFieldEmptyByType } from './valueUtils';
 import type { LayoutNode, SubmissionFeedback } from './types';
@@ -17,6 +17,7 @@ export async function validateBeforeSaveRecord(params: {
   collectWritableValues: () => Record<string, unknown>;
   formData: Record<string, unknown>;
   isWritableFieldVisible: (name: string) => boolean;
+  nativeFieldAccess?: (name: string) => { visible: boolean; writable: boolean; required: boolean } | undefined;
   layoutNodes: LayoutNode[];
   layoutFieldLabels: () => Record<string, string>;
   normalizeFieldValue: (name: string, value: unknown) => unknown;
@@ -63,13 +64,14 @@ export async function validateBeforeSaveRecord(params: {
     };
   }
   const editableMap = params.collectWritableValues();
-  if (!params.recordId) {
+  {
     const requiredIssues = collectRequiredFieldIssues({
       formData: params.formData,
       isWritableFieldVisible: params.isWritableFieldVisible,
       layoutNodes: params.layoutNodes,
       normalizeFieldValue: params.normalizeFieldValue,
       values: editableMap,
+      nativeFieldAccess: params.nativeFieldAccess,
     });
     if (requiredIssues.length) {
       return {
@@ -111,12 +113,14 @@ export function collectRequiredFieldIssues(params: {
   layoutNodes: LayoutNode[];
   normalizeFieldValue: (name: string, value: unknown) => unknown;
   values: Record<string, unknown>;
+  nativeFieldAccess?: (name: string) => { visible: boolean; writable: boolean; required: boolean } | undefined;
 }) {
   const missing = params.layoutNodes
-    .filter((node) => node.kind === 'field' && !node.readonly && params.isWritableFieldVisible(node.name))
+    .filter((node) => {const native=params.nativeFieldAccess?.(node.name);return node.kind==='field'&&(native?native.visible&&native.writable:!node.readonly&&params.isWritableFieldVisible(node.name));})
     .filter((node) => {
       const descriptor = node.descriptor;
-      if (!descriptor?.required) return false;
+      const native=params.nativeFieldAccess?.(node.name);
+      if (!(native?native.required:descriptor?.required)) return false;
       const value = Object.prototype.hasOwnProperty.call(params.values, node.name)
         ? params.values[node.name]
         : params.normalizeFieldValue(node.name, params.formData[node.name]);
@@ -130,7 +134,7 @@ export function collectRequiredFieldIssues(params: {
 
 export type SaveRecordPayloadBuildInput = {
   comparableFieldValue: (name: string, value: unknown) => unknown;
-  contract: ActionContract | null;
+  fieldDescriptors: Record<string, FieldDescriptor>;
   dirtyFieldSet: Set<string>;
   editableMap: Record<string, unknown>;
   formData: Record<string, unknown>;
@@ -144,7 +148,7 @@ export function buildSaveRecordPayload(params: SaveRecordPayloadBuildInput) {
       acc[key] = value;
       return acc;
     }
-    const ttype = fieldType(params.contract?.fields?.[key]);
+    const ttype = fieldType(params.fieldDescriptors[key]);
     if (ttype === 'many2many' || ttype === 'one2many') {
       if (Array.isArray(value) && value.length) {
         acc[key] = value;

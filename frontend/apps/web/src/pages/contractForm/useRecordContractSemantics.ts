@@ -1,13 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { computed, nextTick, ref, watch, type ComputedRef, type Ref } from 'vue';
-import type { ActionContract } from '@sc/schema';
+import { computed, nextTick, type ComputedRef, type Ref } from 'vue';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2';
-import { intentRequest } from '../../api/intents';
-import { config } from '../../config';
 import { ErrorCodes } from '../../app/error_codes';
 import { findActionMeta } from '../../app/menu';
 import { resolveSceneValidationSuggestedAction } from '../../app/sceneValidationRecoveryStrategy';
-import { findSceneReadyEntry, resolveFormSceneReady } from '../../app/resolvers/sceneReadyResolver';
+import { resolveFormSceneReady } from '../../app/resolvers/sceneReadyResolver';
 import { isCoreSceneStrictMode } from '../../app/contractStrictMode';
 import { resolveUnifiedPageContractV2FieldGroups, resolveUnifiedPageContractV2VisibleFields } from '../../app/contracts/unifiedPageContractV2';
 import { collectPrimaryActionRequiredFields } from './contractRuntimeVm';
@@ -29,7 +26,6 @@ import {
 } from './sceneValidation';
 
 export function useRecordContractSemantics(context: {
-  contract: Ref<ActionContract | null>;
   v2ContractStore: Ref<ContractV2NormalizedStore | null>;
   route: any;
   session: any;
@@ -46,42 +42,47 @@ export function useRecordContractSemantics(context: {
   reload: () => Promise<unknown>;
   focusValidationError: (message: string, fields: Array<{ kind: string; name: string; label: string }>) => void;
 }) {
+  const strictFieldDescriptors = () => Array.from(context.v2ContractStore.value?.widgetsById.values() || [])
+    .reduce<Record<string, any>>((output, widget) => {
+      if (widget.fieldCode && widget.fieldDescriptor && !output[widget.fieldCode]) output[widget.fieldCode] = widget.fieldDescriptor;
+      return output;
+    }, {});
+  const strictSnapshot = () => dictOrEmpty(context.v2ContractStore.value?.snapshot);
   const semanticFieldGroups = computed<Record<string, SemanticFieldGroup>>(() => {
-    const snapshot = dictOrEmpty(context.v2ContractStore.value?.snapshot);
-    const source = Object.keys(snapshot).length ? snapshot : context.contract.value;
-    const raw = resolveUnifiedPageContractV2FieldGroups(source);
-    const profile = ((context.contract.value?.views?.form as Record<string, unknown> | undefined)?.form_profile
-      || (context.contract.value as Record<string, unknown> | undefined)?.form_profile) as Record<string, unknown> | undefined;
-    return normalizeSemanticFieldGroups(raw, profile);
+    const raw = resolveUnifiedPageContractV2FieldGroups(strictSnapshot());
+    return normalizeSemanticFieldGroups(raw, undefined);
   });
   const contractFieldSemantics = computed<Record<string, FieldSemanticMeta>>(() => normalizeContractFieldSemantics(
-    (context.contract.value as Record<string, unknown> | null)?.field_semantics,
+    dictOrEmpty(strictSnapshot().runtimeContract).fieldSemantics,
   ));
   const fieldSemanticMeta = (name: string) => resolveFieldSemanticMeta(
     name,
     contractFieldSemantics.value,
-    context.contract.value?.fields?.[name],
+    strictFieldDescriptors()[name],
   );
   const coreFieldNames = computed(() => semanticFieldNamesBySurfaceRole(
-    context.contract.value?.fields, contractFieldSemantics.value, semanticFieldGroups.value, 'core',
+    strictFieldDescriptors(), contractFieldSemantics.value, semanticFieldGroups.value, 'core',
   ));
   const advancedFieldNames = computed(() => semanticFieldNamesBySurfaceRole(
-    context.contract.value?.fields, contractFieldSemantics.value, semanticFieldGroups.value, 'advanced',
+    strictFieldDescriptors(), contractFieldSemantics.value, semanticFieldGroups.value, 'advanced',
   ));
   const hasAdvancedFields = computed(() => advancedFieldNames.value.length > 0);
-  const policyRequiredFields = computed(() => collectPrimaryActionRequiredFields(context.contract.value?.action_policies));
+  const policyRequiredFields = computed(() => collectPrimaryActionRequiredFields(
+    dictOrEmpty(strictSnapshot().actionContract).actionPolicies,
+  ));
   const sceneReadySceneKey = computed(() => String(
     context.route.query.scene_key || context.route.params.sceneKey
     || findActionMeta(context.session.menuTree, context.actionId.value)?.scene_key
     || findActionMeta(context.session.menuTree, context.actionId.value)?.sceneKey
     || context.session.currentAction?.scene_key || context.session.currentAction?.sceneKey || '',
   ).trim());
-  const sceneReadyHydrateRequested = ref(false);
-  const useSceneFormAugmentations = computed(() => context.isIntakeCreateMode.value || Boolean(sceneReadySceneKey.value));
   const sceneReadyEntry = computed<Record<string, unknown> | null>(() => {
-    if (!useSceneFormAugmentations.value) return null;
-    return sceneReadySceneKey.value ? findSceneReadyEntry(context.session.sceneReadyContractV1, sceneReadySceneKey.value) : null;
+    const entry = dictOrEmpty(strictSnapshot().runtimeContract).sceneFormAugmentations;
+    return entry && typeof entry === 'object' && !Array.isArray(entry)
+      ? entry as Record<string, unknown>
+      : null;
   });
+  const useSceneFormAugmentations = computed(() => Boolean(sceneReadyEntry.value));
   const strictContractMode = computed(() => isCoreSceneStrictMode(sceneReadySceneKey.value, sceneReadyEntry.value));
   const strictContractGuard = computed<Record<string, unknown>>(() => strictContractGuardFromSceneReadyEntry(sceneReadyEntry.value));
   const strictContractMissingSummary = computed(() => strictContractMissingSummaryFromGuard(strictContractMode.value, strictContractGuard.value));
@@ -89,25 +90,10 @@ export function useRecordContractSemantics(context: {
   const sceneValidationRequiredFields = computed(() => useSceneFormAugmentations.value
     ? resolveFormSceneReady(sceneReadyEntry.value).requiredFields : []);
   const sceneReadyFormSurface = computed(() => resolveFormSceneReady(useSceneFormAugmentations.value ? sceneReadyEntry.value : null));
-  watch(() => [sceneReadySceneKey.value, sceneReadyFormSurface.value.sceneBlocks.length], async ([sceneKey, blockCount]) => {
-    if (!sceneKey || Number(blockCount || 0) > 0 || sceneReadyHydrateRequested.value) return;
-    sceneReadyHydrateRequested.value = true;
-    try {
-      const result = await intentRequest<Record<string, unknown>>({
-        intent: 'system.init',
-        params: { scene: 'web', with_preload: false, scene_ready_mode: 'full', with: ['workspace_home'],
-          ...(config.startupRootXmlid ? { root_xmlid: config.startupRootXmlid } : {}), scene_key: sceneKey },
-        meta: { startup_chain_bypass: true },
-      });
-      const readyContract = result.scene_ready_contract_v1;
-      if (readyContract && typeof readyContract === 'object' && Array.isArray((readyContract as Record<string, unknown>).scenes)) {
-        context.session.sceneReadyContractV1 = readyContract;
-      }
-    } catch { /* The base form remains usable without optional scene hydration. */ }
-  }, { immediate: true });
   const validationRequiredFields = computed(() => {
     const fields = new Set<string>();
-    const rules = Array.isArray(context.contract.value?.validation_rules) ? context.contract.value.validation_rules : [];
+    const runtime = dictOrEmpty(strictSnapshot().runtimeContract);
+    const rules = Array.isArray(runtime.validationRules) ? runtime.validationRules : [];
     rules.forEach((rule) => {
       if (!rule || typeof rule !== 'object') return;
       const item = rule as Record<string, unknown>;
@@ -146,8 +132,7 @@ export function useRecordContractSemantics(context: {
     await context.reload();
   };
   const contractVisibleFields = computed(() => {
-    const snapshot = dictOrEmpty(context.v2ContractStore.value?.snapshot);
-    return resolveUnifiedPageContractV2VisibleFields(Object.keys(snapshot).length ? snapshot : context.contract.value);
+    return resolveUnifiedPageContractV2VisibleFields(strictSnapshot());
   });
   return {
     advancedFieldNames, contractVisibleFields, coreFieldNames, fieldSemanticMeta, focusFirstValidationError,

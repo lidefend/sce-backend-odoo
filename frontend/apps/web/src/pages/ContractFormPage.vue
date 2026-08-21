@@ -4,16 +4,16 @@
     :content-layout="recordContentLayoutMode"
     :class="['sc-page', { 'contract-form-native-shell': useNativeFormTree }]"
     data-product-page-mode="form"
-    :data-v2-shadow-store="String(v2ShadowStoreReady)" :data-v2-shadow-widgets="String(v2ShadowWidgetCount)"
-    :data-v2-shadow-actions="String(v2ShadowActionCount)" :data-v2-shadow-button-statuses="String(v2ShadowButtonStatusCount)"
-    :data-v2-shadow-field-codes="String(v2ShadowFieldCodeCount)" :data-v2-shadow-field-overlap="String(v2ShadowLegacyFieldOverlapCount)"
-    :data-v2-shadow-field-missing="v2ShadowLegacyFieldMissingPreview" :data-v2-shadow-layout-source="v2ShadowLayoutSourceKind"
-    :data-v2-shadow-global-source="v2ShadowGlobalSourceKind" :data-v2-shadow-source-context="v2ShadowSourceContextKind"
-    :data-v2-shadow-status-fields="String(v2ShadowStatusFieldCount)" :data-v2-shadow-value-fields="String(v2ShadowValueFieldCount)"
-    :data-v2-shadow-main-data-fields="String(v2ShadowMainDataFieldCount)"
-    :data-v2-shadow-readonly-values="String(v2ShadowReadonlyValueCount)"
-    :data-v2-shadow-value-source="v2ShadowValueSourceKind"
-    :data-v2-shadow-error="v2ContractDecodeError || '-'"
+    :data-form-v2-store="String(formV2StoreReady)" :data-form-v2-widgets="String(formV2WidgetCount)"
+    :data-form-v2-actions="String(formV2ActionCount)" :data-form-v2-button-statuses="String(formV2ButtonStatusCount)"
+    :data-form-v2-field-codes="String(formV2FieldCodeCount)" :data-form-v2-descriptor-count="String(formV2DescriptorCount)"
+    :data-form-v2-authority-issues="formV2AuthorityIssuePreview" :data-form-v2-layout-source="formV2LayoutSourceKind"
+    :data-form-v2-global-source="formV2GlobalSourceKind" :data-form-v2-source-context="formV2SourceContextKind"
+    :data-form-v2-status-fields="String(formV2StatusFieldCount)" :data-form-v2-value-fields="String(formV2ValueFieldCount)"
+    :data-form-v2-main-data-fields="String(formV2MainDataFieldCount)"
+    :data-form-v2-readonly-values="String(formV2ReadonlyValueCount)"
+    :data-form-v2-value-source="formV2ValueSourceKind"
+    :data-form-v2-error="v2ContractDecodeError || '-'"
   >
     <h1 class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
     <ContractFormProductHeader
@@ -26,7 +26,7 @@
       :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
       :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible"
-      :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
+      :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(v2ContractStore)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     />
@@ -289,7 +289,7 @@ import { dispatchTemplateFieldChange } from '../components/template/fieldChange.
 import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';
 import { config } from '../config';
 import { intentRequest } from '../api/intents';
-import { loadActionContractRaw, loadModelContractRaw } from '../api/contract';
+import { loadActionFormContractV2Bundle, loadModelFormContractV2Bundle } from '../api/contract';
 import { ApiError } from '../api/client';
 import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
@@ -439,7 +439,7 @@ import {
   normalizeOnchangeFieldPatch,
   normalizeOnchangeResponse,
 } from './contractForm/onchangeNormalization';
-import { fieldRequiresServerOnchange, resolveContractActionRules } from './contractForm/contractActionRules';
+import { fieldRequiresServerOnchange } from './contractForm/contractActionRules';
 import { dictOrEmpty } from './contractForm/recordUtils';
 import {
   collectFormDataFieldNames,
@@ -532,7 +532,6 @@ import {
 import { useRelationRuntime } from './contractForm/useRelationRuntime';
 import {
   buildSceneValidationPanel,
-  collectSceneValidationPrecheckErrors as collectSceneValidationPrecheckErrorsFromRules,
   sceneValidationErrorPrefix,
   strictContractDefaultsSummary as strictContractDefaultsSummaryFromGuard,
   strictContractGuardFromSceneReadyEntry,
@@ -652,7 +651,7 @@ import { useRecordActionPresentation } from './contractForm/useRecordActionPrese
 import { useRecordFormActions } from './contractForm/useRecordFormActions';
 import { resolveCanonicalFormRenderState, useContractFormComponentDriverRuntime } from './contractForm/useContractFormComponentDriverRuntime';
 import { useFormNavigationActionsRuntime } from './contractForm/useFormNavigationActionsRuntime';
-import { useContractV2ShadowDiagnostics } from './contractForm/useContractV2ShadowDiagnostics';
+import { useContractV2Diagnostics } from './contractForm/useContractV2Diagnostics';
 import { useContractFormPageState } from './contractForm/useContractFormPageState';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
@@ -688,17 +687,18 @@ const {
 } = useActionResponseNavigation({
   router,
   currentQuery: () => route.query,
-  currentModel: () => String(route.params.model || contract.value?.head?.model || contract.value?.model || ''),
+  currentModel: () => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''),
 });
 const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
 const {
   status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorMessage,
   recordMissing, errorMessage, loadError, validationErrors, submissionFeedback, formConflict,
   showOne2manyErrors, busyKind, activeContractMode, formSettingsActiveTab, contractModeFeedback,
-  contract, contractMeta,
 } = useContractFormPageState();
 const intentConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
-const initialFormLoading = computed(() => status.value === 'loading' && !contract.value);
+const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
+const v2ContractDecodeError = ref('');
+const initialFormLoading = computed(() => status.value === 'loading' && !v2ContractStore.value);
 type PageStatusEvent = Extract<FormRuntimeStateEvent, { kind: 'status' }>;
 const applyPageStatusEvent = (event: PageStatusEvent) => applyFormRuntimeStatusEvent({ status, errorMessage }, event);
 const {
@@ -706,8 +706,7 @@ const {
   exportContractJson,
 } = useContractDebugExportRuntime({
   actionId: () => actionId.value || 0,
-  contract,
-  contractMeta,
+  store: v2ContractStore,
   modelName: () => model.value,
 });
 const {
@@ -716,8 +715,6 @@ const {
   isActive: () => isComponentActive.value,
   reload: () => reload(),
 });
-const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
-const v2ContractDecodeError = ref('');
 function formRouteIdentity() {
   const query = route.query as Record<string, unknown>;
   return [
@@ -732,15 +729,14 @@ function formRouteIdentity() {
   ].join('|');
 }
 const {
-  v2ShadowStoreReady, v2ShadowWidgetCount, v2ShadowActionCount, v2ShadowButtonStatusCount,
-  v2ShadowFieldCodeCount, v2ShadowLegacyFieldOverlapCount, v2ShadowLegacyFieldMissingPreview,
-  v2ShadowFormStructureContract, v2ShadowFormStructureSlotCount, v2ShadowLayoutSourceKind,
-  v2ShadowGlobalSourceKind, v2ShadowSourceContextKind, v2ShadowStatusFieldCount,
-  v2ShadowValueSourceKind, v2ShadowValueFieldCount, v2ShadowMainDataFieldCount,
-  v2ShadowReadonlyValueCount,
-} = useContractV2ShadowDiagnostics({
+  formV2StoreReady, formV2WidgetCount, formV2ActionCount, formV2ButtonStatusCount,
+  formV2FieldCodeCount, formV2DescriptorCount, formV2AuthorityIssuePreview,
+  formV2FormStructureContract, formV2FormStructureSlotCount, formV2LayoutSourceKind,
+  formV2GlobalSourceKind, formV2SourceContextKind, formV2StatusFieldCount,
+  formV2ValueSourceKind, formV2ValueFieldCount, formV2MainDataFieldCount,
+  formV2ReadonlyValueCount,
+} = useContractV2Diagnostics({
   store: v2ContractStore,
-  legacyFields: () => contract.value?.fields || {},
   nativeLayoutCount: () => nativeFormLayoutNodes.value.length,
   layoutNodes: () => layoutNodes.value,
 });
@@ -880,7 +876,7 @@ const {
   },
 });
 const nativeChatterAutoLoadKey = ref('');
-const model = computed(() => String(route.params.model || contract.value?.head?.model || contract.value?.model || ''));
+const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
 const menuId = computed(() => Number(route.query.menu_id || 0) || 0);
 const actionId = computed(() => {
   const rawRecordId = String(route.params.id || '').trim();
@@ -906,7 +902,7 @@ const recordId = computed(() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
-const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
+const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(v2ContractStore.value?.snapshot), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
 const requestedSurface = computed<'user' | 'native' | 'hud'>(() => {
@@ -992,7 +988,7 @@ const {
   },
 });
 function recordVersionPolicy() {
-  const raw = (contract.value as Record<string, unknown> | null)?.record_version;
+  const raw = v2ContractStore.value?.snapshot.runtimeContract.recordVersionPolicy;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const policy = raw as Record<string, unknown>;
   if (policy.enabled !== true) return null;
@@ -1013,7 +1009,7 @@ const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
   });
 });
 const rights = computed(() => {
-  const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value) || resolveUnifiedPageContractV2GlobalStatus(contract.value);
+  const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
   if (globalStatus?.pageVisible === false || pageAuth === 'none') {
     return { read: false, write: false, create: false, unlink: false, duplicate: false };
@@ -1025,22 +1021,7 @@ const rights = computed(() => {
   if (v2ContractStore.value) {
     return { read: false, write: false, create: false, unlink: false, duplicate: false };
   }
-  const head = contract.value?.head?.permissions;
-  const effective = contract.value?.permissions?.effective?.rights;
-  const resolve = (key: 'read' | 'write' | 'create' | 'unlink') => {
-    const a = head?.[key];
-    if (typeof a === 'boolean') return a;
-    const b = effective?.[key];
-    if (typeof b === 'boolean') return b;
-    return true;
-  };
-  return {
-    read: resolve('read'),
-    write: pageAuth === 'read' ? false : resolve('write'),
-    create: pageAuth === 'read' ? false : resolve('create'),
-    unlink: pageAuth === 'read' ? false : resolve('unlink'),
-    duplicate: false,
-  };
+  return { read: false, write: false, create: false, unlink: false, duplicate: false };
 });
 const canSave = computed(() => (
   renderProfile.value === 'edit'
@@ -1078,9 +1059,10 @@ const intakeAutosaveKey = computed(() => {
   return `sc:intake:autosave:${String(model.value || 'record')}:${mode}:u${userId}`;
 });
 const intakeAutosaveFields = computed(() => {
-  const views = contract.value?.views as Record<string, unknown> | undefined;
-  const form = views?.form && typeof views.form === 'object' ? views.form as Record<string, unknown> : {};
-  const autosave = form.autosave && typeof form.autosave === 'object' ? form.autosave as Record<string, unknown> : {};
+  const runtime = v2ContractStore.value?.snapshot.runtimeContract as Record<string, unknown> | undefined;
+  const autosave = runtime?.intakeAutosave && typeof runtime.intakeAutosave === 'object'
+    ? runtime.intakeAutosave as Record<string, unknown>
+    : {};
   return Array.isArray(autosave.fields) ? autosave.fields : [];
 });
 const quickRequiredReady = computed(() => {
@@ -1091,10 +1073,14 @@ const standardCreateReady = computed(() => {
   if (!isStandardIntakeMode.value) return true;
   return intakeRequiredReadyCount.value >= intakeRequiredFields.value.length;
 });
+function strictFormFieldDescriptor(name: string) {
+  const widgets = v2ContractStore.value?.widgetsByFieldCodeAll.get(String(name || '').trim()) || [];
+  return widgets.find((widget) => widget.fieldDescriptor)?.fieldDescriptor as FieldDescriptor | undefined;
+}
 function hasPendingInlineRelationChange() {
   return layoutNodes.value.some((node) => {
     if (node.kind !== 'field' || node.readonly) return false;
-    const descriptor = contract.value?.fields?.[node.name];
+    const descriptor = strictFormFieldDescriptor(node.name);
     if (fieldType(descriptor) !== 'many2one') return false;
     const inline = relationInlineCreate(descriptor);
     if (!inline.enabled || !inline.createOnNoMatch) return false;
@@ -1108,7 +1094,7 @@ function hasPendingMany2manyTagCreate() {
     if (!String(keyword || '').trim()) return false;
     if (!isFieldWritable(name)) return false;
     if (!Array.isArray(formData[name])) return false;
-    const descriptor = contract.value?.fields?.[name];
+    const descriptor = strictFormFieldDescriptor(name);
     const inline = relationInlineCreate(descriptor);
     if (!inline.enabled || !inline.createOnNoMatch) return false;
     return Boolean(relationModel(name));
@@ -1117,7 +1103,7 @@ function hasPendingMany2manyTagCreate() {
 function hasOne2manyDraftChanges() {
   return layoutNodes.value.some((node) => {
     if (node.kind !== 'field' || node.readonly) return false;
-    const descriptor = contract.value?.fields?.[node.name];
+    const descriptor = strictFormFieldDescriptor(node.name);
     if (fieldType(descriptor) !== 'one2many') return false;
     return one2manyFieldRows(node.name).some((row) => row.isNew || row.dirty || row.removed);
   });
@@ -1194,7 +1180,7 @@ const intakeMissingSummary = computed(() => {
 const one2manyValidation = computed(() => collectOne2manyDraftValidation());
 const currentActionMeta = computed(() => findActionMetaByMenu(session.menuTree, menuId.value, actionId.value || undefined));
 const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryContext({
-  contractRecord: contract.value,
+  contractRecord: v2ContractStore.value?.snapshot,
   routeQuery: route.query as Record<string, unknown>,
   relationBusinessCategoryLabel: relationKeywords.business_category_id,
 }));
@@ -1202,7 +1188,7 @@ const currentBusinessCategoryLabel = computed(() => currentBusinessCategoryConte
 const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContext.value.code);
 const pageIdentityInput = computed(() => buildContractFormPageIdentity({
   action: currentActionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
-  businessCategoryLabel: currentBusinessCategoryLabel.value, contract: contract.value, formData,
+  businessCategoryLabel: currentBusinessCategoryLabel.value, contract: v2ContractStore.value?.snapshot as any, formData,
   entryTitle: route.query.entry_title,
   isCreate: !recordId.value, isEdit: route.name === 'model-form',
   menuName: currentMenuTitle.value, modelName: model.value, recordMissing: recordMissing.value,
@@ -1287,7 +1273,7 @@ const nativeCanvasFormLayoutNodes = computed<NativeFormLayoutNode[]>(() => {
   });
   return filterNodes(nativeFormLayoutNodes.value);
 });
-const contractV2ActionRules = computed(() => resolveContractActionRules(contract.value));
+const contractV2ActionRules = computed(() => v2ContractStore.value?.snapshot.actionContract.actionRuleList || []);
 function contractFieldActions(field: FormSectionFieldSchema) {
   return buildContractFieldActionsFromRules({
     rules: contractV2ActionRules.value,
@@ -1353,7 +1339,7 @@ const {
   buildFormFieldConfigScope, buildLowCodeViewOrchestrationFromDraft, busy,
   busyKind, changedFieldGroupFromDrafts, changedFieldVisibilityFromDrafts,
   collectLowCodeLayoutFromViewOrchestration, collectNativeFieldStructureGroups, collectNativeLayoutGroupTitles,
-  contract, contractActionRuleClientMode, contractActionRuleControl,
+  contractActionRuleClientMode, contractActionRuleControl,
   contractActionRuleKey, contractFieldLabel: (...args: [string]) => contractFieldLabel(...args), contractFieldSequence: (fieldKey: string, fallback?: number) => contractFieldSequence(fieldKey, fallback),
   contractModeFeedback, contractV2ActionRules, currentBusinessCategoryLabel,
   effectiveFieldGroupTitleFromDrafts, ensureFieldOrderDraftStartsFromCurrentLayout: (...args: []) => ensureFieldOrderDraftStartsFromCurrentLayout(...args), errorMessage,
@@ -1412,12 +1398,13 @@ const {
   key: intakeAutosaveKey, hasRecord: recordId, formData, fields: intakeAutosaveFields,
 });
 const contractMetaLine = computed(() => {
-  if (!contract.value) return '';
-  const mode = String(contractMeta.value?.contract_mode || '-');
-  const surface = String((contract.value as Record<string, unknown>)?.contract_surface || contractMeta.value?.contract_surface || '-');
-  const viewType = String(contract.value.head?.view_type || contract.value.view_type || '-');
-  const filters = Array.isArray(contract.value.search?.filters) ? contract.value.search.filters.length : 0;
-  const transitions = Array.isArray(contract.value.workflow?.transitions) ? contract.value.workflow.transitions.length : 0;
+  const snapshot = v2ContractStore.value?.snapshot;
+  if (!snapshot) return '';
+  const mode = String(snapshot.meta.lifecycle.stage || '-');
+  const surface = String(snapshot.meta.sourceType || '-');
+  const viewType = String(snapshot.pageInfo.viewType || '-');
+  const filters = 0;
+  const transitions = snapshot.actionContract.actionRuleList.length;
   const profileLabels: Record<string, string> = {
     create: '新建',
     edit: '编辑',
@@ -1474,32 +1461,32 @@ const policyContext = computed(() => ({
   roleCode: runtimeRoleCode.value,
   roleCodes: runtimeRoleCodes.value,
 }));
-const warnings = computed(() => normalizeContractWarnings(contract.value?.warnings));
+const warnings = computed(() => []);
 
 const contractAccessPolicy = computed<ContractAccessPolicy>(() => {
-  const raw = (contract.value as Record<string, unknown> | null)?.access_policy;
-  return normalizeContractAccessPolicy(raw);
+  const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
+  return normalizeContractAccessPolicy(globalStatus?.pageVisible === false || globalStatus?.pageAuth === 'none'
+    ? { mode: 'block', reason_code: globalStatus?.reasonCode || 'V2_FORM_ACCESS_BLOCKED' }
+    : { mode: v2ContractStore.value ? 'allow' : 'block', reason_code: v2ContractStore.value ? 'OK' : 'V2_FORM_CONTRACT_REQUIRED' });
 });
 
 const workflowTransitions = computed(() => buildWorkflowTransitions({
-  rows: contract.value?.workflow?.transitions,
+  rows: [],
   actions: contractActions.value,
   profile: renderProfile.value,
   showHud: showHud.value,
 }));
-const searchFilters = computed(() => normalizeSearchFilters(contract.value?.search?.filters));
+const searchFilters = computed(() => []);
 
 const showSearchFilters = computed(() => {
   if (useNativeFormTree.value) return false;
-  if (!contract.value) return true;
-  if (renderProfile.value !== 'create') return true;
-  return !contract.value.hide_filters_on_create;
+  return false;
 });
 
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
   one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
-  mergeNativeLayoutFieldDescriptorsIntoContract, nativeFieldSubview, one2manyColumns, visibleOne2manyColumns, one2manyRowColumnBehavior, one2manyRowActions, one2manyPolicies, one2manyCanCreate,
+  nativeFieldSubview, one2manyColumns, visibleOne2manyColumns, one2manyRowColumnBehavior, one2manyRowActions, one2manyPolicies, one2manyCanCreate,
   one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
   hydrateVisibleOne2manyRows, one2manyRowErrors, setRelationKeyword, filteredRelationOptions, relationModel,
   formUiLabels, formUiLabel, dynamicDomainFromDescriptor, resolveDynamicDomainDependencyValue, clearDynamicRelationDependents,
@@ -1510,14 +1497,14 @@ const {
   quickCreateRelation,
 } = useRecordRelationships({
   ApiError, actionId, clearedDynamicRelationFields,
-  closeRelationSearchDialog, confirmRelationSearchSelectionFromRuntime, contract,
+  closeRelationSearchDialog, confirmRelationSearchSelectionFromRuntime,
   contractFieldLabel: (...args: [string]) => contractFieldLabel(...args), createContractFormRecord, deniedRelationModels,
   dynamicDomainDependencyFields, dynamicRelationDomainFromDescriptor, ensureOne2manyRows,
   fallbackRelationSearchColumns, fetchRelationOptionsFromRuntime, fieldModifierMap: computed(() => fieldModifierMap.value),
   fieldType, filteredRelationOptionsFromRuntime, findNativeFieldNodeInTree,
   formData, formUiLabelFromLabels, formUiLabelsFromFormView,
   invalidatedRelationKeywords, isWritableFieldVisible: (...args: [string]) => isWritableFieldVisible(...args), layoutNodes: computed(() => layoutNodes.value),
-  listContractFormRecords, loadModelContractRaw, markFieldChanged,
+  listContractFormRecords, loadModelFormContractV2Bundle, markFieldChanged,
   menuId, mergeHydratedOne2manyRecords, mergeRelationDomains,
   mergeRelationOptions, model, nativeFieldSubviewFromTree,
   nativeFormLayoutNodes: computed(() => nativeFormLayoutNodes.value), nativeNodeFieldDescriptorFromNode, normalizeFieldValue: (...args: [string, unknown]) => normalizeFieldValue(...args),
@@ -1531,7 +1518,7 @@ const {
   relationEntry, relationFieldDescriptors, relationInlineCreate,
   relationKeyword, relationKeywords, relationModelFromDescriptor,
   relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords,
-  relationOrder, relationQueryTimers, relationReadFields, renderProfile,
+  relationOrder, relationQueryTimers, relationReadFields, renderProfile, v2ContractStore,
   relationSearchColumnsFromContract, relationSearchDialog, relationSearchDialogContract,
   relationSearchLimit, relationSearchOrder, relationSearchReadFields,
   relationSearchRowsFromRecords, relationUiLabel, relationUiLabels,
@@ -1552,11 +1539,11 @@ const {
   sceneValidationRequiredFields, strictContractDefaultsSummary, strictContractGuard, strictContractMissingSummary, strictContractMode,
   useSceneFormAugmentations, validationRequiredFields, baseNativeFormLayoutNodes, currentNativeFieldOrder, ensureFieldOrderDraftStartsFromCurrentLayout,
   evaluateNativeActionVisibility, evaluateNativeModifierValue, fieldModifierMap, formDataFieldNames, isFieldVisible,
-  isNativeFavoriteField, isNativeFieldVisible, isNativeLayoutNodeVisible, isWritableFieldVisible, nativeFormLayoutNodes,
+  isNativeFavoriteField, isNativeFieldVisible, isNativeLayoutNodeVisible, isWritableFieldVisible, nativeFieldAccess, nativeFormLayoutNodes,
   nativeFormRootColumns, nativeGroupCount, nativeNotebookPageCount, nativeStatusbar, nativeVisibleFieldNames,
   nativeVisibleSectionTitles, rawNativeFormLayoutNodes, resolveNativeButtonLabel, runtimeFieldStates, runtimeNativeFormLayoutNodes,
   runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree, layoutNodes,
-  nativeFieldSchemasForNodes, collectSceneValidationPrecheckErrors, onTemplateFieldChange, relationFieldAdapter,
+  nativeFieldSchemasForNodes, onTemplateFieldChange, relationFieldAdapter,
 } = useRecordActionPresentation({
   ErrorCodes, actionId, activeChatterLabel,
   activeChatterMode, activityAssigneeId, activityDeadline,
@@ -1568,8 +1555,8 @@ const {
   chatterError, chatterPosting, chatterTimeline, chatterTimelineHasMore, chatterTimelineLoading,
   closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions,
   collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById,
-  collectSceneValidationPrecheckErrorsFromRules, collectUnifiedPageContractV2ButtonStatus, commitMany2oneInline: (...args: Parameters<typeof commitMany2oneInline>) => commitMany2oneInline(...args),
-  confirmActionSafety: (action: ContractAction) => confirmActionSafety(action), contract, detectObjectMethodFromActionKey,
+  collectUnifiedPageContractV2ButtonStatus, commitMany2oneInline: (...args: Parameters<typeof commitMany2oneInline>) => commitMany2oneInline(...args),
+  confirmActionSafety: (action: ContractAction) => confirmActionSafety(action), detectObjectMethodFromActionKey,
   dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible,
   ensureSavedBeforeRecordAction: () => ensureSavedBeforeRecordAction(), executeButton, fieldGroupBase,
   fieldGroupDraft, fieldInputType, fieldMoveTargetDraft,
@@ -1641,17 +1628,18 @@ async function runCanonicalFormAction(actionRef: ContractV2ActionRule) {
   await runAction(action);
 }
 const contractReadiness = computed<FormContractReadiness>(() => {
-  if (!contract.value) {
-    return { usable: false, issues: ['contract not loaded'], fieldCount: 0, layoutFieldCount: 0, visibleCandidateCount: 0 };
-  }
-  return analyzeFormContractReadiness(contract.value, { requirePureFormViewType: false });
+  const store = v2ContractStore.value;
+  if (!store) return { usable: false, issues: ['strict V2 contract not loaded'], fieldCount: 0, layoutFieldCount: 0, visibleCandidateCount: 0 };
+  const fieldCount = store.widgetsByFieldCode.size;
+  const layoutFieldCount = store.widgetsById.size;
+  return { usable: fieldCount > 0 && layoutFieldCount > 0, issues: fieldCount > 0 && layoutFieldCount > 0 ? [] : ['strict V2 form carrier is empty'], fieldCount, layoutFieldCount, visibleCandidateCount: layoutFieldCount };
 });
 
 let recordFormStateRuntime: ReturnType<typeof useRecordFormState>;
 function markFieldChanged(name: string) { recordFormStateRuntime.markFieldChanged(name); }
 function inputFieldValue(name: string) { return recordFormStateRuntime.inputFieldValue(name); }
 recordFormStateRuntime = useRecordFormState({
-  contract, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
+  model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
   invalidatedRelationKeywords, clearedDynamicRelationFields, relationQueryTimers, relationOptions,
   validationErrors, onchangeModifiersPatch, onchangeWarnings, onchangeLinePatches, applyingOnchangePatch,
   changedFieldSet, dirtyFieldSet, getOnchangeTimer: () => onchangeTimer,
@@ -1661,7 +1649,7 @@ recordFormStateRuntime = useRecordFormState({
   switchFormByRelationOption, queryRelationOptions, setRelationKeyword, setMany2oneOption,
   relationKeyword, quickCreateRelation, relationUiLabel, relationModel, relationIds, upsertRelationOption,
   buildOne2manyCommandValue, one2manyFieldRows, initOne2manyRows, applyOnchangeLinePatches,
-  isWritableFieldVisible,
+  isWritableFieldVisible, nativeFieldAccess, v2ContractStore,
 });
 const {
   addRelationId, collectWritableValues, commitMany2oneInline, comparableFieldValue, isFieldWritable,
@@ -1671,7 +1659,7 @@ const {
 } = recordFormStateRuntime;
 
 const {
-  resolveNavigationUrl, syncContractV2ShadowStore, viewOrchestrationHudSummary, hudEntries, loadContract,
+  resolveNavigationUrl, syncContractV2Store, viewOrchestrationHudSummary, hudEntries, loadContract,
   loadRecord, handleSceneBlockAction, reload, ensureFormInitialReload, preloadFormAuxiliaryData,
 } = useRecordPageLifecycle({
   ApiError, ContractAccessPolicyError, ContractV2DecodeError,
@@ -1680,16 +1668,17 @@ const {
   buildRouteContractContext, changedFieldCount,
   changedFieldSet, chatterLoading, clearNativeAttachmentError,
   clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments,
-  closeNativeChatterComposer, contract, contractAccessPolicy,
-  contractActions, contractMeta, contractModelName,
+  closeNativeChatterComposer, contractAccessPolicy,
+  contractActions, contractModelName,
   contractReadiness, coreFieldNames, createContractV2Store,
   decodeContractV2Snapshot, dirtyFieldSet, fieldType,
   formData, formDataFieldNames,
   formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows,
   initOne2manyRows, isComponentActive, layoutNodes,
-  loadActionContractRaw, loadError, loadModelContractRaw,
+  loadError,
+  loadActionFormContractV2Bundle, loadModelFormContractV2Bundle,
   loadNativeChatterTimeline, menuId,
-  mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeAttachments,
+  model, nativeAttachments,
   nativeChatterActions, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision,
   onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer: () => onchangeTimer,
   setOnchangeTimer: (timer: ReturnType<typeof setTimeout> | null) => { onchangeTimer = timer; }, onchangeWarnings, originalValues,
@@ -1705,11 +1694,11 @@ const {
   setStatusbarValue, showHud, showOne2manyErrors,
   snapshotOriginalFormValues, status, toPositiveInt,
   upsertRelationOption, v2ContractDecodeError, v2ContractStore,
-  v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount,
-  v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview,
-  v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount,
-  v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady,
-  v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount,
+  formV2ActionCount, formV2ButtonStatusCount, formV2FieldCodeCount,
+  formV2GlobalSourceKind, formV2LayoutSourceKind, formV2AuthorityIssuePreview,
+  formV2DescriptorCount, formV2MainDataFieldCount, formV2ReadonlyValueCount,
+  formV2SourceContextKind, formV2StatusFieldCount, formV2StoreReady,
+  formV2ValueFieldCount, formV2ValueSourceKind, formV2WidgetCount,
   validateSurfaceMarkers, validationErrors, writableFieldCount,
 });
 const {
@@ -1726,8 +1715,8 @@ const {
   buildLowCodeApplyBaseParams, buildLowCodePreviewQuery, buildLowCodeReturnQuery,
   buildSaveRecordPayload, busy, busyKind,
   canSave, clearIntakeAutosave, closeContractPromptAction,
-  collectPolicyValidationErrors, collectSceneValidationPrecheckErrors, collectWritableValues,
-  comparableFieldValue, contract, contractActionRuleKey,
+  collectPolicyValidationErrors, collectWritableValues, nativeFieldAccess,
+  comparableFieldValue, contractActionRuleKey,
   contractFieldSequenceFromOrder, contractModeFeedback, contractV2ActionRules,
   createContractFormRecord, currentFormDesignFieldKeys, currentFormOrderedFieldKeys,
   dirtyFieldSet, draggingFieldLabel, effectiveFieldGroupTitleForDraft,

@@ -5,6 +5,7 @@ import type { UnifiedPageContractLite } from '../app/contracts/unifiedPageContra
 import { LITE_PREVIEW_LEGACY_FALLBACK_MODE } from '../app/contracts/unifiedPageContractLiteCompat';
 import type { UnifiedPageContractV2 } from '../app/contracts/unifiedPageContractV2';
 import { adaptUnifiedPageContractV2Raw } from '../app/runtime/unifiedPageContractV2CompatProjection';
+import { decodeContractV2Snapshot } from '../app/contracts/v2/schema';
 import { currentContextEpoch } from '../app/contextEpoch';
 import { useSessionStore } from '../stores/session';
 import { resolveModelContractRenderProfile } from './modelContractProfile';
@@ -74,6 +75,17 @@ async function requestUnifiedPageContractV2Raw(params: Record<string, unknown>) 
       ...params,
     },
   });
+  return result;
+}
+
+function extractStrictUnifiedPageContractV2(result: Awaited<ReturnType<typeof requestUnifiedPageContractV2Raw>>) {
+  return decodeContractV2Snapshot(result.data);
+}
+
+function projectLegacyContractFromUnifiedPageContractV2(
+  result: Awaited<ReturnType<typeof requestUnifiedPageContractV2Raw>>,
+  params: Record<string, unknown>,
+) {
   const adapted = adaptUnifiedPageContractV2Raw(result, params);
   if (!Object.keys(adapted.data || {}).length) {
     throw new ApiError('ui.contract.v2 missing projection payload', 500, result.traceId, {
@@ -85,9 +97,24 @@ async function requestUnifiedPageContractV2Raw(params: Record<string, unknown>) 
   return adapted;
 }
 
+async function requestLegacyProjectionFromUnifiedPageContractV2(params: Record<string, unknown>) {
+  return projectLegacyContractFromUnifiedPageContractV2(await requestUnifiedPageContractV2Raw(params), params);
+}
+
+async function requestFormContractV2Bundle(params: Record<string, unknown>) {
+  const result = await requestUnifiedPageContractV2Raw(params);
+  return {
+    snapshot: extractStrictUnifiedPageContractV2(result),
+  };
+}
+
 export async function loadActionUnifiedPageContractV2(actionId: number, options?: LoadActionContractOptions): Promise<UnifiedPageContractV2> {
   const result = await requestUnifiedPageContractV2Raw(buildActionContractParams(actionId, options));
-  return asDict(result.data.__unified_page_contract_v2) as UnifiedPageContractV2;
+  return extractStrictUnifiedPageContractV2(result) as unknown as UnifiedPageContractV2;
+}
+
+export async function loadActionFormContractV2Bundle(actionId: number, options?: LoadActionContractOptions) {
+  return requestFormContractV2Bundle(buildActionContractParams(actionId, options));
 }
 
 function rethrowContractError(err: unknown, context: { op: 'action_open' | 'model'; model?: string; actionId?: number }): never {
@@ -173,7 +200,7 @@ function buildActionContractParams(actionId: number, options?: LoadActionContrac
 
 export async function loadActionContract(actionId: number, options?: LoadActionContractOptions) {
   try {
-    const result = await requestUnifiedPageContractV2Raw(buildActionContractParams(actionId, options));
+    const result = await requestLegacyProjectionFromUnifiedPageContractV2(buildActionContractParams(actionId, options));
     return result.data;
   } catch (err) {
     rethrowContractError(err, { op: 'action_open', actionId });
@@ -182,7 +209,7 @@ export async function loadActionContract(actionId: number, options?: LoadActionC
 
 export async function loadActionContractRaw(actionId: number, options?: LoadActionContractOptions) {
   try {
-    return await requestUnifiedPageContractV2Raw(buildActionContractParams(actionId, options));
+    return await requestLegacyProjectionFromUnifiedPageContractV2(buildActionContractParams(actionId, options));
   } catch (err) {
     rethrowContractError(err, { op: 'action_open', actionId });
   }
@@ -265,7 +292,7 @@ export async function loadModelContractRaw(model: string, options?: LoadModelCon
       return cloneRawContractResponse(cached.response);
     }
     try {
-      const response = await requestUnifiedPageContractV2Raw(params);
+      const response = await requestLegacyProjectionFromUnifiedPageContractV2(params);
       createContractCache.set(key, {
         expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
         response: cloneRawContractResponse(response),
@@ -277,7 +304,7 @@ export async function loadModelContractRaw(model: string, options?: LoadModelCon
     }
   }
   try {
-    return await requestUnifiedPageContractV2Raw(params);
+    return await requestLegacyProjectionFromUnifiedPageContractV2(params);
   } catch (err) {
     rethrowContractError(err, { op: 'model', model });
   }
@@ -285,7 +312,11 @@ export async function loadModelContractRaw(model: string, options?: LoadModelCon
 
 export async function loadModelUnifiedPageContractV2(model: string, options?: LoadModelContractOptions): Promise<UnifiedPageContractV2> {
   const result = await requestUnifiedPageContractV2Raw(buildModelContractParams(model, options));
-  return asDict(result.data.__unified_page_contract_v2) as UnifiedPageContractV2;
+  return extractStrictUnifiedPageContractV2(result) as unknown as UnifiedPageContractV2;
+}
+
+export async function loadModelFormContractV2Bundle(model: string, options?: LoadModelContractOptions) {
+  return requestFormContractV2Bundle(buildModelContractParams(model, options));
 }
 
 export async function loadModelLitePreviewContract(model: string, options?: LoadModelContractOptions): Promise<UnifiedPageContractLite | null> {

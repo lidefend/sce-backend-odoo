@@ -5,7 +5,11 @@ import type { ContractFieldGovernanceAction, ContractFieldGovernanceRow, LowCode
 type PresentationDependencies = Record<string, any>;
 
 export function useRecordFormDesignerPresentation(dependencies: PresentationDependencies) {
-  const { activeContractMode, applyRuntimeInferredFormColumns, buildFormConfigFieldLabelReplacementEntries, busy, changedFieldGroupFromDrafts, changedFieldVisibilityFromDrafts, contract, contractActionRuleClientMode, contractActionRuleControl, contractActionRuleKey, contractFieldLabel, contractV2ActionRules, effectiveFieldGroupTitleFromDrafts, fieldGroupBase, fieldGroupDraft, fieldGroupSavedBase, fieldLayoutDirtyKeys, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldSizeBase, fieldSizeDraft, fieldVisibilityBase, fieldVisibilityDirty, fieldVisibilityDirtyKeys, fieldVisibilityDraft, formConfigAuditResult, formConfigFieldLabelCache, formLayoutColumnsBase, formLayoutColumnsConfigured, formLayoutColumnsDraft, formLayoutDirty, formSettingsActiveTab, formatFormConfigOperationSummaryText, groupColumnsBase, groupColumnsDraft, groupLayoutDirtyKeys, groupVisibilityBase, groupVisibilityDraft, hydrateLowCodeDraftFromContract, isContractFieldOrderEditable, isSuggestedInternalFormField, loadLowCodeContractList, lowCodeContractLoaded, lowCodeFormLayoutBase, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, normalizeFieldGroupTitle, parseMaybeJsonRecord, refreshLowCodeFormLayoutBase, resolveFormDesignFieldLabel, selectedFormSettingsFieldGroupTitleDraft, selectedFormSettingsFieldKey, selectedFormSettingsFieldLabel, selectedFormSettingsOrderTargetKey, v2ContractStore } = dependencies;
+  const { activeContractMode, applyRuntimeInferredFormColumns, buildFormConfigFieldLabelReplacementEntries, busy, changedFieldGroupFromDrafts, changedFieldVisibilityFromDrafts, contractActionRuleClientMode, contractActionRuleControl, contractActionRuleKey, contractFieldLabel, contractV2ActionRules, effectiveFieldGroupTitleFromDrafts, fieldGroupBase, fieldGroupDraft, fieldGroupSavedBase, fieldLayoutDirtyKeys, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldSizeBase, fieldSizeDraft, fieldVisibilityBase, fieldVisibilityDirty, fieldVisibilityDirtyKeys, fieldVisibilityDraft, formConfigAuditResult, formConfigFieldLabelCache, formLayoutColumnsBase, formLayoutColumnsConfigured, formLayoutColumnsDraft, formLayoutDirty, formSettingsActiveTab, formatFormConfigOperationSummaryText, groupColumnsBase, groupColumnsDraft, groupLayoutDirtyKeys, groupVisibilityBase, groupVisibilityDraft, hydrateLowCodeDraftFromContract, isContractFieldOrderEditable, isSuggestedInternalFormField, loadLowCodeContractList, lowCodeContractLoaded, lowCodeFormLayoutBase, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, normalizeFieldGroupTitle, parseMaybeJsonRecord, refreshLowCodeFormLayoutBase, resolveFormDesignFieldLabel, selectedFormSettingsFieldGroupTitleDraft, selectedFormSettingsFieldKey, selectedFormSettingsFieldLabel, selectedFormSettingsOrderTargetKey, v2ContractStore } = dependencies;
+  const strictDescriptor = (fieldKey: string) => {
+    const widgets = v2ContractStore.value?.widgetsByFieldCodeAll.get(String(fieldKey || '').trim()) || [];
+    return widgets.find((widget: any) => widget.fieldDescriptor)?.fieldDescriptor as Record<string, unknown> | undefined;
+  };
   const contractModeBaseFieldRows = computed<ContractFieldGovernanceRow[]>(() => {
     const mode = activeContractMode.value;
     if (!mode) return [];
@@ -126,7 +130,7 @@ export function useRecordFormDesignerPresentation(dependencies: PresentationDepe
   }, { immediate: true });
 
   watch(
-    () => [v2ContractStore.value, contract.value, isContractFieldOrderEditable.value],
+    () => [v2ContractStore.value, isContractFieldOrderEditable.value],
     () => {
       applyRuntimeInferredFormColumns();
     },
@@ -279,7 +283,7 @@ export function useRecordFormDesignerPresentation(dependencies: PresentationDepe
       fieldKeys: currentFormDesignFieldKeys.value,
       resolveContractLabel: (fieldKey) => contractFieldLabel(fieldKey),
       resolveDescriptorLabel: (fieldKey) => {
-        const descriptor = contract.value?.fields?.[fieldKey] as Record<string, unknown> | undefined;
+        const descriptor = strictDescriptor(fieldKey);
         return String(descriptor?.string || descriptor?.label || '').trim();
       },
     });
@@ -299,7 +303,7 @@ export function useRecordFormDesignerPresentation(dependencies: PresentationDepe
       activeRows: activeContractModeFieldRows.value,
       resolveContractLabel: (key) => contractFieldLabel(key),
       resolveDescriptorLabel: (key) => {
-        const descriptor = contract.value?.fields?.[key] as Record<string, unknown> | undefined;
+        const descriptor = strictDescriptor(key);
         return String(descriptor?.string || descriptor?.label || '').trim();
       },
     });

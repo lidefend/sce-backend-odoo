@@ -626,6 +626,92 @@ assert.deepEqual(
   'one canonical widget identity must render once even when legacy and product roots both carry it',
 );
 
+const duplicateOccurrences = snapshot();
+const duplicateRoot = duplicateOccurrences.layoutContract.containerTree[0];
+const duplicateBaseWidget = duplicateRoot.children[0].widgetList[0];
+duplicateRoot.widgetList = [];
+duplicateRoot.children = [
+  {
+    ...duplicateRoot.children[0],
+    fieldCode: 'name',
+    widgetId: 'field.name.occ.first',
+    nativeLocator: 'form/field[name=name][1]',
+    occurrenceIndex: 1,
+    sourcePosition: 1,
+    widgetList: [{
+      ...duplicateBaseWidget,
+      widgetId: 'field.name.occ.first',
+      fieldDescriptor: { name: 'name', type: 'char' },
+      componentConfig: {
+        ...duplicateBaseWidget.componentConfig,
+        native_locator: 'form/field[name=name][1]',
+        occurrence_index: 1,
+        source_position: 1,
+      },
+    }],
+  },
+  {
+    ...duplicateRoot.children[0],
+    fieldCode: 'name',
+    widgetId: 'field.name.occ.second',
+    nativeLocator: 'form/field[name=name][2]',
+    occurrenceIndex: 2,
+    sourcePosition: 2,
+    widgetList: [{
+      ...duplicateBaseWidget,
+      widgetId: 'field.name.occ.second',
+      fieldDescriptor: { name: 'name', type: 'char' },
+      componentConfig: {
+        ...duplicateBaseWidget.componentConfig,
+        native_locator: 'form/field[name=name][2]',
+        occurrence_index: 2,
+        source_position: 2,
+      },
+    }],
+  },
+];
+duplicateOccurrences.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.first', visible: true, readonly: true, required: false, disabled: false, auth: 'read' },
+  { widgetId: 'field.name.occ.second', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+];
+const decodedDuplicateOccurrences = decodeContractV2Snapshot(duplicateOccurrences);
+const duplicateOccurrenceStore = createContractV2Store(decodedDuplicateOccurrences);
+assert.equal(duplicateOccurrenceStore.widgetsByFieldCodeAll.get('name')?.length, 2);
+const duplicateOccurrenceFields = collectFields(
+  presentContractV2Form(duplicateOccurrenceStore, 'edit').zones.primary,
+);
+assert.deepEqual(
+  duplicateOccurrenceFields.map((field) => [field.widgetId, field.readonly, field.required]),
+  [
+    ['field.name.occ.first', true, false],
+    ['field.name.occ.second', false, true],
+  ],
+  'canonical form must preserve same-field occurrences and their independent status',
+);
+
+const duplicateOccurrenceStatus = snapshot();
+const duplicateStatusRoot = duplicateOccurrenceStatus.layoutContract.containerTree[0];
+duplicateStatusRoot.widgetList = [];
+duplicateStatusRoot.children = [
+  { ...duplicateStatusRoot.children[0], widgetId: 'field.name.occ.same', nativeLocator: 'form/field[name=name][1]', occurrenceIndex: 1, sourcePosition: 1, widgetList: [] },
+  { ...duplicateStatusRoot.children[0], widgetId: 'field.name.occ.same', nativeLocator: 'form/field[name=name][2]', occurrenceIndex: 2, sourcePosition: 2, widgetList: [] },
+];
+duplicateOccurrenceStatus.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.same', visible: true, readonly: false, required: false, disabled: false },
+];
+assert.throws(() => decodeContractV2Snapshot(duplicateOccurrenceStatus), /duplicate form occurrence widgetId/);
+
+const missingOccurrenceStatus = snapshot();
+const missingStatusRoot = missingOccurrenceStatus.layoutContract.containerTree[0];
+missingStatusRoot.widgetList = [];
+missingStatusRoot.children = [{ ...missingStatusRoot.children[0], widgetId: 'field.name.occ.missing', nativeLocator: 'form/field[name=name]', occurrenceIndex: 1, sourcePosition: 1, widgetList: [] }];
+missingOccurrenceStatus.statusContract.widgetStatus = [];
+assert.throws(() => decodeContractV2Snapshot(missingOccurrenceStatus), /requires exactly one status/);
+
+const orphanOccurrenceStatus = snapshot();
+orphanOccurrenceStatus.statusContract.widgetStatus.push({ widgetId: 'field.name.occ.orphan', visible: true, readonly: false, required: false, disabled: false });
+assert.throws(() => decodeContractV2Snapshot(orphanOccurrenceStatus), /orphan form widget status/);
+
 const renderedName = canonicalFieldToFormSection(deDuplicatedFields[0]);
 assert.deepEqual(
   { key: renderedName.key, name: renderedName.name, value: renderedName.value, readonly: renderedName.readonly },

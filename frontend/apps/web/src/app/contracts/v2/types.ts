@@ -35,6 +35,7 @@ export interface ContractV2Widget {
   componentKey: string;
   capabilities: string[];
   componentConfig: ContractV2Dictionary;
+  fieldDescriptor?: ContractV2Dictionary;
   fieldType?: string;
   relation?: string;
   formStructureRole?: ContractV2Dictionary;
@@ -55,6 +56,10 @@ export interface ContractV2Container {
   cols?: number;
   columns?: number;
   widget?: string;
+  widgetId?: string;
+  nativeLocator?: string;
+  occurrenceIndex?: number;
+  sourcePosition?: number;
   attributes?: ContractV2Dictionary;
   fieldInfo?: ContractV2Dictionary;
   field_info?: ContractV2Dictionary;
@@ -274,6 +279,13 @@ export interface ContractV2RuntimeContract {
   aiEnvelope?: ContractV2Dictionary;
   interactionMode?: string;
   actionTarget?: string;
+  recordVersionPolicy?: ContractV2Dictionary;
+  collaboration?: ContractV2Dictionary;
+  intakeAutosave?: ContractV2Dictionary;
+  fieldSemantics?: ContractV2Dictionary;
+  validationRules?: ContractV2Dictionary[];
+  governance?: ContractV2Dictionary;
+  sceneFormAugmentations?: ContractV2Dictionary;
 }
 
 export interface ContractV2Lifecycle {
@@ -335,6 +347,7 @@ export interface ContractV2NormalizedStore {
   snapshot: ContractV2Snapshot;
   widgetsById: ReadonlyMap<string, ContractV2Widget>;
   widgetsByFieldCode: ReadonlyMap<string, ContractV2Widget>;
+  widgetsByFieldCodeAll: ReadonlyMap<string, readonly ContractV2Widget[]>;
   actionsById: ReadonlyMap<string, ContractV2ActionRule>;
   widgetStatusById: ReadonlyMap<string, ContractV2WidgetStatus>;
   buttonStatusById: ReadonlyMap<string, ContractV2ButtonStatus>;

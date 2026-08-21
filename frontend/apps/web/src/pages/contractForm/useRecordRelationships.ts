@@ -8,15 +8,16 @@ type RelationshipDependencies = Record<string, any>;
 
 /** Owns relation discovery, access-aware navigation, and inline relation editing. */
 export function useRecordRelationships(dependencies: RelationshipDependencies) {
-  const { ApiError, actionId, clearedDynamicRelationFields, closeRelationSearchDialog, confirmRelationSearchSelectionFromRuntime, contract, contractFieldLabel, createContractFormRecord, deniedRelationModels, dynamicDomainDependencyFields, dynamicRelationDomainFromDescriptor, ensureOne2manyRows, fallbackRelationSearchColumns, fetchRelationOptionsFromRuntime, fieldModifierMap, fieldType, filteredRelationOptionsFromRuntime, findNativeFieldNodeInTree, formData, formUiLabelFromLabels, formUiLabelsFromFormView, invalidatedRelationKeywords, isWritableFieldVisible, listContractFormRecords, loadModelContractRaw, markFieldChanged, mergeHydratedOne2manyRecords, mergeRelationDomains, mergeRelationOptions, model, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeFieldValue, normalizeRelationIds, normalizeRelationSearchColumns, normalizeRouteQueryValues, onchangeModifiersPatch, one2manyCanCreateFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRowActionsFromSubview, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, openRelationSearchFromRuntime, pickContractNavQuery, queryRelationOptionsFromRuntime, rawNativeFormLayoutNodes, readContractFormRecord, recordId, relationCreateMode, relationDomainFromDescriptor, relationEntry, relationFieldDescriptors, relationInlineCreate, relationKeyword, relationKeywords, relationModelFromDescriptor, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationOrder, relationQueryTimers, relationReadFields, relationSearchColumnsFromContract, relationSearchDialog, relationSearchDialogContract, relationSearchLimit, relationSearchOrder, relationSearchReadFields, relationSearchRowsFromRecords, relationUiLabel, relationUiLabels, reload, resolveOne2manyRowColumnBehavior, route, router, runRelationSearchFromRuntime, runtimeRelationDomainFromModifiers, sanitizeUiErrorMessage, selectOne2manySubview, selectRelationSearchOptionFromRuntime, selectedRelationOptionsFromRuntime, setRelationKeywordValue, validationErrors } = dependencies;
+  const { ApiError, actionId, clearedDynamicRelationFields, closeRelationSearchDialog, confirmRelationSearchSelectionFromRuntime, contractFieldLabel, createContractFormRecord, deniedRelationModels, dynamicDomainDependencyFields, dynamicRelationDomainFromDescriptor, ensureOne2manyRows, fallbackRelationSearchColumns, fetchRelationOptionsFromRuntime, fieldModifierMap, fieldType, filteredRelationOptionsFromRuntime, findNativeFieldNodeInTree, formData, formUiLabelFromLabels, formUiLabelsFromFormView, invalidatedRelationKeywords, isWritableFieldVisible, listContractFormRecords, loadModelFormContractV2Bundle, markFieldChanged, mergeHydratedOne2manyRecords, mergeRelationDomains, mergeRelationOptions, model, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeFieldValue, normalizeRelationIds, normalizeRelationSearchColumns, normalizeRouteQueryValues, onchangeModifiersPatch, one2manyCanCreateFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRowActionsFromSubview, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, openRelationSearchFromRuntime, pickContractNavQuery, queryRelationOptionsFromRuntime, rawNativeFormLayoutNodes, readContractFormRecord, recordId, relationCreateMode, relationDomainFromDescriptor, relationEntry, relationFieldDescriptors, relationInlineCreate, relationKeyword, relationKeywords, relationModelFromDescriptor, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationOrder, relationQueryTimers, relationReadFields, relationSearchColumnsFromContract, relationSearchDialog, relationSearchDialogContract, relationSearchLimit, relationSearchOrder, relationSearchReadFields, relationSearchRowsFromRecords, relationUiLabel, relationUiLabels, reload, resolveOne2manyRowColumnBehavior, route, router, runRelationSearchFromRuntime, runtimeRelationDomainFromModifiers, sanitizeUiErrorMessage, selectOne2manySubview, selectRelationSearchOptionFromRuntime, selectedRelationOptionsFromRuntime, setRelationKeywordValue, validationErrors, v2ContractStore } = dependencies;
+  const strictFieldDescriptors=()=>Array.from(v2ContractStore.value?.widgetsById.values()||[]).reduce<Record<string,FieldDescriptor>>((output,widget)=>{if(widget.fieldCode&&widget.fieldDescriptor&&!output[widget.fieldCode])output[widget.fieldCode]=widget.fieldDescriptor as FieldDescriptor;return output;},{});
   const {
     relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
     one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
-    mergeNativeLayoutFieldDescriptorsIntoContract, nativeFieldSubview, one2manyColumns, visibleOne2manyColumns, one2manyRowColumnBehavior, one2manyRowActions, one2manyPolicies, one2manyCanCreate,
+    nativeFieldSubview, one2manyColumns, visibleOne2manyColumns, one2manyRowColumnBehavior, one2manyRowActions, one2manyPolicies, one2manyCanCreate,
     one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
     hydrateVisibleOne2manyRows, one2manyRowErrors,
   } = useRecordRelationshipFields({
-    ApiError, contract, contractFieldLabel, deniedRelationModels,
+    ApiError, contractFieldLabel, deniedRelationModels,
     ensureOne2manyRows, fieldType, findNativeFieldNodeInTree, formData,
     isWritableFieldVisible, mergeHydratedOne2manyRecords, mergeRelationOptions, nativeFieldSubviewFromTree,
     nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeRelationIds, one2manyCanCreateFromPolicies,
@@ -24,7 +25,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation,
     rawNativeFormLayoutNodes, readContractFormRecord, relationFieldDescriptors, relationModel,
     relationEntry, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationReadFields,
-    resolveOne2manyRowColumnBehavior, selectOne2manySubview, selectedRelationOptionsFromRuntime,
+    resolveOne2manyRowColumnBehavior, selectOne2manySubview, selectedRelationOptionsFromRuntime, v2ContractStore,
   });
   function setRelationKeyword(name: string, keyword: string) {
     setRelationKeywordValue(name, keyword);
@@ -51,7 +52,10 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   }
 
   function formUiLabels(): Record<string, string> {
-    return formUiLabelsFromFormView(contract.value?.views?.form);
+    // V1 views.form labels are not a product authority. Until a typed V2
+    // presentation carrier is present, callers receive no configured label
+    // rather than silently reviving the compatibility projection.
+    return {};
   }
 
   function formUiLabel(key: string) {
@@ -88,7 +92,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   }
 
   function clearDynamicRelationDependents(changedName: string) {
-    const fields = contract.value?.fields || {};
+    const fields = strictFieldDescriptors();
     const changed = String(changedName || '').trim();
     if (!changed) return;
     Object.entries(fields).forEach(([name, descriptor]) => {
@@ -205,14 +209,11 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     const relation = relationModel(fieldName);
     if (!relation) return fallbackRelationSearchColumns(descriptor);
     try {
-      const response = await loadModelContractRaw(relation, {
+      const response = await loadModelFormContractV2Bundle(relation, {
         viewType: 'tree',
         renderProfile: 'readonly',
       });
-      const data = response?.data && typeof response.data === 'object'
-        ? response.data as Record<string, unknown>
-        : response as unknown as Record<string, unknown>;
-      return normalizeRelationSearchColumns(data, descriptor);
+      return normalizeRelationSearchColumns(response.snapshot as unknown as Record<string, unknown>, descriptor);
     } catch {
       return fallbackRelationSearchColumns(descriptor);
     }
@@ -289,7 +290,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
 
   async function switchFormByRelationOption(fieldName: string, option: RelationOption) {
     if (recordId.value) return;
-    const descriptor = contract.value?.fields?.[fieldName];
+    const descriptor = effectiveFieldDescriptor(fieldName);
     const entry = relationEntry(descriptor);
     if (!entry?.switchContext?.enabled || !option.switchContext?.code) return;
     const nextCode = option.switchContext.code;
@@ -318,7 +319,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   async function createRelationFromSearchDialog() {
     const fieldName = relationSearchDialog.fieldName;
     if (!fieldName) return;
-    const descriptor = contract.value?.fields?.[fieldName];
+    const descriptor = effectiveFieldDescriptor(fieldName);
     const label = relationSearchDialog.keyword.trim();
     const mode = relationCreateMode(descriptor);
     const exact = label
@@ -352,7 +353,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     openRelationRecordForm, quickCreateRelation,
   } = useRecordRelationshipNavigation({
     actionId, createContractFormRecord, fetchRelationOptions, formData,
-    loadModelContractRaw, model, normalizeFieldValue,
+    loadModelFormContractV2Bundle, model, normalizeFieldValue,
     one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode,
     relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate,
     relationKeyword, relationModel, relationUiLabel, route, router,
@@ -362,7 +363,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   return {
     relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
     one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
-    mergeNativeLayoutFieldDescriptorsIntoContract, nativeFieldSubview, one2manyColumns, visibleOne2manyColumns, one2manyRowColumnBehavior, one2manyRowActions, one2manyPolicies, one2manyCanCreate,
+    nativeFieldSubview, one2manyColumns, visibleOne2manyColumns, one2manyRowColumnBehavior, one2manyRowActions, one2manyPolicies, one2manyCanCreate,
     one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
     hydrateVisibleOne2manyRows, one2manyRowErrors, setRelationKeyword, filteredRelationOptions, relationModel,
     formUiLabels, formUiLabel, dynamicDomainFromDescriptor, resolveDynamicDomainDependencyValue, clearDynamicRelationDependents,

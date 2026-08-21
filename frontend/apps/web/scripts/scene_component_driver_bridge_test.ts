@@ -226,7 +226,7 @@ assert.equal(normalizeSceneFieldControlValue([false]), '');
 assert.equal(normalizeSceneFieldControlValue('false', 'date'), '');
 assert.equal(normalizeSceneFieldControlValue(['2026-08-17']), '2026-08-17');
 assert.deepEqual(toContractFormDriverFieldChange(driverField, 'Updated'), {
-  name: 'name', type: 'char', widget: undefined, value: 'Updated', descriptor: undefined,
+  occurrenceKey: 'name', name: 'name', type: 'char', widget: undefined, value: 'Updated', descriptor: undefined,
 });
 assert.equal(
   usesContractFormDriverField({ ...driverField, readonly: true }, 'tdesign-modern'),

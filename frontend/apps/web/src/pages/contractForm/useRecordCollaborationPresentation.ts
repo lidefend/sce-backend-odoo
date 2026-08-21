@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, type ComputedRef, type Ref } from 'vue';
-import type { ActionContract } from '@sc/schema';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeChatterAction } from './types';
 import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
@@ -25,7 +24,6 @@ import {
 type MutableRef<T = unknown> = Ref<T>;
 
 export function useRecordCollaborationPresentation(context: {
-  contract: Ref<ActionContract | null>;
   v2ContractStore: Ref<ContractV2NormalizedStore | null>;
   recordId: ComputedRef<number | null>;
   model: ComputedRef<string>;
@@ -66,14 +64,14 @@ export function useRecordCollaborationPresentation(context: {
 }) {
   const runtimeCollaborationContract = computed(() => resolveRuntimeCollaborationContract(
     context.v2ContractStore.value?.snapshot?.runtimeContract,
-    (context.contract.value as Record<string, unknown> | null | undefined)?.runtimeContract,
+    null,
   ));
   const nativeChatterContract = computed(() => resolveNativeChatterContract(
-    context.contract.value?.views?.form,
+    null,
     runtimeCollaborationContract.value,
   ));
   const nativeAttachmentContract = computed(() => resolveNativeAttachmentContract(
-    context.contract.value?.views?.form,
+    null,
     runtimeCollaborationContract.value,
   ));
   const nativeChatterActions = computed<NativeChatterAction[]>(() => nativeChatterActionsFromContract(nativeChatterContract.value, {
