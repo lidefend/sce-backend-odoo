@@ -10,7 +10,7 @@
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
-            <field name="version_no">9</field>
+            <field name="version_no">10</field>
             <field name="contract_json" eval="{
                 'view_orchestration': {
                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
@@ -103,7 +103,21 @@
                                 {'name': 'active', 'sequence': 450}
                             ],
                             'actions': [
-                                {'name': 'action_create_payment_execution', 'label': '生成付款登记', 'type': 'object', 'style': 'primary', 'visible_profiles': ['edit', 'readonly']}
+                                {
+                                    'name': 'action_create_payment_execution',
+                                    'label': '生成付款登记',
+                                    'type': 'object',
+                                    'style': 'primary',
+                                    'visible_profiles': ['edit', 'readonly'],
+                                    'visible': {'attrs': {'invisible': {
+                                        'kind': 'any',
+                                        'exprs': [
+                                            {'kind': 'field_compare', 'field': 'type', 'operator': '!=', 'value': 'pay'},
+                                            {'kind': 'field_compare', 'field': 'state', 'operator': '!=', 'value': 'approved'},
+                                            {'kind': 'field_truthy', 'field': 'has_active_payment_execution'}
+                                        ]
+                                    }}}
+                                }
                             ]
                         }
                     }

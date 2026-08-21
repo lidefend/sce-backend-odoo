@@ -30,6 +30,9 @@ payment action whose Contract V2 drives the golden Floorplan.
 - Supply stable `action_ref` plus resolved `action_id` and `menu_id`.
 - Include those identities in the record route so the existing generic router
   and Contract V2 consumer preserve backend authority end to end.
+- Preserve the formal `生成付款登记` state visibility on its product action so
+  a draft readonly record retains `提交审批` as its single effective primary
+  action.
 - Keep model-only routing as a missing-registry fallback; do not weaken native
   occurrence validation or add frontend model branches.
 
@@ -39,6 +42,13 @@ payment action whose Contract V2 drives the golden Floorplan.
   0 errors.
 - Strict frontend TypeScript — PASS.
 - P1 payment field completeness guard — PASS.
+- Draft-readonly single-primary Contract V2 regression — PASS, 1 selected, 0
+  failed, 0 errors; `提交审批` is the only effective primary and `生成付款登记`
+  is invisible before approval.
+- The first frozen release run proved the target-routing correction (no HTTP
+  500) and then failed closed on the missing single primary, which produced
+  this second P1 correction. The final release evidence follows the refreshed
+  candidate.
 - Quick relevant security and contract guards — PASS; the aggregate Quick
   target stopped later on an unrelated pre-existing product-version duplicate
   in architecture documentation and a generated snapshot.

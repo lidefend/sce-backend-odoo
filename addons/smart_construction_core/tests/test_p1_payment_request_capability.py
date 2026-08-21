@@ -1990,6 +1990,68 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertTrue(edit_primary_actions[0].get("allowed"))
         self.assertTrue(edit_primary_actions[0].get("enabled"))
 
+    def test_payment_draft_readonly_contract_keeps_submit_as_single_primary_action(self):
+        request = self._request()
+        action = self.env.ref(
+            "smart_construction_core.action_payment_request_user_payment_apply"
+        )
+        menu = self.env.ref("smart_construction_core.menu_sc_user_payment_apply")
+        result = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        ).handle(
+            {
+                "model": "payment.request",
+                "view_type": "form",
+                "record_id": request.id,
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "render_profile": "readonly",
+                "client_type": "web_pc",
+            }
+        )
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        main_data = (contract.get("dataContract") or {}).get("mainData") or {}
+        status_by_identity = {
+            row.get("backendIdentity"): row
+            for row in contract["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity")
+        }
+        effective_primary = []
+        for row in contract["actionContract"]["actionRuleList"]:
+            if (row.get("presentation") or {}).get("tier") != "primary":
+                continue
+            status = status_by_identity.get(row.get("backendIdentity")) or {}
+            if status.get("visible") is not True or status.get("disabled") is True:
+                continue
+            invisible = contract_assembler._action_invisible_constraint(row)
+            if invisible is not None and contract_assembler._evaluate_action_modifier(
+                invisible, main_data
+            ) is True:
+                continue
+            effective_primary.append(row)
+        self.assertEqual(len(effective_primary), 1)
+        self.assertEqual(
+            (effective_primary[0].get("button") or {}).get("name"),
+            "action_submit",
+        )
+        self.assertTrue(effective_primary[0].get("backendIdentity"))
+
+        execution_action = next(
+            row
+            for row in contract["actionContract"]["actionRuleList"]
+            if (row.get("button") or {}).get("name")
+            == "action_create_payment_execution"
+        )
+        self.assertTrue(
+            contract_assembler._evaluate_action_modifier(
+                contract_assembler._action_invisible_constraint(execution_action),
+                main_data,
+            )
+        )
+
 
 @tagged("post_install", "-at_install", "sc_gate", "p1_payment_request_concurrency")
 class TestP1PaymentRequestConcurrency(TransactionCase):
