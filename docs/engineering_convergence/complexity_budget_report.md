@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 4187 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4192 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4052 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4045 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4013 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
@@ -20,7 +20,7 @@ Generated from repository source files. This report is informational during the 
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3244 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 3285 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3055 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3016 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
@@ -32,8 +32,8 @@ Generated from repository source files. This report is informational during the 
 | 2308 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2293 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2171 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
+| 2084 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2076 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
-| 2069 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2001 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1944 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
@@ -140,7 +140,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 4187 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4192 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4052 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4045 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4013 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
@@ -148,7 +148,7 @@ Generated from repository source files. This report is informational during the 
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3244 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 3285 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3055 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3016 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
@@ -160,8 +160,8 @@ Generated from repository source files. This report is informational during the 
 | 2308 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2293 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2171 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
+| 2084 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2076 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
-| 2069 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2001 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1944 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
