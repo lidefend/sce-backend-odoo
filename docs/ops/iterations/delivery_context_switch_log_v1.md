@@ -5207,3 +5207,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Eleven runtime-profile governance tests passed; the stale backend was replaced
   with the frozen candidate and the complete governed frontend release audit
   subsequently passed.
+
+## Payment request delivery identity and contract assertion closure (2026-08-22)
+
+- Branch / anchor: `feature/custom-frontend-productization-v1` / `cf9c3339`;
+  Draft PR #277 is the sole current product delivery and CI identity, while
+  #276 is marked superseded at its historical integration baseline.
+- Formal Product Layer / Layer Target / Module: P0 contract normalization, P1
+  construction-standard payment facts, and narrow P4 delivery identity /
+  existing Contract V2 assembler, payment action projection, authoritative
+  tests, and governed PR entrypoints / `smart_core`,
+  `smart_construction_core`, and PR metadata.
+- Reason / boundary: runtime payment actions now declare final visibility;
+  single-primary arbitration honors declared presentation priority with stable
+  source-order ties; the payment contract test follows current Native
+  occurrence identity and modifier-preserving structure instead of synthetic
+  `business_category_form_sheet` and legacy generic button identities.
+- Why Here / Why Not Elsewhere: visibility and action tier are backend Contract
+  V2 facts and cannot be inferred by the frontend. Native structure remains the
+  P1 form authority while Floorplan owns product composition. No schema, new
+  contract variant, payment-execution product page, UI5/Native product feature,
+  database profile, or release evidence flow was introduced.
+- Blast radius / validation: payment-request normalized form actions and the
+  generic multiple-primary conflict resolver only. Contract V2 runtime tests
+  collected `17 + 72` and passed; the governed `p1_payment_request` run
+  collected `54` tests with zero failures/errors; assembler and personal-data
+  guards passed. Daily `local.dev` evidence remains separate from formal
+  release evidence.
