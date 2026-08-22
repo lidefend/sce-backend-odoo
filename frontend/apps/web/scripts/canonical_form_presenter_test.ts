@@ -895,6 +895,56 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
+const resolvedDuplicateSubmit = snapshot();
+resolvedDuplicateSubmit.actionContract.actionRuleList[0] = {
+  ...resolvedDuplicateSubmit.actionContract.actionRuleList[0],
+  actionId: 'action.native_submit',
+  actionKey: 'native_submit',
+  backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  sourceWidgetId: 'page.header',
+  button: { name: 'action_submit', type: 'object' },
+};
+resolvedDuplicateSubmit.actionContract.actionRuleList.push({
+  ...resolvedDuplicateSubmit.actionContract.actionRuleList[0],
+  actionId: 'action.weak_submit',
+  actionKey: 'weak_submit',
+  backendIdentity: 'button:object:action_submit',
+  sourceWidgetId: 'page.root',
+  presentation: { tier: 'secondary' },
+});
+resolvedDuplicateSubmit.actionContract.primaryResolution = {
+  policy: 'single_effective_primary_per_record_state',
+  winner: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  demoted: [{
+    actionId: 'action.weak_submit',
+    backendIdentity: 'button:object:action_submit',
+    previousTier: 'primary',
+    effectiveTier: 'secondary',
+  }],
+};
+resolvedDuplicateSubmit.statusContract.buttonStatus = [
+  {
+    btnId: 'btn.native_submit', visible: true, disabled: false,
+    backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  },
+  {
+    btnId: 'btn.weak_submit', visible: true, disabled: false,
+    backendIdentity: 'button:object:action_submit',
+  },
+];
+const decodedResolvedDuplicateSubmit = decodeContractV2Snapshot(resolvedDuplicateSubmit);
+assert.deepEqual(
+  decodedResolvedDuplicateSubmit.actionContract.primaryResolution,
+  resolvedDuplicateSubmit.actionContract.primaryResolution,
+  'the normalized store must retain the backend primary-action verdict',
+);
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(decodedResolvedDuplicateSubmit), 'readonly')
+    .actionBar.map((action) => action.actionRef.actionId),
+  ['action.native_submit'],
+  'a backend-demoted duplicate must not become a second product action',
+);
+
 const normalizedAction = snapshot().actionContract.actionRuleList[0];
 assert.deepEqual(
   contractActionConfirmationPrompt({
@@ -994,4 +1044,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=52');
+console.log('[canonical_form_presenter_test] PASS cases=53');

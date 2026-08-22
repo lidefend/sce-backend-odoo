@@ -176,6 +176,7 @@ export interface ContractV2ActionRule {
 export interface ContractV2ActionContract {
   actionRuleList: ContractV2ActionRule[];
   dependencyGraph: Record<string, string[]>;
+  primaryResolution?: ContractV2Dictionary;
   deletePolicy?: ContractV2Dictionary;
   surfacePolicies?: ContractV2Dictionary;
   identityPolicy?: ContractV2Dictionary;

@@ -6,10 +6,14 @@
       :tier="action.key === effectivePrimaryKey ? 'primary' : 'secondary'"
       :disabled="!action.enabled"
       :data-action-ref="action.actionRef.actionId"
+      :data-action-key="action.actionRef.actionKey || ''"
+      :data-action-method="action.actionRef.button?.name || action.actionRef.button?.method || ''"
       :data-backend-identity="action.actionRef.backendIdentity"
       :data-action-tier="action.key === effectivePrimaryKey ? 'primary' : action.tier"
       :data-normalized-action-tier="action.tier"
       :data-action-enabled="String(action.enabled)"
+      :data-action-allowed="String(action.actionRef.allowed === true)"
+      :data-visible-profiles="action.visibleProfiles.join(',')"
       @activate="action.enabled && emit('action-ref', action.actionRef)"
     >
       <span v-if="canonicalFormActionIconClass(action.icon)" :class="['canonical-action-bar__icon', canonicalFormActionIconClass(action.icon)]" aria-hidden="true" />
@@ -24,9 +28,13 @@
           tier="transparent"
           :disabled="!action.enabled"
           :data-action-ref="action.actionRef.actionId"
+          :data-action-key="action.actionRef.actionKey || ''"
+          :data-action-method="action.actionRef.button?.name || action.actionRef.button?.method || ''"
           :data-backend-identity="action.actionRef.backendIdentity"
           :data-action-tier="action.tier"
           :data-action-enabled="String(action.enabled)"
+          :data-action-allowed="String(action.actionRef.allowed === true)"
+          :data-visible-profiles="action.visibleProfiles.join(',')"
           @activate="action.enabled && emit('action-ref', action.actionRef)"
         >
           <span v-if="canonicalFormActionIconClass(action.icon)" :class="['canonical-action-bar__icon', canonicalFormActionIconClass(action.icon)]" aria-hidden="true" />

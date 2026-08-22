@@ -352,7 +352,18 @@ export function presentContractV2Form(
       pageVisible, pageAuth === 'none', claimedWidgetIds, actionsByIdentity, actionsByNativeOccurrence,
     )
   ));
-  const actions = allActions.filter((action) => isFormActionBarAction(action.actionRef));
+  const demotedActionIds = new Set(
+    (Array.isArray(snapshot.actionContract.primaryResolution?.demoted)
+      ? snapshot.actionContract.primaryResolution.demoted
+      : [])
+      .filter((row): row is ContractV2Dictionary => Boolean(row) && typeof row === 'object' && !Array.isArray(row))
+      .map((row) => text(row.actionId))
+      .filter(Boolean),
+  );
+  const actions = allActions.filter((action) => (
+    isFormActionBarAction(action.actionRef)
+    && !demotedActionIds.has(action.actionRef.actionId)
+  ));
   const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');
   return {

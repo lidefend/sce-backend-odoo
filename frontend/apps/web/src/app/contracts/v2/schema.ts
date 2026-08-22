@@ -555,6 +555,9 @@ function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[
   return {
     actionRuleList,
     dependencyGraph,
+    ...(Object.keys(asRecord(source.primaryResolution)).length
+      ? { primaryResolution: asRecord(source.primaryResolution) }
+      : {}),
     ...(Object.keys(asRecord(source.identityPolicy)).length
       ? { identityPolicy: asRecord(source.identityPolicy) }
       : {}),

@@ -5063,9 +5063,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 ## My Work authoritative payment-detail target closure (2026-08-22)
 
 - Branch / anchor: `codex/fix-project-layout-container-normalize` / `7b5b4b61`.
-- Formal Product Layer / Layer Target / Module: P1 construction standard
-  product / payment work-item navigation target /
-  `smart_construction_core` with its typed frontend consumer.
+- Formal Product Layer / Layer Target / Module: P1 construction standard plus
+  P0 platform kernel / payment work-item navigation target and lossless
+  single-primary projection / `smart_construction_core`, Contract V2 schema,
+  canonical presenter and semantic action bar.
 - Reason / boundary: the product workspace declared the formal payment action
   XMLID but emitted a model-only `/r/payment.request/<id>` route. Opening a
   work item therefore bypassed the action-bound golden contract and reached an

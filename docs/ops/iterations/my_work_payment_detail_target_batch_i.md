@@ -2,14 +2,16 @@
 
 ## Boundary
 
-- Formal Product Layer: P1 construction industry standard product.
-- Layer Target: authoritative payment work-item detail navigation.
-- Module: `smart_construction_core` payment work-item service and the existing
-  generic typed frontend consumer.
+- Formal Product Layer: P1 construction industry standard product plus P0
+  platform contract consumption.
+- Layer Target: authoritative payment work-item detail navigation and generic
+  consumption of the backend single-primary resolution.
+- Module: `smart_construction_core` payment work-item service and product
+  contract, plus the generic Contract V2 schema/presenter/semantic action bar.
 - Standard vs User-Specific: construction product standard; no customer rule,
   runtime configuration or data repair.
-- Why here: the service owns payment work-item facts, actions and targets, and
-  already declared the formal action XMLID.
+- Why here: the P1 service owns payment work-item facts, actions and targets,
+  while P0 owns lossless Contract V2 decoding and generic action projection.
 - Why not elsewhere: Canonical/Floorplan must consume the selected action
   contract, not choose it. The frontend and UI kits must not infer payment
   semantics. The P0 validator must not accept synthetic native identities.
@@ -33,6 +35,10 @@ payment action whose Contract V2 drives the golden Floorplan.
 - Preserve the formal `生成付款登记` state visibility on its product action so
   a draft readonly record retains `提交审批` as its single effective primary
   action.
+- Preserve Contract V2 `primaryResolution` through schema decoding and exclude
+  only the backend-declared demoted duplicate from the semantic action bar.
+  Native occurrence identity remains intact; the frontend does not re-rank
+  actions.
 - Keep model-only routing as a missing-registry fallback; do not weaken native
   occurrence validation or add frontend model branches.
 
