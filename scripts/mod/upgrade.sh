@@ -43,5 +43,6 @@ compose_dev run --rm -T \
   --addons-path="$ODOO_ADDONS_PATH" \
   -u "$MODULE" \
   ${WITHOUT_DEMO:-} \
+  --logfile=- \
   --no-http --workers=0 --max-cron-threads=0 \
   --stop-after-init ${ODOO_ARGS:-} </dev/null

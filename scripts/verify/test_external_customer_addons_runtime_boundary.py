@@ -85,6 +85,11 @@ class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
                 self.assertIn('ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH},/mnt/customer-addons"', text)
                 self.assertIn('--addons-path="$ODOO_ADDONS_PATH"', text)
 
+    def test_module_upgrade_keeps_ephemeral_odoo_failures_diagnosable(self):
+        text = (ROOT / "scripts/mod/upgrade.sh").read_text(encoding="utf-8")
+        self.assertIn("--logfile=-", text)
+        self.assertNotIn("set -x", text)
+
     def test_customer_rename_confirmation_can_reach_odoo_shell(self):
         text = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text(encoding="utf-8")
         self.assertIn("SC_CONFIRM_*", text)
