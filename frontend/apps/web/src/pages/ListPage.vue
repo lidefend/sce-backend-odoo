@@ -393,8 +393,8 @@
                 </td>
               </tr>
             </tbody>
-            <tfoot v-if="showAggregateFooter">
-              <tr>
+            <tfoot v-if="showGroupAggregateFooter(group)">
+              <tr v-if="showGroupPageAggregateFooter(group)">
                 <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('page', group.sampleRows.length) }}</th>
                 <td
                   v-for="col in footerValueColumns"
@@ -406,7 +406,7 @@
                   <template v-else>{{ groupFooterCellText(col, group, 'page') }}</template>
                 </td>
               </tr>
-              <tr>
+              <tr v-if="showGroupTotalAggregateFooter(group)">
                 <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', group.count) }}</th>
                 <td
                   v-for="col in footerValueColumns"
@@ -622,7 +622,7 @@
           </tr>
         </tbody>
         <tfoot v-if="showAggregateFooter">
-          <tr>
+          <tr v-if="showPageAggregateFooter">
             <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('page', pageVisibleRows.length) }}</th>
             <td
               v-for="col in footerValueColumns"
@@ -634,7 +634,7 @@
               <template v-else>{{ footerCellText(col, 'page', pageVisibleRows.length) }}</template>
             </td>
           </tr>
-          <tr>
+          <tr v-if="showTotalAggregateFooter">
             <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', listTotal || pageVisibleRows.length) }}</th>
             <td
               v-for="col in footerValueColumns"
@@ -1859,7 +1859,6 @@ const footerLabelFieldCount = computed(() => displayedColumns.value.length
 const footerValueColumns = computed(() => displayedColumns.value.slice(footerLabelFieldCount.value));
 const footerLabelColspan = computed(() => (showSelectionColumn.value ? 1 : 0)
   + (showRowNumberColumn.value ? 1 : 0) + footerLabelFieldCount.value);
-const showAggregateFooter = computed(() => displayedColumns.value.some((field) => isAggregateColumn(field)));
 const mobileIdentityField = computed(() => {
   const preferred = String(rowPrimary.value || '').trim();
   if (preferred && mobileAvailableColumns.value.includes(preferred) && !isStatusLikeColumn(preferred)) return preferred;
@@ -2204,6 +2203,16 @@ const pageFooterStatsMap = computed(() =>
   }, {}),
 );
 
+const showPageAggregateFooter = computed(() => displayedColumns.value.some((field) => {
+  if (!isAggregateColumn(field)) return false;
+  if (hasServerSemanticAggregate(field)) return pageAggregateValue(field) !== null;
+  return Boolean(pageFooterStatsMap.value[field]?.count);
+}));
+const showTotalAggregateFooter = computed(() => displayedColumns.value.some((field) => (
+  isAggregateColumn(field) && totalAggregateValue(field) !== null
+)));
+const showAggregateFooter = computed(() => showPageAggregateFooter.value || showTotalAggregateFooter.value);
+
 function totalAggregateValue(field: string) {
   const aggregate = props.listAggregates?.[columnAggregationField(field)] || {};
   const value = aggregate.sum;
@@ -2244,6 +2253,28 @@ function groupPageAggregateValue(group: { aggregates?: Record<string, Record<str
   const aggregate = group.aggregates?.[columnAggregationField(field)] || {};
   const value = aggregate.page_sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function showGroupPageAggregateFooter(
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+) {
+  return displayedColumns.value.some((field) => {
+    if (!isAggregateColumn(field)) return false;
+    if (hasServerSemanticAggregate(field)) return groupPageAggregateValue(group, field) !== null;
+    return rowsNumericSum(group.sampleRows || [], field) !== null;
+  });
+}
+
+function showGroupTotalAggregateFooter(
+  group: { aggregates?: Record<string, Record<string, unknown>> },
+) {
+  return displayedColumns.value.some((field) => isAggregateColumn(field) && groupAggregateValue(group, field) !== null);
+}
+
+function showGroupAggregateFooter(
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+) {
+  return showGroupPageAggregateFooter(group) || showGroupTotalAggregateFooter(group);
 }
 
 function groupFooterCellText(

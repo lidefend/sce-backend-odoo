@@ -140,15 +140,19 @@ try {
   const amountCellIndex = await listSurface.locator('th[data-column="request_amount_display"]').first().evaluate((node) => node.cellIndex);
   const amountCellText = normalize(await targetRow.locator('td').nth(amountCellIndex).innerText());
   const amountCellValue = Number(amountCellText.replace(/[^\d.-]/g, ''));
+  const emptyAggregateFooterRows = await listSurface.locator('tfoot tr').filter({ hasText: /--/ }).count();
   report.list = {
     text: listText,
     actions: listActions.map(normalize).filter(Boolean),
     targetRow: { amountCellText, amountCellValue },
+    emptyAggregateFooterRows,
     dataListExchanges,
   };
   check(report.list.actions.includes('新建'), 'authorized payment list did not expose create action', report.list.actions);
   check(Number.isFinite(amountCellValue) && Math.abs(amountCellValue - Number(target.record.amount || 0)) < 0.01,
     'list semantic amount does not match the authoritative record amount', report.list.targetRow);
+  check(emptyAggregateFooterRows === 0,
+    'payment list exposed aggregate rows without authoritative values', report.list);
   for (const forbidden of ['runtime_status', 'direct delivery', 'payment_entry']) {
     check(!listText.toLowerCase().includes(forbidden), `technical product text is visible in list: ${forbidden}`);
   }
