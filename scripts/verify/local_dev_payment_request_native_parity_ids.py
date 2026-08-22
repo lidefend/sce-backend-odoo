@@ -13,8 +13,11 @@ def xmlid(record):
 
 
 user = env.ref("smart_construction_demo.user_demo_role_finance")
+project_create_user = env.ref("smart_construction_demo.sc_demo_user_test_admin")
 menu = env.ref("smart_construction_core.menu_sc_user_payment_apply")
 action = env.ref("smart_construction_core.action_payment_request_user_payment_apply")
+project_create_action = env.ref("smart_construction_core.action_project_initiation")
+project_create_menu = env.ref("smart_construction_core.menu_sc_project_initiation")
 view = env.ref("smart_construction_core.view_payment_request_form")
 candidate = env.ref("smart_construction_demo.sc_demo_pay_req_010_003")
 execution_action = env.ref("smart_construction_core.action_sc_payment_execution_actual_outflow")
@@ -46,6 +49,14 @@ if menu.action != action or action.res_model != "payment.request":
     raise RuntimeError("payment request menu/action authority mismatch")
 if view.model != "payment.request" or view.type != "form":
     raise RuntimeError("payment request native form authority mismatch")
+
+
+project_create_env = env["project.project"].with_user(project_create_user).with_company(
+    project_create_user.company_id
+).with_context(allowed_company_ids=project_create_user.company_ids.ids)
+project_create_env.check_access_rights("create")
+if project_create_action.res_model != "project.project" or project_create_menu.action != project_create_action:
+    raise RuntimeError("project create action/menu authority mismatch")
 
 candidate_rows = []
 for item in payment_env.search([("type", "=", "pay")], order="id"):
@@ -98,6 +109,18 @@ actionable_fingerprint_payload = {
 payload = {
     "database": env.cr.dbname,
     "user": {"id": int(user.id), "login": user.login, "xmlid": xmlid(user)},
+    "project_create_user": {
+        "id": int(project_create_user.id),
+        "login": project_create_user.login,
+        "xmlid": xmlid(project_create_user),
+        "can_create_project": True,
+    },
+    "project_create_entry": {
+        "action_id": int(project_create_action.id),
+        "action_xmlid": xmlid(project_create_action),
+        "menu_id": int(project_create_menu.id),
+        "menu_xmlid": xmlid(project_create_menu),
+    },
     "menu": {"id": int(menu.id), "xmlid": xmlid(menu)},
     "action": {"id": int(action.id), "xmlid": xmlid(action)},
     "view": {"id": int(view.id), "xmlid": xmlid(view)},
