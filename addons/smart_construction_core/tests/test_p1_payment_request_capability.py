@@ -106,7 +106,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "supplier_rank": 1,
                 "sc_account_name": "P1 Payment Counterparty",
                 "sc_bank_name": "P1 Construction Bank",
-                "sc_bank_account": "6222000000000001",
+                "sc_bank_account": "P1-SYNTH-ACCOUNT-PRIMARY",
             }
         )
         self.contract = self.env["construction.contract"].create(
@@ -711,7 +711,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
                     "supplier_rank": 1,
                     "sc_account_name": "P1 concurrent payment partner",
                     "sc_bank_name": "P1 concurrent bank",
-                    "sc_bank_account": "6222000000000099",
+                    "sc_bank_account": "P1-SYNTH-ACCOUNT-CONCURRENT",
                 }
             )
             contract = env["construction.contract"].create(
@@ -826,7 +826,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "payment_request_id": request.id,
                 "payment_account_name": "P1 Company Operating Account",
                 "payment_bank_name": "P1 Construction Bank",
-                "payment_account_no": "1000000000001",
+                "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
                 "payment_method": "bank_transfer",
             }
         )
@@ -923,7 +923,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "paid_amount": 40,
             "payment_account_name": "P1 Company Operating Account",
             "payment_bank_name": "P1 Construction Bank",
-            "payment_account_no": "1000000000001",
+            "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
             "payment_method": "bank_transfer",
         })
         self.env.cr.execute(
@@ -943,7 +943,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "payment_request_id": request.id,
             "payment_account_name": "P1 Company Operating Account",
             "payment_bank_name": "P1 Construction Bank",
-            "payment_account_no": "1000000000001",
+            "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
             "payment_method": "bank_transfer",
         })
         self.assertEqual(second.paid_amount, 60)
@@ -992,7 +992,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "payment_request_id": request.id,
             "payment_account_name": "P1 Company Operating Account",
             "payment_bank_name": "P1 Construction Bank",
-            "payment_account_no": "1000000000001",
+            "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
             "payment_method": "bank_transfer",
         })
         self.assertEqual(replacement.paid_amount, 40)
@@ -1111,7 +1111,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         base_values = {
             "payment_account_name": "P1 Company Operating Account",
             "payment_bank_name": "P1 Construction Bank",
-            "payment_account_no": "1000000000001",
+            "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
             "payment_method": "bank_transfer",
         }
         execution.write(base_values)
