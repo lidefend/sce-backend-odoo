@@ -152,6 +152,7 @@ export function useRelationRuntime() {
   }
 
   async function createRelationFromSearchDialog(params: {
+    resolveDescriptor: (fieldName: string) => FieldDescriptor | undefined;
     resolveMode: (descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
     selectOption: (option: RelationOption) => void;
     quickCreate: (fieldName: string, descriptor: FieldDescriptor | undefined, label: string) => Promise<void>;
@@ -159,8 +160,9 @@ export function useRelationRuntime() {
     clearValidationErrors: () => void;
     openCreateForm: (fieldName: string, descriptor?: FieldDescriptor) => Promise<void>;
   }) {
-    const { fieldName, descriptor } = relationSearchDialog;
+    const { fieldName } = relationSearchDialog;
     if (!fieldName) return;
+    const descriptor = params.resolveDescriptor(fieldName);
     const label = relationSearchDialog.keyword.trim();
     const mode = params.resolveMode(descriptor);
     const exact = label

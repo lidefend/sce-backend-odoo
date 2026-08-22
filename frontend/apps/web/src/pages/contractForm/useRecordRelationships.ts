@@ -494,6 +494,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
 
   async function createRelationFromSearchDialog() {
     await createRelationFromSearchDialogFromRuntime({
+      resolveDescriptor: (fieldName: string) => formFields()[fieldName],
       resolveMode: relationCreateMode,
       selectOption: selectRelationSearchOption,
       quickCreate: (fieldName: string, descriptor: FieldDescriptor | undefined, label: string) =>
