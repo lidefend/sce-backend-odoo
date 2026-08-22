@@ -154,6 +154,24 @@ try {
   }
   await page.screenshot({ path: path.join(outputDir, 'payment-request-list-desktop.png'), fullPage: true });
 
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(300);
+  const listMobileGeometry = await page.evaluate(() => ({
+    width: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  report.list.mobile = {
+    ...listMobileGeometry,
+    overflow: listMobileGeometry.scrollWidth - listMobileGeometry.width,
+    createActionCount: await listSurface.getByRole('button', { name: /^新建$/ }).count(),
+  };
+  check(report.list.mobile.overflow <= 0, '390px payment list has horizontal overflow', report.list.mobile);
+  check(report.list.mobile.createActionCount === 1,
+    '390px authorized payment list must expose one visible create action', report.list.mobile);
+  await page.screenshot({ path: path.join(outputDir, 'payment-request-list-390-full.png'), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.waitForTimeout(300);
+
   const listUrl = page.url();
   const searchInput = listSurface.locator('input[type="search"]:visible').first();
   await searchInput.fill('__floorplan_no_matching_payment_request__');
