@@ -29,6 +29,7 @@
         v-if="floorplan.decisionMode"
         :summary-nodes="floorplan.summaryNodes"
         :task-nodes="floorplan.taskNodes"
+        :required-nodes="floorplan.requiredNodes"
         :context-nodes="floorplan.contextNodes"
         :overflow-context-nodes="floorplan.overflowContextNodes"
         :risk-nodes="floorplan.riskNodes"
@@ -57,13 +58,32 @@
           />
           <p v-else class="canonical-form-activity-empty">暂无活动记录</p>
         </template>
-        <template v-if="floorplan.directActions.length || floorplan.overflowActions.length" #actions>
-          <CanonicalActionBar
-            :direct-actions="floorplan.directActions"
-            :overflow-actions="floorplan.overflowActions"
-            :effective-primary-key="floorplan.effectivePrimaryKey"
-            @action-ref="emit('action-ref', $event)"
-          />
+        <template v-if="showProductActions" #actions>
+          <nav class="canonical-product-edit-actions" aria-label="表单业务动作" data-canonical-action-bar>
+            <SceneButton
+              v-if="localSavePrimary"
+              tier="primary"
+              :disabled="busy"
+              data-action-ref="form.save"
+              data-action-tier="primary"
+              data-action-enabled="true"
+              @activate="emit('save')"
+            >{{ renderModel.identity.mode === 'create' ? '保存草稿' : '保存修改' }}</SceneButton>
+            <CanonicalActionBar
+              v-else
+              :direct-actions="floorplan.directActions"
+              :overflow-actions="floorplan.overflowActions"
+              :effective-primary-key="floorplan.effectivePrimaryKey"
+              @action-ref="emit('action-ref', $event)"
+            />
+            <SceneButton
+              v-if="productWriteMode"
+              tier="transparent"
+              :disabled="busy"
+              data-form-secondary-action="cancel-edit"
+              @activate="emit('cancel-edit')"
+            >{{ renderModel.identity.mode === 'create' ? '取消' : '返回查看' }}</SceneButton>
+          </nav>
         </template>
       </ObjectTaskPage>
       <article v-else class="sc-native-contract-page" data-native-contract-structure>
@@ -143,7 +163,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { SCENE_UI_KITS, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
+import { SCENE_UI_KITS, SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalAuditEvent, CanonicalFormAction, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
 import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
@@ -176,11 +196,15 @@ const props = defineProps<{
   showCollaborationPanel?: boolean;
   collaborationPanelProps?: NativeCollaborationPanelProps;
   collaborationPanelListeners?: NativeCollaborationPanelListeners;
+  dirty?: boolean;
+  busy?: boolean;
 }>();
 const emit = defineEmits<{
   'driver-change': [kit: SceneUiKitId];
   'field-change': [payload: FormSectionFieldChange];
   'action-ref': [action: ContractV2ActionRule];
+  save: [];
+  'cancel-edit': [];
 }>();
 
 function countFields(nodes: CanonicalFormNode[]): number {
@@ -192,11 +216,21 @@ const fieldCount = computed(() => props.renderModel
   : 0);
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'tdesign-modern');
 const emptyFloorplan: CanonicalFormFloorplan = {
-    summaryNodes: [], taskNodes: [], contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
+    summaryNodes: [], taskNodes: [], requiredNodes: [], contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
   relationNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [],
   effectivePrimaryKey: '', decisionMode: false,
 };
 const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : emptyFloorplan);
+const productWriteMode = computed(() => Boolean(
+  floorplan.value.decisionMode && props.renderModel && props.renderModel.identity.mode !== 'readonly',
+));
+const localSavePrimary = computed(() => Boolean(
+  productWriteMode.value && (props.renderModel?.identity.mode === 'create' || props.dirty),
+));
+const showProductActions = computed(() => Boolean(
+  localSavePrimary.value || productWriteMode.value
+  || floorplan.value.directActions.length || floorplan.value.overflowActions.length,
+));
 const renderKit = computed<SceneUiKitId>(() => floorplan.value.decisionMode ? 'tdesign-modern' : activeKit.value);
 const allowedKits = computed<SceneUiKitId[]>(() => (
   props.driverConfig?.allowedKits?.length ? props.driverConfig.allowedKits : ['tdesign-modern', 'sc-native']
@@ -277,6 +311,17 @@ function changeKit(event: Event) {
   border-radius: 8px;
   background: var(--sc-app-danger-bg);
   color: var(--sc-app-danger-text);
+}
+.canonical-product-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .canonical-product-edit-actions { flex-wrap: nowrap; width: 100%; }
+  .canonical-product-edit-actions :deep(button[data-action-tier='primary']) { flex: 1 1 auto; }
 }
 .sc-form-driver-host { min-width: 0; }
 .canonical-form-action-icon { inline-size: 1em; text-align: center; }

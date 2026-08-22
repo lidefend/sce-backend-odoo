@@ -62,6 +62,23 @@
         <slot name="actions" />
       </div>
     </section>
+    <section
+      v-if="requiredNodes.length"
+      class="object-task-page__required"
+      aria-label="本次必须补充"
+      data-floorplan-region="required-input"
+      data-canonical-zone="primary"
+    >
+      <strong class="object-task-page__section-title">本次必须补充</strong>
+      <CanonicalFormNodeRenderer
+        v-for="node in requiredNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+      />
+    </section>
     <slot v-if="!decisionMode" name="blocking" />
     <section
       v-if="!decisionMode && riskNodes.length"
@@ -201,6 +218,7 @@ import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 defineProps<{
   summaryNodes: CanonicalFormNode[];
   taskNodes: CanonicalFormNode[];
+  requiredNodes: CanonicalFormNode[];
   contextNodes: CanonicalFormNode[];
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
@@ -261,6 +279,7 @@ function formatAuditTime(value: string) {
 .object-task-page__context,
 .object-task-page__summary,
 .object-task-page__current-task,
+.object-task-page__required,
 .object-task-page__risk,
 .object-task-page__audit,
 .object-task-page__overflow-context,
@@ -306,6 +325,18 @@ function formatAuditTime(value: string) {
   border: 1px solid var(--sc-app-warning-border);
   border-radius: 12px;
   background: var(--sc-app-warning-bg);
+}
+.object-task-page__required {
+  padding: 16px;
+  border: 1px solid var(--sc-app-warning-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sc-app-warning-bg) 45%, var(--sc-app-panel));
+}
+.object-task-page__section-title {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--sc-app-text-primary);
+  font-size: 16px;
 }
 .object-task-page__audit {
   padding: 12px 16px;

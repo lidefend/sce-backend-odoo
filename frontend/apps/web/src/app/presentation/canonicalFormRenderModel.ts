@@ -47,6 +47,8 @@ export type CanonicalFormField = {
   disabled: boolean;
   reasonCode: string;
   semanticRole: CanonicalFormSemanticRole | '';
+  semanticSlot: string;
+  semanticGroup: string;
   componentConfig: Readonly<Record<string, unknown>>;
   fieldDescriptor: Readonly<Record<string, unknown>>;
 };
@@ -63,6 +65,8 @@ export type CanonicalFormNode = {
   disabled: boolean;
   reasonCode: string;
   semanticRole: CanonicalFormSemanticRole | '';
+  semanticSlot: string;
+  semanticGroup: string;
   action: CanonicalFormAction | null;
   nativeWidget: string;
   fields: CanonicalFormField[];

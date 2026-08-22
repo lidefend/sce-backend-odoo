@@ -36,13 +36,14 @@ export function useRecordFormState(context: {
   buildOne2manyCommandValue:(name:string,mode:'write'|'onchange')=>unknown; one2manyFieldRows:(name:string)=>any[];
   initOne2manyRows:(name:string,value:unknown)=>void; applyOnchangeLinePatches:(patches:any[])=>void;
   isWritableFieldVisible:(name:string)=>boolean;
+  canonicalFieldWritable?:(name:string)=>boolean|undefined;
 }) {
   const inputFieldValue=(name:string)=>{const raw=context.formData[name];return raw===false||raw===null||raw===undefined?'':String(raw);};
   const comparableFieldValue=(name:string,value:unknown)=>{const type=fieldType(context.formFields.value[name]);
     if(type==='many2many')return JSON.stringify(normalizeRelationIds(value).sort((a,b)=>a-b));
     if(type==='one2many')return JSON.stringify(context.one2manyFieldRows(name).map(row=>({id:row.id||0,isNew:row.isNew,removed:row.removed,dirty:row.dirty,dirtyFields:row.dirtyFields||[],values:row.values||{}})));
     return normalizeComparable(value);};
-  const isFieldWritable=(name:string)=>{const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);if(node)return !node.readonly;return Boolean(context.nativeStatusbar.value.field===name&&!context.nativeStatusbar.value.readonly);};
+  const isFieldWritable=(name:string)=>{const canonical=context.canonicalFieldWritable?.(name);if(typeof canonical==='boolean')return canonical;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);if(node)return !node.readonly;return Boolean(context.nativeStatusbar.value.field===name&&!context.nativeStatusbar.value.readonly);};
   const normalizeFieldValue=(name:string,value:unknown)=>normalizeContractFieldValue({name,value,descriptor:context.formFields.value[name],originalValue:context.originalValues.value[name],buildOne2manyValue:context.buildOne2manyCommandValue});
   let onchangeTimer:ReturnType<typeof setTimeout>|null=context.getOnchangeTimer();
   const markFieldChanged=(name:string)=>{const key=String(name||'').trim();if(!key||context.applyingOnchangePatch.value)return;context.dirtyFieldSet.add(key);

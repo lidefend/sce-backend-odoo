@@ -34,6 +34,63 @@ function isListDataResponse(response) {
   }
 }
 
+function isPaymentWriteBody(body) {
+  return String(body?.intent || '') === 'api.data'
+    && String(body?.params?.op || body?.op || '') === 'write'
+    && String(body?.params?.model || '') === 'payment.request';
+}
+
+async function collectWriteFloorplanMetrics(page, surface) {
+  const fieldOccurrences = await surface.locator('[data-object-task-page] [data-field-name]').evaluateAll((nodes) => (
+    nodes.map((node) => String(node.getAttribute('data-field-name') || '')).filter(Boolean)
+  ));
+  const duplicateFields = [...new Set(fieldOccurrences.filter((field, index) => fieldOccurrences.indexOf(field) !== index))];
+  const requiredFields = await surface.locator('[data-floorplan-region="required-input"] [data-field-name]').evaluateAll((nodes) => (
+    nodes.map((node) => String(node.getAttribute('data-field-name') || '')).filter(Boolean)
+  ));
+  const geometry = await page.evaluate(() => ({
+    width: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  return {
+    driver: await surface.locator('[data-contract-form-driver]').getAttribute('data-contract-form-driver'),
+    h1: await surface.locator('h1').count(),
+    statusButtons: await surface.locator('.native-statusbar-track button:visible').count(),
+    duplicateFields,
+    fieldOccurrences,
+    requiredFields,
+    readonlyControls: await surface.locator([
+      '[data-object-task-page] [data-field-state="readonly"] input',
+      '[data-object-task-page] [data-field-state="readonly"] textarea',
+      '[data-object-task-page] [data-field-state="readonly"] select',
+    ].join(', ')).count(),
+    emptyDisabledControls: await surface.locator([
+      '[data-object-task-page] input:disabled',
+      '[data-object-task-page] textarea:disabled',
+      '[data-object-task-page] select:disabled',
+    ].join(', ')).evaluateAll((nodes) => nodes.filter((node) => (
+      !(node instanceof HTMLInputElement && ['checkbox', 'radio'].includes(node.type))
+      && !String(node.value || '').trim()
+    )).length),
+    enabledPrimary: await surface.locator('[data-object-task-page] [data-action-tier="primary"][data-action-enabled="true"]').count(),
+    disabledBusinessActions: await surface.locator('[data-object-task-page] [data-action-ref][data-action-enabled="false"]:visible').count(),
+    nativeStructure: await surface.locator('[data-native-contract-structure]').count(),
+    overflow: geometry.scrollWidth - geometry.width,
+  };
+}
+
+function assertWriteFloorplanMetrics(metrics, label) {
+  check(metrics.driver === 'tdesign-modern', `${label} is not using the TDesign Product Floorplan`, metrics);
+  check(metrics.h1 === 1, `${label} must expose exactly one H1`, metrics);
+  check(metrics.statusButtons === 0, `${label} renders workflow states as buttons`, metrics);
+  check(metrics.duplicateFields.length === 0, `${label} repeats canonical field identities`, metrics);
+  check(metrics.readonlyControls === 0, `${label} renders readonly facts as form controls`, metrics);
+  check(metrics.emptyDisabledControls === 0, `${label} exposes empty disabled controls`, metrics);
+  check(metrics.disabledBusinessActions === 0, `${label} exposes meaningless disabled business actions`, metrics);
+  check(metrics.nativeStructure === 0, `${label} fell back to a full Native form tree`, metrics);
+  check(metrics.overflow <= 0, `${label} has horizontal overflow`, metrics);
+}
+
 check(frontendUrl && database && password && login, 'local.dev submit identity is incomplete');
 check(actionId > 0 && menuId > 0 && recordId > 0 && record.state === 'draft', 'submit-ready target is invalid', record);
 fs.mkdirSync(outputDir, { recursive: true });
@@ -43,6 +100,7 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 960 
 const page = await context.newPage();
 const errors = [];
 const mutations = [];
+const recordWrites = [];
 const observedIntents = [];
 page.on('console', (message) => {
   if (message.type() === 'error' && !message.text().includes('favicon')) errors.push(message.text());
@@ -55,6 +113,7 @@ page.on('request', (request) => {
   const intent = String(body?.intent || '');
   if (intent) observedIntents.push(intent);
   if (intent === 'execute_button') mutations.push({ intent, params: body.params });
+  if (isPaymentWriteBody(body)) recordWrites.push({ intent, params: body.params });
 });
 
 const report = { schemaVersion: 'payment_request_floorplan_submit.v1', target: record, pass: false };
@@ -93,6 +152,13 @@ try {
   await createEditableFieldLocator.first().waitFor({ timeout: 15000 });
   const createEditableFields = await createEditableFieldLocator.count();
   check(createEditableFields > 0, 'payment create entry did not open an editable form', createEditableFields);
+  const createMetrics = await collectWriteFloorplanMetrics(page, createSurface);
+  assertWriteFloorplanMetrics(createMetrics, 'payment create surface');
+  check(createMetrics.enabledPrimary === 1, 'payment create surface must expose one save primary action', createMetrics);
+  for (const field of ['contract_id', 'settlement_id', 'material_settlement_id', 'payment_account_name', 'payment_bank_name', 'payment_account_no']) {
+    check(createMetrics.requiredFields.includes(field), `payment create required-input region does not expose ${field}`, createMetrics);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'create-product-floorplan-desktop.png'), fullPage: true });
   await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
 
@@ -124,6 +190,20 @@ try {
       await editableFields.first().waitFor({ timeout: 15000 });
       stateVariants[kind].editableFields = await editableFields.count();
       check(stateVariants[kind].editableFields > 0, 'blocked remediation path did not enter edit mode');
+      stateVariants[kind].editMetrics = await collectWriteFloorplanMetrics(page, page.locator('[data-product-page-mode="form"]').first());
+      assertWriteFloorplanMetrics(stateVariants[kind].editMetrics, 'blocked payment edit surface');
+      check(stateVariants[kind].editMetrics.enabledPrimary === 0,
+        'blocked payment edit surface exposed a false enabled primary action', stateVariants[kind].editMetrics);
+      for (const field of ['contract_id', 'settlement_id', 'material_settlement_id', 'payment_account_name', 'payment_bank_name', 'payment_account_no']) {
+        check(stateVariants[kind].editMetrics.requiredFields.includes(field),
+          `blocked payment required-input region does not expose ${field}`, stateVariants[kind].editMetrics);
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(300);
+      stateVariants[kind].editMobile = await collectWriteFloorplanMetrics(page, page.locator('[data-product-page-mode="form"]').first());
+      check(stateVariants[kind].editMobile.overflow <= 0, '390px blocked edit surface has horizontal overflow', stateVariants[kind].editMobile);
+      await page.screenshot({ path: path.join(outputDir, 'blocked-edit-product-floorplan-390.png'), fullPage: true });
+      await page.setViewportSize({ width: 1440, height: 960 });
     }
   }
 
@@ -132,6 +212,44 @@ try {
   const journeyRow = page.locator('[data-product-page-mode="list"] tbody tr').filter({ hasText: record.name }).first();
   await journeyRow.waitFor({ timeout: 45000 });
   await journeyRow.click();
+  await page.waitForURL((url) => url.pathname === `/r/payment.request/${recordId}`, { timeout: 45000 });
+  await page.goto(`${frontendUrl}/f/payment.request/${recordId}?menu_id=${menuId}&action_id=${actionId}`, {
+    waitUntil: 'domcontentloaded', timeout: 45000,
+  });
+  const editSurface = page.locator('[data-product-page-mode="form"]').first();
+  await editSurface.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
+  const cleanEditMetrics = await collectWriteFloorplanMetrics(page, editSurface);
+  assertWriteFloorplanMetrics(cleanEditMetrics, 'actionable payment edit surface');
+  const note = editSurface.locator('[data-field-name="note"] textarea, [data-field-name="note"] input').first();
+  await note.waitFor({ timeout: 15000 });
+  await note.fill(`产品化保存验证 ${recordId}`);
+  const dirtyPrimary = editSurface.locator('[data-action-ref="form.save"][data-action-tier="primary"]');
+  await dirtyPrimary.waitFor({ timeout: 15000 });
+  check(await editSurface.locator('[data-action-tier="primary"][data-action-enabled="true"]').count() === 1,
+    'dirty edit surface must expose exactly one save primary action');
+  const writePromise = page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try { return isPaymentWriteBody(JSON.parse(response.request().postData() || '{}')); } catch { return false; }
+  }, { timeout: 30000 });
+  await dirtyPrimary.click();
+  const writeResponse = await writePromise;
+  check(writeResponse.status() === 200, 'payment edit save failed', await writeResponse.text());
+  const afterSavePrimary = editSurface.locator('[data-action-tier="primary"][data-action-enabled="true"]');
+  await afterSavePrimary.waitFor({ timeout: 45000 });
+  check(await afterSavePrimary.count() === 1 && (await afterSavePrimary.innerText()).trim() === '提交审批',
+    'saved edit did not switch to the backend-authoritative submit action');
+  check(Boolean(await afterSavePrimary.getAttribute('data-action-ref'))
+    && Boolean(await afterSavePrimary.getAttribute('data-backend-identity')),
+  'saved edit primary action is missing backend authority identity');
+  check(recordWrites.length === 1, 'edit save emitted an unexpected number of record mutations', recordWrites);
+  report.edit = { before: cleanEditMetrics, recordWrites: [...recordWrites], afterSavePrimary: await afterSavePrimary.innerText() };
+  await page.screenshot({ path: path.join(outputDir, 'edit-after-save-desktop.png'), fullPage: true });
+  await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const postSaveList = page.locator('[data-product-page-mode="list"]').first();
+  await postSaveList.waitFor({ timeout: 45000 });
+  const postSaveRow = postSaveList.locator('tbody tr').filter({ hasText: record.name }).first();
+  await postSaveRow.waitFor({ timeout: 45000 });
+  await postSaveRow.click();
   await page.waitForURL((url) => url.pathname === `/r/payment.request/${recordId}`, { timeout: 45000 });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(300);
@@ -259,7 +377,7 @@ try {
   report.observedIntents = observedIntents;
   report.stateVariants = stateVariants;
   report.list = { before: listRowBefore, after: listRowAfter };
-  report.create = { editableFields: createEditableFields };
+  report.create = { editableFields: createEditableFields, metrics: createMetrics };
   report.home = { before: homeBefore, after: homeAfter };
   report.pass = true;
   fs.writeFileSync(path.join(outputDir, 'summary.json'), `${JSON.stringify(report, null, 2)}\n`);
@@ -267,6 +385,7 @@ try {
 } catch (error) {
   report.failure = error instanceof Error ? error.message : String(error);
   report.mutations = mutations;
+  report.recordWrites = recordWrites;
   report.errors = errors;
   report.observedIntents = observedIntents;
   fs.writeFileSync(path.join(outputDir, 'summary.json'), `${JSON.stringify(report, null, 2)}\n`);

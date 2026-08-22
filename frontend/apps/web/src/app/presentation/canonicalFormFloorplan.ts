@@ -8,6 +8,7 @@ import type {
 export type CanonicalFormFloorplan = {
   summaryNodes: CanonicalFormNode[];
   taskNodes: CanonicalFormNode[];
+  requiredNodes: CanonicalFormNode[];
   contextNodes: CanonicalFormNode[];
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
@@ -135,6 +136,57 @@ function deduplicateEquivalentCreateFields(nodes: CanonicalFormNode[]): Canonica
     };
   }
   return nodes.map(project).filter(createNodeHasContent);
+}
+
+function productFieldPriority(field: CanonicalFormNode['fields'][number]): number {
+  return Number(Boolean(field.semanticRole)) * 16
+    + Number(!field.readonly && !field.disabled) * 8
+    + Number(field.required) * 4
+    + Number(hasPresentableValue(field)) * 2
+    + Number(Boolean(field.semanticSlot || field.semanticGroup));
+}
+
+function deduplicateProductFields(nodes: CanonicalFormNode[]): CanonicalFormNode[] {
+  const retainedByIdentity = new Map<string, CanonicalFormNode['fields'][number]>();
+  function collect(node: CanonicalFormNode) {
+    node.fields.forEach((field) => {
+      if (!field.visible) return;
+      const identity = String(field.fieldCode || field.widgetId).trim();
+      const retained = retainedByIdentity.get(identity);
+      if (!retained || productFieldPriority(field) > productFieldPriority(retained)) {
+        retainedByIdentity.set(identity, field);
+      }
+    });
+    node.children.forEach(collect);
+  }
+  nodes.forEach(collect);
+  const retained = new Set(retainedByIdentity.values());
+  function project(node: CanonicalFormNode): CanonicalFormNode {
+    const projected = {
+      ...node,
+      fields: node.fields.filter((field) => !field.visible || retained.has(field)),
+      children: node.children.map(project),
+    };
+    return { ...projected, children: projected.children.filter(nodeHasContent) };
+  }
+  return nodes.map(project).filter(nodeHasContent);
+}
+
+function fieldNodes(
+  nodes: CanonicalFormNode[],
+  predicate: (field: CanonicalFormNode['fields'][number]) => boolean,
+  suppressTitles = false,
+): CanonicalFormNode[] {
+  function project(node: CanonicalFormNode): CanonicalFormNode {
+    return {
+      ...node,
+      ...(suppressTitles ? { title: '' } : {}),
+      text: '',
+      fields: node.fields.filter((field) => field.visible && predicate(field)),
+      children: node.children.map(project),
+    };
+  }
+  return nodes.map(project).filter(nodeHasContent);
 }
 
 function nodeHasSemanticRole(node: CanonicalFormNode): boolean {
@@ -313,29 +365,50 @@ export function composeCanonicalFormFloorplan(
   renderModel: CanonicalFormRenderModel,
 ): CanonicalFormFloorplan {
   const visiblePrimaryNodes = visibleNodes(renderModel.zones.primary, renderModel.identity.mode);
-  const primaryNodes = renderModel.identity.mode === 'create'
+  const createNodes = renderModel.identity.mode === 'create'
     ? deduplicateEquivalentCreateFields(visiblePrimaryNodes)
     : visiblePrimaryNodes;
+  const semanticProductMode = createNodes.some(nodeHasSemanticRole);
+  const writeMode = renderModel.identity.mode !== 'readonly';
+  const primaryNodes = semanticProductMode && writeMode ? deduplicateProductFields(createNodes) : createNodes;
   const editableNodes = primaryNodes.filter(hasEditableField);
-  const semanticReadonly = renderModel.identity.mode === 'readonly' && primaryNodes.some(nodeHasSemanticRole);
-  const summaryNodes = semanticReadonly
-    ? flattenPresentableFields(roleNodes(primaryNodes, ['summary'], false, true, true), 'summary')
+  const summaryNodes = semanticProductMode
+    ? flattenPresentableFields(fieldNodes(primaryNodes, (field) => (
+      field.semanticRole === 'summary' && field.readonly && hasPresentableValue(field)
+    ), true), 'summary')
     : [];
-  const riskNodes = semanticReadonly ? roleNodes(primaryNodes, ['risk'], false, true, true) : [];
-  const auditNodes = semanticReadonly ? roleNodes(primaryNodes, ['audit'], false, false, true) : [];
-  const auditDeclared = semanticReadonly && primaryNodes.some((node) => nodeDeclaresRole(node, 'audit'));
-  const taskNodes = semanticReadonly
-    ? roleNodes(primaryNodes, ['task'], false, true, true)
+  const riskNodes = semanticProductMode
+    ? fieldNodes(primaryNodes, (field) => field.semanticRole === 'risk' && field.readonly && hasPresentableValue(field), true)
+    : [];
+  const auditNodes = semanticProductMode ? roleNodes(primaryNodes, ['audit'], false, false, true) : [];
+  const auditDeclared = semanticProductMode && primaryNodes.some((node) => nodeDeclaresRole(node, 'audit'));
+  const taskNodes = semanticProductMode
+    ? fieldNodes(primaryNodes, (field) => field.semanticRole === 'task' && field.readonly && hasPresentableValue(field), true)
     : (editableNodes.length ? editableNodes : primaryNodes);
-  const taskIds = new Set(taskNodes.map((node) => node.nodeId));
+  const requiredNodes = semanticProductMode && writeMode
+    ? fieldNodes(primaryNodes, (field) => (
+      !field.readonly && !field.disabled && !fieldHasRelationCapability(field)
+      && (field.required || !hasPresentableValue(field))
+    ))
+    : [];
   const subordinateNodes = visibleNodes(renderModel.zones.subordinate, renderModel.identity.mode);
-  const primaryRelationNodes = semanticReadonly ? relationRoleNodes(primaryNodes.filter(nodeHasRelationCapability)) : [];
-  const subordinateRelationNodes = semanticReadonly ? relationRoleNodes(subordinateNodes.filter(nodeHasRelationCapability)) : [];
+  const primaryRelationNodes = semanticProductMode ? relationRoleNodes(primaryNodes.filter(nodeHasRelationCapability)) : [];
+  const subordinateRelationNodes = semanticProductMode ? relationRoleNodes(subordinateNodes.filter(nodeHasRelationCapability)) : [];
   const relationNodes = [...primaryRelationNodes, ...subordinateRelationNodes];
-  const allContextNodes = semanticReadonly
-    ? contextRoleNodes(primaryNodes)
-    : primaryNodes.filter((node) => !taskIds.has(node.nodeId));
-  const emptySemanticNodes = semanticReadonly
+  const allContextNodes = semanticProductMode
+    ? (writeMode
+      ? fieldNodes(primaryNodes, (field) => (
+        !field.readonly && !field.disabled && !fieldHasRelationCapability(field)
+        && !field.required && hasPresentableValue(field)
+      ))
+      : contextRoleNodes(primaryNodes))
+    : primaryNodes.filter((node) => !taskNodes.includes(node));
+  const readonlyContextNodes = semanticProductMode && writeMode
+    ? fieldNodes(primaryNodes, (field) => (
+      field.readonly && field.semanticRole === 'context' && hasPresentableValue(field)
+    ))
+    : [];
+  const emptySemanticNodes = semanticProductMode && !writeMode
     ? roleNodes(primaryNodes, ['summary', 'task', 'risk'], false, false, true)
       .map((node) => ({
         ...node,
@@ -350,7 +423,7 @@ export function composeCanonicalFormFloorplan(
       }))
       .filter(nodeHasContent)
     : [];
-  const contextPartition = semanticReadonly
+  const contextPartition = semanticProductMode
     ? partitionContextBlocks(splitOversizedContextBlocks(allContextNodes, 24), 24)
     : { direct: allContextNodes, overflow: [] };
   const visibleActions = renderModel.actionBar.filter((action) => action.visible);
@@ -364,28 +437,29 @@ export function composeCanonicalFormFloorplan(
     && action !== effectivePrimary
     && !['overflow', 'configuration'].includes(action.tier)
   ));
-  const directSecondary = renderModel.identity.mode === 'create' ? [] : secondaryCandidates.slice(0, 1);
+  const directSecondary = writeMode ? [] : secondaryCandidates.slice(0, 1);
   const directActions = [...(effectivePrimary ? [effectivePrimary] : []), ...directSecondary];
   const blockedActions = visibleActions.filter((action) => !action.enabled && action.tier === 'primary');
 
   return {
     summaryNodes,
     taskNodes,
+    requiredNodes,
     contextNodes: contextPartition.direct,
-    overflowContextNodes: [...contextPartition.overflow, ...emptySemanticNodes],
+    overflowContextNodes: [...contextPartition.overflow, ...readonlyContextNodes, ...emptySemanticNodes],
     riskNodes,
     auditNodes,
     auditDeclared,
     relationNodes,
-    subordinateNodes: semanticReadonly
+    subordinateNodes: semanticProductMode
       ? subordinateNodes.filter((node) => !nodeHasRelationCapability(node))
       : subordinateNodes,
     blockedActions,
     directActions,
-    overflowActions: visibleActions.filter((action) => (
-      !directActions.includes(action) && !blockedActions.includes(action)
+    overflowActions: writeMode && semanticProductMode ? [] : visibleActions.filter((action) => (
+      !directActions.includes(action) && !blockedActions.includes(action) && action.enabled
     )),
     effectivePrimaryKey: effectivePrimary?.key || '',
-    decisionMode: semanticReadonly,
+    decisionMode: semanticProductMode,
   };
 }

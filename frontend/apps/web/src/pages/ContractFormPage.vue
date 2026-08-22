@@ -21,6 +21,7 @@
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
+      :status-interactive="!canonicalProductRendererActive"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
       :continue-processing-label="continueProcessingLabel"
@@ -136,6 +137,8 @@
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
         <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
+          :busy="busy"
+          :dirty="hasChanges"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
           :collaboration-panel-props="nativeCollaborationPanelProps"
           :relation-adapter="relationFieldAdapter"
@@ -143,6 +146,8 @@
           @driver-change="changeContractFormDriver"
           @field-change="onTemplateFieldChange"
           @action-ref="runCanonicalFormAction"
+          @save="saveRecord()"
+          @cancel-edit="returnToPreviousPage"
         />
         <ContractFormNativeCanvas v-else
           :button-label-resolver="resolveNativeButtonLabel"
@@ -1640,6 +1645,22 @@ const contractReadiness = computed<FormContractReadiness>(() => {
 let recordFormStateRuntime: ReturnType<typeof useRecordFormState>;
 function markFieldChanged(name: string) { recordFormStateRuntime.markFieldChanged(name); }
 function inputFieldValue(name: string) { return recordFormStateRuntime.inputFieldValue(name); }
+function canonicalFieldWritable(name: string): boolean | undefined {
+  const model = canonicalFormRenderState.value.model;
+  if (!model) return undefined;
+  const matches: Array<{ visible: boolean; readonly: boolean; disabled: boolean }> = [];
+  function collect(nodes: typeof model.zones.primary) {
+    nodes.forEach((node) => {
+      node.fields.forEach((field) => {
+        if (field.fieldCode === name) matches.push(field);
+      });
+      collect(node.children);
+    });
+  }
+  collect([...model.zones.primary, ...model.zones.subordinate]);
+  if (!matches.length) return undefined;
+  return matches.some((field) => field.visible && !field.readonly && !field.disabled);
+}
 recordFormStateRuntime = useRecordFormState({
   formFields: canonicalFormFields, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
   invalidatedRelationKeywords, clearedDynamicRelationFields, relationQueryTimers, relationOptions,
@@ -1652,6 +1673,7 @@ recordFormStateRuntime = useRecordFormState({
   relationKeyword, quickCreateRelation, relationUiLabel, relationModel, relationIds, upsertRelationOption,
   buildOne2manyCommandValue, one2manyFieldRows, initOne2manyRows, applyOnchangeLinePatches,
   isWritableFieldVisible,
+  canonicalFieldWritable,
 });
 const {
   addRelationId, collectWritableValues, commitMany2oneInline, comparableFieldValue, isFieldWritable,

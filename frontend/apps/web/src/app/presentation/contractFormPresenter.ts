@@ -37,15 +37,28 @@ const FORM_SEMANTIC_ROLES = new Set<CanonicalFormSemanticRole>([
 
 function semanticRole(value: unknown): CanonicalFormSemanticRole | '' {
   const structure = asDict(value);
-  const role = text(structure.role).toLowerCase() as CanonicalFormSemanticRole;
+  const rawRole = text(structure.role).toLowerCase();
+  const role = (rawRole === 'business_fact' ? 'context' : rawRole) as CanonicalFormSemanticRole;
   return FORM_SEMANTIC_ROLES.has(role) ? role : '';
 }
 
-function fieldSemanticRole(
-  widget: ContractV2Widget,
-  container: ContractV2Container,
-): CanonicalFormSemanticRole | '' {
-  return semanticRole(widget.formStructureRole) || semanticRole(container.formStructureRole);
+function semanticIdentity(value: unknown): { role: CanonicalFormSemanticRole | ''; slot: string; group: string } {
+  const structure = asDict(value);
+  return {
+    role: semanticRole(structure),
+    slot: text(structure.slot),
+    group: text(structure.group),
+  };
+}
+
+function fieldSemanticIdentity(widget: ContractV2Widget, container: ContractV2Container) {
+  const widgetIdentity = semanticIdentity(widget.formStructureRole);
+  const containerIdentity = semanticIdentity(container.formStructureRole);
+  return {
+    role: widgetIdentity.role || containerIdentity.role,
+    slot: widgetIdentity.slot || containerIdentity.slot,
+    group: widgetIdentity.group || containerIdentity.group,
+  };
 }
 
 function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
@@ -116,6 +129,7 @@ function fieldFromWidget(
   const statusResolved = Boolean(status);
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
+  const fieldSemantics = fieldSemanticIdentity(widget, container);
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
@@ -135,7 +149,9 @@ function fieldFromWidget(
     required: bool(status?.required, false),
     disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
-    semanticRole: fieldSemanticRole(widget, container),
+    semanticRole: fieldSemantics.role,
+    semanticSlot: fieldSemantics.slot,
+    semanticGroup: fieldSemantics.group,
     componentConfig: Object.freeze({ ...widget.componentConfig }),
     fieldDescriptor: Object.freeze({ ...(widget.fieldDescriptor || {}) }),
   };
@@ -239,6 +255,7 @@ function presentNode(
     text(nativeIdentity.type), text(nativeIdentity.name), text(nativeIdentity.native_locator || nativeIdentity.nativeLocator),
     String(Number(nativeIdentity.occurrence_index || nativeIdentity.occurrenceIndex || 0)),
   ].join('|');
+  const nodeSemantics = semanticIdentity(container.formStructureRole);
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
     kind: nodeKind,
@@ -250,7 +267,9 @@ function presentNode(
     visible,
     disabled,
     reasonCode: text(status?.reasonCode),
-    semanticRole: semanticRole(container.formStructureRole),
+    semanticRole: nodeSemantics.role,
+    semanticSlot: nodeSemantics.slot,
+    semanticGroup: nodeSemantics.group,
     action: (actionIdentity ? actionsByIdentity.get(actionIdentity) : undefined)
       || actionsByNativeOccurrence.get(nativeActionKey)
       || null,

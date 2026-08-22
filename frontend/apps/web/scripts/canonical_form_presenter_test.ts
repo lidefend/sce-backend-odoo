@@ -289,6 +289,48 @@ assert.deepEqual(
 );
 assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
 assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
+const semanticEditModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'edit');
+const semanticEditFloorplan = composeCanonicalFormFloorplan(semanticEditModel);
+assert.equal(semanticEditFloorplan.decisionMode, true, 'semantic create/edit forms must enter the Product Floorplan');
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.summaryNodes).map((field) => field.fieldCode),
+  [],
+  'editable summary fields must stay in the editing canvas instead of duplicating as readonly facts',
+);
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.riskNodes).map((field) => field.fieldCode),
+  ['state'],
+  'readonly risk authority must remain factual in create/edit mode',
+);
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.requiredNodes).map((field) => field.fieldCode),
+  ['name'],
+  'required editable fields must be directly reachable in the required-input region',
+);
+assert.deepEqual(
+  collectFields([
+    ...semanticEditFloorplan.summaryNodes,
+    ...semanticEditFloorplan.taskNodes,
+    ...semanticEditFloorplan.riskNodes,
+    ...semanticEditFloorplan.requiredNodes,
+    ...semanticEditFloorplan.contextNodes,
+    ...semanticEditFloorplan.overflowContextNodes,
+  ]).map((field) => field.fieldCode),
+  ['state', 'name'],
+  'create/edit Product Floorplan regions must not duplicate a field identity',
+);
+
+const businessFactSnapshot = structuredClone(semanticReadonlySnapshot);
+businessFactSnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
+  role: 'business_fact', slot: 'identity', group: 'identity',
+};
+const businessFactModel = presentContractV2Form(createContractV2Store(businessFactSnapshot), 'edit');
+const businessFactField = collectFields(businessFactModel.zones.primary).find((field) => field.fieldCode === 'name');
+assert.deepEqual(
+  [businessFactField?.semanticRole, businessFactField?.semanticSlot, businessFactField?.semanticGroup],
+  ['context', 'identity', 'identity'],
+  'existing business_fact authority must survive Canonical projection as product context metadata',
+);
 const mixedSemanticTextModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
 const mixedSemanticTextRoot = mixedSemanticTextModel.zones.primary[0];
 mixedSemanticTextRoot.text = 'unassigned native guidance';

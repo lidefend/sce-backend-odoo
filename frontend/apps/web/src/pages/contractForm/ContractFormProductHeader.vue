@@ -18,12 +18,12 @@
           <p class="header-status-item" :class="{ 'header-status-item--danger': intakeMissingSummary !== '无' }">缺少：{{ intakeMissingSummary }}</p>
         </div>
         <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态流程">
-          <p :class="['native-statusbar-summary', { 'native-statusbar-summary--readonly': mode === 'readonly' }]">
+          <p :class="['native-statusbar-summary', { 'native-statusbar-summary--readonly': mode === 'readonly' || !statusInteractive }]">
             <span>当前状态</span><strong>{{ currentStatusLabel }}</strong>
-            <span v-if="nextActionLabel">下一步 {{ nextActionLabel }}</span>
+            <span v-if="statusInteractive && nextActionLabel">下一步 {{ nextActionLabel }}</span>
           </p>
           <ol
-            v-if="mode !== 'readonly'"
+            v-if="mode !== 'readonly' && statusInteractive"
             ref="statusTrackRef"
             class="native-statusbar-track"
             :data-has-more-before="workflowHasMoreBefore || undefined"
@@ -84,6 +84,7 @@ const props = defineProps<{
   intakeMissingSummary: string; statusbar: NativeStatusbarVm; busy: boolean; busyKind: BusyKind; showReturn: boolean;
   mode: 'create' | 'edit' | 'readonly'; modeLabel: string; dirty: boolean; changedFieldCount: number;
   showContinueProcessing: boolean;
+  statusInteractive?: boolean;
   continueProcessingLabel: string;
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;
   primaryFormActionDisabled: boolean; primaryFormActionHint: string; submitLabel: string; primaryAction: ContractAction | null;
