@@ -951,15 +951,11 @@ async function main() {
       }
       const formSamples = [];
       await navigateSpa(page, recordRoute(TARGETS.work_settlement), FORM_SURFACE_SELECTOR);
-      await page.locator('#main-content').getByRole('button', { name: '新建付款申请', exact: true }).click();
-      await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
-      await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+      await openPaymentCreateFromSettlement(page, TARGETS.work_settlement, 'form_open_warmup');
       for (let i = 0; i < PERF_RUNS; i += 1) {
         await navigateSpa(page, recordRoute(TARGETS.work_settlement), FORM_SURFACE_SELECTOR);
         formSamples.push(await time(async () => {
-          await page.locator('#main-content').getByRole('button', { name: '新建付款申请', exact: true }).click();
-          await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
-          await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+          await openPaymentCreateFromSettlement(page, TARGETS.work_settlement, `form_open_${i + 1}`);
         }));
       }
       performanceReport.scenarios.form_open = stats(formSamples);
@@ -1077,6 +1073,59 @@ async function main() {
     await context?.close(); await browser.close();
     await acceptanceLease.release();
   }
+}
+
+function recordFormSurface(page, target) {
+  return page.locator([
+    '[data-product-page-mode="form"]',
+    `[data-form-model="${target.model}"]`,
+    `[data-form-record="${target.record_id}"]`,
+    `[data-form-action-id="${target.action_id}"]`,
+    `[data-form-menu-id="${target.menu_id}"]`,
+    ':visible',
+  ].join(''));
+}
+
+async function activeRecordForm(page, target, label) {
+  const surface = recordFormSurface(page, target);
+  await surface.waitFor({ state: 'visible', timeout: 45000 });
+  check(await surface.count() === 1, `${label}: active record form identity is not unique`);
+  await page.waitForFunction(({ model, recordId, actionId, menuId }) => {
+    const selector = [
+      '[data-product-page-mode="form"]',
+      `[data-form-model="${model}"]`,
+      `[data-form-record="${recordId}"]`,
+      `[data-form-action-id="${actionId}"]`,
+      `[data-form-menu-id="${menuId}"]`,
+    ].join('');
+    const visible = [...document.querySelectorAll(selector)].filter((node) => {
+      const element = /** @type {HTMLElement} */ (node);
+      return element.offsetParent !== null && getComputedStyle(element).visibility !== 'hidden';
+    });
+    return visible.length === 1 && visible[0].getAttribute('aria-busy') !== 'true';
+  }, {
+    model: target.model,
+    recordId: String(target.record_id),
+    actionId: String(target.action_id),
+    menuId: String(target.menu_id),
+  }, { timeout: 45000 });
+  return surface;
+}
+
+async function openPaymentCreateFromSettlement(page, target, label) {
+  const settlementSurface = await activeRecordForm(page, target, label);
+  const create = settlementSurface.getByRole('button', { name: '新建付款申请', exact: true });
+  await create.waitFor({ state: 'visible', timeout: 45000 });
+  check(await create.count() === 1, `${label}: create payment action identity is not unique`);
+  check(await create.isEnabled(), `${label}: create payment action is disabled`);
+  await create.click();
+  await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
+  const paymentCreateSurface = page.locator(
+    '[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="new"]:visible',
+  );
+  await paymentCreateSurface.waitFor({ state: 'visible', timeout: 45000 });
+  check(await paymentCreateSurface.count() === 1, `${label}: payment create form identity is not unique`);
+  await paymentCreateSurface.locator('[data-field-name="amount"] input').waitFor({ state: 'visible', timeout: 45000 });
 }
 
 main().catch((error) => { console.error(`[verify.frontend.delivery_hardening.browser] FAIL ${error.stack || error.message}`); process.exitCode = 1; });
