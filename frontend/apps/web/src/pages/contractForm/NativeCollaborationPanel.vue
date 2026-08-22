@@ -143,7 +143,7 @@
       <li v-for="entry in visibleTimeline" :key="entry.key" class="native-chatter-entry">
         <span class="native-chatter-type">{{ entry.typeLabel }}</span>
         <span class="native-chatter-body">{{ entry.type === 'activity' ? entry.title : (entry.body || entry.title) }}</span>
-        <span class="native-chatter-meta">{{ entry.meta }}</span>
+        <span class="native-chatter-meta">{{ displayTimelineMeta(entry.meta) }}</span>
         <div v-if="entry.type === 'activity'" class="native-chatter-entry-actions">
           <button
             v-if="entry.activity?.can_complete"
@@ -263,6 +263,20 @@ export type NativeCollaborationPanelListeners = {
 
 const props = defineProps<NativeCollaborationPanelProps>();
 const visibleTimeline = computed(() => props.timeline.filter((entry) => entry.type !== 'audit'));
+
+function displayTimelineMeta(value: string) {
+  return String(value || '').replace(
+    /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?/g,
+    (raw) => {
+      const parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) return raw;
+      return new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).format(parsed);
+    },
+  );
+}
 
 const emit = defineEmits<{
   'open-action': [action: NativeChatterAction];

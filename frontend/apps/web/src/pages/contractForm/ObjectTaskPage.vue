@@ -171,7 +171,7 @@
             <strong data-audit-event-name>{{ event.event }}</strong>
             <span data-audit-result>{{ event.result }}</span>
             <span data-audit-actor>{{ event.actor }}</span>
-            <time :datetime="event.occurredAt" data-audit-time>{{ event.occurredAt }}</time>
+            <time :datetime="event.occurredAt" data-audit-time>{{ formatAuditTime(event.occurredAt) }}</time>
             <p v-if="event.detail">{{ event.detail }}</p>
           </li>
         </ol>
@@ -214,6 +214,19 @@ defineProps<{
   decisionMode?: boolean;
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>();
+
+function formatAuditTime(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(parsed);
+}
 </script>
 
 <style scoped>

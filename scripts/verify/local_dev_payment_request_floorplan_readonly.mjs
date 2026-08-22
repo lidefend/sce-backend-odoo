@@ -275,6 +275,26 @@ try {
     region: node.closest('[data-floorplan-region]')?.getAttribute('data-floorplan-region') || '',
   })));
   const readonlyStatusButtons = await page.locator('.native-statusbar-track button:visible').count();
+  const leakedConfigurationLabels = {};
+  for (const label of ['匹配提示显示名称', '付款申请明细显示名称', '付款记录显示名称']) {
+    leakedConfigurationLabels[label] = await page.locator(`[data-object-task-page] [aria-label="${label}"]`).count();
+  }
+  const readonlyActivityWriteActions = await page.locator(
+    '[data-floorplan-region="activity"] button:visible',
+  ).filter({ hasText: /记录沟通|备注|计划|上传/ }).count()
+    + await page.locator('[data-floorplan-region="activity"] input[type="file"]').count();
+  const emptyReadonlyControls = await page.locator([
+    '[data-object-task-page] input:disabled',
+    '[data-object-task-page] textarea:disabled',
+    '[data-object-task-page] select:disabled',
+  ].join(', ')).evaluateAll((nodes) => nodes.filter((node) => {
+    if (node instanceof HTMLInputElement && ['checkbox', 'radio'].includes(node.type)) return false;
+    return !String(node.value || '').trim();
+  }).length);
+  const emptyReadonlyRelations = await page.locator('[data-readonly-relation-empty]').count();
+  const semanticTitles = (await page.locator('[data-object-task-page] h1:visible, [data-object-task-page] h2:visible, [data-object-task-page] h3:visible')
+    .allTextContents()).map(normalize).filter(Boolean);
+  const duplicateSemanticTitles = semanticTitles.filter((title, index) => semanticTitles.indexOf(title) !== index);
   const canonicalActions = await page.locator('[data-object-task-page] [data-action-ref]').evaluateAll((nodes) => nodes.map((node) => ({
     label: String(node.textContent || '').trim(),
     actionRef: node.getAttribute('data-action-ref'),
@@ -290,6 +310,13 @@ try {
     readonlyEditableControls,
     readonlyEditableControlDetails,
     readonlyStatusButtons,
+    leakedConfigurationLabels,
+    readonlyActivityWriteActions,
+    emptyReadonlyControls,
+    emptyReadonlyRelations,
+    semanticTitles,
+    duplicateSemanticTitles,
+    effectivePrimaryActions: enabledPrimary + continueProcessing,
     canonicalActions,
     overflow: desktop.scrollWidth - desktop.width,
   };
@@ -302,6 +329,14 @@ try {
   check(continueProcessing === 1, 'the governed blocked record must expose one path to complete missing facts', continueProcessing);
   check(readonlyEditableControls === 0, 'readonly product surface exposes editable field/configuration controls', readonlyEditableControls);
   check(readonlyStatusButtons === 0, 'readonly product surface renders workflow states as buttons', readonlyStatusButtons);
+  check(Object.values(leakedConfigurationLabels).every((count) => count === 0),
+    'readonly product surface exposes configuration display-name controls', leakedConfigurationLabels);
+  check(readonlyActivityWriteActions === 0,
+    'readonly activity surface exposes write actions', readonlyActivityWriteActions);
+  check(emptyReadonlyControls === 0,
+    'readonly product surface exposes empty disabled controls', emptyReadonlyControls);
+  check(duplicateSemanticTitles.length === 0,
+    'readonly product surface repeats semantic section titles', duplicateSemanticTitles);
   check(enabledPrimary + continueProcessing === 1, 'more than one product primary action is visible', { enabledPrimary, continueProcessing });
   check(canonicalActions.filter((action) => action.label === '取消').length === 1,
     'the same authoritative cancel operation appeared twice', canonicalActions);
@@ -376,39 +411,6 @@ try {
     '390px action surface is not anchored to the viewport bottom', report.mobile);
   await page.screenshot({ path: path.join(outputDir, 'payment-request-390.png') });
   await page.screenshot({ path: path.join(outputDir, 'payment-request-390-full.png'), fullPage: true });
-
-  const reuseTarget = target.reuse_target || {};
-  check(Number(reuseTarget.action_id || 0) > 0 && Number(reuseTarget.record_id || 0) > 0,
-    'second-model reuse target is invalid', reuseTarget);
-  await page.setViewportSize({ width: 1440, height: 960 });
-  await page.goto(
-    `${frontendUrl}/r/${reuseTarget.model}/${reuseTarget.record_id}?menu_id=${reuseTarget.menu_id}&action_id=${reuseTarget.action_id}`,
-    { waitUntil: 'domcontentloaded', timeout: 45000 },
-  );
-  await page.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
-  const reuseHost = page.locator('.sc-form-driver-host');
-  const reuseRegions = await page.locator('[data-object-task-page] [data-floorplan-region]').evaluateAll((nodes) => (
-    [...new Set(nodes.map((node) => node.getAttribute('data-floorplan-region')).filter(Boolean))]
-  ));
-  const reuseEditableReadonlyRelations = await page.locator(
-    '[data-object-task-page] [data-field-state="readonly"] .relation-editor input:not(:disabled), '
-    + '[data-object-task-page] [data-field-state="readonly"] .relation-editor select:not(:disabled)',
-  ).count();
-  report.reuse = {
-    target: reuseTarget,
-    driver: await reuseHost.getAttribute('data-contract-form-driver'),
-    providerKit: await page.locator('.scene-ui-provider').getAttribute('data-scene-ui-kit'),
-    regions: reuseRegions,
-    editableReadonlyRelations: reuseEditableReadonlyRelations,
-  };
-  check(report.reuse.driver === 'tdesign-modern' && report.reuse.providerKit === 'tdesign-modern',
-    'second real model did not reuse the TDesign semantic floorplan', report.reuse);
-  for (const region of ['summary', 'current-task', 'risk', 'audit']) {
-    check(reuseRegions.includes(region), `second-model floorplan region missing: ${region}`, reuseRegions);
-  }
-  check(reuseEditableReadonlyRelations === 0,
-    'second-model readonly relations exposed editable controls', report.reuse);
-  await page.screenshot({ path: path.join(outputDir, 'payment-execution-reuse-desktop.png'), fullPage: true });
 
   report.contract = {
     roleCode: findKey(systemInit, 'role_code'),

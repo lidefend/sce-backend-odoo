@@ -13,7 +13,7 @@
       <span
         v-else-if="!adapter.selectedRelationOptions(field.name).length"
         class="relation-readonly-empty"
-      >暂无{{ field.label || '关联记录' }}</span>
+      >暂无记录</span>
     </div>
     <div v-else-if="isMany2manyTags(field)" class="relation-tag-picker">
       <div class="relation-tags-control">
@@ -101,9 +101,36 @@
     </div>
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
+    <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
+      <div v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-readonly-list">
+        <article
+          v-for="row in adapter.visibleOne2manyRows(field.name)"
+          :key="row.key"
+          class="o2m-readonly-row"
+        >
+          <p v-if="adapter.one2manyRowStateLabel(row)" class="o2m-readonly-state">
+            {{ adapter.one2manyRowStateLabel(row) }}
+          </p>
+          <dl class="o2m-readonly-facts">
+            <div
+              v-for="column in adapter.one2manyColumns(field.name)"
+              :key="`${row.key}-readonly-${column.name}`"
+              class="o2m-readonly-fact"
+            >
+              <dt>{{ column.label }}</dt>
+              <dd>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+      <p v-else class="relation-readonly-empty" data-readonly-relation-empty>
+        暂无记录
+      </p>
+    </div>
+    <template v-else>
     <div class="o2m-toolbar">
       <button
-        v-if="!field.readonly && adapter.one2manyCanCreate(field.name)"
+        v-if="adapter.one2manyCanCreate(field.name)"
         class="chip-btn"
         type="button"
         :disabled="adapter.busy"
@@ -138,14 +165,14 @@
               v-if="column.ttype === 'boolean'"
               class="input-checkbox"
               type="checkbox"
-              :disabled="field.readonly || column.readonly || adapter.busy"
+              :disabled="column.readonly || adapter.busy"
               :checked="Boolean(row.values[column.name])"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).checked)"
             />
             <select
               v-else-if="column.ttype === 'selection'"
               class="input"
-              :disabled="field.readonly || column.readonly || adapter.busy"
+              :disabled="column.readonly || adapter.busy"
               :value="String(row.values[column.name] ?? '')"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLSelectElement).value)"
             >
@@ -158,7 +185,7 @@
               v-else
               class="input"
               :type="adapter.one2manyColumnInputType(column)"
-              :disabled="field.readonly || column.readonly || adapter.busy"
+              :disabled="column.readonly || adapter.busy"
               :value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
               :placeholder="column.label"
               @input="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).value)"
@@ -169,7 +196,7 @@
           class="ghost o2m-row-remove"
           type="button"
           :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
-          :disabled="field.readonly || adapter.busy"
+          :disabled="adapter.busy"
           @click="adapter.removeOne2manyRow(field.name, row.key)"
         >移除本条</button>
         <p v-if="adapter.showOne2manyErrors && adapter.one2manyRowErrors(field.name, row.key).length" class="o2m-row-error">
@@ -195,6 +222,7 @@
         </button>
       </div>
     </div>
+    </template>
   </div>
   <input
   v-else
@@ -296,6 +324,63 @@ function tagColorStyle(color: unknown) {
 .relation-readonly-summary,
 .relation-readonly-empty {
   color: var(--sc-app-text-secondary);
+}
+
+.relation-readonly-empty {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-muted-bg);
+  font-size: 13px;
+}
+
+.o2m-readonly-list {
+  display: grid;
+  gap: 8px;
+}
+
+.o2m-readonly-row {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-panel);
+}
+
+.o2m-readonly-state {
+  margin: 0;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+
+.o2m-readonly-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.o2m-readonly-fact {
+  min-width: 0;
+}
+
+.o2m-readonly-fact dt,
+.o2m-readonly-fact dd {
+  margin: 0;
+}
+
+.o2m-readonly-fact dt {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+
+.o2m-readonly-fact dd {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
 }
 
 .chips {

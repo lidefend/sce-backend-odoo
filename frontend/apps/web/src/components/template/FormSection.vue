@@ -558,8 +558,18 @@ function fieldClass(field: FormSectionFieldSchema) {
       'field--selected': props.fieldSelectionMode && props.selectedFieldKey === fieldKey,
       'field--config-hidden': props.fieldSelectionMode && isFieldMarkedHidden(field),
       'field--empty': fieldHasEmptyValue(field),
+      'field--readonly-empty-relation': isReadonlyEmptyRelation(field),
     },
   ];
+}
+
+function isReadonlyEmptyRelation(field: FormSectionFieldSchema) {
+  if (!field.readonly || !props.relationAdapter || !isRelationEditorField(field)) return false;
+  if (field.type === 'one2many') {
+    return props.relationAdapter.visibleOne2manyRows(field.name).length === 0;
+  }
+  return props.relationAdapter.selectedRelationOptions(field.name).length === 0
+    && props.relationAdapter.relationIds(field.name).length === 0;
 }
 
 function fieldHasEmptyValue(field: FormSectionFieldSchema) {
@@ -1301,6 +1311,16 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   column-gap: 26px;
 }
 
+.template-form-section--readonly .field--readonly-empty-relation {
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.template-form-section--readonly .field--readonly-empty-relation :deep(.relation-readonly-empty) {
+  padding: 6px 10px;
+}
+
 .template-form-section--readonly .label {
   color: var(--sc-app-text-secondary);
   font-size: 12px;
@@ -1329,6 +1349,11 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 
   .template-form-section--readonly .template-form-section-grid {
     row-gap: 12px;
+  }
+
+  .template-form-section--readonly .field--readonly-empty-relation {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
   }
 }
 
