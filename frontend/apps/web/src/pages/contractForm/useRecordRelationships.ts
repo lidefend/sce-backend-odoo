@@ -10,6 +10,68 @@ import { useRecordRelationshipNavigation } from './useRecordRelationshipNavigati
 
 type RelationshipDependencies = Record<string, any>;
 
+type InternalRelationContextSwitchParams = {
+  fieldName: string;
+  formData: Record<string, unknown>;
+  relationKeywords: Record<string, string>;
+  previousValue: unknown;
+  previousKeyword: string;
+  replaceRoute: () => Promise<unknown>;
+  contextApplied: () => boolean;
+  reload: () => Promise<void>;
+};
+
+type RelationSelectionContextSwitchParams = {
+  switchContext: () => Promise<boolean>;
+  finalizeUnswitchedSelection: () => void;
+  reportError: (error: unknown) => void;
+};
+
+/**
+ * Keeps an internal create-context route replacement from treating the value
+ * that caused it as a pre-existing unsaved edit. Other dirty values remain in
+ * place, so the normal route guard still protects them. A cancelled navigation
+ * must never reload and discard the selected relation.
+ */
+export async function applyInternalRelationContextSwitch(
+  params: InternalRelationContextSwitchParams,
+): Promise<boolean> {
+  const selectedValue = params.formData[params.fieldName];
+  const selectedKeyword = params.relationKeywords[params.fieldName] || '';
+  params.formData[params.fieldName] = params.previousValue;
+  params.relationKeywords[params.fieldName] = params.previousKeyword;
+  let applied = false;
+  try {
+    await params.replaceRoute();
+    applied = params.contextApplied();
+  } finally {
+    params.formData[params.fieldName] = selectedValue;
+    params.relationKeywords[params.fieldName] = selectedKeyword;
+  }
+  if (!applied) return false;
+  await params.reload();
+  return true;
+}
+
+/**
+ * Settles relation selection exactly once after an optional context switch.
+ * A failed or cancelled switch keeps the selected value and follows the same
+ * dirty/dependent bookkeeping path; navigation failures are reported without
+ * leaving an unhandled promise rejection behind.
+ */
+export async function settleRelationSelectionContextSwitch(
+  params: RelationSelectionContextSwitchParams,
+): Promise<boolean> {
+  let switched = false;
+  try {
+    switched = await params.switchContext();
+  } catch (error) {
+    params.reportError(error);
+  }
+  if (!switched) params.finalizeUnswitchedSelection();
+  return switched;
+}
+
 /** Owns relation discovery, access-aware navigation, and inline relation editing. */
 export function useRecordRelationships(dependencies: RelationshipDependencies) {
   const {
@@ -58,6 +120,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manyRowLabelFromPrimary,
     one2manySubviewPolicies,
     one2manyValidation,
+    openRelationCreateDialog,
     openRelationSearchFromRuntime,
     pickContractNavQuery,
     queryRelationOptionsFromRuntime,
@@ -435,26 +498,47 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
   }
 
   function setMany2oneOption(fieldName: string, option: RelationOption) {
+    const previousValue = formData[fieldName];
+    const previousKeyword = relationKeywords[fieldName] || '';
     formData[fieldName] = option.id;
     relationKeywords[fieldName] = option.label;
     mergeRelationOptions(fieldName, [option]);
-    clearDynamicRelationDependents(fieldName);
-    markFieldChanged(fieldName);
-    void switchFormByRelationOption(fieldName, option);
+    void settleRelationSelectionContextSwitch({
+      switchContext: () => switchFormByRelationOption(
+        fieldName,
+        option,
+        { previousValue, previousKeyword },
+      ),
+      finalizeUnswitchedSelection: () => {
+        clearDynamicRelationDependents(fieldName);
+        markFieldChanged(fieldName);
+      },
+      reportError: (error) => {
+        const descriptor = effectiveFieldDescriptor(fieldName);
+        validationErrors.value = [sanitizeUiErrorMessage(
+          error instanceof Error ? error.message : error,
+          relationUiLabel(descriptor, 'context_switch_failed', '关联上下文切换失败，请重试'),
+        )];
+      },
+    });
   }
 
-  async function switchFormByRelationOption(fieldName: string, option: RelationOption) {
-    if (recordId.value) return;
+  async function switchFormByRelationOption(
+    fieldName: string,
+    option: RelationOption,
+    transition?: { previousValue: unknown; previousKeyword: string },
+  ): Promise<boolean> {
+    if (recordId.value) return false;
     const descriptor = formFields()[fieldName];
     const entry = relationEntry(descriptor);
-    if (!entry?.switchContext?.enabled || !option.switchContext?.code) return;
+    if (!entry?.switchContext?.enabled || !option.switchContext?.code) return false;
     const nextCode = option.switchContext.code;
     const currentCode = String(
       route.query.current_business_category_code ||
         route.query.default_business_category_code ||
         '',
     ).trim();
-    if (currentCode === nextCode) return;
+    if (currentCode === nextCode) return false;
     const query = normalizeRouteQueryValues(route.query as Record<string, unknown>);
     for (const key of entry.switchContext.defaultClearFields || []) {
       delete query[`default_${key}`];
@@ -471,8 +555,24 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
       if (Array.isArray(value) || typeof value === 'object') return;
       query[`default_${normalizedKey}`] = String(value);
     });
-    await router.replace({ query });
-    await reload();
+    const previousValue = transition?.previousValue
+      ?? route.query[`default_${fieldName}`]
+      ?? false;
+    const previousKeyword = transition?.previousKeyword || '';
+    return applyInternalRelationContextSwitch({
+      fieldName,
+      formData,
+      relationKeywords,
+      previousValue,
+      previousKeyword,
+      replaceRoute: () => router.replace({ query }),
+      contextApplied: () => String(
+        route.query.current_business_category_code
+          || route.query.default_business_category_code
+          || '',
+      ).trim() === nextCode,
+      reload,
+    });
   }
 
   async function createRelationFromSearchDialog() {
@@ -486,7 +586,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
           (item) => item.label.trim().toLowerCase() === label.toLowerCase(),
         )
       : null;
-    if (exact && mode !== 'page') {
+    if (exact && mode !== 'page' && mode !== 'dialog') {
       selectRelationSearchOption(exact);
       return;
     }
@@ -505,8 +605,8 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
       }
       return;
     }
-    closeRelationSearchDialog();
-    await openRelationCreateForm(fieldName, descriptor);
+    relationSearchDialog.open = false;
+    await openRelationCreateForm(fieldName, descriptor, { restoreSearchOnCancel: true });
   }
 
   const {
@@ -525,6 +625,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     model,
     normalizeFieldValue,
     one2manyRelationModel,
+    openRelationCreateDialog,
     pickContractNavQuery,
     queryRelationOptions,
     relationCreateMode,

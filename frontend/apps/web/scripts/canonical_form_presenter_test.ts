@@ -17,11 +17,32 @@ import {
   resolveCanonicalFormActionExecution,
   validateCanonicalFormActionExecutors,
 } from '../src/pages/contractForm/canonicalFormActionExecutor';
-import type { ContractAction } from '../src/pages/contractForm/types';
+import {
+  MANY2ONE_CREATE_OPTION,
+  MANY2ONE_OPEN_RECORD_OPTION,
+  MANY2ONE_SEARCH_MORE_OPTION,
+  type ContractAction,
+} from '../src/pages/contractForm/types';
 import { contractActionConfirmationPrompt } from '../src/pages/contractForm/actionContract';
 import { canonicalFormActionIconClass } from '../src/pages/contractForm/canonicalFormActionIcon';
 import { buildCanonicalNativeFormBridge } from '../src/pages/contractForm/canonicalNativeFormBridge';
 import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
+import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor';
+import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
+import {
+  applyInternalRelationContextSwitch,
+  settleRelationSelectionContextSwitch,
+} from '../src/pages/contractForm/useRecordRelationships';
+import {
+  executeRecordFormReturn,
+  resolveRelationCreateDialogCancelMessage,
+  resolveRelationCreateDialogMessage,
+} from '../src/pages/contractForm/useCreatedRecordNavigationRuntime';
+import {
+  resolveRelationCreateDialogEvent,
+  settleRelationCreateDialog,
+  type RelationCreateDialogState,
+} from '../src/pages/contractForm/relationCreateDialogRuntime';
 import {
   formatMonetaryDisplayValue,
   monetaryInputStep,
@@ -43,6 +64,318 @@ assert.equal(normalizeContractFieldValue({
   name: 'amount', value: '12.345', descriptor: { type: 'monetary', digits: [16, 2] } as never,
   originalValue: 0, buildOne2manyValue: () => [],
 }), 12.35);
+
+assert.equal(relationCreateMode({
+  relation: 'project.project',
+  relation_entry: {
+    can_read: true,
+    can_create: false,
+    create_mode: 'page',
+    action_id: 91,
+  },
+} as never), 'none', 'a readonly page entry must not be projected as a create capability');
+assert.equal(relationCreateMode({
+  relation: 'project.project',
+  relation_entry: {
+    can_read: true,
+    can_create: true,
+    create_mode: 'page',
+    action_id: 91,
+  },
+} as never), 'page', 'a backend-authorized page create entry must remain available');
+assert.equal(relationCreateMode({
+  relation: 'project.project',
+  relation_entry: {
+    can_read: true,
+    can_create: true,
+    create_mode: 'dialog',
+    action_id: 91,
+    menu_id: 12,
+  },
+} as never), 'dialog', 'a backend-authorized dialog create entry must remain in-page');
+
+for (const scenario of [
+  { managed: false, decisionMode: false, label: '返回列表', semanticIdentity: 'return-list' },
+  { managed: false, decisionMode: true, label: '返回列表', semanticIdentity: 'return-list' },
+  { managed: true, decisionMode: false, label: '取消', semanticIdentity: 'cancel-edit' },
+  { managed: true, decisionMode: true, label: '取消', semanticIdentity: 'cancel-edit' },
+] as const) {
+  assert.deepEqual(
+    resolveContractFormExitPresentation(scenario.managed),
+    { label: scenario.label, semanticIdentity: scenario.semanticIdentity },
+    `container exit presentation must stay unique when decisionMode=${scenario.decisionMode}`,
+  );
+}
+
+assert.deepEqual(resolveRelationCreateDialogMessage({
+  query: {
+    relation_create_mode: 'dialog',
+    relation_dialog_nonce: 'dialog-nonce-1234',
+    relation_return_field: 'project_id',
+    relation_return_model: 'payment.request',
+  },
+  createdId: 123,
+  relationModel: 'project.project',
+  label: '新建项目',
+}), {
+  type: 'sc.relation_record_created.v1',
+  nonce: 'dialog-nonce-1234',
+  fieldName: 'project_id',
+  parentModel: 'payment.request',
+  relationModel: 'project.project',
+  id: 123,
+  label: '新建项目',
+}, 'dialog creation must emit a scoped record identity without navigating the parent');
+
+const relationDialogQuery = {
+  relation_create_mode: 'dialog',
+  relation_dialog_nonce: 'dialog-nonce-1234',
+  relation_return_field: 'project_id',
+  relation_return_model: 'payment.request',
+};
+const relationDialogCancelMessage = resolveRelationCreateDialogCancelMessage({
+  query: relationDialogQuery,
+  relationModel: 'project.project',
+});
+assert.deepEqual(relationDialogCancelMessage, {
+  type: 'sc.relation_record_cancelled.v1',
+  nonce: 'dialog-nonce-1234',
+  fieldName: 'project_id',
+  parentModel: 'payment.request',
+  relationModel: 'project.project',
+}, 'managed relation forms must emit a scoped cancel message instead of navigating');
+let managedCancelPosts = 0;
+let managedHistoryBacks = 0;
+assert.equal(await executeRecordFormReturn({
+  query: relationDialogQuery,
+  relationModel: 'project.project',
+  embedded: true,
+  postCancel: () => { managedCancelPosts += 1; },
+  navigateBack: () => { managedHistoryBacks += 1; },
+}), 'dialog_cancel');
+assert.equal(managedCancelPosts, 1);
+assert.equal(managedHistoryBacks, 0, 'managed dialog cancel must never traverse browser history');
+let independentHistoryBacks = 0;
+assert.equal(resolveRelationCreateDialogCancelMessage({
+  query: {},
+  relationModel: 'project.project',
+}), null, 'independent relation forms must keep their normal page navigation behavior');
+assert.equal(await executeRecordFormReturn({
+  query: {},
+  relationModel: 'project.project',
+  embedded: false,
+  postCancel: () => { throw new Error('independent form must not post a dialog cancel'); },
+  navigateBack: () => { independentHistoryBacks += 1; },
+}), 'history');
+assert.equal(independentHistoryBacks, 1, 'independent form must retain its normal history return');
+
+const openRelationDialog = (): RelationCreateDialogState => ({
+  open: true,
+  title: '新建项目',
+  src: 'http://127.0.0.1:18081/f/project.project/new',
+  nonce: 'dialog-nonce-1234',
+  fieldName: 'project_id',
+  parentModel: 'payment.request',
+  relationModel: 'project.project',
+  restoreSearchOnCancel: true,
+});
+const expectedOrigin = 'http://127.0.0.1:18081';
+assert.deepEqual(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(),
+  eventOrigin: expectedOrigin,
+  expectedOrigin,
+  sourceMatches: true,
+  payload: relationDialogCancelMessage,
+}), { kind: 'cancelled' }, 'a fully scoped cancel message must be accepted');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: 'https://example.invalid', expectedOrigin, sourceMatches: true, payload: relationDialogCancelMessage,
+}), null, 'a cancel message from the wrong origin must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: false, payload: relationDialogCancelMessage,
+}), null, 'a cancel message from a stale iframe source must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: true,
+  payload: { ...relationDialogCancelMessage, nonce: 'wrong-nonce-1234' },
+}), null, 'a cancel message with the wrong nonce must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: true,
+  payload: { ...relationDialogCancelMessage, parentModel: 'other.parent' },
+}), null, 'a cancel message with the wrong parent model must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: true,
+  payload: { ...relationDialogCancelMessage, fieldName: 'other_field' },
+}), null, 'a cancel message with the wrong parent field must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: true,
+  payload: { ...relationDialogCancelMessage, relationModel: 'other.model' },
+}), null, 'a cancel message with the wrong relation model must fail closed');
+
+const cancelDialog = openRelationDialog();
+const preservedSearch = { open: false, keyword: 'S69', rows: [7, 9], selectedId: 9 };
+const preservedParentFields = { project_id: false, partner_id: 42, amount: 37.25 };
+const preservedParentUrl = '/f/payment.request/new?menu_id=358&action_id=689';
+let restoredSearchCount = 0;
+assert.equal(settleRelationCreateDialog({
+  dialog: cancelDialog,
+  kind: 'cancelled',
+  restoreSearch: () => { preservedSearch.open = true; restoredSearchCount += 1; },
+  closeSearch: () => { throw new Error('cancel must not discard search state'); },
+}), true, 'cancel must close only the create dialog and restore its search context');
+assert.deepEqual(preservedSearch, { open: true, keyword: 'S69', rows: [7, 9], selectedId: 9 });
+assert.deepEqual(preservedParentFields, { project_id: false, partner_id: 42, amount: 37.25 });
+assert.equal(preservedParentUrl, '/f/payment.request/new?menu_id=358&action_id=689');
+assert.equal(settleRelationCreateDialog({
+  dialog: cancelDialog,
+  kind: 'cancelled',
+  restoreSearch: () => { restoredSearchCount += 1; },
+  closeSearch: () => {},
+}), false, 'duplicate cancel messages must be idempotent');
+assert.equal(restoredSearchCount, 1);
+
+const successDialog = openRelationDialog();
+let backfillCount = 0;
+let closeSearchCount = 0;
+const successEvent = resolveRelationCreateDialogEvent({
+  dialog: successDialog,
+  eventOrigin: expectedOrigin,
+  expectedOrigin,
+  sourceMatches: true,
+  payload: {
+    type: 'sc.relation_record_created.v1',
+    nonce: successDialog.nonce,
+    fieldName: successDialog.fieldName,
+    parentModel: successDialog.parentModel,
+    relationModel: successDialog.relationModel,
+    id: 123,
+    label: '新建项目',
+  },
+});
+assert.equal(successEvent?.kind, 'created');
+assert.equal(settleRelationCreateDialog({
+  dialog: successDialog,
+  kind: 'created',
+  restoreSearch: () => {},
+  closeSearch: () => { closeSearchCount += 1; },
+  onCreated: () => { backfillCount += 1; },
+}), true, 'success must backfill once and close both dialog layers');
+assert.equal(settleRelationCreateDialog({
+  dialog: successDialog,
+  kind: 'created',
+  restoreSearch: () => {},
+  closeSearch: () => { closeSearchCount += 1; },
+  onCreated: () => { backfillCount += 1; },
+}), false, 'duplicate success messages must be idempotent');
+assert.equal(backfillCount, 1);
+assert.equal(closeSearchCount, 1);
+
+const contextSwitchFormData: Record<string, unknown> = { business_category_id: 7, note: '保留未保存内容' };
+const contextSwitchKeywords: Record<string, string> = { business_category_id: '付款申请' };
+let contextCode = '';
+let contextReloads = 0;
+let valueSeenByRouteGuard: unknown = 'not-observed';
+let otherDirtyValueSeenByRouteGuard = '';
+assert.equal(await applyInternalRelationContextSwitch({
+  fieldName: 'business_category_id',
+  formData: contextSwitchFormData,
+  relationKeywords: contextSwitchKeywords,
+  previousValue: false,
+  previousKeyword: '',
+  replaceRoute: async () => {
+    valueSeenByRouteGuard = contextSwitchFormData.business_category_id;
+    otherDirtyValueSeenByRouteGuard = String(contextSwitchFormData.note || '');
+    contextCode = 'finance.payment.apply.pay';
+  },
+  contextApplied: () => contextCode === 'finance.payment.apply.pay',
+  reload: async () => { contextReloads += 1; },
+}), true);
+assert.equal(valueSeenByRouteGuard, false, 'internal context navigation must not dirty itself');
+assert.equal(otherDirtyValueSeenByRouteGuard, '保留未保存内容', 'unrelated dirty values must remain guarded');
+assert.equal(contextSwitchFormData.business_category_id, 7, 'selected required relation must survive route replacement');
+assert.equal(contextSwitchKeywords.business_category_id, '付款申请');
+assert.equal(contextReloads, 1, 'an applied internal context route must reload exactly once');
+
+contextCode = '';
+contextReloads = 0;
+assert.equal(await applyInternalRelationContextSwitch({
+  fieldName: 'business_category_id',
+  formData: contextSwitchFormData,
+  relationKeywords: contextSwitchKeywords,
+  previousValue: false,
+  previousKeyword: '',
+  replaceRoute: async () => {},
+  contextApplied: () => false,
+  reload: async () => { contextReloads += 1; },
+}), false);
+assert.equal(contextSwitchFormData.business_category_id, 7, 'cancelled navigation must preserve the selected relation');
+assert.equal(contextReloads, 0, 'cancelled navigation must not reload and clear the form');
+
+let settledDirtyCount = 0;
+let settledDependentClearCount = 0;
+let settledError = '';
+assert.equal(await settleRelationSelectionContextSwitch({
+  switchContext: async () => true,
+  finalizeUnswitchedSelection: () => {
+    settledDirtyCount += 1;
+    settledDependentClearCount += 1;
+  },
+  reportError: (error) => { settledError = String(error); },
+}), true, 'an applied context switch must remain owned by reload');
+assert.equal(settledDirtyCount, 0, 'an applied context switch must not duplicate dirty bookkeeping');
+assert.equal(settledDependentClearCount, 0, 'an applied context switch must not clear dependents twice');
+assert.equal(settledError, '');
+
+assert.equal(await settleRelationSelectionContextSwitch({
+  switchContext: async () => false,
+  finalizeUnswitchedSelection: () => {
+    settledDirtyCount += 1;
+    settledDependentClearCount += 1;
+  },
+  reportError: (error) => { settledError = String(error); },
+}), false, 'cancelled context navigation must settle as an ordinary local selection');
+assert.equal(settledDirtyCount, 1, 'cancelled navigation must mark the selection dirty exactly once');
+assert.equal(settledDependentClearCount, 1, 'cancelled navigation must clear dependents exactly once');
+assert.equal(contextSwitchFormData.business_category_id, 7, 'cancel bookkeeping must retain the selected value');
+
+const rejectedContextFormData: Record<string, unknown> = {
+  business_category_id: 11,
+  note: '拒绝后仍保留的其他未保存内容',
+};
+const rejectedContextKeywords: Record<string, string> = { business_category_id: '付款申请' };
+let rejectedReloads = 0;
+let rejectedGuardValue: unknown = 'not-observed';
+let rejectedErrorReports = 0;
+assert.equal(await settleRelationSelectionContextSwitch({
+  switchContext: () => applyInternalRelationContextSwitch({
+    fieldName: 'business_category_id',
+    formData: rejectedContextFormData,
+    relationKeywords: rejectedContextKeywords,
+    previousValue: false,
+    previousKeyword: '',
+    replaceRoute: async () => {
+      rejectedGuardValue = rejectedContextFormData.business_category_id;
+      throw new Error('ROUTE_REPLACE_REJECTED');
+    },
+    contextApplied: () => false,
+    reload: async () => { rejectedReloads += 1; },
+  }),
+  finalizeUnswitchedSelection: () => {
+    settledDirtyCount += 1;
+    settledDependentClearCount += 1;
+  },
+  reportError: (error) => {
+    rejectedErrorReports += 1;
+    settledError = error instanceof Error ? error.message : String(error);
+  },
+}), false, 'a rejected route replacement must be contained as an unswitched selection');
+assert.equal(settledDirtyCount, 2, 'rejected navigation must mark dirty exactly once');
+assert.equal(settledDependentClearCount, 2, 'rejected navigation must clear dependents exactly once');
+assert.equal(settledError, 'ROUTE_REPLACE_REJECTED', 'rejected navigation must remain diagnosable');
+assert.equal(rejectedErrorReports, 1, 'rejected navigation must report its error exactly once');
+assert.equal(rejectedGuardValue, false, 'the selected relation must not trip its own route guard');
+assert.equal(rejectedReloads, 0, 'rejected navigation must never reload');
+assert.equal(rejectedContextFormData.business_category_id, 11, 'rejected navigation must restore the selected value');
+assert.equal(rejectedContextKeywords.business_category_id, '付款申请', 'rejected navigation must restore the selected label');
+assert.equal(rejectedContextFormData.note, '拒绝后仍保留的其他未保存内容', 'other unsaved fields must remain protected');
 
 function snapshot(): ContractV2Snapshot {
   return {
@@ -290,6 +623,66 @@ assert.deepEqual(
 assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
 assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
 const semanticEditModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'edit');
+const semanticEditNameNode = semanticEditModel.zones.primary[0].children.find((node) => (
+  node.fields.some((field) => field.fieldCode === 'name')
+));
+assert.ok(semanticEditNameNode, 'semantic edit fixture must expose the editable name node');
+const semanticEditNameField = semanticEditNameNode.fields.find((field) => field.fieldCode === 'name')!;
+const relationMappedField = canonicalFieldToFormSection({
+  ...semanticEditNameField,
+  widgetId: 'field.project_id',
+  fieldCode: 'project_id',
+  fieldType: 'many2one',
+  value: null,
+  required: true,
+  fieldDescriptor: {
+    relation: 'project.project',
+    relation_entry: {
+      can_read: true,
+      can_open: true,
+      can_create: true,
+      create_mode: 'page',
+      action_id: 91,
+      menu_id: 12,
+      inline_create: { enabled: true, create_on_no_match: true, name_field: 'name' },
+    },
+  },
+}, {
+  relationKeyword: () => '演示项目',
+  filteredRelationOptions: () => [{ id: 7, label: '演示项目' }],
+  selectedRelationOptions: () => [],
+  relationCreateMode: () => 'page',
+  relationInlineCreate: () => ({ enabled: true, createOnNoMatch: true, nameField: 'name' }),
+  relationCreateLabel: () => '新增并编辑',
+  relationInlineCreateLabel: () => '快速创建“演示项目”',
+  canOpenRelationRecord: () => true,
+  relationOpenLabel: () => '维护当前项',
+  relationSearchLabel: () => '搜索更多',
+});
+assert.equal(relationMappedField.many2oneTextValue, '演示项目');
+assert.deepEqual(relationMappedField.relationOptions, [{ value: 7, label: '演示项目' }]);
+assert.equal(relationMappedField.required, true, 'required many2one authority must survive canonical projection');
+assert.equal(relationMappedField.relationCreateMode, 'page');
+assert.equal(relationMappedField.many2oneCreateToken, MANY2ONE_CREATE_OPTION);
+assert.equal(relationMappedField.many2oneSearchToken, MANY2ONE_SEARCH_MORE_OPTION);
+assert.equal(relationMappedField.many2oneOpenToken, MANY2ONE_OPEN_RECORD_OPTION);
+assert.equal(relationMappedField.many2oneCreateLabel, '新增并编辑');
+assert.equal(relationMappedField.many2oneOpenLabel, '维护当前项');
+assert.equal(relationMappedField.many2oneSearchLabel, '搜索更多');
+assert.deepEqual(relationMappedField.relationInlineCreate, {
+  enabled: true, createOnNoMatch: true, nameField: 'name',
+});
+semanticEditNameNode.fields.push({
+  ...semanticEditNameField,
+  widgetId: 'field.note',
+  fieldCode: 'note',
+  label: 'Note',
+  value: null,
+  required: false,
+  semanticRole: 'context',
+  semanticSlot: 'supplement',
+  semanticGroup: 'notes',
+});
 const semanticEditFloorplan = composeCanonicalFormFloorplan(semanticEditModel);
 assert.equal(semanticEditFloorplan.decisionMode, true, 'semantic create/edit forms must enter the Product Floorplan');
 assert.deepEqual(
@@ -303,20 +696,28 @@ assert.deepEqual(
   'readonly risk authority must remain factual in create/edit mode',
 );
 assert.deepEqual(
-  collectFields(semanticEditFloorplan.requiredNodes).map((field) => field.fieldCode),
+  collectFields(semanticEditFloorplan.coreInputNodes).map((field) => field.fieldCode),
   ['name'],
-  'required editable fields must be directly reachable in the required-input region',
+  'required editable fields must be directly reachable in the core-input region',
+);
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.supplementaryInputNodes).map((field) => field.fieldCode),
+  ['note'],
+  'empty optional fields must stay in supplementary input instead of being inferred as required',
 );
 assert.deepEqual(
   collectFields([
     ...semanticEditFloorplan.summaryNodes,
     ...semanticEditFloorplan.taskNodes,
     ...semanticEditFloorplan.riskNodes,
-    ...semanticEditFloorplan.requiredNodes,
+    ...semanticEditFloorplan.coreInputNodes,
+    ...semanticEditFloorplan.conditionInputNodes,
+    ...semanticEditFloorplan.preExecutionInputNodes,
+    ...semanticEditFloorplan.supplementaryInputNodes,
     ...semanticEditFloorplan.contextNodes,
     ...semanticEditFloorplan.overflowContextNodes,
   ]).map((field) => field.fieldCode),
-  ['state', 'name'],
+  ['state', 'name', 'note'],
   'create/edit Product Floorplan regions must not duplicate a field identity',
 );
 
@@ -1141,4 +1542,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=53');
+console.log('[canonical_form_presenter_test] PASS cases=87');

@@ -29,7 +29,10 @@
         v-if="floorplan.decisionMode"
         :summary-nodes="floorplan.summaryNodes"
         :task-nodes="floorplan.taskNodes"
-        :required-nodes="floorplan.requiredNodes"
+        :core-input-nodes="floorplan.coreInputNodes"
+        :condition-input-nodes="floorplan.conditionInputNodes"
+        :pre-execution-input-nodes="floorplan.preExecutionInputNodes"
+        :supplementary-input-nodes="floorplan.supplementaryInputNodes"
         :context-nodes="floorplan.contextNodes"
         :overflow-context-nodes="floorplan.overflowContextNodes"
         :risk-nodes="floorplan.riskNodes"
@@ -76,13 +79,6 @@
               :effective-primary-key="floorplan.effectivePrimaryKey"
               @action-ref="emit('action-ref', $event)"
             />
-            <SceneButton
-              v-if="productWriteMode"
-              tier="transparent"
-              :disabled="busy"
-              data-form-secondary-action="cancel-edit"
-              @activate="emit('cancel-edit')"
-            >{{ renderModel.identity.mode === 'create' ? '取消' : '返回查看' }}</SceneButton>
           </nav>
         </template>
       </ObjectTaskPage>
@@ -204,7 +200,6 @@ const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
   'action-ref': [action: ContractV2ActionRule];
   save: [];
-  'cancel-edit': [];
 }>();
 
 function countFields(nodes: CanonicalFormNode[]): number {
@@ -216,7 +211,8 @@ const fieldCount = computed(() => props.renderModel
   : 0);
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'tdesign-modern');
 const emptyFloorplan: CanonicalFormFloorplan = {
-    summaryNodes: [], taskNodes: [], requiredNodes: [], contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
+    summaryNodes: [], taskNodes: [], coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], supplementaryInputNodes: [],
+    contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
   relationNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [],
   effectivePrimaryKey: '', decisionMode: false,
 };

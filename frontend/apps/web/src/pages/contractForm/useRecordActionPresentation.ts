@@ -303,10 +303,11 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     setRelationMultiField,
     setRelationIds,
     relationCreateMode: (fieldName: string) => relationCreateMode(formFields.value[fieldName]),
+    relationInlineCreate: (fieldName: string) => relationInlineCreate(formFields.value[fieldName]),
     relationCreateLabel: (fieldName: string) => {
       const descriptor = formFields.value[fieldName];
       const mode = relationCreateMode(descriptor);
-      if (mode === 'page') return relationUiLabel(descriptor, 'create_and_edit');
+      if (mode === 'page' || mode === 'dialog') return relationUiLabel(descriptor, 'create_and_edit');
       if (mode === 'quick') return relationUiLabel(descriptor, 'quick_create');
       return '';
     },
@@ -316,6 +317,9 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       const label = relationKeyword(fieldName).trim();
       return template.includes('%s') ? template.replace('%s', label) : template || label;
     },
+    canOpenRelationRecord: (fieldName: string) => canOpenRelationRecordForm(fieldName, formFields.value[fieldName]),
+    relationOpenLabel: (fieldName: string) => relationUiLabel(formFields.value[fieldName], 'open_existing', '维护当前项'),
+    relationSearchLabel: (fieldName: string) => relationUiLabel(formFields.value[fieldName], 'search_more'),
     canInlineCreateRelation: (fieldName: string) => {
       const descriptor = formFields.value[fieldName];
       const inline = relationInlineCreate(descriptor);

@@ -5234,3 +5234,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   collected `54` tests with zero failures/errors; assembler and personal-data
   guards passed. Daily `local.dev` evidence remains separate from formal
   release evidence.
+
+## Linked-worktree local.dev Frontend Quick governance (2026-08-23)
+
+- Branch / anchor: `feature/custom-frontend-productization-v1` / `ccaeeeb0`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling / governed
+  linked-worktree Frontend Quick identity / `make/dev.mk`, `scripts/dev`, and
+  direct P4 verification.
+- Reason / boundary: ordinary `verify.frontend.quick.gate` intentionally uses
+  the current worktree default environment, while linked worktrees must not
+  contain their own `.env.dev`. The wrapper resolves only the primary worktree
+  authority through Git common-dir, validates its file identity, runs existing
+  `local.dev.ready`, and then executes the unchanged ordinary Quick target.
+- Why Here / Why Not Elsewhere: this closes a local verification entry gap. It
+  does not modify CI, Contract V2, renderer behavior, product pages, runtime
+  profiles, credentials, databases, ports, volumes, fixtures, or the ordinary
+  Quick target.
+- Blast radius / validation: one local.dev Make entry and its direct tests.
+  Missing, linked, incorrectly permissioned, caller-overridden, wrong-profile,
+  or caller-injected Git identities fail closed; no credential content is
+  emitted.

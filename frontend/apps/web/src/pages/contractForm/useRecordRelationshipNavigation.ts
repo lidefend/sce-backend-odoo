@@ -5,7 +5,7 @@ import { resolveContractV2FormFieldMap } from '../../app/contracts/v2/store';
 type NavigationDependencies = Record<string, any>;
 
 export function useRecordRelationshipNavigation(dependencies: NavigationDependencies) {
-  const { actionId, createContractFormRecord, fetchRelationOptions, formData, loadModelContractV2, model, normalizeFieldValue, one2manyRelationModel, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
+  const { actionId, createContractFormRecord, fetchRelationOptions, formData, loadModelContractV2, model, normalizeFieldValue, one2manyRelationModel, openRelationCreateDialog, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
   async function ensureRelationFieldDescriptors(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
@@ -27,7 +27,11 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     }
   }
 
-  async function openRelationCreateForm(fieldName: string, descriptor?: FieldDescriptor) {
+  async function openRelationCreateForm(
+    fieldName: string,
+    descriptor?: FieldDescriptor,
+    options: { restoreSearchOnCancel?: boolean } = {},
+  ) {
     const relation = String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();
     if (!relation) return;
     const mode = relationCreateMode(descriptor);
@@ -69,6 +73,30 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
       view_mode: 'form',
       ...defaultQuery,
     });
+    if (mode === 'dialog') {
+      const nonce = window.crypto.randomUUID();
+      const dialogRoute = router.resolve({
+        name: 'model-form',
+        params: { model: relation, id: 'new' },
+        query: {
+          ...nextQuery,
+          relation_create_mode: 'dialog',
+          relation_dialog_nonce: nonce,
+          relation_return_field: fieldName,
+          relation_return_model: model.value,
+        },
+      });
+      openRelationCreateDialog({
+        title: relationUiLabel(descriptor, 'create_and_edit', `新建${String((descriptor as Record<string, unknown>)?.string || '')}`),
+        src: new URL(dialogRoute.href, window.location.origin).toString(),
+        nonce,
+        fieldName,
+        parentModel: model.value,
+        relationModel: relation,
+        restoreSearchOnCancel: Boolean(options.restoreSearchOnCancel),
+      });
+      return;
+    }
     const returnUrl = `${window.location.pathname}${window.location.search}`;
     try {
       await router.push({

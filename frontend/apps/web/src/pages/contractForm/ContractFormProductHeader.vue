@@ -47,8 +47,16 @@
       </div>
     </template>
     <template #actions>
-      <span v-if="!intakeMode || showReturn" class="form-header-navigation-actions">
-        <button v-if="!intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-back-action" :disabled="busy" type="button" @click="$emit('back')"><ScIcon name="arrow-left" :size="16" /> 返回列表</button>
+      <span v-if="showBack !== false || showReturn" class="form-header-navigation-actions">
+        <button
+          v-if="showBack !== false"
+          class="sc-btn sc-btn-ghost sc-btn-sm form-header-back-action"
+          :disabled="busy"
+          type="button"
+          :aria-label="backLabel"
+          :data-form-secondary-action="backSemanticIdentity"
+          @click="$emit('back')"
+        ><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</button>
         <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
       </span>
       <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length" class="form-header-primary-actions">
@@ -84,6 +92,9 @@ const props = defineProps<{
   intakeMissingSummary: string; statusbar: NativeStatusbarVm; busy: boolean; busyKind: BusyKind; showReturn: boolean;
   mode: 'create' | 'edit' | 'readonly'; modeLabel: string; dirty: boolean; changedFieldCount: number;
   showContinueProcessing: boolean;
+  showBack?: boolean;
+  backLabel: string;
+  backSemanticIdentity: 'return-list' | 'cancel-edit';
   statusInteractive?: boolean;
   continueProcessingLabel: string;
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;

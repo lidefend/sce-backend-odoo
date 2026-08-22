@@ -8,7 +8,10 @@ import type {
 export type CanonicalFormFloorplan = {
   summaryNodes: CanonicalFormNode[];
   taskNodes: CanonicalFormNode[];
-  requiredNodes: CanonicalFormNode[];
+  coreInputNodes: CanonicalFormNode[];
+  conditionInputNodes: CanonicalFormNode[];
+  preExecutionInputNodes: CanonicalFormNode[];
+  supplementaryInputNodes: CanonicalFormNode[];
   contextNodes: CanonicalFormNode[];
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
@@ -189,6 +192,13 @@ function fieldNodes(
   return nodes.map(project).filter(nodeHasContent);
 }
 
+function collectVisibleFields(node: CanonicalFormNode): CanonicalFormNode['fields'] {
+  return [
+    ...node.fields.filter((field) => field.visible),
+    ...node.children.flatMap(collectVisibleFields),
+  ];
+}
+
 function nodeHasSemanticRole(node: CanonicalFormNode): boolean {
   return ['summary', 'task', 'context', 'risk', 'audit'].includes(node.semanticRole)
     || node.fields.some((field) => ['summary', 'task', 'context', 'risk', 'audit'].includes(field.semanticRole))
@@ -264,18 +274,48 @@ function fieldHasRelationCapability(field: CanonicalFormNode['fields'][number]):
     || ['one2many', 'many2many'].includes(field.fieldType.trim().toLowerCase());
 }
 
+function fieldHasAttachmentCapability(field: CanonicalFormNode['fields'][number]): boolean {
+  const config = field.componentConfig;
+  const descriptor = field.fieldDescriptor;
+  const tokens = [
+    field.componentKey,
+    config.widget, config.widgetType, config.widget_type,
+    descriptor.widget, descriptor.widgetType, descriptor.widget_type,
+  ].map((value) => String(value || '').trim().toLowerCase());
+  return field.semanticRole === 'activity'
+    || tokens.some((value) => value === 'many2many_binary' || value === 'attachment');
+}
+
+function fieldHasBusinessRelationCapability(field: CanonicalFormNode['fields'][number]): boolean {
+  return fieldHasRelationCapability(field) && !fieldHasAttachmentCapability(field);
+}
+
 function projectRelationNode(node: CanonicalFormNode): CanonicalFormNode {
   const directRelation = node.semanticRole === 'relation' || node.kind.trim().toLowerCase() === 'relation';
   if (directRelation) return node;
   return {
     ...node,
-    fields: node.fields.filter(fieldHasRelationCapability),
+    fields: node.fields.filter(fieldHasBusinessRelationCapability),
     children: node.children.map(projectRelationNode).filter(nodeHasContent),
   };
 }
 
 function relationRoleNodes(nodes: CanonicalFormNode[]): CanonicalFormNode[] {
   return nodes.map(projectRelationNode).filter(nodeHasContent);
+}
+
+function suppressRepeatedTitles(nodes: CanonicalFormNode[], seen: Set<string>): CanonicalFormNode[] {
+  function project(node: CanonicalFormNode): CanonicalFormNode {
+    const titleIdentity = node.title.trim().toLocaleLowerCase();
+    const repeated = Boolean(titleIdentity && seen.has(titleIdentity));
+    if (titleIdentity && !repeated) seen.add(titleIdentity);
+    return {
+      ...node,
+      ...(repeated ? { title: '' } : {}),
+      children: node.children.map(project),
+    };
+  }
+  return nodes.map(project);
 }
 
 function projectContextNode(node: CanonicalFormNode): CanonicalFormNode {
@@ -385,10 +425,28 @@ export function composeCanonicalFormFloorplan(
   const taskNodes = semanticProductMode
     ? fieldNodes(primaryNodes, (field) => field.semanticRole === 'task' && field.readonly && hasPresentableValue(field), true)
     : (editableNodes.length ? editableNodes : primaryNodes);
-  const requiredNodes = semanticProductMode && writeMode
+  const conditionInputNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
-      !field.readonly && !field.disabled && !fieldHasRelationCapability(field)
-      && (field.required || !hasPresentableValue(field))
+      !field.readonly && !field.disabled && !fieldHasBusinessRelationCapability(field)
+      && ['task', 'risk'].includes(field.semanticRole)
+    ))
+    : [];
+  const conditionFields = new Set(conditionInputNodes.flatMap((node) => collectVisibleFields(node)));
+  const coreInputNodes = semanticProductMode && writeMode
+    ? fieldNodes(primaryNodes, (field) => (
+      !field.readonly && !field.disabled && !fieldHasBusinessRelationCapability(field)
+      && field.required && !conditionFields.has(field)
+    ))
+    : [];
+  const coreFields = new Set(coreInputNodes.flatMap((node) => collectVisibleFields(node)));
+  // A later-stage requirement must be explicitly supplied by the normalized
+  // contract. Contract V2 currently has no such authority, so this projection
+  // intentionally stays empty instead of deriving a stage from names or values.
+  const preExecutionInputNodes: CanonicalFormNode[] = [];
+  const supplementaryInputNodes = semanticProductMode && writeMode
+    ? fieldNodes(primaryNodes, (field) => (
+      !field.readonly && !field.disabled && !fieldHasBusinessRelationCapability(field)
+      && !conditionFields.has(field) && !coreFields.has(field)
     ))
     : [];
   const subordinateNodes = visibleNodes(renderModel.zones.subordinate, renderModel.identity.mode);
@@ -396,12 +454,7 @@ export function composeCanonicalFormFloorplan(
   const subordinateRelationNodes = semanticProductMode ? relationRoleNodes(subordinateNodes.filter(nodeHasRelationCapability)) : [];
   const relationNodes = [...primaryRelationNodes, ...subordinateRelationNodes];
   const allContextNodes = semanticProductMode
-    ? (writeMode
-      ? fieldNodes(primaryNodes, (field) => (
-        !field.readonly && !field.disabled && !fieldHasRelationCapability(field)
-        && !field.required && hasPresentableValue(field)
-      ))
-      : contextRoleNodes(primaryNodes))
+    ? (writeMode ? [] : contextRoleNodes(primaryNodes))
     : primaryNodes.filter((node) => !taskNodes.includes(node));
   const readonlyContextNodes = semanticProductMode && writeMode
     ? fieldNodes(primaryNodes, (field) => (
@@ -441,19 +494,42 @@ export function composeCanonicalFormFloorplan(
   const directActions = [...(effectivePrimary ? [effectivePrimary] : []), ...directSecondary];
   const blockedActions = visibleActions.filter((action) => !action.enabled && action.tier === 'primary');
 
-  return {
-    summaryNodes,
-    taskNodes,
-    requiredNodes,
-    contextNodes: contextPartition.direct,
-    overflowContextNodes: [...contextPartition.overflow, ...readonlyContextNodes, ...emptySemanticNodes],
-    riskNodes,
-    auditNodes,
-    auditDeclared,
-    relationNodes,
-    subordinateNodes: semanticProductMode
+  const titleRegistry = new Set<string>();
+  const titledSummaryNodes = suppressRepeatedTitles(summaryNodes, titleRegistry);
+  const titledTaskNodes = suppressRepeatedTitles(taskNodes, titleRegistry);
+  const titledRiskNodes = suppressRepeatedTitles(riskNodes, titleRegistry);
+  const titledCoreNodes = suppressRepeatedTitles(coreInputNodes, titleRegistry);
+  const titledConditionNodes = suppressRepeatedTitles(conditionInputNodes, titleRegistry);
+  const titledPreExecutionNodes = suppressRepeatedTitles(preExecutionInputNodes, titleRegistry);
+  const titledSupplementaryNodes = suppressRepeatedTitles(supplementaryInputNodes, titleRegistry);
+  const titledContextNodes = suppressRepeatedTitles(contextPartition.direct, titleRegistry);
+  const titledOverflowContextNodes = suppressRepeatedTitles(
+    [...contextPartition.overflow, ...readonlyContextNodes, ...emptySemanticNodes],
+    titleRegistry,
+  );
+  const titledRelationNodes = suppressRepeatedTitles(relationNodes, titleRegistry);
+  const titledSubordinateNodes = suppressRepeatedTitles(
+    semanticProductMode
       ? subordinateNodes.filter((node) => !nodeHasRelationCapability(node))
       : subordinateNodes,
+    titleRegistry,
+  );
+  const titledAuditNodes = suppressRepeatedTitles(auditNodes, titleRegistry);
+
+  return {
+    summaryNodes: titledSummaryNodes,
+    taskNodes: titledTaskNodes,
+    coreInputNodes: titledCoreNodes,
+    conditionInputNodes: titledConditionNodes,
+    preExecutionInputNodes: titledPreExecutionNodes,
+    supplementaryInputNodes: titledSupplementaryNodes,
+    contextNodes: titledContextNodes,
+    overflowContextNodes: titledOverflowContextNodes,
+    riskNodes: titledRiskNodes,
+    auditNodes: titledAuditNodes,
+    auditDeclared,
+    relationNodes: titledRelationNodes,
+    subordinateNodes: titledSubordinateNodes,
     blockedActions,
     directActions,
     overflowActions: writeMode && semanticProductMode ? [] : visibleActions.filter((action) => (

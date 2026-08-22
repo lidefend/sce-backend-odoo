@@ -33,7 +33,7 @@ export type BuildFormSectionFieldSchemasOptions = {
   resolveErrorText?: (field: FormSectionMapperFieldNode) => string;
   resolveSelectionOptions: (descriptor?: FieldDescriptor) => TemplateSelectOption[];
   resolveRelationOptions: (fieldName: string) => TemplateSelectOption[];
-  resolveRelationCreateMode: (fieldName: string, descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page';
+  resolveRelationCreateMode: (fieldName: string, descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
   resolveRelationInlineCreate: (fieldName: string, descriptor?: FieldDescriptor) => FormSectionFieldSchema['relationInlineCreate'];
   resolveRelationTextValue: (fieldName: string) => string;
   resolveCanOpenRelationRecord: (fieldName: string, descriptor?: FieldDescriptor) => boolean;
@@ -45,6 +45,55 @@ export type BuildFormSectionFieldSchemasOptions = {
   many2oneSearchToken?: string;
   many2oneOpenToken?: string;
 };
+
+type Many2oneCapabilityProjectionOptions = {
+  fieldName: string;
+  descriptor?: FieldDescriptor;
+  resolveRelationCreateMode: BuildFormSectionFieldSchemasOptions['resolveRelationCreateMode'];
+  resolveRelationInlineCreate: BuildFormSectionFieldSchemasOptions['resolveRelationInlineCreate'];
+  resolveCanOpenRelationRecord: BuildFormSectionFieldSchemasOptions['resolveCanOpenRelationRecord'];
+  resolveRelationRecordOpenLabel: BuildFormSectionFieldSchemasOptions['resolveRelationRecordOpenLabel'];
+  resolveRelationSearchLabel: BuildFormSectionFieldSchemasOptions['resolveRelationSearchLabel'];
+  resolveRelationCreateLabel: BuildFormSectionFieldSchemasOptions['resolveRelationCreateLabel'];
+  resolveRelationInlineCreateLabel: BuildFormSectionFieldSchemasOptions['resolveRelationInlineCreateLabel'];
+  relationTextValue: string;
+  many2oneCreateToken?: string;
+  many2oneSearchToken?: string;
+  many2oneOpenToken?: string;
+};
+
+export function projectMany2oneCapabilities(
+  options: Many2oneCapabilityProjectionOptions,
+): Pick<FormSectionFieldSchema,
+  | 'relationCreateMode'
+  | 'relationInlineCreate'
+  | 'many2oneCreateToken'
+  | 'many2oneSearchToken'
+  | 'many2oneOpenToken'
+  | 'many2oneOpenLabel'
+  | 'many2oneSearchLabel'
+  | 'many2oneCreateLabel'
+  | 'many2oneInlineCreateLabel'
+> {
+  const { fieldName, descriptor } = options;
+  return {
+    relationCreateMode: options.resolveRelationCreateMode(fieldName, descriptor),
+    relationInlineCreate: options.resolveRelationInlineCreate(fieldName, descriptor),
+    many2oneCreateToken: options.many2oneCreateToken,
+    many2oneSearchToken: options.many2oneSearchToken,
+    many2oneOpenToken: options.resolveCanOpenRelationRecord(fieldName, descriptor)
+      ? options.many2oneOpenToken
+      : undefined,
+    many2oneOpenLabel: options.resolveRelationRecordOpenLabel(fieldName, descriptor),
+    many2oneSearchLabel: options.resolveRelationSearchLabel(fieldName, descriptor),
+    many2oneCreateLabel: options.resolveRelationCreateLabel(fieldName, descriptor),
+    many2oneInlineCreateLabel: options.resolveRelationInlineCreateLabel(
+      fieldName,
+      descriptor,
+      options.relationTextValue,
+    ),
+  };
+}
 
 export function normalizeMonetaryDigits(value: unknown): [number, number] | undefined {
   if (!Array.isArray(value) || value.length !== 2) return undefined;
@@ -114,6 +163,24 @@ export function buildFormSectionFieldSchemas(
       : '';
     const helpText = options.resolveHelpText?.(field) || '';
     const errorText = options.resolveErrorText?.(field) || '';
+    const relationTextValue = type === 'many2one' ? options.resolveRelationTextValue(field.name) : '';
+    const many2oneCapabilities = type === 'many2one'
+      ? projectMany2oneCapabilities({
+        fieldName: field.name,
+        descriptor: field.descriptor,
+        resolveRelationCreateMode: options.resolveRelationCreateMode,
+        resolveRelationInlineCreate: options.resolveRelationInlineCreate,
+        resolveCanOpenRelationRecord: options.resolveCanOpenRelationRecord,
+        resolveRelationRecordOpenLabel: options.resolveRelationRecordOpenLabel,
+        resolveRelationSearchLabel: options.resolveRelationSearchLabel,
+        resolveRelationCreateLabel: options.resolveRelationCreateLabel,
+        resolveRelationInlineCreateLabel: options.resolveRelationInlineCreateLabel,
+        relationTextValue,
+        many2oneCreateToken: options.many2oneCreateToken,
+        many2oneSearchToken: options.many2oneSearchToken,
+        many2oneOpenToken: options.many2oneOpenToken,
+      })
+      : { relationCreateMode: 'none' as const };
     return {
       key: field.key,
       name: field.name,
@@ -137,20 +204,8 @@ export function buildFormSectionFieldSchemas(
       inputPlaceholder: options.resolveInputPlaceholder(field.label),
       selectionOptions: options.resolveSelectionOptions(field.descriptor),
       relationOptions: options.resolveRelationOptions(field.name),
-      relationCreateMode: type === 'many2one' ? options.resolveRelationCreateMode(field.name, field.descriptor) : 'none',
-      relationInlineCreate: type === 'many2one' ? options.resolveRelationInlineCreate(field.name, field.descriptor) : undefined,
-      many2oneCreateToken: type === 'many2one' ? options.many2oneCreateToken : undefined,
-      many2oneSearchToken: type === 'many2one' ? options.many2oneSearchToken : undefined,
-      many2oneOpenToken: type === 'many2one' && options.resolveCanOpenRelationRecord(field.name, field.descriptor)
-        ? options.many2oneOpenToken
-        : undefined,
-      many2oneTextValue: type === 'many2one' ? options.resolveRelationTextValue(field.name) : undefined,
-      many2oneOpenLabel: type === 'many2one' ? options.resolveRelationRecordOpenLabel(field.name, field.descriptor) : undefined,
-      many2oneSearchLabel: type === 'many2one' ? options.resolveRelationSearchLabel(field.name, field.descriptor) : undefined,
-      many2oneCreateLabel: type === 'many2one' ? options.resolveRelationCreateLabel(field.name, field.descriptor) : undefined,
-      many2oneInlineCreateLabel: type === 'many2one'
-        ? options.resolveRelationInlineCreateLabel(field.name, field.descriptor, options.resolveRelationTextValue(field.name))
-        : undefined,
+      ...many2oneCapabilities,
+      many2oneTextValue: relationTextValue || undefined,
       descriptor: field.descriptor,
     };
   });

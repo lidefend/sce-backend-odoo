@@ -4,6 +4,10 @@
     :content-layout="recordContentLayoutMode"
     :class="['sc-page', { 'contract-form-native-shell': useNativeFormTree }]"
     data-product-page-mode="form"
+    :data-form-model="model"
+    :data-form-record="recordId ? String(recordId) : 'new'"
+    :data-form-action-id="String(actionId || '')"
+    :data-form-menu-id="String(Number(route.query.menu_id || 0) || '')"
     :data-v2-shadow-store="String(v2ShadowStoreReady)" :data-v2-shadow-widgets="String(v2ShadowWidgetCount)"
     :data-v2-shadow-actions="String(v2ShadowActionCount)" :data-v2-shadow-button-statuses="String(v2ShadowButtonStatusCount)"
     :data-v2-shadow-field-codes="String(v2ShadowFieldCodeCount)" :data-v2-shadow-field-overlap="String(v2ShadowLegacyFieldOverlapCount)"
@@ -25,6 +29,9 @@
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
       :continue-processing-label="continueProcessingLabel"
+      :show-back="true"
+      :back-label="formExitPresentation.label"
+      :back-semantic-identity="formExitPresentation.semanticIdentity"
       :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
       :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible"
@@ -147,7 +154,6 @@
           @field-change="onTemplateFieldChange"
           @action-ref="runCanonicalFormAction"
           @save="saveRecord()"
-          @cancel-edit="returnToPreviousPage"
         />
         <ContractFormNativeCanvas v-else
           :button-label-resolver="resolveNativeButtonLabel"
@@ -249,6 +255,11 @@
       @search="runRelationSearch"
       @select-row="selectRelationSearchRow"
     />
+    <RelationCreateDialog
+      :dialog="relationCreateDialog"
+      @close="cancelRelationCreateDialog"
+      @created="completeRelationCreateDialog"
+    />
     <IntentConfirmationDialog ref="intentConfirmationRef" />
     <AttachmentViewer ref="attachmentViewerRef" />
   </LayoutShell>
@@ -282,6 +293,14 @@ import {
 } from './contractForm/canonicalFormActionExecutor';
 import { shouldShowNativeCollaborationPanel } from './contractForm/collaborationPresentation';
 import RelationSearchDialog from './contractForm/RelationSearchDialog.vue';
+import RelationCreateDialog from './contractForm/RelationCreateDialog.vue';
+import { resolveContractFormExitPresentation } from './contractForm/contractFormExitPresentation';
+import {
+  closedRelationCreateDialogState,
+  settleRelationCreateDialog,
+  type RelationCreateDialogState,
+  type RelationCreatedDialogResult,
+} from './contractForm/relationCreateDialogRuntime';
 import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vue';
 import CurrentFormFieldSettingsPanel from './contractForm/CurrentFormFieldSettingsPanel.vue';
 import ContractFormActionBlocks from './contractForm/ContractFormActionBlocks.vue';
@@ -637,7 +656,11 @@ import { focusProductFormValidationError } from './contractForm/formValidationFo
 import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from './contractForm/contractHeaderActionPresentation';
 import { resolveContractFormFieldLabels } from './contractForm/formFieldLabels';
 import { buildSaveRecordPayload, validateBeforeSaveRecord } from './contractForm/saveRecordHelpers';
-import { useCreatedRecordNavigationRuntime } from './contractForm/useCreatedRecordNavigationRuntime';
+import {
+  executeRecordFormReturn,
+  resolveRelationCreateDialogCancelMessage,
+  useCreatedRecordNavigationRuntime,
+} from './contractForm/useCreatedRecordNavigationRuntime';
 import { useRecordCollaborationPresentation } from './contractForm/useRecordCollaborationPresentation';
 import { useRecordContractSemantics } from './contractForm/useRecordContractSemantics';
 import { useRecordFormLayout } from './contractForm/useRecordFormLayout';
@@ -757,6 +780,25 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
 const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.model
   ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)
   : null);
+const relationCreateDialog = reactive<RelationCreateDialogState>(closedRelationCreateDialogState());
+function openRelationCreateDialog(dialog: Omit<RelationCreateDialogState, 'open'>) {
+  Object.assign(relationCreateDialog, dialog, { open: true });
+}
+function settleActiveRelationCreateDialog(
+  kind: 'created' | 'cancelled',
+  onCreated?: () => void,
+) {
+  return settleRelationCreateDialog({
+    dialog: relationCreateDialog,
+    kind,
+    restoreSearch: () => { relationSearchDialog.open = true; },
+    closeSearch: closeRelationSearchDialog,
+    onCreated,
+  });
+}
+function cancelRelationCreateDialog() {
+  settleActiveRelationCreateDialog('cancelled');
+}
 // Product routes have one rendering authority. Contract/driver failures stay in
 // the canonical host and must never reactivate the legacy product pipeline.
 const canonicalProductRendererActive = computed(() => !showCurrentFormFieldConfigScope.value);
@@ -884,6 +926,15 @@ const {
 });
 const nativeChatterAutoLoadKey = ref('');
 const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
+const isManagedRelationCreateDialog = computed(() => Boolean(
+  resolveRelationCreateDialogCancelMessage({
+    query: route.query as Record<string, unknown>,
+    relationModel: model.value,
+  }),
+) && window.parent !== window);
+const formExitPresentation = computed(() => resolveContractFormExitPresentation(
+  isManagedRelationCreateDialog.value,
+));
 const menuId = computed(() => Number(route.query.menu_id || 0) || 0);
 const actionId = computed(() => {
   const rawRecordId = String(route.params.id || '').trim();
@@ -1501,7 +1552,8 @@ const {
   fallbackRelationSearchColumns, fetchRelationOptionsFromRuntime, fieldModifierMap: computed(() => fieldModifierMap.value),
   fieldType, filteredRelationOptionsFromRuntime, findNativeFieldNodeInTree,
   formData, formUiLabelFromLabels, formUiLabelsFromFormView,
-  invalidatedRelationKeywords, isWritableFieldVisible: (...args: [string]) => isWritableFieldVisible(...args), layoutNodes: computed(() => layoutNodes.value),
+  invalidatedRelationKeywords,
+  isWritableFieldVisible: (...args: [string]) => isWritableFieldVisible(...args), layoutNodes: computed(() => layoutNodes.value),
   listContractFormRecords, loadModelContractV2, markFieldChanged,
   menuId, mergeHydratedOne2manyRecords, mergeRelationDomains,
   mergeRelationOptions, model, nativeFieldSubviewFromTree,
@@ -1511,6 +1563,7 @@ const {
   one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows,
   one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies,
   one2manyValidation, openRelationSearchFromRuntime, pickContractNavQuery,
+  openRelationCreateDialog,
   queryRelationOptionsFromRuntime, rawNativeFormLayoutNodes: computed(() => rawNativeFormLayoutNodes.value), readContractFormRecord,
   recordId, relationCreateMode, relationDomainFromDescriptor,
   relationEntry, relationFieldDescriptors, relationInlineCreate,
@@ -1525,6 +1578,11 @@ const {
   selectOne2manySubview, selectRelationSearchOptionFromRuntime, selectedRelationOptionsFromRuntime,
   setRelationKeywordValue, v2ContractStore, validationErrors,
 });
+function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
+  settleActiveRelationCreateDialog('created', () => {
+    setMany2oneOption(result.fieldName, { id: result.id, label: result.label });
+  });
+}
 const {
   currentWorkflowContract, workflowContractActionRows, blockingWorkflowEvidenceMessage, applyWorkflowContractToAction, shouldShowWorkflowNativeAction,
   workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
@@ -1781,7 +1839,15 @@ const unsavedFormGuard = useUnsavedFormGuard({
   }) ?? false,
 });
 async function returnToPreviousPage() {
-  await unsavedFormGuard.navigateAfterConfirm(() => router.back());
+  await unsavedFormGuard.navigateAfterConfirm(async () => {
+    await executeRecordFormReturn({
+      query: route.query as Record<string, unknown>,
+      relationModel: model.value,
+      embedded: window.parent !== window,
+      postCancel: (message) => window.parent.postMessage(message, window.location.origin),
+      navigateBack: () => router.back(),
+    });
+  });
 }
 useFormAuxiliaryWatchersRuntime({
   autosaveSource: () => [

@@ -57,7 +57,7 @@ export type FormSectionFieldSchema = {
   relationOptions?: TemplateSelectOption[];
 
   // many2one-only relation entry extension
-  relationCreateMode?: 'none' | 'quick' | 'page';
+  relationCreateMode?: 'none' | 'quick' | 'page' | 'dialog';
   relationInlineCreate?: {
     enabled: boolean;
     createOnNoMatch: boolean;

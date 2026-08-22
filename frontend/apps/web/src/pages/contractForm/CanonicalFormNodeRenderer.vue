@@ -70,7 +70,9 @@ const emit = defineEmits<{
 }>();
 
 const nodeKind = computed(() => String(props.node.kind || 'container').trim().toLowerCase());
-const fields = computed(() => canonicalSectionFields(props.node).map(canonicalFieldToFormSection));
+const fields = computed(() => canonicalSectionFields(props.node).map((field) => (
+  canonicalFieldToFormSection(field, props.relationAdapter)
+)));
 const children = computed(() => visibleCanonicalChildren(props.node));
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
 const hasContent = computed(() => canonicalNodeHasContent(props.node));

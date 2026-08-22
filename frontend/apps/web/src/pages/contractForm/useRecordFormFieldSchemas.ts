@@ -33,7 +33,7 @@ export function useRecordFormFieldSchemas(context: {
   isFieldVisible:(name:string)=>boolean; contractVisibleFields:ComputedRef<string[]>; coreFieldNames:ComputedRef<string[]>;
   advancedFieldNames:ComputedRef<string[]>; evaluatePolicyContext:ComputedRef<any>; runtimeFieldStates:ComputedRef<Record<string,any>>;
   validationErrors:Ref<string[]>;
-  relationOptionsForField:(name:string)=>any[]; relationCreateMode:(descriptor?:FieldDescriptor)=>'none'|'quick'|'page';
+  relationOptionsForField:(name:string)=>any[]; relationCreateMode:(descriptor?:FieldDescriptor)=>'none'|'quick'|'page'|'dialog';
   relationInlineCreate:(descriptor?:FieldDescriptor)=>{enabled:boolean;createOnNoMatch:boolean;nameField:string;match?:string};
   relationKeyword:(name:string)=>string; canOpenRelationRecordForm:(name:string,descriptor?:FieldDescriptor)=>boolean;
   relationUiLabel:(descriptor:FieldDescriptor|undefined,key:string,fallback?:string)=>string;
@@ -107,7 +107,7 @@ export function useRecordFormFieldSchemas(context: {
     resolveCanOpenRelationRecord:context.canOpenRelationRecordForm,
     resolveRelationRecordOpenLabel:(_name,descriptor)=>context.relationUiLabel(descriptor,'open_existing','维护当前项'),
     resolveRelationSearchLabel:(_name,descriptor)=>context.relationUiLabel(descriptor,'search_more'),
-    resolveRelationCreateLabel:(_name,descriptor)=>{const mode=context.relationCreateMode(descriptor);return mode==='page'?context.relationUiLabel(descriptor,'create_and_edit'):mode==='quick'?context.relationUiLabel(descriptor,'quick_create'):'';},
+    resolveRelationCreateLabel:(_name,descriptor)=>{const mode=context.relationCreateMode(descriptor);return mode==='page'||mode==='dialog'?context.relationUiLabel(descriptor,'create_and_edit'):mode==='quick'?context.relationUiLabel(descriptor,'quick_create'):'';},
     resolveRelationInlineCreateLabel:(_name,descriptor,keyword)=>{const template=context.relationUiLabel(descriptor,'inline_create');const label=String(keyword||'').trim();return template.includes('%s')?template.replace('%s',label):template||label;},
     many2oneCreateToken:'__create__',many2oneSearchToken:'__search_more__',many2oneOpenToken:'__open_record__',
   });

@@ -523,6 +523,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         }
         return await navigateCreatedRecord({
           createdId: created.id,
+          createdLabel: String(formData.display_name || formData.name || title || '').trim(),
           nextSceneKey: String(sceneReadyFormSurface.value.nextSceneKey || '').trim(),
           nextSceneRoute: String(sceneReadyFormSurface.value.nextSceneRoute || '').trim(),
           refreshPolicy,

@@ -63,15 +63,15 @@
       </div>
     </section>
     <section
-      v-if="requiredNodes.length"
-      class="object-task-page__required"
-      aria-label="本次必须补充"
-      data-floorplan-region="required-input"
+      v-if="coreInputNodes.length"
+      class="object-task-page__core-input"
+      aria-label="核心申请信息"
+      data-floorplan-region="core-input"
       data-canonical-zone="primary"
     >
-      <strong class="object-task-page__section-title">本次必须补充</strong>
+      <strong class="object-task-page__section-title">核心申请信息</strong>
       <CanonicalFormNodeRenderer
-        v-for="node in requiredNodes"
+        v-for="node in coreInputNodes"
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
@@ -79,6 +79,55 @@
         @field-change="emit('field-change', $event)"
       />
     </section>
+    <section
+      v-if="conditionInputNodes.length"
+      class="object-task-page__condition-input"
+      aria-label="当前办理条件"
+      data-floorplan-region="condition-input"
+      data-canonical-zone="primary"
+    >
+      <strong class="object-task-page__section-title">当前办理条件</strong>
+      <CanonicalFormNodeRenderer
+        v-for="node in conditionInputNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+      />
+    </section>
+    <section
+      v-if="preExecutionInputNodes.length"
+      class="object-task-page__pre-execution-input"
+      aria-label="付款执行前补齐"
+      data-floorplan-region="pre-execution-input"
+      data-canonical-zone="primary"
+    >
+      <strong class="object-task-page__section-title">付款执行前补齐</strong>
+      <CanonicalFormNodeRenderer
+        v-for="node in preExecutionInputNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+      />
+    </section>
+    <details
+      v-if="supplementaryInputNodes.length"
+      class="object-task-page__supplementary-input"
+      data-floorplan-region="supplementary-input"
+    >
+      <summary>补充信息</summary>
+      <CanonicalFormNodeRenderer
+        v-for="node in supplementaryInputNodes"
+        :key="node.nodeId"
+        :node="node"
+        :relation-adapter="relationAdapter"
+        prefer-readonly-facts
+        @field-change="emit('field-change', $event)"
+      />
+    </details>
     <slot v-if="!decisionMode" name="blocking" />
     <section
       v-if="!decisionMode && riskNodes.length"
@@ -180,7 +229,7 @@
       data-floorplan-region="activity"
       data-canonical-zone="subordinate"
     ><slot name="collaboration" /></section>
-    <details v-if="hasAudit || auditNodes.length || auditEvents.length" class="object-task-page__audit" data-floorplan-region="audit">
+    <details v-if="auditNodes.length || auditEvents.length" class="object-task-page__audit" data-floorplan-region="audit">
       <summary>审批与历史审计</summary>
       <div data-audit-content>
         <ol v-if="auditEvents.length" class="object-task-page__audit-events" aria-label="审计事件">
@@ -200,7 +249,6 @@
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
-        <p v-if="!auditEvents.length && !auditNodes.length" class="object-task-page__empty-fact">暂无审批与审计记录</p>
       </div>
     </details>
     <footer v-if="!decisionMode && $slots.actions" class="object-task-page__actions" data-floorplan-region="action-bar">
@@ -218,7 +266,10 @@ import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 defineProps<{
   summaryNodes: CanonicalFormNode[];
   taskNodes: CanonicalFormNode[];
-  requiredNodes: CanonicalFormNode[];
+  coreInputNodes: CanonicalFormNode[];
+  conditionInputNodes: CanonicalFormNode[];
+  preExecutionInputNodes: CanonicalFormNode[];
+  supplementaryInputNodes: CanonicalFormNode[];
   contextNodes: CanonicalFormNode[];
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
@@ -279,7 +330,10 @@ function formatAuditTime(value: string) {
 .object-task-page__context,
 .object-task-page__summary,
 .object-task-page__current-task,
-.object-task-page__required,
+.object-task-page__core-input,
+.object-task-page__condition-input,
+.object-task-page__pre-execution-input,
+.object-task-page__supplementary-input,
 .object-task-page__risk,
 .object-task-page__audit,
 .object-task-page__overflow-context,
@@ -326,12 +380,29 @@ function formatAuditTime(value: string) {
   border-radius: 12px;
   background: var(--sc-app-warning-bg);
 }
-.object-task-page__required {
+.object-task-page__core-input,
+.object-task-page__condition-input,
+.object-task-page__pre-execution-input {
   padding: 16px;
-  border: 1px solid var(--sc-app-warning-border);
+  border: 1px solid var(--sc-app-border);
   border-radius: 12px;
+  background: var(--sc-app-panel);
+}
+.object-task-page__condition-input {
+  border-color: var(--sc-app-warning-border);
   background: color-mix(in srgb, var(--sc-app-warning-bg) 45%, var(--sc-app-panel));
 }
+.object-task-page__pre-execution-input {
+  border-color: var(--sc-app-info-border);
+  background: color-mix(in srgb, var(--sc-app-info-bg) 35%, var(--sc-app-panel));
+}
+.object-task-page__supplementary-input {
+  padding: 12px 16px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 12px;
+  background: var(--sc-app-panel);
+}
+.object-task-page__supplementary-input > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__section-title {
   display: block;
   margin-bottom: 12px;
