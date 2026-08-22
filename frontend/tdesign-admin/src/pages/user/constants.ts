@@ -9,7 +9,7 @@ export interface UserInfoListType {
 export const getUserInfoList = (): Array<UserInfoListType> => [
   {
     title: 'pages.user.personalInfo.desc.mobile',
-    content: '+86 13923734567',
+    content: '未设置',
   },
   {
     title: 'pages.user.personalInfo.desc.phone',

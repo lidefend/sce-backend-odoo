@@ -117,7 +117,7 @@ export default [
           'list|1-50': [
             {
               'index|+1': 1,
-              adminPhone: '+86 13587609955',
+              adminPhone: '未设置',
               updateTime: '2020-05-30 @date("HH:mm:ss")',
               'adminName|1': ['顾娟	', '常刚', '郑洋'],
               'name|1': [
