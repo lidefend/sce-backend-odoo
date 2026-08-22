@@ -172,6 +172,30 @@ jobs:
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           git cat-file -e "${BASE_SHA}^{commit}"
 
+      - name: Pin frontend Node toolchain for full contract validation
+        if: env.PROFESSIONAL_MODE == 'full'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.17.0
+
+      - name: Restore content-addressed pnpm store for full contract validation
+        if: env.PROFESSIONAL_MODE == 'full'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-node22.17.0-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-node22.17.0-
+
+      - name: Install locked frontend toolchain for full contract validation
+        if: env.PROFESSIONAL_MODE == 'full'
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@9.12.3 --activate
+          pnpm config set store-dir "${HOME}/.local/share/pnpm/store"
+          pnpm -C frontend install --frozen-lockfile
+
       - name: Run full professional quality gate
         if: env.PROFESSIONAL_MODE == 'full'
         run: make ci.professional.backend
