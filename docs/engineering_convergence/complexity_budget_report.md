@@ -90,12 +90,12 @@ Generated from repository source files. This report is informational during the 
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1142 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1136 | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 1131 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1129 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1094 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
 | 1093 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1092 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
-| 1082 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1076 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1070 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1053 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
@@ -212,13 +212,13 @@ Generated from repository source files. This report is informational during the 
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1142 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1136 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
+| 1131 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1129 | warning | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1121 | warning | Python source | `scripts/release/production_backup_restore.py` |
 | 1111 | within_budget | XML data/view | `addons/smart_construction_core/views/menu_business_taxonomy.xml` |
 | 1094 | warning | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
 | 1093 | warning | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1092 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
-| 1082 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1076 | warning | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1070 | warning | Python source | `addons/smart_core/handlers/load_contract.py` |
 
