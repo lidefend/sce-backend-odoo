@@ -1423,6 +1423,47 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         resolution = full["actionContract"]["primaryResolution"]
         self.assertEqual(resolution["winner"], "button:object:action_submit")
 
+    def test_single_primary_prefers_declared_presentation_authority(self):
+        contract = {
+            "actionContract": {
+                "actionRuleList": [
+                    {
+                        "actionId": "action.native",
+                        "backendIdentity": "button:object:action_continue",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentationPriority": 100,
+                        "presentation": {"tier": "primary"},
+                    },
+                    {
+                        "actionId": "action.product",
+                        "backendIdentity": "button:object:action_view_result",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentationPriority": 360,
+                        "presentation": {"tier": "primary"},
+                    },
+                ]
+            },
+            "statusContract": {"buttonStatus": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        assembler._enforce_single_effective_primary_action(contract)
+
+        tiers = {
+            row["backendIdentity"]: row["presentation"]["tier"]
+            for row in contract["actionContract"]["actionRuleList"]
+        }
+        self.assertEqual(tiers["button:object:action_continue"], "secondary")
+        self.assertEqual(tiers["button:object:action_view_result"], "primary")
+        self.assertEqual(
+            contract["actionContract"]["primaryResolution"]["winner"],
+            "button:object:action_view_result",
+        )
+
     def test_final_modifier_hydration_recomputes_status_and_primary_from_complete_record(self):
         contract = {
             "actionContract": {

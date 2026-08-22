@@ -3474,9 +3474,14 @@ def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
             effective.append(row)
     if len(effective) <= 1:
         return
-    winner = effective[0]
+    # Presentation authority is already normalized into a numeric priority.
+    # Select the strongest declared authority while preserving source order
+    # for equal priorities; array order alone must not override product facts.
+    winner = max(effective, key=_action_presentation_priority)
     conflicts = []
-    for row in effective[1:]:
+    for row in effective:
+        if row is winner:
+            continue
         presentation = _dict(row.get("presentation"))
         row["presentation"] = {**presentation, "tier": "secondary"}
         conflicts.append({
