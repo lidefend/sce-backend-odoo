@@ -1,0 +1,13 @@
+events:
+  - type: batch_started
+    at: "2026-08-21T00:17:00+08:00"
+    detail: Generated-report guard transferred the stale split-plan consumer to Batch-T.
+  - type: generated_report_refreshed
+    at: "2026-08-21T00:18:00+08:00"
+    detail: Existing generator rewrote the queue from the refreshed complexity report.
+  - type: generated_report_guard_passed
+    at: "2026-08-21T00:20:00+08:00"
+    detail: All tracked generated reports reproduced exactly.
+  - type: scope_completed
+    at: "2026-08-21T00:25:00+08:00"
+    detail: Quick passed the refreshed queue and transferred stale contract-form line-count evidence to Batch-U.

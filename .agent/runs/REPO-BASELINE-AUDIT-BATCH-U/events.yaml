@@ -1,0 +1,10 @@
+events:
+  - type: batch_started
+    at: "2026-08-21T00:25:00+08:00"
+    detail: Quick transferred the stale contract-form line-count evidence to Batch-U.
+  - type: exact_evidence_refreshed
+    at: "2026-08-21T00:26:00+08:00"
+    detail: The two 1800-line observations were updated to the authoritative 1774-line source count.
+  - type: verification_pending
+    at: "2026-08-21T00:27:00+08:00"
+    detail: Focused guard and complete Quick remain to be recorded.

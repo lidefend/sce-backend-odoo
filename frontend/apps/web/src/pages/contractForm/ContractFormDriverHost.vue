@@ -33,6 +33,7 @@
         :overflow-context-nodes="floorplan.overflowContextNodes"
         :risk-nodes="floorplan.riskNodes"
         :audit-nodes="floorplan.auditNodes"
+        :audit-events="auditEvents"
         :has-audit="floorplan.auditDeclared"
         :relation-nodes="floorplan.relationNodes"
         :subordinate-nodes="floorplanSubordinateNodes"
@@ -51,6 +52,7 @@
           <NativeCollaborationPanel
             v-if="showCollaborationPanel"
             v-bind="collaborationPanelProps"
+            readonly
             v-on="collaborationPanelListeners"
           />
           <p v-else class="canonical-form-activity-empty">暂无活动记录</p>
@@ -143,7 +145,7 @@
 import { computed } from 'vue';
 import { SCENE_UI_KITS, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
-import type { CanonicalFormAction, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
+import type { CanonicalAuditEvent, CanonicalFormAction, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
 import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
@@ -210,6 +212,22 @@ const directActions = computed(() => visibleActions.value.filter((action) => ['p
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
 const hasCollaboration = computed(() => props.showCollaborationPanel === true || hasCollaborationNode.value);
+const auditEvents = computed<CanonicalAuditEvent[]>(() => (props.collaborationPanelProps?.timeline || []).flatMap((entry) => {
+  if (entry.type !== 'audit' || !entry.audit) return [];
+  const actor = String(entry.audit.actor || '').trim();
+  const occurredAt = String(entry.audit.occurred_at || '').trim();
+  const event = String(entry.audit.event || '').trim();
+  const result = String(entry.audit.result || '').trim();
+  if (!actor || !occurredAt || !event || !result) return [];
+  return [{
+    key: entry.key,
+    actor,
+    occurredAt,
+    event,
+    result,
+    detail: String(entry.body || '').trim(),
+  }];
+}));
 const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
   const model = props.renderModel;
   if (!model || model.identity.mode !== 'create') return model;

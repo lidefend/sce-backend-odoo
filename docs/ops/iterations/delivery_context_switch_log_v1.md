@@ -3,6 +3,108 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-22 — Payment-request readonly product Floorplan activation
+
+- Formal Product Layer / Layer Target: P0 generic presentation mechanism /
+  frontend Canonical Model → Product Floorplan → semantic components → UI kit.
+- Product result: semantic readonly forms now enter the existing Floorplan in the
+  production host and use TDesign by default; create, edit and non-semantic forms
+  retain the Native compatibility renderer.
+- Boundary: no contract expansion, payment-model branch, role inference, backend
+  semantic change, database mutation, Lite rollout, Native ledger or UI5 growth.
+- Acceptance: governed `local.dev` payment data proves summary, current task,
+  context, risk, relation and canonical actions; desktop and 390px have no
+  horizontal overflow, technical driver text is absent and the business
+  fingerprint is unchanged.
+
+## 2026-08-21 — P4 contract-form split evidence refresh
+
+- Formal Product Layer / Layer Target / Module: P4 repository evidence /
+  contract-form split line-count lock / existing verification document.
+- Reason: complete Quick proved the route source and frontend build are valid,
+  then found the historical split evidence still recorded 1800 lines while the
+  current authoritative route contains 1774 lines.
+- Boundary: update only the two exact line-count observations. Split policy,
+  application source, contract behavior, thresholds and runtime stay unchanged.
+- Validation: the focused split-evidence guard and complete Quick are rerun;
+  outcomes are recorded in Batch-U evidence.
+
+## 2026-08-21 — P4 split-plan queue dependency refresh
+
+- Formal Product Layer / Layer Target / Module: P4 repository evidence /
+  generated split-plan queue / existing queue generator.
+- Reason: the refreshed complexity report changed authoritative line counts;
+  its deterministic split-plan consumer was consequently stale.
+- Boundary: only `docs/engineering_convergence/split_plan_queue.md` is generated.
+  Queue policy, ownership mapping, priorities, source and runtime remain unchanged.
+- Validation: `ci.generated_reports.guard` and complete Quick are rerun; results
+  are recorded in Batch-T evidence.
+
+## 2026-08-21 — P4 governed complexity report refresh
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` at
+  `58c3cfbdb3bf743f37806fec63d188fad948ade5`; Batch-Q and Batch-R are frozen.
+- Formal Product Layer / Layer Target / Module: P4 repository evidence /
+  generated complexity report / existing convergence report generator.
+- Standard vs User-Specific: deterministic repository metadata only; no budget,
+  split-plan threshold, application source, contract or runtime change.
+- Reason / Why Here: after the two governance repairs passed, Quick correctly
+  rejected a stale complexity report. The registered generator is the sole
+  authority for that derived file.
+- Why Not Elsewhere: hand-editing report rows or weakening the generated-report
+  guard would make the evidence non-reproducible.
+- Blast Radius: `docs/engineering_convergence/complexity_budget_report.md` only;
+  the diff reflects the complete current source inventory and line counts.
+- Validation: the generator write is followed by `ci.generated_reports.guard`
+  and a complete Quick rerun; outcomes are recorded in Batch-S evidence.
+
+## 2026-08-21 — P4 product-version single-source derived observation
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` at
+  `58c3cfbdb3bf743f37806fec63d188fad948ade5`; Batch-Q changes remain frozen.
+- Formal Product Layer / Layer Target / Module: P4 release governance / product
+  version single source / release guard, behavior tests, architecture record and
+  agent run evidence.
+- Standard vs User-Specific: generic release governance only. The authoritative
+  product version remains the repository-root `VERSION` file.
+- Reason / Why Here: Quick found the current version literal in an architecture
+  note and in the governed `system.init` snapshot. The note is not an authority
+  and now references `VERSION`; the snapshot is a derived backend fact that must
+  remain observable.
+- Why Not Elsewhere: deleting `ui_contract_raw.product_version`, changing the
+  actual version, or weakening the repository-wide duplicate scan would damage
+  runtime truth or release governance.
+- Blast Radius: exactly one derived JSON observation at
+  `ui_contract_raw.product_version`. It must equal `VERSION`, occur once in the
+  file and at no other JSON path; stale, moved or duplicated observations fail.
+- Validation: the product-release suite collects 11 tests including four new
+  negative cases; the live version guard reports zero duplicates and one exact
+  derived observation. Full Quick outcome is recorded in Batch-R evidence.
+
+## 2026-08-21 — P4 exact oversized generated-evidence admission
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` at
+  `58c3cfbdb3bf743f37806fec63d188fad948ade5`.
+- Formal Product Layer / Layer Target / Module: P4 repository governance /
+  reachable-history RH007 admission / `scripts/verify`, `config/security`, and
+  governance evidence.
+- Standard vs User-Specific: generic public-repository security governance. No
+  product contract, frontend, addon, customer payload, database, fixture, or
+  runtime profile changes.
+- Reason / Why Here: Quick found eleven immutable JSON evidence blobs above the
+  five-MiB limit. Rewriting published history, increasing the global limit, or
+  exempting a path would widen the boundary. The clean-history guard owns exact
+  reachable-object admission.
+- Why Not Elsewhere: generated product evidence must remain unchanged; product
+  code, Contract V2 and runtime environments cannot repair a Git-history gate.
+- Blast Radius: an exception must match RH007, one repository-relative path,
+  one full blob SHA-1 and `OVERSIZED_BLOB`; stale, duplicate, changed-path and
+  changed-content registrations fail closed. Registered objects still undergo
+  secret, personal-data and customer-boundary scanning.
+- Validation: 26 non-zero behavior tests and the real reachable-history scan
+  pass with exactly 11 reviewed exceptions and no sensitive values recorded;
+  full Quick and restricted outcomes are recorded in the Batch-Q evidence.
+
 ## 2026-08-04 — DAILY-DEV-ADDON-ROOT-AUDIT-COMPAT-01
 
 - Branch / anchor: `fix/daily-dev-addon-root-audit` from merged `main` at `95313b73be47107e09daa955e5e9f12ba23d7622`.

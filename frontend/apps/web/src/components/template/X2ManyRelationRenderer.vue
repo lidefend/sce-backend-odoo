@@ -6,10 +6,14 @@
         :key="`${field.name}-readonly-${option.id}`"
         class="relation-readonly-item"
       >{{ option.label }}</span>
-      <span v-if="!adapter.selectedRelationOptions(field.name).length && adapter.relationIds(field.name).length" class="relation-readonly-summary">
-        已关联 {{ adapter.relationIds(field.name).length }} 条
-      </span>
-      <span v-else-if="!adapter.selectedRelationOptions(field.name).length" class="relation-readonly-empty">暂无{{ field.label || '关联记录' }}</span>
+      <span
+        v-if="!adapter.selectedRelationOptions(field.name).length && adapter.relationIds(field.name).length"
+        class="relation-readonly-summary"
+      >已关联 {{ adapter.relationIds(field.name).length }} 条</span>
+      <span
+        v-else-if="!adapter.selectedRelationOptions(field.name).length"
+        class="relation-readonly-empty"
+      >暂无{{ field.label || '关联记录' }}</span>
     </div>
     <div v-else-if="isMany2manyTags(field)" class="relation-tag-picker">
       <div class="relation-tags-control">
@@ -290,7 +294,9 @@ function tagColorStyle(color: unknown) {
 }
 
 .relation-readonly-summary,
-.relation-readonly-empty { color: var(--sc-app-text-secondary); }
+.relation-readonly-empty {
+  color: var(--sc-app-text-secondary);
+}
 
 .chips {
   display: flex;

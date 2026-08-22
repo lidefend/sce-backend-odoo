@@ -1,7 +1,7 @@
 goal:
   id: REPO-BASELINE-AUDIT
   title: repository_current_state_and_agent_governance_baseline
-  status: active
+  status: planned
   formal_product_layer: P4
 
   objective: establish_a_resumable_governed_repository_work_environment_baseline
@@ -41,10 +41,11 @@ goal:
     - agent_context_guards_pass
 
   current_batch:
-    id: Batch-J
-    objective: fix_snapshot_export_internal_argument_forwarding
-    status: active
+    id: Batch-U
+    objective: refresh_contract_form_split_line_count_evidence
+    status: planned
 
   next_iteration_direction:
+    - paused_by_payment_request_product_floorplan_redirect
     - strengthen_agent_context_schema_guards
     - reconcile_legacy_readme_and_runtime_entry_documentation

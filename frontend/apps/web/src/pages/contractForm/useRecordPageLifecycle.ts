@@ -292,10 +292,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     recordVersionToken.value = '';
     closeNativeChatterComposer();
     clearNativeChatterForRecordLoad();
+    nativeChatterAutoLoadKey.value = '';
     clearNativeAttachmentError();
     if (!recordId.value) {
       clearPendingNativeAttachments();
-      nativeChatterAutoLoadKey.value = '';
     }
     Object.keys(formData).forEach((key) => {
       delete formData[key];

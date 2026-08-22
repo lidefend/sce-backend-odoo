@@ -1,0 +1,22 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-T
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Refresh split-plan queue from the governed complexity report
+status: completed
+formal_product_layer: P4
+layer_target: deterministic generated repository evidence
+reason: The queue must reproduce the exact split-plan rows of the refreshed complexity report.
+scope:
+  include:
+    - docs/engineering_convergence/split_plan_queue.md
+    - docs/ops/iterations/delivery_context_switch_log_v1.md
+    - .agent/goals/REPO-BASELINE-AUDIT.yaml
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-S
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-T
+  exclude:
+    - scripts/ci/generate_split_plan_queue.py
+    - queue_policy
+    - application_source
+    - contract_or_schema
+    - database_or_runtime
+rollback:
+  method: regenerate the queue from the reverted complexity report

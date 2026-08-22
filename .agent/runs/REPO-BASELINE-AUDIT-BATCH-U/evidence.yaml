@@ -1,0 +1,18 @@
+evidence:
+  baseline_commit: 58c3cfbdb3bf743f37806fec63d188fad948ade5
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  authoritative_source: frontend/apps/web/src/pages/ContractFormPage.vue
+  source_line_count: 1774
+  changed_file: docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md
+  source_changed: false
+  guard_changed: false
+  verification:
+    contract_form_split_evidence:
+      status: pending
+    ci_local_quick:
+      status: pending
+    verify_restricted:
+      status: pending
+  completion:
+    status: verification_pending

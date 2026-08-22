@@ -36,7 +36,7 @@
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
             </label>
             <input
-              v-else
+              v-else-if="fieldConfigEditable"
               class="field-label-editor"
               type="text"
               :value="field.label"

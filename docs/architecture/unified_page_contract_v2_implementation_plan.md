@@ -34,8 +34,9 @@ authority for the Web Action/Form runtime and must not be used to reintroduce a
 fallback into the strict V2 path.
 
 The immutable product image has not yet been rebuilt for this cutover. The local
-formal image remains `1.0.0-rc.20` and is stale; a new candidate requires a clean,
-merged, versioned `main` candidate and the governed release workflow.
+formal image remains at the product version recorded by the repository-root
+`VERSION` authority and is stale; a new candidate requires a clean, merged,
+versioned `main` candidate and the governed release workflow.
 
 ## Superseded Direction Record
 

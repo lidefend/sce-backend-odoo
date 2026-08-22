@@ -1,7 +1,7 @@
 goal:
   id: NATIVE-VIEW-CONTRACT-CAPABILITY-CLOSURE
   title: native_view_contract_capability_closure
-  status: active
+  status: planned
   objective: close_native_view_capability_loss_across_contract_and_renderer_layers
 
   baseline:
@@ -70,7 +70,7 @@ goal:
       status: completed
     - id: Q2
       title: modifiers_actions_permissions_closure
-      status: active
+      status: planned
       current_increment:
         id: Q2-4b
         title: professional_field_driver_occurrence_event_closure

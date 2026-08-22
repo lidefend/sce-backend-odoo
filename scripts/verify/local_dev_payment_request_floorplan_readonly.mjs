@@ -258,6 +258,23 @@ try {
   const bodyText = normalize(await page.locator('[data-object-task-page]').innerText());
   const enabledPrimary = await page.locator('[data-object-task-page] [data-action-tier="primary"][data-action-enabled="true"]').count();
   const continueProcessing = await page.locator('[data-form-mode-action="edit"]:visible').count();
+  const readonlyEditableControlLocator = page.locator([
+    '[data-object-task-page] input:visible:not([readonly]):not([disabled])',
+    '[data-object-task-page] textarea:visible:not([readonly]):not([disabled])',
+    '[data-object-task-page] select:visible:not([disabled])',
+    '.contract-field-group-rename input:visible:not([disabled])',
+    '.field-label-editor:visible:not([disabled])',
+  ].join(', '));
+  const readonlyEditableControls = await readonlyEditableControlLocator.count();
+  const readonlyEditableControlDetails = await readonlyEditableControlLocator.evaluateAll((nodes) => nodes.map((node) => ({
+    tag: node.tagName.toLowerCase(),
+    type: node.getAttribute('type') || '',
+    className: String(node.className || ''),
+    ariaLabel: node.getAttribute('aria-label') || '',
+    field: node.closest('[data-field-name]')?.getAttribute('data-field-name') || '',
+    region: node.closest('[data-floorplan-region]')?.getAttribute('data-floorplan-region') || '',
+  })));
+  const readonlyStatusButtons = await page.locator('.native-statusbar-track button:visible').count();
   const canonicalActions = await page.locator('[data-object-task-page] [data-action-ref]').evaluateAll((nodes) => nodes.map((node) => ({
     label: String(node.textContent || '').trim(),
     actionRef: node.getAttribute('data-action-ref'),
@@ -270,6 +287,9 @@ try {
     regions,
     enabledPrimary,
     continueProcessing,
+    readonlyEditableControls,
+    readonlyEditableControlDetails,
+    readonlyStatusButtons,
     canonicalActions,
     overflow: desktop.scrollWidth - desktop.width,
   };
@@ -280,6 +300,8 @@ try {
   }
   check(enabledPrimary === 0, 'the governed blocked record exposed a false executable primary action', enabledPrimary);
   check(continueProcessing === 1, 'the governed blocked record must expose one path to complete missing facts', continueProcessing);
+  check(readonlyEditableControls === 0, 'readonly product surface exposes editable field/configuration controls', readonlyEditableControls);
+  check(readonlyStatusButtons === 0, 'readonly product surface renders workflow states as buttons', readonlyStatusButtons);
   check(enabledPrimary + continueProcessing === 1, 'more than one product primary action is visible', { enabledPrimary, continueProcessing });
   check(canonicalActions.filter((action) => action.label === '取消').length === 1,
     'the same authoritative cancel operation appeared twice', canonicalActions);
@@ -296,6 +318,21 @@ try {
     check(!bodyText.toLowerCase().includes(forbidden), `technical product text is visible: ${forbidden}`);
   }
   check(bodyText.includes('缺少合同或结算依据'), 'authoritative blocker is not visible before the action surface', bodyText);
+  const auditDisclosure = page.locator('[data-floorplan-region="audit"]').first();
+  await auditDisclosure.locator('summary').click();
+  await auditDisclosure.locator('[data-audit-event]').first().waitFor({ timeout: 15000 });
+  const auditEvents = await auditDisclosure.locator('[data-audit-event]').evaluateAll((nodes) => nodes.map((node) => ({
+    actor: String(node.querySelector('[data-audit-actor]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+    time: String(node.querySelector('[data-audit-time]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+    event: String(node.querySelector('[data-audit-event-name]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+    result: String(node.querySelector('[data-audit-result]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+  })));
+  report.desktop.auditEvents = auditEvents;
+  check(auditEvents.length >= 1, 'readonly audit region has no trustworthy event', auditEvents);
+  check(auditEvents.every((event) => event.actor && event.time && event.event && event.result),
+    'audit event must contain actor, time, event and result', auditEvents);
+  check(!auditEvents.some((event) => /(^|[._:-])action_|payment_[a-z_]+/i.test(`${event.event} ${event.result}`)),
+    'technical audit identifiers reached the product surface', auditEvents);
   const submitRules = (findKey(formContract, 'actionRuleList') || []).filter((rule) => (
     rule?.button?.name === 'action_submit'
   ));

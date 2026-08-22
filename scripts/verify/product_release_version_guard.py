@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import re
 import subprocess
@@ -9,6 +10,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+DERIVED_VERSION_OBSERVATIONS = {
+    Path("docs/contract/snapshots/system_init_intent_admin.json"): (
+        "ui_contract_raw",
+        "product_version",
+    ),
+}
 
 
 def load(name: str, path: Path):
@@ -29,6 +36,54 @@ def tracked_files() -> list[Path]:
     return [ROOT / item for item in output.splitlines() if item]
 
 
+def version_token_pattern(version: str) -> re.Pattern[str]:
+    return re.compile(
+        rf"(?<![0-9A-Za-z.^~<>=]){re.escape(version)}(?![0-9A-Za-z.-])"
+    )
+
+
+def scalar_paths(value: object, expected: str, prefix: tuple[str, ...] = ()) -> list[tuple[str, ...]]:
+    matches: list[tuple[str, ...]] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            matches.extend(scalar_paths(item, expected, (*prefix, str(key))))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            matches.extend(scalar_paths(item, expected, (*prefix, str(index))))
+    elif value == expected:
+        matches.append(prefix)
+    return matches
+
+
+def validate_derived_version_observations(root: Path, version: str) -> list[str]:
+    errors: list[str] = []
+    token = version_token_pattern(version)
+    for relative, expected_path in DERIVED_VERSION_OBSERVATIONS.items():
+        path = root / relative
+        try:
+            content = path.read_text(encoding="utf-8")
+            payload = json.loads(content)
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            errors.append(f"derived product-version observation unreadable: {relative}: {type(exc).__name__}")
+            continue
+        value: object = payload
+        for key in expected_path:
+            if not isinstance(value, dict) or key not in value:
+                value = None
+                break
+            value = value[key]
+        if value != version:
+            errors.append(
+                f"derived product-version observation does not match VERSION: {relative}:{'.'.join(expected_path)}"
+            )
+        matching_paths = scalar_paths(payload, version)
+        if matching_paths != [expected_path] or len(token.findall(content)) != 1:
+            errors.append(
+                f"derived product-version observation is not unique: {relative}"
+            )
+    return errors
+
+
 def main() -> int:
     errors: list[str] = []
     release = load("sce_product_release_guard", ROOT / "scripts" / "release" / "product_release.py")
@@ -38,12 +93,11 @@ def main() -> int:
         print(f"[product.release.version] FAIL {exc}")
         return 1
     version = config["product_version"]
-    version_token = re.compile(
-        rf"(?<![0-9A-Za-z.^~<>=]){re.escape(version)}(?![0-9A-Za-z.-])"
-    )
+    version_token = version_token_pattern(version)
+    derived_paths = {ROOT / path for path in DERIVED_VERSION_OBSERVATIONS}
     duplicates = []
     for path in tracked_files():
-        if path == ROOT / "VERSION" or not path.is_file():
+        if path == ROOT / "VERSION" or path in derived_paths or not path.is_file():
             continue
         try:
             content = path.read_text(encoding="utf-8")
@@ -53,6 +107,7 @@ def main() -> int:
             duplicates.append(str(path.relative_to(ROOT)))
     if duplicates:
         errors.append(f"product version duplicated outside VERSION: {duplicates}")
+    errors.extend(validate_derived_version_observations(ROOT, version))
 
     dockerfile = (ROOT / "Dockerfile.production-candidate").read_text(encoding="utf-8")
     for marker in (
@@ -99,7 +154,10 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
-    print(f"[product.release.version] PASS version={version} duplicates=0")
+    print(
+        f"[product.release.version] PASS version={version} duplicates=0 "
+        f"derived_observations={len(DERIVED_VERSION_OBSERVATIONS)}"
+    )
     return 0
 
 

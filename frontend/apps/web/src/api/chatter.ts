@@ -11,6 +11,12 @@ export interface ChatterTimelineEntry {
   at?: string;
   id?: number;
   reason_code?: ContractReasonCode;
+  audit?: {
+    actor: string;
+    occurred_at: string;
+    event: string;
+    result: string;
+  };
   activity?: {
     id?: number;
     assignee_user_id?: number;
