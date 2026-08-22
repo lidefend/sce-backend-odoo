@@ -3,6 +3,141 @@ import json
 
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import (
+    PageAssembler,
+)
+
+
+@tagged("post_install", "-at_install", "smart_core", "relation_entry_override")
+class TestRelationEntryOverrideFailClosed(TransactionCase):
+    def setUp(self):
+        super().setUp()
+        self.assembler = PageAssembler(
+            self.env,
+            self.env["ir.model"].sudo().env,
+        )
+
+    def test_consistent_form_occurrences_project_one_override(self):
+        override = {"create_mode": "dialog", "action_id": 10, "menu_id": 20}
+        views = {
+            "form": {"children": [
+                {"type": "field", "name": "project_id", "fieldInfo": {"widget_options": {"relation_entry": override}}},
+                {"type": "field", "name": "project_id", "fieldInfo": {"widget_options": {"relation_entry": dict(override)}}},
+            ]},
+            "tree": {"children": [
+                {"type": "field", "name": "project_id", "fieldInfo": {}},
+            ]},
+        }
+        resolved, errors = self.assembler._relation_entry_overrides_from_views(views)
+        self.assertEqual(resolved, {"project_id": override})
+        self.assertEqual(errors, {})
+
+    def test_field_without_override_keeps_generic_relation_path(self):
+        resolved, errors = self.assembler._relation_entry_overrides_from_views({
+            "form": {"children": [
+                {"type": "field", "name": "partner_id", "fieldInfo": {}},
+            ]},
+        })
+        self.assertEqual(resolved, {})
+        self.assertEqual(errors, {})
+
+    def test_conflicting_occurrences_fail_closed(self):
+        views = {"form": {"children": [
+            {"type": "field", "name": "project_id", "fieldInfo": {"widget_options": {"relation_entry": {"action_id": 10, "menu_id": 20}}}},
+            {"type": "field", "name": "project_id", "fieldInfo": {"widget_options": {"relation_entry": {"action_id": 11, "menu_id": 20}}}},
+        ]}}
+        resolved, errors = self.assembler._relation_entry_overrides_from_views(views)
+        self.assertEqual(resolved, {})
+        self.assertEqual(errors["project_id"], "RELATION_ENTRY_OVERRIDE_OCCURRENCE_CONFLICT")
+
+    def test_missing_or_half_pair_occurrence_fails_closed(self):
+        missing = {"form": {"children": [
+            {"type": "field", "name": "project_id", "fieldInfo": {"widget_options": {"relation_entry": {"action_id": 10, "menu_id": 20}}}},
+            {"type": "field", "name": "project_id", "fieldInfo": {}},
+        ]}}
+        _, missing_errors = self.assembler._relation_entry_overrides_from_views(missing)
+        self.assertEqual(missing_errors["project_id"], "RELATION_ENTRY_OVERRIDE_OCCURRENCE_CONFLICT")
+        half_pair = {"form": {"children": [
+            {"type": "field", "name": "project_id", "fieldInfo": {"widget_options": {"relation_entry": {"action_id": 10}}}},
+        ]}}
+        _, half_pair_errors = self.assembler._relation_entry_overrides_from_views(half_pair)
+        self.assertEqual(
+            half_pair_errors["project_id"],
+            "RELATION_ENTRY_OVERRIDE_AUTHORITY_PAIR_INCOMPLETE",
+        )
+        invalid = {"form": {"children": [
+            {"type": "field", "name": "project_id", "fieldInfo": {"widget_options": {"relation_entry": "invalid"}}},
+        ]}}
+        _, invalid_errors = self.assembler._relation_entry_overrides_from_views(invalid)
+        self.assertEqual(
+            invalid_errors["project_id"],
+            "RELATION_ENTRY_OVERRIDE_INVALID",
+        )
+
+    def test_override_cannot_expand_runtime_create_acl(self):
+        entry = self.assembler._build_relation_entry_for_field(
+            "parent_id",
+            {
+                "relation": "res.partner",
+                "widget_options": {"relation_entry": {"can_create": True}},
+            },
+            {
+                "model": "res.partner",
+                "action_id": None,
+                "menu_id": None,
+                "can_read": True,
+                "can_create": False,
+            },
+        )
+        self.assertFalse(entry["can_create"])
+        self.assertEqual(entry["create_mode"], "disabled")
+
+    def test_dialog_mode_requires_managed_action_menu_authority(self):
+        entry = self.assembler._build_relation_entry_for_field(
+            "parent_id",
+            {
+                "relation": "res.partner",
+                "widget_options": {"relation_entry": {"create_mode": "dialog"}},
+            },
+            {
+                "model": "res.partner",
+                "action_id": None,
+                "menu_id": None,
+                "can_read": True,
+                "can_create": True,
+            },
+        )
+        self.assertEqual(entry["create_mode"], "disabled")
+        self.assertEqual(
+            entry["reason_code"],
+            "RELATION_ENTRY_OVERRIDE_CREATE_MODE_AUTHORITY_REQUIRED",
+        )
+
+    def test_field_authority_is_projected_to_every_native_occurrence(self):
+        views = {
+            "form": {"children": [
+                {"type": "field", "name": "project_id", "fieldInfo": {}},
+                {"type": "group", "children": [
+                    {"type": "field", "name": "project_id", "fieldInfo": {}},
+                ]},
+            ]},
+        }
+        entry = {
+            "create_mode": "dialog",
+            "action_id": 10,
+            "menu_id": 20,
+            "can_create": True,
+        }
+        self.assembler._project_relation_entries_into_views(
+            views,
+            {"project_id": entry},
+        )
+        first = views["form"]["children"][0]
+        second = views["form"]["children"][1]["children"][0]
+        self.assertEqual(first["relation_entry"], entry)
+        self.assertEqual(first["fieldInfo"]["relation_entry"], entry)
+        self.assertEqual(second["relation_entry"], entry)
+        self.assertEqual(second["fieldInfo"]["relation_entry"], entry)
 
 
 @tagged("post_install", "-at_install", "smart_core", "runtime_view_contract")

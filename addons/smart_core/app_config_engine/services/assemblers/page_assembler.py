@@ -3097,10 +3097,14 @@ class PageAssembler:
                 relation_models.add(relation)
         if not relation_models:
             return
+        layout_relation_overrides, layout_relation_override_errors = self._relation_entry_overrides_from_views(
+            data.get("views")
+        )
         relation_models_ready_at = time.monotonic()
         relation_entry_map = self._build_relation_entry_map(relation_models)
         relation_map_ready_at = time.monotonic()
         relation_projection_cache = {}
+        projected_relation_entries = {}
         relation_cache_key = str(relation_cache_key or "").strip()
         if relation_cache_key:
             for relation in relation_models:
@@ -3113,15 +3117,40 @@ class PageAssembler:
                 continue
             relation = str(desc.get("relation") or "").strip()
             if relation and relation in relation_entry_map:
-                desc["relation_entry"] = self._build_relation_entry_for_field(
+                effective_desc = desc
+                layout_override = layout_relation_overrides.get(str(field_name or "").strip())
+                if isinstance(layout_override, dict):
+                    effective_desc = dict(desc)
+                    options = effective_desc.get("widget_options")
+                    options = dict(options) if isinstance(options, dict) else {}
+                    options["relation_entry"] = dict(layout_override)
+                    effective_desc["widget_options"] = options
+                relation_entry = self._build_relation_entry_for_field(
                     field_name,
-                    desc,
+                    effective_desc,
                     relation_entry_map[relation],
                     model_name=model_name,
                     contract_context=contract_context,
                     relation_projection_cache=relation_projection_cache,
                     relation_cache_key=relation_cache_key,
                 )
+                override_error = layout_relation_override_errors.get(
+                    str(field_name or "").strip()
+                )
+                if override_error:
+                    relation_entry.update({
+                        "action_id": None,
+                        "menu_id": None,
+                        "create_mode": "disabled",
+                        "can_open": False,
+                        "reason_code": override_error,
+                    })
+                desc["relation_entry"] = relation_entry
+                projected_relation_entries[str(field_name or "").strip()] = deepcopy(relation_entry)
+        self._project_relation_entries_into_views(
+            data.get("views"),
+            projected_relation_entries,
+        )
         if relation_cache_key:
             for relation in relation_models:
                 local_key = ("search_dialog", relation, model_name)
@@ -3138,6 +3167,85 @@ class PageAssembler:
                 "relation_base_map": int((relation_map_ready_at - relation_models_ready_at) * 1000),
                 "relation_field_projection": int((time.monotonic() - relation_map_ready_at) * 1000),
             })
+
+    def _project_relation_entries_into_views(self, views, entries):
+        """Keep every native field occurrence aligned with field-level authority."""
+        if not isinstance(entries, dict) or not entries:
+            return
+
+        def visit(value):
+            if isinstance(value, dict):
+                if str(value.get("type") or "").strip().lower() == "field":
+                    field_name = str(value.get("name") or "").strip()
+                    entry = entries.get(field_name)
+                    if isinstance(entry, dict):
+                        value["relation_entry"] = deepcopy(entry)
+                        field_info = value.get("fieldInfo")
+                        if isinstance(field_info, dict):
+                            field_info["relation_entry"] = deepcopy(entry)
+                for nested in value.values():
+                    visit(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    visit(nested)
+
+        visit(views)
+
+    def _relation_entry_overrides_from_views(self, views):
+        """Project consistent native field relation-entry options into fields."""
+        if isinstance(views, dict) and isinstance(views.get("form"), dict):
+            views = views.get("form")
+        candidates = {}
+
+        def visit(value):
+            if isinstance(value, dict):
+                if str(value.get("type") or "").strip().lower() == "field":
+                    field_name = str(value.get("name") or "").strip()
+                    field_info = value.get("fieldInfo")
+                    field_info = field_info if isinstance(field_info, dict) else {}
+                    options = field_info.get("widget_options")
+                    options = options if isinstance(options, dict) else {}
+                    if field_name:
+                        has_override = "relation_entry" in options
+                        override = options.get("relation_entry")
+                        candidates.setdefault(field_name, []).append(
+                            dict(override) if isinstance(override, dict)
+                            else "__invalid__" if has_override
+                            else None
+                        )
+                for nested in value.values():
+                    visit(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    visit(nested)
+
+        visit(views)
+        resolved = {}
+        errors = {}
+        for field_name, rows in candidates.items():
+            if not any(row is not None for row in rows):
+                continue
+            if any(row == "__invalid__" for row in rows):
+                errors[field_name] = "RELATION_ENTRY_OVERRIDE_INVALID"
+                continue
+            if any(row is None for row in rows):
+                errors[field_name] = "RELATION_ENTRY_OVERRIDE_OCCURRENCE_CONFLICT"
+                continue
+            normalized = {
+                json.dumps(row, sort_keys=True, separators=(",", ":"), default=str)
+                for row in rows
+            }
+            if len(normalized) != 1:
+                errors[field_name] = "RELATION_ENTRY_OVERRIDE_OCCURRENCE_CONFLICT"
+                continue
+            override = rows[0]
+            has_action = bool(override.get("action_id") or override.get("action_xmlid"))
+            has_menu = bool(override.get("menu_id") or override.get("menu_xmlid"))
+            if has_action != has_menu:
+                errors[field_name] = "RELATION_ENTRY_OVERRIDE_AUTHORITY_PAIR_INCOMPLETE"
+                continue
+            resolved[field_name] = override
+        return resolved, errors
 
     def _extract_dictionary_type_from_domain(self, domain_raw):
         if not domain_raw:
@@ -3252,6 +3360,8 @@ class PageAssembler:
             can_create = False
             has_page = False
         options_override = self._relation_entry_override_from_options(descriptor)
+        override_authority_error = ""
+        override_create_mode = ""
         if relation == "sc.business.category" and str(field_name or "").strip() == "business_category_id":
             display_field = "name"
             relation_order = "sequence asc, id asc"
@@ -3323,15 +3433,32 @@ class PageAssembler:
             if isinstance(relation_policy.get("ui_labels"), dict):
                 ui_labels_extra.update(relation_policy.get("ui_labels") or {})
         if options_override:
+            override_create_mode = str(options_override.get("create_mode") or "").strip().lower()
+            if override_create_mode and override_create_mode not in ("page", "dialog"):
+                override_authority_error = "RELATION_ENTRY_OVERRIDE_CREATE_MODE_INVALID"
             action_id = options_override.get("action_id") or self._resolve_relation_entry_ref_id(options_override.get("action_xmlid"))
             menu_id = options_override.get("menu_id") or self._resolve_relation_entry_ref_id(options_override.get("menu_xmlid"))
-            if action_id:
+            has_action_authority = bool(options_override.get("action_id") or options_override.get("action_xmlid"))
+            has_menu_authority = bool(options_override.get("menu_id") or options_override.get("menu_xmlid"))
+            if not override_authority_error and override_create_mode in ("page", "dialog") and not (has_action_authority and has_menu_authority):
+                override_authority_error = "RELATION_ENTRY_OVERRIDE_CREATE_MODE_AUTHORITY_REQUIRED"
+            elif not override_authority_error and has_action_authority != has_menu_authority:
+                override_authority_error = "RELATION_ENTRY_OVERRIDE_AUTHORITY_PAIR_INCOMPLETE"
+            elif not override_authority_error and has_action_authority and (not action_id or not menu_id):
+                override_authority_error = "RELATION_ENTRY_OVERRIDE_AUTHORITY_INVALID"
+            elif not override_authority_error and action_id and menu_id:
+                override_authority_error = self._relation_entry_authority_pair_error(
+                    action_id,
+                    menu_id,
+                    relation,
+                )
+            if action_id and not override_authority_error:
                 entry["action_id"] = int(action_id)
                 has_page = True
-            if menu_id:
+            if menu_id and not override_authority_error:
                 entry["menu_id"] = int(menu_id)
             if "can_create" in options_override:
-                can_create = bool(options_override.get("can_create"))
+                can_create = can_create and bool(options_override.get("can_create"))
             if isinstance(options_override.get("default_vals"), dict):
                 default_vals.update(options_override.get("default_vals") or {})
             if isinstance(options_override.get("default_from_fields"), dict):
@@ -3381,15 +3508,22 @@ class PageAssembler:
         else:
             search_dialog = deepcopy(search_dialog)
 
-        if not can_read:
+        if override_authority_error:
+            entry["action_id"] = None
+            entry["menu_id"] = None
+            has_page = False
+            can_open = False
+            create_mode = "disabled"
+            reason_code = override_authority_error
+        elif not can_read:
             create_mode = "disabled"
             reason_code = "RELATION_READ_FORBIDDEN"
         elif has_page:
-            create_mode = "page"
+            create_mode = "dialog" if override_create_mode == "dialog" else "page"
             if can_create:
-                reason_code = reason_code or "PAGE_ENTRY_READY"
+                reason_code = reason_code or ("DIALOG_ENTRY_READY" if create_mode == "dialog" else "PAGE_ENTRY_READY")
             else:
-                reason_code = reason_code or "PAGE_ENTRY_READONLY"
+                reason_code = reason_code or ("DIALOG_ENTRY_READONLY" if create_mode == "dialog" else "PAGE_ENTRY_READONLY")
         elif can_create and (relation == "sc.dictionary" or is_contract_tax_field):
             if dict_type or is_contract_tax_field:
                 create_mode = "quick"
@@ -3446,6 +3580,26 @@ class PageAssembler:
             }
         )
         return entry
+
+    def _relation_entry_authority_pair_error(self, action_id, menu_id, relation):
+        try:
+            action = self.env["ir.actions.act_window"].browse(int(action_id)).exists()
+            menu = self.env["ir.ui.menu"].browse(int(menu_id)).exists()
+        except Exception:
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_INVALID"
+        if not action or not menu:
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_INVALID"
+        if str(action.res_model or "").strip() != str(relation or "").strip():
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_TARGET_MISMATCH"
+        if not menu.action or menu.action.id != action.id:
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_PAIR_MISMATCH"
+        user = self.env.user
+        if not user._is_admin():
+            if action.groups_id and not (action.groups_id & user.groups_id):
+                return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
+            if menu.groups_id and not (menu.groups_id & user.groups_id):
+                return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
+        return ""
 
     def _build_relation_search_dialog_contract(self, relation, model_name=""):
         relation = str(relation or "").strip()

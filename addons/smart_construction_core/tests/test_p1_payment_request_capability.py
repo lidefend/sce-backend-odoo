@@ -1404,6 +1404,14 @@ class TestP1PaymentRequestCapability(TransactionCase):
         )
 
         form = self.env.ref("smart_construction_core.view_payment_request_form")
+        form_arch = etree.fromstring(form.arch_db.encode("utf-8"))
+        project_nodes = form_arch.xpath(".//field[@name='project_id']")
+        self.assertGreaterEqual(len(project_nodes), 2)
+        for node in project_nodes:
+            options = node.get("options") or ""
+            self.assertNotIn("no_create", options)
+            self.assertIn("smart_construction_core.action_project_initiation", options)
+            self.assertIn("smart_construction_core.menu_sc_project_initiation", options)
         self.assertIn("项目与收款对象", form.arch_db)
         self.assertIn("结算与合同依据", form.arch_db)
         self.assertIn("本次付款事实", form.arch_db)
@@ -1625,6 +1633,45 @@ class TestP1PaymentRequestCapability(TransactionCase):
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(envelope.get("ok", True), envelope)
         contract = envelope["data"]
+
+        project_relation_entries = []
+
+        def collect_project_relation_entries(value):
+            if isinstance(value, dict):
+                field_name = value.get("fieldCode") or value.get("name") or value.get("field")
+                if field_name == "project_id":
+                    for source in (
+                        value,
+                        value.get("fieldDescriptor") or {},
+                        value.get("fieldInfo") or {},
+                        value.get("componentConfig") or {},
+                    ):
+                        entry = source.get("relation_entry") or source.get("relationEntry")
+                        if isinstance(entry, dict):
+                            project_relation_entries.append(entry)
+                for nested in value.values():
+                    collect_project_relation_entries(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_project_relation_entries(nested)
+
+        collect_project_relation_entries(contract)
+        project_action = self.env.ref(
+            "smart_construction_core.action_project_initiation"
+        )
+        project_menu = self.env.ref(
+            "smart_construction_core.menu_sc_project_initiation"
+        )
+        self.assertTrue(project_relation_entries, contract)
+        self.assertTrue(
+            all(
+                entry.get("action_id") == project_action.id
+                and entry.get("menu_id") == project_menu.id
+                and entry.get("create_mode") == "dialog"
+                for entry in project_relation_entries
+            ),
+            project_relation_entries,
+        )
 
         container_tree = contract["layoutContract"]["containerTree"]
 
