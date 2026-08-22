@@ -766,6 +766,15 @@ import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
+import {
+  canListGroupPageNext,
+  canListGroupPagePrev,
+  listGroupPageRangeText,
+  resolveListGroupPageLimit,
+  resolveListGroupPageMeta,
+  resolveListGroupPageOffset,
+  type ListGroupPage,
+} from './listPage/listGroupPagination';
 import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, resolveListColumnBudgetWidth, type ListColumnLayoutRole } from './listPage/listColumnWidth';
 import {
   resolveDesktopListCandidates,
@@ -1265,85 +1274,39 @@ function groupCountText(group: { count: number; sampleRows?: Array<Record<string
   return uiLabel('group_count', '共 {count} 条', { count: total });
 }
 
-function resolveGroupPageLimit(group: { pageLimit?: number }) {
-  const limitRaw = Number(group.pageLimit || effectiveGroupSampleLimit.value);
-  return Number.isFinite(limitRaw) && limitRaw > 0 ? Math.trunc(limitRaw) : 3;
+function resolveGroupPageLimit(group: Pick<ListGroupPage, 'pageLimit'>) {
+  return resolveListGroupPageLimit(group, effectiveGroupSampleLimit.value);
 }
 
-function resolveGroupPageOffset(group: { pageOffset?: number; count: number; pageLimit?: number }) {
-  const limit = resolveGroupPageLimit(group);
-  const maxOffset = Math.max(0, Number(group.count || 0) - limit);
-  const offsetRaw = Number(group.pageOffset || 0);
-  if (!Number.isFinite(offsetRaw)) return 0;
-  const clamped = Math.min(Math.max(Math.trunc(offsetRaw), 0), maxOffset);
-  return Math.floor(clamped / limit) * limit;
+function resolveGroupPageOffset(group: Pick<ListGroupPage, 'count' | 'pageOffset' | 'pageLimit'>) {
+  return resolveListGroupPageOffset(group, effectiveGroupSampleLimit.value);
 }
 
-function resolveGroupPageMeta(group: {
-  count: number;
-  pageOffset?: number;
-  pageLimit?: number;
-  pageCurrent?: number;
-  pageTotal?: number;
-  pageRangeStart?: number;
-  pageRangeEnd?: number;
-}) {
-  const total = Math.max(0, Number(group.count || 0));
-  const limit = Math.max(1, resolveGroupPageLimit(group));
-  const offset = resolveGroupPageOffset(group);
-  const fallbackTotal = Math.max(1, Math.ceil(total / limit));
-  const fallbackCurrent = Math.floor(offset / limit) + 1;
-  const fallbackStart = total > 0 ? offset + 1 : 0;
-  const fallbackEnd = total > 0 ? Math.min(total, offset + limit) : 0;
-  const backendTotal = Math.trunc(Number(group.pageTotal || 0));
-  const backendCurrent = Math.trunc(Number(group.pageCurrent || 0));
-  const backendStart = Math.trunc(Number(group.pageRangeStart || 0));
-  const backendEnd = Math.trunc(Number(group.pageRangeEnd || 0));
-  const backendWindow = (group as { pageWindow?: { start?: unknown; end?: unknown } }).pageWindow;
-  const backendWindowStart = Math.trunc(Number(backendWindow?.start || 0));
-  const backendWindowEnd = Math.trunc(Number(backendWindow?.end || 0));
-  return {
-    totalPages: backendTotal > 0 ? backendTotal : fallbackTotal,
-    currentPage: backendCurrent > 0 ? backendCurrent : fallbackCurrent,
-    rangeStart: backendWindowStart > 0 ? backendWindowStart : (backendStart > 0 ? backendStart : fallbackStart),
-    rangeEnd: backendWindowEnd > 0 ? backendWindowEnd : (backendEnd > 0 ? backendEnd : fallbackEnd),
-  };
+function resolveGroupPageMeta(group: ListGroupPage) {
+  return resolveListGroupPageMeta(group, effectiveGroupSampleLimit.value);
 }
 
-function canGroupPagePrev(group: { count: number; pageOffset?: number; pageLimit?: number }) {
-  if (typeof (group as { pageHasPrev?: unknown }).pageHasPrev === 'boolean') {
-    return Boolean((group as { pageHasPrev?: unknown }).pageHasPrev);
-  }
-  return resolveGroupPageOffset(group) > 0;
+function canGroupPagePrev(group: ListGroupPage) {
+  return canListGroupPagePrev(group, effectiveGroupSampleLimit.value);
 }
 
-function canGroupPageNext(group: { count: number; pageOffset?: number; pageLimit?: number }) {
-  if (typeof (group as { pageHasNext?: unknown }).pageHasNext === 'boolean') {
-    return Boolean((group as { pageHasNext?: unknown }).pageHasNext);
-  }
-  const offset = resolveGroupPageOffset(group);
-  const limit = resolveGroupPageLimit(group);
-  return offset + limit < Number(group.count || 0);
+function canGroupPageNext(group: ListGroupPage) {
+  return canListGroupPageNext(group, effectiveGroupSampleLimit.value);
 }
 
-function groupPageRangeText(group: { count: number; pageOffset?: number; pageLimit?: number }) {
-  const total = Math.max(0, Number(group.count || 0));
-  if (!total) return '0 / 0';
-  const meta = resolveGroupPageMeta(group);
-  const start = meta.rangeStart;
-  const end = meta.rangeEnd;
-  return `${start}-${end} / ${total}`;
+function groupPageRangeText(group: ListGroupPage) {
+  return listGroupPageRangeText(group, effectiveGroupSampleLimit.value);
 }
 
-function groupTotalPages(group: { count: number; pageLimit?: number }) {
+function groupTotalPages(group: ListGroupPage) {
   return resolveGroupPageMeta(group).totalPages;
 }
 
-function groupCurrentPage(group: { count: number; pageOffset?: number; pageLimit?: number }) {
+function groupCurrentPage(group: ListGroupPage) {
   return resolveGroupPageMeta(group).currentPage;
 }
 
-function groupPageInfoText(group: { count: number; pageOffset?: number; pageLimit?: number }) {
+function groupPageInfoText(group: ListGroupPage) {
   return uiLabel('group_page_info', '第 {current} / {total} 页 · {range}', {
     current: groupCurrentPage(group),
     total: groupTotalPages(group),
