@@ -280,6 +280,37 @@ function isFormActionBarAction(action: ContractV2ActionRule): boolean {
     || targetScope === 'footer';
 }
 
+function actionOperationIdentity(action: CanonicalFormAction): string {
+  const button = asDict(action.actionRef.button);
+  const buttonType = text(button.type).toLowerCase();
+  const buttonName = text(button.name);
+  if (buttonType && buttonName) return `button:${buttonType}:${buttonName}`;
+  return `backend:${text(action.actionRef.backendIdentity)}`;
+}
+
+function retainAuthoritativeActionOccurrences(
+  actions: CanonicalFormAction[],
+  primaryWinnerIdentity: string,
+): CanonicalFormAction[] {
+  const operations = new Map<string, CanonicalFormAction[]>();
+  actions.forEach((action) => {
+    const identity = actionOperationIdentity(action);
+    operations.set(identity, [...(operations.get(identity) || []), action]);
+  });
+  const retained = new Set<CanonicalFormAction>();
+  operations.forEach((occurrences) => {
+    const resolvedWinner = occurrences.find((action) => primaryWinnerIdentity && [
+      action.actionRef.actionId, action.actionRef.backendIdentity,
+    ].includes(primaryWinnerIdentity));
+    const winner = resolvedWinner || occurrences.reduce((current, action) => (
+      Number(action.actionRef.presentationPriority || 0)
+        > Number(current.actionRef.presentationPriority || 0) ? action : current
+    ));
+    retained.add(winner);
+  });
+  return actions.filter((action) => retained.has(action));
+}
+
 function actionStatus(
   store: ContractV2NormalizedStore,
   action: ContractV2ActionRule,
@@ -360,10 +391,12 @@ export function presentContractV2Form(
       .map((row) => text(row.actionId))
       .filter(Boolean),
   );
-  const actions = allActions.filter((action) => (
+  const actionCandidates = allActions.filter((action) => (
     isFormActionBarAction(action.actionRef)
     && !demotedActionIds.has(action.actionRef.actionId)
   ));
+  const primaryWinnerIdentity = text(asDict(snapshot.actionContract.primaryResolution).winner);
+  const actions = retainAuthoritativeActionOccurrences(actionCandidates, primaryWinnerIdentity);
   const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');
   return {

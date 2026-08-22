@@ -929,6 +929,7 @@ resolvedDuplicateSubmit.actionContract.actionRuleList[0] = {
   backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
   sourceWidgetId: 'page.header',
   button: { name: 'action_submit', type: 'object' },
+  presentationPriority: 100,
 };
 resolvedDuplicateSubmit.actionContract.actionRuleList.push({
   ...resolvedDuplicateSubmit.actionContract.actionRuleList[0],
@@ -936,6 +937,7 @@ resolvedDuplicateSubmit.actionContract.actionRuleList.push({
   actionKey: 'weak_submit',
   backendIdentity: 'button:object:action_submit',
   sourceWidgetId: 'page.root',
+  presentationPriority: 250,
   presentation: { tier: 'secondary' },
 });
 resolvedDuplicateSubmit.actionContract.primaryResolution = {
@@ -969,6 +971,33 @@ assert.deepEqual(
     .actionBar.map((action) => action.actionRef.actionId),
   ['action.native_submit'],
   'a backend-demoted duplicate must not become a second product action',
+);
+
+const prioritizedDuplicateAction = snapshot();
+prioritizedDuplicateAction.actionContract.actionRuleList[0] = {
+  ...prioritizedDuplicateAction.actionContract.actionRuleList[0],
+  actionId: 'action.native_cancel', actionKey: 'native_cancel',
+  backendIdentity: 'native_button:object:action_cancel:/form/header/button[1]:1',
+  sourceWidgetId: 'page.header', button: { name: 'action_cancel', type: 'object' },
+  presentationPriority: 100, presentationAuthority: 'native_contract',
+  presentation: { tier: 'overflow' },
+};
+prioritizedDuplicateAction.actionContract.actionRuleList.push({
+  ...prioritizedDuplicateAction.actionContract.actionRuleList[0],
+  actionId: 'action.product_cancel', actionKey: 'product_cancel',
+  backendIdentity: 'button:object:action_cancel', sourceWidgetId: 'page.root',
+  presentationPriority: 250, presentationAuthority: 'product_contract',
+  presentation: { tier: 'secondary' },
+});
+prioritizedDuplicateAction.statusContract.buttonStatus = [
+  { btnId: 'action.native_cancel', visible: true, disabled: false },
+  { btnId: 'action.product_cancel', visible: true, disabled: false },
+];
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(prioritizedDuplicateAction), 'readonly')
+    .actionBar.map((action) => action.actionRef.actionId),
+  ['action.product_cancel'],
+  'the highest backend presentation priority must own one duplicated execution identity',
 );
 
 const normalizedAction = snapshot().actionContract.actionRuleList[0];

@@ -281,6 +281,8 @@ try {
   check(enabledPrimary === 0, 'the governed blocked record exposed a false executable primary action', enabledPrimary);
   check(continueProcessing === 1, 'the governed blocked record must expose one path to complete missing facts', continueProcessing);
   check(enabledPrimary + continueProcessing === 1, 'more than one product primary action is visible', { enabledPrimary, continueProcessing });
+  check(canonicalActions.filter((action) => action.label === '取消').length === 1,
+    'the same authoritative cancel operation appeared twice', canonicalActions);
   check(report.desktop.overflow <= 0, 'desktop has horizontal overflow', report.desktop);
   check(await page.locator('[data-contract-form-driver-chooser]').count() === 0, 'component supplier chooser reached product surface');
   check(await page.locator('.workflow-evidence-block').count() === 0,

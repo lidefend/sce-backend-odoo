@@ -704,6 +704,43 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(statuses[0]["disabled"])
         self.assertEqual(statuses[0]["reasonCode"], "WAITING_FOR_REQUIRED_FACTS")
 
+    def test_denied_product_action_keeps_visibility_separate_from_executability(self):
+        source = {
+            "model": "x.approval",
+            "view_type": "form",
+            "fields": {},
+            "business_actions": [{
+                "key": "submit_product",
+                "label": "Submit",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": False,
+                "enabled": False,
+                "disabled": True,
+                "visible": True,
+                "reason_code": "WAITING_FOR_REQUIRED_FACTS",
+                "business_available": False,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
+                "presentation": {"tier": "primary"},
+            }],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc",
+            request_id="test.action.denied.visible",
+        )
+
+        rule = full["actionContract"]["actionRuleList"][0]
+        status = next(
+            row for row in full["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == rule["backendIdentity"]
+        )
+        self.assertFalse(rule["allowed"])
+        self.assertTrue(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "WAITING_FOR_REQUIRED_FACTS")
+
     def test_runtime_business_action_is_promoted_to_normalized_authority(self):
         contract = assembler.assemble_unified_page_contract_v2(
             {

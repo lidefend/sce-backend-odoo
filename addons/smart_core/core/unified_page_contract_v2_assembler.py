@@ -2972,7 +2972,10 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
         disabled = row.get("disabled") is True or not allowed or not enabled
         contract["statusContract"]["buttonStatus"].append({
             "btnId": f"btn.{key}",
-            "visible": allowed,
+            # Visibility and executability are independent only when the
+            # action authority explicitly declares that visibility. Unknown
+            # permission remains fail-closed.
+            "visible": row.get("visible") is not False and (allowed or row.get("visible") is True),
             "disabled": disabled,
             **({"reasonCode": _text(row.get("reason_code"), "ACTION_NOT_ALLOWED")} if disabled else {}),
         })
@@ -3108,7 +3111,7 @@ def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
         if value not in (None, False, "", 0):
             return deepcopy(value)
     if (
-        rule.get("allowed") is False
+        (rule.get("allowed") is False and rule.get("visible") is not True)
         or rule.get("visible") is False
     ):
         return {"kind": "static", "value": True}
@@ -3339,7 +3342,10 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             or rule.get("disabled") is True
         )
         if denied:
-            status["visible"] = status.get("visible", True) is not False and rule.get("allowed") is not False
+            status["visible"] = (
+                True if rule.get("visible") is True
+                else status.get("visible", True) is not False and rule.get("allowed") is not False
+            )
             status["disabled"] = True
             trace_reason = next(
                 (

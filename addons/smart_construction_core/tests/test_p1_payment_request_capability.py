@@ -193,6 +193,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(action["presentation"]["tier"], "primary")
         self.assertEqual(action["method"], "action_create_payment_execution")
         self.assertEqual(action["visible_profiles"], ["edit", "readonly"])
+        self.assertTrue(action["visible"])
 
     def test_execution_continuation_requires_exact_manager_capability(self):
         request = self._set_request_state(self._request())
@@ -1152,6 +1153,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         submit = next(
             row for row in payload["actions"] if row.get("action_key") == "submit"
         )
+        self.assertTrue(submit["visible"])
         self.assertTrue(submit["business_available"])
         self.assertTrue(submit["authorization_allowed"])
         self.assertTrue(submit["enabled"])
