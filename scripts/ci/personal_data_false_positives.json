@@ -196,6 +196,34 @@
       "blob_id": "3f9215cb603c34956599ffbe187477613ac4ce2a",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_fixed_synthetic_payment_fixture_history"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "frontend/tdesign-admin/mock/index.ts",
+      "blob_id": "916c23f297d21e4db69f1c7abbd8551bc85304f9",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "verified_synthetic_tdesign_admin_fixture_history"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "frontend/tdesign-admin/src/locales/lang/en_US.json",
+      "blob_id": "014a18cd8cdacdd3b6b2339e7e5584768754b6e7",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "verified_synthetic_tdesign_admin_fixture_history"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "frontend/tdesign-admin/src/locales/lang/zh_CN.json",
+      "blob_id": "d248d45b557a8e89d6035fdffe9ab93448699b35",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "verified_synthetic_tdesign_admin_fixture_history"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "frontend/tdesign-admin/src/pages/user/constants.ts",
+      "blob_id": "9b8b2be6ddb690a18998ce2bfada247defd215e2",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "verified_synthetic_tdesign_admin_fixture_history"
     }
   ]
 }
