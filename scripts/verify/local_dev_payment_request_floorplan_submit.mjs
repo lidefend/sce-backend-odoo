@@ -489,9 +489,6 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     );
     await paymentSurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
     await paymentSurface.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 45000 });
-    await projectPage.waitForFunction((expectedLabel) => (
-      new URL(window.location.href).searchParams.get('default_business_category_label') === expectedLabel
-    ), '付款申请', { timeout: 30000 });
     await chooseUniqueRelationOption(projectPage, paymentSurface, {
       fieldName: 'business_category_id',
       relationModel: 'sc.business.category',
@@ -1194,9 +1191,6 @@ try {
       `required many2one field ${fieldName} lost its backend-authorized search entry`, capability);
   }
   await page.screenshot({ path: path.join(outputDir, 'create-product-floorplan-desktop.png'), fullPage: true });
-  await page.waitForFunction((expectedLabel) => (
-    new URL(window.location.href).searchParams.get('default_business_category_label') === expectedLabel
-  ), '付款申请', { timeout: 30000 });
   await chooseUniqueRelationOption(page, createSurface, {
     fieldName: 'business_category_id',
     relationModel: 'sc.business.category',

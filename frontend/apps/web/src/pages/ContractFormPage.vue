@@ -1228,6 +1228,7 @@ const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryCon
   contractRecord: contract.value,
   routeQuery: route.query as Record<string, unknown>,
   relationBusinessCategoryLabel: relationKeywords.business_category_id,
+  relationBusinessCategorySelected: Number(formData.business_category_id || 0) > 0,
 }));
 const currentBusinessCategoryLabel = computed(() => currentBusinessCategoryContext.value.label);
 const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContext.value.code);

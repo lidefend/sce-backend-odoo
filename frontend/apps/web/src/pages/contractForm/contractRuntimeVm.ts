@@ -91,13 +91,14 @@ export function resolveBusinessCategoryContext(params: {
   contractRecord: unknown;
   routeQuery: Record<string, unknown>;
   relationBusinessCategoryLabel: string;
+  relationBusinessCategorySelected: boolean;
 }) {
   const query = params.routeQuery;
   return {
     label: String(
       query.current_business_category_label
       || query.default_business_category_label
-      || params.relationBusinessCategoryLabel
+      || (params.relationBusinessCategorySelected ? params.relationBusinessCategoryLabel : '')
       || '',
     ).trim(),
     code: String(

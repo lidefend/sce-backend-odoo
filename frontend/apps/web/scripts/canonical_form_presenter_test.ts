@@ -49,6 +49,20 @@ import {
   normalizeMonetaryDigits,
   resolveCurrencyDisplayLabel,
 } from '../src/components/template/formSection.mapper';
+import { resolveBusinessCategoryContext } from '../src/pages/contractForm/contractRuntimeVm';
+
+assert.equal(resolveBusinessCategoryContext({
+  contractRecord: null,
+  routeQuery: {},
+  relationBusinessCategoryLabel: '仅为搜索关键词',
+  relationBusinessCategorySelected: false,
+}).label, '', 'an unselected relation search keyword must not become business context authority');
+assert.equal(resolveBusinessCategoryContext({
+  contractRecord: null,
+  routeQuery: {},
+  relationBusinessCategoryLabel: '已选业务分类',
+  relationBusinessCategorySelected: true,
+}).label, '已选业务分类', 'a selected relation may supply its display label');
 
 assert.deepEqual(normalizeMonetaryDigits([16, 2]), [16, 2]);
 assert.equal(normalizeMonetaryDigits([16, -1]), undefined);
@@ -1542,4 +1556,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=87');
+console.log('[canonical_form_presenter_test] PASS cases=89');
