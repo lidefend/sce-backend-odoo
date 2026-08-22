@@ -1643,45 +1643,48 @@ class TestP1PaymentRequestCapability(TransactionCase):
                     collect_group_titles(nested, titles)
             return titles
 
-        # Contract-spec v0.1 (path B, product decision 2026-08-19): the
-        # backend keeps the native category sheet authoritative and ships the
-        # payment contract sections as sparse semantic annotations. Golden
-        # floorplan task-page composition belongs to the frontend presenter
-        # (ObjectTaskPage + canonical render model); the superseded backend
-        # root-replacement projection stays archived in git (2ec2e2df~1) as
-        # the deferred extension point.
+        def collect_native_locators(value, locators=None):
+            if locators is None:
+                locators = []
+            if isinstance(value, dict):
+                locator = value.get("native_locator")
+                if isinstance(locator, str) and locator:
+                    locators.append(locator)
+                for nested in value.values():
+                    collect_native_locators(nested, locators)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_native_locators(nested, locators)
+            return locators
+
+        # Contract-spec v0.1 (path B): the current native form remains the
+        # structural authority.  Business-category annotations must not
+        # replace its root with the historical synthetic sheet; product page
+        # composition remains a frontend Floorplan responsibility.
         self.assertEqual(
             [row.get("type") for row in container_tree],
             ["header", "sheet"],
         )
         category_sheet = container_tree[-1]
-        self.assertEqual(
+        self.assertNotEqual(
             category_sheet.get("name") or category_sheet.get("string"),
             "business_category_form_sheet",
         )
+        self.assertTrue(
+            collect_native_locators(category_sheet),
+            "readonly layout must retain native occurrence identity",
+        )
         group_titles = collect_group_titles(container_tree)
         for native_anchor in (
-            "办理类型",
-            "项目与收款单位",
-            "申请依据",
-            "付款申请金额",
-            "申请明细",
+            "申请识别与状态",
+            "项目与收款对象",
+            "结算与合同依据",
+            "本次付款事实",
+            "本次收款账户快照",
+            "付款单位与默认账户",
+            "办理说明与附件",
         ):
             self.assertIn(native_anchor, group_titles)
-        self.assertFalse(
-            {
-                "申请识别与状态",
-                "项目与收款对象",
-                "结算与合同依据",
-                "本次付款事实",
-                "账户与开票信息",
-                "说明与附件",
-                "审批与审计",
-            }
-            & set(group_titles),
-            "contract semantic sections must stay sparse annotations, "
-            "not structural replacement of the native root",
-        )
 
         normalized_fields = set()
         declared_fields = set()
@@ -1908,24 +1911,27 @@ class TestP1PaymentRequestCapability(TransactionCase):
             ["header", "sheet"],
         )
         edit_sheet = edit_container_tree[-1]
-        self.assertEqual(
+        self.assertNotEqual(
             edit_sheet.get("name") or edit_sheet.get("string"),
             "business_category_form_sheet",
         )
+        self.assertTrue(
+            collect_native_locators(edit_sheet),
+            "edit layout must retain native occurrence identity",
+        )
         edit_group_titles = collect_group_titles(edit_container_tree)
-        self.assertFalse(
+        self.assertTrue(
             {
                 "申请识别与状态",
                 "项目与收款对象",
                 "结算与合同依据",
                 "本次付款事实",
-                "账户与开票信息",
-                "说明与附件",
-                "审批与审计",
+                "本次收款账户快照",
+                "付款单位与默认账户",
+                "办理说明与附件",
             }
-            & set(edit_group_titles),
-            "edit contract semantic sections must stay sparse annotations, "
-            "not structural replacement of the native root",
+            <= set(edit_group_titles),
+            "edit contract must preserve current native section anchors",
         )
 
         edit_layout_fields = set()
@@ -1944,8 +1950,11 @@ class TestP1PaymentRequestCapability(TransactionCase):
                     visit_edit_layout(nested)
 
         visit_edit_layout(edit_container_tree)
-        expected_edit_layout_fields = required_fields - {"reject_reason"}
-        self.assertEqual(len(expected_edit_layout_fields), 41)
+        # Native occurrences remain structurally complete; draft visibility
+        # is carried by the normalized modifier/status authority rather than
+        # by deleting the rejected-only field from the layout tree.
+        expected_edit_layout_fields = required_fields
+        self.assertEqual(len(expected_edit_layout_fields), 42)
         self.assertEqual(
             edit_layout_fields & required_fields,
             expected_edit_layout_fields,
@@ -1985,9 +1994,15 @@ class TestP1PaymentRequestCapability(TransactionCase):
             )
             is not True
         ]
-        self.assertEqual(
-            [row.get("backendIdentity") for row in edit_primary_actions],
-            ["button:object:action_submit"],
+        self.assertEqual(len(edit_primary_actions), 1)
+        edit_primary = edit_primary_actions[0]
+        self.assertEqual((edit_primary.get("button") or {}).get("type"), "object")
+        self.assertEqual((edit_primary.get("button") or {}).get("name"), "action_submit")
+        self.assertTrue(
+            str(edit_primary.get("backendIdentity") or "").startswith(
+                "native_button:object:action_submit:"
+            ),
+            edit_primary,
         )
         self.assertTrue(edit_primary_actions[0].get("allowed"))
         self.assertTrue(edit_primary_actions[0].get("enabled"))
