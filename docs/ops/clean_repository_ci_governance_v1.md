@@ -97,6 +97,18 @@ removed by using a fresh clone before release or RC construction.
 Diagnostics report only rule IDs, paths, object prefixes, and classifications;
 matching secret or personal-data values are never printed.
 
+Published generated evidence that exceeds the global blob-size limit may be
+admitted only through
+`config/security/repository_oversized_blob_exceptions.v1.json`. Each entry is
+bound to `RH007`, one repository-relative path, one full immutable Git blob
+SHA-1, the exact `OVERSIZED_BLOB` classification, and an audit reason. Path
+prefixes, wildcards, mutable refs, directory exemptions, threshold increases,
+and duplicate entries are invalid. A registered object continues through the
+secret, personal-data, customer-boundary, and repository-identity scanners;
+the registration suppresses only its exact RH007 size finding. Registrations
+that no longer resolve from the publication history fail closed as
+`RH021 STALE_OVERSIZED_BLOB_EXCEPTION`.
+
 ## Main protection
 
 The `main` branch must require pull requests, a current branch, and these

@@ -154,9 +154,9 @@ export function useActionViewLoadRequestRuntime() {
       advancedFields: kanbanFieldState.advancedFields,
       resolveRequestedFieldsFn: options.resolveRequestedFields,
     });
-    const requestedFields = requestedFieldState.requestedFields;
     const fieldSemantics = extractListFieldSemanticsFromContract(options.contract)
-      .filter((row) => requestedFields.includes(String(row.display_field || '').trim()));
+      .filter((row) => requestedFieldState.requestedFields.includes(String(row.display_field || '').trim()));
+    const requestedFields = requestedFieldState.requestedFields;
 
     const missingColumnsState = options.resolveLoadMissingTreeColumnsErrorState({
       viewMode: options.viewMode,

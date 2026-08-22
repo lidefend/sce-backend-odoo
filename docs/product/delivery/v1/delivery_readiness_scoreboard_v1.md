@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- generated_at_utc: 2026-08-21T08:41:19Z
+- generated_at_utc: 2026-08-21T18:26:53Z
 - branch: `codex/fix-project-layout-container-normalize`
-- commit_ref: `854ecc00`
+- commit_ref: `58c3cfbd`
 - primary_gate: `make verify.scene.delivery.readiness.role_company_matrix`
 - gate_result: `PASS`
-- final_closeout_date: `2026-08-21`
+- final_closeout_date: `2026-08-22`
 
 ## System-Bound Evidence Summary
 
@@ -23,9 +23,9 @@
 | Company access preflight | PASS (strict) | `artifacts/backend/scene_company_access_preflight_report.json` |
 | Multi-company evidence accumulation | PASS (strict) | `artifacts/backend/scene_multi_company_evidence_report.json` |
 | No-action regression guard | PASS | `make verify.scene.no_action_scene.guard` |
-| CI restricted profile readiness | PASS (2026-08-21T08:41:18Z) | `CI_SCENE_DELIVERY_PROFILE=restricted make ci.scene.delivery.readiness` |
+| CI restricted profile readiness | FAIL (2026-08-21T18:26:53Z) | `CI_SCENE_DELIVERY_PROFILE=restricted make ci.scene.delivery.readiness` |
 | CI strict profile readiness | UNKNOWN | `CI_SCENE_DELIVERY_PROFILE=strict make ci.scene.delivery.readiness` |
-| Mainline one-command summary | PASS | `artifacts/backend/delivery_mainline_run_summary.json` |
+| Mainline one-command summary | FAIL | `artifacts/backend/delivery_mainline_run_summary.json` |
 | Product delivery action closure smoke | PASS | `artifacts/backend/product_delivery_action_closure_report.json` |
 | Product delivery module capability smoke | PASS | `artifacts/backend/product_delivery_module9_smoke_report.json` |
 | Payment approval chain smoke | UNKNOWN | `artifacts/backend/payment_request_approval_chain_summary.json` |
@@ -72,7 +72,7 @@
 4. Current release wording is fixed by `make verify.release.current_status.wording_closeout.guard`.
 5. Payment approval field consumer audit is green: `verify.portal.payment_request_approval_field_consumer_audit` with `unexpected_deprecated_refs=0`.
 6. Open backlog is Post-GA only: `gap.role_journey_longtail_coverage`; it is retained to keep governance truthful and is not a release blocker.
-7. CI profile posture: strict=UNKNOWN, restricted=PASS (2026-08-21T08:41:18Z); release execution should use strict in live-enabled runners and restricted only for network-restricted evidence runs.
+7. CI profile posture: strict=UNKNOWN, restricted=FAIL (2026-08-21T18:26:53Z); release execution should use strict in live-enabled runners and restricted only for network-restricted evidence runs.
 
 ## Repro Command Set (Default)
 

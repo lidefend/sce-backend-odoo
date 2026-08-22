@@ -1,0 +1,18 @@
+evidence:
+  baseline_commit: 58c3cfbdb3bf743f37806fec63d188fad948ade5
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  generator: python3 scripts/ci/generate_split_plan_queue.py --write
+  generated_file: docs/engineering_convergence/split_plan_queue.md
+  generator_changed: false
+  verification:
+    generated_reports_guard:
+      status: passed
+    ci_local_quick:
+      status: failed_after_batch_t_scope_passed
+      passed_checkpoint: contract_form_split_evidence_predecessors
+      failure_artifact: docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md
+    verify_restricted:
+      status: pending
+  completion:
+    status: completed_scope_followup_batch_u

@@ -1,0 +1,22 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-U
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Refresh contract-form split line-count evidence
+status: verification_pending
+formal_product_layer: P4
+layer_target: deterministic repository verification evidence
+reason: The split evidence must match the exact current ContractFormPage source line count.
+scope:
+  include:
+    - docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md
+    - docs/ops/iterations/delivery_context_switch_log_v1.md
+    - .agent/goals/REPO-BASELINE-AUDIT.yaml
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-T
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-U
+  exclude:
+    - frontend/apps/web/src/pages/ContractFormPage.vue
+    - scripts/ci/verify_contract_form_split_evidence.py
+    - split_policy
+    - contract_or_schema
+    - database_or_runtime
+rollback:
+  method: restore the evidence observations with the source revision they describe
