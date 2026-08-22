@@ -295,17 +295,24 @@ try {
   const reuseRegions = await page.locator('[data-object-task-page] [data-floorplan-region]').evaluateAll((nodes) => (
     [...new Set(nodes.map((node) => node.getAttribute('data-floorplan-region')).filter(Boolean))]
   ));
+  const reuseEditableReadonlyRelations = await page.locator(
+    '[data-object-task-page] [data-field-state="readonly"] .relation-editor input:not(:disabled), '
+    + '[data-object-task-page] [data-field-state="readonly"] .relation-editor select:not(:disabled)',
+  ).count();
   report.reuse = {
     target: reuseTarget,
     driver: await reuseHost.getAttribute('data-contract-form-driver'),
     providerKit: await page.locator('.scene-ui-provider').getAttribute('data-scene-ui-kit'),
     regions: reuseRegions,
+    editableReadonlyRelations: reuseEditableReadonlyRelations,
   };
   check(report.reuse.driver === 'tdesign-modern' && report.reuse.providerKit === 'tdesign-modern',
     'second real model did not reuse the TDesign semantic floorplan', report.reuse);
   for (const region of ['summary', 'current-task', 'risk', 'audit']) {
     check(reuseRegions.includes(region), `second-model floorplan region missing: ${region}`, reuseRegions);
   }
+  check(reuseEditableReadonlyRelations === 0,
+    'second-model readonly relations exposed editable controls', report.reuse);
   await page.screenshot({ path: path.join(outputDir, 'payment-execution-reuse-desktop.png'), fullPage: true });
 
   report.contract = {

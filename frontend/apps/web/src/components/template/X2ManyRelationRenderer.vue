@@ -1,6 +1,17 @@
 <template>
   <div v-if="field.type === 'many2many'" class="relation-editor">
-    <div v-if="isMany2manyTags(field)" class="relation-tag-picker">
+    <div v-if="field.readonly" class="relation-readonly" data-readonly-relation>
+      <span
+        v-for="option in adapter.selectedRelationOptions(field.name)"
+        :key="`${field.name}-readonly-${option.id}`"
+        class="relation-readonly-item"
+      >{{ option.label }}</span>
+      <span v-if="!adapter.selectedRelationOptions(field.name).length && adapter.relationIds(field.name).length" class="relation-readonly-summary">
+        已关联 {{ adapter.relationIds(field.name).length }} 条
+      </span>
+      <span v-else-if="!adapter.selectedRelationOptions(field.name).length" class="relation-readonly-empty">暂无{{ field.label || '关联记录' }}</span>
+    </div>
+    <div v-else-if="isMany2manyTags(field)" class="relation-tag-picker">
       <div class="relation-tags-control">
         <div v-if="adapter.selectedRelationOptions(field.name).length" class="relation-tag-list">
           <button
@@ -262,6 +273,24 @@ function tagColorStyle(color: unknown) {
   display: grid;
   gap: 6px;
 }
+
+.relation-readonly {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+  align-items: center;
+  color: var(--sc-app-text-primary);
+}
+
+.relation-readonly-item {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--sc-app-muted-bg);
+}
+
+.relation-readonly-summary,
+.relation-readonly-empty { color: var(--sc-app-text-secondary); }
 
 .chips {
   display: flex;
