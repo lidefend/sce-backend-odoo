@@ -6,6 +6,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from js_contract_consumer_markers import has_contract_page_info_view_type_access
+
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB_ROOT = ROOT / "frontend/apps/web/src"
@@ -114,8 +116,9 @@ def main() -> int:
         "selectorTokens(`filter.${key}`, key)",
         "selectorTokens(`group.${field}`, field)",
     ))
+    if not has_contract_page_info_view_type_access(surface_contract_source):
+        fail(errors, "web v2 surface modes missing canonical contract pageInfo.viewType access")
     require_tokens(errors, surface_contract_source, "web v2 surface modes", (
-        "contract?.snapshot.pageInfo.viewType",
         "resolveContractV2ListProfile(contract)",
     ))
     require_tokens(errors, meta_runtime_source, "web v2 meta runtime", (

@@ -386,7 +386,8 @@ verify.unified_page_contract.v2.regression_audit.host: guard.prod.forbid
 
 .PHONY: verify.unified_page_contract.v2.web_consumer
 verify.unified_page_contract.v2.web_consumer: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/unified_page_contract_v2_web_consumer_guard.py scripts/verify/web_unified_page_contract_v2_guard.py
+	@python3 -m py_compile scripts/verify/js_contract_consumer_markers.py scripts/verify/test_js_contract_consumer_markers.py scripts/verify/unified_page_contract_v2_web_consumer_guard.py scripts/verify/web_unified_page_contract_v2_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_js_contract_consumer_markers.py
 	@python3 scripts/verify/unified_page_contract_v2_web_consumer_guard.py
 	@python3 scripts/verify/web_unified_page_contract_v2_guard.py
 

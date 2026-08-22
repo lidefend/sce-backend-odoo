@@ -8,6 +8,9 @@ import re
 import ast
 from pathlib import Path
 
+from contract_form_semantic_identity_guard import validate_semantic_identity_projection
+from scene_audit_disclosure_guard import audit_disclosure_is_governed
+
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB_SRC = ROOT / "frontend/apps/web/src"
@@ -215,13 +218,11 @@ for semantic_region in ("summary", "current-task", "business-context", "relation
         f"object-task floorplan does not expose {semantic_region} semantic region",
     )
 require(
-    '<details v-if="hasAudit || auditNodes.length"' in object_task_page
-    and '<details v-if="hasAudit || auditNodes.length" open' not in object_task_page,
-    "audit region is not default-collapsed",
+    audit_disclosure_is_governed(object_task_page),
+    "audit region must be content-backed and default-collapsed",
 )
 require(
-    "widget.formStructureRole" in presenter
-    and "semanticRole: semanticRole(container.formStructureRole)" in presenter,
+    not validate_semantic_identity_projection(presenter),
     "normalized form semantic roles do not survive the canonical mechanical mapping",
 )
 require(

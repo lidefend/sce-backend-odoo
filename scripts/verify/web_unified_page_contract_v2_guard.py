@@ -6,6 +6,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from js_contract_consumer_markers import has_contract_page_info_view_type_access
+
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB_CONTRACT_API = ROOT / "frontend/apps/web/src/api/contract.ts"
@@ -106,7 +108,7 @@ def main() -> int:
         errors.append("web filter runtime must honor v2 selectorStatus for search/filter/group controls")
     if "snapshot.pageInfo.model" not in shape_source:
         errors.append("web model resolver must read canonical pageInfo.model")
-    if "contract?.snapshot.pageInfo.viewType" not in surface_source or "resolveContractV2ListProfile" not in surface_source:
+    if not has_contract_page_info_view_type_access(surface_source) or "resolveContractV2ListProfile" not in surface_source:
         errors.append("web action surface contract must consume canonical pageInfo/listProfile")
     if "collectContractV2FieldStatusByCode" not in form_layout_source:
         errors.append("web contract form layout must consume canonical widget status")

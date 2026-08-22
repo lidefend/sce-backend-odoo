@@ -67,6 +67,8 @@ verify.frontend.scene_component_bridge.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_scene_component_driver_feature_flags.py
 
 verify.frontend.scene_component_bridge.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_scene_audit_disclosure_guard
+	@python3 -m unittest scripts.verify.test_contract_form_semantic_identity_guard
 	@python3 scripts/verify/frontend_scene_component_bridge_guard.py
 
 verify.frontend.scene_component_bridge.browser: guard.prod.forbid check-compose-project check-compose-env
@@ -276,6 +278,7 @@ verify.contract.subviews.guard: guard.prod.forbid
 	@python3 scripts/verify/subviews_contract_guard.py
 
 verify.frontend.view_type_render_coverage.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_view_type_render_coverage_guard
 	@python3 scripts/verify/view_type_render_coverage_guard.py
 
 verify.frontend.view_type_contract_semantic.guard: guard.prod.forbid
