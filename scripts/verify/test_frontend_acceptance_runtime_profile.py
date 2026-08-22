@@ -157,6 +157,14 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             )
         self.assertIn("REUSED governed pid=", runtime)
 
+    def test_make_exposes_governed_stale_backend_replacement(self):
+        dev_make = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        target = dev_make.split("backend.acceptance.replace-stale:", 1)[1].split(
+            "backend.acceptance.down:", 1
+        )[0]
+        self.assertIn("guard.prod.forbid", target)
+        self.assertIn("frontend_acceptance_operation_entry.sh backend-replace-stale", target)
+
     def test_local_db_ensure_reloads_registry_after_baseline_refresh(self):
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
             encoding="utf-8"
