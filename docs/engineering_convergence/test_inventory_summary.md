@@ -4,21 +4,21 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1210`
+- Total assets: `1218`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `170`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `815`
+- PR dedupe candidates: `823`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 458 |
-| contract | 345 |
-| unit | 207 |
+| governance | 461 |
+| contract | 349 |
+| unit | 208 |
 | odoo_integration | 101 |
 | e2e | 44 |
 | security | 27 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1034 |
+| pr_candidate | 1042 |
 | integration_candidate | 125 |
 | release_candidate | 42 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 815 |
+| deduplicate_before_required | 823 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 124 |
 | keep_release_only | 42 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1036 |
+| <5m | 1044 |
 | 10-30m | 126 |
 | 30-60m | 44 |
 | unknown | 3 |
@@ -152,9 +152,9 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 458 |
-| platform owner | 345 |
-| test owner | 208 |
+| architecture owner | 461 |
+| platform owner | 349 |
+| test owner | 209 |
 | backend owner | 101 |
 | qa owner | 44 |
 | security owner | 27 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1080 |
+| scripts/verify | 1088 |
 | scripts/ops | 67 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 14 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-190 | governance | `scripts/verify/business_shape_assembly_guard.py` | architecture owner |
 | T-ASSET-191 | contract | `scripts/verify/capability_core_health_report_schema_guard.py` | platform owner |
 | T-ASSET-192 | governance | `scripts/verify/capability_dormant_explain_guard.py` | architecture owner |
-| ... | ... | 735 more | ... |
+| ... | ... | 743 more | ... |
 
 ## Dedupe Hotspots
 
