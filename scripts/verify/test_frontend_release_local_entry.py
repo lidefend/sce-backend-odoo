@@ -182,27 +182,29 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             self.assertLess(backend, login_probe, target)
             self.assertLess(login_probe, frontend, target)
 
-    def test_ci_reloads_registry_after_install_and_release_stops_after_first_browser_failure(self) -> None:
+    def test_ci_starts_http_carrier_after_install_and_stops_after_first_browser_failure(self) -> None:
         operation = (
             ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh"
         ).read_text(encoding="utf-8")
         db_ensure = operation.split("  db-ensure)", 1)[1].split("    ;;", 1)[0]
+        infrastructure = db_ensure.index("compose_dev up -d --wait db redis")
+        carrier = db_ensure.index("compose_dev create odoo", infrastructure)
         install = db_ensure.index("frontend_acceptance_db_ensure.sh")
         pre_restart_identity = db_ensure.index(
             'validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required',
             install,
         )
-        restart = db_ensure.index("compose_dev restart odoo")
-        healthy = db_ensure.index("compose_dev up -d --wait odoo", restart)
+        healthy = db_ensure.index("compose_dev up -d --wait odoo", install)
         final_identity = db_ensure.index(
             'validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required',
             healthy,
         )
-        self.assertLess(install, restart)
+        self.assertLess(infrastructure, carrier)
+        self.assertLess(carrier, install)
         self.assertLess(install, pre_restart_identity)
-        self.assertLess(pre_restart_identity, restart)
-        self.assertLess(restart, healthy)
+        self.assertLess(pre_restart_identity, healthy)
         self.assertLess(healthy, final_identity)
+        self.assertNotIn("compose_dev restart odoo", db_ensure)
 
         runtime = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
         audit = runtime.split("verify.frontend.release.audit:", 1)[1].split("\n\n", 1)[0]

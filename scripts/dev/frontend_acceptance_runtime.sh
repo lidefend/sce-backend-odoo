@@ -354,9 +354,12 @@ case "$command" in
     preflight
     # shellcheck source=../common/compose.sh
     source "$ROOT_DIR/scripts/common/compose.sh"
-    compose_dev up -d --wait db redis odoo
+    # A running HTTP carrier may execute cron while the disposable upgrade
+    # process refreshes ir.cron. Create its governed container identity now,
+    # but do not start it until module refresh is complete.
+    compose_dev up -d --wait db redis
+    compose_dev create odoo
     bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
-    compose_dev restart odoo
     compose_dev up -d --wait odoo
     preflight
     echo "[frontend.acceptance.registry] RELOADED local project=$COMPOSE_PROJECT_NAME sha=$(git -C "$ROOT_DIR" rev-parse HEAD)"

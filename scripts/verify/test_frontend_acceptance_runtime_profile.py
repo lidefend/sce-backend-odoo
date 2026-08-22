@@ -165,16 +165,19 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         self.assertIn("guard.prod.forbid", target)
         self.assertIn("frontend_acceptance_operation_entry.sh backend-replace-stale", target)
 
-    def test_local_db_ensure_reloads_registry_after_baseline_refresh(self):
+    def test_local_db_ensure_starts_http_carrier_after_baseline_refresh(self):
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
             encoding="utf-8"
         )
         db_ensure = runtime.split("  db-ensure)", 1)[1].split("    ;;", 1)[0]
+        infrastructure = db_ensure.index("compose_dev up -d --wait db redis")
+        carrier = db_ensure.index("compose_dev create odoo", infrastructure)
         refresh = db_ensure.index("frontend_acceptance_db_ensure.sh")
-        restart = db_ensure.index("compose_dev restart odoo", refresh)
-        healthy = db_ensure.index("compose_dev up -d --wait odoo", restart)
+        healthy = db_ensure.index("compose_dev up -d --wait odoo", refresh)
         runtime_check = db_ensure.index("preflight", healthy)
-        self.assertLess(restart, healthy)
+        self.assertLess(infrastructure, carrier)
+        self.assertLess(carrier, refresh)
+        self.assertNotIn("compose_dev restart odoo", db_ensure)
         self.assertLess(healthy, runtime_check)
 
     def test_source_fingerprint_covers_dirty_and_untracked_addons(self):

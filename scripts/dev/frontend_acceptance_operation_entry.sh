@@ -117,14 +117,15 @@ case "$operation" in
   db-ensure)
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" optional
     source "$ROOT_DIR/scripts/common/compose.sh"
-    compose_dev up -d --wait db redis odoo
+    # Keep the HTTP carrier stopped while disposable Odoo processes install
+    # and upgrade modules. Otherwise its cron runner can lock ir.cron while
+    # XML data is being refreshed in the same database.
+    compose_dev up -d --wait db redis
+    compose_dev create odoo
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
-    # Module installation runs in a disposable Odoo process. Recycle the
-    # already-running HTTP carrier so its registry reflects the installed
-    # modules before any fixture or login request can reach it.
-    compose_dev restart odoo
+    # Start the HTTP carrier only after the refreshed registry is durable.
     compose_dev up -d --wait odoo
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     echo "[frontend.acceptance.registry] RELOADED isolated_ci project=$COMPOSE_PROJECT_NAME sha=$SC_SOURCE_REVISION"

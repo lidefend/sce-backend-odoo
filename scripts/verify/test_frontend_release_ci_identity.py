@@ -239,7 +239,7 @@ class FrontendReleaseCIIdentityTests(unittest.TestCase):
             f"local|operation_entry_v1|{ROOT / 'scripts/dev/frontend_acceptance_runtime.sh'}|fixture",
         )
 
-    def test_install_drift_is_rejected_before_odoo_restart(self) -> None:
+    def test_install_drift_is_rejected_before_odoo_http_start(self) -> None:
         root = Path(self.temp.name) / "mock-root"
         (root / "scripts/common").mkdir(parents=True)
         (root / "scripts/test").mkdir(parents=True)
@@ -287,8 +287,9 @@ validate_frozen_frontend_release_ci_resources() {
         self.assertEqual(result.returncode, 2)
         self.assertIn("post-install identity drift", result.stderr)
         recorded = compose_calls.read_text(encoding="utf-8")
-        self.assertIn("up -d --wait db redis odoo", recorded)
-        self.assertNotIn("restart", recorded)
+        self.assertIn("up -d --wait db redis", recorded)
+        self.assertIn("create odoo", recorded)
+        self.assertNotIn("up -d --wait odoo", recorded)
 
     def test_ci_frontend_lifecycle_is_bound_to_frozen_run_process_identity(self) -> None:
         source = (ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh").read_text(
