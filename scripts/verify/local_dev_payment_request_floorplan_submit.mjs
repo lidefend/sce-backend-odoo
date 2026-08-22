@@ -76,6 +76,7 @@ try {
   });
   check(metrics.position === 'fixed' && Math.abs(metrics.bottom - metrics.viewportHeight) <= 1 && metrics.overflow <= 0,
     'mobile primary action surface is not fixed and contained', metrics);
+  const beforeTaskText = (await page.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
   await page.screenshot({ path: path.join(outputDir, 'before-submit-390.png') });
 
   await primary.click();
@@ -92,10 +93,13 @@ try {
   const executeBody = await executeResponse.json();
   report.execute = { status: executeResponse.status(), body: executeBody };
   check(executeResponse.status() === 200 && executeBody?.ok === true, 'submit execution failed', executeBody);
-  const currentStateLocator = page.locator('.native-statusbar-mobile-summary strong').first();
+  const statusSummary = page.locator('.native-statusbar-summary--readonly').first();
+  const currentStateLocator = statusSummary.locator('strong').first();
   await currentStateLocator.waitFor({ state: 'visible', timeout: 45000 });
   await page.locator('[data-object-task-page]').waitFor({ state: 'visible', timeout: 45000 });
   const currentState = (await currentStateLocator.innerText()).trim();
+  const statusSummaryText = (await statusSummary.innerText()).replace(/\s+/g, ' ').trim();
+  const currentTaskText = (await page.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
   const currentPageText = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
   check(!currentPageText.includes('无权访问'), 'successful submit navigated to an access-denied product surface', {
     executeBody, observedIntents, url: page.url(), currentPageText,
@@ -103,6 +107,15 @@ try {
   check(currentState === '提交', 'page did not refresh to the submitted business state', {
     currentState, observedIntents, url: page.url(), currentPageText,
   });
+  check(currentTaskText.includes('下一步办理') && currentTaskText.includes('审批处理'),
+    'post-submit next step was not refreshed from authoritative facts', currentTaskText);
+  check(currentTaskText !== beforeTaskText, 'post-submit task and blocker projection did not refresh', {
+    beforeTaskText, currentTaskText,
+  });
+  const executeIntentIndex = observedIntents.lastIndexOf('execute_button');
+  const refreshIntents = executeIntentIndex >= 0 ? observedIntents.slice(executeIntentIndex + 1) : [];
+  check(refreshIntents.includes('ui.contract.v2') && refreshIntents.includes('api.data'),
+    'post-submit contract and record were not refreshed', refreshIntents);
 
   const regions = await page.locator('[data-object-task-page] [data-floorplan-region]').evaluateAll((nodes) => (
     [...new Set(nodes.map((node) => node.getAttribute('data-floorplan-region')).filter(Boolean))]
@@ -110,13 +123,24 @@ try {
   for (const region of ['summary', 'current-task', 'relation', 'activity', 'audit']) {
     check(regions.includes(region), `post-submit Floorplan region missing: ${region}`, regions);
   }
-  const auditText = (await page.locator('[data-floorplan-region="audit"]').innerText()).replace(/\s+/g, ' ').trim();
-  check(auditText.length > 0, 'post-submit audit region is empty');
+  const auditRegion = page.locator('[data-floorplan-region="audit"]').first();
+  await auditRegion.locator('summary').click();
+  await auditRegion.locator('[data-audit-event]').first().waitFor({ timeout: 15000 });
+  const auditEvents = await auditRegion.locator('[data-audit-event]').evaluateAll((nodes) => nodes.map((node) => ({
+    actor: String(node.querySelector('[data-audit-actor]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+    time: String(node.querySelector('[data-audit-time]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+    event: String(node.querySelector('[data-audit-event-name]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+    result: String(node.querySelector('[data-audit-result]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+  })));
+  check(auditEvents.length >= 1 && auditEvents.every((event) => event.actor && event.time && event.event && event.result),
+    'post-submit audit region has no trustworthy event', auditEvents);
   check(mutations.length === 1 && mutations[0].params?.button?.name === 'action_submit', 'journey emitted unexpected mutations', mutations);
   check(errors.length === 0, 'browser errors detected', errors);
   await page.screenshot({ path: path.join(outputDir, 'after-submit-390-full.png'), fullPage: true });
   report.regions = regions;
-  report.auditText = auditText;
+  report.statusSummary = statusSummaryText;
+  report.currentTask = currentTaskText;
+  report.auditEvents = auditEvents;
   report.mutations = mutations;
   report.errors = errors;
   report.observedIntents = observedIntents;

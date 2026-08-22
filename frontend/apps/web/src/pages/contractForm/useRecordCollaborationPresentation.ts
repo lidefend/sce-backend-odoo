@@ -125,7 +125,8 @@ export function useRecordCollaborationPresentation(context: {
     collaborationUserQuery: context.collaborationUserQuery.value, hasAttachments: Boolean(nativeAttachments.value),
     pendingAttachments: context.pendingNativeAttachments.value, posting: context.chatterPosting.value,
     selectedMentionUsers: context.selectedMentionUsers.value, submitDisabled: isNativeChatterSubmitDisabled.value,
-    timeline: context.chatterTimeline.value, timelineHasMore: context.chatterTimelineHasMore.value,
+    timeline: context.chatterTimeline.value,
+    timelineHasMore: context.chatterTimelineHasMore.value,
     timelineLoading: context.chatterTimelineLoading.value, title: nativeCollaborationTitle.value,
     unavailableMessage: nativeCollaborationUnavailableMessage.value, usersLoading: context.collaborationUsersLoading.value,
   }));

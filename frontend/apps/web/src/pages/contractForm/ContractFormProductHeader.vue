@@ -18,12 +18,12 @@
           <p class="header-status-item" :class="{ 'header-status-item--danger': intakeMissingSummary !== '无' }">缺少：{{ intakeMissingSummary }}</p>
         </div>
         <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态流程">
-          <p class="native-statusbar-mobile-summary">
+          <p :class="['native-statusbar-summary', { 'native-statusbar-summary--readonly': mode === 'readonly' }]">
             <span>当前状态</span><strong>{{ currentStatusLabel }}</strong>
             <span v-if="nextActionLabel">下一步 {{ nextActionLabel }}</span>
-            <span class="native-statusbar-progress">状态 {{ currentStatusPosition }}/{{ statusbar.states.length }}</span>
           </p>
           <ol
+            v-if="mode !== 'readonly'"
             ref="statusTrackRef"
             class="native-statusbar-track"
             :data-has-more-before="workflowHasMoreBefore || undefined"
@@ -92,7 +92,6 @@ const props = defineProps<{
 }>();
 
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
-const currentStatusPosition = computed(() => Math.max(1, currentStatusIndex.value + 1));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
 const nextActionLabel = computed(() => nextBusinessActionLabel(props.primaryAction, props.directActions));
 const statusTrackRef = ref<HTMLOListElement | null>(null);
@@ -198,7 +197,17 @@ function buttonClass(action: ContractAction) {
   scrollbar-width: thin;
 }
 .native-statusbar-track > li { display: flex; flex: 0 0 auto; }
-.native-statusbar-mobile-summary { display: none; }
+.native-statusbar-summary { display: none; }
+.native-statusbar-summary--readonly {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 0;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+.native-statusbar-summary--readonly strong { color: var(--sc-app-info-text); font-size: 13px; }
 .native-statusbar-step-index {
   display: none;
   width: 18px;
@@ -252,7 +261,7 @@ function buttonClass(action: ContractAction) {
   .record-header-status { gap: 6px; }
   .record-header-context { min-height: 24px; }
   .record-header-context strong { padding: 3px 7px; }
-  .native-statusbar-mobile-summary {
+  .native-statusbar-summary {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
@@ -261,14 +270,8 @@ function buttonClass(action: ContractAction) {
     color: var(--sc-app-text-secondary);
     font-size: 11px;
   }
-  .native-statusbar-mobile-summary strong { color: var(--sc-app-info-text); font-size: 13px; }
-  .native-statusbar-mobile-summary > span:nth-child(3) { margin-left: auto; }
-  .native-statusbar-progress {
-    flex: 1 0 100%;
-    color: var(--sc-app-text-muted);
-    font-size: 10px;
-    text-align: right;
-  }
+  .native-statusbar-summary strong { color: var(--sc-app-info-text); font-size: 13px; }
+  .native-statusbar-summary > span:nth-child(3) { margin-left: auto; }
   .native-statusbar-track {
     display: none;
   }

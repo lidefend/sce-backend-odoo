@@ -240,6 +240,13 @@ class TestChatterTimelineAuthorizationOrm(TransactionCase):
         self.assertGreaterEqual(data["counts"]["attachments"], 1)
         self.assertGreaterEqual(data["counts"]["activities"], 1)
         self.assertGreaterEqual(data["counts"]["audit"], 1)
+        audit_item = next(item for item in data["items"] if item.get("type") == "audit")
+        self.assertEqual(
+            set((audit_item.get("audit") or {}).keys()),
+            {"actor", "occurred_at", "event", "result"},
+        )
+        self.assertTrue(all((audit_item.get("audit") or {}).values()))
+        self.assertNotIn("TIMELINE_AUTHORIZED_AUDIT", audit_item.get("title", ""))
 
         admin_data, _admin_meta = self._timeline(
             self.env(

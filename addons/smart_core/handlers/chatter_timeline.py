@@ -281,20 +281,52 @@ class ChatterTimelineHandler(BaseIntentHandler):
         items: List[Dict[str, Any]] = []
         for row in rows:
             date_value = _to_iso(row.ts)
-            actor = row.actor_login or (row.actor_uid.display_name if row.actor_uid else "System")
+            actor = (row.actor_uid.display_name if row.actor_uid else "") or row.actor_login or "系统"
+            event = _audit_event_label(row.action, row.event_code)
             items.append(
                 {
                     "key": f"l-{row.id}",
                     "type": "audit",
-                    "typeLabel": "操作",
-                    "title": row.action or row.event_code or "操作日志",
+                    "typeLabel": "审计",
+                    "title": event,
                     "meta": f"{actor} · {date_value or '-'}",
                     "body": row.reason or "",
                     "at": date_value,
                     "id": row.id,
                     "reason_code": row.event_code or "",
+                    "audit": {
+                        "actor": actor,
+                        "occurred_at": date_value or "",
+                        "event": event,
+                        "result": "已记录",
+                    },
                 }
             )
+        if not items:
+            record = self.env[model].browse(res_id).exists()
+            created_at = _to_iso(getattr(record, "create_date", None)) if record else None
+            creator = getattr(record, "create_uid", None) if record else None
+            actor = str(getattr(creator, "display_name", "") or getattr(creator, "login", "") or "系统")
+            if record and created_at:
+                items.append(
+                    {
+                        "key": f"record-created-{res_id}",
+                        "type": "audit",
+                        "typeLabel": "审计",
+                        "title": "创建记录",
+                        "meta": f"{actor} · {created_at}",
+                        "body": "",
+                        "at": created_at,
+                        "id": 0,
+                        "reason_code": "",
+                        "audit": {
+                            "actor": actor,
+                            "occurred_at": created_at,
+                            "event": "创建记录",
+                            "result": "已创建",
+                        },
+                    }
+                )
         return items
 
 
@@ -334,6 +366,15 @@ def _to_iso(value: Any) -> Optional[str]:
         return datetime.fromisoformat(str(value).replace(" ", "T")).isoformat()
     except Exception:
         return str(value)
+
+
+def _audit_event_label(action: Any, event_code: Any) -> str:
+    """Keep technical method/event identifiers out of the product timeline."""
+    for value in (action, event_code):
+        label = str(value or "").strip()
+        if label and not all(char.isascii() and (char.isalnum() or char in "._:-") for char in label):
+            return label
+    return "业务操作"
 
 
 def _strip_html(value: str) -> str:

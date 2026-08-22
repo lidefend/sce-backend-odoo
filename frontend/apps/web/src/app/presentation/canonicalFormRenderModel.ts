@@ -23,6 +23,15 @@ export type CanonicalFormAction = {
   actionRef: ContractV2ActionRule;
 };
 
+export type CanonicalAuditEvent = {
+  key: string;
+  actor: string;
+  occurredAt: string;
+  event: string;
+  result: string;
+  detail: string;
+};
+
 export type CanonicalFormField = {
   widgetId: string;
   fieldCode: string;

@@ -92,7 +92,7 @@ export function useNativeChatterRuntime(params: {
         model: targetModel,
         res_id: targetResId,
         offset: append ? timelineNextOffset.value : 0,
-        include_audit: false,
+        include_audit: true,
       });
       if (!isCurrentRequest()) return;
       const nextItems = Array.isArray(response.items) ? response.items : [];
