@@ -158,11 +158,12 @@ require(
 require(
     (
         "filter(isFormActionBarAction)" in presenter
-        or "filter((action) => isFormActionBarAction(action.actionRef))" in presenter
+        or "isFormActionBarAction(action.actionRef)" in presenter
     )
+    and "demotedActionIds.has(action.actionRef.actionId)" in presenter
     and "sourceWidgetId === 'page.root'" in presenter
     and "targetScope === 'footer'" in presenter,
-    "iteration one changed the cb6e276 canonical form action collection",
+    "canonical form action collection does not honor the backend primary resolution",
 )
 require(
     "actionsByIdentity.get(actionIdentity)" in presenter

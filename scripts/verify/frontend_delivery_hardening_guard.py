@@ -111,13 +111,22 @@ require(
     "isolated performance evidence SHA mismatch",
     "warmed retained detail page reloaded its primary contract",
     "fs.writeFileSync(path.join(OUT, 'performance.json')",
-    "button:object:action_submit",
+    'data-action-method="action_submit"',
+    "primaryResolution",
     "ACTION_DIAGNOSTIC",
     "NORMALIZED_ACTION_DIAGNOSTIC",
     "expected=提交审批",
 )
 require(
     "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+    "data-backend-identity",
+    "data-action-enabled",
+    "data-visible-profiles",
+)
+require(
+    "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+    "data-canonical-action-bar",
+    "data-action-method",
     "data-backend-identity",
     "data-action-enabled",
     "data-visible-profiles",
