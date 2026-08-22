@@ -5,7 +5,13 @@ import {
   resolveActionSurfaceRenderer,
 } from '../src/app/renderers/actionSurfaceRendererRegistry';
 import { resolveActionCollectionPresentation } from '../src/app/contracts/actionViewSurfaceContract';
-import { activityCellText, resolveActivitySurfaceModelFromProfile } from '../src/app/contracts/actionViewActivityContract';
+import {
+  activityCellText,
+  resolveActivitySurfaceModel,
+  resolveActivitySurfaceModelFromProfile,
+} from '../src/app/contracts/actionViewActivityContract';
+import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
+import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { shouldUseCanonicalCollectionDetail } from '../src/app/runtime/actionViewInteractionRuntime';
 
 const readySemantics = [
@@ -82,23 +88,34 @@ assert.equal(activityModel.templateNodes[0]?.children[0]?.tail, 'due soon');
 assert.equal(Object.prototype.hasOwnProperty.call(activityModel, 'template_qweb'), false);
 assert.equal(resolveActivitySurfaceModelFromProfile({}, []).ok, false);
 const activityProfile = {
+  activityTypeSlots: {},
+  deadlineSlots: {},
+  assigneeSlots: {},
   fieldOccurrences: [
-    { name: 'x_subject', label: 'Subject', widget: '', native_locator: 'activity/templates[1]/div[t-name=activity-box]/field[name=x_subject]', occurrence_index: 1, source_position: 4, attributes: { name: 'x_subject' }, text: '', tail: 'due soon', modifiers: '', decorations: [] },
+    {
+      name: 'x_subject', label: 'Subject', widget: '',
+      native_locator: 'activity/templates[1]/div[t-name=activity-box]/field[name=x_subject]',
+      occurrence_index: 1, source_position: 4,
+      attributes: { name: 'x_subject', 'decoration-info': "state == 'new'" },
+      text: '', tail: 'due soon', modifiers: '',
+      decorations: [{ class: 'info', expr_raw: "state == 'new'", expr: { kind: 'raw', value: "state == 'new'" } }],
+      field_type: '', currency_field: '', digits: [],
+    },
   ],
   nativeAttrs: { string: 'Activities' },
   nodeOccurrences: [
-    { tag: 'activity', native_locator: 'activity', occurrence_index: 1, source_position: 0, attributes: { string: 'Activities' } },
-    { tag: 'templates', native_locator: 'activity/templates[1]', occurrence_index: 1, source_position: 2, attributes: {} },
-    { tag: 'div', native_locator: 'activity/templates[1]/div[t-name=activity-box]', occurrence_index: 1, source_position: 3, attributes: { 't-name': 'activity-box' }, text: 'Section' },
-    { tag: 'field', native_locator: 'activity/templates[1]/div[t-name=activity-box]/field[name=x_subject]', occurrence_index: 1, source_position: 4, attributes: { name: 'x_subject' }, tail: 'due soon' },
+    { tag: 'activity', native_locator: 'activity', occurrence_index: 1, source_position: 0, attributes: { string: 'Activities' }, text: '', tail: '' },
+    { tag: 'templates', native_locator: 'activity/templates[1]', occurrence_index: 1, source_position: 2, attributes: {}, text: '', tail: '' },
+    { tag: 'div', native_locator: 'activity/templates[1]/div[t-name=activity-box]', occurrence_index: 1, source_position: 3, attributes: { 't-name': 'activity-box' }, text: 'Section', tail: '' },
+    { tag: 'field', native_locator: 'activity/templates[1]/div[t-name=activity-box]/field[name=x_subject]', occurrence_index: 1, source_position: 4, attributes: { name: 'x_subject', 'decoration-info': "state == 'new'" }, text: '', tail: 'due soon' },
   ],
   template: {
     native_locator: 'activity/templates[1]', occurrence_index: 1, names: ['activity-box'],
     nodes: [{
       tag: 'div', native_locator: 'activity/templates[1]/div[t-name=activity-box]', occurrence_index: 1, source_position: 3,
-      attributes: { 't-name': 'activity-box' }, text: 'Section', children: [{
+      attributes: { 't-name': 'activity-box' }, text: 'Section', tail: '', children: [{
         tag: 'field', native_locator: 'activity/templates[1]/div[t-name=activity-box]/field[name=x_subject]', occurrence_index: 1,
-        source_position: 4, attributes: { name: 'x_subject' }, tail: 'due soon', children: [],
+        source_position: 4, attributes: { name: 'x_subject', 'decoration-info': "state == 'new'" }, text: '', tail: 'due soon', children: [],
       }],
     }],
   },
@@ -112,6 +129,123 @@ const activityProfile = {
     runtime_carrier: 'ui.contract.v2.layoutContract.activityProfile',
   },
 };
+
+const activityCarrierPayload = {
+  pageInfo: {
+    pageId: 'page.x.activity', sceneKey: 'x.activity', pageName: 'Activities', model: 'x.activity',
+    viewType: 'activity', layoutType: 'activity', renderMode: 'governed', contractVersion: '2.0.0', clientType: 'web_pc',
+  },
+  layoutContract: {
+    pageId: 'page.x.activity', layoutType: 'activity', adaptMode: 'pc', containerTree: [],
+    layoutHints: { density: 'compact' }, componentRegistry: {},
+    listProfile: { collection_presentation: { semantic: 'activity' } },
+    activityProfile,
+  },
+  statusContract: {
+    globalStatus: {}, widgetStatus: [], buttonStatus: [], containerStatus: [], selectorStatus: [],
+  },
+  actionContract: { actionRuleList: [], dependencyGraph: {} },
+  dataContract: {
+    mainData: {}, tableRows: {}, relationRows: {}, dictData: {}, pagination: {}, dataSource: {}, dataMeta: {},
+  },
+  runtimeContract: {
+    patchStrategy: 'full', cachePolicy: 'snapshot', optimistic: false, lazyContainer: [], virtualization: {}, retryPolicy: {},
+  },
+  meta: {
+    etag: 'activity-etag', snapshotId: 'activity-snapshot', traceId: 'activity-trace', requestId: 'activity-request',
+    sourceType: 'ui.contract',
+    lifecycle: {
+      lifecycleVersion: '1', stage: 'sealed',
+      definition: { schemaId: 'v2', schemaVersion: '2', schemaSha256: 'schema', contractVersion: '2', normativeStatus: 'active' },
+      generation: { generator: 'test', generatorVersion: '1', sourceType: 'ui.contract', sourceSha256: 'source' },
+      runtime: { requestId: 'activity-request', traceId: 'activity-trace', clientType: 'web_pc', traceSource: 'test' },
+      integrity: { algorithm: 'sha256', contractSha256: 'activity-contract-sha' }, authority: {},
+    },
+  },
+};
+
+const decodedActivityCarrier = decodeContractV2Snapshot(activityCarrierPayload);
+assert.deepEqual(decodedActivityCarrier.layoutContract.activityProfile, activityProfile);
+assert.deepEqual(decodedActivityCarrier.layoutContract.listProfile, activityCarrierPayload.layoutContract.listProfile);
+assert.deepEqual(decodedActivityCarrier.layoutContract.layoutHints, activityCarrierPayload.layoutContract.layoutHints);
+const activityCarrierStore = createContractV2Store(decodedActivityCarrier);
+assert.deepEqual(activityCarrierStore.snapshot.layoutContract.activityProfile, activityProfile);
+const activityFromNormalizedStore = resolveActivitySurfaceModel(activityCarrierStore, [{ id: 7, x_subject: 'Review' }]);
+assert.equal(activityFromNormalizedStore.ok, true);
+assert.equal(activityFromNormalizedStore.records[0]?.x_subject, 'Review');
+assert.equal(activityFromNormalizedStore.sourceAuthority.runtime_carrier, 'ui.contract.v2.layoutContract.activityProfile');
+
+const { activityProfile: omittedActivityProfile, ...layoutWithoutActivityProfile } = activityCarrierPayload.layoutContract;
+assert.ok(omittedActivityProfile);
+const decodedMissingActivityCarrier = decodeContractV2Snapshot({
+  ...activityCarrierPayload,
+  layoutContract: layoutWithoutActivityProfile,
+});
+assert.equal(
+  resolveActivitySurfaceModel(createContractV2Store(decodedMissingActivityCarrier), []).reasonCode,
+  'ACTIVITY_SOURCE_AUTHORITY_MISSING',
+);
+
+const invalidActivityCarrier = structuredClone(activityCarrierPayload);
+Object.assign(invalidActivityCarrier.layoutContract.activityProfile, { fieldOccurrences: {} });
+assert.throws(
+  () => decodeContractV2Snapshot(invalidActivityCarrier),
+  /layoutContract\.activityProfile\.fieldOccurrences must be an array/,
+);
+
+type DecodedActivityCarrier = ReturnType<typeof decodeContractV2Snapshot>;
+function assertInvalidActivityCarrierRejected(
+  mutate: (profile: Record<string, unknown>) => void,
+  expectedIssue: RegExp,
+): void {
+  const payload = structuredClone(activityCarrierPayload);
+  mutate(payload.layoutContract.activityProfile as unknown as Record<string, unknown>);
+  let decoded: DecodedActivityCarrier | undefined;
+  assert.throws(() => {
+    decoded = decodeContractV2Snapshot(payload);
+  }, expectedIssue);
+  assert.equal(decoded, undefined, 'invalid profile must not enter the normalized store');
+}
+
+function firstActivityField(profile: Record<string, unknown>): Record<string, unknown> {
+  return (profile.fieldOccurrences as Array<Record<string, unknown>>)[0];
+}
+
+function activityAuthority(profile: Record<string, unknown>): Record<string, unknown> {
+  return profile.sourceAuthority as Record<string, unknown>;
+}
+
+const nullActivityCarrier = structuredClone(activityCarrierPayload);
+Object.assign(nullActivityCarrier.layoutContract, { activityProfile: null });
+let decodedNullActivityCarrier: DecodedActivityCarrier | undefined;
+assert.throws(() => {
+  decodedNullActivityCarrier = decodeContractV2Snapshot(nullActivityCarrier);
+}, /layoutContract\.activityProfile must be an object/);
+assert.equal(decodedNullActivityCarrier, undefined, 'null profile must not enter the normalized store');
+
+assertInvalidActivityCarrierRejected((profile) => { firstActivityField(profile).digits = [16]; }, /digits must be empty or contain precision and scale/);
+assertInvalidActivityCarrierRejected((profile) => { firstActivityField(profile).digits = [16, 2, 1]; }, /digits must be empty or contain precision and scale/);
+assertInvalidActivityCarrierRejected((profile) => { firstActivityField(profile).digits = '16,2'; }, /digits must be empty or contain precision and scale/);
+assertInvalidActivityCarrierRejected((profile) => { firstActivityField(profile).digits = [16, '2']; }, /digits must contain valid precision and scale integers/);
+assertInvalidActivityCarrierRejected((profile) => { firstActivityField(profile).digits = [-1, 0]; }, /digits must contain valid precision and scale integers/);
+assertInvalidActivityCarrierRejected((profile) => { firstActivityField(profile).occurrence_index = '1'; }, /occurrence_index must be an integer greater than or equal to 1/);
+assertInvalidActivityCarrierRejected((profile) => { profile.actionCount = '0'; }, /actionCount must be an integer greater than or equal to 0/);
+assertInvalidActivityCarrierRejected((profile) => {
+  firstActivityField(profile).decorations = [{ class: 'info' }, 'invalid'];
+}, /decorations\[1\] must be an object/);
+assertInvalidActivityCarrierRejected((profile) => {
+  activityAuthority(profile).authorities = ['ir.ui.view', 'ir.model.fields', 7];
+}, /authorities must exactly match the governed native authorities/);
+assertInvalidActivityCarrierRejected((profile) => {
+  activityAuthority(profile).authorities = ['ir.ui.view', 'ir.model.fields', 'unknown.authority'];
+}, /authorities must exactly match the governed native authorities/);
+assertInvalidActivityCarrierRejected((profile) => {
+  activityAuthority(profile).authorities = ['ir.ui.view', 'ir.model.fields'];
+}, /authorities must exactly match the governed native authorities/);
+assertInvalidActivityCarrierRejected((profile) => {
+  activityAuthority(profile).authorities = ['ir.ui.view', 'ir.model.fields', 'ir.model.fields'];
+}, /authorities must exactly match the governed native authorities/);
+
 assert.equal(resolveActivitySurfaceModelFromProfile({ ...activityProfile, nodeOccurrences: [] }, []).reasonCode, 'ACTIVITY_NATIVE_EVIDENCE_INVALID');
 assert.equal(resolveActivitySurfaceModelFromProfile({ ...activityProfile, nativeAttrs: { string: 'Changed' } }, []).reasonCode, 'ACTIVITY_NATIVE_EVIDENCE_INVALID');
 const shiftedProfile = structuredClone(activityProfile);

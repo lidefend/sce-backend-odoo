@@ -211,7 +211,165 @@
         },
         "listProfile": {
           "type": "object"
+        },
+        "activityProfile": {
+          "$ref": "#/$defs/activityProfile"
         }
+      }
+    },
+    "activityProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "activityTypeSlots",
+        "deadlineSlots",
+        "assigneeSlots",
+        "fieldOccurrences",
+        "nativeAttrs",
+        "nodeOccurrences",
+        "template",
+        "templateQwebPresent",
+        "actions",
+        "actionCount",
+        "sourceAuthority"
+      ],
+      "properties": {
+        "activityTypeSlots": { "type": "object" },
+        "deadlineSlots": { "type": "object" },
+        "assigneeSlots": { "type": "object" },
+        "fieldOccurrences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/activityFieldOccurrence" }
+        },
+        "nativeAttrs": { "type": "object" },
+        "nodeOccurrences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/activityNodeOccurrence" }
+        },
+        "template": { "$ref": "#/$defs/activityTemplate" },
+        "templateQwebPresent": { "type": "boolean" },
+        "actions": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "actionCount": { "type": "integer", "minimum": 0 },
+        "sourceAuthority": { "$ref": "#/$defs/activitySourceAuthority" }
+      }
+    },
+    "activitySourceAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "authorities", "projection_only", "no_business_fact_authority", "runtime_carrier"],
+      "properties": {
+        "kind": { "const": "native_activity_view_projection" },
+        "authorities": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "ir.ui.view" },
+            { "const": "ir.model.fields" },
+            { "const": "ir.actions.act_window" }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "projection_only": { "const": true },
+        "no_business_fact_authority": { "const": true },
+        "runtime_carrier": { "const": "ui.contract.v2.layoutContract.activityProfile" }
+      }
+    },
+    "activityFieldOccurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "label",
+        "widget",
+        "native_locator",
+        "occurrence_index",
+        "source_position",
+        "attributes",
+        "text",
+        "tail",
+        "modifiers",
+        "decorations",
+        "field_type",
+        "currency_field",
+        "digits"
+      ],
+      "properties": {
+        "name": { "type": "string", "pattern": "\\S" },
+        "label": { "type": "string", "pattern": "\\S" },
+        "widget": { "type": "string" },
+        "native_locator": { "type": "string", "pattern": "\\S" },
+        "occurrence_index": { "type": "integer", "minimum": 1 },
+        "source_position": { "type": "integer", "minimum": 0 },
+        "attributes": { "type": "object" },
+        "text": { "type": "string" },
+        "tail": { "type": "string" },
+        "modifiers": { "type": "string" },
+        "decorations": { "type": "array", "items": { "type": "object" } },
+        "field_type": { "type": "string" },
+        "currency_field": { "type": "string" },
+        "digits": {
+          "oneOf": [
+            { "type": "array", "maxItems": 0 },
+            {
+              "type": "array",
+              "prefixItems": [
+                { "type": "integer", "minimum": 0 },
+                { "type": "integer", "minimum": 0 }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        }
+      }
+    },
+    "activityNodeOccurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "native_locator", "occurrence_index", "source_position", "attributes", "text", "tail"],
+      "properties": {
+        "tag": { "type": "string", "pattern": "\\S" },
+        "native_locator": { "type": "string", "pattern": "\\S" },
+        "occurrence_index": { "type": "integer", "minimum": 1 },
+        "source_position": { "type": "integer", "minimum": 0 },
+        "attributes": { "type": "object" },
+        "text": { "type": "string" },
+        "tail": { "type": "string" }
+      }
+    },
+    "activityNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "native_locator", "occurrence_index", "source_position", "attributes", "text", "tail", "children"],
+      "properties": {
+        "tag": { "type": "string", "pattern": "\\S" },
+        "native_locator": { "type": "string", "pattern": "\\S" },
+        "occurrence_index": { "type": "integer", "minimum": 1 },
+        "source_position": { "type": "integer", "minimum": 0 },
+        "attributes": { "type": "object" },
+        "text": { "type": "string" },
+        "tail": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/activityNode" }
+        }
+      }
+    },
+    "activityTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native_locator", "occurrence_index", "names", "nodes"],
+      "properties": {
+        "native_locator": { "type": "string", "pattern": "\\S" },
+        "occurrence_index": { "type": "integer", "minimum": 1 },
+        "names": { "type": "array", "items": { "type": "string", "pattern": "\\S" } },
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/activityNode" } }
       }
     },
     "container": {
@@ -782,6 +940,9 @@
         },
         "identityPolicy": {
           "type": "object"
+        },
+        "primaryResolution": {
+          "type": "object"
         }
       }
     },
@@ -846,6 +1007,9 @@
             "partial",
             "full"
           ]
+        },
+        "refreshPolicy": {
+          "type": "object"
         },
         "actionKey": {
           "type": "string"

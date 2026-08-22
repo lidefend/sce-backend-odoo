@@ -1,6 +1,10 @@
 import type {
   ContractV2ActionContract,
   ContractV2ActionRule,
+  ContractV2ActivityNode,
+  ContractV2ActivityNodeOccurrence,
+  ContractV2ActivityProfile,
+  ContractV2ActivitySourceAuthority,
   ContractV2Auth,
   ContractV2ButtonStatus,
   ContractV2AdaptMode,
@@ -276,6 +280,54 @@ function requiredArray(source: ContractV2Dictionary, key: string, path: string, 
   return [];
 }
 
+function requiredActivityString(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): string {
+  if (typeof source[key] === 'string') return source[key] as string;
+  issues.push({ path: `${path}.${key}`, message: 'must be a string' });
+  return '';
+}
+
+function requiredActivityNonEmptyString(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): string {
+  const value = source[key];
+  if (typeof value === 'string' && value.trim()) return value;
+  issues.push({ path: `${path}.${key}`, message: 'must be a non-empty string' });
+  return '';
+}
+
+function requiredActivityInteger(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+  minimum: number,
+): number {
+  const value = source[key];
+  if (typeof value === 'number' && Number.isInteger(value) && value >= minimum) return value;
+  issues.push({ path: `${path}.${key}`, message: `must be an integer greater than or equal to ${minimum}` });
+  return minimum;
+}
+
+function rejectUnknownActivityKeys(
+  source: ContractV2Dictionary,
+  allowedKeys: readonly string[],
+  path: string,
+  issues: DecodeIssue[],
+): void {
+  const allowed = new Set(allowedKeys);
+  Object.keys(source).filter((key) => !allowed.has(key)).forEach((key) => {
+    issues.push({ path: `${path}.${key}`, message: 'is not allowed' });
+  });
+}
+
 function requiredIntegerInRange(
   source: ContractV2Dictionary,
   key: string,
@@ -451,6 +503,210 @@ function decodeContainer(
   };
 }
 
+function decodeActivityNode(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ActivityNode | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'activity node must be an object' });
+    return null;
+  }
+  rejectUnknownActivityKeys(raw, [
+    'tag', 'native_locator', 'occurrence_index', 'source_position', 'attributes', 'text', 'tail', 'children',
+  ], path, issues);
+  const tag = requiredActivityNonEmptyString(raw, 'tag', path, issues);
+  const nativeLocator = requiredActivityNonEmptyString(raw, 'native_locator', path, issues);
+  const occurrenceIndex = requiredActivityInteger(raw, 'occurrence_index', path, issues, 1);
+  const sourcePosition = requiredActivityInteger(raw, 'source_position', path, issues, 0);
+  const children = requiredArray(raw, 'children', path, issues)
+    .map((child, index) => decodeActivityNode(child, `${path}.children[${index}]`, issues))
+    .filter((child): child is ContractV2ActivityNode => Boolean(child));
+  const nodeText = requiredActivityString(raw, 'text', path, issues);
+  const nodeTail = requiredActivityString(raw, 'tail', path, issues);
+  if (!tag || !nativeLocator) return null;
+  return {
+    tag,
+    native_locator: nativeLocator,
+    occurrence_index: occurrenceIndex,
+    source_position: sourcePosition,
+    attributes: requiredRecord(raw, 'attributes', path, issues),
+    text: nodeText,
+    tail: nodeTail,
+    children,
+  };
+}
+
+function decodeActivityNodeOccurrence(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ActivityNodeOccurrence | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'activity node occurrence must be an object' });
+    return null;
+  }
+  rejectUnknownActivityKeys(raw, [
+    'tag', 'native_locator', 'occurrence_index', 'source_position', 'attributes', 'text', 'tail',
+  ], path, issues);
+  const tag = requiredActivityNonEmptyString(raw, 'tag', path, issues);
+  const nativeLocator = requiredActivityNonEmptyString(raw, 'native_locator', path, issues);
+  const occurrenceIndex = requiredActivityInteger(raw, 'occurrence_index', path, issues, 1);
+  const sourcePosition = requiredActivityInteger(raw, 'source_position', path, issues, 0);
+  const nodeText = requiredActivityString(raw, 'text', path, issues);
+  const nodeTail = requiredActivityString(raw, 'tail', path, issues);
+  if (!tag || !nativeLocator) return null;
+  return {
+    tag,
+    native_locator: nativeLocator,
+    occurrence_index: occurrenceIndex,
+    source_position: sourcePosition,
+    attributes: requiredRecord(raw, 'attributes', path, issues),
+    text: nodeText,
+    tail: nodeTail,
+  };
+}
+
+function decodeActivitySourceAuthority(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2ActivitySourceAuthority | undefined {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  rejectUnknownActivityKeys(raw, [
+    'kind', 'authorities', 'projection_only', 'no_business_fact_authority', 'runtime_carrier',
+  ], path, issues);
+  const authorities = raw.authorities;
+  const expectedAuthorities = ['ir.ui.view', 'ir.model.fields', 'ir.actions.act_window'] as const;
+  const validAuthorities = Array.isArray(authorities)
+    && authorities.length === expectedAuthorities.length
+    && authorities.every((value, index) => typeof value === 'string' && value === expectedAuthorities[index]);
+  if (!validAuthorities) {
+    issues.push({ path: `${path}.authorities`, message: 'must exactly match the governed native authorities' });
+  }
+  if (raw.kind !== 'native_activity_view_projection') {
+    issues.push({ path: `${path}.kind`, message: 'must be native_activity_view_projection' });
+  }
+  if (raw.runtime_carrier !== 'ui.contract.v2.layoutContract.activityProfile') {
+    issues.push({ path: `${path}.runtime_carrier`, message: 'must identify the activity profile runtime carrier' });
+  }
+  if (raw.projection_only !== true || raw.no_business_fact_authority !== true) {
+    issues.push({ path, message: 'must remain projection-only without business fact authority' });
+  }
+  if (!validAuthorities
+      || raw.kind !== 'native_activity_view_projection'
+      || raw.runtime_carrier !== 'ui.contract.v2.layoutContract.activityProfile'
+      || raw.projection_only !== true
+      || raw.no_business_fact_authority !== true) {
+    return undefined;
+  }
+  return {
+    kind: raw.kind,
+    authorities: [authorities[0], authorities[1], authorities[2]],
+    projection_only: raw.projection_only,
+    no_business_fact_authority: raw.no_business_fact_authority,
+    runtime_carrier: raw.runtime_carrier,
+  };
+}
+
+function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2ActivityProfile | undefined {
+  const path = 'layoutContract.activityProfile';
+  if (raw === undefined) return undefined;
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  rejectUnknownActivityKeys(raw, [
+    'activityTypeSlots', 'deadlineSlots', 'assigneeSlots', 'fieldOccurrences', 'nativeAttrs',
+    'nodeOccurrences', 'template', 'templateQwebPresent', 'actions', 'actionCount', 'sourceAuthority',
+  ], path, issues);
+  const authority = decodeActivitySourceAuthority(raw.sourceAuthority, `${path}.sourceAuthority`, issues);
+  const fieldOccurrences = requiredArray(raw, 'fieldOccurrences', path, issues).map((item, index) => {
+    const itemPath = `${path}.fieldOccurrences[${index}]`;
+    if (!isRecord(item)) {
+      issues.push({ path: itemPath, message: 'must be an object' });
+      return null;
+    }
+    rejectUnknownActivityKeys(item, [
+      'name', 'label', 'widget', 'native_locator', 'occurrence_index', 'source_position', 'attributes',
+      'text', 'tail', 'modifiers', 'decorations', 'field_type', 'currency_field', 'digits',
+    ], itemPath, issues);
+    const occurrenceIndex = requiredActivityInteger(item, 'occurrence_index', itemPath, issues, 1);
+    const sourcePosition = requiredActivityInteger(item, 'source_position', itemPath, issues, 0);
+    let digits: [] | [number, number] = [];
+    if (!Array.isArray(item.digits) || (item.digits.length !== 0 && item.digits.length !== 2)) {
+      issues.push({ path: `${itemPath}.digits`, message: 'must be empty or contain precision and scale' });
+    } else if (item.digits.length === 2) {
+      const precision = item.digits[0];
+      const scale = item.digits[1];
+      if (typeof precision !== 'number' || typeof scale !== 'number'
+          || !Number.isInteger(precision) || !Number.isInteger(scale)
+          || precision < 0 || scale < 0) {
+        issues.push({ path: `${itemPath}.digits`, message: 'must contain valid precision and scale integers' });
+      } else {
+        digits = [precision, scale];
+      }
+    }
+    const decorations = requiredArray(item, 'decorations', itemPath, issues).map((decoration, decorationIndex) => {
+      if (isRecord(decoration)) return decoration;
+      issues.push({ path: `${itemPath}.decorations[${decorationIndex}]`, message: 'must be an object' });
+      return null;
+    }).filter((decoration): decoration is ContractV2Dictionary => Boolean(decoration));
+    const fieldText = requiredActivityString(item, 'text', itemPath, issues);
+    const fieldTail = requiredActivityString(item, 'tail', itemPath, issues);
+    return {
+      name: requiredActivityNonEmptyString(item, 'name', itemPath, issues),
+      label: requiredActivityNonEmptyString(item, 'label', itemPath, issues),
+      widget: requiredActivityString(item, 'widget', itemPath, issues),
+      native_locator: requiredActivityNonEmptyString(item, 'native_locator', itemPath, issues),
+      occurrence_index: occurrenceIndex,
+      source_position: sourcePosition,
+      attributes: requiredRecord(item, 'attributes', itemPath, issues),
+      text: fieldText,
+      tail: fieldTail,
+      modifiers: requiredActivityString(item, 'modifiers', itemPath, issues),
+      decorations,
+      field_type: requiredActivityString(item, 'field_type', itemPath, issues),
+      currency_field: requiredActivityString(item, 'currency_field', itemPath, issues),
+      digits,
+    };
+  }).filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const templateRaw = requiredRecord(raw, 'template', path, issues);
+  rejectUnknownActivityKeys(templateRaw, ['native_locator', 'occurrence_index', 'names', 'nodes'], `${path}.template`, issues);
+  const templateNodes = requiredArray(templateRaw, 'nodes', `${path}.template`, issues)
+    .map((item, index) => decodeActivityNode(item, `${path}.template.nodes[${index}]`, issues))
+    .filter((item): item is ContractV2ActivityNode => Boolean(item));
+  const templateOccurrenceIndex = requiredActivityInteger(templateRaw, 'occurrence_index', `${path}.template`, issues, 1);
+  const templateNames = requiredArray(templateRaw, 'names', `${path}.template`, issues).map((item, index) => {
+    if (typeof item === 'string' && item.trim()) return item;
+    issues.push({ path: `${path}.template.names[${index}]`, message: 'must be a non-empty string' });
+    return '';
+  }).filter(Boolean);
+  const actions = requiredArray(raw, 'actions', path, issues).map((item, index) => {
+    if (isRecord(item)) return item;
+    issues.push({ path: `${path}.actions[${index}]`, message: 'must be an object' });
+    return null;
+  }).filter((item): item is ContractV2Dictionary => Boolean(item));
+  const actionCount = requiredActivityInteger(raw, 'actionCount', path, issues, 0);
+  if (actionCount !== actions.length) issues.push({ path: `${path}.actionCount`, message: 'must equal actions length' });
+  if (!authority) return undefined;
+  return {
+    activityTypeSlots: requiredRecord(raw, 'activityTypeSlots', path, issues),
+    deadlineSlots: requiredRecord(raw, 'deadlineSlots', path, issues),
+    assigneeSlots: requiredRecord(raw, 'assigneeSlots', path, issues),
+    fieldOccurrences,
+    nativeAttrs: requiredRecord(raw, 'nativeAttrs', path, issues),
+    nodeOccurrences: requiredArray(raw, 'nodeOccurrences', path, issues)
+      .map((item, index) => decodeActivityNodeOccurrence(item, `${path}.nodeOccurrences[${index}]`, issues))
+      .filter((item): item is ContractV2ActivityNodeOccurrence => Boolean(item)),
+    template: {
+      native_locator: requiredActivityNonEmptyString(templateRaw, 'native_locator', `${path}.template`, issues),
+      occurrence_index: templateOccurrenceIndex,
+      names: templateNames,
+      nodes: templateNodes,
+    },
+    templateQwebPresent: requiredBoolean(raw, 'templateQwebPresent', path, issues, false),
+    actions,
+    actionCount,
+    sourceAuthority: authority,
+  };
+}
+
 function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2LayoutContract {
   const containerTreeRaw = Array.isArray(source.containerTree) ? source.containerTree : [];
   if (!Array.isArray(source.containerTree)) {
@@ -468,6 +724,9 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
     componentRegistry: requiredRecord(source, 'componentRegistry', 'layoutContract', issues),
     ...(Object.keys(asRecord(source.listProfile)).length
       ? { listProfile: asRecord(source.listProfile) }
+      : {}),
+    ...(source.activityProfile !== undefined
+      ? { activityProfile: decodeActivityProfile(source.activityProfile, issues) }
       : {}),
   };
 }

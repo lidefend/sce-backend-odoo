@@ -126,6 +126,71 @@ export interface ContractV2Container {
   widgetList: ContractV2Widget[];
 }
 
+export interface ContractV2ActivityNode {
+  tag: string;
+  native_locator: string;
+  occurrence_index: number;
+  source_position: number;
+  attributes: ContractV2Dictionary;
+  text: string;
+  tail: string;
+  children: ContractV2ActivityNode[];
+}
+
+export interface ContractV2ActivityNodeOccurrence {
+  tag: string;
+  native_locator: string;
+  occurrence_index: number;
+  source_position: number;
+  attributes: ContractV2Dictionary;
+  text: string;
+  tail: string;
+}
+
+export interface ContractV2ActivityFieldOccurrence {
+  name: string;
+  label: string;
+  widget: string;
+  native_locator: string;
+  occurrence_index: number;
+  source_position: number;
+  attributes: ContractV2Dictionary;
+  text: string;
+  tail: string;
+  modifiers: string;
+  decorations: ContractV2Dictionary[];
+  field_type: string;
+  currency_field: string;
+  digits: [] | [number, number];
+}
+
+export interface ContractV2ActivitySourceAuthority {
+  kind: 'native_activity_view_projection';
+  authorities: ['ir.ui.view', 'ir.model.fields', 'ir.actions.act_window'];
+  projection_only: true;
+  no_business_fact_authority: true;
+  runtime_carrier: 'ui.contract.v2.layoutContract.activityProfile';
+}
+
+export interface ContractV2ActivityProfile {
+  activityTypeSlots: ContractV2Dictionary;
+  deadlineSlots: ContractV2Dictionary;
+  assigneeSlots: ContractV2Dictionary;
+  fieldOccurrences: ContractV2ActivityFieldOccurrence[];
+  nativeAttrs: ContractV2Dictionary;
+  nodeOccurrences: ContractV2ActivityNodeOccurrence[];
+  template: {
+    native_locator: string;
+    occurrence_index: number;
+    names: string[];
+    nodes: ContractV2ActivityNode[];
+  };
+  templateQwebPresent: boolean;
+  actions: ContractV2Dictionary[];
+  actionCount: number;
+  sourceAuthority: ContractV2ActivitySourceAuthority;
+}
+
 export interface ContractV2LayoutContract {
   pageId: string;
   layoutType: ContractV2LayoutType;
@@ -134,6 +199,7 @@ export interface ContractV2LayoutContract {
   layoutHints: ContractV2Dictionary;
   componentRegistry: ContractV2Dictionary;
   listProfile?: ContractV2Dictionary;
+  activityProfile?: ContractV2ActivityProfile;
 }
 
 export interface ContractV2ActionRule {
