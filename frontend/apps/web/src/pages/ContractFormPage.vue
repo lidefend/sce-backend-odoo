@@ -1130,8 +1130,12 @@ const {
 } = useRecordFormProgress({
   layoutNodes: () => layoutNodes.value,
   canonicalFormFields, formData, originalValues, relationKeywords, fieldType,
-  relationInlineCreate, relationKeyword, relationModel, one2manyFieldRows,
-  isFieldWritable, isFieldVisible, isIntakeCreateMode,
+  relationInlineCreate, relationKeyword,
+  relationModel: (name) => relationModel(name),
+  one2manyFieldRows,
+  isFieldWritable: (name) => isFieldWritable(name),
+  isFieldVisible: (name) => isFieldVisible(name),
+  isIntakeCreateMode,
   nativeStatusbar: () => nativeStatusbar.value,
   comparableFieldValue,
 });
