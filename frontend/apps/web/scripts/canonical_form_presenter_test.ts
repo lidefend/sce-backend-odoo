@@ -32,7 +32,7 @@ import { resolveContractFormExitPresentation } from '../src/pages/contractForm/c
 import {
   applyInternalRelationContextSwitch,
   settleRelationSelectionContextSwitch,
-} from '../src/pages/contractForm/useRecordRelationships';
+} from '../src/pages/contractForm/relationSelectionRuntime';
 import {
   executeRecordFormReturn,
   resolveRelationCreateDialogCancelMessage,
@@ -50,6 +50,38 @@ import {
   resolveCurrencyDisplayLabel,
 } from '../src/components/template/formSection.mapper';
 import { resolveBusinessCategoryContext } from '../src/pages/contractForm/contractRuntimeVm';
+import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
+
+const relationRuntime = useRelationRuntime();
+relationRuntime.relationSearchDialog.fieldName = 'project_id';
+relationRuntime.relationSearchDialog.descriptor = { type: 'many2one', relation: 'project.project' } as never;
+relationRuntime.relationSearchDialog.keyword = '唯一项目';
+relationRuntime.relationSearchDialog.options = [{ id: 41, label: '唯一项目' }];
+let selectedExactRelationId = 0;
+await relationRuntime.createRelationFromSearchDialog({
+  resolveMode: () => 'quick',
+  selectOption: (option) => { selectedExactRelationId = option.id; },
+  quickCreate: async () => { throw new Error('exact option must not quick-create'); },
+  readValidationErrors: () => [],
+  clearValidationErrors: () => {},
+  openCreateForm: async () => { throw new Error('exact option must not open create form'); },
+});
+assert.equal(selectedExactRelationId, 41, 'an exact governed option must be selected without creating a duplicate');
+
+relationRuntime.relationSearchDialog.open = true;
+relationRuntime.relationSearchDialog.keyword = '新项目';
+relationRuntime.relationSearchDialog.options = [];
+let openedCreateField = '';
+await relationRuntime.createRelationFromSearchDialog({
+  resolveMode: () => 'dialog',
+  selectOption: () => { throw new Error('missing option must not be selected'); },
+  quickCreate: async () => { throw new Error('dialog mode must not quick-create'); },
+  readValidationErrors: () => [],
+  clearValidationErrors: () => {},
+  openCreateForm: async (fieldName) => { openedCreateField = fieldName; },
+});
+assert.equal(openedCreateField, 'project_id');
+assert.equal(relationRuntime.relationSearchDialog.open, false, 'dialog creation temporarily hides the preserved search surface');
 
 assert.equal(resolveBusinessCategoryContext({
   contractRecord: null,

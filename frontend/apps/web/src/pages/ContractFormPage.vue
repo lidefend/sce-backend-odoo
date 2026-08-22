@@ -666,6 +666,7 @@ import { useRecordContractSemantics } from './contractForm/useRecordContractSema
 import { useRecordFormLayout } from './contractForm/useRecordFormLayout';
 import { useRecordFormFieldSchemas } from './contractForm/useRecordFormFieldSchemas';
 import { useRecordFormState } from './contractForm/useRecordFormState';
+import { useRecordFormProgress } from './contractForm/useRecordFormProgress';
 import { useRecordFormDesigner } from './contractForm/useRecordFormDesigner';
 import { useRecordRelationships } from './contractForm/useRecordRelationships';
 import { useRecordPageLifecycle } from './contractForm/useRecordPageLifecycle';
@@ -827,6 +828,7 @@ const {
   runRelationSearch: runRelationSearchFromRuntime,
   confirmRelationSearchSelection: confirmRelationSearchSelectionFromRuntime,
   selectRelationSearchOption: selectRelationSearchOptionFromRuntime,
+  createRelationFromSearchDialog: createRelationFromSearchDialogFromRuntime,
   queryRelationOptions: queryRelationOptionsFromRuntime,
   fetchRelationOptions: fetchRelationOptionsFromRuntime,
 } = useRelationRuntime();
@@ -1122,55 +1124,6 @@ const standardCreateReady = computed(() => {
   if (!isStandardIntakeMode.value) return true;
   return intakeRequiredReadyCount.value >= intakeRequiredFields.value.length;
 });
-function hasPendingInlineRelationChange() {
-  return layoutNodes.value.some((node) => {
-    if (node.kind !== 'field' || node.readonly) return false;
-    const descriptor = canonicalFormFields.value[node.name];
-    if (fieldType(descriptor) !== 'many2one') return false;
-    const inline = relationInlineCreate(descriptor);
-    if (!inline.enabled || !inline.createOnNoMatch) return false;
-    const currentId = Number(formData[node.name] || 0);
-    if (Number.isFinite(currentId) && currentId > 0) return false;
-    return Boolean(relationKeyword(node.name).trim());
-  });
-}
-function hasPendingMany2manyTagCreate() {
-  return Object.entries(relationKeywords).some(([name, keyword]) => {
-    if (!String(keyword || '').trim()) return false;
-    if (!isFieldWritable(name)) return false;
-    if (!Array.isArray(formData[name])) return false;
-    const descriptor = canonicalFormFields.value[name];
-    const inline = relationInlineCreate(descriptor);
-    if (!inline.enabled || !inline.createOnNoMatch) return false;
-    return Boolean(relationModel(name));
-  });
-}
-function hasOne2manyDraftChanges() {
-  return layoutNodes.value.some((node) => {
-    if (node.kind !== 'field' || node.readonly) return false;
-    const descriptor = canonicalFormFields.value[node.name];
-    if (fieldType(descriptor) !== 'one2many') return false;
-    return one2manyFieldRows(node.name).some((row) => row.isNew || row.dirty || row.removed);
-  });
-}
-const hasChanges = computed(() => {
-  if (hasPendingInlineRelationChange()) return true;
-  if (hasPendingMany2manyTagCreate()) return true;
-  if (hasOne2manyDraftChanges()) return true;
-  const statusField = nativeStatusbar.value.field;
-  if (
-    statusField
-    && !nativeStatusbar.value.readonly
-    && comparableFieldValue(statusField, formData[statusField]) !== comparableFieldValue(statusField, originalValues.value[statusField])
-  ) {
-    return true;
-  }
-  const keys = Object.keys(formData);
-  return keys.some((key) => {
-    if (!isFieldWritable(key)) return false;
-    return comparableFieldValue(key, formData[key]) !== comparableFieldValue(key, originalValues.value[key]);
-  });
-});
 const writableFieldCount = computed(() =>
   layoutNodes.value.filter((node) => node.kind === 'field' && !node.readonly).length,
 );
@@ -1178,50 +1131,6 @@ const changedFieldCount = computed(() =>
   Object.keys(formData).filter((key) => isFieldWritable(key) && comparableFieldValue(key, formData[key]) !== comparableFieldValue(key, originalValues.value[key])).length
     + (hasOne2manyDraftChanges() ? 1 : 0),
 );
-const intakeRequiredFields = computed(() => {
-  if (!isIntakeCreateMode.value) return [];
-  return layoutNodes.value
-    .filter((node) => node.kind === 'field' && node.required && isFieldVisible(node.name))
-    .map((node) => ({ name: node.name, label: node.label || node.name }));
-});
-const intakeRequiredReadyCount = computed(() => {
-  if (!isIntakeCreateMode.value) return 0;
-  return intakeRequiredFields.value.filter((field) => {
-    const value = formData[field.name];
-    if (value === null || value === undefined) return false;
-    if (typeof value === 'string') return value.trim().length > 0;
-    if (typeof value === 'number') return Number.isFinite(value) && value > 0;
-    if (Array.isArray(value)) return value.length > 0;
-    if (typeof value === 'boolean') return true;
-    return Boolean(value);
-  }).length;
-});
-const intakeMissingRequiredLabels = computed(() => {
-  if (!isIntakeCreateMode.value) return [];
-  return intakeRequiredFields.value
-    .filter((field) => {
-      const value = formData[field.name];
-      if (value === null || value === undefined) return true;
-      if (typeof value === 'string') return value.trim().length === 0;
-      if (typeof value === 'number') return !Number.isFinite(value) || value <= 0;
-      if (Array.isArray(value)) return value.length === 0;
-      return false;
-    })
-    .map((field) => String(field.label || '').trim())
-    .slice(0, 5);
-});
-const intakeRequiredSummary = computed(() => {
-  if (!isIntakeCreateMode.value) return '';
-  const total = intakeRequiredFields.value.length;
-  const done = intakeRequiredReadyCount.value;
-  if (total <= 0) return '当前页面未提供必填字段约束。';
-  return `${done}/${total}`;
-});
-const intakeMissingSummary = computed(() => {
-  if (!isIntakeCreateMode.value) return '';
-  if (!intakeMissingRequiredLabels.value.length) return '无';
-  return intakeMissingRequiredLabels.value.join('、');
-});
 const one2manyValidation = computed(() => collectOne2manyDraftValidation());
 const currentActionMeta = computed(() => findActionMetaByMenu(session.menuTree, menuId.value, actionId.value || undefined));
 const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryContext({
@@ -1564,6 +1473,7 @@ const {
   one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows,
   one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies,
   one2manyValidation, openRelationSearchFromRuntime, pickContractNavQuery,
+  createRelationFromSearchDialogFromRuntime,
   openRelationCreateDialog,
   queryRelationOptionsFromRuntime, rawNativeFormLayoutNodes: computed(() => rawNativeFormLayoutNodes.value), readContractFormRecord,
   recordId, relationCreateMode, relationDomainFromDescriptor,
@@ -1652,6 +1562,16 @@ const {
   updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics,
   useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore,
   validationErrors, visibleOne2manyRows,
+});
+const {
+  hasChanges, hasOne2manyDraftChanges, intakeRequiredFields, intakeRequiredReadyCount,
+  intakeMissingRequiredLabels, intakeRequiredSummary, intakeMissingSummary,
+} = useRecordFormProgress({
+  layoutNodes, canonicalFormFields, formData, originalValues, relationKeywords, fieldType,
+  relationInlineCreate, relationKeyword, relationModel, one2manyFieldRows,
+  isFieldWritable, isFieldVisible, isIntakeCreateMode,
+  nativeStatusbar: () => nativeStatusbar.value,
+  comparableFieldValue,
 });
 
 // Cutover is allowed only when every executable canonical action has one exact

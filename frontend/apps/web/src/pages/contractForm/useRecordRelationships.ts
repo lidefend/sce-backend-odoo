@@ -5,72 +5,14 @@ import {
   resolveContractV2VisibleFieldCodes,
 } from '../../app/contracts/v2/store';
 import type { RelationOption, RelationSearchColumn, RelationSearchRow } from './types';
+import {
+  settleRelationSelectionContextSwitch,
+  switchRelationOptionContext,
+} from './relationSelectionRuntime';
 import { useRecordRelationshipFields } from './useRecordRelationshipFields';
 import { useRecordRelationshipNavigation } from './useRecordRelationshipNavigation';
 
 type RelationshipDependencies = Record<string, any>;
-
-type InternalRelationContextSwitchParams = {
-  fieldName: string;
-  formData: Record<string, unknown>;
-  relationKeywords: Record<string, string>;
-  previousValue: unknown;
-  previousKeyword: string;
-  replaceRoute: () => Promise<unknown>;
-  contextApplied: () => boolean;
-  reload: () => Promise<void>;
-};
-
-type RelationSelectionContextSwitchParams = {
-  switchContext: () => Promise<boolean>;
-  finalizeUnswitchedSelection: () => void;
-  reportError: (error: unknown) => void;
-};
-
-/**
- * Keeps an internal create-context route replacement from treating the value
- * that caused it as a pre-existing unsaved edit. Other dirty values remain in
- * place, so the normal route guard still protects them. A cancelled navigation
- * must never reload and discard the selected relation.
- */
-export async function applyInternalRelationContextSwitch(
-  params: InternalRelationContextSwitchParams,
-): Promise<boolean> {
-  const selectedValue = params.formData[params.fieldName];
-  const selectedKeyword = params.relationKeywords[params.fieldName] || '';
-  params.formData[params.fieldName] = params.previousValue;
-  params.relationKeywords[params.fieldName] = params.previousKeyword;
-  let applied = false;
-  try {
-    await params.replaceRoute();
-    applied = params.contextApplied();
-  } finally {
-    params.formData[params.fieldName] = selectedValue;
-    params.relationKeywords[params.fieldName] = selectedKeyword;
-  }
-  if (!applied) return false;
-  await params.reload();
-  return true;
-}
-
-/**
- * Settles relation selection exactly once after an optional context switch.
- * A failed or cancelled switch keeps the selected value and follows the same
- * dirty/dependent bookkeeping path; navigation failures are reported without
- * leaving an unhandled promise rejection behind.
- */
-export async function settleRelationSelectionContextSwitch(
-  params: RelationSelectionContextSwitchParams,
-): Promise<boolean> {
-  let switched = false;
-  try {
-    switched = await params.switchContext();
-  } catch (error) {
-    params.reportError(error);
-  }
-  if (!switched) params.finalizeUnswitchedSelection();
-  return switched;
-}
 
 /** Owns relation discovery, access-aware navigation, and inline relation editing. */
 export function useRecordRelationships(dependencies: RelationshipDependencies) {
@@ -80,6 +22,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     clearedDynamicRelationFields,
     closeRelationSearchDialog,
     confirmRelationSearchSelectionFromRuntime,
+    createRelationFromSearchDialogFromRuntime,
     contractFieldLabel,
     createContractFormRecord,
     deniedRelationModels,
@@ -528,85 +471,38 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     option: RelationOption,
     transition?: { previousValue: unknown; previousKeyword: string },
   ): Promise<boolean> {
-    if (recordId.value) return false;
     const descriptor = formFields()[fieldName];
-    const entry = relationEntry(descriptor);
-    if (!entry?.switchContext?.enabled || !option.switchContext?.code) return false;
-    const nextCode = option.switchContext.code;
-    const currentCode = String(
-      route.query.current_business_category_code ||
-        route.query.default_business_category_code ||
-        '',
-    ).trim();
-    if (currentCode === nextCode) return false;
-    const query = normalizeRouteQueryValues(route.query as Record<string, unknown>);
-    for (const key of entry.switchContext.defaultClearFields || []) {
-      delete query[`default_${key}`];
-    }
-    query.current_business_category_code = nextCode;
-    query.default_business_category_code = nextCode;
-    query.current_business_category_label = option.switchContext.label || option.label;
-    query.default_business_category_label = option.switchContext.label || option.label;
-    query.default_business_category_id = String(option.id);
-    query.ctx_source = 'business_category_relation_switch';
-    Object.entries(option.switchContext.defaultValues || {}).forEach(([key, value]) => {
-      const normalizedKey = String(key || '').trim();
-      if (!normalizedKey || value === undefined || value === null) return;
-      if (Array.isArray(value) || typeof value === 'object') return;
-      query[`default_${normalizedKey}`] = String(value);
-    });
-    const previousValue = transition?.previousValue
-      ?? route.query[`default_${fieldName}`]
-      ?? false;
-    const previousKeyword = transition?.previousKeyword || '';
-    return applyInternalRelationContextSwitch({
+    return switchRelationOptionContext({
       fieldName,
+      option,
+      recordId: recordId.value,
+      entry: relationEntry(descriptor),
+      routeQuery: route.query as Record<string, unknown>,
+      normalizeQuery: normalizeRouteQueryValues,
+      transition,
       formData,
       relationKeywords,
-      previousValue,
-      previousKeyword,
-      replaceRoute: () => router.replace({ query }),
-      contextApplied: () => String(
+      replaceRoute: (query) => router.replace({ query }),
+      currentContextCode: () => String(
         route.query.current_business_category_code
           || route.query.default_business_category_code
           || '',
-      ).trim() === nextCode,
+      ).trim(),
       reload,
     });
   }
 
   async function createRelationFromSearchDialog() {
-    const fieldName = relationSearchDialog.fieldName;
-    if (!fieldName) return;
-    const descriptor = formFields()[fieldName];
-    const label = relationSearchDialog.keyword.trim();
-    const mode = relationCreateMode(descriptor);
-    const exact = label
-      ? relationSearchDialog.options.find(
-          (item) => item.label.trim().toLowerCase() === label.toLowerCase(),
-        )
-      : null;
-    if (exact && mode !== 'page' && mode !== 'dialog') {
-      selectRelationSearchOption(exact);
-      return;
-    }
-    if (mode === 'quick') {
-      if (!label) {
-        relationSearchDialog.error = relationSearchDialog.labels.missing_name || '';
-        return;
-      }
-      validationErrors.value = [];
-      await quickCreateRelation(fieldName, descriptor, label, { stayInDialog: true });
-      if (!validationErrors.value.length) {
-        closeRelationSearchDialog();
-      } else {
-        relationSearchDialog.error = validationErrors.value.join('；');
-        validationErrors.value = [];
-      }
-      return;
-    }
-    relationSearchDialog.open = false;
-    await openRelationCreateForm(fieldName, descriptor, { restoreSearchOnCancel: true });
+    await createRelationFromSearchDialogFromRuntime({
+      resolveMode: relationCreateMode,
+      selectOption: selectRelationSearchOption,
+      quickCreate: (fieldName: string, descriptor: FieldDescriptor | undefined, label: string) =>
+        quickCreateRelation(fieldName, descriptor, label, { stayInDialog: true }),
+      readValidationErrors: () => validationErrors.value,
+      clearValidationErrors: () => { validationErrors.value = []; },
+      openCreateForm: (fieldName: string, descriptor?: FieldDescriptor) =>
+        openRelationCreateForm(fieldName, descriptor, { restoreSearchOnCancel: true }),
+    });
   }
 
   const {

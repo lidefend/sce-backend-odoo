@@ -151,6 +151,39 @@ export function useRelationRuntime() {
     closeRelationSearchDialog();
   }
 
+  async function createRelationFromSearchDialog(params: {
+    resolveMode: (descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
+    selectOption: (option: RelationOption) => void;
+    quickCreate: (fieldName: string, descriptor: FieldDescriptor | undefined, label: string) => Promise<void>;
+    readValidationErrors: () => string[];
+    clearValidationErrors: () => void;
+    openCreateForm: (fieldName: string, descriptor?: FieldDescriptor) => Promise<void>;
+  }) {
+    const { fieldName, descriptor } = relationSearchDialog;
+    if (!fieldName) return;
+    const label = relationSearchDialog.keyword.trim();
+    const mode = params.resolveMode(descriptor);
+    const exact = label
+      ? relationSearchDialog.options.find((item) => item.label.trim().toLowerCase() === label.toLowerCase())
+      : null;
+    if (exact && mode !== 'page' && mode !== 'dialog') return params.selectOption(exact);
+    if (mode === 'quick') {
+      if (!label) {
+        relationSearchDialog.error = relationSearchDialog.labels.missing_name || '';
+        return;
+      }
+      params.clearValidationErrors();
+      await params.quickCreate(fieldName, descriptor, label);
+      const errors = params.readValidationErrors();
+      if (!errors.length) closeRelationSearchDialog();
+      else relationSearchDialog.error = errors.join('；');
+      params.clearValidationErrors();
+      return;
+    }
+    relationSearchDialog.open = false;
+    await params.openCreateForm(fieldName, descriptor);
+  }
+
   async function queryRelationOptions(params: {
     fieldName: string;
     keyword: string;
@@ -226,6 +259,7 @@ export function useRelationRuntime() {
     runRelationSearch,
     confirmRelationSearchSelection,
     selectRelationSearchOption,
+    createRelationFromSearchDialog,
     queryRelationOptions,
     fetchRelationOptions,
     clearRelationRuntime,
