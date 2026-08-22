@@ -51,13 +51,13 @@ def _expected_ds_key(section_key: str) -> str:
 
 
 def _validate_page(page_key: str, page_obj: dict[str, Any], errors: list[str]) -> None:
-    orch = page_obj.get("page_orchestration_v1") if isinstance(page_obj.get("page_orchestration_v1"), dict) else {}
+    orch = page_obj.get("page_orchestration") if isinstance(page_obj.get("page_orchestration"), dict) else {}
     if not orch:
         return
 
     data_sources = orch.get("data_sources") if isinstance(orch.get("data_sources"), dict) else {}
     if not data_sources:
-        errors.append(f"pages.{page_key}.page_orchestration_v1.data_sources must be non-empty object")
+        errors.append(f"pages.{page_key}.page_orchestration.data_sources must be non-empty object")
         return
 
     ds_sections = data_sources.get("ds_sections")
@@ -154,13 +154,13 @@ def main() -> int:
         if not isinstance(page_obj, dict):
             errors.append(f"pages.{page_key} must be object")
             continue
-        if not isinstance(page_obj.get("page_orchestration_v1"), dict):
+        if not isinstance(page_obj.get("page_orchestration"), dict):
             continue
         checked += 1
         _validate_page(str(page_key), page_obj, errors)
 
     if checked == 0:
-        errors.append("no page_orchestration_v1 payload found")
+        errors.append("no page_orchestration payload found")
     if errors:
         return _fail(errors)
     print(f"[page_contract_data_source_semantics_guard] PASS (checked_pages={checked})")

@@ -104,16 +104,12 @@ def _has_navigation(row: dict[str, Any]) -> bool:
 
 
 def _validate_contract(contract: dict[str, Any], errors: list[str]) -> None:
-    protocol = contract.get("contract_protocol") if isinstance(contract.get("contract_protocol"), dict) else {}
-    if protocol.get("primary") != "page_orchestration_v1":
-        errors.append("contract_protocol.primary must be page_orchestration_v1")
-    legacy = protocol.get("legacy") if isinstance(protocol.get("legacy"), dict) else {}
-    if legacy.get("key") != "page_orchestration" or legacy.get("status") != "compatibility":
-        errors.append("contract_protocol.legacy must declare page_orchestration compatibility")
+    if "contract_protocol" in contract:
+        errors.append("contract_protocol compatibility carrier must be removed")
 
-    orchestration = contract.get("page_orchestration_v1") if isinstance(contract.get("page_orchestration_v1"), dict) else {}
-    if orchestration.get("contract_version") != "page_orchestration_v1":
-        errors.append("page_orchestration_v1.contract_version must be page_orchestration_v1")
+    orchestration = contract.get("page_orchestration") if isinstance(contract.get("page_orchestration"), dict) else {}
+    if orchestration.get("contract_version") != "2.0.0":
+        errors.append("page_orchestration.contract_version must be 2.0.0")
     zones = orchestration.get("zones") if isinstance(orchestration.get("zones"), list) else []
     zone_keys = [_text(zone.get("key")) for zone in zones if isinstance(zone, dict)]
     if set(zone_keys) != set(MAIN_ZONE_KEYS):
@@ -124,7 +120,7 @@ def _validate_contract(contract: dict[str, Any], errors: list[str]) -> None:
         if isinstance(zone, dict)
     }
     if not priority:
-        errors.append("page_orchestration_v1.zones must include prioritized main zones")
+        errors.append("page_orchestration.zones must include prioritized main zones")
     elif priority.get("today_focus", 0) <= max(priority.get(key, 0) for key in priority if key != "today_focus"):
         errors.append("today_focus must have the highest first-screen priority")
     if priority and priority.get("hero", 999) >= priority.get("today_focus", 0):

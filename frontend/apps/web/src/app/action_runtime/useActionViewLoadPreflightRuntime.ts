@@ -1,4 +1,9 @@
-import { resolveUnifiedPageContractV2PrimaryDataSource } from '../contracts/unifiedPageContractV2';
+import {
+  resolveContractV2FieldWidgets,
+  resolveContractV2PrimaryDataSource,
+  resolveContractV2SearchContract,
+} from '../contracts/v2/store';
+import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
 type SavedFilterChip = { key: string; isDefault: boolean };
@@ -21,21 +26,11 @@ function collectOrderCandidateFields(value: unknown, fields: Set<string>): void 
   });
 }
 
-function collectContractOrderFields(contract: unknown): Set<string> {
+function collectContractOrderFields(contract: ContractV2NormalizedStore): Set<string> {
   const fields = new Set<string>(['id', 'name', 'display_name']);
-  const typed = contract && typeof contract === 'object' && !Array.isArray(contract) ? contract as Dict : {};
-  ['fields', 'field_schema', 'fields_schema'].forEach((key) => {
-    const row = typed[key];
-    if (row && typeof row === 'object' && !Array.isArray(row)) {
-      Object.keys(row as Dict).forEach((field) => {
-        if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(field)) fields.add(field);
-      });
-    }
-  });
-  collectOrderCandidateFields(typed.views, fields);
-  collectOrderCandidateFields(typed.data_sources, fields);
-  collectOrderCandidateFields(typed.projection, fields);
-  collectOrderCandidateFields(typed.surface, fields);
+  resolveContractV2FieldWidgets(contract).forEach((widget) => fields.add(widget.fieldCode));
+  collectOrderCandidateFields(resolveContractV2PrimaryDataSource(contract), fields);
+  collectOrderCandidateFields(resolveContractV2SearchContract(contract), fields);
   return fields;
 }
 
@@ -82,9 +77,9 @@ type ExecuteLoadPreflightOptions = {
   buildModelFormRouteTarget: (input: { model: string; id: string; query: Dict }) => unknown;
   resolveCarryQuery: (extra?: Dict) => Dict;
   extractActionResId: (input: unknown) => number | null;
-  resolveAction: (menuTree: unknown, actionId: number, actionMeta: Dict | null) => Promise<{ contract: unknown; meta?: Dict | null }>;
+  resolveAction: (menuTree: unknown, actionId: number, actionMeta: Dict | null) => Promise<{ contract: ContractV2NormalizedStore; meta?: Dict | null }>;
   setActionMeta: (meta: Dict) => void;
-  resolveContractViewMode: (contract: unknown, viewType: unknown) => string;
+  resolveContractViewMode: (contract: ContractV2NormalizedStore) => string;
   resolveActionViewType: (meta: unknown, contract: unknown) => string;
   resolvePreferredActionViewMode: (input: Dict) => string;
   resolveRouteSelectionState: (input: Dict) => Dict;
@@ -93,8 +88,8 @@ type ExecuteLoadPreflightOptions = {
     activeSavedFilterKey: string;
     activeGroupByField: string;
   };
-  resolveContractAccessPolicy: (contract: unknown) => { reasonCode?: unknown; mode?: unknown };
-  resolveContractReadRight: (contract: unknown) => boolean;
+  resolveContractAccessPolicy: (contract: ContractV2NormalizedStore) => { reasonCode?: unknown; mode?: unknown };
+  resolveContractReadRight: (contract: ContractV2NormalizedStore) => boolean;
   resolveLoadPreflightContractFlags: (input: Dict) => Dict;
   resolveContractFlagApplyState: (input: { contractFlags: Dict }) => {
     contractReadAllowed: boolean;
@@ -110,12 +105,12 @@ type ExecuteLoadPreflightOptions = {
   }) => unknown;
   isUrlAction: (meta: unknown, contract: unknown) => boolean;
   redirectUrlAction: (meta: unknown, contract: unknown) => Promise<boolean>;
-  extractListOrderFromContract: (contract: unknown) => string;
+  extractListOrderFromContract: (contract: ContractV2NormalizedStore) => string;
   resolveLoadPreflightSortValue: (input: Dict) => string;
   resolveLoadPreflightContractLimit: (input: Dict) => number;
   evaluateCapabilityPolicy: (input: { source: unknown; available: unknown; required?: string[] }) => { state?: unknown; missing?: unknown };
   resolveLoadCapabilityRedirectPayload: (input: Dict) => Dict;
-  resolveModelFromContract: (contract: unknown) => string;
+  resolveModelFromContract: (contract: ContractV2NormalizedStore) => string;
   resolveActionViewResolvedModel: (input: Dict) => string;
   isClientAction: (meta: unknown) => boolean;
   isWindowAction: (meta: unknown) => boolean;
@@ -166,9 +161,8 @@ export type ExecuteLoadPreflightResult =
   | { kind: 'handled' }
   | {
       kind: 'continue';
-      contract: unknown;
+      contract: ContractV2NormalizedStore;
       meta: Dict | null;
-      typedContract: Dict;
       contractViewType: string;
       preferredViewMode: string;
       activeContractFilterKey: string;
@@ -183,8 +177,12 @@ export type ExecuteLoadPreflightResult =
       sortValue: string;
     };
 
-function deriveSavedFilterChipsFromContract(contract: Dict): SavedFilterChip[] {
-  const rows = (contract.search as Dict | undefined)?.saved_filters;
+function searchContract(contract: ContractV2NormalizedStore): Dict {
+  return resolveContractV2SearchContract(contract);
+}
+
+function deriveSavedFilterChipsFromContract(contract: ContractV2NormalizedStore): SavedFilterChip[] {
+  const rows = searchContract(contract).saved_filters;
   if (!Array.isArray(rows)) return [];
   return rows
     .map((row, idx) => {
@@ -199,12 +197,12 @@ function deriveSavedFilterChipsFromContract(contract: Dict): SavedFilterChip[] {
     .filter((row): row is SavedFilterChip => Boolean(row));
 }
 
-function deriveGroupByChipsFromContract(contract: Dict): GroupByChip[] {
-  const search = contract.search as Dict | undefined;
-  const custom = search?.custom as Dict | undefined;
+function deriveGroupByChipsFromContract(contract: ContractV2NormalizedStore): GroupByChip[] {
+  const search = searchContract(contract);
+  const custom = search.custom as Dict | undefined;
   const customGroup = custom?.group_by as Dict | undefined;
   const rows = [
-    ...(Array.isArray(search?.group_by) ? search.group_by : []),
+    ...(Array.isArray(search.group_by) ? search.group_by : []),
     ...(Array.isArray(customGroup?.fields) ? customGroup.fields : []),
   ];
   if (!rows.length) return [];
@@ -232,7 +230,7 @@ export function useActionViewLoadPreflightRuntime() {
       options.setActionMeta(nextMeta);
     }
 
-    const contractViewType = options.resolveContractViewMode(contract, options.resolveActionViewType(nextMeta, contract));
+    const contractViewType = options.resolveContractViewMode(contract);
     if (!contractViewType) {
       const missingViewTypeState = options.resolveLoadMissingContractViewTypeErrorState();
       const missingViewTypeApplyState = options.resolveLoadMissingViewTypeApplyState({
@@ -246,17 +244,16 @@ export function useActionViewLoadPreflightRuntime() {
       };
     }
 
-    const typedContract = (contract || {}) as Dict;
     const preferredViewMode = options.resolvePreferredActionViewMode({
       contractViewTypeRaw: contractViewType,
       metaViewModesRaw: (nextMeta as { view_modes?: unknown } | null)?.view_modes,
-      contract: typedContract,
+      contract,
       routeViewModeRaw: options.routeViewModeRaw,
       currentPreferredViewModeRaw: options.currentPreferredViewModeRaw,
     });
 
-    const contractSavedFilterChips = deriveSavedFilterChipsFromContract(typedContract);
-    const contractGroupByChips = deriveGroupByChipsFromContract(typedContract);
+    const contractSavedFilterChips = deriveSavedFilterChipsFromContract(contract);
+    const contractGroupByChips = deriveGroupByChipsFromContract(contract);
     const routeSelection = options.resolveRouteSelectionState({
       routeFilterRaw: options.routeFilterRaw,
       routeSavedFilterRaw: options.routeSavedFilterRaw,
@@ -266,17 +263,17 @@ export function useActionViewLoadPreflightRuntime() {
       activeContractFilterKey: options.activeContractFilterKey,
       activeSavedFilterKey: options.activeSavedFilterKey,
       activeGroupByField: options.activeGroupByField,
-      contractFiltersRaw: (typedContract.search as Dict | undefined)?.filters,
+      contractFiltersRaw: searchContract(contract).filters,
       savedFilterChips: contractSavedFilterChips.length ? contractSavedFilterChips : options.contractSavedFilterChips,
       groupByChips: contractGroupByChips.length ? contractGroupByChips : options.contractGroupByChips,
     });
     const routeSelectionState = options.resolveRouteSelectionApplyState({ routeSelection });
 
-    const accessPolicy = options.resolveContractAccessPolicy(typedContract);
+    const accessPolicy = options.resolveContractAccessPolicy(contract);
     const contractFlags = options.resolveLoadPreflightContractFlags({
-      contractReadAllowedRaw: options.resolveContractReadRight(typedContract),
-      warningsRaw: typedContract.warnings,
-      degradedRaw: typedContract.degraded,
+      contractReadAllowedRaw: options.resolveContractReadRight(contract),
+      warningsRaw: contract.unsupported,
+      degradedRaw: false,
     });
     const contractFlagState = options.resolveContractFlagApplyState({ contractFlags });
 
@@ -300,12 +297,11 @@ export function useActionViewLoadPreflightRuntime() {
       return { kind: 'handled' };
     }
 
-    const v2PrimarySource = resolveUnifiedPageContractV2PrimaryDataSource(contract);
+    const v2PrimarySource = resolveContractV2PrimaryDataSource(contract);
     const v2PrimaryParams = (v2PrimarySource.params && typeof v2PrimarySource.params === 'object' && !Array.isArray(v2PrimarySource.params))
       ? v2PrimarySource.params as Dict
       : {};
-    const searchDefaults = (typedContract.search as Dict | undefined)?.defaults as Dict | undefined;
-    const viewsTree = (typedContract.views as Dict | undefined)?.tree as Dict | undefined;
+    const searchDefaults = searchContract(contract).defaults as Dict | undefined;
     const orderFields = collectContractOrderFields(contract);
     const fallbackSort = options.extractListOrderFromContract(contract) || '';
     const sortValue = sanitizeOrderValue(options.resolveLoadPreflightSortValue({
@@ -313,7 +309,7 @@ export function useActionViewLoadPreflightRuntime() {
       sceneReadyDefaultSortRaw: sanitizeOrderValue(options.sceneReadyDefaultSortRaw, orderFields),
       sceneDefaultSortRaw: sanitizeOrderValue(options.sceneDefaultSortRaw, orderFields),
       searchDefaultOrderRaw: sanitizeOrderValue(v2PrimaryParams.order || searchDefaults?.order, orderFields),
-      viewOrderRaw: sanitizeOrderValue(viewsTree?.order, orderFields),
+      viewOrderRaw: '',
       metaOrderRaw: '',
       fallbackSortRaw: sanitizeOrderValue(fallbackSort, orderFields),
     }), orderFields);
@@ -351,8 +347,8 @@ export function useActionViewLoadPreflightRuntime() {
       isClientAction: options.isClientAction(nextMeta),
       isWindowAction: options.isWindowAction(nextMeta),
       actionTypeRaw: options.getActionType(nextMeta),
-      contractDataTypeRaw: (typedContract.data as Dict | undefined)?.type,
-      contractUrlRaw: (typedContract.data as Dict | undefined)?.url,
+      contractDataTypeRaw: '',
+      contractUrlRaw: '',
       metaUrlRaw: (nextMeta as Dict | null)?.url,
       noModelCode: 'ACT_NO_MODEL',
       unsupportedCode: 'ACT_UNSUPPORTED_TYPE',
@@ -396,7 +392,6 @@ export function useActionViewLoadPreflightRuntime() {
       kind: 'continue',
       contract,
       meta: nextMeta,
-      typedContract,
       contractViewType,
       preferredViewMode,
       activeContractFilterKey: routeSelectionState.activeContractFilterKey,

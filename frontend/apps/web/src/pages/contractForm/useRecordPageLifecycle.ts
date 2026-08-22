@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
-import type { ActionContract } from '@sc/schema';
+import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
@@ -14,58 +14,150 @@ type LifecycleDependencies = Record<string, any>;
 
 /** Owns authoritative contract loading, record hydration, and stale-response isolation. */
 export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
-  const { ApiError, ContractAccessPolicyError, ContractV2DecodeError, ErrorCodes, actionId, advancedExpanded, analyzeFormContractReadiness, applyIncomingFormFieldValue, applyPageStatusEvent, buildRouteContractContext, changedFieldCount, changedFieldSet, clearNativeAttachmentError, clearNativeChatterForRecordLoad, clearOne2manyRows, clearPendingNativeAttachments, closeNativeChatterComposer, contract, contractAccessPolicy, contractActions, contractMeta, contractModelName, contractReadiness, coreFieldNames, createContractV2Store, decodeContractV2Snapshot, defaultContractFormRecord, dirtyFieldSet, formData, formDataFieldNames, formRouteIdentity, hydrateSelectedRelationOptions, hydrateVisibleOne2manyRows, initOne2manyRows, isComponentActive, layoutNodes, loadActionContractRaw, loadError, loadModelContractRaw, menuId, mergeNativeLayoutFieldDescriptorsIntoContract, model, nativeChatterAutoLoadKey, nativeLayoutVisibilityRevision, onchangeLinePatches, onchangeModifiersPatch, getOnchangeTimer, setOnchangeTimer, onchangeWarnings, originalValues, pickContractNavQuery, readContractFormRecord, recordId, recordIdDisplay, recordMissing, recordVersionPolicy, recordVersionToken, relationKeywords, relationOptions, renderErrorMessage, renderProfile, requestedSourceMode, requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState, resolveNavigationUrlFromOrigin, resolveUnifiedPageContractV2, resolveUnifiedPageContractV2MainData, resolveUnifiedPageContractV2PrimaryDataSource, restoreIntakeAutosave, retainedRouteIdentity, rights, route, router, setStatusbarValue, showHud, showOne2manyErrors, snapshotOriginalFormValues, status, toPositiveInt, upsertRelationOption, v2ContractDecodeError, v2ContractStore, v2ShadowActionCount, v2ShadowButtonStatusCount, v2ShadowFieldCodeCount, v2ShadowGlobalSourceKind, v2ShadowLayoutSourceKind, v2ShadowLegacyFieldMissingPreview, v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount, v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady, v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount, validateSurfaceMarkers, validationErrors, writableFieldCount } = dependencies;
+  const {
+    ApiError,
+    ContractAccessPolicyError,
+    ErrorCodes,
+    actionId,
+    advancedExpanded,
+    applyIncomingFormFieldValue,
+    applyPageStatusEvent,
+    buildRouteContractContext,
+    changedFieldCount,
+    changedFieldSet,
+    clearNativeAttachmentError,
+    clearNativeChatterForRecordLoad,
+    clearOne2manyRows,
+    clearPendingNativeAttachments,
+    closeNativeChatterComposer,
+    contract,
+    contractAccessPolicy,
+    contractActions,
+    contractMeta,
+    contractReadiness,
+    coreFieldNames,
+    defaultContractFormRecord,
+    dirtyFieldSet,
+    formData,
+    formDataFieldNames,
+    formRouteIdentity,
+    hydrateSelectedRelationOptions,
+    hydrateVisibleOne2manyRows,
+    initOne2manyRows,
+    isComponentActive,
+    layoutNodes,
+    loadActionContractV2,
+    loadError,
+    loadModelContractV2,
+    menuId,
+    model,
+    nativeChatterAutoLoadKey,
+    nativeLayoutVisibilityRevision,
+    onchangeLinePatches,
+    onchangeModifiersPatch,
+    getOnchangeTimer,
+    setOnchangeTimer,
+    onchangeWarnings,
+    originalValues,
+    pickContractNavQuery,
+    readContractFormRecord,
+    recordId,
+    recordIdDisplay,
+    recordMissing,
+    recordVersionPolicy,
+    recordVersionToken,
+    relationKeywords,
+    relationOptions,
+    renderErrorMessage,
+    renderProfile,
+    requestedSourceMode,
+    requestedSurface,
+    resolveContractV2MainData,
+    resolveCreateDefaultsFromState,
+    resolveNavigationUrlFromOrigin,
+    restoreIntakeAutosave,
+    retainedRouteIdentity,
+    rights,
+    route,
+    router,
+    setStatusbarValue,
+    showHud,
+    showOne2manyErrors,
+    snapshotOriginalFormValues,
+    status,
+    toPositiveInt,
+    upsertRelationOption,
+    v2ContractDecodeError,
+    v2ContractStore,
+    v2ShadowActionCount,
+    v2ShadowButtonStatusCount,
+    v2ShadowFieldCodeCount,
+    v2ShadowGlobalSourceKind,
+    v2ShadowLayoutSourceKind,
+    v2ShadowLegacyFieldMissingPreview,
+    v2ShadowLegacyFieldOverlapCount,
+    v2ShadowMainDataFieldCount,
+    v2ShadowReadonlyValueCount,
+    v2ShadowSourceContextKind,
+    v2ShadowStatusFieldCount,
+    v2ShadowStoreReady,
+    v2ShadowValueFieldCount,
+    v2ShadowValueSourceKind,
+    v2ShadowWidgetCount,
+    validationErrors,
+    writableFieldCount,
+  } = dependencies;
   let activeReloadToken = 0;
   let activeReloadIdentity = '';
   let activeReloadPromise: Promise<void> | null = null;
+  const formFields = () => resolveContractV2FormFieldMap(v2ContractStore.value);
 
   function resolveNavigationUrl(url: string) {
     return resolveNavigationUrlFromOrigin(url, window.location.origin);
   }
 
-  function syncContractV2ShadowStore(rawContract: unknown) {
-    v2ContractStore.value = null;
-    v2ContractDecodeError.value = '';
-    try {
-      const snapshot = decodeContractV2Snapshot(resolveUnifiedPageContractV2(rawContract) || rawContract);
-      v2ContractStore.value = createContractV2Store(snapshot);
-    } catch (err) {
-      if (err instanceof ContractV2DecodeError) {
-        v2ContractDecodeError.value = err.issues.slice(0, 4).map((issue) => `${issue.path} ${issue.message}`).join(' | ');
-        return;
-      }
-      v2ContractDecodeError.value = err instanceof Error ? err.message : '表单配置解析失败';
-    }
-  }
-
   const viewOrchestrationHudSummary = computed(() => {
-    const rootGovernance = contract.value && typeof contract.value === 'object'
-      ? (contract.value as Record<string, unknown>).governance
-      : undefined;
-    const governance = rootGovernance && typeof rootGovernance === 'object' && !Array.isArray(rootGovernance)
-      ? rootGovernance as Record<string, unknown>
-      : {};
-    const orchestration = governance.view_orchestration && typeof governance.view_orchestration === 'object' && !Array.isArray(governance.view_orchestration)
-      ? governance.view_orchestration as Record<string, unknown>
-      : {};
-    const views = orchestration.views && typeof orchestration.views === 'object' && !Array.isArray(orchestration.views)
-      ? orchestration.views as Record<string, unknown>
-      : {};
+    const rootGovernance =
+      contract.value && typeof contract.value === 'object'
+        ? (contract.value as Record<string, unknown>).governance
+        : undefined;
+    const governance =
+      rootGovernance && typeof rootGovernance === 'object' && !Array.isArray(rootGovernance)
+        ? (rootGovernance as Record<string, unknown>)
+        : {};
+    const orchestration =
+      governance.view_orchestration &&
+      typeof governance.view_orchestration === 'object' &&
+      !Array.isArray(governance.view_orchestration)
+        ? (governance.view_orchestration as Record<string, unknown>)
+        : {};
+    const views =
+      orchestration.views &&
+      typeof orchestration.views === 'object' &&
+      !Array.isArray(orchestration.views)
+        ? (orchestration.views as Record<string, unknown>)
+        : {};
     const current = (views.form || {}) as Record<string, unknown>;
     const contracts = Array.isArray(current.business_config_contracts)
-      ? current.business_config_contracts as Array<Record<string, unknown>>
+      ? (current.business_config_contracts as Array<Record<string, unknown>>)
       : [];
     const businessConfigFormFields = Array.isArray(current.business_config_form_fields)
       ? current.business_config_form_fields.map((item) => String(item || '').trim()).filter(Boolean)
       : [];
     const skippedLegacyPolicyFields = Array.isArray(current.skipped_legacy_policy_fields)
-      ? current.skipped_legacy_policy_fields.map((item) => String(item || '').trim()).filter(Boolean)
+      ? current.skipped_legacy_policy_fields
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
       : [];
     return {
       applied: Boolean(orchestration.applied || current.applied || contracts.length),
       owner: String(orchestration.owner_layer || current.owner_layer || '-'),
       contractCount: contracts.length,
-      contractNames: contracts.map((row) => String(row.name || row.id || '').trim()).filter(Boolean).join(',') || '-',
+      contractNames:
+        contracts
+          .map((row) => String(row.name || row.id || '').trim())
+          .filter(Boolean)
+          .join(',') || '-',
       legacyOverlay: Boolean(current.legacy_field_policy_overlay),
       businessConfigFieldCount: businessConfigFormFields.length,
       skippedLegacyPolicyFields: skippedLegacyPolicyFields.join(',') || '-',
@@ -95,7 +187,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     { label: '新版配置只读值数', value: v2ShadowReadonlyValueCount.value },
     { label: '新版配置值来源', value: v2ShadowValueSourceKind.value },
     { label: '配置解析问题', value: v2ContractDecodeError.value || '-' },
-    { label: '配置视图类型', value: contract.value?.head?.view_type || contract.value?.view_type || '-' },
+    { label: '配置视图类型', value: v2ContractStore.value?.snapshot.pageInfo.viewType || '-' },
     { label: '页面编排已应用', value: viewOrchestrationHudSummary.value.applied },
     { label: '页面编排责任层', value: viewOrchestrationHudSummary.value.owner },
     { label: '页面编排配置数', value: viewOrchestrationHudSummary.value.contractCount },
@@ -104,12 +196,15 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     { label: '跳过策略字段', value: viewOrchestrationHudSummary.value.skippedLegacyPolicyFields },
     { label: '历史策略覆盖', value: viewOrchestrationHudSummary.value.legacyOverlay },
     { label: '渲染档位', value: renderProfile.value },
-    { label: '字段数', value: Object.keys(contract.value?.fields || {}).length },
+    { label: '字段数', value: Object.keys(formFields()).length },
     { label: '布局节点数', value: layoutNodes.value.length },
     { label: '可写字段数', value: writableFieldCount.value },
     { label: '已变更字段数', value: changedFieldCount.value },
     { label: '操作数', value: contractActions.value.length },
-    { label: '权限', value: `${rights.value.read ? 'R' : '-'}${rights.value.write ? 'W' : '-'}${rights.value.create ? 'C' : '-'}${rights.value.unlink ? 'D' : '-'}` },
+    {
+      label: '权限',
+      value: `${rights.value.read ? 'R' : '-'}${rights.value.write ? 'W' : '-'}${rights.value.create ? 'C' : '-'}${rights.value.unlink ? 'D' : '-'}`,
+    },
     { label: '联动提醒数', value: onchangeWarnings.value.length },
     { label: '明细联动补丁数', value: onchangeLinePatches.value.length },
   ]);
@@ -122,11 +217,12 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     const contractContext = buildRouteContractContext(route.query as Record<string, unknown>);
     const contextRaw = String(route.query.context_raw || '').trim();
     const sceneKey = String(route.query.scene_key || route.query.scene || '').trim();
-    const requestedViewId = toPositiveInt(route.query.view_id) || toPositiveInt(route.query.viewId) || 0;
-    let response: Awaited<ReturnType<typeof loadActionContractRaw>> | null = null;
+    const requestedViewId =
+      toPositiveInt(route.query.view_id) || toPositiveInt(route.query.viewId) || 0;
+    let response: Awaited<ReturnType<typeof loadActionContractV2>> | null = null;
     if (actionId.value && recordId.value) {
       try {
-        response = await loadActionContractRaw(actionId.value, {
+        response = await loadActionContractV2(actionId.value, {
           sceneKey: sceneKey || undefined,
           menuId: menuId.value || undefined,
           viewType: 'form',
@@ -140,9 +236,11 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           previewToken: String(route.query.preview_token || '').trim() || undefined,
           previewRoleKey: String(route.query.preview_role_key || '').trim() || undefined,
         });
-        const actionReadiness = analyzeFormContractReadiness(response?.data, { requirePureFormViewType: true });
-        const actionModel = contractModelName(response?.data);
-        if (!actionReadiness.usable || (currentModel && actionModel && actionModel !== currentModel)) {
+        const pageInfo = response.snapshot.pageInfo;
+        if (
+          pageInfo.viewType !== 'form' ||
+          (currentModel && pageInfo.model && pageInfo.model !== currentModel)
+        ) {
           response = null;
         }
       } catch {
@@ -150,7 +248,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       }
     }
     if (!response && currentModel) {
-      response = await loadModelContractRaw(currentModel, {
+      response = await loadModelContractV2(currentModel, {
         sceneKey: sceneKey || undefined,
         actionId: actionId.value || undefined,
         menuId: menuId.value || undefined,
@@ -166,25 +264,15 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         previewRoleKey: String(route.query.preview_role_key || '').trim() || undefined,
       });
     }
-    if (!response?.data || typeof response.data !== 'object') {
+    if (!response?.snapshot || !response.store) {
       throw new Error('表单配置返回为空');
     }
-    const markerCheck = validateSurfaceMarkers(
-      response.data,
-      (response.meta as Record<string, unknown> | null) || null,
-      requestedSurface.value,
-    );
-    if (!markerCheck.ok) {
-      throw new Error(`表单配置标记不完整：${markerCheck.issues.slice(0, 4).join(' | ')}`);
+    if (response.snapshot.pageInfo.viewType !== 'form') {
+      throw new Error(`表单配置视图类型错误：${response.snapshot.pageInfo.viewType}`);
     }
-    const readiness = analyzeFormContractReadiness(response.data, { requirePureFormViewType: false });
-    if (!readiness.usable) {
-      throw new Error(`表单配置暂不可渲染：${readiness.issues.slice(0, 4).join(' | ')}`);
-    }
-    contract.value = response.data as ActionContract;
-    contractMeta.value = response.meta || null;
-    syncContractV2ShadowStore(response.data);
-    mergeNativeLayoutFieldDescriptorsIntoContract();
+    contract.value = response.snapshot;
+    contractMeta.value = response.snapshot.meta as unknown as Record<string, unknown>;
+    v2ContractStore.value = response.store;
     const policy = contractAccessPolicy.value;
     if (policy.mode === 'block') {
       const message = policy.message || 'contract access policy blocked this page';
@@ -204,10 +292,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     recordVersionToken.value = '';
     closeNativeChatterComposer();
     clearNativeChatterForRecordLoad();
+    nativeChatterAutoLoadKey.value = '';
     clearNativeAttachmentError();
     if (!recordId.value) {
       clearPendingNativeAttachments();
-      nativeChatterAutoLoadKey.value = '';
     }
     Object.keys(formData).forEach((key) => {
       delete formData[key];
@@ -235,16 +323,19 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       initOne2manyRows,
     };
     if (shouldHydrateCreateDefaults(recordId.value, renderProfile.value)) {
-      const baseDefaults = resolveCreateDefaultsFromState({ contract: contract.value, routeQuery: route.query as Record<string, unknown>, v2ContractStore: v2ContractStore.value });
+      const baseDefaults = resolveCreateDefaultsFromState({
+        routeQuery: route.query as Record<string, unknown>,
+        v2ContractStore: v2ContractStore.value,
+      });
       const defaults = await loadAuthoritativeCreateDefaults({
-        primaryDataSource: resolveUnifiedPageContractV2PrimaryDataSource(contract.value),
+        primaryDataSource: v2ContractStore.value?.primaryDataSource || {},
         model: model.value,
         fieldNames,
         baseDefaults,
         fetchDefaults: defaultContractFormRecord,
       });
       fieldNames.forEach((name) => {
-        const descriptor = contract.value?.fields?.[name];
+        const descriptor = formFields()[name];
         applyIncomingFormFieldValue({
           fieldName: name,
           descriptor,
@@ -252,7 +343,13 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
           target: hydrationTarget,
         });
       });
-      Object.entries(resolveCreateRouteRelationLabels(contract.value, route.query as Record<string, unknown>, defaults)).forEach(([name, label]) => {
+      Object.entries(
+        resolveCreateRouteRelationLabels(
+          v2ContractStore.value,
+          route.query as Record<string, unknown>,
+          defaults,
+        ),
+      ).forEach(([name, label]) => {
         if (!fieldNames.includes(name)) return;
         const id = Number(formData[name] || 0);
         if (!Number.isFinite(id) || id <= 0) return;
@@ -265,7 +362,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       return;
     }
     const storeMainData = resolveContractV2MainData(v2ContractStore.value);
-    const contractMainData = Object.keys(storeMainData).length ? storeMainData : resolveUnifiedPageContractV2MainData(contract.value);
+    const contractMainData = storeMainData;
     const canUseReadonlyMainData = readonlyMainDataCoversFields({
       renderProfile: renderProfile.value,
       fieldNames,
@@ -288,16 +385,18 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     }
     recordMissing.value = false;
     if (versionPolicy?.tokenField) {
-      recordVersionToken.value = String((row as Record<string, unknown>)[versionPolicy.tokenField] || '').trim();
+      recordVersionToken.value = String(
+        (row as Record<string, unknown>)[versionPolicy.tokenField] || '',
+      ).trim();
     }
     fieldNames.forEach((name) => {
-      if (name === versionPolicy?.tokenField && !contract.value?.fields?.[name]) return;
+      if (name === versionPolicy?.tokenField && !formFields()[name]) return;
       const incoming = Object.prototype.hasOwnProperty.call(row, name)
         ? (row as Record<string, unknown>)[name]
         : (contractMainData[name] ?? '');
       applyIncomingFormFieldValue({
         fieldName: name,
-        descriptor: contract.value?.fields?.[name],
+        descriptor: formFields()[name],
         incoming,
         target: hydrationTarget,
       });
@@ -306,9 +405,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     nativeLayoutVisibilityRevision.value += 1;
   }
   function handleSceneBlockAction(payload: { action?: { target?: Record<string, unknown> } }) {
-    const target = payload?.action?.target && typeof payload.action.target === 'object'
-      ? payload.action.target
-      : {};
+    const target =
+      payload?.action?.target && typeof payload.action.target === 'object'
+        ? payload.action.target
+        : {};
     const targetKind = String(target.kind || '').trim();
     if (targetKind === 'statusbar_value') {
       const value = String(target.value || '').trim();
@@ -352,7 +452,11 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       } catch (err) {
         if (reloadToken !== activeReloadToken) return;
         if (err instanceof ApiError) {
-          Object.assign(loadError, { status: err.status, reason: String(err.reasonCode || ''), trace: String(err.traceId || '') });
+          Object.assign(loadError, {
+            status: err.status,
+            reason: String(err.reasonCode || ''),
+            trace: String(err.traceId || ''),
+          });
         }
         if (err instanceof ApiError && err.status === 403) {
           await router.replace({
@@ -375,12 +479,17 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
               reason: ErrorCodes.CAPABILITY_MISSING,
               action_id: actionId.value || undefined,
               menu_id: Number(route.query.menu_id || 0) || undefined,
-              diag: showHud.value ? (err.reasonCode || 'CONTRACT_ACCESS_BLOCKED') : undefined,
+              diag: showHud.value ? err.reasonCode || 'CONTRACT_ACCESS_BLOCKED' : undefined,
             }),
           });
           return;
         }
-        applyPageStatusEvent({ kind: 'status', transaction: 'formReload', status: 'error', errorMessage: err instanceof Error ? err.message : '表单加载失败' });
+        applyPageStatusEvent({
+          kind: 'status',
+          transaction: 'formReload',
+          status: 'error',
+          errorMessage: err instanceof Error ? err.message : '表单加载失败',
+        });
       } finally {
         if (activeReloadIdentity === reloadIdentity) {
           activeReloadPromise = null;
@@ -421,10 +530,8 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     }
   }
 
-
   return {
     resolveNavigationUrl,
-    syncContractV2ShadowStore,
     viewOrchestrationHudSummary,
     hudEntries,
     loadContract,

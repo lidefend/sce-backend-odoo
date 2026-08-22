@@ -63,7 +63,7 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
 from odoo.addons.smart_core.core.page_contracts_builder import build_page_contracts
 from odoo.addons.smart_core.core.workspace_home_contract_builder import build_workspace_home_contract
 from odoo.addons.smart_core.core.runtime_page_contract_builder import mirror_workspace_home_role_context
-from odoo.addons.smart_core.core.scene_governance_payload_builder import build_scene_governance_payload_v1
+from odoo.addons.smart_core.core.scene_governance_payload_builder import build_scene_governance_payload
 from odoo.addons.smart_core.core.ui_base_contract_asset_event_queue import get_queue_metrics
 from odoo.addons.smart_core.core.platform_database_contract import (
     PlatformDatabaseContractError,
@@ -75,7 +75,7 @@ from odoo.addons.smart_core.core.scene_delivery_policy import (
     resolve_delivery_policy_runtime,
 )
 from odoo.addons.smart_core.core.scene_nav_contract_builder import build_scene_nav_contract
-from odoo.addons.smart_core.core.scene_ready_contract_builder import build_scene_ready_contract_v1
+from odoo.addons.smart_core.core.scene_ready_contract_builder import build_scene_ready_contract
 from odoo.addons.smart_core.core.ui_base_contract_asset_repository import bind_scene_assets
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.delivery.menu_service import MenuService
@@ -102,7 +102,7 @@ from odoo.addons.smart_core.core.extension_loader import run_extension_hooks
 _logger = logging.getLogger(__name__)
 
 # Contract/API version markers for client compatibility
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "2.0.0"
 API_VERSION = "v1"
 
 _BUSINESS_NAV_GROUP_DISPLAY_ORDER: dict[str, int] = {}
@@ -1738,7 +1738,12 @@ class SystemInitHandler(BaseIntentHandler):
         user = env.user
         identity_resolver = IdentityResolver(env)
         user_groups_xmlids = identity_resolver.user_group_xmlids(user)
-        user_dict = SystemInitIdentityPayload.build(user, user_groups_xmlids)
+        user_dict = SystemInitIdentityPayload.build(
+            user,
+            user_groups_xmlids,
+            company=env.company,
+            allowed_company_ids=env.context.get("allowed_company_ids") or user.company_ids.ids,
+        )
 
         # -------- 2) 导航（净化 + 指纹）--------
         p_nav = SystemInitNavRequestBuilder.build(params, scene)
@@ -2019,7 +2024,7 @@ class SystemInitHandler(BaseIntentHandler):
             startup_scene_subset_resolver_fn=SystemInitPayloadBuilder.resolve_startup_scene_subset,
             filter_startup_scenes_for_preload_fn=_filter_startup_scenes_for_preload,
             bind_scene_assets_fn=_bind_scene_assets,
-            build_scene_ready_contract_fn=build_scene_ready_contract_v1,
+            build_scene_ready_contract_fn=build_scene_ready_contract,
             build_scene_nav_contract_fn=build_scene_nav_contract,
         )
         scene_runtime_surface_result = SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=scene_runtime_surface_ctx)
@@ -2027,9 +2032,9 @@ class SystemInitHandler(BaseIntentHandler):
         delivery_result = scene_runtime_surface_result["delivery_result"]
         scene_nav_contract = scene_runtime_surface_result["scene_nav_contract"]
         bind_result = scene_runtime_surface_result["bind_result"]
-        data["scene_ready_contract_v1"] = (
-            data.get("scene_ready_contract_v1")
-            if isinstance(data.get("scene_ready_contract_v1"), dict)
+        data["scene_ready_contract"] = (
+            data.get("scene_ready_contract")
+            if isinstance(data.get("scene_ready_contract"), dict)
             else {}
         )
         nav_meta = data.get("nav_meta") if isinstance(data.get("nav_meta"), dict) else {}
@@ -2125,8 +2130,9 @@ class SystemInitHandler(BaseIntentHandler):
                 meta = {}
                 delivery_payload["meta"] = meta
             meta["release_audit_trail_summary"] = release_audit_trail_summary
-        data["edition_runtime_v1"] = {
-            "contract_version": "v1",
+        data["edition_runtime"] = {
+            "contract_version": "2.0.0",
+            "schema_version": "2.0.0",
             "requested": {
                 "product_key": requested_product_key,
                 "base_product_key": requested_base_product_key,
@@ -2179,7 +2185,7 @@ class SystemInitHandler(BaseIntentHandler):
             delivery_meta["formal_product_menu_policy"] = formal_product_menu_meta
             delivery_meta["user_menu_config"] = delivery_user_menu_config_meta
             delivery_meta["system_init_nav_boundary"] = {
-                "authority": "navigation_v1",
+                "authority": "navigation",
                 "semantic_post_processing": False,
                 "allowed_runtime_filters": [
                     "platform_release_gate",
@@ -2195,7 +2201,7 @@ class SystemInitHandler(BaseIntentHandler):
             # filtered projection, never the pre-role/pre-overlay snapshot.
             _delivery_authoritative_nav = list(delivery_nav)
             nav_meta = data.get("nav_meta") if isinstance(data.get("nav_meta"), dict) else {}
-            nav_meta["nav_source"] = "navigation_v1"
+            nav_meta["nav_source"] = "navigation"
             nav_meta["role_surface_nav_preserved"] = True
             nav_meta["platform_release_gate"] = (
                 delivery_payload.get("meta", {}).get("platform_release_gate")
@@ -2206,7 +2212,7 @@ class SystemInitHandler(BaseIntentHandler):
             nav_meta["formal_product_menu_policy"] = formal_product_menu_meta
             nav_meta["user_menu_config"] = delivery_user_menu_config_meta
             nav_meta["system_init_nav_boundary"] = {
-                "authority": "navigation_v1",
+                "authority": "navigation",
                 "semantic_post_processing": False,
             }
             data["nav_meta"] = nav_meta
@@ -2229,7 +2235,7 @@ class SystemInitHandler(BaseIntentHandler):
         }
 
         if build_mode == SystemInitPayloadBuilder.BUILD_MODE_DEBUG:
-            data["scene_governance_v1"] = build_scene_governance_payload_v1(
+            data["scene_governance"] = build_scene_governance_payload(
                 data=data,
                 scene_diagnostics=scene_diagnostics,
                 delivery_meta=delivery_result.get("meta") if isinstance(delivery_result, dict) else {},
@@ -2237,7 +2243,7 @@ class SystemInitHandler(BaseIntentHandler):
                 asset_queue_metrics=get_queue_metrics(env),
             )
         else:
-            data.pop("scene_governance_v1", None)
+            data.pop("scene_governance", None)
         data = _strip_ui_base_contract_for_frontend(data)
         snapshot_ext = (
             data.get("ext_facts")
@@ -2265,7 +2271,7 @@ class SystemInitHandler(BaseIntentHandler):
                 "nav_meta": data.get("nav_meta") if isinstance(data.get("nav_meta"), dict) else {},
                 "delivery_policy": delivery_result.get("meta") if isinstance(delivery_result, dict) else {},
                 "scene_nav_meta": scene_nav_contract.get("meta") if isinstance(scene_nav_contract, dict) else {},
-                "scene_governance_v1": data.get("scene_governance_v1") if isinstance(data.get("scene_governance_v1"), dict) else {},
+                "scene_governance": data.get("scene_governance") if isinstance(data.get("scene_governance"), dict) else {},
                 "asset_binding": bind_result if isinstance(bind_result, dict) else {},
                 "scene_diagnostics": scene_diagnostics if isinstance(scene_diagnostics, dict) else {},
             }
@@ -2288,16 +2294,13 @@ class SystemInitHandler(BaseIntentHandler):
         )
         if _delivery_authoritative:
             data["nav"] = _delivery_authoritative
-        SystemInitPayloadBuilder.attach_layered_contract(data)
+        SystemInitPayloadBuilder.attach_product_identity(data)
         try:
             data = apply_dictionary_startup_data(env, data)
         except Exception:
             pass
         data = _normalize_access_suggested_action(data)
         data["record_context"] = build_record_context_contract(env, params)
-        # Compatibility carrier for clients released before the canonical
-        # record-context contract. New consumers must use record_context.
-        data["project_context"] = data["record_context"]
         # Product baseline: one navigation contract owns both the rendered
         # tree and its route authority. No client-facing fallback carriers are
         # allowed because independently selected trees and authorities can
@@ -2312,7 +2315,7 @@ class SystemInitHandler(BaseIntentHandler):
         # Startup overlays can reintroduce compatibility action nodes after
         # DeliveryEngine performed its first role-scoped projection. Reconcile
         # the final tree with this response-local authority before sealing the
-        # single navigation_v1 contract. Authorized action and scene routes
+        # single navigation contract. Authorized action and scene routes
         # are preserved; action-bearing nodes without matching authority are
         # removed because the SPA cannot execute either target without it.
         _final_navigation = delivery_engine.menu_service.filter_nav_by_route_authority(
@@ -2346,15 +2349,16 @@ class SystemInitHandler(BaseIntentHandler):
             "edition_key": str(delivery_payload.get("edition_key") or ""),
             "role_code": str(delivery_payload.get("role_code") or ""),
             "system_init_nav_boundary": {
-                "authority": "navigation_v1",
+                "authority": "navigation",
                 "semantic_post_processing": False,
             },
         })
-        data["navigation_v1"] = {
-            "contract_version": "navigation.v1",
-            "source": "system_init.navigation_v1",
+        data["navigation"] = {
+            "contract_version": "2.0.0",
+            "schema_version": "2.0.0",
+            "source": "system_init.navigation",
             "nav": _final_navigation,
-            "route_authority_v1": _final_route_authority,
+            "route_authority": _final_route_authority,
             "contextual_routes": list(delivery_payload.get("contextual_routes") or []),
             "integrity": {
                 "visible_action_count": len(_visible_navigation_pairs),
@@ -2368,15 +2372,10 @@ class SystemInitHandler(BaseIntentHandler):
             "nav_role_surface",
             "nav_legacy",
             "release_navigation_v1",
-            "delivery_engine_v1",
-            "route_authority_v1",
+            "delivery_engine",
+            "route_authority",
         ):
             data.pop(_removed_navigation_carrier, None)
-        for _section_contract_name in ("system_init_sections_v1", "init_contract_v1"):
-            _section_contract = data.get(_section_contract_name)
-            if isinstance(_section_contract, dict):
-                _section_contract.pop("nav", None)
-                _section_contract["navigation"] = {"contract_ref": "navigation_v1"}
         data["contract_mode"] = contract_mode
         if contract_mode == "user":
             data.pop("scene_diagnostics", None)

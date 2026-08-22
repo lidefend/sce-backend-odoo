@@ -71,17 +71,17 @@ def mirror_workspace_home_role_context(data: dict[str, Any]) -> None:
     record["hero"] = hero
     workspace_home["record"] = record
 
-    page_orchestration_v1 = (
-        workspace_home.get("page_orchestration_v1")
-        if isinstance(workspace_home.get("page_orchestration_v1"), dict)
+    page_orchestration = (
+        workspace_home.get("page_orchestration")
+        if isinstance(workspace_home.get("page_orchestration"), dict)
         else {}
     )
-    page = page_orchestration_v1.get("page") if isinstance(page_orchestration_v1.get("page"), dict) else {}
+    page = page_orchestration.get("page") if isinstance(page_orchestration.get("page"), dict) else {}
     context = page.get("context") if isinstance(page.get("context"), dict) else {}
     context["role_code"] = role_code
     page["context"] = context
-    page_orchestration_v1["page"] = page
-    workspace_home["page_orchestration_v1"] = page_orchestration_v1
+    page_orchestration["page"] = page
+    workspace_home["page_orchestration"] = page_orchestration
 
 
 def _to_text(value: Any) -> str:
@@ -97,7 +97,7 @@ def _semantic_title_for(raw_title: str, key: str, fallback: str) -> str:
 
 
 def _sanitize_page_orchestration_titles(page: dict[str, Any]) -> dict[str, Any]:
-    orchestration = page.get("page_orchestration_v1") if isinstance(page.get("page_orchestration_v1"), dict) else {}
+    orchestration = page.get("page_orchestration") if isinstance(page.get("page_orchestration"), dict) else {}
     zones = orchestration.get("zones") if isinstance(orchestration.get("zones"), list) else []
     sanitized_zones: list[dict[str, Any]] = []
     for zone in zones:
@@ -123,7 +123,7 @@ def _sanitize_page_orchestration_titles(page: dict[str, Any]) -> dict[str, Any]:
         next_zone["blocks"] = sanitized_blocks
         sanitized_zones.append(next_zone)
     orchestration["zones"] = sanitized_zones
-    page["page_orchestration_v1"] = orchestration
+    page["page_orchestration"] = orchestration
     return page
 
 
@@ -135,7 +135,7 @@ def build_runtime_page_contracts(data: dict[str, Any]) -> dict[str, Any]:
     for page_key, page in list(pages.items()):
         if not isinstance(page, dict):
             continue
-        orchestration = page.get("page_orchestration_v1") if isinstance(page.get("page_orchestration_v1"), dict) else {}
+        orchestration = page.get("page_orchestration") if isinstance(page.get("page_orchestration"), dict) else {}
         meta = orchestration.get("meta") if isinstance(orchestration.get("meta"), dict) else {}
         page_payload = orchestration.get("page") if isinstance(orchestration.get("page"), dict) else {}
         context = page_payload.get("context") if isinstance(page_payload.get("context"), dict) else {}
@@ -145,7 +145,7 @@ def build_runtime_page_contracts(data: dict[str, Any]) -> dict[str, Any]:
         meta["role_source_code"] = role_code
         meta["runtime_source_authority"] = source_authority_contract()
         orchestration["meta"] = meta
-        page["page_orchestration_v1"] = orchestration
+        page["page_orchestration"] = orchestration
         page = apply_runtime_page_parser_semantic_bridge(page, page_key=page_key)
         page = apply_runtime_page_semantic_orchestration_bridge(page)
         page = _sanitize_page_orchestration_titles(page)

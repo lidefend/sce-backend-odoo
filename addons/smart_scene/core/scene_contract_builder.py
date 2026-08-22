@@ -180,7 +180,7 @@ def build_scene_contract(
         "extensions": _normalize_extensions(extensions),
         "diagnostics": _normalize_diagnostics(diagnostics),
     }
-    contract["scene_contract_v1"] = {
+    contract["scene_contract"] = {
         "contract_version": "v1",
         "scene": dict(contract["scene"]),
         "page": dict(contract["page"]),

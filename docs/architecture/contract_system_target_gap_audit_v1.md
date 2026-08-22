@@ -36,8 +36,8 @@ The current system already has a real contract foundation, but it is not yet the
 Current mainline artifacts are:
 
 - `Scene Contract v1`: documented in `docs/architecture/scene_contract_spec_v1.md`.
-- `page_orchestration_v1`: consumed by frontend page contract helpers.
-- `scene_ready_contract_v1`: built during `system.init`.
+- `page_orchestration`: consumed by frontend page contract helpers.
+- `scene_ready_contract`: built during `system.init`.
 - `ui.contract`: still available for model/action/native contract paths, with frontend native delivery restrictions.
 - `api.onchange`: incremental patch path for form field changes.
 
@@ -80,7 +80,7 @@ This aligns with the target direction, especially the principle that frontend sh
 
 ### 3.2 Backend Scene Contract Builder Exists
 
-`addons/smart_scene/core/scene_contract_builder.py` builds `scene_contract_v1` with:
+`addons/smart_scene/core/scene_contract_builder.py` builds `scene_contract` with:
 
 - `contract_version`
 - `scene`
@@ -101,8 +101,8 @@ This covers part of the desired `LayoutContract`, `StatusContract`, `ActionContr
 `addons/smart_core/handlers/system_init.py` builds and returns:
 
 - `page_contracts`
-- `scene_ready_contract_v1`
-- `delivery_engine_v1`
+- `scene_ready_contract`
+- `delivery_engine`
 - `release_navigation_v1`
 - `role_surface`
 - `default_route`
@@ -126,8 +126,8 @@ Frontend receives and stores:
 
 Frontend helpers consume:
 
-- `page_orchestration_v1`
-- `scene_contract_v1`
+- `page_orchestration`
+- `scene_contract`
 - action schemas
 - data sources
 
@@ -245,7 +245,7 @@ Current data is spread across:
 
 - `record`
 - `api.data`
-- `page_orchestration_v1.data_sources`
+- `page_orchestration.data_sources`
 - form local runtime
 - dictionary/startup data
 
@@ -332,7 +332,7 @@ Introduce `UnifiedPageContract v2` as the canonical frontend package:
 
 Compatibility rule:
 
-- Existing `scene_contract_v1`, `page_orchestration_v1`, and `ui.contract` may remain as inputs.
+- Existing `scene_contract`, `page_orchestration`, and `ui.contract` may remain as inputs.
 - Frontend default mode should consume only `UnifiedPageContract v2`.
 - Compat mode may expose legacy fields under a clearly separated `compat` node.
 
@@ -482,7 +482,7 @@ Acceptance:
 
 Goal:
 
-- Add backend assembler that converts existing `scene_contract_v1/page_orchestration_v1/ui_base facts` into `UnifiedPageContract v2`.
+- Add backend assembler that converts existing `scene_contract/page_orchestration/ui_base facts` into `UnifiedPageContract v2`.
 
 Do not:
 

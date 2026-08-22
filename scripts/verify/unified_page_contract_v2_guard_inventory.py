@@ -19,6 +19,7 @@ OFFLINE_TARGETS = {
     ),
     "verify.unified_page_contract.v2.assembler": (
         "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
     ),
     "verify.unified_page_contract.v2.status": (
         "scripts/verify/unified_page_contract_v2_status_guard.py",
@@ -95,7 +96,7 @@ def main() -> int:
     errors: list[str] = []
 
     aggregate = aggregate_dependencies(makefile)
-    expected_aggregate = set(OFFLINE_TARGETS)
+    expected_aggregate = set(OFFLINE_TARGETS) | {"verify.contract.page_v1_zero_residue.guard"}
     if aggregate != expected_aggregate:
         errors.append(
             "verify.unified_page_contract.v2 aggregate dependencies drifted; "

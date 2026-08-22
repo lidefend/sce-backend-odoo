@@ -13,11 +13,48 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "global.message.inbox",
-      "runtime_snapshot": false
-    }
+    "raw": [
+      {
+        "items": [],
+        "latest_id": 0,
+        "source_authority": {
+          "authorities": [
+            "mail.message",
+            "mail.notification",
+            "res.partner",
+            "res.users",
+            "res.groups",
+            "ir.rule"
+          ],
+          "authority": "mail.message",
+          "kind": "odoo_global_station_message_contract",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "runtime_carrier": "global.message.inbox",
+          "scope": "global_station_message",
+          "write_proxy": false
+        }
+      },
+      {
+        "source_authority": {
+          "authorities": [
+            "mail.message",
+            "mail.notification",
+            "res.partner",
+            "res.users",
+            "res.groups",
+            "ir.rule"
+          ],
+          "authority": "mail.message",
+          "kind": "odoo_global_station_message_contract",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "runtime_carrier": "global.message.inbox",
+          "scope": "global_station_message",
+          "write_proxy": false
+        }
+      }
+    ]
   },
   "user": "admin",
   "user_fallback": null,

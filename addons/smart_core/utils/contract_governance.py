@@ -866,8 +866,8 @@ def _scene_actions_from_contract(data: dict) -> dict:
     return _native_bridge.scene_actions_from_contract(data)
 
 
-def _ensure_scene_contract_v1_envelope(data: dict) -> None:
-    _native_bridge.ensure_scene_contract_v1_envelope(data)
+def _ensure_scene_contract_envelope(data: dict) -> None:
+    _native_bridge.ensure_scene_contract_envelope(data)
 
 
 def _business_field_label(field_name: str, current_label: Any = "", model_name: str = "") -> str:
@@ -1341,7 +1341,7 @@ def apply_contract_governance(
         _preserve_native_layout_labels(data)
         _emit_relation_entry_semantics(data)
         _normalize_business_field_labels(data)
-        _ensure_scene_contract_v1_envelope(data)
+        _ensure_scene_contract_envelope(data)
     else:
         override_failures = []
     _annotate_field_semantics(data)

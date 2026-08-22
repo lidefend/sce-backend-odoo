@@ -1,0 +1,112 @@
+goal:
+  id: NATIVE-VIEW-CONTRACT-CAPABILITY-CLOSURE
+  title: native_view_contract_capability_closure
+  status: planned
+  objective: close_native_view_capability_loss_across_contract_and_renderer_layers
+
+  baseline:
+    branch: codex/fix-project-layout-container-normalize
+    full_sha: 35f31407ab34ffff1d43de264e51de5f858a2596
+    source: origin/main
+    worktree: /home/lidefend/workspace/sce-backend-odoo
+
+  product_boundary:
+    formal_product_layer: P0
+    supporting_layer: P4
+    layer_target:
+      - smart_core_native_view_contract_pipeline
+      - frontend_generic_renderer_registry
+      - product_contract_verification
+    standard_vs_user_specific: platform_mechanism
+    why_here: native_view_normalization_and_generic_rendering_are_shared_platform_capabilities
+    why_not_elsewhere:
+      - no_construction_business_semantics_in_smart_core
+      - no_customer_preferences_in_public_repository
+      - no_frontend_business_inference
+      - no_ops_script_as_runtime_authority
+
+  product_result:
+    statement: every_formal_product_view_capability_is_traceable_or_explicitly_fail_closed
+    independently_acceptable: true
+    formal_menu_policy: scripts/verify/baselines/formal_business_product_menu_policy_v1.json
+    discovery_reference:
+      formal_menu_count: 89
+      model_count: 65
+      resolved_surface_count: 280
+      authority_status: must_be_regenerated_and_frozen_on_this_branch
+
+  scope:
+    include:
+      - native_capability_atom_inventory
+      - source_to_normalized_to_semantic_to_renderer_loss_ledger
+      - canonical_native_view_and_semantic_page_shape
+      - modifiers_actions_permissions_and_reason_codes
+      - form_tree_search_kanban_closure
+      - pivot_graph_activity_renderer_progression
+      - widget_capability_registry
+      - product_wide_fail_closed_gates
+    exclude:
+      - construction_industry_business_rule_changes
+      - customer_specific_layout_or_preferences
+      - new_compose_project_database_port_volume_or_fixture_system
+      - manual_runtime_or_database_commands
+      - page_specific_frontend_fallbacks
+
+  governed_infrastructure:
+    runtime_profile: local.clean
+    compose_project: sc-local-clean
+    database: sc_clean
+    database_filter: ^sc_clean$
+    demo_data: forbidden
+    runtime_mutation: serialized
+    environment_reuse_only: true
+
+  batches:
+    - id: Q0
+      title: topic_bootstrap_and_boundary_freeze
+      status: completed
+    - id: Q1
+      title: product_capability_loss_ledger
+      status: completed
+    - id: Q2
+      title: modifiers_actions_permissions_closure
+      status: planned
+      current_increment:
+        id: Q2-4b
+        title: professional_field_driver_occurrence_event_closure
+        status: verified
+        result:
+          - canonical_widget_id_is_preserved_as_field_change_occurrence_key
+          - professional_driver_change_query_commit_and_binary_events_preserve_occurrence
+          - record_value_mutation_remains_field_name_driven
+          - no_model_label_or_business_semantic_inference_added
+        terminal_counts:
+          ready: 381
+          fallback: 1340
+          unsupported: 24810
+          silent_loss: 0
+    - id: Q3
+      title: form_tree_search_kanban_semantic_closure
+      status: planned
+    - id: Q4
+      title: pivot_graph_activity_renderer_closure
+      status: planned
+    - id: Q5
+      title: widget_registry_and_release_gate
+      status: planned
+
+  acceptance:
+    - exact_formal_menu_policy_coverage
+    - every_native_capability_atom_has_a_terminal_status
+    - zero_silent_capability_loss
+    - every_fallback_has_stable_reason_code
+    - canonical_contract_shape_is_single_source
+    - frontend_does_not_infer_model_menu_role_or_business_semantics
+    - non_zero_targeted_tests_per_batch
+    - clean_install_runtime_gate_passes
+    - generated_reports_bind_exact_candidate_fingerprint
+
+  rollback:
+    - batch_scoped_commits
+    - generated_baseline_and_gate_changes_land_after_mechanism_tests
+    - renderer_activation_is_independent_from_parser_and_contract_commits

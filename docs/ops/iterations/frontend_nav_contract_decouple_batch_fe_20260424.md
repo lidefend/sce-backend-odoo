@@ -175,7 +175,7 @@
 
 - Batch: `Scene-Runtime-Asset-Drift-Fix`
 - Frozen fact:
-  - live `system.init` 里 `scene_ready_contract_v1.projects.list` 仍然错误绑定到了：
+  - live `system.init` 里 `scene_ready_contract.projects.list` 仍然错误绑定到了：
     - `meta.target.action_id = 519`
     - `meta.target.menu_id = 329`
     - `meta.ui_base_contract_source.source_ref = action:519`
@@ -183,7 +183,7 @@
 - Root cause:
   - `scene_provider.merge_missing_scenes_from_registry()` 只会基于已有 scene `target` 继续向下走。
   - `ui_base_contract_asset_repository._asset_is_stale_for_scene()` 只把“纯 canonical scene root + action asset”判为 stale，`projects.list` 这种带 fallback target 的 scene 不会触发失效。
-  - 结果是旧 asset `action:519` 会持续进入 `scene_ready_contract_v1`。
+  - 结果是旧 asset `action:519` 会持续进入 `scene_ready_contract`。
 - Fix:
   - `addons/smart_core/core/scene_provider.py`
     - 新增 provider payload identity upgrade。

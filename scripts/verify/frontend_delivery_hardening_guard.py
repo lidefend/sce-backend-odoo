@@ -111,13 +111,22 @@ require(
     "isolated performance evidence SHA mismatch",
     "warmed retained detail page reloaded its primary contract",
     "fs.writeFileSync(path.join(OUT, 'performance.json')",
-    "button:object:action_submit",
+    'data-action-method="action_submit"',
+    "primaryResolution",
     "ACTION_DIAGNOSTIC",
     "NORMALIZED_ACTION_DIAGNOSTIC",
     "expected=提交审批",
 )
 require(
     "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+    "data-backend-identity",
+    "data-action-enabled",
+    "data-visible-profiles",
+)
+require(
+    "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+    "data-canonical-action-bar",
+    "data-action-method",
     "data-backend-identity",
     "data-action-enabled",
     "data-visible-profiles",
@@ -180,12 +189,23 @@ require(
     "DELIVERY_HARDENING_SKIP_PERF=1",
 )
 require(
-    "frontend/apps/web/src/api/contract.ts",
+    "frontend/apps/web/src/app/contracts/v2/client.ts",
+    "intent: 'ui.contract.v2'",
+    "decodeContractV2Snapshot(response.data)",
+    "createContractV2Store(snapshot)",
     "CREATE_CONTRACT_CACHE_TTL_MS",
     "currentContextEpoch()",
     "resolveModelContractRenderProfile",
-    "params.render_profile === 'create'",
-    "!Number(params.record_id || 0)",
+    "renderProfile === 'create'",
+    "restoreCachedResult",
+    "if (recordId) params.record_id = recordId;",
+)
+forbid(
+    "frontend/apps/web/src/api/contract.ts",
+    "CREATE_CONTRACT_CACHE_TTL_MS",
+    "adaptUnifiedPageContractV2Raw",
+    "requestProjectedFormContractRaw",
+    "loadModelContractRaw",
 )
 require(
     "frontend/apps/web/src/api/modelContractProfile.ts",
@@ -222,7 +242,7 @@ forbid(
 )
 require(
     "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
-    "const entry = relationEntry(contract.value?.fields?.[name]);",
+    "const entry = relationEntry(formFields()[name]);",
     "if (entry?.canRead === false)",
     "if (deniedRelationModels.has(relation)) return;",
 )

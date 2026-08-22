@@ -13,6 +13,7 @@ export type CanonicalRelationValue = {
 export type CanonicalFormAction = {
   key: string;
   label: string;
+  icon: string;
   tier: 'primary' | 'secondary' | 'overflow' | 'configuration';
   visible: boolean;
   enabled: boolean;
@@ -20,6 +21,15 @@ export type CanonicalFormAction = {
   visibleProfiles: CanonicalFormRenderMode[];
   safety: Readonly<Record<string, unknown>>;
   actionRef: ContractV2ActionRule;
+};
+
+export type CanonicalAuditEvent = {
+  key: string;
+  actor: string;
+  occurredAt: string;
+  event: string;
+  result: string;
+  detail: string;
 };
 
 export type CanonicalFormField = {
@@ -38,6 +48,7 @@ export type CanonicalFormField = {
   reasonCode: string;
   semanticRole: CanonicalFormSemanticRole | '';
   componentConfig: Readonly<Record<string, unknown>>;
+  fieldDescriptor: Readonly<Record<string, unknown>>;
 };
 
 export type CanonicalFormNode = {

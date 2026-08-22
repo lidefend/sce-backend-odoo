@@ -21,6 +21,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </section>
@@ -38,6 +39,7 @@
           :key="node.nodeId"
           :node="node"
           :relation-adapter="relationAdapter"
+          prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
         <div v-if="riskNodes.length" class="object-task-page__current-task-facts" data-floorplan-region="risk">
@@ -46,11 +48,17 @@
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
+            prefer-readonly-facts
             @field-change="emit('field-change', $event)"
           />
         </div>
       </div>
-      <div v-if="$slots.actions" class="object-task-page__current-task-actions" data-floorplan-region="action-bar">
+      <div
+        v-if="$slots.actions"
+        class="object-task-page__current-task-actions"
+        data-floorplan-region="action-bar"
+        data-mobile-action-surface
+      >
         <slot name="actions" />
       </div>
     </section>
@@ -67,6 +75,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </section>
@@ -78,6 +87,7 @@
             :key="node.nodeId"
             :node="node"
             :relation-adapter="relationAdapter"
+            prefer-readonly-facts
             @field-change="emit('field-change', $event)"
           />
         </template>
@@ -94,6 +104,7 @@
           :key="node.nodeId"
           :node="node"
           :relation-adapter="relationAdapter"
+          prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
       </aside>
@@ -109,6 +120,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </details>
@@ -124,6 +136,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </section>
@@ -139,6 +152,7 @@
         :key="node.nodeId"
         :node="node"
         :relation-adapter="relationAdapter"
+        prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
     </section>
@@ -149,16 +163,27 @@
       data-floorplan-region="activity"
       data-canonical-zone="subordinate"
     ><slot name="collaboration" /></section>
-    <details v-if="auditNodes.length" class="object-task-page__audit" data-floorplan-region="audit">
+    <details v-if="hasAudit || auditNodes.length || auditEvents.length" class="object-task-page__audit" data-floorplan-region="audit">
       <summary>审批与历史审计</summary>
       <div data-audit-content>
+        <ol v-if="auditEvents.length" class="object-task-page__audit-events" aria-label="审计事件">
+          <li v-for="event in auditEvents" :key="event.key" class="object-task-page__audit-event" data-audit-event>
+            <strong data-audit-event-name>{{ event.event }}</strong>
+            <span data-audit-result>{{ event.result }}</span>
+            <span data-audit-actor>{{ event.actor }}</span>
+            <time :datetime="event.occurredAt" data-audit-time>{{ event.occurredAt }}</time>
+            <p v-if="event.detail">{{ event.detail }}</p>
+          </li>
+        </ol>
         <CanonicalFormNodeRenderer
-          v-for="node in auditNodes"
+          v-for="node in auditEvents.length ? [] : auditNodes"
           :key="node.nodeId"
           :node="node"
           :relation-adapter="relationAdapter"
+          prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
+        <p v-if="!auditEvents.length && !auditNodes.length" class="object-task-page__empty-fact">暂无审批与审计记录</p>
       </div>
     </details>
     <footer v-if="!decisionMode && $slots.actions" class="object-task-page__actions" data-floorplan-region="action-bar">
@@ -168,7 +193,7 @@
 </template>
 
 <script setup lang="ts">
-import type { CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
+import type { CanonicalAuditEvent, CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
@@ -180,10 +205,12 @@ defineProps<{
   overflowContextNodes: CanonicalFormNode[];
   riskNodes: CanonicalFormNode[];
   auditNodes: CanonicalFormNode[];
+  auditEvents: CanonicalAuditEvent[];
   relationNodes: CanonicalFormNode[];
   subordinateNodes: CanonicalFormNode[];
   relationAdapter?: RelationFieldAdapter;
   hasCollaboration?: boolean;
+  hasAudit?: boolean;
   decisionMode?: boolean;
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>();
@@ -282,6 +309,26 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__overflow-context > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit:not([open]) [data-audit-content] { display: none; }
+.object-task-page__audit-events {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.object-task-page__audit-event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  padding: 12px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+}
+.object-task-page__audit-event [data-audit-result] { color: var(--sc-app-success-text); }
+.object-task-page__audit-event [data-audit-actor],
+.object-task-page__audit-event time,
+.object-task-page__audit-event p { color: var(--sc-app-text-secondary); }
+.object-task-page__audit-event p { grid-column: 1 / -1; margin: 4px 0 0; }
 .object-task-page__context {
   padding: 16px;
   border: 1px solid var(--sc-app-border);
@@ -317,6 +364,31 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   }
 }
 @media (max-width: 560px) {
-  .object-task-page__summary { grid-template-columns: minmax(0, 1fr); }
+  .object-task-page--decision {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+  .object-task-page--decision .object-task-page__current-task { order: -1; }
+  .object-task-page__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px;
+  }
+  .object-task-page__summary :deep(.canonical-form-node) {
+    padding: 10px;
+    overflow-wrap: anywhere;
+  }
+  .object-task-page__current-task-actions {
+    position: fixed;
+    z-index: 40;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    min-width: 0;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--sc-app-border);
+    background: color-mix(in srgb, var(--sc-app-panel) 96%, transparent);
+    box-shadow: var(--sc-app-shadow-popover);
+    backdrop-filter: blur(10px);
+  }
 }
 </style>

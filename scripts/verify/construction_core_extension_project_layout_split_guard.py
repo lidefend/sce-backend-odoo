@@ -63,7 +63,6 @@ def main() -> int:
             "def sc_project_field_node(",
             "def sc_node_has_field(",
             "def sc_append_project_responsibility_group(",
-            "\"field.user_id\"",
             "\"sc_project_responsibility_collaboration\"",
             "\"项目责任与协作\"",
         ]:
@@ -88,10 +87,14 @@ def main() -> int:
             },
         ]
         pruned = layout.sc_prune_and_label_project_nodes(nodes)
-        if len(pruned) != 1 or pruned[0].get("label") != "项目经理":
-            errors.append("project layout helper must remove user_id and relabel manager_id")
+        if (
+            len(pruned) != 2
+            or pruned[0].get("label") != "项目负责人"
+            or pruned[1].get("label") != "项目经理"
+        ):
+            errors.append("project layout helper must preserve distinct project owner and manager semantics")
         dialog_title = (
-            ((pruned[0].get("componentConfig") or {}).get("relationEntry") or {})
+            ((pruned[1].get("componentConfig") or {}).get("relationEntry") or {})
             .get("ui_labels", {})
             .get("dialog_title")
         )
@@ -110,8 +113,8 @@ def main() -> int:
         if group.get("name") != "sc_project_responsibility_collaboration":
             errors.append("project layout helper must append responsibility collaboration group")
         widget_ids = [row.get("widgetId") for row in (contract.get("statusContract") or {}).get("widgetStatus", [])]
-        if widget_ids != ["field.responsibility_ids", "field.collaborator_ids"]:
-            errors.append("project layout helper must replace user_id status and append responsibility/collaborator statuses")
+        if widget_ids != ["field.user_id", "field.responsibility_ids", "field.collaborator_ids"]:
+            errors.append("project layout helper must preserve user_id status and append responsibility/collaborator statuses")
 
     if errors:
         print("[construction_core_extension_project_layout_split_guard] FAIL")

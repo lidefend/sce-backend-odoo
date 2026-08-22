@@ -128,7 +128,7 @@ def main() -> int:
         token = extract_login_token(payload)
         status, payload = intent("system.init", {"contract_mode": "user", "with_preload": False}, token)
         data = require_ok(status, payload, f"{role}.system.init")
-        navigation = data.get("navigation_v1") if isinstance(data.get("navigation_v1"), dict) else {}
+        navigation = data.get("navigation") if isinstance(data.get("navigation"), dict) else {}
         delivery = flatten_xmlids(navigation.get("nav") or [])
         expected = set(policies[role].get("primary_menu_xmlids") or []) | set(policies[role].get("role_home_menu_xmlids") or [])
         if delivery != expected:

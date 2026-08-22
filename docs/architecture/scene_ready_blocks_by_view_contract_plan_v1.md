@@ -2,7 +2,7 @@
 
 ## Goal
 
-Freeze a backend-first scene block contract so frontend renders list/form/kanban directly from `scene_ready_contract_v1.scenes[*].scene_blocks_by_view`.
+Freeze a backend-first scene block contract so frontend renders list/form/kanban directly from `scene_ready_contract.scenes[*].scene_blocks_by_view`.
 
 ## Boundary
 

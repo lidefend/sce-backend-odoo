@@ -68,4 +68,8 @@ class NativeParseService:
             )
         except Exception as exc:
             _logger.exception("app.view.parser 解析失败，进入降级：%s.%s, error=%s", model_name, view_type, exc)
+            if view_type == "form" and bool((self.owner.env.context or {}).get("contract_projection_readonly")):
+                raise ValueError(
+                    f"native form parser failed for {model_name}; compatibility fallback cannot satisfy native authority"
+                ) from exc
         return parsed_json

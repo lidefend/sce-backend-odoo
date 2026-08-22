@@ -27,7 +27,7 @@
                                 {'title': '付款结果', 'sequence': 20, 'columns': 2, 'fields': ['date_payment', 'paid_amount', 'planned_amount', 'invoice_amount', 'payment_method', 'document_no', 'handler_name', 'note']},
                                 {'title': '收付款账户', 'sequence': 30, 'columns': 2, 'fields': ['receipt_account_name', 'receipt_bank_name', 'receipt_account_no', 'payment_account_name', 'payment_bank_name', 'payment_account_no', 'bank_account']},
                                 {'title': '责任与凭证', 'sequence': 40, 'columns': 2, 'fields': ['company_contractor_responsibility_state', 'company_contractor_arrival_unprocessed_amount', 'company_contractor_arrival_over_processed_amount', 'company_contractor_self_funding_balance', 'company_contractor_responsibility_notice', 'kingdee_document_no', 'attachment_ids']},
-                                {'title': '来源追溯', 'sequence': 50, 'columns': 2, 'fields': ['source_kind', 'payment_family', 'push_result', 'legacy_source_model', 'legacy_source_table', 'legacy_record_id', 'legacy_document_state']}
+                                {'title': '来源状态', 'sequence': 50, 'columns': 2, 'fields': ['source_kind', 'payment_family', 'push_result']}
                             ],
                             'fields': [
                                 {'name': 'name', 'sequence': 10, 'group_title': '办理主信息', 'readonly': True},
@@ -62,11 +62,7 @@
                                 {'name': 'attachment_ids', 'sequence': 300, 'group_title': '责任与凭证'},
                                 {'name': 'source_kind', 'sequence': 310, 'group_title': '来源追溯', 'readonly': True},
                                 {'name': 'payment_family', 'sequence': 320, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'push_result', 'sequence': 330, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'legacy_source_model', 'sequence': 340, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'legacy_source_table', 'sequence': 350, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'legacy_record_id', 'sequence': 360, 'group_title': '来源追溯', 'readonly': True},
-                                {'name': 'legacy_document_state', 'sequence': 370, 'group_title': '来源追溯', 'readonly': True}
+                                {'name': 'push_result', 'sequence': 330, 'group_title': '来源状态', 'readonly': True}
                             ]
                         }
                     }
@@ -100,7 +96,7 @@
                                 {'title': '付款结果', 'sequence': 20, 'columns': 2, 'fields': ['date_payment', 'paid_amount', 'planned_amount', 'invoice_amount', 'payment_method', 'document_no', 'handler_name', 'note']},
                                 {'title': '收付款账户', 'sequence': 30, 'columns': 2, 'fields': ['receipt_account_name', 'receipt_bank_name', 'receipt_account_no', 'payment_account_name', 'payment_bank_name', 'payment_account_no', 'bank_account']},
                                 {'title': '责任与凭证', 'sequence': 40, 'columns': 2, 'fields': ['company_contractor_responsibility_state', 'company_contractor_arrival_unprocessed_amount', 'company_contractor_arrival_over_processed_amount', 'company_contractor_self_funding_balance', 'company_contractor_responsibility_notice', 'kingdee_document_no', 'attachment_ids']},
-                                {'title': '来源追溯', 'sequence': 50, 'columns': 2, 'fields': ['source_kind', 'payment_family', 'push_result', 'legacy_source_model', 'legacy_source_table', 'legacy_record_id', 'legacy_document_state']}
+                                {'title': '来源状态', 'sequence': 50, 'columns': 2, 'fields': ['source_kind', 'payment_family', 'push_result']}
                             ],
                             'fields': [
                                 {'name': 'name', 'sequence': 10, 'readonly': True},
@@ -135,11 +131,7 @@
                                 {'name': 'attachment_ids', 'sequence': 300},
                                 {'name': 'source_kind', 'sequence': 310, 'readonly': True},
                                 {'name': 'payment_family', 'sequence': 320, 'readonly': True},
-                                {'name': 'push_result', 'sequence': 330, 'readonly': True},
-                                {'name': 'legacy_source_model', 'sequence': 340, 'readonly': True},
-                                {'name': 'legacy_source_table', 'sequence': 350, 'readonly': True},
-                                {'name': 'legacy_record_id', 'sequence': 360, 'readonly': True},
-                                {'name': 'legacy_document_state', 'sequence': 370, 'readonly': True}
+                                {'name': 'push_result', 'sequence': 330, 'readonly': True}
                             ]
                         }
                     }
@@ -173,7 +165,7 @@
                                 {'title': '付款结果', 'sequence': 20, 'columns': 2, 'fields': ['date_payment', 'paid_amount', 'planned_amount', 'invoice_amount', 'payment_method', 'document_no', 'handler_name', 'note']},
                                 {'title': '收付款账户', 'sequence': 30, 'columns': 2, 'fields': ['receipt_account_name', 'receipt_bank_name', 'receipt_account_no', 'payment_account_name', 'payment_bank_name', 'payment_account_no', 'bank_account']},
                                 {'title': '责任与凭证', 'sequence': 40, 'columns': 2, 'fields': ['company_contractor_responsibility_state', 'company_contractor_arrival_unprocessed_amount', 'company_contractor_arrival_over_processed_amount', 'company_contractor_self_funding_balance', 'company_contractor_responsibility_notice', 'kingdee_document_no', 'attachment_ids']},
-                                {'title': '来源追溯', 'sequence': 50, 'columns': 2, 'fields': ['source_kind', 'payment_family', 'push_result', 'legacy_source_model', 'legacy_source_table', 'legacy_record_id', 'legacy_document_state']}
+                                {'title': '来源状态', 'sequence': 50, 'columns': 2, 'fields': ['source_kind', 'payment_family', 'push_result']}
                             ],
                             'fields': [
                                 {'name': 'name', 'sequence': 10, 'readonly': True},
@@ -208,11 +200,7 @@
                                 {'name': 'attachment_ids', 'sequence': 300},
                                 {'name': 'source_kind', 'sequence': 310, 'readonly': True},
                                 {'name': 'payment_family', 'sequence': 320, 'readonly': True},
-                                {'name': 'push_result', 'sequence': 330, 'readonly': True},
-                                {'name': 'legacy_source_model', 'sequence': 340, 'readonly': True},
-                                {'name': 'legacy_source_table', 'sequence': 350, 'readonly': True},
-                                {'name': 'legacy_record_id', 'sequence': 360, 'readonly': True},
-                                {'name': 'legacy_document_state', 'sequence': 370, 'readonly': True}
+                                {'name': 'push_result', 'sequence': 330, 'readonly': True}
                             ]
                         }
                     }

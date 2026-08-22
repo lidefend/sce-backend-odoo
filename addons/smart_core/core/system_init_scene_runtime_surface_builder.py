@@ -95,8 +95,8 @@ def _build_scene_ready_registry_contract(
             }
         )
     return {
-        "contract_version": "v1",
-        "schema_version": "scene_ready_contract_v1",
+        "contract_version": "2.0.0",
+        "schema_version": "2.0.0",
         "source_schema_version": str(schema_version or ""),
         "scene_version": str(scene_version or ""),
         "scene_channel": str(scene_channel or ""),
@@ -151,9 +151,15 @@ class SystemInitSceneRuntimeSurfaceBuilder:
             data["nav_meta"]["delivery_policy"] = delivery_result.get("meta") or {}
 
         startup_scene_subset = surface_ctx.startup_scene_subset_resolver_fn(data, params=params)
-        preload_scenes = surface_ctx.filter_startup_scenes_for_preload_fn(
-            delivery_result.get("delivery_scenes") if isinstance(delivery_result, dict) else [],
-            startup_scene_subset,
+        delivery_scenes = (
+            delivery_result.get("delivery_scenes")
+            if isinstance(delivery_result, dict) and isinstance(delivery_result.get("delivery_scenes"), list)
+            else []
+        )
+        preload_scenes = (
+            surface_ctx.filter_startup_scenes_for_preload_fn(delivery_scenes, startup_scene_subset)
+            if scene_ready_mode == "registry"
+            else list(delivery_scenes)
         )
         preload_scene_keys = {
             str(row.get("code") or row.get("key") or "").strip()
@@ -209,7 +215,7 @@ class SystemInitSceneRuntimeSurfaceBuilder:
         role_code = str(role_surface.get("role_code") or "").strip()
         bind_result = {}
         if scene_ready_mode == "registry":
-            data["scene_ready_contract_v1"] = _build_scene_ready_registry_contract(
+            data["scene_ready_contract"] = _build_scene_ready_registry_contract(
                 scene_ready_input,
                 scene_version=data.get("scene_version"),
                 schema_version=data.get("schema_version"),
@@ -227,7 +233,7 @@ class SystemInitSceneRuntimeSurfaceBuilder:
             if isinstance(bind_result, dict) and bind_result:
                 scene_ready_input = bind_result.get("scenes") or scene_ready_input
 
-            data["scene_ready_contract_v1"] = surface_ctx.build_scene_ready_contract_fn(
+            data["scene_ready_contract"] = surface_ctx.build_scene_ready_contract_fn(
                 scenes=scene_ready_input,
                 role_surface=role_surface,
                 scene_version=data.get("scene_version"),
@@ -256,9 +262,9 @@ class SystemInitSceneRuntimeSurfaceBuilder:
             data["nav_contract"] = scene_nav_contract
             if isinstance(data.get("nav_meta"), dict):
                 data["nav_meta"]["scene_nav_contract_available"] = True
-                data["nav_meta"]["scene_ready_contract_v1"] = bool(
-                    isinstance(data.get("scene_ready_contract_v1"), dict)
-                    and ((data.get("scene_ready_contract_v1") or {}).get("scenes"))
+                data["nav_meta"]["scene_ready_contract"] = bool(
+                    isinstance(data.get("scene_ready_contract"), dict)
+                    and ((data.get("scene_ready_contract") or {}).get("scenes"))
                 )
                 contract_meta = scene_nav_contract.get("meta")
                 if isinstance(contract_meta, dict):

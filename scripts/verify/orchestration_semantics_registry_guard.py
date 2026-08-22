@@ -102,7 +102,7 @@ def main() -> int:
         for page_obj in pages.values():
             if not isinstance(page_obj, dict):
                 continue
-            orch = page_obj.get("page_orchestration_v1")
+            orch = page_obj.get("page_orchestration")
             if not isinstance(orch, dict):
                 continue
             state_schema = orch.get("state_schema") if isinstance(orch.get("state_schema"), dict) else {}

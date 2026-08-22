@@ -1,0 +1,79 @@
+SystemInitContract:
+  type: object
+  required: [navigation, user]
+  properties:
+    navigation:
+      $ref: '#/NavigationContract'
+    user:
+      type: object
+    scene_ready_contract:
+      type: object
+    page_contracts:
+      type: object
+
+NavigationContract:
+  type: object
+  required: [contract_version, schema_version, source, nav, route_authority, integrity]
+  properties:
+    contract_version:
+      const: 2.0.0
+    schema_version:
+      const: 2.0.0
+    source:
+      const: system_init.navigation
+    nav:
+      type: array
+    route_authority:
+      $ref: '#/RouteAuthorityContract'
+    contextual_routes:
+      type: array
+    integrity:
+      type: object
+      required: [visible_action_count, authorized_action_count, missing_authority_count]
+      properties:
+        visible_action_count:
+          type: integer
+          minimum: 0
+        authorized_action_count:
+          type: integer
+          minimum: 0
+        missing_authority_count:
+          const: 0
+    meta:
+      type: object
+
+RouteAuthorityContract:
+  type: object
+  required:
+    - contract_version
+    - schema_version
+    - source
+    - principal_scope
+    - primary_actions
+    - role_home_actions
+    - contextual_actions
+    - admin_actions
+    - denied_actions
+    - menu_containers
+  properties:
+    contract_version:
+      const: 2.0.0
+    schema_version:
+      const: 2.0.0
+    source:
+      const: delivery_engine.route_authority
+    principal_scope:
+      type: object
+      required: [user_id, company_id, role_code]
+    primary_actions:
+      type: array
+    role_home_actions:
+      type: array
+    contextual_actions:
+      type: array
+    admin_actions:
+      type: array
+    denied_actions:
+      type: array
+    menu_containers:
+      type: array

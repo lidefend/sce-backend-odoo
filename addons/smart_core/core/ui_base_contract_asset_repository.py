@@ -11,6 +11,7 @@ from odoo.addons.smart_core.core.ui_base_contract_canonicalizer import canonical
 
 ASSET_MODEL = "sc.ui.base.contract.asset"
 CONTRACT_KIND_UI_BASE = "ui_base"
+CONTRACT_KIND_RUNTIME_SOURCE = "runtime_source"
 ASSET_TABLE = "sc_ui_base_contract_asset"
 SOURCE_KIND = "ui_base_contract_asset_repository"
 SOURCE_AUTHORITIES = ("sc.ui.base.contract.asset", "ir.config_parameter", "ui_base_contract_runtime_builder")
@@ -441,6 +442,121 @@ def upsert_asset(
             return {}
         rec.write(vals)
     return get_latest_asset(env, scene_key=key, role_code=role or None, company_id=company)
+
+
+def get_runtime_source_asset(
+    env,
+    *,
+    cache_key: str,
+    source_token: str,
+    role_code: str,
+    company_id: int,
+) -> dict:
+    model = _asset_model(env)
+    key = _text(cache_key)
+    token = _text(source_token)
+    role = _text(role_code)
+    company = int(company_id or 0)
+    if model is None or not key or not token or not role or not company or not _asset_table_available(env):
+        return {}
+    try:
+        record = model.search(
+            [
+                ("contract_kind", "=", CONTRACT_KIND_RUNTIME_SOURCE),
+                ("scene_key", "=", key),
+                ("role_code", "=", role),
+                ("company_id", "=", company),
+                ("asset_version", "=", token),
+                ("status", "=", "active"),
+            ],
+            limit=1,
+        )
+        payload = json.loads(record.payload_json or "") if record else {}
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def upsert_runtime_source_asset(
+    env,
+    *,
+    cache_key: str,
+    source_token: str,
+    payload: dict,
+    role_code: str,
+    company_id: int,
+    source_ref: str,
+) -> dict:
+    model = _asset_model(env)
+    key = _text(cache_key)
+    token = _text(source_token)
+    role = _text(role_code)
+    company = int(company_id or 0)
+    if (
+        model is None
+        or not key
+        or not token
+        or not isinstance(payload, dict)
+        or not role
+        or not company
+        or not _asset_table_available(env)
+    ):
+        return {}
+    raw = json.dumps(payload, ensure_ascii=False, default=str, sort_keys=True, separators=(",", ":"))
+    values = {
+        "name": f"runtime:{key[:24]}@{token[:12]}",
+        "contract_kind": CONTRACT_KIND_RUNTIME_SOURCE,
+        "scene_key": key,
+        "role_code": role,
+        "company_id": company,
+        "scope_hash": _scope_hash(
+            scene_key=key,
+            role_code=role,
+            company_id=company,
+            contract_kind=CONTRACT_KIND_RUNTIME_SOURCE,
+        ),
+        "source_type": "runtime_intent",
+        "status": "active",
+        "asset_version": token,
+        "asset_hash": hashlib.sha256(raw.encode("utf-8")).hexdigest(),
+        "source_ref": _text(source_ref),
+        "payload_json": raw,
+    }
+    unique_domain = [
+        ("contract_kind", "=", CONTRACT_KIND_RUNTIME_SOURCE),
+        ("scene_key", "=", key),
+        ("role_code", "=", role),
+        ("company_id", "=", company),
+        ("asset_version", "=", token),
+    ]
+    try:
+        with env.cr.savepoint():
+            record = model.search(unique_domain, limit=1)
+            old_active = model.search(
+                [
+                    ("contract_kind", "=", CONTRACT_KIND_RUNTIME_SOURCE),
+                    ("scene_key", "=", key),
+                    ("role_code", "=", role),
+                    ("company_id", "=", company),
+                    ("status", "=", "active"),
+                    ("id", "!=", record.id if record else 0),
+                ]
+            )
+            if old_active:
+                old_active.write({"status": "archived"})
+            if record:
+                record.write(values)
+            else:
+                model.create(values)
+    except Exception:
+        return {}
+    return get_runtime_source_asset(
+        env,
+        cache_key=key,
+        source_token=token,
+        role_code=role,
+        company_id=company,
+    )
 
 
 def bind_scene_assets(

@@ -1,0 +1,10 @@
+evidence:
+  baseline_commit: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  layer_target: scripts/contract snapshot evidence exporter
+  standard_vs_user_specific: generic governed evidence mechanism
+  why_here: The exporter adds record facts after the structure-only ui.contract response.
+  why_not_elsewhere: ACLs and product contracts must not be widened to accommodate an evidence-tool read.
+  blast_radius: Form snapshot record field selection only.
+  validation_status: passed

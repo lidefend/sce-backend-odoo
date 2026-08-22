@@ -24,6 +24,7 @@ ALLOWED_COMPARE_MODES = {"strict", "shape"}
 ALLOWED_CASE_KEYS = {
     "action_xmlid",
     "allow_error_response",
+    "allow_record_error",
     "case",
     "compare_mode",
     "execute_method",
@@ -130,6 +131,8 @@ def main() -> int:
             invalid.append(f"{case_name}: include_meta must be boolean")
         if "allow_error_response" in item and not isinstance(item.get("allow_error_response"), bool):
             invalid.append(f"{case_name}: allow_error_response must be boolean")
+        if "allow_record_error" in item and not isinstance(item.get("allow_record_error"), bool):
+            invalid.append(f"{case_name}: allow_record_error must be boolean")
         if "compare_mode" in item:
             compare_mode = _as_str(item.get("compare_mode")).lower()
             if compare_mode not in ALLOWED_COMPARE_MODES:

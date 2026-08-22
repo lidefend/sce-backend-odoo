@@ -23,8 +23,8 @@ Batch-A froze the v2+ protocol assets. Batch-B adds a backend-side canonical ass
 
 | Source | v2+ output |
 | --- | --- |
-| `scene_contract_v1` | Full `UnifiedPageContract v2+` with scene blocks mapped into `LayoutContract`, state mapped into `StatusContract`, actions mapped into `ActionContract`, and legacy source retained under `meta.compat.scene_contract_v1`. |
-| `page_orchestration_v1` | Full `UnifiedPageContract v2+` with zones/blocks mapped into container/widget structure, action schema mapped into action rules, data sources mapped into `DataContract.dataSource`, and legacy source retained under `meta.compat.page_orchestration_v1`. |
+| `scene_contract` | Full `UnifiedPageContract v2+` with scene blocks mapped into `LayoutContract`, state mapped into `StatusContract`, actions mapped into `ActionContract`, and legacy source retained under `meta.compat.scene_contract`. |
+| `page_orchestration` | Full `UnifiedPageContract v2+` with zones/blocks mapped into container/widget structure, action schema mapped into action rules, data sources mapped into `DataContract.dataSource`, and legacy source retained under `meta.compat.page_orchestration`. |
 | `ui.contract` | Full `UnifiedPageContract v2+` with model/view/fields mapped into page/layout/status contracts, and legacy source retained under `meta.compat.ui_contract`. |
 | `api.onchange` | `UnifiedPagePatch v2+` partial patch with value changes mapped into `dataPatch`, modifiers mapped into `statusPatch`, and legacy source retained under `meta.compat.api_onchange`. |
 
@@ -67,7 +67,7 @@ Revert:
 - `addons/smart_core/core/unified_page_contract_v2_assembler.py`
 - `scripts/verify/unified_page_contract_v2_assembler_guard.py`
 - `docs/architecture/unified_page_contract_v2/fixtures`
-- `docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json`
 - `Makefile` v2 assembler targets
 
 No database rollback is required.

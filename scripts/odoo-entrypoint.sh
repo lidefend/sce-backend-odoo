@@ -10,14 +10,8 @@ echo "[entrypoint] render odoo.conf: ${TPL} -> ${OUT}"
 # ensure output directory writable
 mkdir -p "$(dirname "$OUT")"
 
-if command -v envsubst >/dev/null 2>&1; then
-  echo "[entrypoint] using envsubst"
-  # envsubst doesn't validate unresolved vars; python renderer acts as validator
-  envsubst < "$TPL" > "$OUT"
-else
-  echo "[entrypoint] envsubst not found, using python3 renderer"
-  python3 /usr/local/bin/render_odoo_conf.py "$TPL" "$OUT"
-fi
+echo "[entrypoint] using validated python3 renderer"
+python3 /usr/local/bin/render_odoo_conf.py "$TPL" "$OUT"
 
 echo "[entrypoint] rendered odoo.conf (show dbfilter line):"
 grep -n "dbfilter" "$OUT" || true

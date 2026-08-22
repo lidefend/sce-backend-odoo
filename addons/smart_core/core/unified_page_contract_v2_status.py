@@ -10,6 +10,7 @@ from .unified_page_contract_v2_permissions import permission_auth_level, resolve
 SOURCE_KIND = "unified_page_contract_v2_status_projection"
 SOURCE_AUTHORITIES = ("permission_surface", "access_policy", "field_modifiers", "button_status")
 NO_BUSINESS_FACT_AUTHORITY = True
+AUTH_LEVELS = {"none", "read", "edit", "admin"}
 
 
 def source_authority_contract() -> dict[str, Any]:

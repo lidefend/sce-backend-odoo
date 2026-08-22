@@ -9,16 +9,16 @@
 
 ### 文件
 
-- `docs/architecture/ui_base_vs_scene_ready_contract_v1.md`
-- `docs/architecture/app_shell_vs_page_scene_contract_v1.md`
+- `docs/architecture/ui_base_vs_scene_ready_contract.md`
+- `docs/architecture/app_shell_vs_page_scene_contract.md`
 - `docs/contracts/ui_base_contract_schema_v1.md`
 - `docs/audit/current_response_contract_gap_audit_v1.md`
 
 ### 验收
 
 ```bash
-test -f docs/architecture/ui_base_vs_scene_ready_contract_v1.md
-test -f docs/architecture/app_shell_vs_page_scene_contract_v1.md
+test -f docs/architecture/ui_base_vs_scene_ready_contract.md
+test -f docs/architecture/app_shell_vs_page_scene_contract.md
 test -f docs/contracts/ui_base_contract_schema_v1.md
 test -f docs/audit/current_response_contract_gap_audit_v1.md
 ```
@@ -26,8 +26,8 @@ test -f docs/audit/current_response_contract_gap_audit_v1.md
 ### 提交
 
 ```bash
-git add docs/architecture/ui_base_vs_scene_ready_contract_v1.md \
-  docs/architecture/app_shell_vs_page_scene_contract_v1.md \
+git add docs/architecture/ui_base_vs_scene_ready_contract.md \
+  docs/architecture/app_shell_vs_page_scene_contract.md \
   docs/contracts/ui_base_contract_schema_v1.md \
   docs/audit/current_response_contract_gap_audit_v1.md
 git commit -m "docs(scene): freeze base/scene/app-shell boundaries"

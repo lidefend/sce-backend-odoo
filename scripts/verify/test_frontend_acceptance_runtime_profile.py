@@ -92,6 +92,14 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         ):
             self.assertIn(marker, runtime)
 
+    def test_release_static_server_proxies_odoo_web_assets_before_spa_fallback(self):
+        server = (ROOT / "scripts/release/release_static_server.mjs").read_text(
+            encoding="utf-8"
+        )
+        backend_route = "requestPath === '/web' || requestPath.startsWith('/web/')"
+        self.assertIn(backend_route, server)
+        self.assertLess(server.index("if (isBackendRoute)"), server.index("const raw ="))
+
     def test_runtime_mutators_validate_existing_resource_identity_before_change(self):
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
             encoding="utf-8"
@@ -99,6 +107,7 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         backend_up = runtime.split("  backend-up)", 1)[1].split("    ;;", 1)[0]
         backend_down = runtime.split("  backend-down)", 1)[1].split("    ;;", 1)[0]
         backend_replace = runtime.split("  backend-replace-stale)", 1)[1].split("    ;;", 1)[0]
+        backend_logs = runtime.split("  backend-logs)", 1)[1].split("    ;;", 1)[0]
         frontend_up = runtime.split("  frontend-up)", 1)[1].split("    ;;", 1)[0]
         frontend_down = runtime.split("  frontend-down)", 1)[1].split("    ;;", 1)[0]
         self.assertNotIn("docker rm", backend_up)
@@ -121,6 +130,12 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         self.assertIn("validate_backend_runtime", backend_replace)
         self.assertNotIn("validate_backend_identity ||", backend_replace)
         self.assertLess(
+            backend_logs.index("validate_backend_identity"),
+            backend_logs.index("docker exec"),
+        )
+        self.assertIn("/opt/sce-runtime/logs/odoo.log", backend_logs)
+        self.assertIn("docker logs --tail 200", backend_logs)
+        self.assertLess(
             frontend_up.index("validate_frontend_runtime"),
             frontend_up.index("frontend_acceptance_up.sh"),
         )
@@ -141,6 +156,26 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
                 rf'require_container_env \"\$container\" {key} .* \|\| return 1',
             )
         self.assertIn("REUSED governed pid=", runtime)
+
+    def test_make_exposes_governed_stale_backend_replacement(self):
+        dev_make = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        target = dev_make.split("backend.acceptance.replace-stale:", 1)[1].split(
+            "backend.acceptance.down:", 1
+        )[0]
+        self.assertIn("guard.prod.forbid", target)
+        self.assertIn("frontend_acceptance_operation_entry.sh backend-replace-stale", target)
+
+    def test_local_db_ensure_reloads_registry_after_baseline_refresh(self):
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        db_ensure = runtime.split("  db-ensure)", 1)[1].split("    ;;", 1)[0]
+        refresh = db_ensure.index("frontend_acceptance_db_ensure.sh")
+        restart = db_ensure.index("compose_dev restart odoo", refresh)
+        healthy = db_ensure.index("compose_dev up -d --wait odoo", restart)
+        runtime_check = db_ensure.index("preflight", healthy)
+        self.assertLess(restart, healthy)
+        self.assertLess(healthy, runtime_check)
 
     def test_source_fingerprint_covers_dirty_and_untracked_addons(self):
         helper = ROOT / "scripts/dev/acceptance_source_fingerprint.sh"

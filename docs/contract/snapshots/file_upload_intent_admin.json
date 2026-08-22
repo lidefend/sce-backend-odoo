@@ -13,7 +13,7 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "id": 720,
+    "id": 1199,
     "model": "project.project",
     "name": "snapshot-upload.txt",
     "res_id": 1

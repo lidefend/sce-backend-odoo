@@ -328,7 +328,7 @@
                   <input
                     v-if="rowId(row)"
                     type="checkbox"
-                    :aria-label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, row[mobileIdentityField]).text}`)"
+                    :aria-label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, columnValue(row, mobileIdentityField)).text}`)"
                     :checked="isSelected(row)"
                     :disabled="loading"
                     @change="onRowCheckboxChange(row, $event)"
@@ -339,27 +339,27 @@
                   v-for="col in displayedColumns"
                   :key="`group-cell-${group.key}-${String(row.id ?? index)}-${col}`"
                   :style="columnWidthStyle(col)"
-                  :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, row[col]).text === '--' }]"
-                  :title="semanticCell(col, row[col]).text"
+                  :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, columnValue(row, col)).text === '--' }]"
+                  :title="semanticCell(col, columnValue(row, col)).text"
                 >
                   <button
                     v-if="isFavoriteColumn(col)"
                     type="button"
                     class="favorite-toggle"
-                    :class="{ active: isFavoriteValue(row[col]) }"
+                    :class="{ active: isFavoriteValue(columnValue(row, col)) }"
                     :disabled="loading || !onToggleRecordFavorite"
                     :title="favoriteTitle(col)"
                     :aria-label="favoriteTitle(col)"
                     @click.stop="toggleRecordFavorite(row, col)"
                   >
-                    <ScIcon class="favorite-star" :name="isFavoriteValue(row[col]) ? 'star' : 'star-outline'" :size="16" />
+                    <ScIcon class="favorite-star" :name="isFavoriteValue(columnValue(row, col)) ? 'star' : 'star-outline'" :size="16" />
                   </button>
                   <span
                     v-else-if="isStatusLikeColumn(col)"
                     class="status-badge"
-                    :class="`tone-${semanticCell(col, row[col]).tone}`"
+                    :class="`tone-${semanticCell(col, columnValue(row, col)).tone}`"
                   >
-                    {{ semanticCell(col, row[col]).text }}
+                    {{ semanticCell(col, columnValue(row, col)).text }}
                   </span>
                   <button
                     v-else-if="isPrimaryTextColumn(col)"
@@ -367,11 +367,11 @@
                     class="cell-primary-link"
                     @click.stop="handleRow(row)"
                   >
-                    {{ semanticCell(col, row[col]).text }}
+                    {{ semanticCell(col, columnValue(row, col)).text }}
                   </button>
-                  <span v-else-if="attachmentLinks(row[col]).length" class="attachment-links">
+                  <span v-else-if="attachmentLinks(columnValue(row, col)).length" class="attachment-links">
                     <a
-                      v-for="link in attachmentLinks(row[col])"
+                      v-for="link in attachmentLinks(columnValue(row, col))"
                       :key="`${link.name}-${link.url}`"
                       href="#"
                       target="_blank"
@@ -382,19 +382,19 @@
                     </a>
                   </span>
                   <button
-                    v-else-if="isAttachmentCountCell(col, row[col])"
+                    v-else-if="isAttachmentCountCell(col, columnValue(row, col))"
                     type="button"
                     class="attachment-count-link"
-                    @click.prevent.stop="previewRecordAttachmentCount(row, row[col])"
+                    @click.prevent.stop="previewRecordAttachmentCount(row, columnValue(row, col))"
                   >
-                    {{ semanticCell(col, row[col]).text }}
+                    {{ semanticCell(col, columnValue(row, col)).text }}
                   </button>
-                  <span v-else>{{ semanticCell(col, row[col]).text }}</span>
+                  <span v-else>{{ semanticCell(col, columnValue(row, col)).text }}</span>
                 </td>
               </tr>
             </tbody>
-            <tfoot v-if="showAggregateFooter">
-              <tr>
+            <tfoot v-if="showGroupAggregateFooter(group)">
+              <tr v-if="showGroupPageAggregateFooter(group)">
                 <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('page', group.sampleRows.length) }}</th>
                 <td
                   v-for="col in footerValueColumns"
@@ -406,7 +406,7 @@
                   <template v-else>{{ groupFooterCellText(col, group, 'page') }}</template>
                 </td>
               </tr>
-              <tr>
+              <tr v-if="showGroupTotalAggregateFooter(group)">
                 <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', group.count) }}</th>
                 <td
                   v-for="col in footerValueColumns"
@@ -458,20 +458,20 @@
             @click="handleRow(row)"
           >
             <template #identity>
-              <strong>{{ semanticCell(mobileIdentityField, row[mobileIdentityField]).text }}</strong>
+              <strong>{{ semanticCell(mobileIdentityField, columnValue(row, mobileIdentityField)).text }}</strong>
             </template>
             <template #status>
               <ScStatusBadge
                 v-if="mobileStatusField"
-                :value="String(row[mobileStatusField] ?? '')"
-                :label="semanticCell(mobileStatusField, row[mobileStatusField]).text"
-                :semantic="statusSemantic(semanticCell(mobileStatusField, row[mobileStatusField]).tone)"
+                :value="String(columnValue(row, mobileStatusField) ?? '')"
+                :label="semanticCell(mobileStatusField, columnValue(row, mobileStatusField)).text"
+                :semantic="statusSemantic(semanticCell(mobileStatusField, columnValue(row, mobileStatusField)).tone)"
               />
             </template>
             <template v-for="col in mobileFactColumns" :key="`mobile-${String(row.id ?? index)}-${col}`">
               <span class="mobile-record-fact">
                 <small>{{ columnLabel(col) }}</small>
-                <b>{{ semanticCell(col, row[col]).text }}</b>
+                <b>{{ semanticCell(col, columnValue(row, col)).text }}</b>
               </span>
             </template>
             <template #actions><span class="mobile-record-card__open">查看详情 <ScIcon name="arrow-right" :size="16" /></span></template>
@@ -562,7 +562,7 @@
               <input
                 v-if="rowId(row)"
                 type="checkbox"
-                :aria-label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, row[mobileIdentityField]).text}`)"
+                :aria-label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, columnValue(row, mobileIdentityField)).text}`)"
                 :checked="isSelected(row)"
                 :disabled="loading"
                 @change="onRowCheckboxChange(row, $event)"
@@ -570,34 +570,34 @@
             </td>
             <td v-if="showRowNumberColumn" class="cell-row-number">{{ flatRowNumber(index) }}</td>
             <td v-for="col in displayedColumns" :key="col" :style="columnWidthStyle(col)"
-              :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, row[col]).text === '--' }]"
-              :title="semanticCell(col, row[col]).text">
+              :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, columnValue(row, col)).text === '--' }]"
+              :title="semanticCell(col, columnValue(row, col)).text">
               <button
                 v-if="isFavoriteColumn(col)"
                 type="button"
                 class="favorite-toggle"
-                :class="{ active: isFavoriteValue(row[col]) }"
+                :class="{ active: isFavoriteValue(columnValue(row, col)) }"
                 :disabled="loading || !onToggleRecordFavorite"
                 :title="favoriteTitle(col)"
                 :aria-label="favoriteTitle(col)"
                 @click.stop="toggleRecordFavorite(row, col)"
               >
-                <ScIcon class="favorite-star" :name="isFavoriteValue(row[col]) ? 'star' : 'star-outline'" :size="16" />
+                <ScIcon class="favorite-star" :name="isFavoriteValue(columnValue(row, col)) ? 'star' : 'star-outline'" :size="16" />
               </button>
               <div v-else-if="isStatusLikeColumn(col)">
-                <span class="status-badge" :class="`tone-${semanticCell(col, row[col]).tone}`">
-                  {{ semanticCell(col, row[col]).text }}
+                <span class="status-badge" :class="`tone-${semanticCell(col, columnValue(row, col)).tone}`">
+                  {{ semanticCell(col, columnValue(row, col)).text }}
                 </span>
               </div>
               <div v-else-if="isPrimaryTextColumn(col)" class="cell-primary">
                 <button type="button" class="primary cell-primary-link" @click.stop="handleRow(row)">
-                  {{ semanticCell(col, row[col]).text }}
+                  {{ semanticCell(col, columnValue(row, col)).text }}
                 </button>
-                <div v-if="shouldRenderRowSecondary(col, row)" class="secondary">{{ semanticCell(rowSecondary, row[rowSecondary]).text }}</div>
+                <div v-if="shouldRenderRowSecondary(col, row)" class="secondary">{{ semanticCell(rowSecondary, columnValue(row, rowSecondary)).text }}</div>
               </div>
-              <div v-else-if="attachmentLinks(row[col]).length" class="attachment-links">
+              <div v-else-if="attachmentLinks(columnValue(row, col)).length" class="attachment-links">
                 <a
-                  v-for="link in attachmentLinks(row[col])"
+                  v-for="link in attachmentLinks(columnValue(row, col))"
                   :key="`${link.name}-${link.url}`"
                   href="#"
                   target="_blank"
@@ -608,21 +608,21 @@
                 </a>
               </div>
               <button
-                v-else-if="isAttachmentCountCell(col, row[col])"
+                v-else-if="isAttachmentCountCell(col, columnValue(row, col))"
                 type="button"
                 class="attachment-count-link"
-                @click.prevent.stop="previewRecordAttachmentCount(row, row[col])"
+                @click.prevent.stop="previewRecordAttachmentCount(row, columnValue(row, col))"
               >
-                {{ semanticCell(col, row[col]).text }}
+                {{ semanticCell(col, columnValue(row, col)).text }}
               </button>
               <div v-else>
-                {{ semanticCell(col, row[col]).text }}
+                {{ semanticCell(col, columnValue(row, col)).text }}
               </div>
             </td>
           </tr>
         </tbody>
         <tfoot v-if="showAggregateFooter">
-          <tr>
+          <tr v-if="showPageAggregateFooter">
             <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('page', pageVisibleRows.length) }}</th>
             <td
               v-for="col in footerValueColumns"
@@ -634,7 +634,7 @@
               <template v-else>{{ footerCellText(col, 'page', pageVisibleRows.length) }}</template>
             </td>
           </tr>
-          <tr>
+          <tr v-if="showTotalAggregateFooter">
             <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', listTotal || pageVisibleRows.length) }}</th>
             <td
               v-for="col in footerValueColumns"
@@ -765,7 +765,7 @@ import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composa
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
-import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell } from './listPage/listCellPresentation';
+import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
 import { deriveListColumnWidth, listColumnAdaptiveFloor, rankListBusinessColumn, resolveListColumnBudgetWidth, type ListColumnLayoutRole } from './listPage/listColumnWidth';
 import {
   resolveDesktopListCandidates,
@@ -1201,7 +1201,7 @@ function favoriteTitle(field: string) {
 
 function toggleRecordFavorite(row: Record<string, unknown>, field: string) {
   if (!props.onToggleRecordFavorite || !isFavoriteColumn(field)) return;
-  props.onToggleRecordFavorite(row, field, !isFavoriteValue(row[field]));
+  props.onToggleRecordFavorite(row, columnValueField(field), !isFavoriteValue(columnValue(row, field)));
 }
 
 function toggleGroupCollapsed(key: string) {
@@ -1768,7 +1768,7 @@ function derivedColumnWidth(field: string) {
   const option = columnOption(field);
   return deriveListColumnWidth({
     label: columnLabel(field), type: option?.type, role: columnLayoutRole(field),
-    values: props.records.map((row) => row[field]),
+    values: props.records.map((row) => columnValue(row, field)),
     selectionLabels: option?.selection?.map((item) => item.label),
   });
 }
@@ -1859,7 +1859,6 @@ const footerLabelFieldCount = computed(() => displayedColumns.value.length
 const footerValueColumns = computed(() => displayedColumns.value.slice(footerLabelFieldCount.value));
 const footerLabelColspan = computed(() => (showSelectionColumn.value ? 1 : 0)
   + (showRowNumberColumn.value ? 1 : 0) + footerLabelFieldCount.value);
-const showAggregateFooter = computed(() => displayedColumns.value.some((field) => isAggregateColumn(field)));
 const mobileIdentityField = computed(() => {
   const preferred = String(rowPrimary.value || '').trim();
   if (preferred && mobileAvailableColumns.value.includes(preferred) && !isStatusLikeColumn(preferred)) return preferred;
@@ -2080,14 +2079,15 @@ function stopColumnResize() {
   emit('column-widths-change', { columnWidths: { ...draftColumnWidths.value } });
 }
 
-function columnLabel(col: string) {
-  const option = columnOption(col);
-  return option?.label || columnLabels.value[col] || contractColumnLabels.value[col] || col;
-}
+function columnLabel(col: string) { return columnOption(col)?.label || columnLabels.value[col] || contractColumnLabels.value[col] || col; }
 
 function columnOption(field: string) {
   return columnChoices.value.find((column) => column.name === field) || null;
 }
+
+function columnValueField(field: string) { return resolveListDisplayField(field, columnOption(field)); }
+function columnAggregationField(field: string) { const option = columnOption(field); return String(option?.aggregationField || option?.valueField || field).trim() || field; }
+function columnValue(row: Record<string, unknown>, field: string) { return row[columnValueField(field)]; }
 
 function columnSemanticInput(field: string) {
   const option = columnOption(field);
@@ -2184,7 +2184,7 @@ const pageFooterStats = computed(() =>
         };
       }
       const values = pageVisibleRows.value
-        .map((row) => numericCellValue(row[field]))
+        .map((row) => numericCellValue(columnValue(row, field)))
         .filter((value): value is number => typeof value === 'number');
       return {
         name: field,
@@ -2203,14 +2203,24 @@ const pageFooterStatsMap = computed(() =>
   }, {}),
 );
 
+const showPageAggregateFooter = computed(() => displayedColumns.value.some((field) => {
+  if (!isAggregateColumn(field)) return false;
+  if (hasServerSemanticAggregate(field)) return pageAggregateValue(field) !== null;
+  return Boolean(pageFooterStatsMap.value[field]?.count);
+}));
+const showTotalAggregateFooter = computed(() => displayedColumns.value.some((field) => (
+  isAggregateColumn(field) && totalAggregateValue(field) !== null
+)));
+const showAggregateFooter = computed(() => showPageAggregateFooter.value || showTotalAggregateFooter.value);
+
 function totalAggregateValue(field: string) {
-  const aggregate = props.listAggregates?.[field] || {};
+  const aggregate = props.listAggregates?.[columnAggregationField(field)] || {};
   const value = aggregate.sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function pageAggregateValue(field: string) {
-  const aggregate = props.listAggregates?.[field] || {};
+  const aggregate = props.listAggregates?.[columnAggregationField(field)] || {};
   const value = aggregate.page_sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
@@ -2227,22 +2237,44 @@ function footerCellText(field: string, scope: 'page' | 'total', rowCount: number
 
 function rowsNumericSum(rows: Array<Record<string, unknown>>, field: string) {
   const values = rows
-    .map((row) => numericCellValue(row[field]))
+    .map((row) => numericCellValue(columnValue(row, field)))
     .filter((value): value is number => typeof value === 'number');
   if (!values.length) return null;
   return values.reduce((total, value) => total + value, 0);
 }
 
 function groupAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
-  const aggregate = group.aggregates?.[field] || {};
+  const aggregate = group.aggregates?.[columnAggregationField(field)] || {};
   const value = aggregate.sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function groupPageAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
-  const aggregate = group.aggregates?.[field] || {};
+  const aggregate = group.aggregates?.[columnAggregationField(field)] || {};
   const value = aggregate.page_sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function showGroupPageAggregateFooter(
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+) {
+  return displayedColumns.value.some((field) => {
+    if (!isAggregateColumn(field)) return false;
+    if (hasServerSemanticAggregate(field)) return groupPageAggregateValue(group, field) !== null;
+    return rowsNumericSum(group.sampleRows || [], field) !== null;
+  });
+}
+
+function showGroupTotalAggregateFooter(
+  group: { aggregates?: Record<string, Record<string, unknown>> },
+) {
+  return displayedColumns.value.some((field) => isAggregateColumn(field) && groupAggregateValue(group, field) !== null);
+}
+
+function showGroupAggregateFooter(
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+) {
+  return showGroupPageAggregateFooter(group) || showGroupTotalAggregateFooter(group);
 }
 
 function groupFooterCellText(

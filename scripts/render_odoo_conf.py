@@ -87,6 +87,11 @@ def normalize_non_production_addons_path(
         removed.extend(item for item in configured if item not in available)
         if not available:
             raise SystemExit("[render_odoo_conf] No available addons_path entries")
+        source_root = "/mnt/source-addons"
+        product_root = "/mnt/product-addons"
+        if source_root in available and product_root in available:
+            available.remove(source_root)
+            available.insert(available.index(product_root), source_root)
         output.append(match.group("prefix") + ",".join(available) + match.group("newline"))
 
     if not found:

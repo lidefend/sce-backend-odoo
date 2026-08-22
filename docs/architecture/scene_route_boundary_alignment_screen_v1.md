@@ -16,7 +16,7 @@ visible misalignment families.
 Bounded inputs:
 
 1. `docs/architecture/frontend_scene_ready_only_contract_governance_topic_v1.md`
-2. `docs/architecture/ui_base_vs_scene_ready_contract_v1.md`
+2. `docs/architecture/ui_base_vs_scene_ready_contract.md`
 3. `docs/architecture/backend_contract_layer_responsibility_freeze_v1.md`
 4. `docs/architecture/runtime_entrypoint_inventory_v1.md`
 5. `frontend/apps/web/src/api/contract.ts`

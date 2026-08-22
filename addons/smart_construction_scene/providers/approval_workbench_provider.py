@@ -33,7 +33,7 @@ def build(scene_key: str = "payments.approval", runtime: dict | None = None, con
             "semantic": "payment_approval_queue",
         },
         "fallback_strategy": fallback_strategy,
-        "delivery_handoff_v1": build_direct_runtime_handoff(
+        "delivery_handoff": build_direct_runtime_handoff(
             family="payment_approval",
             user_entry="menu:smart_construction_core.menu_sc_tier_review_my_payment_request",
             final_scene="payments.approval",

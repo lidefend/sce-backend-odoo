@@ -1,24 +1,15 @@
 import { computed, type Ref } from 'vue';
 import {
-  resolveUnifiedPageContractV2SelectorStatus,
-  resolveUnifiedPageContractV2SurfacePolicies,
-} from '../contracts/unifiedPageContractV2';
+  resolveContractV2SearchContract,
+  resolveContractV2SelectorStatus,
+  resolveContractV2SurfacePolicies,
+} from '../contracts/v2/store';
+import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
 
 type UseActionViewFilterComputedRuntimeOptions = {
-  actionContract: Ref<{
-    search?: {
-      filters?: Array<Record<string, unknown>>;
-      saved_filters?: Array<Record<string, unknown>>;
-      group_by?: Array<Record<string, unknown>>;
-      custom?: Record<string, unknown>;
-      ui_labels?: Record<string, unknown>;
-    };
-    surface_policies?: {
-      filters_primary_max?: number;
-    };
-  } | null>;
+  actionContract: Ref<ContractV2NormalizedStore | null>;
   activeGroupByField: Ref<string>;
   parseContractContextRaw: (value: unknown) => Dict;
   isActionViewNumericToken: (value: unknown) => boolean;
@@ -67,12 +58,12 @@ function selectorTokens(...items: unknown[]): string[] {
 
 export function useActionViewFilterComputedRuntime(options: UseActionViewFilterComputedRuntimeOptions) {
   function isSelectorEnabled(selectors: string[]): boolean {
-    const status = resolveUnifiedPageContractV2SelectorStatus(options.actionContract.value, selectors);
+    const status = resolveContractV2SelectorStatus(options.actionContract.value, selectors);
     return status?.visible !== false && status?.disabled !== true;
   }
 
   const contractFilterChips = computed(() => {
-    const rows = options.actionContract.value?.search?.filters;
+    const rows = resolveContractV2SearchContract(options.actionContract.value).filters;
     if (!Array.isArray(rows)) return [];
     return rows
       .map((row) => {
@@ -94,7 +85,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   });
 
   const filterPrimaryBudget = computed(() => {
-    const surfacePolicies = resolveUnifiedPageContractV2SurfacePolicies(options.actionContract.value);
+    const surfacePolicies = resolveContractV2SurfacePolicies(options.actionContract.value);
     const raw = Number(surfacePolicies.filters_primary_max ?? 5);
     if (!Number.isFinite(raw) || raw < 0) return 5;
     return Math.floor(raw);
@@ -109,7 +100,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   );
 
   const contractSavedFilterChips = computed(() => {
-    const rows = options.actionContract.value?.search?.saved_filters;
+    const rows = resolveContractV2SearchContract(options.actionContract.value).saved_filters;
     if (!Array.isArray(rows)) return [];
     return rows
       .map((row, idx) => {
@@ -141,8 +132,9 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   );
 
   const contractGroupByChips = computed(() => {
-    const explicitRows = options.actionContract.value?.search?.group_by;
-    const filterRows = options.actionContract.value?.search?.filters;
+    const search = resolveContractV2SearchContract(options.actionContract.value);
+    const explicitRows = search.group_by;
+    const filterRows = search.filters;
     const rows = [
       ...(Array.isArray(filterRows) ? filterRows.map((row) => ({ row, source: 'filter' as const })) : []),
       ...(Array.isArray(explicitRows) ? explicitRows.map((row) => ({ row, source: 'group' as const })) : []),
@@ -168,7 +160,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   });
 
   const customFilterFields = computed(() => {
-    const custom = options.actionContract.value?.search?.custom as Dict | undefined;
+    const custom = resolveContractV2SearchContract(options.actionContract.value).custom as Dict | undefined;
     const filterConfig = (custom?.filters || {}) as Dict;
     const rows = filterConfig.enabled === false ? [] : filterConfig.fields;
     if (!Array.isArray(rows)) return [];
@@ -190,7 +182,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   });
 
   const customGroupByChips = computed(() => {
-    const custom = options.actionContract.value?.search?.custom as Dict | undefined;
+    const custom = resolveContractV2SearchContract(options.actionContract.value).custom as Dict | undefined;
     const groupConfig = (custom?.group_by || {}) as Dict;
     const rows = groupConfig.enabled === false ? [] : groupConfig.fields;
     if (!Array.isArray(rows)) return [];
@@ -221,8 +213,9 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   });
 
   const customSearchCapabilities = computed(() => {
-    const searchLabels = (options.actionContract.value?.search?.ui_labels || {}) as Dict;
-    const custom = options.actionContract.value?.search?.custom as Dict | undefined;
+    const search = resolveContractV2SearchContract(options.actionContract.value);
+    const searchLabels = (search.ui_labels || {}) as Dict;
+    const custom = search.custom as Dict | undefined;
     const filters = (custom?.filters || {}) as Dict;
     const groups = (custom?.group_by || {}) as Dict;
     const favorites = (custom?.favorites || {}) as Dict;

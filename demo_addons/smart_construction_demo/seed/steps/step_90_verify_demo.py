@@ -40,6 +40,14 @@ def _verify_full_product_principal(env):
         raise UserError("wutao must carry the business-full permission aggregate.")
 
 
+def _verify_payment_request_floorplan_fixture(env):
+    records = env["payment.request"].sudo().search([("name", "=", "DEMO-PR-FLOORPLAN-001")])
+    if len(records) != 1:
+        raise UserError("Floorplan payment fixture must resolve to exactly one record.")
+    if records.state != "draft" or not records.contract_id or records.amount <= 0:
+        raise UserError("Floorplan payment fixture must be a contract-backed positive draft request.")
+
+
 def _get_project(env, code):
     return env["project.project"].sudo().search([("project_code", "=", code)], limit=1)
 
@@ -259,6 +267,7 @@ def run(env):
             raise UserError(f"Warn ratio out of range: {warn_ratio:.2f}")
 
     _verify_full_product_principal(env)
+    _verify_payment_request_floorplan_fixture(env)
     _verify_demo_full_my_work(env)
 
     stage_xmlids = [

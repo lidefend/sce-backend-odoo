@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_v1_field_schema_state.json"
+STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_field_schema_state.json"
 REPORT_JSON = ROOT / "artifacts" / "backend" / "product_delivery_action_closure_report.json"
 REPORT_MD = ROOT / "docs" / "ops" / "audit" / "product_delivery_action_closure_report.md"
 
@@ -104,7 +104,7 @@ def main() -> int:
     checks: list[dict] = []
 
     payload = _load_json(STATE_PATH)
-    contract = _as_dict(payload.get("scene_ready_contract_v1"))
+    contract = _as_dict(payload.get("scene_ready_contract"))
     scenes = _as_list(contract.get("scenes"))
 
     targets = [
@@ -114,7 +114,7 @@ def main() -> int:
     ]
 
     if not scenes:
-        warnings.append("scene_ready_contract_v1.scenes is empty; action closure checks skipped")
+        warnings.append("scene_ready_contract.scenes is empty; action closure checks skipped")
         targets = []
 
     for scene_key, label, checker in targets:

@@ -64,7 +64,7 @@ def _page_sections(payload: dict[str, Any], page_key: str) -> dict[str, bool]:
 def _find_block(payload: dict[str, Any], page_key: str, section_key: str) -> dict[str, Any]:
     pages = payload.get("pages") if isinstance(payload.get("pages"), dict) else {}
     page = pages.get(page_key) if isinstance(pages.get(page_key), dict) else {}
-    orch = page.get("page_orchestration_v1") if isinstance(page.get("page_orchestration_v1"), dict) else {}
+    orch = page.get("page_orchestration") if isinstance(page.get("page_orchestration"), dict) else {}
     zones = orch.get("zones") if isinstance(orch.get("zones"), list) else []
     for zone in zones:
         if not isinstance(zone, dict):
@@ -81,7 +81,7 @@ def _find_block(payload: dict[str, Any], page_key: str, section_key: str) -> dic
 def _zone_order(payload: dict[str, Any], page_key: str) -> list[str]:
     pages = payload.get("pages") if isinstance(payload.get("pages"), dict) else {}
     page = pages.get(page_key) if isinstance(pages.get(page_key), dict) else {}
-    orch = page.get("page_orchestration_v1") if isinstance(page.get("page_orchestration_v1"), dict) else {}
+    orch = page.get("page_orchestration") if isinstance(page.get("page_orchestration"), dict) else {}
     zones = orch.get("zones") if isinstance(orch.get("zones"), list) else []
     rows: list[tuple[str, int]] = []
     for zone in zones:

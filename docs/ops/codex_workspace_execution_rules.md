@@ -42,8 +42,14 @@
 3. **按风险逐级验证**
    - Quick：语法、lint/type、纯单元、范围/架构/契约守卫、生成报告一致性。
    - Targeted：通过已登记入口执行受影响模块、权限、迁移或业务专项测试；测试必须真实收集。
-   - Full Release：仅在前置门禁通过后，消费正式隔离 profile 完成增量升级、fixture、release
-     snapshot、生产构建、浏览器用户旅程和证据包。
+   - 日常开发只能使用 `local.dev.*`、`sc_dev_demo`、18081 和对应 targeted tests；其报告是迭代
+     证据，不得标记为 release snapshot、发布候选或最终验收证据，也不得触发 `make pr.push`。
+   - Full Release：仅在产品结果已确定且明确进入最终验收后，消费正式隔离 profile 完成增量
+     升级、fixture、release snapshot、生产构建、浏览器用户旅程和证据包。本地入口必须使用
+     `CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT make verify.frontend.release.local`；
+     该确认不得写入日常脚本、别名或默认环境。
+   - 日常开发与 Full Release 是互斥证据通道。发布审计一旦开始，候选必须冻结；若发现需要修改
+     产品代码，立即终止发布审计并回到 `local.dev.*`，不得在同一轮中边修边生成发布证据。
    - 任何 `0 tests`、未收集测试、错误标签或错误模块都按失败处理，禁止以退出码 0 计通过。
    - 合成测试数据仅允许通过个人数据误报登记表做精确豁免；登记必须绑定规则、路径、完整 Git
      blob SHA、分类与合成夹具原因。禁止目录级、通配符或测试树整体豁免，内容变化自动失效。

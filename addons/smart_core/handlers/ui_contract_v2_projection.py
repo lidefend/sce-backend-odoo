@@ -68,11 +68,18 @@ def normalize_post_projected_container_tree(
             node["containerId"] = container_id
             node["containerType"] = formal_type
             node.setdefault("type", node_type)
-            label = str(
-                node.get("title")
-                or node.get("string")
-                or node.get("label")
-            ).strip()
+            label = next(
+                (
+                    value.strip()
+                    for value in (
+                        node.get("title"),
+                        node.get("string"),
+                        node.get("label"),
+                    )
+                    if isinstance(value, str) and value.strip()
+                ),
+                "",
+            )
             node["title"] = label
             span = node.get("span")
             node["span"] = span if isinstance(span, int) and not isinstance(span, bool) and 1 <= span <= 24 else 24
@@ -94,6 +101,15 @@ def normalize_post_projected_container_tree(
     status_contract["containerStatus"] = container_status
     contract["statusContract"] = status_contract
     return normalized
+
+
+def normalize_final_layout_contract(contract: dict[str, Any]) -> None:
+    """Normalize and persist the final layout through the projection boundary."""
+    if not isinstance(contract, dict):
+        return
+    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
+    container_tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
+    set_v2_container_tree(contract, normalize_post_projected_container_tree(contract, container_tree))
 
 
 def set_v2_container_tree(contract: dict[str, Any], container_tree: list[Any]) -> None:
@@ -293,6 +309,38 @@ def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contra
         render_profile = "edit"
     status_contract = contract_v2.get("statusContract") if isinstance(contract_v2.get("statusContract"), dict) else {}
     widget_status = status_contract.get("widgetStatus") if isinstance(status_contract.get("widgetStatus"), list) else []
+    layout_contract = contract_v2.get("layoutContract") if isinstance(contract_v2.get("layoutContract"), dict) else {}
+    native_form = str(layout_contract.get("layoutType") or "").strip().lower() == "form"
+    form_widgets_by_field: dict[str, list[str]] = {}
+
+    def collect_form_widgets(value: Any) -> None:
+        if isinstance(value, list):
+            for item in value:
+                collect_form_widgets(item)
+            return
+        if not isinstance(value, dict):
+            return
+        node_type = str(value.get("containerType") or value.get("type") or "").strip().lower()
+        if node_type == "field":
+            field_code = str(value.get("fieldCode") or value.get("name") or value.get("field") or "").strip()
+            widget_id = str(value.get("widgetId") or value.get("containerId") or "").strip()
+            if field_code and widget_id:
+                form_widgets_by_field.setdefault(field_code, []).append(widget_id)
+        for key in ("children", "pages", "tabs", "nodes", "items"):
+            collect_form_widgets(value.get(key))
+
+    if native_form:
+        collect_form_widgets(layout_contract.get("containerTree"))
+        owned_widget_ids = {
+            widget_id
+            for widget_ids in form_widgets_by_field.values()
+            for widget_id in widget_ids
+        }
+        widget_status = [
+            row
+            for row in widget_status
+            if isinstance(row, dict) and str(row.get("widgetId") or "").strip() in owned_widget_ids
+        ]
     by_widget: dict[str, list[dict[str, Any]]] = {}
     for row in widget_status:
         if not isinstance(row, dict):
@@ -323,8 +371,17 @@ def apply_field_policies_to_v2_status(contract_v2: dict[str, Any], source_contra
         if not field_code:
             continue
         widget_id = f"field.{field_code}"
-        rows = by_widget.get(widget_id)
+        if native_form:
+            rows = [
+                row
+                for occurrence_widget_id in form_widgets_by_field.get(field_code, [])
+                for row in by_widget.get(occurrence_widget_id, [])
+            ]
+        else:
+            rows = by_widget.get(widget_id)
         if not rows:
+            if native_form:
+                continue
             row = {
                 "widgetId": widget_id,
                 "visible": True,
@@ -368,27 +425,27 @@ def ensure_native_layout_widget_status_visible(contract_v2: dict[str, Any]) -> N
             )
         )
 
-    visible_widget_ids: set[str] = set()
+    widget_visibility: dict[str, bool] = {}
 
     def walk(rows: list[Any]) -> None:
         for row in rows:
             if not isinstance(row, dict):
                 continue
             node_type = str(row.get("type") or row.get("containerType") or "").strip().lower()
-            if node_type == "field" and not node_invisible(row):
+            if node_type == "field":
                 widget_id = str(row.get("widgetId") or "").strip()
                 if not widget_id:
                     field_name = str(row.get("name") or row.get("field") or "").strip()
                     widget_id = f"field.{field_name}" if field_name else ""
                 if widget_id:
-                    visible_widget_ids.add(widget_id)
+                    widget_visibility[widget_id] = not node_invisible(row)
             for key in ("children", "pages", "tabs", "nodes", "items"):
                 children = row.get(key)
                 if isinstance(children, list):
                     walk(children)
 
     walk(container_tree)
-    if not visible_widget_ids:
+    if not widget_visibility:
         return
     status_contract = contract_v2.get("statusContract") if isinstance(contract_v2.get("statusContract"), dict) else {}
     widget_status = status_contract.get("widgetStatus") if isinstance(status_contract.get("widgetStatus"), list) else []
@@ -397,22 +454,27 @@ def ensure_native_layout_widget_status_visible(contract_v2: dict[str, Any]) -> N
         if not isinstance(row, dict):
             continue
         widget_id = str(row.get("widgetId") or "").strip()
-        if widget_id not in visible_widget_ids:
+        if widget_id not in widget_visibility:
             continue
         seen.add(widget_id)
-        row["visible"] = True
-        if row.get("readonly") is True:
+        if not widget_visibility[widget_id]:
+            row["visible"] = False
+            row["auth"] = "none"
+        else:
+            row["visible"] = True
+        if widget_visibility[widget_id] and row.get("readonly") is True:
             row["auth"] = "read"
-        elif row.get("disabled") is not True:
+        elif widget_visibility[widget_id] and row.get("disabled") is not True:
             row["auth"] = "edit"
-    for widget_id in sorted(visible_widget_ids - seen):
+    for widget_id in sorted(set(widget_visibility) - seen):
+        visible = widget_visibility[widget_id]
         widget_status.append({
             "widgetId": widget_id,
-            "visible": True,
+            "visible": visible,
             "readonly": False,
             "required": False,
             "disabled": False,
-            "auth": "edit",
+            "auth": "edit" if visible else "none",
         })
     set_v2_widget_status(contract_v2, widget_status)
 

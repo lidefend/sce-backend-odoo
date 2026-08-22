@@ -14,9 +14,9 @@
   "ui_contract": null,
   "ui_contract_raw": {
     "action": "package_export",
-    "checksum": "dc07bb53d360e39ca2f3a6fede76e79ee562825f4354a8c5d655cf74c40da8a1",
+    "checksum": "88fa32bfd52fc6ab268b3e441cee5bb54ef5661c1c7c93bc900457ab6b597c8e",
     "package": {
-      "checksum": "dc07bb53d360e39ca2f3a6fede76e79ee562825f4354a8c5d655cf74c40da8a1",
+      "checksum": "88fa32bfd52fc6ab268b3e441cee5bb54ef5661c1c7c93bc900457ab6b597c8e",
       "compatibility": {
         "min_core_version": "10.6.0",
         "supported_schema_versions": [

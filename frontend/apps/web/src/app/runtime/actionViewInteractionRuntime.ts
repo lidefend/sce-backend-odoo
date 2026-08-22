@@ -32,8 +32,10 @@ export function shouldUseCanonicalCollectionDetail(options: {
   collectionSemantic: unknown;
 }): boolean {
   const semantic = String(options.collectionSemantic || '').trim().toLowerCase();
+  const viewMode = String(options.viewMode || '').trim().toLowerCase();
+  if (viewMode === 'activity') return true;
   if (semantic === 'hierarchy_browser' || semantic === 'hierarchy_planner' || semantic === 'hierarchical_worksheet') return true;
-  return String(options.viewMode || '').trim().toLowerCase() === 'kanban' && semantic === 'card';
+  return viewMode === 'kanban' && semantic === 'card';
 }
 
 export function resolveListControlTransition(options: {

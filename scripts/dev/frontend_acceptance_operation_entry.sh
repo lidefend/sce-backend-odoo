@@ -139,6 +139,18 @@ case "$operation" in
     bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
       < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
     ;;
+  core-record-form-journeys)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    # shellcheck source=../common/frontend_acceptance_make_identity.sh
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make "FE_PRO_03_JOURNEY=${FE_PRO_03_JOURNEY:-ALL}" verify.frontend.core_record_form.journeys
+    ;;
+  activity-surface-browser)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    # shellcheck source=../common/frontend_acceptance_make_identity.sh
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make verify.frontend.activity_surface.browser.internal
+    ;;
   backend-up)
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     source "$ROOT_DIR/scripts/common/compose.sh"

@@ -848,8 +848,8 @@ frontend private field
 旧协议必须映射进入 v2+：
 
 ```text
-scene_contract_v1
-page_orchestration_v1
+scene_contract
+page_orchestration
 ui.contract
 api.onchange
 ```

@@ -98,13 +98,13 @@ def main() -> int:
         page_contract_text,
         "pageContract.ts",
         [
-            "contract.value?.page_orchestration_v1?.action_schema",
+            "contract.value?.page_orchestration?.action_schema",
             "const orchestrationDataSources = computed<Record<string, unknown>>(() => {",
-            "contract.value?.page_orchestration_v1?.data_sources",
-            "const hasV1Zones = zones.length > 0;",
+            "contract.value?.page_orchestration?.data_sources",
+            "const orchestration = contract.value?.page_orchestration;",
             "const dataSourceKey = asText(row.data_source);",
             "const dataSource = dataSourcesRow[dataSourceKey];",
-            "const raw = hasV1Zones",
+            "fromCanonical.forEach((item, idx) => {",
             "const globalActions = computed<GlobalActionConfig[]>(() => {",
             "(page as Record<string, unknown>).global_actions",
             "const orchestrationActions = computed<Record<string, unknown>>(() => {",
@@ -124,6 +124,15 @@ def main() -> int:
         ],
         errors,
     )
+    for forbidden in (
+        "page_orchestration_v1",
+        "scene_contract_v1",
+        "allowSceneContractFallback",
+        "sceneActionSchema",
+        "hasV1Zones",
+    ):
+        if forbidden in page_contract_text:
+            errors.append(f"pageContract.ts forbidden compatibility token: {forbidden}")
     _expect(
         page_builder_text,
         "page_contracts_builder.py",

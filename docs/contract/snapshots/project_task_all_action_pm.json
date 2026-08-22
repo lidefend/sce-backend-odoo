@@ -307,6 +307,10 @@
           "景观"
         ],
         [
+          "municipal",
+          "市政"
+        ],
+        [
           "other",
           "其他"
         ]
@@ -739,7 +743,7 @@
       "ttype": "char"
     },
     {
-      "domain": "['!', ('id', 'child_of', id)]",
+      "domain": "['!', ('id', 'child_of', id), ('project_id', '!=', False)]",
       "help": null,
       "name": "parent_id",
       "readonly": false,
@@ -1414,7 +1418,7 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {},
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

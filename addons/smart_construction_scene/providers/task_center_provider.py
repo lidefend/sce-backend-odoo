@@ -27,7 +27,7 @@ def build(scene_key: str = "task.center", runtime: dict | None = None, context: 
         },
         "primary_action": primary_action,
         "fallback_strategy": fallback_strategy,
-        "delivery_handoff_v1": build_direct_runtime_handoff(
+        "delivery_handoff": build_direct_runtime_handoff(
             family="tasks",
             user_entry="action:project.action_view_all_task",
             final_scene="task.center",

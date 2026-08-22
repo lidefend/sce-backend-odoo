@@ -1,0 +1,22 @@
+evidence:
+  baseline_commit: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P0
+  p4_tooling: true
+  schema: product_view_structure_contract/1.0.0
+  v1_alias_published: false
+  runtime_profile:
+    compose_project: sc-local-clean
+    database: sc_clean
+    dbfilter: ^sc_clean$
+    demo_data: false
+  verification:
+    targeted_unittest:
+      status: pending
+      tests_collected: 0
+    static_guard:
+      status: pending
+    governed_drift_gate:
+      status: pending
+  completion:
+    status: verification_pending

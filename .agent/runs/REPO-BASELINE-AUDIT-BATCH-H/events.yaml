@@ -1,0 +1,13 @@
+events:
+  - type: boundary.frozen
+    result: local_dev_wrapper_only
+  - type: change.completed
+    result: contract_export_all_bound_to_local_dev_identity
+  - type: verification.pending
+    result: lifecycle_test_and_real_snapshot_not_run_yet
+  - type: verification.failed
+    result: underlying_exporter_accepted_empty_and_unexpected_record_error_snapshots
+
+next_exact_step:
+  command: python3 -m unittest scripts.verify.test_local_development_lifecycle -v
+  requires_explicit_validation_authorization: false

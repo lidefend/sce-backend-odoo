@@ -62,9 +62,11 @@ ObjectTaskPage
 ```
 
 The component names describe semantic responsibilities. TDesign is the
-default implementation. Native and UI5 remain parity implementations. Driver
-choice must not change field identity, displayed business value, action
-reference, request payload, or permission result.
+default product implementation. Native remains the compatibility/loading
+fallback and UI5 remains a compatibility adapter; neither defines a parallel
+product page system or a user-selectable product capability. Adapter choice
+must not change field identity, displayed business value, action reference,
+request payload, or permission result.
 
 ## Canonical content classification
 
@@ -79,7 +81,7 @@ reference, request payload, or permission result.
 | context money | contract and settlement total/paid/unpaid/payable facts | business context rail | hide a wholly inapplicable group; show `不适用` for a single confirmed non-applicable fact |
 | evidence | `attachment_ids`, invoice/detail relations, note | relation/evidence panels | empty panels use an intentional empty state with an add/view action only when allowed |
 | collaboration | chatter, activity, approval history | activity tabs | preserve the normalized subordinate identity; do not count as a main section |
-| audit | legacy/source/import metadata and migration markers | audit drawer, role-limited where declared | never render in the ordinary handling canvas |
+| audit | approval and business audit facts declared by the contract | audit drawer, role-limited where declared | legacy IDs and migration markers never enter the product surface |
 
 ## Blueprint A — first create
 
@@ -312,4 +314,3 @@ conditions pass: zero raw relation IDs, zero empty readonly controls in the
 task surface, zero duplicate groups, zero migration markers in ordinary
 content, at most one effective primary action, and zero unexpected browser or
 network errors.
-

@@ -84,7 +84,7 @@
               @group-add-field="emit('group-add-field', $event)"
               @native-action="emit('native-action', $event)"
             >
-              <template #readonly="{ field }">
+              <template v-if="$slots.readonly" #readonly="{ field }">
                 <slot name="readonly" :field="field" />
               </template>
               <template #chatter="{ node: chatterNode }">
@@ -154,7 +154,7 @@
             @group-add-field="emit('group-add-field', $event)"
             @native-action="emit('native-action', $event)"
           >
-            <template #readonly="{ field }">
+            <template v-if="$slots.readonly" #readonly="{ field }">
               <slot name="readonly" :field="field" />
             </template>
             <template #chatter="{ node: chatterNode }">
@@ -195,7 +195,7 @@
             @field-add-after="emit('field-add-after', $event)"
             @field-select="emit('field-select', $event)"
           >
-            <template #readonly="{ field }">
+            <template v-if="$slots.readonly" #readonly="{ field }">
               <slot name="readonly" :field="field" />
             </template>
           </FormSection>
@@ -278,7 +278,7 @@
             @group-add-field="emit('group-add-field', $event)"
             @native-action="emit('native-action', $event)"
           >
-            <template #readonly="{ field }">
+            <template v-if="$slots.readonly" #readonly="{ field }">
               <slot name="readonly" :field="field" />
             </template>
             <template #chatter="{ node: chatterNode }">
@@ -318,7 +318,7 @@
         @field-add-after="emit('field-add-after', $event)"
         @field-select="emit('field-select', $event)"
       >
-        <template #readonly="{ field }">
+        <template v-if="$slots.readonly" #readonly="{ field }">
           <slot name="readonly" :field="field" />
         </template>
       </FormSection>
@@ -582,8 +582,8 @@ function containerChildren(node: NativeFormLayoutNode) {
 }
 
 function notebookPages(node: NativeFormLayoutNode) {
-  const pages = rawChildren(node).filter((child) => nodeType(child) === 'page');
-  return pages.length ? pages : rawChildren(node);
+  const pages = rawChildren(node).filter((child) => nodeType(child) === 'page' && isNodeRenderable(child));
+  return pages.length ? pages : rawChildren(node).filter((child) => isNodeRenderable(child));
 }
 
 function activeNotebookChildren(node: NativeFormLayoutNode) {

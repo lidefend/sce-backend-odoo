@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "artifacts" / "backend" / "backend_contract_closure_snapshot.json"
-REQUIRED_SECTIONS = ("meta_intent_catalog", "scene_governance_v1")
+REQUIRED_SECTIONS = ("meta_intent_catalog", "scene_governance")
 
 
 def _load_json(path: Path) -> dict:

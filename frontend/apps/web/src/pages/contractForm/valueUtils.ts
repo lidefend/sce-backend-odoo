@@ -73,7 +73,15 @@ export function normalizeContractFieldValue(params: {
   }
   if (ttype === 'float' || ttype === 'monetary') {
     const parsed = parseNumeric(params.value);
-    return parsed === null ? false : parsed;
+    if (parsed === null) return false;
+    if (ttype !== 'monetary') return parsed;
+    const rawDigits = params.descriptor && typeof params.descriptor === 'object'
+      ? (params.descriptor as Record<string, unknown>).digits
+      : undefined;
+    const scale = Array.isArray(rawDigits) && rawDigits.length === 2 ? Number(rawDigits[1]) : NaN;
+    if (!Number.isInteger(scale) || scale < 0 || scale > 20) return parsed;
+    const factor = 10 ** scale;
+    return Math.round((parsed + Number.EPSILON) * factor) / factor;
   }
   if (ttype === 'many2one') {
     if (Array.isArray(params.value) && typeof params.value[0] === 'number') return params.value[0];

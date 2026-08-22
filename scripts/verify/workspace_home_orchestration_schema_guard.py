@@ -168,23 +168,23 @@ def _validate_contract(contract: dict[str, Any], role_code: str, errors: list[st
     if progress != REQUIRED_PROGRESS:
         errors.append(f"{role_code}: progress_states mismatch expected={sorted(REQUIRED_PROGRESS)} got={sorted(progress)}")
 
-    orchestration_v1 = contract.get("page_orchestration_v1")
-    if not isinstance(orchestration_v1, dict):
-        errors.append(f"{role_code}: missing page_orchestration_v1 object")
+    orchestration = contract.get("page_orchestration")
+    if not isinstance(orchestration, dict):
+        errors.append(f"{role_code}: missing page_orchestration object")
         return
 
-    page = orchestration_v1.get("page")
-    zones = orchestration_v1.get("zones")
-    data_sources = orchestration_v1.get("data_sources")
-    state_schema = orchestration_v1.get("state_schema")
-    action_schema = orchestration_v1.get("action_schema")
-    render_hints = orchestration_v1.get("render_hints")
-    meta = orchestration_v1.get("meta")
+    page = orchestration.get("page")
+    zones = orchestration.get("zones")
+    data_sources = orchestration.get("data_sources")
+    state_schema = orchestration.get("state_schema")
+    action_schema = orchestration.get("action_schema")
+    render_hints = orchestration.get("render_hints")
+    meta = orchestration.get("meta")
     if not isinstance(page, dict):
-        errors.append(f"{role_code}: page_orchestration_v1.page must be object")
+        errors.append(f"{role_code}: page_orchestration.page must be object")
     if isinstance(page, dict):
         if _as_set_list(page.get("audience")) == set():
-            errors.append(f"{role_code}: page_orchestration_v1.page.audience must be non-empty")
+            errors.append(f"{role_code}: page_orchestration.page.audience must be non-empty")
         page_type = str(page.get("page_type") or "").strip()
         layout_mode = str(page.get("layout_mode") or "").strip()
         priority_model = str(page.get("priority_model") or "").strip()
@@ -211,10 +211,10 @@ def _validate_contract(contract: dict[str, Any], role_code: str, errors: list[st
                     if tone and tone not in REQUIRED_TONES:
                         errors.append(f"{bprefix}.tone invalid: {tone}")
     if not isinstance(zones, list) or not zones:
-        errors.append(f"{role_code}: page_orchestration_v1.zones must be non-empty list")
+        errors.append(f"{role_code}: page_orchestration.zones must be non-empty list")
         return
     if not isinstance(data_sources, dict) or not data_sources:
-        errors.append(f"{role_code}: page_orchestration_v1.data_sources must be non-empty object")
+        errors.append(f"{role_code}: page_orchestration.data_sources must be non-empty object")
         data_sources = {}
     else:
         for ds_key, ds in data_sources.items():
@@ -248,7 +248,7 @@ def _validate_contract(contract: dict[str, Any], role_code: str, errors: list[st
             if source_type in {"computed", "scene_context", "capability_registry", "static"} and not provider.startswith("workspace."):
                 errors.append(f"{dprefix}.provider must start with workspace.")
     if not isinstance(state_schema, dict):
-        errors.append(f"{role_code}: page_orchestration_v1.state_schema must be object")
+        errors.append(f"{role_code}: page_orchestration.state_schema must be object")
     else:
         tone_keys = _as_set_list(list((state_schema.get("tones") or {}).keys()))
         business_state_keys = _as_set_list(list((state_schema.get("business_states") or {}).keys()))
@@ -260,12 +260,12 @@ def _validate_contract(contract: dict[str, Any], role_code: str, errors: list[st
             )
     action_registry = action_schema.get("actions") if isinstance(action_schema, dict) and isinstance(action_schema.get("actions"), dict) else {}
     if not isinstance(action_registry, dict):
-        errors.append(f"{role_code}: page_orchestration_v1.action_schema.actions must be object")
+        errors.append(f"{role_code}: page_orchestration.action_schema.actions must be object")
         action_registry = {}
     if not isinstance(render_hints, dict):
-        errors.append(f"{role_code}: page_orchestration_v1.render_hints must be object")
+        errors.append(f"{role_code}: page_orchestration.render_hints must be object")
     if not isinstance(meta, dict):
-        errors.append(f"{role_code}: page_orchestration_v1.meta must be object")
+        errors.append(f"{role_code}: page_orchestration.meta must be object")
 
     seen_keys: set[str] = set()
     for zone_idx, zone in enumerate(zones):
@@ -409,7 +409,7 @@ def _validate_contract(contract: dict[str, Any], role_code: str, errors: list[st
 
     _scan_forbidden_layout_keys(page, f"{role_code}: page", errors)
     _scan_forbidden_layout_keys(zones, f"{role_code}: zones", errors)
-    _scan_forbidden_layout_keys(orchestration_v1.get("render_hints"), f"{role_code}: render_hints", errors)
+    _scan_forbidden_layout_keys(orchestration.get("render_hints"), f"{role_code}: render_hints", errors)
 
 
 def main() -> int:
@@ -441,14 +441,14 @@ def main() -> int:
             errors.append("role_variant.focus must differ across pm/finance/owner for heterogeneous layout")
 
         priority_models = {
-            role: str(((contracts[role].get("page_orchestration_v1") or {}).get("page") or {}).get("priority_model") or "").strip()
+            role: str(((contracts[role].get("page_orchestration") or {}).get("page") or {}).get("priority_model") or "").strip()
             for role in ("pm", "finance", "owner")
         }
         if len(set(priority_models.values())) < 2:
             errors.append("page.priority_model should vary across roles (pm/finance/owner)")
 
         def _zone_order(role: str) -> list[str]:
-            orch = contracts[role].get("page_orchestration_v1") if isinstance(contracts[role].get("page_orchestration_v1"), dict) else {}
+            orch = contracts[role].get("page_orchestration") if isinstance(contracts[role].get("page_orchestration"), dict) else {}
             zones = orch.get("zones") if isinstance(orch.get("zones"), list) else []
             normalized: list[tuple[int, str]] = []
             for zone in zones:

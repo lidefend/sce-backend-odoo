@@ -43,6 +43,17 @@
     {
       "domain": null,
       "help": null,
+      "name": "cost_flow_label",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "成本来源",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
       "name": "create_date",
       "readonly": true,
       "relation": null,
@@ -136,7 +147,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "期间(YYYY-MM)",
+      "string": "期间文本",
       "ttype": "char"
     },
     {
@@ -147,7 +158,7 @@
       "relation": "project.cost.period",
       "required": true,
       "selection": null,
-      "string": "期间",
+      "string": "成本期间",
       "ttype": "many2one"
     },
     {
@@ -171,6 +182,28 @@
       "selection": null,
       "string": "数量",
       "ttype": "float"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "source_created_at",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "来源录入时间",
+      "ttype": "datetime"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "source_created_by",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "来源录入人",
+      "ttype": "char"
     },
     {
       "domain": null,
@@ -224,7 +257,7 @@
       "relation": "construction.work.breakdown",
       "required": false,
       "selection": null,
-      "string": "工程结构(WBS)",
+      "string": "工程结构",
       "ttype": "many2one"
     },
     {
@@ -256,7 +289,7 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {},
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

@@ -44,8 +44,8 @@ REQUIRED_SOURCE_SURFACES = {
     "contract_governance",
     "api_onchange",
     "x2many_commands",
-    "scene_contract_v1",
-    "page_orchestration_v1",
+    "scene_contract",
+    "page_orchestration",
 }
 
 FORBIDDEN_TOKENS = {

@@ -205,7 +205,7 @@ const autoDegradeLabel = computed(() => {
 });
 
 const governanceSnapshot = computed(() => {
-  const value = session.sceneGovernanceV1;
+  const value = session.sceneGovernance;
   return value && typeof value === 'object' ? value : null;
 });
 

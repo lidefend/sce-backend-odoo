@@ -55,7 +55,7 @@ def read_json(path: Path, reason: str = "JSON_INVALID") -> dict[str, Any]:
 
 def authoritative_navigation_total() -> int:
     policy = read_json(
-        ROOT / "config/frontend/authoritative_navigation_v1.json",
+        ROOT / "config/frontend/authoritative_navigation.json",
         "AUTHORITATIVE_NAVIGATION_POLICY_INVALID",
     )
     roles = policy.get("roles") or {}

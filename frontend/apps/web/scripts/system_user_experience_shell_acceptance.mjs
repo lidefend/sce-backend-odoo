@@ -186,7 +186,7 @@ async function main() {
     with: ["workspace_home"],
     root_xmlid: "smart_construction_core.menu_sc_root",
   });
-  const nav = init?.delivery_engine_v1?.nav || init?.nav || [];
+  const nav = init?.delivery_engine?.nav || init?.nav || [];
   const projectLedger = findLabelNode(nav, "项目台账");
   if (!projectLedger?.menuId) throw new Error("项目台账 menu node missing");
 

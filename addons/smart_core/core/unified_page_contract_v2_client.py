@@ -121,9 +121,9 @@ def trim_unified_page_contract_v2(
     layout["componentRegistry"] = _trim_component_registry(_dict(layout.get("componentRegistry")), client)
     out["layoutContract"] = layout
 
+    delivered_widget_ids = set(_collect_widget_ids(layout.get("containerTree")))
+    out["statusContract"] = _trim_status_contract(_dict(out.get("statusContract")), delivered_widget_ids)
     if compact:
-        delivered_widget_ids = set(_collect_widget_ids(layout.get("containerTree")))
-        out["statusContract"] = _trim_status_contract(_dict(out.get("statusContract")), delivered_widget_ids)
         out["actionContract"] = _trim_action_contract(_dict(out.get("actionContract")), action_limit, trim_meta=trim_meta)
     else:
         action_rows = _list(_dict(out.get("actionContract")).get("actionRuleList"))
@@ -238,10 +238,14 @@ def _collect_widget_ids(rows: Any) -> list[str]:
     for row in _list(rows):
         if not isinstance(row, dict):
             continue
+        node_widget_id = _text(row.get("widgetId"))
+        if node_widget_id:
+            out.append(node_widget_id)
         for widget in _list(row.get("widgetList")):
             if isinstance(widget, dict) and _text(widget.get("widgetId")):
                 out.append(_text(widget.get("widgetId")))
-        out.extend(_collect_widget_ids(row.get("children")))
+        for key in ("children", "pages", "tabs", "nodes", "items"):
+            out.extend(_collect_widget_ids(row.get(key)))
     return out
 
 

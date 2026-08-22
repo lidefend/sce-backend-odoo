@@ -21,6 +21,78 @@
     "idempotency_replay_reason_code": "",
     "idempotent_replay": false,
     "model": "project.task",
+    "project_scope": {
+      "applied": false,
+      "business_scope": true,
+      "company_id": null,
+      "domain": [],
+      "enabled": false,
+      "legacy_project_scope": true,
+      "model": "project.task",
+      "operation_strategy": "",
+      "operation_strategy_values": [
+        "direct",
+        "joint"
+      ],
+      "project_id": null,
+      "project_operation_strategy": "",
+      "project_operation_strategy_mismatch": false,
+      "record_context_id": null,
+      "source_authority": {
+        "authorities": [
+          "record_context_projection",
+          "odoo_field_metadata"
+        ],
+        "kind": "legacy_project_scope_adapter",
+        "legacy_compatibility": true,
+        "legacy_default_model": "project.project",
+        "no_business_fact_authority": true,
+        "projection_only": true,
+        "registered_legacy_scope_models": [
+          "project.project"
+        ],
+        "registered_operation_strategies": [
+          "direct",
+          "joint"
+        ]
+      }
+    },
+    "record_scope": {
+      "applied": false,
+      "business_scope": true,
+      "company_id": null,
+      "domain": [],
+      "enabled": false,
+      "legacy_project_scope": true,
+      "model": "project.task",
+      "operation_strategy": "",
+      "operation_strategy_values": [
+        "direct",
+        "joint"
+      ],
+      "project_id": null,
+      "project_operation_strategy": "",
+      "project_operation_strategy_mismatch": false,
+      "record_context_id": null,
+      "source_authority": {
+        "authorities": [
+          "record_context_projection",
+          "odoo_field_metadata"
+        ],
+        "kind": "legacy_project_scope_adapter",
+        "legacy_compatibility": true,
+        "legacy_default_model": "project.project",
+        "no_business_fact_authority": true,
+        "projection_only": true,
+        "registered_legacy_scope_models": [
+          "project.project"
+        ],
+        "registered_operation_strategies": [
+          "direct",
+          "joint"
+        ]
+      }
+    },
     "replay_supported": false,
     "replay_window_expired": false,
     "values": {
@@ -30,7 +102,7 @@
       "name"
     ]
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

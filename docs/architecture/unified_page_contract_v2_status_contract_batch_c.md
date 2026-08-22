@@ -11,7 +11,7 @@ Contract Governance / StatusContract Consolidation
 
 - `addons/smart_core/core/unified_page_contract_v2_status.py`
 - `docs/architecture/unified_page_contract_v2/fixtures/status_contract_source.json`
-- `docs/architecture/unified_page_contract_v2/snapshots/status_contract_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/status_contract_snapshot_v2.json`
 - `scripts/verify/unified_page_contract_v2_status_guard.py`
 - `Makefile`
 
@@ -74,7 +74,7 @@ Revert:
 - `addons/smart_core/core/unified_page_contract_v2_status.py`
 - `scripts/verify/unified_page_contract_v2_status_guard.py`
 - `docs/architecture/unified_page_contract_v2/fixtures/status_contract_source.json`
-- `docs/architecture/unified_page_contract_v2/snapshots/status_contract_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/status_contract_snapshot_v2.json`
 - `Makefile` status target changes
 
 No database rollback is required.

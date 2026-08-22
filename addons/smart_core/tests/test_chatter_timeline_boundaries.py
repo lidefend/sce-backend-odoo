@@ -206,6 +206,16 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
         self.assertEqual(data["paging"], {"offset": 2, "limit": 2, "next_offset": 4, "has_more": True})
         self.assertEqual(data["counts"]["total"], 2)
 
+    def test_technical_audit_identifiers_are_not_product_labels(self):
+        self.assertEqual(
+            self.module._audit_event_label("action_submit", "payment_submitted"),
+            "业务操作",
+        )
+        self.assertEqual(
+            self.module._audit_event_label("提交付款申请", "payment_submitted"),
+            "提交付款申请",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

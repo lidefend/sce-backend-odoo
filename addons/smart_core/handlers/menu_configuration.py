@@ -783,13 +783,13 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
                 raise RuntimeError("delivery_navigation_empty")
             meta = navigation.get("meta") if isinstance(navigation, dict) and isinstance(navigation.get("meta"), dict) else {}
             return nav, {
-                "source": "delivery_engine_v1",
+                "source": "delivery_engine",
                 "nav_versions": nav_versions if isinstance(nav_versions, dict) else {},
                 "user_menu_config": meta.get("user_menu_config") if isinstance(meta.get("user_menu_config"), dict) else {},
             }
         except Exception as exc:
             _logger.debug("MENU_CONFIG_DELIVERY_NAVIGATION_STATE_FAILED error=%s", exc)
-            return [], {"source": "delivery_engine_v1", "error": "runtime_navigation_unavailable"}
+            return [], {"source": "delivery_engine", "error": "runtime_navigation_unavailable"}
 
     def _runtime_navigation_state(self, configured_by_menu: dict[int, dict], menu_rows: list[dict] | None = None) -> dict:
         root_menu_id = 0

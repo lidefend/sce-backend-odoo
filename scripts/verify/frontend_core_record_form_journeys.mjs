@@ -26,16 +26,54 @@ function recordRoute(target) {
 }
 
 function capture(page) {
-  const runtime = { console: [], pageerror: [], unexpectedHttp: [] };
+  const runtime = { console: [], pageerror: [], unexpectedHttp: [], contractResponses: [] };
   page.on('console', (message) => {
     if (message.type() === 'error' && !/favicon|ResizeObserver|Failed to load resource/i.test(message.text())) runtime.console.push(message.text());
   });
   page.on('pageerror', (error) => runtime.pageerror.push(error.message));
   page.on('response', (response) => {
+    let requestPayload = {};
+    try { requestPayload = JSON.parse(response.request().postData() || '{}'); } catch {}
+    if (response.status() < 400 && requestPayload?.intent === 'ui.contract.v2') {
+      void response.json().then((body) => {
+        const queue = [body];
+        let layoutContract = null;
+        let snapshot = null;
+        for (let depth = 0; depth < 5 && queue.length && !layoutContract; depth += 1) {
+          const levelSize = queue.length;
+          for (let index = 0; index < levelSize; index += 1) {
+            const candidate = queue.shift();
+            if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+            if (candidate.layoutContract && typeof candidate.layoutContract === 'object') {
+              layoutContract = candidate.layoutContract;
+              snapshot = candidate;
+              break;
+            }
+            for (const value of Object.values(candidate)) {
+              if (value && typeof value === 'object' && !Array.isArray(value)) queue.push(value);
+            }
+          }
+        }
+        const rows = Array.isArray(layoutContract?.containerTree) ? layoutContract.containerTree : [];
+        runtime.contractResponses.push({
+          status: response.status(),
+          pageInfo: snapshot?.pageInfo || null,
+          globalStatus: snapshot?.statusContract?.globalStatus || null,
+          sourceContext: snapshot?.dataContract?.dataMeta?.sourceContext || null,
+          containerCount: rows.length,
+          containers: rows.slice(0, 12).map((row) => ({
+            keys: row && typeof row === 'object' ? Object.keys(row).sort() : [],
+            containerId: row?.containerId || null,
+            containerType: row?.containerType || null,
+            widgetId: row?.widgetId || null,
+            type: row?.type || null,
+            name: row?.name || null,
+          })),
+        });
+      }).catch((error) => runtime.contractResponses.push({ parseError: String(error?.message || error) }));
+    }
     if (response.status() >= 400 && response.status() !== 409) {
-      let payload = {};
-      try { payload = JSON.parse(response.request().postData() || '{}'); } catch {}
-      runtime.unexpectedHttp.push({ status: response.status(), url: response.url(), intent: payload?.intent || '', params: payload?.params || {} });
+      runtime.unexpectedHttp.push({ status: response.status(), url: response.url(), intent: requestPayload?.intent || '', params: requestPayload?.params || {} });
     }
   });
   return runtime;
@@ -43,10 +81,14 @@ function capture(page) {
 
 async function login(page, loginName) {
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const inputs = page.locator('input');
-  await inputs.nth(0).fill(loginName);
-  await inputs.nth(1).fill(PASSWORD);
-  if (await inputs.nth(2).isEnabled().catch(() => false)) await inputs.nth(2).fill(DB_NAME);
+  const username = page.locator('#login-username');
+  const password = page.locator('#login-password');
+  await username.waitFor({ state: 'visible', timeout: 90000 });
+  await password.waitFor({ state: 'visible', timeout: 90000 });
+  await username.fill(loginName);
+  await password.fill(PASSWORD);
+  const database = page.locator('input[placeholder*="数据库名"]');
+  if (await database.isEnabled().catch(() => false)) await database.fill(DB_NAME);
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
@@ -58,15 +100,15 @@ async function waitForm(page) {
 }
 
 async function j12(page) {
-  const target = TARGETS.contract;
+  const target = TARGETS.general_contract;
   await page.goto(`${BASE_URL}${formRoute(target)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await waitForm(page);
-  const subject = page.locator('[data-field-name="subject"] input, [data-field-name="subject"] textarea').first();
-  await subject.waitFor({ timeout: 30000 });
-  check(await subject.isEditable(), 'J12 contract subject is not editable for contract operator');
-  const original = await subject.inputValue();
+  const contractName = page.locator('[data-field-name="contract_name"] input, [data-field-name="contract_name"] textarea').first();
+  await contractName.waitFor({ timeout: 30000 });
+  check(await contractName.isEditable(), 'J12 general contract name is not editable for contract operator');
+  const original = await contractName.inputValue();
   const edited = `${original} · J12`;
-  await subject.fill(edited);
+  await contractName.fill(edited);
   await page.getByRole('button', { name: '放弃', exact: true }).waitFor({ timeout: 15000 });
   const back = page.getByRole('button', { name: '返回列表', exact: true });
   await back.click();
@@ -74,22 +116,23 @@ async function j12(page) {
   await leaveDialog.waitFor({ timeout: 15000 });
   check((await leaveDialog.innerText()).includes('尚未保存'), 'J12 unsaved warning missing');
   await leaveDialog.getByRole('button', { name: '取消', exact: true }).click();
-  check(await subject.inputValue() === edited, 'J12 cancel leave discarded the current input');
-  const save = page.getByRole('button', { name: /^保存$/ }).first();
+  check(await contractName.inputValue() === edited, 'J12 cancel leave discarded the current input');
+  const save = page.getByRole('button', { name: /^保存(?:修改)?$/ }).first();
   await save.click();
   await page.getByText(/保存成功|已保存/, { exact: false }).first().waitFor({ timeout: 45000 });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   await waitForm(page);
-  const persisted = await page.locator('[data-field-name="subject"] input, [data-field-name="subject"] textarea').first().inputValue();
+  const persisted = await page.locator('[data-field-name="contract_name"] input, [data-field-name="contract_name"] textarea').first().inputValue();
   check(persisted === edited, `J12 authoritative reload mismatch: ${persisted}`);
   return { status: 'PASS', role: 'contract_operator', dirty_guard: true, cancel_retains_input: true, save_and_reload: true };
 }
 
 async function openLegalPaymentCreate(page) {
   await page.goto(`${BASE_URL}${recordRoute(TARGETS.settlement)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const workspace = page.locator('.financial-workspace[data-workspace-kind="settlement"]');
-  await workspace.waitFor({ timeout: 45000 });
-  await workspace.getByRole('button', { name: '新建付款申请', exact: true }).click();
+  await waitForm(page);
+  const createPayment = page.getByRole('button', { name: '新建付款申请', exact: true });
+  await createPayment.waitFor({ timeout: 45000 });
+  await createPayment.click();
   await page.waitForURL((url) => url.pathname.includes('/f/payment.request/new'), { timeout: 45000 });
   await waitForm(page);
 }
@@ -140,7 +183,7 @@ async function j13(page) {
   const localValue = String(Number(authorityValue || 0) + 1);
   await existingAmount.fill(localValue);
   const removeConflict = await interceptWriteConflict(page);
-  await page.getByRole('button', { name: /^保存(?:草稿)?$/ }).first().click();
+  await page.getByRole('button', { name: /^保存(?:草稿|修改)?$/ }).first().click();
   await page.getByRole('heading', { name: '记录已被其他操作更新' }).waitFor({ timeout: 30000 });
   check(await existingAmount.inputValue() === localValue, 'J13 conflict did not retain local input');
   const intercepted = await removeConflict();
@@ -157,14 +200,15 @@ async function j13(page) {
 }
 
 async function main() {
-  check(TARGETS.contract?.record_id > 0 && TARGETS.settlement?.record_id > 0 && TARGETS.core_form_request?.record_id > 0, 'missing J12/J13 targets');
+  check(TARGETS.general_contract?.record_id > 0 && TARGETS.settlement?.record_id > 0 && TARGETS.core_form_request?.record_id > 0, 'missing J12/J13 targets');
   const browser = await launchChromium({ headless: true });
   const report = { schema_version: 'frontend_core_record_form_journeys.v1', database: DB_NAME, j12: {}, j13: {}, runtime: {}, pass: false };
+  let page;
   try {
     let context;
-    let page;
     const j12Runtime = { console: [], pageerror: [], unexpectedHttp: [] };
     const j13Runtime = { console: [], pageerror: [], unexpectedHttp: [] };
+    report.runtime = { j12: j12Runtime, j13: j13Runtime };
     if (JOURNEY === 'ALL' || JOURNEY === 'J12') {
       context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
       page = await context.newPage();
@@ -173,8 +217,8 @@ async function main() {
       await login(page, 'fixture_role_contract_operator');
       applyReleasedNavigationTarget(
         TARGETS,
-        ['contract'],
-        await releasedNavigation.targetByMenuXmlid('smart_construction_core.menu_sc_contract_center'),
+        ['general_contract'],
+        await releasedNavigation.targetByMenuXmlid(TARGETS.general_contract.menu_xmlid),
       );
       report.j12 = await j12(page);
       await context.close();
@@ -194,14 +238,23 @@ async function main() {
       await page.screenshot({ path: path.join(OUTPUT, 'j13-recovered-390x844.png'), fullPage: true });
       await context.close();
     }
-    report.runtime = { j12: j12Runtime, j13: j13Runtime };
     check(!j12Runtime.console.length && !j12Runtime.pageerror.length && !j12Runtime.unexpectedHttp.length, `J12 runtime errors ${JSON.stringify(j12Runtime)}`);
     check(!j13Runtime.console.length && !j13Runtime.pageerror.length && !j13Runtime.unexpectedHttp.length, `J13 runtime errors ${JSON.stringify(j13Runtime)}`);
     report.pass = true;
     fs.writeFileSync(path.join(OUTPUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
     console.log('[verify.frontend.core_record_form.journeys] PASS J12 J13');
   } catch (error) {
-    fs.writeFileSync(path.join(OUTPUT, 'failure.json'), `${JSON.stringify({ ...report, error: error.stack || error.message }, null, 2)}\n`);
+    const activePage = page;
+    const diagnostic = activePage
+      ? {
+          url: activePage.url(),
+          title: await activePage.title().catch(() => ''),
+          productPageMode: await activePage.locator('[data-product-page-mode]').first().getAttribute('data-product-page-mode').catch(() => ''),
+          bodyText: (await activePage.locator('body').innerText().catch(() => '')).slice(0, 4000),
+        }
+      : {};
+    if (activePage) await activePage.screenshot({ path: path.join(OUTPUT, 'failure.png'), fullPage: true }).catch(() => {});
+    fs.writeFileSync(path.join(OUTPUT, 'failure.json'), `${JSON.stringify({ ...report, diagnostic, error: error.stack || error.message }, null, 2)}\n`);
     throw error;
   } finally {
     await browser.close();

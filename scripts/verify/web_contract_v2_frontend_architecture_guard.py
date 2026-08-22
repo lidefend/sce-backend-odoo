@@ -280,9 +280,7 @@ REQUIRED_FORM_SHADOW_TOKENS: tuple[str, ...] = (
     "data-v2-shadow-store",
 )
 
-REQUIRED_FORM_SHADOW_RUNTIME_TOKENS: tuple[tuple[str, str], ...] = (
-    ("pages/contractForm/useRecordPageLifecycle.ts", "syncContractV2ShadowStore(response.data)"),
-)
+REQUIRED_FORM_SHADOW_RUNTIME_TOKENS: tuple[tuple[str, str], ...] = ()
 
 REQUIRED_FORM_STORE_SELECTOR_TOKENS: tuple[str, ...] = (
     "collectContractV2ButtonStatusById",
@@ -304,11 +302,7 @@ FORBIDDEN_FORM_LOCAL_SELECTOR_TOKENS: tuple[str, ...] = (
 )
 
 REQUIRED_WORKFLOW_CONTRACT_PROJECTION_TOKENS: tuple[tuple[str, str], ...] = (
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "v2Contract.workflowContract"),
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "asDict(v2Contract.runtimeContract).workflowContract"),
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "workflowContract,"),
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "runtimeContract: { workflowContract }"),
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "__unified_page_contract_v2: v2Contract"),
+    ("app/contracts/v2/store.ts", "resolveContractV2WorkflowContract"),
     ("pages/ContractFormPage.vue", "currentWorkflowContract"),
     ("pages/ContractFormPage.vue", "workflowContractActionRows"),
     ("pages/ContractFormPage.vue", "workflowEvidenceGateRows"),

@@ -19,7 +19,7 @@
       @driver-change="handleSceneDriverChange"
     >
     <template #standard>
-    <section v-if="vm.header.actions.length" class="page-actions">
+    <section v-if="viewMode !== 'activity' && vm.header.actions.length" class="page-actions">
       <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">
         {{ action.label || action.key }}
       </button>
@@ -503,6 +503,85 @@
         />
       </template>
     </ListPage>
+    <ActivityPage
+      v-else-if="viewMode === 'activity'"
+      :title="vm.page.title"
+      :loading="isUiBusy"
+      :model="activitySurfaceModel"
+      :labels="{
+        eyebrow: t('activity_surface_eyebrow', '原生活动视图'),
+        countSuffix: t('activity_surface_count_suffix', '条'),
+        loading: t('activity_surface_loading', '正在加载活动记录...'),
+        unavailable: t('activity_surface_unavailable', '活动视图契约不可用'),
+        record: t('activity_surface_record', '记录'),
+        emptyTitle: t('activity_surface_empty_title', '暂无活动记录'),
+        emptyHint: t('activity_surface_empty_hint', '当前筛选范围内没有可显示的数据。'),
+      }"
+      @open-record="handleCollectionRowClick"
+    >
+      <template v-if="showTopActionToolbar" #toolbar>
+        <ActionSurfaceToolbar
+          :loading="isUiBusy"
+          :show-view-switch="showViewSwitch"
+          :view-label="toolbarUiLabel('view_switch', '视图')"
+          :view-modes="vm.page.availableViewModes"
+          :current-view-mode="vm.page.viewMode"
+          :view-mode-labels="toolbarViewModeLabels"
+          :search-value="toolbarSearchDraft"
+          :search-placeholder="toolbarUiLabel('search_placeholder', '搜索关键字')"
+          :clear-label="t('chip_action_clear', '清除')"
+          :show-filter="showToolbarFilter"
+          :filter-label="toolbarUiLabel('filters', '筛选')"
+          :filter-primary="vm.filters.quickFilters.primary"
+          :filter-overflow="vm.filters.quickFilters.overflow"
+          :active-filter-key="activeContractFilterKey"
+          :show-saved-filter="showToolbarSavedFilter"
+          :saved-filter-label="toolbarUiLabel('saved_filters', '收藏夹')"
+          :saved-filter-primary="vm.filters.savedFilters.primary"
+          :saved-filter-overflow="vm.filters.savedFilters.overflow"
+          :active-saved-filter-key="activeSavedFilterKey"
+          :sort-label="toolbarUiLabel('sort', '排序')"
+          :sort-options="displaySortOptions"
+          :sort-value="sortValue"
+          :show-group="showToolbarGroup"
+          :group-label="toolbarUiLabel('group_by', '分组方式')"
+          :group-primary="vm.filters.groupBy.primary"
+          :group-overflow="vm.filters.groupBy.overflow"
+          :custom-filter-enabled="customSearchCapabilities.filterEnabled"
+          :custom-filter-label="customSearchCapabilities.filterLabel"
+          :custom-filter-fields="customFilterFields"
+          :custom-group-enabled="customSearchCapabilities.groupEnabled"
+          :custom-group-label="customSearchCapabilities.groupLabel"
+          :custom-group-fields="customGroupByChips"
+          :favorite-save-enabled="false"
+          :favorite-save-label="customSearchCapabilities.favoriteLabel"
+          :active-custom-filter-label="activeCustomFilterLabel"
+          :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
+          :active-group-key="toolbarActiveGroupKey"
+          :can-create-record="false"
+          :create-label="toolbarUiLabel('create', '新建')"
+          :active-condition-count="toolbarActiveConditionCount"
+          :ui-labels="toolbarUiLabels"
+          @switch-view="switchViewMode"
+          @search-composition-start="onToolbarSearchCompositionStart"
+          @search-composition-end="onToolbarSearchCompositionEnd"
+          @search-input="onToolbarSearchInput"
+          @search-submit="submitToolbarSearch"
+          @clear-search="clearToolbarSearch"
+          @filter="applyContractFilter"
+          @clear-filter="clearContractFilter"
+          @saved-filter="applySavedFilter"
+          @clear-saved-filter="clearSavedFilter"
+          @sort="handleSort"
+          @group="applyGroupBy"
+          @custom-group="applyCustomGroupBy"
+          @clear-group="clearGroupBy"
+          @custom-filter="applyCustomFilter"
+          @clear-custom-filter="clearCustomFilter"
+          @clear-all="clearAllListConditions"
+        />
+      </template>
+    </ActivityPage>
     <section v-else-if="isSectionVisible('advanced_view', { defaultEnabled: pageSectionEnabled('advanced_view', true), tag: 'section' })" class="advanced-view" :style="getSectionStyle('advanced_view')">
       <header class="advanced-view-head">
         <h3>{{ vm.content.advanced?.title }}</h3>
@@ -582,7 +661,7 @@
 import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorCaptured, onMounted, ref, watch, type Ref } from 'vue';
 import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
-import type { ActionContract } from '@sc/schema';
+import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
@@ -591,12 +670,14 @@ import { executeButton } from '../api/executeButton';
 import { trackUsageEvent } from '../api/usage';
 import { resolveAction } from '../app/resolvers/actionResolver';
 import { resolveMenuAction } from '../app/resolvers/menuResolver';
-import { loadActionContract } from '../api/contract';
+import { loadActionContractStore } from '../api/contract';
 import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { useSessionStore } from '../stores/session';
 import ListPage from '../pages/ListPage.vue';
 import KanbanPage from '../pages/KanbanPage.vue';
+import ActivityPage from '../pages/ActivityPage.vue';
+import { resolveActivitySurfaceModel } from '../app/contracts/actionViewActivityContract';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import GroupSummaryBar from '../components/GroupSummaryBar.vue';
@@ -874,10 +955,12 @@ import {
   type SurfaceIntentContract,
 } from '../app/contracts/actionViewSurfaceContract';
 import {
-  collectUnifiedPageContractV2ButtonStatus,
-  resolveUnifiedPageContractV2GlobalStatus,
-  resolveUnifiedPageContractV2SurfacePolicies,
-} from '../app/contracts/unifiedPageContractV2';
+  collectContractV2ButtonStatusById,
+  resolveContractV2ActionRules,
+  resolveContractV2EffectiveFormCapabilities,
+  resolveContractV2GlobalStatus,
+  resolveContractV2SurfacePolicies,
+} from '../app/contracts/v2';
 import {
   mapProjectionMetricItems,
 } from '../app/contracts/actionViewProjectionContract';
@@ -908,14 +991,8 @@ const pageSectionStyle = pageContract.sectionStyle;
 const pageSectionTagIs = pageContract.sectionTagIs;
 let latestLoadGeneration = 0;
 let loadPageInvoker: (loadGeneration: number) => Promise<void> = async () => {};
-function requestLoadPage(): Promise<void> {
-  latestLoadGeneration += 1;
-  return loadPageInvoker(latestLoadGeneration);
-}
-
-function currentActionActivityRouteKey(): string {
-  return buildActionActivityRouteKey({ actionId: route.params.actionId, queryActionId: route.query.action_id, menuId: route.query.menu_id });
-}
+function requestLoadPage(): Promise<void> { latestLoadGeneration += 1; return loadPageInvoker(latestLoadGeneration); }
+function currentActionActivityRouteKey(): string { return buildActionActivityRouteKey({ actionId: route.params.actionId, queryActionId: route.query.action_id, menuId: route.query.menu_id }); }
 
 function resolveCurrentRouteActionId(): number {
   const fromParam = Number(route.params.actionId || 0);
@@ -925,9 +1002,7 @@ function resolveCurrentRouteActionId(): number {
 }
 
 let clearSelectionInvoker: () => void = () => {};
-function clearSelection(): void {
-  clearSelectionInvoker();
-}
+function clearSelection(): void { clearSelectionInvoker(); }
 
 const { t } = useActionViewTextRuntime({ pageText });
 const pageActionIntent = pageContract.actionIntent;
@@ -953,6 +1028,7 @@ const renderErrorMessage = ref('');
 const traceId = ref('');
 const lastTraceId = ref('');
 const records = ref<Array<Record<string, unknown>>>([]);
+const activitySurfaceModel = computed(() => resolveActivitySurfaceModel(actionContract.value, records.value));
 const listTotalCount = ref<number | null>(null);
 const listOffset = ref(Math.max(0, Math.trunc(Number(route.query.list_offset || 0))));
 const listLimitOverride = ref(0);
@@ -1054,64 +1130,7 @@ type ContractViewBlock = {
   model?: string;
   order?: string;
 };
-type ActionViewRuntimeContract = ActionContract & {
-  head?: {
-    model?: string;
-    view_type?: string;
-    context?: unknown;
-    res_id?: number | string;
-    permissions?: {
-      read?: boolean;
-      write?: boolean;
-      create?: boolean;
-      unlink?: boolean;
-    };
-  };
-  views?: {
-    tree?: ContractViewBlock;
-    list?: ContractViewBlock;
-    kanban?: ContractViewBlock;
-    form?: ContractViewBlock;
-  };
-  fields?: Record<string, unknown>;
-  buttons?: Array<Record<string, unknown>>;
-  action_groups?: ContractActionGroupRaw[];
-  toolbar?: {
-    header?: Array<Record<string, unknown>>;
-    sidebar?: Array<Record<string, unknown>>;
-    footer?: Array<Record<string, unknown>>;
-  };
-  surface_policies?: {
-    filters_primary_max?: number;
-    actions_primary_max?: number;
-    filters_max?: number;
-    actions_max?: number;
-    kind?: string;
-    delete_mode?: string;
-    batch_policy?: SceneListProfile['batch_policy'];
-    intent_profile?: SurfaceIntentContract;
-    empty_reason?: string;
-  };
-  model?: string;
-  data?: {
-    type?: string;
-    url?: string;
-    target?: string;
-  };
-  warnings?: Array<string | Record<string, unknown>>;
-  degraded?: boolean;
-  permissions?: {
-    effective?: {
-      rights?: {
-        read?: boolean;
-        write?: boolean;
-        create?: boolean;
-        unlink?: boolean;
-      };
-    };
-  };
-  __unified_page_contract_v2?: Record<string, unknown>;
-};
+type ActionViewRuntimeContract = ContractV2NormalizedStore;
 type ContractActionSelection = 'none' | 'single' | 'multi';
 type ContractActionButton = {
   key: string;
@@ -1187,7 +1206,7 @@ const batchPolicy = computed<ActionBatchPolicy>(() => {
   if (profilePolicy && Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0) {
     return profilePolicy;
   }
-  const surfacePolicies = resolveUnifiedPageContractV2SurfacePolicies(actionContract.value);
+  const surfacePolicies = resolveContractV2SurfacePolicies(actionContract.value);
   return (surfacePolicies.batch_policy as ActionBatchPolicy | undefined) || profilePolicy || {};
 });
 const activeField = computed(() => String(batchPolicy.value.active_field || '').trim());
@@ -1213,7 +1232,7 @@ const listColumnPreferenceScope = computed(() => {
 });
 const sceneReadyEntry = computed<Record<string, unknown> | null>(() => {
   if (!sceneContextEnabled.value || !sceneKey.value) return null;
-  return findSceneReadyEntry(session.sceneReadyContractV1, sceneKey.value);
+  return findSceneReadyEntry(session.sceneReadyContract, sceneKey.value);
 });
 const sceneReadyCollectionMode = computed<'list' | 'kanban'>(() => {
   const raw = String(route.query.view_mode || '').trim().toLowerCase();
@@ -1268,9 +1287,9 @@ watch(
         },
         meta: { startup_chain_bypass: true },
       });
-      const contract = result.scene_ready_contract_v1;
+      const contract = result.scene_ready_contract;
       if (contract && typeof contract === 'object' && Array.isArray((contract as Record<string, unknown>).scenes)) {
-        session.sceneReadyContractV1 = contract as never;
+        session.sceneReadyContract = contract as never;
       }
     } catch (err) {
       void err;
@@ -1332,22 +1351,17 @@ const {
 });
 
 function resolveCreateRight(contract: ActionViewRuntimeContract | null): boolean {
-  const head = contract?.head?.permissions?.create;
-  if (typeof head === 'boolean') return head;
-  const effective = contract?.permissions?.effective?.rights?.create;
-  if (typeof effective === 'boolean') return effective;
-  const globalStatus = resolveUnifiedPageContractV2GlobalStatus(contract?.__unified_page_contract_v2);
+  const capabilities = resolveContractV2EffectiveFormCapabilities(contract);
+  if (capabilities) return capabilities.create;
+  const globalStatus = resolveContractV2GlobalStatus(contract);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
-  if (pageAuth === 'read') return false;
-  return true;
+  return ['edit', 'write', 'manage'].includes(pageAuth);
 }
 
 function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean {
-  const head = contract?.head?.permissions?.write;
-  if (typeof head === 'boolean') return head;
-  const effective = contract?.permissions?.effective?.rights?.write;
-  if (typeof effective === 'boolean') return effective;
-  const globalStatus = resolveUnifiedPageContractV2GlobalStatus(contract?.__unified_page_contract_v2);
+  const capabilities = resolveContractV2EffectiveFormCapabilities(contract);
+  if (capabilities) return capabilities.write;
+  const globalStatus = resolveContractV2GlobalStatus(contract);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
   return ['edit', 'write', 'manage'].includes(pageAuth);
 }
@@ -1371,7 +1385,7 @@ const showViewSwitch = computed(() =>
 );
 const toolbarViewModeLabels = computed(() =>
   vm.value.page.availableViewModes.reduce<Record<string, string>>((acc, mode) => {
-    acc[mode] = mode === 'kanban' ? resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(actionContract.value as Record<string, unknown> | null, mode), route.query.group_by).label : viewModeLabel(mode);
+    acc[mode] = mode === 'kanban' ? resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(actionContract.value, mode), route.query.group_by).label : viewModeLabel(mode);
     return acc;
   }, {}),
 );
@@ -1525,9 +1539,7 @@ const businessCategoryCreateOptions = computed<BusinessCategoryCreateOption[]>((
     .filter((row): row is BusinessCategoryCreateOption => Boolean(row));
 });
 
-function closeBusinessCategoryCreatePicker() {
-  businessCategoryCreatePickerVisible.value = false;
-}
+function closeBusinessCategoryCreatePicker() { businessCategoryCreatePickerVisible.value = false; }
 
 function createRouteQueryForBusinessCategory(categoryCode = '') {
   const code = String(categoryCode || '').trim();
@@ -1561,13 +1573,13 @@ async function openCreateRecord() {
 }
 const availableViewModes = computed(() => resolveActionViewAvailableModes({ contractViewTypeRaw: contractViewType.value,
   metaViewModesRaw: (actionMeta.value as { view_modes?: unknown } | null)?.view_modes,
-  contract: actionContract.value as Record<string, unknown> | null }));
+  contract: actionContract.value }));
 const viewMode = computed(() => {
   const fallbackMode = resolvedModelRef.value || Number(route.query.action_id || 0) > 0 ? 'tree' : '';
   return resolveRenderableActionViewMode(preferredViewMode.value, availableViewModes.value, fallbackMode);
 });
 const collectionPresentation = computed(() => resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(
-  actionContract.value as Record<string, unknown> | null, viewMode.value), route.query.group_by));
+  actionContract.value, viewMode.value), route.query.group_by));
 const {
   viewModeLabel,
   switchViewMode,
@@ -1708,7 +1720,7 @@ const {
 });
 const actionIdentityInput = computed(() => buildActionPageIdentity({
     action: actionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
-    actionContractTitle: actionContract.value?.head?.title || actionMetaName.value,
+    actionContractTitle: actionContract.value?.snapshot.pageInfo.pageName || actionMetaName.value,
     legacyTitle: legacyPageTitle.value, menuName: currentMenuTitle.value,
     modelName: resolvedModelRef.value || model.value, status: status.value, subtitle: subtitle.value,
 }));
@@ -1720,16 +1732,7 @@ function resolveContractActionCountForHud() {
   const contract = actionContract.value;
   if (!contract) return 0;
 
-  const buttons = Array.isArray(contract.buttons) ? contract.buttons : [];
-  if (buttons.length) return buttons.length;
-
-  const toolbar = typeof contract.toolbar === 'object' && contract.toolbar
-    ? (contract.toolbar as Record<string, unknown>)
-    : {};
-  const header = Array.isArray(toolbar.header) ? toolbar.header.length : 0;
-  const sidebar = Array.isArray(toolbar.sidebar) ? toolbar.sidebar.length : 0;
-  const footer = Array.isArray(toolbar.footer) ? toolbar.footer.length : 0;
-  return header + sidebar + footer;
+  return resolveContractV2ActionRules(contract).length;
 }
 
 const { buildHudEntriesInput } = useActionViewHudEntriesInputRuntime({
@@ -1802,9 +1805,7 @@ const toolbarUiLabels = computed<Record<string, string>>(() => {
   }, {});
 });
 
-function toolbarUiLabel(key: string, fallback: string) {
-  return toolbarUiLabels.value[key] || fallback;
-}
+function toolbarUiLabel(key: string, fallback: string) { return toolbarUiLabels.value[key] || fallback; }
 const {
   toContractActionButton,
 } = useActionViewContractActionButtonRuntime({
@@ -1832,7 +1833,7 @@ const {
   strictContractMode,
   toContractActionButton: (row, dedup) => applyActionViewV2ButtonStatus(
     toContractActionButton(row, dedup) as ContractActionButton | null,
-    collectUnifiedPageContractV2ButtonStatus(actionContract.value),
+    collectContractV2ButtonStatusById(actionContract.value),
   ),
   resolveContractActionPresentation,
   pageText,
@@ -2258,10 +2259,10 @@ async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; 
     is_default: payload.isDefault === true,
     is_shared: payload.isShared === true,
   });
-  actionContract.value = await loadActionContract(actionId.value, {
+  actionContract.value = await loadActionContractStore(actionId.value, {
     sceneKey: sceneKey.value || undefined,
     menuId: menuId.value || undefined,
-  }) as ActionViewRuntimeContract;
+  });
   await requestLoadPage();
 }
 
@@ -2410,7 +2411,7 @@ const { runContractAction } = useActionViewActionRuntime({
   resolveActionContextRecordId: () => {
     const fromRoute = toPositiveInt(route.query.res_id);
     if (fromRoute) return fromRoute;
-    const fromContract = toPositiveInt(actionContract.value?.head?.res_id);
+    const fromContract = toPositiveInt(actionContract.value?.snapshot.dataContract.mainData.id);
     if (fromContract) return fromContract;
     return null;
   },

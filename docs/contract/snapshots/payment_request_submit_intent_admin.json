@@ -20,7 +20,7 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "idempotency_fingerprint": "96b4a2cf0f6cb0f59cb50241f89ed7a0dc1ec973",
+    "idempotency_fingerprint": "2b7238e95e087b2c7aa89456d4924bb8518c1bae",
     "idempotency_key": "snapshot_payment_request_submit_1",
     "idempotency_replay_reason_code": "",
     "idempotent_replay": false,

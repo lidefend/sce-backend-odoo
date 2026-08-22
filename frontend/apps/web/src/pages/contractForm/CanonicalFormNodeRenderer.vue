@@ -8,7 +8,7 @@
     :data-section-navigation-role="node.zoneRole"
     :data-group-title="node.title || undefined"
   >
-    <span v-if="node.text" class="canonical-form-native-text">{{ node.text }}</span>
+    <span v-if="presentableNodeText" class="canonical-form-native-text">{{ presentableNodeText }}</span>
     <button
       v-if="node.action"
       type="button"
@@ -28,6 +28,7 @@
       :columns="columns"
       :fields="fields"
       :relation-adapter="relationAdapter"
+      :prefer-readonly-facts="preferReadonlyFacts"
       @field-change="emit('field-change', $event)"
       @action-ref="emit('action-ref', $event)"
     />
@@ -37,7 +38,9 @@
       :key="child.nodeId"
       :node="child"
       :relation-adapter="relationAdapter"
+      :prefer-readonly-facts="preferReadonlyFacts"
       @field-change="emit('field-change', $event)"
+      @action-ref="emit('action-ref', $event)"
     />
   </section>
 </template>
@@ -59,6 +62,7 @@ import {
 const props = defineProps<{
   node: CanonicalFormNode;
   relationAdapter?: RelationFieldAdapter;
+  preferReadonlyFacts?: boolean;
 }>();
 const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
@@ -71,6 +75,11 @@ const children = computed(() => visibleCanonicalChildren(props.node));
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
 const hasContent = computed(() => canonicalNodeHasContent(props.node));
 const nativeClass = computed(() => String(props.node.attributes.class || '').trim());
+const presentableNodeText = computed(() => {
+  const text = String(props.node.text || '');
+  if (props.preferReadonlyFacts && /^[\s.·•:_-]+$/.test(text)) return '';
+  return text;
+});
 </script>
 
 <style scoped>

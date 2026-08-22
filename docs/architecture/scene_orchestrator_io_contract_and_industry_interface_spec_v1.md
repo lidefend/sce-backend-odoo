@@ -260,7 +260,7 @@ def provide(scene_key: str, runtime: dict, context: dict) -> dict:
 ## 10. 版本策略
 
 - Input contract 版本：`scene_orchestrator_input_v1`
-- Output contract 版本：`scene_ready_contract_v1`
+- Output contract 版本：`scene_ready_contract`
 - Profile schema 版本：`scene_profile_v1`
 - Policy schema 版本：`scene_policy_v1`
 - Provider interface 版本：`scene_provider_v1`

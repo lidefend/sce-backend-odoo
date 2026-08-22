@@ -28,7 +28,7 @@ def build(scene_key: str = "projects.list", runtime: dict | None = None, context
         },
         "primary_action": primary_action,
         "fallback_strategy": fallback_strategy,
-        "delivery_handoff_v1": build_direct_runtime_handoff(
+        "delivery_handoff": build_direct_runtime_handoff(
             family="projects",
             user_entry="menu:smart_construction_core.menu_sc_root",
             final_scene="projects.list",

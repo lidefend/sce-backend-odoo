@@ -35,7 +35,7 @@ const viewports = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, {
 const maxSurfacesPerRole = Number(process.env.AUDIT_MAX_SURFACES || 0);
 const actionXmlids = JSON.parse(process.env.FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON || '{}');
 const navigationManifestPath = process.env.FRONTEND_NAVIGATION_MANIFEST
-  || 'config/frontend/authoritative_navigation_v1.json';
+  || 'config/frontend/authoritative_navigation.json';
 const gitSha = String(process.env.GIT_SHA || '').trim();
 const expectedAppTitle = String(process.env.AUDIT_APP_TITLE || '企业业务管理平台').trim();
 const writeAction = /新建|创建|保存|提交|审批|删除|撤销|登记|确认|导入|发布|重置|编辑/i;
@@ -56,7 +56,7 @@ function pageType(url, mode, text) {
 function navigationFromPayload(payload) {
   const candidates = [payload, payload?.result, payload?.data, payload?.result?.data];
   for (const value of candidates) {
-    const navigation = value?.navigation_v1;
+    const navigation = value?.navigation;
     if (Array.isArray(navigation?.nav)) return navigation.nav;
   }
   return null;

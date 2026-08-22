@@ -139,7 +139,7 @@ class TestSceneContractBuilderSemantics(unittest.TestCase):
     def test_page_contract_projects_parser_semantics_into_scene_contract(self):
         payload = target.build_release_surface_scene_contract_from_page_contract(
             {
-                "page_orchestration_v1": {
+                "page_orchestration": {
                     "page": {"title": "我的工作", "layout_mode": "workspace"},
                     "zones": [],
                     "action_schema": {"actions": {}},

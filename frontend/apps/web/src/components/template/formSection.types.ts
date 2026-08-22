@@ -74,9 +74,13 @@ export type FormSectionFieldSchema = {
   many2oneInlineCreateLabel?: string;
   descriptor?: FieldDescriptor;
   fileName?: string;
+  digits?: [number, number];
+  currencyField?: string;
+  currencyLabel?: string;
 };
 
 export type FormSectionFieldChange = {
+  occurrenceKey?: string;
   name: string;
   type: TemplateFieldType;
   widget?: string;

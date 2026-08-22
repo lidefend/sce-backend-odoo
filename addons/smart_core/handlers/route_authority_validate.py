@@ -20,7 +20,7 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
     DESCRIPTION = "Validate a delivered route authority against current session and record scope"
     VERSION = "1.0.0"
     SOURCE_KIND = "route_authority_runtime_validation"
-    SOURCE_AUTHORITIES = ("route_authority_v1", "ir.model.access", "ir.rule", "allowed_company_ids")
+    SOURCE_AUTHORITIES = ("route_authority", "ir.model.access", "ir.rule", "allowed_company_ids")
     REQUIRED_GROUPS = []
 
     def _params(self, payload) -> dict:

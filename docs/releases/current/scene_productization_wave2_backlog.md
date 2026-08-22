@@ -153,7 +153,7 @@
   - 新增 `verify.scene.r3.runtime.quick` 一键目标（严格校验 + 报表摘要输出）
   - 用于快速确认本轮门禁效果，无需手动翻全量日志
 - ✅ Round31 已落地：
-  - 前端自定义视图重构 Batch1：抽离 `scene_contract_v1 -> page_orchestration_v1` 公共转换器
+  - 前端自定义视图重构 Batch1（已被统一页面契约切换取代）：删除旧场景到页面编排的兼容转换器
   - `MyWorkView`、`WorkbenchView` 去重复实现，统一走 `app/sceneContractV1.ts`
   - 降低场景契约适配逻辑漂移风险，为后续批次重构打基础
 - ✅ Round32 已落地：

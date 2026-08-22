@@ -604,6 +604,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
                 "key": f"payment_{action_key}", "action_key": action_key, "label": label,
                 "kind": "mutation", "level": "header", "source_widget_id": "page.header",
                 "selection": "none", "visible_profiles": ["edit", "readonly"], "method": method,
+                "visible": True,
                 "intent": str(row.get("execute_intent") or row.get("intent") or "payment.request.execute"),
                 "allowed": executable, "enabled": executable, "disabled": not executable,
                 "business_available": business_available,

@@ -13,9 +13,9 @@ REQUIRED = {
         "statusContract.buttonStatus",
         "Fail-Closed Rules",
     ),
-    "frontend/apps/web/src/api/contract.ts": (
+    "frontend/apps/web/src/app/contracts/v2/client.ts": (
         "sceneKey?: string | null;",
-        "params.scene_key = sceneKey",
+        "params.scene_key = options.sceneKey",
     ),
     "frontend/apps/web/src/app/resolvers/actionResolver.ts": (
         "sceneKey: String(options?.sceneKey || '').trim() || undefined",
@@ -43,16 +43,19 @@ REQUIRED = {
         "with self.env.cr.savepoint():",
         "Menu config concurrent create resolved",
     ),
-    "frontend/apps/web/src/app/runtime/unifiedPageContractV2CompatProjection.ts": (
-        "collectUnifiedPageContractV2ButtonStatus",
-        "projectedStatus.disabled !== true",
+    "frontend/apps/web/src/app/contracts/v2/store.ts": (
+        "collectContractV2ButtonStatusById",
+        "status.disabled",
     ),
 }
 
 FORBIDDEN = {
     "frontend/apps/web/src/pages/ContractFormPage.vue": ("groups_xmlids",),
-    "frontend/apps/web/src/app/contractPolicies.ts": ("required_groups", "userGroups"),
 }
+
+RETIRED = (
+    "frontend/apps/web/src/app/contractPolicies.ts",
+)
 
 
 def main() -> int:
@@ -75,6 +78,9 @@ def main() -> int:
         for token in tokens:
             if token in text:
                 errors.append(f"{relative}: forbidden token: {token}")
+    for relative in RETIRED:
+        if (ROOT / relative).exists():
+            errors.append(f"retired compatibility file must not exist: {relative}")
     if errors:
         print("[contract_authority_hierarchy_guard] FAIL")
         for error in errors:

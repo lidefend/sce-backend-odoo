@@ -55,11 +55,11 @@ def main() -> int:
 
     required = [
         "user",
-        "navigation_v1",
+        "navigation",
         "intents",
         "default_route",
         "role_surface",
-        "scene_ready_contract_v1",
+        "scene_ready_contract",
         "page_contracts",
     ]
     modes = {

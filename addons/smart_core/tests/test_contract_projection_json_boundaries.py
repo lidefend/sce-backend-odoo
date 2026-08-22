@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import importlib.util
+import ast
 import sys
 import types
 import unittest
+import xml.etree.ElementTree as ET
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -47,6 +49,48 @@ class _Env(dict):
         return None
 
 
+class _ElementWrapper:
+    def __init__(self, element, parent=None):
+        self._element = element
+        self._parent = parent
+        self.tag = element.tag
+        self.attrib = element.attrib
+
+    def get(self, key, default=None):
+        return self._element.get(key, default)
+
+    def getparent(self):
+        return self._parent
+
+    def __iter__(self):
+        return iter([_ElementWrapper(child, self) for child in list(self._element)])
+
+    def __eq__(self, other):
+        return isinstance(other, _ElementWrapper) and self._element is other._element
+
+    def iter(self):
+        rows = []
+
+        def visit(element, parent=None):
+            current = _ElementWrapper(element, parent)
+            rows.append(current)
+            for child in list(element):
+                visit(child, current)
+
+        visit(self._element, self._parent)
+        return iter(rows)
+
+
+def _install_lxml_stub():
+    etree = types.SimpleNamespace(
+        fromstring=lambda raw: _ElementWrapper(ET.fromstring(raw.decode("utf-8") if isinstance(raw, bytes) else raw))
+    )
+    lxml = types.ModuleType("lxml")
+    lxml.etree = etree
+    sys.modules["lxml"] = lxml
+    sys.modules["lxml.etree"] = etree
+
+
 def _install_odoo_stub():
     odoo = types.ModuleType("odoo")
     odoo.models = types.SimpleNamespace(Model=object, AbstractModel=object)
@@ -66,6 +110,7 @@ def _install_odoo_stub():
 
 def _load_module(name, path):
     _install_odoo_stub()
+    _install_lxml_stub()
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -112,6 +157,52 @@ class ContractProjectionJsonBoundaryTests(unittest.TestCase):
         result = record.get_search_contract(filter_runtime=True, include_user_filters=False)
         self.assertEqual(result["filters"][0]["since"], "2026-06-30")
         self.assertEqual(result["defaults"]["amount"], "12.30")
+
+    def test_search_view_preserves_filter_field_occurrences(self):
+        module = _load_module("smart_core_test_app_search_config_occurrences", SEARCH_PATH)
+        record = module.AppSearchConfig.__new__(module.AppSearchConfig)
+        record._safe_eval_expr = lambda raw: ast.literal_eval(raw) if raw else None
+
+        filters, groupbys, fields = record._parse_search_view("""
+            <search>
+                <group>
+                    <filter name="status" string="Open" domain="[('state', '=', 'open')]" help="Open only"/>
+                    <filter name="status" string="Closed" domain="[('state', '=', 'closed')]" date="date_done"/>
+                    <filter name="by_partner" string="Partner" context="{'group_by': 'partner_id'}"/>
+                    <field name="partner_id" string="Customer" filter_domain="[('partner_id', 'child_of', self)]"/>
+                    <field name="partner_id" string="Invoice Customer" operator="=" optional="hide"/>
+                </group>
+            </search>
+        """)
+
+        self.assertEqual(len(filters), 2)
+        self.assertEqual([item["occurrence_index"] for item in filters], [1, 2])
+        self.assertNotEqual(filters[0]["native_locator"], filters[1]["native_locator"])
+        self.assertEqual(filters[0]["attributes"]["help"], "Open only")
+        self.assertEqual(filters[1]["date"], "date_done")
+        self.assertEqual(groupbys[0]["field"], "partner_id")
+        self.assertEqual(groupbys[0]["native_locator"], "/search[1]/group[1]/filter[3]")
+        self.assertEqual(len(fields), 2)
+        self.assertEqual([item["occurrence_index"] for item in fields], [1, 2])
+        self.assertEqual(fields[0]["filter_domain"], "[('partner_id', 'child_of', self)]")
+        self.assertEqual(fields[1]["attributes"]["optional"], "hide")
+
+        search_def = record._build_search_def(
+            model_name="x.demo",
+            filters=filters,
+            fields=fields,
+            saved_filters=[],
+            group_by=groupbys,
+            facets={"enabled": True},
+            custom={},
+            defaults={"limit": 20, "order": "id desc"},
+        )
+        self.assertEqual([item["label"] for item in search_def["fields"]], ["Customer", "Invoice Customer"])
+
+        with self.assertRaises(ValueError):
+            record._parse_search_view("")
+        with self.assertRaises(Exception):
+            record._parse_search_view("<search><field></search>")
 
     def test_workflow_contract_serializes_non_json_scalars(self):
         module = _load_module("smart_core_test_app_workflow_config", WORKFLOW_PATH)

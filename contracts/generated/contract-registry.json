@@ -82,6 +82,11 @@
       "version": 1
     },
     {
+      "path": "schemas/system-init.yaml",
+      "kind": "schema",
+      "version": 2
+    },
+    {
       "path": "api/openapi.yaml",
       "kind": "api",
       "version": "0.1.0"

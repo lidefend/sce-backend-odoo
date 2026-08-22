@@ -27,7 +27,7 @@ class _KanbanPivotGraphParserMixin:
         }
 
     # ---------------- kanban 解析 ----------------
-    def _parse_kanban_view(self, arch, fields_info):
+    def _parse_kanban_view(self, arch, fields_info, root=None):
         out = {
             "template_qweb": None,
             "quick_create": True,
@@ -45,9 +45,10 @@ class _KanbanPivotGraphParserMixin:
             },
         }
         try:
-            if not arch:
+            if root is None and not arch:
                 return out
-            root = etree.fromstring(arch.encode('utf-8'))
+            if root is None:
+                root = etree.fromstring(arch.encode('utf-8'))
             if root.tag != 'kanban':
                 kn = root.xpath('.//kanban')
                 if kn:
@@ -110,11 +111,12 @@ class _KanbanPivotGraphParserMixin:
         return out
 
     # ---------------- pivot 解析 ----------------
-    def _parse_pivot_view(self, arch, fields_info):
+    def _parse_pivot_view(self, arch, fields_info, root=None):
         measures, dimensions = [], []
         try:
-            if arch:
-                root = etree.fromstring(arch.encode('utf-8'))
+            if root is not None or arch:
+                if root is None:
+                    root = etree.fromstring(arch.encode('utf-8'))
                 for fld in root.xpath('.//field[@name]'):
                     name = fld.get('name')
                     ftype = fld.get('type')
@@ -144,12 +146,13 @@ class _KanbanPivotGraphParserMixin:
         return {"measures": measures, "dimensions": dimensions, "defaults": {}}
 
     # ---------------- graph 解析 ----------------
-    def _parse_graph_view(self, arch, fields_info):
+    def _parse_graph_view(self, arch, fields_info, root=None):
         measures, dimensions = [], []
         type_default = "bar"
         try:
-            if arch:
-                root = etree.fromstring(arch.encode('utf-8'))
+            if root is not None or arch:
+                if root is None:
+                    root = etree.fromstring(arch.encode('utf-8'))
                 type_default = root.get('type') or type_default
                 for fld in root.xpath('.//field[@name]'):
                     name = fld.get('name')

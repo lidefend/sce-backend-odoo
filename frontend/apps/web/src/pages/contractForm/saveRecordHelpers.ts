@@ -1,4 +1,4 @@
-import type { ActionContract } from '@sc/schema';
+import type { FieldDescriptor } from '@sc/schema';
 import { fieldType } from './fieldUtils';
 import { isRequiredFieldEmptyByType } from './valueUtils';
 import type { LayoutNode, SubmissionFeedback } from './types';
@@ -12,7 +12,6 @@ export type SaveRecordValidationResult = {
 };
 
 export async function validateBeforeSaveRecord(params: {
-  collectPolicyValidationErrors: (submittedFields: Set<string>) => string[];
   collectSceneValidationPrecheckErrors: (fieldLabels: Record<string, string>) => string[];
   collectWritableValues: () => Record<string, unknown>;
   formData: Record<string, unknown>;
@@ -24,7 +23,6 @@ export async function validateBeforeSaveRecord(params: {
   recordId: number | null;
   resolvePendingInlineRelationCreates: () => Promise<string[]>;
   resolvePendingMany2manyTagCreates: () => Promise<string[]>;
-  validateContractFormData: (fieldLabels: Record<string, string>, values: Record<string, unknown>) => string[];
 }): Promise<SaveRecordValidationResult> {
   if (params.one2manyIssues.length) {
     return {
@@ -80,24 +78,6 @@ export async function validateBeforeSaveRecord(params: {
       };
     }
   }
-  const policyIssues = params.collectPolicyValidationErrors(new Set(Object.keys(editableMap)));
-  if (policyIssues.length) {
-    return {
-      ok: false,
-      showOne2manyErrors: false,
-      validationErrors: Array.from(new Set(policyIssues)).slice(0, 5),
-      submissionFeedback: { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' },
-    };
-  }
-  const issues = params.validateContractFormData(labels, editableMap);
-  if (issues.length) {
-    return {
-      ok: false,
-      showOne2manyErrors: false,
-      validationErrors: Array.from(new Set(issues)).slice(0, 5),
-      submissionFeedback: { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' },
-    };
-  }
   return {
     editableMap,
     ok: true,
@@ -130,7 +110,7 @@ export function collectRequiredFieldIssues(params: {
 
 export type SaveRecordPayloadBuildInput = {
   comparableFieldValue: (name: string, value: unknown) => unknown;
-  contract: ActionContract | null;
+  formFields: Record<string, FieldDescriptor>;
   dirtyFieldSet: Set<string>;
   editableMap: Record<string, unknown>;
   formData: Record<string, unknown>;
@@ -144,7 +124,7 @@ export function buildSaveRecordPayload(params: SaveRecordPayloadBuildInput) {
       acc[key] = value;
       return acc;
     }
-    const ttype = fieldType(params.contract?.fields?.[key]);
+    const ttype = fieldType(params.formFields[key]);
     if (ttype === 'many2many' || ttype === 'one2many') {
       if (Array.isArray(value) && value.length) {
         acc[key] = value;

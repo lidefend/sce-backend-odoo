@@ -25,9 +25,9 @@ Validate that the workbench has moved from a "capability summary page" to an "ac
 
 ## D. Protocol and compatibility
 
-- [x] `page_orchestration_v1` is the primary protocol.
-- [x] `page_orchestration` remains legacy-compatible and not primary.
-- [x] Contract includes `contract_protocol.primary=page_orchestration_v1`.
+- [x] `page_orchestration` is the only page-orchestration protocol.
+- [x] The retired carrier and legacy compatibility branch are removed.
+- [x] The contract uses version `2.0.0` and feeds the unified page contract assembler.
 
 ## E. Debug-field separation
 

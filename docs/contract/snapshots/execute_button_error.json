@@ -3,14 +3,46 @@
   "case": "execute_button_error",
   "contract_version": "v1",
   "error": null,
-  "execute_error": "你没有权限推进项目阶段。",
-  "execute_result": null,
+  "execute_error": null,
+  "execute_result": {
+    "next_action": {
+      "action_id": 344,
+      "entry_target": {
+        "compatibility_refs": {
+          "action_id": 344,
+          "delivery_mode": "odoo_action_result",
+          "model": "project.project",
+          "target_type": "action"
+        },
+        "record_entry": {
+          "action_id": 344,
+          "model": "project.project",
+          "record_id": 1
+        },
+        "route": "/a/344",
+        "type": "compatibility"
+      },
+      "id": 344,
+      "params": {
+        "message": "建议完善：业主单位、项目地点；建议后续导入工程量清单，便于成本、进度和结算衔接",
+        "sticky": false,
+        "title": "项目已启动",
+        "type": "warning"
+      },
+      "tag": "display_notification",
+      "type": "ir.actions.client"
+    },
+    "reload": false,
+    "ui_effect": null
+  },
   "fallback": false,
   "meta_fields": null,
   "model": "project.project",
   "op": "model",
-  "record": null,
-  "record_error": "You are not allowed to access '项目合同' (construction.contract) records.\n\nThis operation is allowed for the following groups:\n\t- Smart Construction/SC 能力 - 合同中心只读\n\t- Smart Construction/SC 能力 - 合同中心审批\n\t- Smart Construction/SC 能力 - 合同中心经办\n\t- Smart Construction/SC 能力 - 财务中心只读\n\t- Smart Construction/SC 能力 - 财务中心审批\n\t- Smart Construction/SC 能力 - 财务中心经办\n\t- Smart Construction/合同中心-只读\n\t- Smart Construction/合同中心-审批\n\t- Smart Construction/合同中心-经办\n\nContact your administrator to request access if necessary.",
+  "record": {
+    "id": 1
+  },
+  "record_error": null,
   "ui_contract": {
     "chatter": {},
     "headerButtons": [],
@@ -22,7 +54,7 @@
     "view_type": "form"
   },
   "ui_contract_raw": {},
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": "form"
 }

@@ -87,7 +87,7 @@ class SceneService:
                     "capability_key": str(row.get("capability_key") or "").strip(),
                     "requires_project_context": bool(row.get("requires_project_context", False)),
                     "state": "present" if source else "policy_only",
-                    "source": "delivery_engine_v1",
+                    "source": "delivery_engine",
                     "source_authority": self.source_authority_contract(),
                     "scene_contract_standard_v1": snapshot_contract or standard_contract,
                     "scene_asset_binding": {

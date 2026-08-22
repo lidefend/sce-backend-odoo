@@ -59,7 +59,7 @@ class DeliveryEngine:
             kind=cls.SOURCE_KIND,
             authorities=cls.SOURCE_AUTHORITIES,
             no_business_fact_authority=cls.NO_BUSINESS_FACT_AUTHORITY,
-            runtime_carrier="delivery_engine_v1",
+            runtime_carrier="delivery_engine",
         )
 
     def _resolve_xmlid_record(self, xmlid: str, expected_model: str = "", expected_prefix: str = ""):
@@ -233,8 +233,9 @@ class DeliveryEngine:
         policy_empty = not (policy.get("menu_groups") or policy.get("scenes") or policy.get("capabilities"))
         policy_empty_reason = "MINIMAL_DEFAULT_PRODUCT_POLICY" if policy_source_kind == "minimal_default_product_policy_provider" else ""
         return {
-            "contract_version": "v1",
-            "source": "delivery_engine_v1",
+            "contract_version": "2.0.0",
+            "schema_version": "2.0.0",
+            "source": "delivery_engine",
             "source_authority": self.source_authority_contract(),
             "product_key": str(policy.get("product_key") or "").strip(),
             "base_product_key": str(policy.get("base_product_key") or "").strip(),
@@ -247,7 +248,7 @@ class DeliveryEngine:
             ],
             "nav": nav,
             "contextual_routes": contextual_routes,
-            "route_authority_v1": route_authority,
+            "route_authority": route_authority,
             "scenes": scenes,
             "capabilities": capabilities,
             "product_policy": {

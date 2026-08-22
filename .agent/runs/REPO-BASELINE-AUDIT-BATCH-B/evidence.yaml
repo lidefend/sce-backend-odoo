@@ -1,0 +1,25 @@
+evidence:
+  baseline:
+    branch: codex/fix-project-layout-container-normalize
+    full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  behavior:
+    iteration_preflight: dirty_worktree_is_inventoried_and_fingerprinted
+    stage_preflight: clean_worktree_and_docker_are_required
+    branch_policy: canonical_allowed_write_branch_regex
+    agent_context: existing_lint_and_verify_guards_are_required
+
+  verification:
+    command: python3 -m unittest scripts.verify.test_codex_preflight -v
+    status: passed
+    tests_collected: 6
+    integration_command: make codex.preflight
+    integration_status: passed
+    candidate_fingerprint_sha256: 3e1cf3402e87244a2cde0c875f49cf261a50036679c6671cc8678ee6248e5ffc
+
+  risks:
+    - callers_that_expected_codex_preflight_to_require_docker_must_use_explicit_stage_mode
+    - candidate_fingerprint_identifies_content_but_does_not_assign_change_ownership
+
+  completion:
+    status: completed

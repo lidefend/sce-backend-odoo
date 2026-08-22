@@ -1,0 +1,29 @@
+evidence:
+  baseline_commit: 58c3cfbdb3bf743f37806fec63d188fad948ade5
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  contract_or_schema_changed: false
+  startup_chain_changed: false
+  runtime_or_database_touched: false
+  reviewed_oversized_blob_count: 11
+  verification:
+    targeted_unittest:
+      status: passed
+      tests_collected: 26
+      command: python3 scripts/verify/test_repository_clean_history_guard.py
+    real_history_guard:
+      status: passed
+      registered_objects: 11
+      sensitive_values_recorded: false
+    ci_local_quick:
+      status: failed
+      passed_checkpoint: repository_clean_history_guard
+      failure_gate: verify.product.release.version
+      failure_classification: preexisting_out_of_scope_governance_baseline
+      failure_files:
+        - docs/architecture/unified_page_contract_v2_implementation_plan.md
+        - docs/contract/snapshots/system_init_intent_admin.json
+    verify_restricted:
+      status: not_run_due_to_earlier_quick_failure
+  completion:
+    status: completed_scope_followup_batch_r

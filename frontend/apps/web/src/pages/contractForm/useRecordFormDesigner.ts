@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, reactive, ref } from 'vue';
 import type { FieldDescriptor } from '@sc/schema';
+import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type {
   FormConfigAuditResult,
@@ -140,7 +141,7 @@ export function useRecordFormDesigner(dependencies: DesignerDependencies) {
   } = useFormSettingsGroupRuntime({
     busy: () => busy.value,
     nativeFormLayoutNodes: () => nativeFormLayoutNodes.value,
-    contractFields: () => (contract.value?.fields || {}) as Record<string, FieldDescriptor>,
+    contractFields: () => resolveContractV2FormFieldMap(v2ContractStore.value) as Record<string, FieldDescriptor>,
     currentOrderedFieldKeys: () => currentFormOrderedFieldKeys.value,
     effectiveFieldGroupTitle: (fieldKey) => effectiveFieldGroupTitleForDraft(fieldKey),
     formDesignFieldLabel: (fieldKey) => formDesignFieldLabel(fieldKey),

@@ -93,8 +93,7 @@ def _render_profile(row: dict[str, Any]) -> str:
 
 def _source_context(v2: dict[str, Any]) -> dict[str, Any]:
     data_meta = ((v2.get("dataContract") or {}).get("dataMeta") or {})
-    runtime = v2.get("runtimeContract") or {}
-    row = data_meta.get("sourceContext") or runtime.get("sourceContext") or {}
+    row = data_meta.get("sourceContext") or {}
     return row if isinstance(row, dict) else {}
 
 

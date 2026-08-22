@@ -19,7 +19,9 @@
           {
             "canonical": "api.data",
             "name": "api.data",
-            "required_groups_xmlids": [],
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
             "status": "canonical",
             "version": "2.1.1"
           },
@@ -52,6 +54,42 @@
             "version": "1.0.0"
           },
           {
+            "canonical": "auth.credential.create",
+            "name": "auth.credential.create",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "auth.credential.list",
+            "name": "auth.credential.list",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "auth.credential.revoke",
+            "name": "auth.credential.revoke",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "auth.credential.rotate",
+            "name": "auth.credential.rotate",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
             "canonical": "login",
             "name": "auth.login",
             "required_groups_xmlids": [],
@@ -61,6 +99,13 @@
           {
             "canonical": "auth.logout",
             "name": "auth.logout",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "auth.machine.token",
+            "name": "auth.machine.token",
             "required_groups_xmlids": [],
             "status": "canonical",
             "version": "1.0.0"
@@ -103,6 +148,13 @@
             "version": "1.0.0"
           },
           {
+            "canonical": "collaboration.users.search",
+            "name": "collaboration.users.search",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
             "canonical": "cost.tracking.block.fetch",
             "name": "cost.tracking.block.fetch",
             "required_groups_xmlids": [
@@ -121,11 +173,43 @@
             "version": "1.0.0"
           },
           {
+            "canonical": "cost.tracking.record.create",
+            "name": "cost.tracking.record.create",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "dashboard.company.enter",
+            "name": "dashboard.company.enter",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
             "canonical": "file.download",
             "name": "file.download",
             "required_groups_xmlids": [],
             "status": "canonical",
             "version": "0.1.0"
+          },
+          {
+            "canonical": "global.message.conversations",
+            "name": "global.message.conversations",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "global.message.inbox",
+            "name": "global.message.inbox",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
           },
           {
             "canonical": "load_contract",
@@ -177,6 +261,33 @@
             "version": "1.0.0"
           },
           {
+            "canonical": "payment.block.fetch",
+            "name": "payment.block.fetch",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "payment.enter",
+            "name": "payment.enter",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "payment.record.create",
+            "name": "payment.record.create",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
             "canonical": "payment.request.approve",
             "name": "payment.request.approve",
             "required_groups_xmlids": [
@@ -220,15 +331,6 @@
             "version": "1.0.0"
           },
           {
-            "canonical": "payment.request.submit",
-            "name": "payment.request.submit",
-            "required_groups_xmlids": [
-              "base.group_user"
-            ],
-            "status": "canonical",
-            "version": "1.0.0"
-          },
-          {
             "canonical": "permission.check",
             "name": "permission.check",
             "required_groups_xmlids": [],
@@ -242,6 +344,13 @@
               "base.group_user"
             ],
             "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "record.context.search",
+            "name": "project.context.search",
+            "required_groups_xmlids": [],
+            "status": "alias",
             "version": "1.0.0"
           },
           {
@@ -297,6 +406,15 @@
             "version": "1.0.0"
           },
           {
+            "canonical": "project.execution.advance",
+            "name": "project.execution.advance",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
             "canonical": "project.execution.block.fetch",
             "name": "project.execution.block.fetch",
             "required_groups_xmlids": [
@@ -342,6 +460,110 @@
             "version": "1.0.0"
           },
           {
+            "canonical": "record.context.search",
+            "name": "record.context.search",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.approve",
+            "name": "release.operator.approve",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.freeze",
+            "name": "release.operator.freeze",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.promote",
+            "name": "release.operator.promote",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.rollback",
+            "name": "release.operator.rollback",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.runtime_probe",
+            "name": "release.operator.runtime_probe",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.set_page_enabled",
+            "name": "release.operator.set_page_enabled",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.surface",
+            "name": "release.operator.surface",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.sync_policy",
+            "name": "release.operator.sync_policy",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.update_page_policy",
+            "name": "release.operator.update_page_policy",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "release.operator.update_policy",
+            "name": "release.operator.update_policy",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "route.authority.validate",
+            "name": "route.authority.validate",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
             "canonical": "scene.health",
             "name": "scene.health",
             "required_groups_xmlids": [],
@@ -349,9 +571,36 @@
             "version": "1.0.0"
           },
           {
+            "canonical": "search.favorite.set",
+            "name": "search.favorite.set",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
             "canonical": "session.bootstrap",
             "name": "session.bootstrap",
             "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "settlement.block.fetch",
+            "name": "settlement.block.fetch",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "settlement.enter",
+            "name": "settlement.enter",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
             "status": "canonical",
             "version": "1.0.0"
           },
@@ -372,9 +621,399 @@
             "version": "1.0.0"
           },
           {
+            "canonical": "terminal.shell.v2",
+            "name": "terminal.shell.v2",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "2.2.0"
+          },
+          {
+            "canonical": "ui.business_config.analysis.audit",
+            "name": "ui.business_config.analysis.audit",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.analysis.bootstrap",
+            "name": "ui.business_config.analysis.bootstrap",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.analysis.set",
+            "name": "ui.business_config.analysis.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.change_set.discard",
+            "name": "ui.business_config.change_set.discard",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.change_set.get",
+            "name": "ui.business_config.change_set.get",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.change_set.open",
+            "name": "ui.business_config.change_set.open",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.change_set.preview",
+            "name": "ui.business_config.change_set.preview",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.change_set.publish",
+            "name": "ui.business_config.change_set.publish",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.change_set.rollback",
+            "name": "ui.business_config.change_set.rollback",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.change_set.stage",
+            "name": "ui.business_config.change_set.stage",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.change_set.validate",
+            "name": "ui.business_config.change_set.validate",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.contract.get",
+            "name": "ui.business_config.contract.get",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.contract.list",
+            "name": "ui.business_config.contract.list",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.contract.publish",
+            "name": "ui.business_config.contract.publish",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.contract.rollback",
+            "name": "ui.business_config.contract.rollback",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.contract.save",
+            "name": "ui.business_config.contract.save",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.contract.versions",
+            "name": "ui.business_config.contract.versions",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.coverage.bootstrap_list_search",
+            "name": "ui.business_config.coverage.bootstrap_list_search",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.coverage.bootstrap_missing",
+            "name": "ui.business_config.coverage.bootstrap_missing",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.coverage.scan",
+            "name": "ui.business_config.coverage.scan",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.form.audit",
+            "name": "ui.business_config.form.audit",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.form.bootstrap",
+            "name": "ui.business_config.form.bootstrap",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.list_search.audit",
+            "name": "ui.business_config.list_search.audit",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.list_search.bootstrap",
+            "name": "ui.business_config.list_search.bootstrap",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.list_search.set",
+            "name": "ui.business_config.list_search.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.lowcode.apply",
+            "name": "ui.business_config.lowcode.apply",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.mutation_audit.snapshot",
+            "name": "ui.business_config.mutation_audit.snapshot",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.snapshot.compare",
+            "name": "ui.business_config.snapshot.compare",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.snapshot.export",
+            "name": "ui.business_config.snapshot.export",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.snapshot.summary",
+            "name": "ui.business_config.snapshot.summary",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.business_config.surface.get",
+            "name": "ui.business_config.surface.get",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
             "canonical": "ui.contract",
             "name": "ui.contract",
             "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.contract.v2",
+            "name": "ui.contract.v2",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "2.2.0"
+          },
+          {
+            "canonical": "ui.form_custom_field.create",
+            "name": "ui.form_custom_field.create",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.form_field_config.batch_set",
+            "name": "ui.form_field_config.batch_set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.form_field_order.set",
+            "name": "ui.form_field_order.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.form_field_policy.set",
+            "name": "ui.form_field_policy.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.menu_config.audit",
+            "name": "ui.menu_config.audit",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.menu_config.menu.create",
+            "name": "ui.menu_config.menu.create",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.menu_config.menu.delete",
+            "name": "ui.menu_config.menu.delete",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.menu_config.panel.get",
+            "name": "ui.menu_config.panel.get",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.menu_config.panel.set",
+            "name": "ui.menu_config.panel.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.menu_config.rollback",
+            "name": "ui.menu_config.rollback",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "ui.menu_config.versions",
+            "name": "ui.menu_config.versions",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
             "status": "canonical",
             "version": "1.0.0"
           },
@@ -402,6 +1041,31 @@
             ],
             "status": "canonical",
             "version": "1.0.0"
+          },
+          {
+            "canonical": "user.view.preference.get",
+            "name": "user.view.preference.get",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "user.view.preference.set",
+            "name": "user.view.preference.set",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          {
+            "canonical": "workspace.home.enter",
+            "name": "workspace.home.enter",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
           }
         ],
         "intents": [
@@ -409,14 +1073,24 @@
           "app.catalog",
           "app.nav",
           "app.open",
+          "auth.credential.create",
+          "auth.credential.list",
+          "auth.credential.revoke",
+          "auth.credential.rotate",
           "auth.logout",
+          "auth.machine.token",
           "business.evidence.trace",
           "capability.describe",
           "capability.visibility.report",
           "chatter.timeline",
+          "collaboration.users.search",
           "cost.tracking.block.fetch",
           "cost.tracking.enter",
+          "cost.tracking.record.create",
+          "dashboard.company.enter",
           "file.download",
+          "global.message.conversations",
+          "global.message.inbox",
           "load_contract",
           "load_metadata",
           "load_view",
@@ -424,12 +1098,14 @@
           "meta.describe_model",
           "meta.intent_catalog",
           "my.work.summary",
+          "payment.block.fetch",
+          "payment.enter",
+          "payment.record.create",
           "payment.request.approve",
           "payment.request.available_actions",
           "payment.request.done",
           "payment.request.execute",
           "payment.request.reject",
-          "payment.request.submit",
           "permission.check",
           "project.connection.transition",
           "project.dashboard",
@@ -438,25 +1114,90 @@
           "project.dashboard.open",
           "project.entry.context.options",
           "project.entry.context.resolve",
+          "project.execution.advance",
           "project.execution.block.fetch",
           "project.execution.enter",
           "project.initiation.enter",
           "project.plan_bootstrap.block.fetch",
           "project.plan_bootstrap.enter",
+          "record.context.search",
+          "release.operator.approve",
+          "release.operator.freeze",
+          "release.operator.promote",
+          "release.operator.rollback",
+          "release.operator.runtime_probe",
+          "release.operator.set_page_enabled",
+          "release.operator.surface",
+          "release.operator.sync_policy",
+          "release.operator.update_page_policy",
+          "release.operator.update_policy",
+          "route.authority.validate",
           "scene.health",
+          "search.favorite.set",
           "session.bootstrap",
+          "settlement.block.fetch",
+          "settlement.enter",
           "system.init",
           "telemetry.track",
+          "terminal.shell.v2",
+          "ui.business_config.analysis.audit",
+          "ui.business_config.analysis.bootstrap",
+          "ui.business_config.analysis.set",
+          "ui.business_config.change_set.discard",
+          "ui.business_config.change_set.get",
+          "ui.business_config.change_set.open",
+          "ui.business_config.change_set.preview",
+          "ui.business_config.change_set.publish",
+          "ui.business_config.change_set.rollback",
+          "ui.business_config.change_set.stage",
+          "ui.business_config.change_set.validate",
+          "ui.business_config.contract.get",
+          "ui.business_config.contract.list",
+          "ui.business_config.contract.publish",
+          "ui.business_config.contract.rollback",
+          "ui.business_config.contract.save",
+          "ui.business_config.contract.versions",
+          "ui.business_config.coverage.bootstrap_list_search",
+          "ui.business_config.coverage.bootstrap_missing",
+          "ui.business_config.coverage.scan",
+          "ui.business_config.form.audit",
+          "ui.business_config.form.bootstrap",
+          "ui.business_config.list_search.audit",
+          "ui.business_config.list_search.bootstrap",
+          "ui.business_config.list_search.set",
+          "ui.business_config.lowcode.apply",
+          "ui.business_config.mutation_audit.snapshot",
+          "ui.business_config.snapshot.compare",
+          "ui.business_config.snapshot.export",
+          "ui.business_config.snapshot.summary",
+          "ui.business_config.surface.get",
           "ui.contract",
+          "ui.contract.v2",
+          "ui.form_custom_field.create",
+          "ui.form_field_config.batch_set",
+          "ui.form_field_order.set",
+          "ui.form_field_policy.set",
+          "ui.menu_config.audit",
+          "ui.menu_config.menu.create",
+          "ui.menu_config.menu.delete",
+          "ui.menu_config.panel.get",
+          "ui.menu_config.panel.set",
+          "ui.menu_config.rollback",
+          "ui.menu_config.versions",
           "usage.export.csv",
           "usage.report",
-          "usage.track"
+          "usage.track",
+          "user.view.preference.get",
+          "user.view.preference.set",
+          "workspace.home.enter"
         ],
         "intents_meta": {
           "api.data": {
             "aliases": [],
             "canonical": "api.data",
-            "required_groups_xmlids": [],
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
             "status": "canonical",
             "version": "2.1.1"
           },
@@ -481,9 +1222,52 @@
             "status": "canonical",
             "version": "1.0.0"
           },
+          "auth.credential.create": {
+            "aliases": [],
+            "canonical": "auth.credential.create",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "auth.credential.list": {
+            "aliases": [],
+            "canonical": "auth.credential.list",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "auth.credential.revoke": {
+            "aliases": [],
+            "canonical": "auth.credential.revoke",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "auth.credential.rotate": {
+            "aliases": [],
+            "canonical": "auth.credential.rotate",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
           "auth.logout": {
             "aliases": [],
             "canonical": "auth.logout",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "auth.machine.token": {
+            "aliases": [],
+            "canonical": "auth.machine.token",
             "required_groups_xmlids": [],
             "status": "canonical",
             "version": "1.0.0"
@@ -518,6 +1302,13 @@
             "status": "canonical",
             "version": "1.0.0"
           },
+          "collaboration.users.search": {
+            "aliases": [],
+            "canonical": "collaboration.users.search",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
           "cost.tracking.block.fetch": {
             "aliases": [],
             "canonical": "cost.tracking.block.fetch",
@@ -536,12 +1327,44 @@
             "status": "canonical",
             "version": "1.0.0"
           },
+          "cost.tracking.record.create": {
+            "aliases": [],
+            "canonical": "cost.tracking.record.create",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "dashboard.company.enter": {
+            "aliases": [],
+            "canonical": "dashboard.company.enter",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
           "file.download": {
             "aliases": [],
             "canonical": "file.download",
             "required_groups_xmlids": [],
             "status": "canonical",
             "version": "0.1.0"
+          },
+          "global.message.conversations": {
+            "aliases": [],
+            "canonical": "global.message.conversations",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "global.message.inbox": {
+            "aliases": [],
+            "canonical": "global.message.inbox",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
           },
           "load_contract": {
             "aliases": [],
@@ -594,6 +1417,33 @@
             "status": "canonical",
             "version": "1.0.0"
           },
+          "payment.block.fetch": {
+            "aliases": [],
+            "canonical": "payment.block.fetch",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "payment.enter": {
+            "aliases": [],
+            "canonical": "payment.enter",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "payment.record.create": {
+            "aliases": [],
+            "canonical": "payment.record.create",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
           "payment.request.approve": {
             "aliases": [],
             "canonical": "payment.request.approve",
@@ -631,15 +1481,6 @@
           "payment.request.reject": {
             "aliases": [],
             "canonical": "payment.request.reject",
-            "required_groups_xmlids": [
-              "base.group_user"
-            ],
-            "status": "canonical",
-            "version": "1.0.0"
-          },
-          "payment.request.submit": {
-            "aliases": [],
-            "canonical": "payment.request.submit",
             "required_groups_xmlids": [
               "base.group_user"
             ],
@@ -714,6 +1555,15 @@
             "status": "canonical",
             "version": "1.0.0"
           },
+          "project.execution.advance": {
+            "aliases": [],
+            "canonical": "project.execution.advance",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
           "project.execution.block.fetch": {
             "aliases": [],
             "canonical": "project.execution.block.fetch",
@@ -759,6 +1609,112 @@
             "status": "canonical",
             "version": "1.0.0"
           },
+          "record.context.search": {
+            "aliases": [
+              "project.context.search"
+            ],
+            "canonical": "record.context.search",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.approve": {
+            "aliases": [],
+            "canonical": "release.operator.approve",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.freeze": {
+            "aliases": [],
+            "canonical": "release.operator.freeze",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.promote": {
+            "aliases": [],
+            "canonical": "release.operator.promote",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.rollback": {
+            "aliases": [],
+            "canonical": "release.operator.rollback",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.runtime_probe": {
+            "aliases": [],
+            "canonical": "release.operator.runtime_probe",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.set_page_enabled": {
+            "aliases": [],
+            "canonical": "release.operator.set_page_enabled",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.surface": {
+            "aliases": [],
+            "canonical": "release.operator.surface",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.sync_policy": {
+            "aliases": [],
+            "canonical": "release.operator.sync_policy",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.update_page_policy": {
+            "aliases": [],
+            "canonical": "release.operator.update_page_policy",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "release.operator.update_policy": {
+            "aliases": [],
+            "canonical": "release.operator.update_policy",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "route.authority.validate": {
+            "aliases": [],
+            "canonical": "route.authority.validate",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
           "scene.health": {
             "aliases": [],
             "canonical": "scene.health",
@@ -766,10 +1722,37 @@
             "status": "canonical",
             "version": "1.0.0"
           },
+          "search.favorite.set": {
+            "aliases": [],
+            "canonical": "search.favorite.set",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
           "session.bootstrap": {
             "aliases": [],
             "canonical": "session.bootstrap",
             "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "settlement.block.fetch": {
+            "aliases": [],
+            "canonical": "settlement.block.fetch",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "settlement.enter": {
+            "aliases": [],
+            "canonical": "settlement.enter",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
             "status": "canonical",
             "version": "1.0.0"
           },
@@ -792,10 +1775,400 @@
             "status": "canonical",
             "version": "1.0.0"
           },
+          "terminal.shell.v2": {
+            "aliases": [],
+            "canonical": "terminal.shell.v2",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "2.2.0"
+          },
+          "ui.business_config.analysis.audit": {
+            "aliases": [],
+            "canonical": "ui.business_config.analysis.audit",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.analysis.bootstrap": {
+            "aliases": [],
+            "canonical": "ui.business_config.analysis.bootstrap",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.analysis.set": {
+            "aliases": [],
+            "canonical": "ui.business_config.analysis.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.change_set.discard": {
+            "aliases": [],
+            "canonical": "ui.business_config.change_set.discard",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.change_set.get": {
+            "aliases": [],
+            "canonical": "ui.business_config.change_set.get",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.change_set.open": {
+            "aliases": [],
+            "canonical": "ui.business_config.change_set.open",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.change_set.preview": {
+            "aliases": [],
+            "canonical": "ui.business_config.change_set.preview",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.change_set.publish": {
+            "aliases": [],
+            "canonical": "ui.business_config.change_set.publish",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.change_set.rollback": {
+            "aliases": [],
+            "canonical": "ui.business_config.change_set.rollback",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.change_set.stage": {
+            "aliases": [],
+            "canonical": "ui.business_config.change_set.stage",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.change_set.validate": {
+            "aliases": [],
+            "canonical": "ui.business_config.change_set.validate",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.contract.get": {
+            "aliases": [],
+            "canonical": "ui.business_config.contract.get",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.contract.list": {
+            "aliases": [],
+            "canonical": "ui.business_config.contract.list",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.contract.publish": {
+            "aliases": [],
+            "canonical": "ui.business_config.contract.publish",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.contract.rollback": {
+            "aliases": [],
+            "canonical": "ui.business_config.contract.rollback",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.contract.save": {
+            "aliases": [],
+            "canonical": "ui.business_config.contract.save",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.contract.versions": {
+            "aliases": [],
+            "canonical": "ui.business_config.contract.versions",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.coverage.bootstrap_list_search": {
+            "aliases": [],
+            "canonical": "ui.business_config.coverage.bootstrap_list_search",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.coverage.bootstrap_missing": {
+            "aliases": [],
+            "canonical": "ui.business_config.coverage.bootstrap_missing",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.coverage.scan": {
+            "aliases": [],
+            "canonical": "ui.business_config.coverage.scan",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.form.audit": {
+            "aliases": [],
+            "canonical": "ui.business_config.form.audit",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.form.bootstrap": {
+            "aliases": [],
+            "canonical": "ui.business_config.form.bootstrap",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.list_search.audit": {
+            "aliases": [],
+            "canonical": "ui.business_config.list_search.audit",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.list_search.bootstrap": {
+            "aliases": [],
+            "canonical": "ui.business_config.list_search.bootstrap",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.list_search.set": {
+            "aliases": [],
+            "canonical": "ui.business_config.list_search.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.lowcode.apply": {
+            "aliases": [],
+            "canonical": "ui.business_config.lowcode.apply",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.mutation_audit.snapshot": {
+            "aliases": [],
+            "canonical": "ui.business_config.mutation_audit.snapshot",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.snapshot.compare": {
+            "aliases": [],
+            "canonical": "ui.business_config.snapshot.compare",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.snapshot.export": {
+            "aliases": [],
+            "canonical": "ui.business_config.snapshot.export",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.snapshot.summary": {
+            "aliases": [],
+            "canonical": "ui.business_config.snapshot.summary",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.business_config.surface.get": {
+            "aliases": [],
+            "canonical": "ui.business_config.surface.get",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
           "ui.contract": {
             "aliases": [],
             "canonical": "ui.contract",
             "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.contract.v2": {
+            "aliases": [],
+            "canonical": "ui.contract.v2",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "2.2.0"
+          },
+          "ui.form_custom_field.create": {
+            "aliases": [],
+            "canonical": "ui.form_custom_field.create",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.form_field_config.batch_set": {
+            "aliases": [],
+            "canonical": "ui.form_field_config.batch_set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.form_field_order.set": {
+            "aliases": [],
+            "canonical": "ui.form_field_order.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.form_field_policy.set": {
+            "aliases": [],
+            "canonical": "ui.form_field_policy.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.menu_config.audit": {
+            "aliases": [],
+            "canonical": "ui.menu_config.audit",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.menu_config.menu.create": {
+            "aliases": [],
+            "canonical": "ui.menu_config.menu.create",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.menu_config.menu.delete": {
+            "aliases": [],
+            "canonical": "ui.menu_config.menu.delete",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.menu_config.panel.get": {
+            "aliases": [],
+            "canonical": "ui.menu_config.panel.get",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.menu_config.panel.set": {
+            "aliases": [],
+            "canonical": "ui.menu_config.panel.set",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.menu_config.rollback": {
+            "aliases": [],
+            "canonical": "ui.menu_config.rollback",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "ui.menu_config.versions": {
+            "aliases": [],
+            "canonical": "ui.menu_config.versions",
+            "required_groups_xmlids": [
+              "smart_core.group_smart_core_business_config_admin"
+            ],
             "status": "canonical",
             "version": "1.0.0"
           },
@@ -823,11 +2196,54 @@
             ],
             "status": "canonical",
             "version": "1.0.0"
+          },
+          "user.view.preference.get": {
+            "aliases": [],
+            "canonical": "user.view.preference.get",
+            "required_groups_xmlids": [],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "user.view.preference.set": {
+            "aliases": [],
+            "canonical": "user.view.preference.set",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
+          },
+          "workspace.home.enter": {
+            "aliases": [],
+            "canonical": "workspace.home.enter",
+            "required_groups_xmlids": [
+              "base.group_user"
+            ],
+            "status": "canonical",
+            "version": "1.0.0"
           }
         }
       },
       {
-        "schema_version": "1.0.0"
+        "schema_version": "1.0.0",
+        "source_authorities": [
+          "handler_registry",
+          "ir.model.access",
+          "res.groups"
+        ],
+        "source_authority": {
+          "authorities": [
+            "handler_registry",
+            "ir.model.access",
+            "res.groups"
+          ],
+          "kind": "intent_delivery_catalog_projection",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "rebuildable": true,
+          "runtime_carrier": "meta.intent_catalog"
+        },
+        "source_kind": "intent_delivery_catalog_projection"
       }
     ]
   },

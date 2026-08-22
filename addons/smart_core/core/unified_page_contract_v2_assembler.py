@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from copy import deepcopy
 from typing import Any
 
@@ -39,6 +40,109 @@ def _dict(value: Any) -> dict[str, Any]:
 
 def _list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
+
+
+def _validated_activity_projection(collection_view: Any) -> dict[str, Any]:
+    if not isinstance(collection_view, dict):
+        raise ValueError("native Activity view carrier must be an object")
+    native_activity = collection_view.get("activity")
+    if not isinstance(native_activity, dict) or not native_activity:
+        raise ValueError("native Activity projection is required")
+    for key in ("field_occurrences", "node_occurrences", "actions"):
+        rows = native_activity.get(key)
+        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+            raise ValueError(f"native Activity {key} must be an object array")
+    for key in ("native_attrs", "template"):
+        if not isinstance(native_activity.get(key), dict) or not native_activity.get(key):
+            raise ValueError(f"native Activity {key} is required")
+    if not native_activity["field_occurrences"] or not native_activity["node_occurrences"]:
+        raise ValueError("native Activity occurrence evidence is required")
+    template = native_activity["template"]
+    if not isinstance(template.get("nodes"), list) or not template.get("nodes"):
+        raise ValueError("native Activity template nodes are required")
+
+    def occurrence_identity(row: dict[str, Any], *, tag: str = "") -> tuple[Any, ...]:
+        return (
+            tag or row.get("tag"), row.get("native_locator"), row.get("occurrence_index"),
+            row.get("source_position"), row.get("attributes"), row.get("text", ""), row.get("tail", ""),
+        )
+
+    node_by_locator: dict[str, dict[str, Any]] = {}
+    source_positions: set[int] = set()
+    for row in native_activity["node_occurrences"]:
+        locator = _text(row.get("native_locator"))
+        position = row.get("source_position")
+        if (not locator or locator in node_by_locator or not _text(row.get("tag"))
+                or not isinstance(row.get("occurrence_index"), int) or row["occurrence_index"] < 1
+                or not isinstance(position, int) or position < 0 or position in source_positions
+                or not isinstance(row.get("attributes"), dict)):
+            raise ValueError("native Activity node occurrence identity is invalid")
+        node_by_locator[locator] = row
+        source_positions.add(position)
+
+    for row in native_activity["field_occurrences"]:
+        locator = _text(row.get("native_locator"))
+        node = node_by_locator.get(locator)
+        if (not node or occurrence_identity(row, tag="field") != occurrence_identity(node)
+                or _text(row.get("name")) != _text(_dict(node.get("attributes")).get("name"))):
+            raise ValueError("native Activity field occurrence evidence mismatch")
+
+    def validate_template_nodes(rows: list[Any]) -> None:
+        discovered_names: list[str] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ValueError("native Activity template node must be an object")
+            node = node_by_locator.get(_text(row.get("native_locator")))
+            if not node or occurrence_identity(row) != occurrence_identity(node):
+                raise ValueError("native Activity template occurrence evidence mismatch")
+            template_name = _text(_dict(row.get("attributes")).get("t-name"))
+            if template_name:
+                discovered_names.append(template_name)
+            children = row.get("children", [])
+            if not isinstance(children, list):
+                raise ValueError("native Activity template children must be an array")
+            discovered_names.extend(validate_template_nodes(children))
+        return discovered_names
+
+    template_root = node_by_locator.get(_text(template.get("native_locator")))
+    if (not template_root or _text(template_root.get("tag")) != "templates"
+            or template.get("occurrence_index") != template_root.get("occurrence_index")):
+        raise ValueError("native Activity template root evidence mismatch")
+    discovered_names = validate_template_nodes(template["nodes"])
+    if template.get("names") != discovered_names:
+        raise ValueError("native Activity template names evidence mismatch")
+
+    valid_button_nodes = {
+        locator: row for locator, row in node_by_locator.items()
+        if _text(row.get("tag")) == "button"
+        and _text(_dict(row.get("attributes")).get("name"))
+        and _text(_dict(row.get("attributes")).get("type")).lower() in {"object", "action"}
+    }
+    action_by_locator: dict[str, dict[str, Any]] = {}
+    for action in native_activity["actions"]:
+        locator = _text(action.get("native_locator"))
+        node = valid_button_nodes.get(locator)
+        attributes = _dict(node.get("attributes")) if node else {}
+        expected_identity = {
+            "authoritative": True, "canonical_region": "activity.actions",
+            "native_locator": locator, "occurrence_index": node.get("occurrence_index") if node else None,
+            "type": _text(attributes.get("type")).lower(), "name": _text(attributes.get("name")),
+            "id": attributes.get("id") or "", "context_raw": attributes.get("context") or "",
+            "domain_raw": attributes.get("domain") or "", "confirm": attributes.get("confirm") or "",
+            "special": attributes.get("special") or "", "data_hotkey": attributes.get("data-hotkey") or "",
+        }
+        if (not node or locator in action_by_locator
+                or action.get("occurrence_index") != node.get("occurrence_index")
+                or action.get("source_position") != node.get("source_position")
+                or action.get("attributes") != attributes
+                or _text(action.get("name")) != expected_identity["name"]
+                or _text(action.get("type")).lower() != expected_identity["type"]
+                or action.get("native_identity") != expected_identity):
+            raise ValueError("native Activity action occurrence evidence mismatch")
+        action_by_locator[locator] = action
+    if set(action_by_locator) != set(valid_button_nodes):
+        raise ValueError("native Activity action occurrence parity mismatch")
+    return native_activity
 
 
 def _text(value: Any, default: str = "") -> str:
@@ -87,18 +191,18 @@ def _fingerprint(value: Any) -> str:
 def _resolve_source_type(source: dict[str, Any], explicit: str = "") -> str:
     if explicit:
         return explicit
-    if _dict(source.get("scene_contract_v1")):
-        return "scene_contract_v1"
-    if _dict(source.get("page_orchestration_v1")):
-        return "page_orchestration_v1"
+    if _dict(source.get("scene_contract")):
+        return "scene_contract"
+    if _dict(source.get("page_orchestration")):
+        return "page_orchestration"
     if "meta_fields" in source or source.get("view_type"):
         return "ui.contract"
-    if source.get("schema_version") == "v1" and ("patch" in source or "modifiers_patch" in source):
+    if "patch" in source or "modifiers_patch" in source:
         return "api.onchange"
     if _dict(source.get("page")) and _list(source.get("zones")):
-        return "page_orchestration_v1"
+        return "page_orchestration"
     if _dict(source.get("identity")) and _dict(source.get("page")):
-        return "scene_contract_v1"
+        return "scene_contract"
     return "unknown"
 
 
@@ -256,23 +360,39 @@ def assemble_unified_page_contract_v2(
     client_type: str = "web_pc",
     request_id: str = "request.upc.v2.assembler",
     trace_id: str = "",
+    stage_timings: dict[str, int] | None = None,
 ) -> dict[str, Any]:
+    started_at = time.monotonic()
     source = _dict(source_contract)
     resolved = _resolve_source_type(source, source_type)
     payload = _extract_source_payload(source, resolved)
-    if resolved == "scene_contract_v1":
+    if resolved == "scene_contract":
         contract = _assemble_scene_contract(payload, client_type=client_type, request_id=request_id)
-    elif resolved == "page_orchestration_v1":
+    elif resolved == "page_orchestration":
         contract = _assemble_page_orchestration(payload, client_type=client_type, request_id=request_id)
     elif resolved == "ui.contract":
-        contract = _assemble_ui_contract(source, client_type=client_type, request_id=request_id)
+        contract = _assemble_ui_contract(
+            source,
+            client_type=client_type,
+            request_id=request_id,
+            source_type=resolved,
+        )
+    elif resolved == "native_form_projection":
+        contract = _assemble_native_form_projection(
+            source,
+            client_type=client_type,
+            request_id=request_id,
+        )
     else:
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
+    assembled_at = time.monotonic()
     _merge_action_rules_by_backend_identity(contract)
+    actions_merged_at = time.monotonic()
     _bind_native_layout_action_references(contract)
-    return seal_unified_page_contract(
+    actions_bound_at = time.monotonic()
+    sealed = seal_unified_page_contract(
         contract,
-        source_payload=payload if resolved != "ui.contract" else source,
+        source_payload=payload if resolved not in {"ui.contract", "native_form_projection"} else source,
         source_type=resolved,
         request_id=request_id,
         trace_id=trace_id,
@@ -282,6 +402,14 @@ def assemble_unified_page_contract_v2(
         generator_version=CONTRACT_VERSION,
         source_authority=source_authority_contract(),
     )
+    if stage_timings is not None:
+        stage_timings.update({
+            "v2_source_assembly": int((assembled_at - started_at) * 1000),
+            "v2_action_merge": int((actions_merged_at - assembled_at) * 1000),
+            "v2_action_binding": int((actions_bound_at - actions_merged_at) * 1000),
+            "v2_seal": int((time.monotonic() - actions_bound_at) * 1000),
+        })
+    return sealed
 
 
 def assemble_unified_page_patch_v2(
@@ -328,10 +456,10 @@ def assemble_unified_page_patch_v2(
 
 
 def _extract_source_payload(source: dict[str, Any], source_type: str) -> dict[str, Any]:
-    if source_type == "scene_contract_v1":
-        return _dict(source.get("scene_contract_v1")) or source
-    if source_type == "page_orchestration_v1":
-        return _dict(source.get("page_orchestration_v1")) or source
+    if source_type == "scene_contract":
+        return _dict(source.get("scene_contract")) or source
+    if source_type == "page_orchestration":
+        return _dict(source.get("page_orchestration")) or source
     return source
 
 
@@ -349,7 +477,7 @@ def _assemble_scene_contract(source: dict[str, Any], *, client_type: str, reques
         view_type="combine",
         layout_type="combine",
         client_type=client_type,
-        source_type="scene_contract_v1",
+        source_type="scene_contract",
         source_payload=source,
         request_id=request_id,
     )
@@ -415,7 +543,7 @@ def _assemble_page_orchestration(source: dict[str, Any], *, client_type: str, re
         view_type="combine",
         layout_type="combine",
         client_type=client_type,
-        source_type="page_orchestration_v1",
+        source_type="page_orchestration",
         source_payload=source,
         request_id=request_id,
     )
@@ -462,7 +590,13 @@ def _assemble_page_orchestration(source: dict[str, Any], *, client_type: str, re
     return contract
 
 
-def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_id: str) -> dict[str, Any]:
+def _assemble_ui_contract(
+    source: dict[str, Any],
+    *,
+    client_type: str,
+    request_id: str,
+    source_type: str = "ui.contract",
+) -> dict[str, Any]:
     ui = _dict(source)
     head = _dict(source.get("head") or ui.get("head"))
     model = _text(source.get("model") or ui.get("model"))
@@ -481,7 +615,7 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
         view_type="list" if view_type == "tree" else view_type,
         layout_type=layout_type,
         client_type=client_type,
-        source_type="ui.contract",
+        source_type=source_type,
         source_payload=source,
         request_id=request_id,
     )
@@ -489,6 +623,10 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     source_context = _ui_source_context(_dict(source), _dict(ui))
     render_profile = _text(source_context.get("renderProfile")).lower()
     source_context_context = _dict(source_context.get("context"))
+    form_modifier_record = {
+        **source_context_context,
+        **deepcopy(_dict(source.get("record"))),
+    }
     raw_field_map = _dict(ui.get("fields") or source.get("fields"))
     fields_by_name: dict[str, dict[str, Any]] = {}
     for key, value in raw_field_map.items():
@@ -561,6 +699,7 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     form_structure_contract = _dict(source.get("formStructureContract") or source.get("form_structure_contract"))
     form_structure_applied = False
     if layout_type == "form" and native_layout_rows:
+        native_widget_status: list[dict[str, Any]] = []
         container_tree = _normalize_native_layout_nodes(
             native_layout_rows,
             fields_by_name,
@@ -568,9 +707,13 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             form_subviews=form_subviews,
             component_keys=component_keys,
             container_status=contract["statusContract"]["containerStatus"],
-            widget_status=contract["statusContract"]["widgetStatus"],
-            context=source_context_context,
+            widget_status=native_widget_status,
+            context=form_modifier_record,
         )
+        # A native Form is occurrence-authoritative.  Name-level status rows
+        # built from the compatibility field map have no layout owner and
+        # must not survive beside the exact occurrence rows.
+        contract["statusContract"]["widgetStatus"] = native_widget_status
         if form_structure_contract:
             _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
             form_structure_applied = True
@@ -625,6 +768,9 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             {"containerId": sheet_id, "visible": True, "disabled": False},
             {"containerId": group_id, "visible": True, "disabled": False},
         ])
+        if form_structure_contract:
+            _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
+            form_structure_applied = True
     else:
         container_id = "main.table"
         widgets = []
@@ -670,10 +816,34 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
             "no_business_fact_authority": True,
             "runtime_carrier": "ui.contract.v2.layoutContract.listProfile",
         }
+    if view_type == "activity":
+        native_activity = _validated_activity_projection(collection_view)
+        contract["layoutContract"]["activityProfile"] = {
+                "activityTypeSlots": deepcopy(_dict(native_activity.get("activity_type_slots"))),
+                "deadlineSlots": deepcopy(_dict(native_activity.get("deadline_slots"))),
+                "assigneeSlots": deepcopy(_dict(native_activity.get("assignee_slots"))),
+                "fieldOccurrences": deepcopy(native_activity["field_occurrences"]),
+                "nativeAttrs": deepcopy(_dict(native_activity.get("native_attrs"))),
+                "nodeOccurrences": deepcopy(native_activity["node_occurrences"]),
+                "template": deepcopy(_dict(native_activity.get("template"))),
+                "templateQwebPresent": bool(native_activity.get("template_qweb")),
+                "actions": deepcopy(native_activity["actions"]),
+                "actionCount": len(native_activity["actions"]),
+                "sourceAuthority": {
+                    "kind": "native_activity_view_projection",
+                    "authorities": ["ir.ui.view", "ir.model.fields", "ir.actions.act_window"],
+                    "projection_only": True,
+                    "no_business_fact_authority": True,
+                    "runtime_carrier": "ui.contract.v2.layoutContract.activityProfile",
+                },
+        }
     interaction_mode = _text(_dict(ui.get("head")).get("interaction_mode"))
     if interaction_mode:
         contract["runtimeContract"]["interactionMode"] = interaction_mode
         contract["runtimeContract"]["actionTarget"] = _text(_dict(ui.get("head")).get("action_target"), "current")
+    record_version_policy = _dict(ui.get("record_version") or _dict(ui.get("head")).get("record_version"))
+    if record_version_policy:
+        contract["runtimeContract"]["recordVersionPolicy"] = deepcopy(record_version_policy)
     if form_structure_contract and form_structure_applied:
         contract["formStructureContract"] = deepcopy(form_structure_contract)
     contract["dataContract"]["dataMeta"]["fieldCount"] = len(fields)
@@ -688,17 +858,24 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
         verdict = _dict(form_capabilities.get(key))
         if verdict:
             contract["statusContract"]["globalStatus"][key] = deepcopy(verdict)
-    effective_render_profile = _text(form_capabilities.get("effectiveRenderProfile")).lower()
+    effective_render_profile = _text(
+        form_capabilities.get("effectiveRenderProfile") or render_profile
+    ).lower()
     if effective_render_profile in {"create", "edit", "readonly"}:
         contract["statusContract"]["globalStatus"]["effectiveRenderProfile"] = effective_render_profile
     effective_record_capabilities = _dict(form_capabilities.get("effectiveRecordCapabilities"))
+    if not effective_record_capabilities:
+        effective_record_capabilities = _ui_contract_permission_rights(_dict(source), _dict(ui))
+        if effective_record_capabilities:
+            contract["statusContract"]["globalStatus"]["effectiveRecordCapabilities"] = deepcopy(
+                effective_record_capabilities
+            )
     if effective_render_profile == "create" and effective_record_capabilities.get("create") is not True:
         contract["statusContract"]["globalStatus"]["pageVisible"] = False
         contract["statusContract"]["globalStatus"]["pageAuth"] = "none"
         contract["statusContract"]["globalStatus"]["reasonCode"] = "FORM_CREATE_NOT_ALLOWED"
     if source_context:
         contract["dataContract"]["dataMeta"]["sourceContext"] = deepcopy(source_context)
-        contract["runtimeContract"]["sourceContext"] = deepcopy(source_context)
         contract["statusContract"]["globalStatus"]["pageAuth"] = _ui_contract_page_auth(
             _dict(source),
             _dict(ui),
@@ -724,7 +901,6 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     search_contract = _ui_search_contract(source, ui)
     if search_contract:
         contract["searchContract"] = search_contract
-        contract["dataContract"]["search"] = deepcopy(search_contract)
     business_operation_profile = _dict(source.get("business_operation_profile"))
     if business_operation_profile:
         profile_projection = deepcopy(business_operation_profile)
@@ -768,6 +944,146 @@ def _assemble_ui_contract(source: dict[str, Any], *, client_type: str, request_i
     return contract
 
 
+def _assemble_native_form_projection(
+    source: dict[str, Any],
+    *,
+    client_type: str,
+    request_id: str,
+) -> dict[str, Any]:
+    marker = _dict(source.get("nativeFormProjection"))
+    authority = _dict(marker.get("sourceAuthority"))
+    model = _text(source.get("model"))
+    if marker.get("schemaVersion") != "2.0":
+        raise ValueError("native form projection schemaVersion must be 2.0")
+    if _text(marker.get("model")) != model or _text(marker.get("viewType")) != "form":
+        raise ValueError("native form projection identity mismatch")
+    if _text(source.get("view_type")) != "form":
+        raise ValueError("native form projection source view_type must be form")
+    if authority.get("kind") != "native_form_projection":
+        raise ValueError("native form projection authority kind mismatch")
+    if authority.get("projectionOnly") is not True or authority.get("noBusinessFactAuthority") is not True:
+        raise ValueError("native form projection authority boundary is incomplete")
+    field_descriptors = marker.get("fieldDescriptors")
+    layout = marker.get("layout")
+    capabilities = marker.get("capabilities")
+    subviews = marker.get("subviews")
+    header_buttons = marker.get("headerButtons")
+    if not isinstance(field_descriptors, dict):
+        raise ValueError("native form projection fieldDescriptors must be an object")
+    if not isinstance(layout, list) or not layout:
+        raise ValueError("native form projection resolved layout is missing")
+    if not isinstance(capabilities, dict) or not isinstance(subviews, dict):
+        raise ValueError("native form projection capabilities and subviews must be objects")
+    if not isinstance(header_buttons, list):
+        raise ValueError("native form projection headerButtons must be an array")
+    field_names = set(field_descriptors)
+
+    def validate_occurrences(nodes: list[Any], *, parent_path: str = "layout") -> None:
+        for node_index, raw in enumerate(nodes):
+            node_path = f"{parent_path}[{node_index}]"
+            if not isinstance(raw, dict):
+                raise ValueError(f"native form projection {node_path} must be an object")
+            node_type = _text(raw.get("type") or raw.get("kind")).lower()
+            if node_type == "field":
+                field_name = _text(raw.get("name") or raw.get("field"))
+                native_locator = _text(raw.get("native_locator") or raw.get("nativeLocator"))
+                occurrence_index = _positive_int(
+                    raw.get("occurrence_index") or raw.get("occurrenceIndex"),
+                    0,
+                )
+                source_position = (
+                    raw.get("source_position")
+                    if "source_position" in raw
+                    else raw.get("sourcePosition")
+                )
+                if not field_name or field_name not in field_names:
+                    raise ValueError(
+                        f"native form projection {node_path} field descriptor identity mismatch: "
+                        f"field={field_name!r}"
+                    )
+                if not native_locator or occurrence_index <= 0:
+                    raise ValueError(
+                        f"native form projection {node_path} field occurrence identity is incomplete: "
+                        f"field={field_name!r} locator={native_locator!r} "
+                        f"occurrence_index={occurrence_index!r} source_position={source_position!r}"
+                    )
+                if not isinstance(source_position, int) or isinstance(source_position, bool) or source_position < 0:
+                    raise ValueError(
+                        f"native form projection {node_path} field source_position is invalid: "
+                        f"field={field_name!r} source_position={source_position!r}"
+                    )
+            children = raw.get("children")
+            if isinstance(children, list):
+                validate_occurrences(children, parent_path=f"{node_path}.children")
+
+    validate_occurrences(layout)
+    page = _dict(marker.get("page"))
+    actions = _dict(marker.get("actions"))
+    runtime = _dict(marker.get("runtime"))
+    canonical_source = {
+        "nativeFormProjection": deepcopy(marker),
+        "model": model,
+        "view_type": "form",
+        "title": deepcopy(page.get("title")),
+        "head": deepcopy(_dict(page.get("head"))),
+        "record_id": deepcopy(page.get("recordId")),
+        "render_profile": deepcopy(page.get("renderProfile")),
+        "domain": deepcopy(_list(page.get("domain"))),
+        "domain_raw": deepcopy(page.get("domainRaw")),
+        "context": deepcopy(_dict(page.get("context"))),
+        "context_raw": deepcopy(page.get("contextRaw")),
+        "order": deepcopy(page.get("order")),
+        "limit": deepcopy(page.get("limit")),
+        "record": deepcopy(_dict(marker.get("record"))),
+        "search": deepcopy(_dict(marker.get("search"))),
+        "permissions": deepcopy(_dict(marker.get("permissions"))),
+        "fields": deepcopy(field_descriptors),
+        "buttons": deepcopy(_list(actions.get("buttons"))),
+        "business_actions": deepcopy(_list(actions.get("businessActions"))),
+        "toolbar": deepcopy(_dict(actions.get("toolbar"))),
+        "action_groups": deepcopy(_list(actions.get("actionGroups"))),
+        "action_policies": deepcopy(_dict(actions.get("actionPolicies"))),
+        "action_schema": deepcopy(_dict(actions.get("actionSchema"))),
+        "collaboration": deepcopy(_dict(runtime.get("collaboration"))),
+        "record_version": deepcopy(_dict(runtime.get("recordVersion"))),
+        "data_sources": deepcopy(_dict(runtime.get("dataSources"))),
+        "business_operation_profile": deepcopy(_dict(runtime.get("businessOperationProfile"))),
+        "visible_fields": deepcopy(_list(runtime.get("visibleFields"))),
+        "field_groups": deepcopy(_list(runtime.get("fieldGroups"))),
+        "formStructureContract": deepcopy(_dict(runtime.get("formStructureContract"))),
+        "views": {
+        "form": {
+            "layout": deepcopy(layout),
+            "capabilities": deepcopy(capabilities),
+            "subviews": deepcopy(subviews),
+            "header_buttons": deepcopy(header_buttons),
+        }
+        },
+        "header_buttons": deepcopy(header_buttons),
+    }
+    contract = _assemble_ui_contract(
+        canonical_source,
+        client_type=client_type,
+        request_id=request_id,
+        source_type="native_form_projection",
+    )
+    runtime_extensions = {
+        "intakeAutosave": deepcopy(_dict(runtime.get("intakeAutosave"))),
+        "fieldSemantics": deepcopy(_dict(runtime.get("fieldSemantics"))),
+        "validationRules": deepcopy(_list(runtime.get("validationRules"))),
+        "governance": deepcopy(_dict(runtime.get("governance"))),
+    }
+    if any(bool(value) for value in runtime_extensions.values()):
+        runtime_contract = _dict(contract.get("runtimeContract"))
+        if not runtime_contract:
+            runtime_contract = {}
+            contract["runtimeContract"] = runtime_contract
+        for key, value in runtime_extensions.items():
+            if value:
+                runtime_contract[key] = value
+    return contract
+
+
 def _has_governed_form_layout_overlay(source: dict[str, Any]) -> bool:
     governance = _dict(source.get("governance"))
     view_governance = _dict(governance.get("view_orchestration"))
@@ -797,14 +1113,43 @@ def _ui_search_contract(source: dict[str, Any], ui: dict[str, Any]) -> dict[str,
         value = search.get(key)
         if _text(value):
             out[key] = deepcopy(value)
-    for key in ("filters", "saved_filters", "group_by", "fields"):
+    for key in ("filters", "saved_filters"):
         value = search.get(key)
         if isinstance(value, list):
-            out[key] = deepcopy(value)
-    for key in ("search_panel", "searchpanel", "favorites", "custom", "ui_labels", "defaults"):
+            rows = []
+            for item in value:
+                if not isinstance(item, dict):
+                    continue
+                row = deepcopy(item)
+                if key == "filters" and not _text(row.get("key")) and _text(row.get("name")):
+                    row["key"] = _text(row.get("name"))
+                rows.append(row)
+            if rows:
+                out[key] = rows
+    raw_groups = search.get("group_by_fields") or search.get("group_by")
+    if isinstance(raw_groups, list):
+        groups = []
+        for item in raw_groups:
+            if isinstance(item, dict):
+                groups.append(deepcopy(item))
+                continue
+            field = _text(item)
+            if field:
+                groups.append({"key": field, "field": field, "label": field})
+        if groups:
+            out["group_by"] = groups
+    raw_fields = search.get("fields") or search.get("search_fields")
+    if isinstance(raw_fields, list):
+        fields = [deepcopy(item) for item in raw_fields if isinstance(item, dict)]
+        if fields:
+            out["fields"] = fields
+    for key in ("favorites", "custom", "ui_labels", "defaults"):
         value = search.get(key)
         if isinstance(value, dict):
             out[key] = deepcopy(value)
+    search_panel = search.get("search_panel") or search.get("searchpanel")
+    if isinstance(search_panel, dict):
+        out["search_panel"] = deepcopy(search_panel)
     return out
 
 
@@ -982,6 +1327,12 @@ def _view_column_schema_by_name(ui: dict[str, Any], view_type: str) -> dict[str,
 
 def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     field_name = _stable_id(field.get("name"), "field")
+    native_locator = _text(field.get("native_locator"))
+    occurrence_index = _positive_int(field.get("occurrence_index"), 0)
+    source_position = field.get("source_position")
+    widget_id = f"field.{field_name}"
+    if layout_type == "form" and native_locator:
+        widget_id = f"field.{field_name}.occ.{_fingerprint({'locator': native_locator, 'occurrence': occurrence_index})}"
     explicit_widget = _text(field.get("widget"))
     widget_type = "table" if layout_type == "table" else explicit_widget or _widget_type_from_field(field)
     component_key = _component_key(widget_type)
@@ -995,6 +1346,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "currency_field", "precision", "sum", "aggregate", "aggregate_label",
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
+        "native_locator", "occurrence_index", "source_position", "modifiers",
     ):
         if key in field:
             component_config[key] = deepcopy(field.get(key))
@@ -1013,7 +1365,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     if widget_options:
         component_config["widgetOptions"] = deepcopy(widget_options)
     return {
-        "widgetId": f"field.{field_name}",
+        "widgetId": widget_id,
         "widgetType": widget_type,
         "fieldCode": field_name,
         "label": _text(field.get("string") or field.get("label"), field_name),
@@ -1021,6 +1373,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "componentKey": component_key,
         "capabilities": capabilities,
         "componentConfig": component_config,
+        "fieldDescriptor": deepcopy(field),
     }
 
 
@@ -1040,6 +1393,9 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     field_info = _dict(node.get("fieldInfo") or node.get("field_info"))
     field_source.update({k: deepcopy(v) for k, v in field_info.items() if k not in {"label", "string"}})
     field_source["name"] = field_name
+    for key in ("native_locator", "occurrence_index", "source_position", "modifiers"):
+        if key in node:
+            field_source[key] = deepcopy(node.get(key))
     field_source.setdefault("string", label)
     field_source.setdefault("label", label)
     if _text(node.get("widget")):
@@ -1062,7 +1418,11 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     out["componentKey"] = widget["componentKey"]
     out["componentConfig"] = component_config
     out["widgetId"] = widget["widgetId"]
-    out.setdefault("field_info", field_info)
+    native_locator = _text(field_source.get("native_locator"))
+    if layout_type == "form" and native_locator:
+        out["nativeLocator"] = native_locator
+        out["occurrenceIndex"] = _positive_int(field_source.get("occurrence_index"), 0)
+        out["sourcePosition"] = field_source.get("source_position")
     return out
 
 
@@ -1081,6 +1441,7 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
         "currency_field", "precision", "aggregate", "aggregate_label",
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
+        "native_locator", "occurrence_index", "source_position", "modifiers",
     ):
         if key in node:
             field_source[key] = deepcopy(node.get(key))
@@ -1133,11 +1494,28 @@ def _normalize_native_layout_nodes(
             continue
         node_path = f"{path}.{index}"
         node = deepcopy(row)
+        alias_pairs = (
+            ("field_info", "fieldInfo"),
+            ("attrs", "attributes"),
+            ("field_size", "fieldSize"),
+            ("source_authority", "sourceAuthority"),
+            ("form_structure", "formStructure"),
+            ("form_structure_role", "formStructureRole"),
+            ("button_type", "buttonType"),
+            ("container_id", "containerId"),
+            ("container_type", "containerType"),
+            ("widget_id", "widgetId"),
+        )
+        for alias, canonical in alias_pairs:
+            if alias in node and canonical not in node:
+                node[canonical] = deepcopy(node.get(alias))
         node_type = _text(node.get("type") or node.get("kind"), "group").lower()
         node["type"] = node_type
         node_name = _text(node.get("name") or node.get("field"))
         if node_name:
             node["name"] = node_name
+        for alias in ("kind", "field", *(pair[0] for pair in alias_pairs)):
+            node.pop(alias, None)
         label = _text(node.get("string") or node.get("label") or node.get("title"))
         if label:
             node["string"] = label
@@ -1157,11 +1535,24 @@ def _normalize_native_layout_nodes(
                     field_info = _dict(normalized.get("fieldInfo"))
                     field_info["subview"] = deepcopy(subview)
                     normalized["fieldInfo"] = field_info
-                    normalized["field_info"] = deepcopy(field_info)
             widget_source = _field_source_with_node_info(normalized, field, fallback_name=node_name or _text(field.get("name")))
             widget = _field_widget(widget_source, layout_type=layout_type)
+            container_id = widget["widgetId"]
+            if container_id in used_container_ids:
+                raise ValueError("native form field container identity is duplicated")
+            used_container_ids.add(container_id)
+            normalized["containerId"] = container_id
+            normalized["containerType"] = "field"
             component_keys.add(widget["componentKey"])
-            widget_status.append(_field_status(widget_source, widget["widgetId"], context=context))
+            widget_status.append(_field_status(
+                widget_source,
+                widget["widgetId"],
+                context=context,
+                occurrence=bool(
+                    _text(widget_source.get("native_locator"))
+                    and _positive_int(widget_source.get("occurrence_index"), 0)
+                ),
+            ))
             out.append(normalized)
             continue
         container_id = _text(node.get("containerId") or node.get("container_id") or node_name)
@@ -2187,7 +2578,16 @@ def _ui_data_source_extra_params(source: dict[str, Any], ui: dict[str, Any]) -> 
 
 
 def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:
-    out = _ui_data_source_extra_params(source, ui)
+    transport = _ui_data_source_extra_params(source, ui)
+    out = {
+        key: deepcopy(value)
+        for key, value in transport.items()
+        if key in {"context", "domain", "order", "limit"}
+    }
+    if _text(transport.get("context_raw")):
+        out["contextRaw"] = _text(transport.get("context_raw"))
+    if _text(transport.get("domain_raw")):
+        out["domainRaw"] = _text(transport.get("domain_raw"))
     source_meta = _dict(source.get("source_meta"))
     action = _dict(ui.get("action"))
     head = _dict(ui.get("head"))
@@ -2308,7 +2708,7 @@ def _append_standard_form_save_action(
         "allowed": True,
         "enabled": True,
         "disabled": False,
-        "entitlement_evaluated": True,
+        "entitlementEvaluated": True,
         "sourceTrace": [{
             "actionId": action_id,
             "sourceActionKey": action_id,
@@ -2374,6 +2774,23 @@ def _modifier_true(value: Any) -> bool:
     return False
 
 
+def _field_modifier_constraint(field: dict[str, Any], key: str) -> tuple[bool, Any]:
+    modifiers = _dict(field.get("modifiers"))
+    attributes = _dict(field.get("attributes"))
+    attribute_modifiers = _dict(attributes.get("modifiers"))
+    for source in (modifiers, attribute_modifiers, field, attributes):
+        if key in source:
+            return True, source.get(key)
+    return False, None
+
+
+def _field_modifier_verdict(field: dict[str, Any], key: str, record: dict[str, Any]) -> tuple[bool, bool | None]:
+    present, value = _field_modifier_constraint(field, key)
+    if not present:
+        return False, False
+    return True, _evaluate_action_modifier(value, record, strict=True)
+
+
 def _contextual_modifier_true(value: Any, context: dict[str, Any]) -> bool | None:
     if value is True:
         return True
@@ -2432,22 +2849,51 @@ def _apply_contextual_invisible_modifier(node: dict[str, Any], context: dict[str
     return resolved
 
 
-def _field_status(field: dict[str, Any], widget_id: str, *, context: dict[str, Any] | None = None) -> dict[str, Any]:
-    readonly = bool(field.get("readonly") is True or _modifier_true(field.get("readonly")))
-    invisible = _contextual_modifier_true(field.get("invisible"), context or {})
-    if invisible is None:
-        invisible = _modifier_true(field.get("invisible"))
-    column_invisible = _contextual_modifier_true(field.get("column_invisible"), context or {})
-    if column_invisible is None:
-        column_invisible = _modifier_true(field.get("column_invisible"))
-    visible = not (invisible or column_invisible)
+def _field_status(
+    field: dict[str, Any],
+    widget_id: str,
+    *,
+    context: dict[str, Any] | None = None,
+    occurrence: bool = False,
+) -> dict[str, Any]:
+    if not occurrence:
+        invisible_value = _field_modifier_constraint(field, "invisible")[1]
+        column_invisible_value = _field_modifier_constraint(field, "column_invisible")[1]
+        contextual_invisible = _contextual_modifier_true(invisible_value, context or {})
+        contextual_column_invisible = _contextual_modifier_true(column_invisible_value, context or {})
+        invisible = _modifier_true(invisible_value) if contextual_invisible is None else contextual_invisible
+        column_invisible = (
+            _modifier_true(column_invisible_value)
+            if contextual_column_invisible is None
+            else contextual_column_invisible
+        )
+        readonly = _modifier_true(_field_modifier_constraint(field, "readonly")[1])
+        required = _modifier_true(_field_modifier_constraint(field, "required")[1])
+        return {
+            "widgetId": widget_id,
+            "visible": not invisible and not column_invisible,
+            "readonly": readonly,
+            "required": required,
+            "disabled": False,
+            "auth": "read" if readonly else "edit",
+        }
+    record = context or {}
+    _, invisible = _field_modifier_verdict(field, "invisible", record)
+    _, column_invisible = _field_modifier_verdict(field, "column_invisible", record)
+    _, readonly = _field_modifier_verdict(field, "readonly", record)
+    _, required = _field_modifier_verdict(field, "required", record)
+    unresolved = any(value is None for value in (invisible, column_invisible, readonly, required))
+    visible = invisible is False and column_invisible is False
+    readonly_value = readonly is not False
+    required_value = required is not False
     return {
         "widgetId": widget_id,
         "visible": visible,
-        "readonly": readonly,
-        "required": bool(field.get("required") is True or _modifier_true(field.get("required"))),
-        "disabled": False,
-        "auth": "read" if readonly else "edit",
+        "readonly": readonly_value,
+        "required": required_value,
+        "disabled": unresolved,
+        "auth": "read" if readonly_value else "edit",
+        **({"reasonCode": "NATIVE_MODIFIER_UNRESOLVED"} if unresolved else {}),
     }
 
 
@@ -2478,6 +2924,7 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                 "intent": intent,
                 "target": deepcopy(_dict(row.get("target"))),
                 "button": deepcopy(_dict(row.get("button"))),
+                "nativeIdentity": deepcopy(_dict(row.get("native_identity") or row.get("nativeIdentity"))),
                 "triggerType": normalize_trigger_type(row.get("trigger") or row.get("display_mode")),
                 "sourceWidgetId": source_id,
                 "targetIds": [],
@@ -2509,11 +2956,12 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("visible_profiles", "visibleProfiles"),
             ("presentation", "presentation"),
             ("action_safety", "actionSafety"),
+            ("refresh_policy", "refreshPolicy"),
             ("allowed", "allowed"),
             ("enabled", "enabled"),
             ("disabled", "disabled"),
             ("permission_constraints", "permissionConstraints"),
-            ("entitlement_evaluated", "entitlement_evaluated"),
+            ("entitlement_evaluated", "entitlementEvaluated"),
         ):
             if row.get(source_key) is not None:
                 action_rule[target_key] = deepcopy(row.get(source_key))
@@ -2524,7 +2972,10 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
         disabled = row.get("disabled") is True or not allowed or not enabled
         contract["statusContract"]["buttonStatus"].append({
             "btnId": f"btn.{key}",
-            "visible": allowed,
+            # Visibility and executability are independent only when the
+            # action authority explicitly declares that visibility. Unknown
+            # permission remains fail-closed.
+            "visible": row.get("visible") is not False and (allowed or row.get("visible") is True),
             "disabled": disabled,
             **({"reasonCode": _text(row.get("reason_code"), "ACTION_NOT_ALLOWED")} if disabled else {}),
         })
@@ -2556,6 +3007,13 @@ def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]
 
 
 def _action_backend_identity(rule: dict[str, Any]) -> str:
+    native_identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
+    native_locator = _text(native_identity.get("native_locator"))
+    if native_identity.get("authoritative") is True and native_locator:
+        native_type = _text(native_identity.get("type"), "object").lower()
+        native_name = _text(native_identity.get("name"), "anonymous")
+        occurrence_index = _positive_int(native_identity.get("occurrence_index"), 1)
+        return f"native_button:{native_type}:{native_name}:{native_locator}:{occurrence_index}"
     button = _dict(rule.get("button"))
     button_type = _text(button.get("type") or button.get("buttonType"), "object").lower()
     method = _text(button.get("name") or button.get("method"))
@@ -2605,6 +3063,7 @@ def _native_layout_action_backend_identity(action: dict[str, Any]) -> str:
     action_id = _positive_int(payload.get("action_id") or action.get("action_id"), 0)
     if kind in {"open", "url"} or intent in {"open", "url"} or action_id:
         return _action_backend_identity({
+            "nativeIdentity": deepcopy(_dict(action.get("native_identity") or action.get("nativeIdentity"))),
             "target": {
                 "action_id": action_id,
                 "action_ref": payload.get("ref") or action.get("ref"),
@@ -2614,6 +3073,7 @@ def _native_layout_action_backend_identity(action: dict[str, Any]) -> str:
             },
         })
     return _action_backend_identity({
+        "nativeIdentity": deepcopy(_dict(action.get("native_identity") or action.get("nativeIdentity"))),
         "button": {
             "name": _text(action.get("name") or action.get("method_name") or payload.get("method")),
             "type": _text(action.get("button_type") or payload.get("type") or action.get("type"), "object"),
@@ -2651,7 +3111,7 @@ def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
         if value not in (None, False, "", 0):
             return deepcopy(value)
     if (
-        rule.get("allowed") is False
+        (rule.get("allowed") is False and rule.get("visible") is not True)
         or rule.get("visible") is False
     ):
         return {"kind": "static", "value": True}
@@ -2801,10 +3261,16 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
                     current_safety.get("requires_confirm") or incoming_safety.get("requires_confirm")
                 ),
             }
+        if not _dict(current.get("refreshPolicy")) and _dict(row.get("refreshPolicy")):
+            current["refreshPolicy"] = deepcopy(row.get("refreshPolicy"))
         if _action_presentation_priority(row) > _action_presentation_priority(current):
             current["label"] = _text(row.get("label"), _text(current.get("label")))
             if _dict(row.get("presentation")):
-                current["presentation"] = deepcopy(row.get("presentation"))
+                incoming_presentation = deepcopy(_dict(row.get("presentation")))
+                native_icon = _text(_dict(current.get("presentation")).get("icon"))
+                if native_icon and not _text(incoming_presentation.get("icon")):
+                    incoming_presentation["icon"] = native_icon
+                current["presentation"] = incoming_presentation
             current["presentationAuthority"] = _text(row.get("presentationAuthority"), "product_contract")
             current["presentationPriority"] = _action_presentation_priority(row)
         elif not _dict(current.get("presentation")) and _dict(row.get("presentation")):
@@ -2834,7 +3300,7 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
         for source, targets in graph.items()
     }
     action_contract["identityPolicy"] = {
-        "version": "backend_action_identity.v1",
+        "version": "2.0.0",
         "object": "button_type_and_backend_method",
         "window": "action_id",
         "url": "absolute_url_or_route",
@@ -2876,7 +3342,10 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             or rule.get("disabled") is True
         )
         if denied:
-            status["visible"] = status.get("visible", True) is not False and rule.get("allowed") is not False
+            status["visible"] = (
+                True if rule.get("visible") is True
+                else status.get("visible", True) is not False and rule.get("allowed") is not False
+            )
             status["disabled"] = True
             trace_reason = next(
                 (
@@ -2893,16 +3362,20 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
     _enforce_single_effective_primary_action(contract)
 
 
-def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool:
+def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool | None:
     left = actual[0] if isinstance(actual, (list, tuple)) and actual else actual
     if operator in {"=", "=="}:
         return left == expected
     if operator in {"!=", "<>"}:
         return left != expected
     if operator == "in":
-        return isinstance(expected, (list, tuple, set)) and left in expected
+        if not isinstance(expected, (list, tuple, set)):
+            return None
+        return left in expected
     if operator == "not in":
-        return isinstance(expected, (list, tuple, set)) and left not in expected
+        if not isinstance(expected, (list, tuple, set)):
+            return None
+        return left not in expected
     try:
         if operator == ">":
             return left > expected
@@ -2913,27 +3386,30 @@ def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool:
         if operator == "<=":
             return left <= expected
     except (TypeError, ValueError):
-        return False
-    return False
+        return None
+    return None
 
 
-def _evaluate_action_modifier(value: Any, record: dict[str, Any]) -> bool | None:
+def _evaluate_action_modifier(value: Any, record: dict[str, Any], *, strict: bool = False) -> bool | None:
     if isinstance(value, bool):
         return value
-    if value in (None, "", 0, "0", "false", "False"):
+    if value is None or value == "":
+        return None if strict else False
+    if value in (0, "0", "false", "False"):
         return False
     if value in (1, "1", "true", "True"):
         return True
     if not isinstance(value, dict):
-        return None
+        return None if strict else False
     kind = _text(value.get("kind"))
     if kind == "static":
-        return bool(value.get("value"))
+        static_value = value.get("value")
+        return static_value if isinstance(static_value, bool) else (None if strict else False)
     if kind == "not":
-        resolved = _evaluate_action_modifier(value.get("expr"), record)
+        resolved = _evaluate_action_modifier(value.get("expr"), record, strict=strict)
         return None if resolved is None else not resolved
     if kind in {"all", "any"}:
-        values = [_evaluate_action_modifier(item, record) for item in _list(value.get("exprs"))]
+        values = [_evaluate_action_modifier(item, record, strict=strict) for item in _list(value.get("exprs"))]
         if kind == "all":
             if False in values:
                 return False
@@ -2943,19 +3419,20 @@ def _evaluate_action_modifier(value: Any, record: dict[str, Any]) -> bool | None
         return False if values and all(item is False for item in values) else None
     field = _text(value.get("field"))
     if not field or field not in record:
-        return None
+        return None if strict else False
     if kind == "field_truthy":
         return bool(record.get(field))
     if kind == "field_compare":
         value_field = _text(value.get("value_field"))
         if value_field:
             if value_field not in record:
-                return None
+                return None if strict else False
             expected = record.get(value_field)
         else:
             expected = value.get("value")
-        return _compare_action_value(record.get(field), _text(value.get("operator")), expected)
-    return None
+        compared = _compare_action_value(record.get(field), _text(value.get("operator")), expected)
+        return compared if strict or compared is not None else False
+    return None if strict else False
 
 
 def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
@@ -3032,9 +3509,47 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
         for status in statuses
         if isinstance(status, dict) and _text(status.get("backendIdentity"))
     }
+    runtime_business_by_button: dict[tuple[str, str], dict[str, Any]] = {}
+    for candidate in rows:
+        if not isinstance(candidate, dict):
+            continue
+        source_channels = {
+            _text(candidate.get("sourceChannel")),
+            *(
+                _text(trace.get("sourceChannel"))
+                for trace in _list(candidate.get("sourceTrace"))
+                if isinstance(trace, dict)
+            ),
+        }
+        if "runtime_business_action" not in source_channels:
+            continue
+        button = _dict(candidate.get("button"))
+        button_name = _text(button.get("name") or button.get("method"))
+        if not button_name:
+            continue
+        button_type = _text(button.get("type") or button.get("buttonType"), "object").lower()
+        runtime_business_by_button[(button_type, button_name)] = candidate
     for row in rows:
         if not isinstance(row, dict):
             continue
+        button = _dict(row.get("button"))
+        button_name = _text(button.get("name") or button.get("method"))
+        button_type = _text(button.get("type") or button.get("buttonType"), "object").lower()
+        runtime_business = runtime_business_by_button.get((button_type, button_name)) if button_name else None
+        if runtime_business is not None and runtime_business is not row:
+            for field_name in (
+                "businessAvailable", "authorizationAllowed", "entitlementEvaluated",
+                "allowed", "enabled", "disabled",
+            ):
+                value = runtime_business.get(field_name)
+                if isinstance(value, bool):
+                    row[field_name] = value
+            if _dict(runtime_business.get("actionSafety")):
+                row["actionSafety"] = deepcopy(runtime_business.get("actionSafety"))
+            if _dict(runtime_business.get("refreshPolicy")):
+                row["refreshPolicy"] = deepcopy(runtime_business.get("refreshPolicy"))
+            if _text(runtime_business.get("reasonCode")):
+                row["reasonCode"] = runtime_business.get("reasonCode")
         invisible = _action_invisible_constraint(row)
         if invisible is None:
             continue
@@ -3045,7 +3560,7 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
             status = {"btnId": btn_id, "visible": True, "disabled": False}
             statuses.append(status)
             status_by_btn_id[btn_id] = status
-        verdict = _evaluate_action_modifier(invisible, record)
+        verdict = _evaluate_action_modifier(invisible, record, strict=True)
         if verdict is True:
             status["visible"] = False
             status.setdefault("reasonCode", "ACTION_NOT_VISIBLE_IN_STATE")
@@ -3053,6 +3568,55 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
             status["visible"] = False
             status["disabled"] = True
             status["reasonCode"] = "ACTION_VISIBILITY_UNRESOLVED"
+        else:
+            status["visible"] = True
+            evaluated_traces = [
+                trace for trace in _list(row.get("sourceTrace"))
+                if isinstance(trace, dict) and trace.get("entitlementEvaluated") is True
+            ]
+            authorization_results = [
+                trace.get("authorizationAllowed") for trace in evaluated_traces
+                if isinstance(trace.get("authorizationAllowed"), bool)
+            ]
+            entitlement_evaluated = row.get("entitlementEvaluated") is True or bool(evaluated_traces)
+            authorization_allowed = row.get("authorizationAllowed") is True or (
+                bool(authorization_results) and all(result is True for result in authorization_results)
+            )
+            modifier_authoritative = (
+                _text(row.get("sourceChannel")) == "native_form_header"
+                and _text(_dict(row.get("button")).get("type")) == "object"
+                and bool(_text(_dict(row.get("nativeIdentity")).get("native_locator")))
+            )
+            if (
+                runtime_business is None
+                and modifier_authoritative
+                and entitlement_evaluated
+                and authorization_allowed
+            ):
+                row["businessAvailable"] = True
+                row["authorizationAllowed"] = True
+                row["entitlementEvaluated"] = True
+                row["allowed"] = True
+                row["enabled"] = True
+                row["disabled"] = False
+                status["disabled"] = False
+                if _text(status.get("reasonCode")) in {
+                    "ACTION_NOT_ALLOWED", "ACTION_NOT_VISIBLE_IN_STATE", "ACTION_VISIBILITY_UNRESOLVED",
+                }:
+                    status.pop("reasonCode", None)
+            elif runtime_business is not None:
+                denied = (
+                    row.get("allowed") is False
+                    or row.get("enabled") is False
+                    or row.get("disabled") is True
+                )
+                status["disabled"] = denied
+                if denied:
+                    status["reasonCode"] = _text(row.get("reasonCode"), "ACTION_NOT_ALLOWED")
+                elif _text(status.get("reasonCode")) in {
+                    "ACTION_NOT_ALLOWED", "ACTION_NOT_VISIBLE_IN_STATE", "ACTION_VISIBILITY_UNRESOLVED",
+                }:
+                    status.pop("reasonCode", None)
     status_contract["buttonStatus"] = statuses
     contract["statusContract"] = status_contract
     _enforce_single_effective_primary_action(contract)
@@ -3085,20 +3649,6 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
         if isinstance(row, dict) and _text(row.get("widgetId"))
     }
 
-    def invisible_constraint(node: dict[str, Any]) -> Any:
-        attributes = _dict(node.get("attributes"))
-        attribute_modifiers = _dict(attributes.get("modifiers"))
-        modifiers = _dict(node.get("modifiers"))
-        for value in (
-            modifiers.get("invisible"),
-            attribute_modifiers.get("invisible"),
-            node.get("invisible"),
-            attributes.get("invisible"),
-        ):
-            if value is not None:
-                return value
-        return None
-
     def visit(value: Any) -> None:
         if isinstance(value, list):
             for item in value:
@@ -3106,28 +3656,63 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
             return
         if not isinstance(value, dict):
             return
-        constraint = invisible_constraint(value)
-        if constraint is not None:
-            verdict = _evaluate_action_modifier(constraint, record)
-            node_type = _text(value.get("type") or value.get("containerType")).lower()
-            if node_type == "field":
-                widget_id = _text(value.get("widgetId") or f"field.{_text(value.get('name'))}")
-                status = widget_by_id.get(widget_id)
-            else:
+        node_type = _text(value.get("type") or value.get("containerType")).lower()
+        if node_type == "field":
+            widget_id = _text(value.get("widgetId") or f"field.{_text(value.get('name'))}")
+            status = widget_by_id.get(widget_id)
+            if isinstance(status, dict):
+                if ".occ." not in widget_id:
+                    present, constraint = _field_modifier_constraint(value, "invisible")
+                    if present:
+                        verdict = _evaluate_action_modifier(constraint, record, strict=True)
+                        if verdict is True:
+                            status["visible"] = False
+                            status.setdefault("reasonCode", "NATIVE_MODIFIER_INVISIBLE")
+                        elif verdict is False:
+                            status["visible"] = True
+                            if status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
+                                status.pop("reasonCode", None)
+                        else:
+                            status["visible"] = False
+                            status["disabled"] = True
+                            status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
+                    for key in ("children", "pages", "tabs", "nodes", "items"):
+                        visit(value.get(key))
+                    return
+                _, invisible = _field_modifier_verdict(value, "invisible", record)
+                _, column_invisible = _field_modifier_verdict(value, "column_invisible", record)
+                _, readonly = _field_modifier_verdict(value, "readonly", record)
+                _, required = _field_modifier_verdict(value, "required", record)
+                unresolved = any(item is None for item in (invisible, column_invisible, readonly, required))
+                status["visible"] = invisible is False and column_invisible is False
+                status["readonly"] = readonly is not False
+                status["required"] = required is not False
+                status["disabled"] = unresolved
+                status["auth"] = "read" if status["readonly"] else "edit"
+                if unresolved:
+                    status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
+                elif not status["visible"]:
+                    status["reasonCode"] = "NATIVE_MODIFIER_INVISIBLE"
+                elif status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
+                    status.pop("reasonCode", None)
+        else:
+            present, constraint = _field_modifier_constraint(value, "invisible")
+            if present:
+                verdict = _evaluate_action_modifier(constraint, record, strict=True)
                 container_id = _text(value.get("containerId"))
                 status = container_by_id.get(container_id)
-            if isinstance(status, dict):
-                if verdict is True:
-                    status["visible"] = False
-                    status.setdefault("reasonCode", "NATIVE_MODIFIER_INVISIBLE")
-                elif verdict is False:
-                    status["visible"] = True
-                    if status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
-                        status.pop("reasonCode", None)
-                else:
-                    status["visible"] = False
-                    status["disabled"] = True
-                    status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
+                if isinstance(status, dict):
+                    if verdict is True:
+                        status["visible"] = False
+                        status.setdefault("reasonCode", "NATIVE_MODIFIER_INVISIBLE")
+                    elif verdict is False:
+                        status["visible"] = True
+                        if status.get("reasonCode") in {"NATIVE_MODIFIER_INVISIBLE", "NATIVE_MODIFIER_UNRESOLVED"}:
+                            status.pop("reasonCode", None)
+                    else:
+                        status["visible"] = False
+                        status["disabled"] = True
+                        status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
         for key in ("children", "pages", "tabs", "nodes", "items"):
             visit(value.get(key))
 
@@ -3206,6 +3791,14 @@ def _append_ui_contract_actions(
                     "target_scope": _text(row.get("target_scope"), "header"),
                     "_source_channel": source_channel,
                 })
+    for row in _list(form_view.get("stat_buttons")):
+        if isinstance(row, dict):
+            rows.append({
+                **row,
+                "level": _text(row.get("level"), "smart"),
+                "target_scope": _text(row.get("target_scope"), "page"),
+                "_source_channel": "native_form_stat",
+            })
     active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
     if active_view_type == "list":
         active_view_type = "tree"
@@ -3246,6 +3839,9 @@ def _append_ui_contract_actions(
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:
+        native_identity = _dict(row.get("native_identity") or row.get("nativeIdentity"))
+        if native_identity and native_identity.get("authoritative") is False:
+            continue
         raw_key = _text(row.get("key") or row.get("name") or row.get("type") or row.get("string"), "action")
         key = _stable_id(raw_key, "action")
         policy = _dict(action_policies.get(raw_key) or action_policies.get(key))
@@ -3300,7 +3896,16 @@ def _append_ui_contract_actions(
         permission_unresolved = bool(permission_constraints) and (
             not entitlement_evaluated or not explicit_permission_verdict
         )
-        if (
+        if kind == "server" or payload.get("server_action_id"):
+            action_intent = "execute_button"
+            target = {}
+            button = {
+                "name": _text(row.get("name") or row.get("key"), key),
+                "type": "server_action",
+                "server_action_id": payload.get("server_action_id"),
+                "xml_id": payload.get("xml_id"),
+            }
+        elif (
             kind in {"open", "url"}
             or intent in {"open", "url"}
             or _positive_int(row.get("action_id"), 0)
@@ -3323,15 +3928,6 @@ def _append_ui_contract_actions(
                 "target": payload.get("target"),
             }
             button = {}
-        elif kind == "server" or payload.get("server_action_id"):
-            action_intent = "execute_button"
-            target = {}
-            button = {
-                "name": _text(row.get("name") or row.get("key"), key),
-                "type": "server_action",
-                "server_action_id": payload.get("server_action_id"),
-                "xml_id": payload.get("xml_id"),
-            }
         else:
             action_intent = _text(row.get("intent"), "execute_button")
             target = deepcopy(_dict(row.get("target")))
@@ -3407,6 +4003,7 @@ def _append_ui_contract_actions(
                     or ("product_contract" if policy.get("label") or policy.get("presentation") else ""),
                     "native_contract",
                 ),
+                "native_identity": deepcopy(native_identity),
             }
         )
     _append_actions(contract, normalized, source_widget_id=source_widget_id)
@@ -3423,6 +4020,9 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:
+        native_identity = _dict(row.get("native_identity") or row.get("nativeIdentity"))
+        if native_identity and native_identity.get("authoritative") is False:
+            continue
         raw_key = _text(row.get("key") or row.get("name") or row.get("intent"), "row_action")
         key = _stable_id(raw_key, "row_action")
         policy = _dict(action_policies.get(raw_key) or action_policies.get(key))
@@ -3470,7 +4070,15 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
         permission_unresolved = bool(permission_constraints) and (
             not entitlement_evaluated or not explicit_permission_verdict
         )
-        if (
+        if kind == "server" or payload.get("server_action_id"):
+            target = {}
+            button = {
+                "name": _text(row.get("name") or row.get("key"), key),
+                "type": "server_action",
+                "server_action_id": payload.get("server_action_id"),
+                "xml_id": payload.get("xml_id"),
+            }
+        elif (
             kind in {"open", "url"}
             or intent in {"open", "url"}
             or _positive_int(row.get("action_id"), 0)
@@ -3489,14 +4097,6 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
                 "target": payload.get("target"),
             }
             button = {}
-        elif kind == "server" or payload.get("server_action_id"):
-            target = {}
-            button = {
-                "name": _text(row.get("name") or row.get("key"), key),
-                "type": "server_action",
-                "server_action_id": payload.get("server_action_id"),
-                "xml_id": payload.get("xml_id"),
-            }
         else:
             target = deepcopy(_dict(row.get("target")))
             button = deepcopy(_dict(row.get("button")))
@@ -3550,6 +4150,7 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
             "source_channel": _text(row.get("_source_channel"), "native_row_action"),
             "presentation_authority": _text(row.get("presentation_authority"), "native_contract"),
             "presentation_priority": _positive_int(row.get("presentation_priority"), 100),
+            "native_identity": deepcopy(native_identity),
         })
     _append_actions(contract, normalized, source_widget_id="page.row")
 

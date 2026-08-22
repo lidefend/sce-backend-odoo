@@ -36,7 +36,7 @@
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
             </label>
             <input
-              v-else
+              v-else-if="fieldConfigEditable"
               class="field-label-editor"
               type="text"
               :value="field.label"
@@ -86,7 +86,7 @@
             </button>
             <div class="field-control-main">
               <div
-                v-if="field.type === 'selection' && isRadioWidget(field)"
+                v-if="field.type === 'selection' && isRadioWidget(field) && !(preferReadonlyFacts && field.readonly)"
                 class="native-radio-group"
                 role="radiogroup"
                 :aria-label="field.label"
@@ -112,7 +112,7 @@
                 </label>
               </div>
               <SceneFieldControl
-                v-else-if="usesSceneFieldControl(field)"
+                v-else-if="usesSceneFieldControl(field) && !(preferReadonlyFacts && field.readonly)"
                 :field="sceneField(field)"
                 :model-value="contractFormDriverValue(field)"
                 @update:model-value="emitFieldChange(field, $event)"
@@ -293,6 +293,21 @@
                   rows="4"
                   @input="emitFieldChange(field, ($event.target as HTMLTextAreaElement).value)"
                 />
+                <div v-else-if="field.type === 'monetary'" class="field-monetary-control">
+                  <input
+                    :id="fieldControlId(field)"
+                    :value="String(field.inputValue ?? '')"
+                    class="input"
+                    :aria-required="field.required || undefined"
+                    :aria-invalid="field.invalid || undefined"
+                    :aria-describedby="fieldDescribedBy(field)"
+                    type="number"
+                    :step="monetaryInputStep(field.digits)"
+                    :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
+                    @input="emitFieldChange(field, ($event.target as HTMLInputElement).value)"
+                  />
+                  <span v-if="field.currencyLabel" class="field-currency-label">{{ field.currencyLabel }}</span>
+                </div>
                 <input
                   v-else
                   :id="fieldControlId(field)"
@@ -341,6 +356,7 @@ import ScSelect from '../design-system/ScSelect.vue';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
+import { formatMonetaryDisplayValue, monetaryInputStep } from './formSection.mapper';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -377,6 +393,7 @@ const props = withDefaults(defineProps<{
   selectedFieldKey?: string;
   selectPlaceholder?: (label: string) => string;
   inputPlaceholder?: (label: string) => string;
+  preferReadonlyFacts?: boolean;
 }>(), {
   hint: '',
   columns: 2,
@@ -396,6 +413,7 @@ const props = withDefaults(defineProps<{
   selectedFieldKey: '',
   selectPlaceholder: (label: string) => resolveSelectPlaceholder(label),
   inputPlaceholder: (label: string) => resolveInputPlaceholder(label),
+  preferReadonlyFacts: false,
 });
 
 const many2oneFocusedField = ref('');
@@ -617,6 +635,9 @@ function inputPlaceholderText(field: FormSectionFieldSchema) {
 
 function readonlyText(field: FormSectionFieldSchema) {
   const fieldType = String(field.type || field.descriptor?.ttype || field.descriptor?.type || '').trim().toLowerCase();
+  if (fieldType === 'monetary') {
+    return formatMonetaryDisplayValue(field.value, field.digits, field.currencyLabel);
+  }
   const normalizedValue = ['date', 'datetime', 'many2one'].includes(fieldType)
     && String(field.value).trim().toLowerCase() === 'false'
     ? ''
@@ -659,6 +680,7 @@ function emitBinaryFieldChange(field: FormSectionFieldSchema, event: Event) {
     const result = String(reader.result || '');
     const separatorIndex = result.indexOf(',');
     emit('field-change', {
+      occurrenceKey: field.key,
       name: field.name,
       type: field.type,
       widget: field.widget,
@@ -691,6 +713,7 @@ function emitMany2oneAction(field: FormSectionFieldSchema, value: string | numbe
 function emitMany2oneQuery(field: FormSectionFieldSchema, value: string) {
   many2oneActiveIndex.value[field.name] = -1;
   emit('field-change', {
+    occurrenceKey: field.key,
     name: field.name,
     type: field.type,
     widget: field.widget,
@@ -759,6 +782,7 @@ function handleMany2oneKeydown(field: FormSectionFieldSchema, event: KeyboardEve
 
 function emitMany2oneCommit(field: FormSectionFieldSchema, value: string) {
   emit('field-change', {
+    occurrenceKey: field.key,
     name: field.name,
     type: field.type,
     widget: field.widget,
@@ -1538,5 +1562,18 @@ select.input {
   .native-date-range-separator {
     display: none;
   }
+}
+.field-monetary-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-currency-label {
+  color: var(--sc-app-text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 </style>

@@ -184,7 +184,7 @@ const route = useRoute();
 const router = useRouter();
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
 const session = useSessionStore();
-const pageContract = usePageContract('scene', { allowSceneContractFallback: true });
+const pageContract = usePageContract('scene');
 const pageText = pageContract.text;
 const pageSectionEnabled = pageContract.sectionEnabled;
 const pageSectionStyle = pageContract.sectionStyle;
@@ -327,46 +327,31 @@ function hasHandlingEntryCatalog(currentScene: Scene | null) {
 }
 
 const idleDiagnosticMessage = computed(() => {
-  const sceneKey = String(route.meta?.sceneKey || route.params.sceneKey || '').trim();
-  const hint = pageText(
-    'status_idle_diag_hint',
-    '当前场景暂无可展示内容。',
-  );
-  return `${pageText('status_idle_diag_scene_prefix', 'scene')}：${sceneKey || '-'}；${hint}`;
+  return pageText('status_idle_diag_hint', '当前页面暂无可展示的业务内容。');
 });
 
 const runtimeDiagnosticTitle = computed(() => {
-  const statusKey = String(resolveSceneRuntimeStatus() || '').trim();
-  if (!statusKey) return pageText('runtime_diag_title_default', '场景运行状态');
-  return pageText(`runtime_diag_title_${statusKey.toLowerCase()}`, statusKey);
+  return pageText('runtime_diag_title_default', '当前暂无可办理内容');
 });
 
 const runtimeDiagnosticMessage = computed(() => {
   const runtime = resolveSceneRuntime();
-  const statusKey = String(resolveSceneRuntimeStatus() || '').trim();
-  const currentState = String(runtime.current_state || '').trim();
   const missingRequiredCount = Number(runtime.missing_required_count || 0);
   const activeTransitionCount = Number(runtime.active_transition_count || 0);
   const bridgeAligned = isSceneRuntimeBridgeAligned();
   const parts: string[] = [];
 
-  if (statusKey && statusKey !== 'ready') {
-    parts.push(`${pageText('runtime_diag_status_prefix', 'runtime_status')}：${statusKey}`);
-  }
-  if (currentState) {
-    parts.push(`${pageText('runtime_diag_state_prefix', 'record_state')}：${currentState}`);
-  }
   if (missingRequiredCount > 0) {
-    parts.push(`${pageText('runtime_diag_missing_required_prefix', 'missing_required')}：${missingRequiredCount}`);
+    parts.push(`${pageText('runtime_diag_missing_required_prefix', '待补充事项')}：${missingRequiredCount}`);
   }
   if (activeTransitionCount > 0) {
-    parts.push(`${pageText('runtime_diag_transition_prefix', 'active_transitions')}：${activeTransitionCount}`);
+    parts.push(`${pageText('runtime_diag_transition_prefix', '可办理步骤')}：${activeTransitionCount}`);
   }
   if (!bridgeAligned) {
     parts.push(pageText('runtime_diag_alignment_mismatch', '当前场景语义尚未完全对齐。'));
   }
 
-  return parts.join('；');
+  return parts.join('；') || pageText('runtime_diag_empty', '暂未获取到可展示的业务信息，请稍后重试。');
 });
 
 function asRuntimeRecord(value: unknown): Record<string, unknown> {
@@ -390,21 +375,6 @@ function resolveSceneRuntime() {
     }
   }
   return {};
-}
-
-function resolveSceneRuntimeStatus() {
-  const runtime = resolveSceneRuntime();
-  const statusCandidates = [
-    runtime.runtime_status,
-    runtime.status,
-    runtime.delivery_mode,
-    runtime.family,
-  ];
-  for (const item of statusCandidates) {
-    const text = String(item || '').trim();
-    if (text) return text;
-  }
-  return '';
 }
 
 function isSceneRuntimeBridgeAligned() {
@@ -572,10 +542,10 @@ async function hydrateSceneReadyForCurrentScene(sceneKey: string) {
       },
       meta: { startup_chain_bypass: true },
     });
-    const contract = result.scene_ready_contract_v1;
+    const contract = result.scene_ready_contract;
     if (contract && typeof contract === 'object' && Array.isArray((contract as Record<string, unknown>).scenes)) {
       const readyContract = contract as Record<string, unknown>;
-      session.sceneReadyContractV1 = readyContract as never;
+      session.sceneReadyContract = readyContract as never;
       setSceneRegistryFromSceneReadyContract(readyContract as never);
       return true;
     }
@@ -636,11 +606,11 @@ const productDeliverySurface = computed(() => {
   const advisoryOnly = deliveryMode === 'advisory_only';
   const actionLabel = String(entryAction.label || '').trim();
   const title = advisoryOnly
-    ? pageText('scene_delivery_title_advisory', '当前场景提供下一步建议')
-    : pageText('scene_delivery_title_direct', '当前场景已准备好交付入口');
+    ? pageText('scene_delivery_title_advisory', '下一步建议')
+    : pageText('scene_delivery_title_direct', '继续办理');
   const message = advisoryOnly
-    ? pageText('scene_delivery_message_advisory', '当前阶段保持 advisory-only，由后端语义决定下一步提示，不在前端扩展深链行为。')
-    : pageText('scene_delivery_message_direct', '当前阶段使用后端提供的交付语义，统一呈现 direct delivery 入口，不在前端推导业务规则。');
+    ? pageText('scene_delivery_message_advisory', '请根据页面提示选择下一步办理。')
+    : pageText('scene_delivery_message_direct', '可从此处进入下一步业务办理。');
 
   return {
     visible: true,
@@ -763,7 +733,7 @@ function resolveRecordId(targetRecord: unknown) {
 function resolveVisibleActionTarget(target: SceneTarget, sceneKey = '') {
   const isSceneContractNav = (() => {
     const navMeta = (session.initMeta as Record<string, unknown> | null)?.nav_meta as Record<string, unknown> | undefined;
-    if (String(navMeta?.nav_source || '') === 'scene_contract_v1') {
+    if (String(navMeta?.nav_source || '') === 'scene_contract') {
       return true;
     }
     const walk = (nodes: NavNode[]): boolean => {
@@ -893,7 +863,7 @@ function fallbackSceneFromSceneReady(sceneKey: string): Scene | null {
   if (!key) {
     return null;
   }
-  const contract = session.sceneReadyContractV1;
+  const contract = session.sceneReadyContract;
   const rows = Array.isArray(contract?.scenes) ? contract.scenes : [];
   for (const item of rows) {
     if (!item || typeof item !== 'object') continue;

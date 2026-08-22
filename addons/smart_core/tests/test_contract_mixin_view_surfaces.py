@@ -109,6 +109,46 @@ class ContractMixinViewSurfaceTests(unittest.TestCase):
         )
         self.assertNotIn("unsafe_nested", result)
 
+    def test_governed_sanitize_preserves_native_activity_evidence(self):
+        activity = {
+            "native_attrs": {"string": "Activities"},
+            "node_occurrences": [{"tag": "activity", "native_locator": "activity", "attributes": {"string": "Activities"}}],
+            "field_occurrences": [{"name": "amount", "field_type": "monetary", "currency_field": "company_currency_id", "digits": [16, 2]}],
+            "template": {"native_locator": "activity/templates[1]", "nodes": [{"tag": "field", "children": []}]},
+            "actions": [],
+        }
+        result = self.mixin.sanitize_governed_contract("activity", {"activity": activity, "unsafe_nested": {"should": "drop"}})
+
+        self.assertEqual(result["activity"], activity)
+        self.assertNotIn("unsafe_nested", result)
+
+    def test_governed_tree_preserves_occurrence_behavior_and_action_identity(self):
+        result = self.mixin.sanitize_governed_contract(
+            "tree",
+            {
+                "column_occurrences": [
+                    {"name": "amount", "occurrence_index": 0, "modifiers": {"readonly": True}},
+                    {"name": "partner_id", "occurrence_index": 1, "relation_active_actions": {"write": False}},
+                ],
+                "row_actions": [
+                    {
+                        "name": "approve",
+                        "native_identity": {
+                            "type": "object",
+                            "name": "approve",
+                            "data_hotkey": "a",
+                        },
+                    }
+                ],
+                "unsafe_nested": {"should": "drop"},
+            },
+        )
+
+        self.assertEqual(len(result["column_occurrences"]), 2)
+        self.assertEqual(result["column_occurrences"][1]["relation_active_actions"], {"write": False})
+        self.assertEqual(result["row_actions"][0]["native_identity"]["data_hotkey"], "a")
+        self.assertNotIn("unsafe_nested", result)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,21 @@
 <template>
   <div v-if="field.type === 'many2many'" class="relation-editor">
-    <div v-if="isMany2manyTags(field)" class="relation-tag-picker">
+    <div v-if="field.readonly" class="relation-readonly" data-readonly-relation>
+      <span
+        v-for="option in adapter.selectedRelationOptions(field.name)"
+        :key="`${field.name}-readonly-${option.id}`"
+        class="relation-readonly-item"
+      >{{ option.label }}</span>
+      <span
+        v-if="!adapter.selectedRelationOptions(field.name).length && adapter.relationIds(field.name).length"
+        class="relation-readonly-summary"
+      >已关联 {{ adapter.relationIds(field.name).length }} 条</span>
+      <span
+        v-else-if="!adapter.selectedRelationOptions(field.name).length"
+        class="relation-readonly-empty"
+      >暂无{{ field.label || '关联记录' }}</span>
+    </div>
+    <div v-else-if="isMany2manyTags(field)" class="relation-tag-picker">
       <div class="relation-tags-control">
         <div v-if="adapter.selectedRelationOptions(field.name).length" class="relation-tag-list">
           <button
@@ -88,7 +103,7 @@
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
     <div class="o2m-toolbar">
       <button
-        v-if="adapter.one2manyCanCreate(field.name)"
+        v-if="!field.readonly && adapter.one2manyCanCreate(field.name)"
         class="chip-btn"
         type="button"
         :disabled="adapter.busy"
@@ -123,14 +138,14 @@
               v-if="column.ttype === 'boolean'"
               class="input-checkbox"
               type="checkbox"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="field.readonly || column.readonly || adapter.busy"
               :checked="Boolean(row.values[column.name])"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).checked)"
             />
             <select
               v-else-if="column.ttype === 'selection'"
               class="input"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="field.readonly || column.readonly || adapter.busy"
               :value="String(row.values[column.name] ?? '')"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLSelectElement).value)"
             >
@@ -143,7 +158,7 @@
               v-else
               class="input"
               :type="adapter.one2manyColumnInputType(column)"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="field.readonly || column.readonly || adapter.busy"
               :value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
               :placeholder="column.label"
               @input="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).value)"
@@ -154,7 +169,7 @@
           class="ghost o2m-row-remove"
           type="button"
           :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
-          :disabled="adapter.busy"
+          :disabled="field.readonly || adapter.busy"
           @click="adapter.removeOne2manyRow(field.name, row.key)"
         >移除本条</button>
         <p v-if="adapter.showOne2manyErrors && adapter.one2manyRowErrors(field.name, row.key).length" class="o2m-row-error">
@@ -261,6 +276,26 @@ function tagColorStyle(color: unknown) {
 .relation-editor {
   display: grid;
   gap: 6px;
+}
+
+.relation-readonly {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+  align-items: center;
+  color: var(--sc-app-text-primary);
+}
+
+.relation-readonly-item {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--sc-app-muted-bg);
+}
+
+.relation-readonly-summary,
+.relation-readonly-empty {
+  color: var(--sc-app-text-secondary);
 }
 
 .chips {

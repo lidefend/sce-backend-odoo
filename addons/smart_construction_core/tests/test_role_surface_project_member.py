@@ -292,7 +292,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertFalse(labels & {"用户核对菜单", "用户数据验收", "用户验收", "直营项目系统菜单"})
         self.assertFalse(surface["system_configuration_visible"])
         self.assertNotIn("system_admin", surface["role_codes"])
-        self.assertFalse((delivery.get("route_authority_v1") or {}).get("denied_actions"))
+        self.assertFalse((delivery.get("route_authority") or {}).get("denied_actions"))
 
     def test_system_admin_navigation_discovers_installed_capabilities_and_configuration(self):
         resolver = self._resolver()

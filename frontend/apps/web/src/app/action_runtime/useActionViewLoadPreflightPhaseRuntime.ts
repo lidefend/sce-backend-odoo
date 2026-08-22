@@ -3,7 +3,6 @@ type Dict = Record<string, unknown>;
 type ContinuePayload = {
   contract: unknown;
   meta: Dict | null;
-  typedContract: Dict;
   resolvedModel: string;
 };
 

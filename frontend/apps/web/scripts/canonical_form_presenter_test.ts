@@ -1,18 +1,48 @@
 import assert from 'node:assert/strict';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
-import { createContractV2Store, resolveContractV2EffectiveFormCapabilities } from '../src/app/contracts/v2/store';
+import {
+  createContractV2Store, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
+} from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
-import { adaptUnifiedPageContractV2Raw } from '../src/app/runtime/unifiedPageContractV2CompatProjection';
 import {
   canonicalFieldToFormSection,
   canonicalNodeHasContent,
   canonicalSectionFields,
   visibleCanonicalChildren,
 } from '../src/pages/contractForm/canonicalFormRenderer';
-import { resolveCanonicalFormActionExecution, validateCanonicalFormActionExecutors } from '../src/pages/contractForm/canonicalFormActionExecutor';
+import {
+  collectCanonicalFormActions,
+  resolveCanonicalFormActionExecution,
+  validateCanonicalFormActionExecutors,
+} from '../src/pages/contractForm/canonicalFormActionExecutor';
 import type { ContractAction } from '../src/pages/contractForm/types';
+import { contractActionConfirmationPrompt } from '../src/pages/contractForm/actionContract';
+import { canonicalFormActionIconClass } from '../src/pages/contractForm/canonicalFormActionIcon';
+import { buildCanonicalNativeFormBridge } from '../src/pages/contractForm/canonicalNativeFormBridge';
+import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
+import {
+  formatMonetaryDisplayValue,
+  monetaryInputStep,
+  normalizeMonetaryDigits,
+  resolveCurrencyDisplayLabel,
+} from '../src/components/template/formSection.mapper';
+
+assert.deepEqual(normalizeMonetaryDigits([16, 2]), [16, 2]);
+assert.equal(normalizeMonetaryDigits([16, -1]), undefined);
+assert.equal(normalizeMonetaryDigits([2, 3]), undefined);
+assert.equal(resolveCurrencyDisplayLabel([7, 'USD']), 'USD');
+assert.equal(resolveCurrencyDisplayLabel({ id: 7, symbol: '€', name: 'EUR' }), 'EUR');
+assert.equal(monetaryInputStep([16, 2]), '0.01');
+assert.equal(monetaryInputStep(undefined), 'any');
+assert.equal(formatMonetaryDisplayValue(1234.5, [16, 2], 'USD', 'en-US'), '$1,234.50');
+assert.equal(formatMonetaryDisplayValue(1234.5, [16, 1], '元', 'en-US'), '1,234.5 元');
+assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US'), '-');
+assert.equal(normalizeContractFieldValue({
+  name: 'amount', value: '12.345', descriptor: { type: 'monetary', digits: [16, 2] } as never,
+  originalValue: 0, buildOne2manyValue: () => [],
+}), 12.35);
 
 function snapshot(): ContractV2Snapshot {
   return {
@@ -68,7 +98,7 @@ function snapshot(): ContractV2Snapshot {
         actionId: 'action.submit', backendIdentity: 'button:object:action_submit', triggerType: 'click',
         sourceWidgetId: 'page.root', targetIds: [], dispatchMode: 'serverBlocking', targetScope: 'page',
         refreshMode: 'full', actionKey: 'action_submit', label: 'Submit', allowed: true, enabled: true,
-        disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'primary' },
+        disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'primary', icon: 'fa-check' },
         actionSafety: { level: 'danger', requiresConfirmation: true },
       }], dependencyGraph: { 'action.submit': ['field.name'] },
     },
@@ -117,6 +147,10 @@ function collectFields(nodes: ReturnType<typeof presentContractV2Form>['zones'][
   return nodes.flatMap((node): typeof node.fields => [...node.fields, ...collectFields(node.children)]);
 }
 
+function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['primary']): string[] {
+  return nodes.flatMap((node) => [node.text, ...collectTexts(node.children)]).filter(Boolean);
+}
+
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
@@ -124,6 +158,15 @@ assert.deepEqual(resolveContractV2EffectiveFormCapabilities(store), {
   read: true, write: true, create: true, unlink: true, duplicate: true,
 });
 assert.equal(store.snapshot.statusContract.globalStatus.effectiveRenderProfile, 'edit');
+const descriptorSelectionSnapshot = snapshot();
+descriptorSelectionSnapshot.layoutContract.containerTree[0].children[1].widgetList[0].fieldDescriptor = {
+  name: 'state', type: 'selection', widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']],
+};
+assert.deepEqual(
+  resolveContractV2FieldDescriptorMap(createContractV2Store(descriptorSelectionSnapshot)).state?.selection,
+  [['draft', 'Draft'], ['done', 'Done']],
+  'native fieldDescriptor selection must remain available to statusbar rendering',
+);
 const model = presentContractV2Form(store, 'edit');
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
@@ -138,6 +181,10 @@ assert.equal(fields.find((field) => field.fieldCode === 'state')?.visible, false
 assert.equal(model.actionBar[0]?.actionRef, store.snapshot.actionContract.actionRuleList[0]);
 assert.deepEqual(model.actionBar[0]?.actionRef, source.actionContract.actionRuleList[0]);
 assert.equal(model.actionBar[0]?.enabled, true);
+assert.equal(model.actionBar[0]?.icon, 'fa-check');
+assert.equal(canonicalFormActionIconClass(model.actionBar[0]?.icon || ''), 'check');
+assert.equal(canonicalFormActionIconClass('fa-check injected-class'), '');
+assert.equal(canonicalFormActionIconClass('oi-check'), '');
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
 
 const bodyActionSnapshot = structuredClone(snapshot());
@@ -158,6 +205,46 @@ const bodyActionNode = bodyActionModel.zones.primary[0].children.find((node) => 
 assert.equal(bodyActionNode?.action?.actionRef.backendIdentity, 'window_action:91');
 assert.equal(canonicalNodeHasContent(bodyActionNode!), true);
 assert.deepEqual(bodyActionModel.actionBar.map((action) => action.key), ['action_submit']);
+const nativeBridge = buildCanonicalNativeFormBridge(bodyActionModel);
+assert.deepEqual(
+  nativeBridge.subordinateNodes.map((node) => node.type),
+  ['notebook', 'container'],
+  'canonical native bridge must keep notebook/attachment structure while collaboration stays in its governed panel',
+);
+const notebookPage = nativeBridge.subordinateNodes[0].children?.[0];
+assert.equal(notebookPage?.type, 'page', 'a native notebook without explicit pages must retain its children in a stable default page');
+assert.deepEqual(
+  nativeBridge.fieldSchemasForNodes(notebookPage?.children || []).map((field) => [field.key, field.name]),
+  [['field.line_ids', 'line_ids']],
+  'canonical widget occurrence identity and record field name must remain separate through the native renderer bridge',
+);
+const bridgedBodyAction = nativeBridge.primaryNodes[0].children?.find((node) => node.type === 'button');
+assert.equal(
+  nativeBridge.actionForPayload(bridgedBodyAction?.action || {})?.backendIdentity,
+  'window_action:91',
+  'body action execution must resolve through the same canonical backend identity after native structure rendering',
+);
+assert.deepEqual(
+  nativeBridge.actionStateForNode(bridgedBodyAction || {} as never),
+  { disabled: false, title: '' },
+  'canonical button status must remain authoritative when the native renderer asks for interaction state',
+);
+
+const nativeOccurrenceActionSnapshot = structuredClone(snapshot());
+nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'button.native.submit', containerType: 'button', type: 'button', title: 'Submit Native', span: 24,
+  action: { native_identity: { type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1 } },
+  children: [], widgetList: [],
+});
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity = {
+  type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1,
+};
+const nativeOccurrenceModel = presentContractV2Form(createContractV2Store(nativeOccurrenceActionSnapshot), 'edit');
+assert.equal(
+  nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
+  'button:object:action_submit',
+  'native snake-case occurrence identity must resolve to the canonical action rule',
+);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
 const editFloorplan = composeCanonicalFormFloorplan(model);
@@ -202,6 +289,51 @@ assert.deepEqual(
 );
 assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
 assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
+const mixedSemanticTextModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const mixedSemanticTextRoot = mixedSemanticTextModel.zones.primary[0];
+mixedSemanticTextRoot.text = 'unassigned native guidance';
+const taskProjectionChild = mixedSemanticTextRoot.children.find((node) => node.semanticRole === 'summary')!;
+taskProjectionChild.semanticRole = 'task';
+taskProjectionChild.fields = taskProjectionChild.fields.map((field) => ({ ...field, semanticRole: 'task' }));
+const mixedSemanticTextFloorplan = composeCanonicalFormFloorplan(mixedSemanticTextModel);
+assert.deepEqual(
+  collectTexts([...mixedSemanticTextFloorplan.taskNodes, ...mixedSemanticTextFloorplan.riskNodes]),
+  [],
+  'unassigned native text must not duplicate across semantic Floorplan projections',
+);
+const mixedRoleModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const mixedRoleParent = mixedRoleModel.zones.primary[0].children.find((node) => node.semanticRole === 'summary');
+assert.ok(mixedRoleParent, 'semantic summary parent is required for mixed-role projection coverage');
+const mixedRoleChild = structuredClone(mixedRoleParent);
+mixedRoleChild.nodeId = `${mixedRoleParent.nodeId}.audit-override`;
+mixedRoleChild.semanticRole = 'audit';
+mixedRoleChild.fields = mixedRoleChild.fields.map((field) => ({
+  ...field,
+  widgetId: `${field.widgetId}.audit-override`,
+  semanticRole: 'audit',
+}));
+mixedRoleChild.children = [];
+mixedRoleParent.children.push(mixedRoleChild);
+const mixedRoleFloorplan = composeCanonicalFormFloorplan(mixedRoleModel);
+assert.equal(
+  collectFields(mixedRoleFloorplan.summaryNodes).some((field) => field.widgetId.endsWith('.audit-override')),
+  false,
+  'a parent role must not absorb a descendant semantic override',
+);
+assert.equal(
+  collectFields(mixedRoleFloorplan.auditNodes).some((field) => field.widgetId.endsWith('.audit-override')),
+  true,
+  'a descendant semantic override must project into its declared Floorplan region',
+);
+const repeatedSummaryModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const repeatedSummaryRoot = structuredClone(repeatedSummaryModel.zones.primary[0]);
+repeatedSummaryRoot.nodeId = `${repeatedSummaryRoot.nodeId}.repeated-occurrence`;
+repeatedSummaryModel.zones.primary.push(repeatedSummaryRoot);
+assert.deepEqual(
+  collectFields(composeCanonicalFormFloorplan(repeatedSummaryModel).summaryNodes).map((field) => field.fieldCode),
+  ['name'],
+  'product summary must project one fact per canonical field even when the native layout repeats an occurrence',
+);
 
 const semanticContextSnapshot = structuredClone(semanticReadonlySnapshot);
 function addContextGroup(groupId: string, fieldCodes: string[]) {
@@ -328,6 +460,19 @@ assert.equal(
 assert.equal(createFloorplan.effectivePrimaryKey, 'form.save', 'create save must occupy the effective primary slot');
 assert.deepEqual(createFloorplan.directActions.map((action) => action.key), ['form.save']);
 assert.deepEqual(createFloorplan.overflowActions, []);
+
+const unresolvedCreateIdentitySnapshot = structuredClone(createFloorplanSnapshot);
+unresolvedCreateIdentitySnapshot.dataContract.mainData.name = 'New';
+unresolvedCreateIdentitySnapshot.statusContract.widgetStatus = unresolvedCreateIdentitySnapshot.statusContract.widgetStatus
+  .map((status) => status.widgetId === 'field.name' ? { ...status, readonly: true, required: false } : status);
+assert.equal(
+  collectFields(composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(unresolvedCreateIdentitySnapshot),
+    'create',
+  )).taskNodes).some((field) => field.fieldCode === 'name'),
+  false,
+  'create floorplan must not expose an unresolved platform identity placeholder',
+);
 
 const createBackendPrimarySnapshot = structuredClone(createFloorplanSnapshot);
 createBackendPrimarySnapshot.actionContract.actionRuleList.push({
@@ -604,6 +749,105 @@ assert.deepEqual(
   'one canonical widget identity must render once even when legacy and product roots both carry it',
 );
 
+const duplicateOccurrences = snapshot();
+const duplicateRoot = duplicateOccurrences.layoutContract.containerTree[0];
+const duplicateBaseWidget = duplicateRoot.children[0].widgetList[0];
+duplicateRoot.widgetList = [];
+duplicateRoot.children = [
+  {
+    ...duplicateRoot.children[0],
+    fieldCode: 'name',
+    widgetId: 'field.name.occ.first',
+    nativeLocator: 'form/field[name=name][1]',
+    occurrenceIndex: 1,
+    sourcePosition: 1,
+    widgetList: [{
+      ...duplicateBaseWidget,
+      widgetId: 'field.name.occ.first',
+      fieldDescriptor: { name: 'name', type: 'char' },
+      componentConfig: {
+        ...duplicateBaseWidget.componentConfig,
+        native_locator: 'form/field[name=name][1]',
+        occurrence_index: 1,
+        source_position: 1,
+      },
+    }],
+  },
+  {
+    ...duplicateRoot.children[0],
+    fieldCode: 'name',
+    widgetId: 'field.name.occ.second',
+    nativeLocator: 'form/field[name=name][2]',
+    occurrenceIndex: 2,
+    sourcePosition: 2,
+    widgetList: [{
+      ...duplicateBaseWidget,
+      widgetId: 'field.name.occ.second',
+      fieldDescriptor: { name: 'name', type: 'char' },
+      componentConfig: {
+        ...duplicateBaseWidget.componentConfig,
+        native_locator: 'form/field[name=name][2]',
+        occurrence_index: 2,
+        source_position: 2,
+      },
+    }],
+  },
+];
+duplicateOccurrences.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.first', visible: true, readonly: true, required: false, disabled: false, auth: 'read' },
+  { widgetId: 'field.name.occ.second', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+];
+const decodedDuplicateOccurrences = decodeContractV2Snapshot(duplicateOccurrences);
+const duplicateOccurrenceStore = createContractV2Store(decodedDuplicateOccurrences);
+assert.equal(duplicateOccurrenceStore.widgetsByFieldCodeAll.get('name')?.length, 2);
+const duplicateOccurrenceFields = collectFields(
+  presentContractV2Form(duplicateOccurrenceStore, 'edit').zones.primary,
+);
+assert.deepEqual(
+  duplicateOccurrenceFields.map((field) => [field.widgetId, field.readonly, field.required]),
+  [
+    ['field.name.occ.first', true, false],
+    ['field.name.occ.second', false, true],
+  ],
+  'canonical form must preserve same-field occurrences and their independent status',
+);
+const equivalentCreateOccurrences = structuredClone(duplicateOccurrences);
+equivalentCreateOccurrences.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.first', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+  { widgetId: 'field.name.occ.second', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+];
+assert.deepEqual(
+  collectFields(composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(decodeContractV2Snapshot(equivalentCreateOccurrences)),
+    'create',
+  )).taskNodes).map((field) => field.widgetId),
+  ['field.name.occ.second'],
+  'create floorplan must merge equivalent occurrences while preserving the retained canonical identity',
+);
+
+const duplicateOccurrenceStatus = snapshot();
+const duplicateStatusRoot = duplicateOccurrenceStatus.layoutContract.containerTree[0];
+duplicateStatusRoot.widgetList = [];
+duplicateStatusRoot.children = [
+  { ...duplicateStatusRoot.children[0], widgetId: 'field.name.occ.same', nativeLocator: 'form/field[name=name][1]', occurrenceIndex: 1, sourcePosition: 1, widgetList: [] },
+  { ...duplicateStatusRoot.children[0], widgetId: 'field.name.occ.same', nativeLocator: 'form/field[name=name][2]', occurrenceIndex: 2, sourcePosition: 2, widgetList: [] },
+];
+duplicateOccurrenceStatus.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.same', visible: true, readonly: false, required: false, disabled: false },
+];
+assert.throws(() => decodeContractV2Snapshot(duplicateOccurrenceStatus), /duplicate form occurrence widgetId/);
+
+const missingOccurrenceStatus = snapshot();
+const missingStatusRoot = missingOccurrenceStatus.layoutContract.containerTree[0];
+missingStatusRoot.widgetList = [];
+missingStatusRoot.children = [{ ...missingStatusRoot.children[0], widgetId: 'field.name.occ.missing', nativeLocator: 'form/field[name=name]', occurrenceIndex: 1, sourcePosition: 1, widgetList: [] }];
+missingOccurrenceStatus.statusContract.widgetStatus = [];
+assert.throws(() => decodeContractV2Snapshot(missingOccurrenceStatus), /requires exactly one status/);
+
+const orphanOccurrenceStatus = snapshot();
+orphanOccurrenceStatus.statusContract.widgetStatus.push({ widgetId: 'field.name.occ.orphan', visible: true, readonly: false, required: false, disabled: false });
+assert.throws(() => decodeContractV2Snapshot(orphanOccurrenceStatus), /orphan form widget status/);
+
 const renderedName = canonicalFieldToFormSection(deDuplicatedFields[0]);
 assert.deepEqual(
   { key: renderedName.key, name: renderedName.name, value: renderedName.value, readonly: renderedName.readonly },
@@ -656,6 +900,7 @@ assert.deepEqual(
   disabledSecondaryPrimaryModel.actionBar.find((action) => action.key === 'action_blocked'),
   {
     key: 'action_blocked', label: 'Submit', tier: 'primary', visible: true, enabled: false,
+    icon: 'fa-check',
     reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE', visibleProfiles: ['edit', 'readonly'],
     safety: { level: 'danger', requiresConfirmation: true },
     actionRef: disabledSecondaryPrimary.actionContract.actionRuleList[1],
@@ -676,7 +921,104 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
+const resolvedDuplicateSubmit = snapshot();
+resolvedDuplicateSubmit.actionContract.actionRuleList[0] = {
+  ...resolvedDuplicateSubmit.actionContract.actionRuleList[0],
+  actionId: 'action.native_submit',
+  actionKey: 'native_submit',
+  backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  sourceWidgetId: 'page.header',
+  button: { name: 'action_submit', type: 'object' },
+  presentationPriority: 100,
+};
+resolvedDuplicateSubmit.actionContract.actionRuleList.push({
+  ...resolvedDuplicateSubmit.actionContract.actionRuleList[0],
+  actionId: 'action.weak_submit',
+  actionKey: 'weak_submit',
+  backendIdentity: 'button:object:action_submit',
+  sourceWidgetId: 'page.root',
+  presentationPriority: 250,
+  presentation: { tier: 'secondary' },
+});
+resolvedDuplicateSubmit.actionContract.primaryResolution = {
+  policy: 'single_effective_primary_per_record_state',
+  winner: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  demoted: [{
+    actionId: 'action.weak_submit',
+    backendIdentity: 'button:object:action_submit',
+    previousTier: 'primary',
+    effectiveTier: 'secondary',
+  }],
+};
+resolvedDuplicateSubmit.statusContract.buttonStatus = [
+  {
+    btnId: 'btn.native_submit', visible: true, disabled: false,
+    backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  },
+  {
+    btnId: 'btn.weak_submit', visible: true, disabled: false,
+    backendIdentity: 'button:object:action_submit',
+  },
+];
+const decodedResolvedDuplicateSubmit = decodeContractV2Snapshot(resolvedDuplicateSubmit);
+assert.deepEqual(
+  decodedResolvedDuplicateSubmit.actionContract.primaryResolution,
+  resolvedDuplicateSubmit.actionContract.primaryResolution,
+  'the normalized store must retain the backend primary-action verdict',
+);
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(decodedResolvedDuplicateSubmit), 'readonly')
+    .actionBar.map((action) => action.actionRef.actionId),
+  ['action.native_submit'],
+  'a backend-demoted duplicate must not become a second product action',
+);
+
+const prioritizedDuplicateAction = snapshot();
+prioritizedDuplicateAction.actionContract.actionRuleList[0] = {
+  ...prioritizedDuplicateAction.actionContract.actionRuleList[0],
+  actionId: 'action.native_cancel', actionKey: 'native_cancel',
+  backendIdentity: 'native_button:object:action_cancel:/form/header/button[1]:1',
+  sourceWidgetId: 'page.header', button: { name: 'action_cancel', type: 'object' },
+  presentationPriority: 100, presentationAuthority: 'native_contract',
+  presentation: { tier: 'overflow' },
+};
+prioritizedDuplicateAction.actionContract.actionRuleList.push({
+  ...prioritizedDuplicateAction.actionContract.actionRuleList[0],
+  actionId: 'action.product_cancel', actionKey: 'product_cancel',
+  backendIdentity: 'button:object:action_cancel', sourceWidgetId: 'page.root',
+  presentationPriority: 250, presentationAuthority: 'product_contract',
+  presentation: { tier: 'secondary' },
+});
+prioritizedDuplicateAction.statusContract.buttonStatus = [
+  { btnId: 'action.native_cancel', visible: true, disabled: false },
+  { btnId: 'action.product_cancel', visible: true, disabled: false },
+];
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(prioritizedDuplicateAction), 'readonly')
+    .actionBar.map((action) => action.actionRef.actionId),
+  ['action.product_cancel'],
+  'the highest backend presentation priority must own one duplicated execution identity',
+);
+
 const normalizedAction = snapshot().actionContract.actionRuleList[0];
+assert.deepEqual(
+  contractActionConfirmationPrompt({
+    key: 'action_submit', label: 'Submit', hint: '',
+    actionSafety: {
+      classification: 'danger', requiresConfirm: true,
+      confirmMessage: 'Submit this document?', reasonCode: 'NATIVE_BUTTON_DANGEROUS_ACTION',
+    },
+  } as never),
+  { actionLabel: 'Submit', message: 'Submit this document?' },
+  'native confirm message must reach the confirmation interaction unchanged',
+);
+assert.equal(
+  contractActionConfirmationPrompt({
+    key: 'action_help', label: 'Help', hint: 'Descriptive help only',
+  } as never),
+  null,
+  'button help must never manufacture a confirmation prompt',
+);
 const readonlySaveSnapshot = snapshot();
 readonlySaveSnapshot.actionContract.actionRuleList = [{
   ...readonlySaveSnapshot.actionContract.actionRuleList[0],
@@ -742,28 +1084,19 @@ assert.deepEqual(
   'an executable action without an exact unified executor adapter must block canonical cutover',
 );
 
-const implicitStateSnapshot = snapshot();
-const implicitStateProjection = adaptUnifiedPageContractV2Raw(
-  { ok: true, data: implicitStateSnapshot } as never,
-  { view_type: 'form' },
-);
-assert.equal(
-  implicitStateProjection.data?.views?.form?.statusbar,
-  undefined,
-  'a state selection without an explicit native statusbar widget must not fabricate a statusbar',
-);
-const explicitStatusbarSnapshot = snapshot();
-const explicitStatusbarField = explicitStatusbarSnapshot.layoutContract.containerTree[0]?.children[1] as unknown as Record<string, unknown>;
-explicitStatusbarField.widget = 'statusbar';
-explicitStatusbarField.fieldInfo = { widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']] };
-const explicitStatusbarProjection = adaptUnifiedPageContractV2Raw(
-  { ok: true, data: explicitStatusbarSnapshot } as never,
-  { view_type: 'form' },
+assert.deepEqual(
+  collectCanonicalFormActions(bodyActionModel).map((action) => action.actionRef.backendIdentity),
+  ['button:object:action_submit', 'window_action:91'],
+  'body-node actions must join actionBar actions in exact executor validation',
 );
 assert.deepEqual(
-  explicitStatusbarProjection.data?.views?.form?.statusbar,
-  { field: 'state', states: [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }] },
-  'an explicit native statusbar widget must remain available to the compatibility renderer',
+  validateCanonicalFormActionExecutors(collectCanonicalFormActions(bodyActionModel), [contractAction]),
+  {
+    reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING',
+    actionId: 'action.open_lines',
+    backendIdentity: 'window_action:91',
+  },
+  'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=51');
+console.log('[canonical_form_presenter_test] PASS cases=53');

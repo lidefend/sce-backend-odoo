@@ -4,6 +4,13 @@
     "addons/smart_construction_core",
     "addons/smart_construction_scene"
   ],
+  "module_roots": [
+    "addons",
+    "demo_addons"
+  ],
+  "optional_tracked_modules": [
+    "smart_construction_custom"
+  ],
   "forbidden_imports": {
     "addons/smart_core": [
       "smart_construction_portal",

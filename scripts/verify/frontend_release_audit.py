@@ -42,7 +42,7 @@ def sha256(path: Path) -> str:
 
 
 def authoritative_navigation_counts() -> dict[str, int]:
-    policy = read_json(ROOT / "config/frontend/authoritative_navigation_v1.json")
+    policy = read_json(ROOT / "config/frontend/authoritative_navigation.json")
     configured_roles = policy.get("roles") or {}
     counts: dict[str, int] = {}
     for role, row in configured_roles.items():

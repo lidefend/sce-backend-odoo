@@ -92,35 +92,35 @@ def build_role_focus_config(role_code: str) -> Dict[str, Any]:
     return _call_provider("build_role_focus_config", default, role_code)
 
 
-def build_v1_focus_map() -> Dict[str, List[str]]:
+def build_focus_map() -> Dict[str, List[str]]:
     default = {
         "pm": ["todo_list_today", "risk_alert_panel", "metric_row_core", "progress_summary_ops"],
         "finance": ["todo_list_today", "risk_alert_panel", "progress_summary_ops", "metric_row_core"],
         "owner": ["todo_list_today", "risk_alert_panel", "metric_row_core", "progress_summary_ops"],
     }
-    return _call_provider("build_v1_focus_map", default)
+    return _call_provider("build_focus_map", default)
 
 
-def build_v1_zone_order() -> Dict[str, List[str]]:
+def build_zone_order() -> Dict[str, List[str]]:
     default = {
         "pm": ["today_focus", "analysis", "quick_entries"],
         "finance": ["analysis", "today_focus", "quick_entries"],
         "owner": ["quick_entries", "analysis", "today_focus"],
     }
-    return _call_provider("build_v1_zone_order", default)
+    return _call_provider("build_zone_order", default)
 
 
-def build_v1_page_profile(role_code: str) -> Dict[str, Any]:
+def build_page_profile(role_code: str) -> Dict[str, Any]:
     role = _to_text(role_code).lower()
     default = {
         "audience": ["internal_user", "reviewer"] if role == "pm" else ["internal_user", "reviewer"] if role == "finance" else ["owner", "executive"],
         "priority_model": "task_first" if role == "pm" else "metric_first" if role == "finance" else "role_first",
         "mobile_priority": ["today_focus", "analysis", "quick_entries", "hero"],
     }
-    return _call_provider("build_v1_page_profile", default, role_code)
+    return _call_provider("build_page_profile", default, role_code)
 
 
-def build_v1_data_sources() -> Dict[str, Dict[str, Any]]:
+def build_data_sources() -> Dict[str, Dict[str, Any]]:
     default = {
         "ds_hero": {"source_type": "computed", "provider": "workspace.hero", "section_keys": ["hero"]},
         "ds_metrics": {"source_type": "computed", "provider": "workspace.metrics.summary", "section_keys": ["metrics"]},
@@ -133,18 +133,18 @@ def build_v1_data_sources() -> Dict[str, Dict[str, Any]]:
         "ds_advice": {"source_type": "computed", "provider": "workspace.advice", "section_keys": ["advice"]},
         "ds_filters": {"source_type": "static", "provider": "workspace.filters", "section_keys": ["filters"]},
     }
-    return _call_provider("build_v1_data_sources", default)
+    return _call_provider("build_data_sources", default)
 
 
 def build_legacy_blocks(role_code: str) -> List[Dict[str, Any]]:
     return _call_provider("build_legacy_blocks", [], role_code)
 
 
-def build_v1_zones(role_code: str, audience: List[str], zone_rank: Dict[str, int]) -> List[Dict[str, Any]]:
-    return _call_provider("build_v1_zones", [], role_code, audience, zone_rank)
+def build_zones(role_code: str, audience: List[str], zone_rank: Dict[str, int]) -> List[Dict[str, Any]]:
+    return _call_provider("build_zones", [], role_code, audience, zone_rank)
 
 
-def build_v1_state_schema() -> Dict[str, Dict[str, str]]:
+def build_state_schema() -> Dict[str, Dict[str, str]]:
     default = {
         "pending": {"tone": "warning", "label": "待处理"},
         "running": {"tone": "info", "label": "进行中"},
@@ -152,4 +152,4 @@ def build_v1_state_schema() -> Dict[str, Dict[str, str]]:
         "completed": {"tone": "success", "label": "已完成"},
         "overdue": {"tone": "danger", "label": "已逾期"},
     }
-    return _call_provider("build_v1_state_schema", default)
+    return _call_provider("build_state_schema", default)

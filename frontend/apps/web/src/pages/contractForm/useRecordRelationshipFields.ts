@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
+import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { NativeLayoutLikeNode } from './nativeLayoutUtils';
 import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types';
@@ -7,7 +8,8 @@ import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types'
 type FieldDependencies = Record<string, any>;
 
 export function useRecordRelationshipFields(dependencies: FieldDependencies) {
-  const { ApiError, contract, contractFieldLabel, deniedRelationModels, ensureOne2manyRows, fieldType, findNativeFieldNodeInTree, formData, isWritableFieldVisible, mergeHydratedOne2manyRecords, mergeRelationOptions, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeRelationIds, one2manyCanCreateFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, rawNativeFormLayoutNodes, readContractFormRecord, relationEntry, relationFieldDescriptors, relationModel, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationReadFields, selectOne2manySubview, selectedRelationOptionsFromRuntime } = dependencies;
+  const { ApiError, contractFieldLabel, deniedRelationModels, ensureOne2manyRows, fieldType, findNativeFieldNodeInTree, formData, isWritableFieldVisible, mergeHydratedOne2manyRecords, mergeRelationOptions, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeRelationIds, one2manyCanCreateFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, readContractFormRecord, relationEntry, relationFieldDescriptors, relationModel, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationReadFields, selectOne2manySubview, selectedRelationOptionsFromRuntime, v2ContractStore } = dependencies;
+  const formFields = () => resolveContractV2FormFieldMap(v2ContractStore.value) as Record<string, FieldDescriptor>;
   function relationIds(name: string): number[] {
     return normalizeRelationIds(formData[name]);
   }
@@ -26,7 +28,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
   async function hydrateSelectedRelationOptions() {
-    const fields = contract.value?.fields || {};
+    const fields = formFields();
     await Promise.all(Object.entries(fields).map(async ([name, descriptor]) => {
       const type = fieldType(descriptor);
       if (!['many2one', 'many2many'].includes(type)) return;
@@ -55,7 +57,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
   function one2manyRelationModel(name: string) {
-    const descriptor = contract.value?.fields?.[name] as Record<string, unknown> | undefined;
+    const descriptor = formFields()[name] as Record<string, unknown> | undefined;
     return String(descriptor?.relation || '').trim();
   }
 
@@ -78,39 +80,9 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   function effectiveFieldDescriptor(name: string): FieldDescriptor | undefined {
     const normalized = String(name || '').trim();
     if (!normalized) return undefined;
-    const fallback = contract.value?.fields?.[normalized];
+    const fallback = formFields()[normalized];
     const nativeNode = findNativeFieldNode(normalized);
     return nativeNode ? nativeNodeFieldDescriptor(nativeNode, fallback) : fallback;
-  }
-
-  function mergeNativeLayoutFieldDescriptorsIntoContract() {
-    if (!contract.value?.fields) return;
-    const fields = { ...(contract.value.fields || {}) };
-    let changed = false;
-    const walk = (nodes: NativeFormLayoutNode[]) => {
-      nodes.forEach((node) => {
-        const type = String(node?.type || (node as { containerType?: string })?.containerType || '').trim().toLowerCase();
-        const name = String(node?.name || '').trim();
-        if (type === 'field' && name) {
-          const descriptor = nativeNodeFieldDescriptor(node, fields[name]);
-          if (descriptor) {
-            fields[name] = descriptor;
-            changed = true;
-          }
-        }
-        for (const key of ['children', 'pages', 'tabs', 'nodes', 'items'] as const) {
-          const children = node?.[key];
-          if (Array.isArray(children)) walk(children as NativeFormLayoutNode[]);
-        }
-      });
-    };
-    walk(rawNativeFormLayoutNodes.value);
-    if (changed) {
-      contract.value = {
-        ...contract.value,
-        fields,
-      };
-    }
   }
 
   function nativeFieldSubview(name: string): Record<string, unknown> | null {
@@ -118,22 +90,16 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
   function one2manyColumns(name: string): One2ManyColumn[] {
-    const subviews = (contract.value?.views?.form as Record<string, unknown> | undefined)?.subviews;
-    const legacySubview = subviews && typeof subviews === 'object'
-      ? (subviews as Record<string, unknown>)[name]
-      : undefined;
+    const descriptorSubview = (formFields()[name] as Record<string, unknown> | undefined)?.subview;
     const nativeSubview = nativeFieldSubview(name);
-    const fieldSubview = selectOne2manySubview(legacySubview, nativeSubview);
+    const fieldSubview = selectOne2manySubview(descriptorSubview, nativeSubview);
     return one2manyColumnsFromSubview(fieldSubview, (column) => one2manyRelationFieldDescriptor(name, column));
   }
 
   function one2manyPolicies(name: string) {
-    const subviews = (contract.value?.views?.form as Record<string, unknown> | undefined)?.subviews;
-    const legacySubview = subviews && typeof subviews === 'object'
-      ? (subviews as Record<string, unknown>)[name]
-      : undefined;
+    const descriptorSubview = (formFields()[name] as Record<string, unknown> | undefined)?.subview;
     const nativeSubview = nativeFieldSubview(name);
-    const fieldSubview = selectOne2manySubview(legacySubview, nativeSubview);
+    const fieldSubview = selectOne2manySubview(descriptorSubview, nativeSubview);
     return one2manySubviewPolicies(fieldSubview);
   }
 
@@ -142,7 +108,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
   function one2manyCreateLabel(name: string, fieldLabel = '') {
-    const label = String(fieldLabel || contractFieldLabel(name) || contract.value?.fields?.[name]?.string || '').trim();
+    const label = String(fieldLabel || contractFieldLabel(name) || formFields()[name]?.string || '').trim();
     return one2manyCreateLabelFromPolicies(one2manyPolicies(name), label);
   }
 
@@ -161,7 +127,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   async function hydrateOne2manyRows(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
-    const entry = relationEntry(contract.value?.fields?.[name]);
+    const entry = relationEntry(formFields()[name]);
     if (entry?.canRead === false) {
       deniedRelationModels.add(relation);
       return;
@@ -186,7 +152,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
   async function hydrateVisibleOne2manyRows() {
-    const fields = contract.value?.fields || {};
+    const fields = formFields();
     const names = Object.entries(fields)
       .filter(([, descriptor]) => fieldType(descriptor) === 'one2many')
       .map(([name]) => name)
@@ -199,5 +165,5 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
 
-  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, mergeNativeLayoutFieldDescriptorsIntoContract, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, hydrateVisibleOne2manyRows, one2manyRowErrors };
+  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCreateLabel, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, hydrateVisibleOne2manyRows, one2manyRowErrors };
 }

@@ -19,8 +19,8 @@ class PaymentRequestWorkItemService:
 
     VERSION = "payment-request-workspace-v1"
     MODEL = "payment.request"
-    ACTION_XMLID = "smart_construction_core.action_payment_request"
-    MENU_XMLID = ""
+    ACTION_XMLID = "smart_construction_core.action_payment_request_user_payment_apply"
+    MENU_XMLID = "smart_construction_core.menu_sc_user_payment_apply"
     COMPLETION_EVENTS = (
         "PAYMENT_REQUEST_SUBMIT_INTENT",
         "PAYMENT_REQUEST_APPROVE_INTENT",
@@ -42,6 +42,7 @@ class PaymentRequestWorkItemService:
         self._action_specs = list(self._action_handler._ACTION_SPECS)
         self._state_labels = dict(self.PaymentRequest._fields["state"].selection or [])
         self._allowed_actions_cache = {}
+        self._record_target_context_cache = None
 
     def _active_company_id(self):
         raw = self.params.get("company_id") or self.context.get("company_id")
@@ -115,14 +116,40 @@ class PaymentRequestWorkItemService:
             return None
         return {"id": int(value.id), "label": str(value.display_name or "")}
 
+    def _record_target_context(self):
+        if self._record_target_context_cache is not None:
+            return dict(self._record_target_context_cache)
+        action = self.env.ref(self.ACTION_XMLID, raise_if_not_found=False)
+        menu = self.env.ref(self.MENU_XMLID, raise_if_not_found=False)
+        context = {
+            "action_id": int(action.id) if action and action.exists() else 0,
+            "menu_id": int(menu.id) if menu and menu.exists() else 0,
+        }
+        self._record_target_context_cache = dict(context)
+        return context
+
     def _target(self, record):
+        action_context = self._record_target_context()
+        action_id = int(action_context.get("action_id") or 0)
+        menu_id = int(action_context.get("menu_id") or 0)
+        query = []
+        if action_id:
+            query.append("action_id=%s" % action_id)
+        if menu_id:
+            query.append("menu_id=%s" % menu_id)
+        route = "/r/%s/%s" % (self.MODEL, record.id)
+        if query:
+            route = "%s?%s" % (route, "&".join(query))
         return {
             "kind": "record",
             "model": self.MODEL,
             "record_id": int(record.id),
+            "action_ref": self.ACTION_XMLID,
             "action_xmlid": self.ACTION_XMLID,
             "menu_xmlid": self.MENU_XMLID,
-            "route": "/r/%s/%s" % (self.MODEL, record.id),
+            "action_id": action_id,
+            "menu_id": menu_id,
+            "route": route,
         }
 
     def _list_target(self):

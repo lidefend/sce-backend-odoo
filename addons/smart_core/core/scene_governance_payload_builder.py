@@ -50,7 +50,7 @@ def _error_codes(resolve_errors: list) -> list[str]:
 
 
 def _scene_type_consumption_summary(data: Dict[str, Any]) -> Dict[str, Any]:
-    ready = _as_dict(data.get("scene_ready_contract_v1"))
+    ready = _as_dict(data.get("scene_ready_contract"))
     ready_meta = _as_dict(ready.get("meta"))
     metrics = _as_dict(ready_meta.get("scene_type_consumption_metrics"))
     if not metrics:
@@ -191,7 +191,7 @@ def _scene_metrics_unified(delivery_policy: Dict[str, Any], nav_policy: Dict[str
     }
 
 
-def build_scene_governance_payload_v1(
+def build_scene_governance_payload(
     *,
     data: Dict[str, Any],
     scene_diagnostics: Dict[str, Any] | None,
@@ -223,7 +223,8 @@ def build_scene_governance_payload_v1(
     scene_metrics = _scene_metrics_unified(delivery_policy, nav_policy)
 
     return {
-        "contract_version": "v1",
+        "contract_version": "2.0.0",
+        "schema_version": "2.0.0",
         "scene_channel": _as_text(data.get("scene_channel")) or "stable",
         "scene_contract_ref": _as_text(data.get("scene_contract_ref")),
         "runtime_source": _as_text(diagnostics.get("loaded_from")) or "unknown",

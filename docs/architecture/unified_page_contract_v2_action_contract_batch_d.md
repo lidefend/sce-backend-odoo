@@ -12,7 +12,7 @@ Contract Governance / ActionContract Consolidation
 - `addons/smart_core/core/unified_page_contract_v2_action.py`
 - `docs/architecture/unified_page_contract_v2/fixtures/action_contract_source.json`
 - `docs/architecture/unified_page_contract_v2/fixtures/action_patch_source.json`
-- `docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v2.json`
 - `scripts/verify/unified_page_contract_v2_action_guard.py`
 - `Makefile`
 
@@ -77,7 +77,7 @@ Revert:
 - `scripts/verify/unified_page_contract_v2_action_guard.py`
 - `docs/architecture/unified_page_contract_v2/fixtures/action_contract_source.json`
 - `docs/architecture/unified_page_contract_v2/fixtures/action_patch_source.json`
-- `docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v2.json`
 - `Makefile` action target changes
 
 No database rollback is required.

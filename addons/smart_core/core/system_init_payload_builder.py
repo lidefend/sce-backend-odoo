@@ -12,8 +12,8 @@ class SystemInitPayloadBuilder:
     SOURCE_KIND = "system_init_startup_payload_projection"
     SOURCE_AUTHORITIES = (
         "system_init_runtime_payload",
-        "navigation_v1",
-        "scene_ready_contract_v1",
+        "navigation",
+        "scene_ready_contract",
         "page_contracts",
         "sc.entitlement",
         "sc.usage.counter",
@@ -23,12 +23,12 @@ class SystemInitPayloadBuilder:
     BUILD_MODE_PRELOAD = "preload"
     BUILD_MODE_DEBUG = "debug"
     MINIMAL_ALLOWED_KEYS = {
-        "edition_runtime_v1",
+        "edition_runtime",
         "user",
         "nav",
         "nav_meta",
         "default_route",
-        "scene_ready_contract_v1",
+        "scene_ready_contract",
         "intents",
         "feature_flags",
         "role_surface",
@@ -402,8 +402,8 @@ class SystemInitPayloadBuilder:
             minimal["ext_facts"] = minimal_ext_facts
         if isinstance(row.get("scene_action_surface_strategy"), dict):
             minimal["scene_action_surface_strategy"] = row.get("scene_action_surface_strategy")
-        if isinstance(row.get("edition_runtime_v1"), dict):
-            minimal["edition_runtime_v1"] = row.get("edition_runtime_v1")
+        if isinstance(row.get("edition_runtime"), dict):
+            minimal["edition_runtime"] = row.get("edition_runtime")
         if isinstance(row.get("semantic_runtime"), dict):
             minimal["semantic_runtime"] = cls._build_minimal_semantic_runtime(
                 row.get("semantic_runtime")
@@ -412,12 +412,12 @@ class SystemInitPayloadBuilder:
             minimal["released_scene_semantic_surface"] = cls._build_minimal_released_scene_semantic_surface(
                 row.get("released_scene_semantic_surface")
             )
-        if isinstance(row.get("scene_ready_contract_v1"), dict):
+        if isinstance(row.get("scene_ready_contract"), dict):
             if parse_bool(params.get("with_preload"), False):
-                minimal["scene_ready_contract_v1"] = row.get("scene_ready_contract_v1")
+                minimal["scene_ready_contract"] = row.get("scene_ready_contract")
             else:
-                minimal["scene_ready_contract_v1"] = cls._build_minimal_scene_ready_contract(
-                    row.get("scene_ready_contract_v1")
+                minimal["scene_ready_contract"] = cls._build_minimal_scene_ready_contract(
+                    row.get("scene_ready_contract")
                 )
         if include_capabilities:
             minimal["capabilities"] = row.get("capabilities") if isinstance(row.get("capabilities"), list) else []
@@ -462,7 +462,7 @@ class SystemInitPayloadBuilder:
                 "page",
                 "scene_blocks",
                 "scene_blocks_by_view",
-                "view_orchestration_contract_v1",
+                "view_orchestration_contract",
                 "parser_semantic_surface",
                 "semantic_view",
                 "semantic_page",
@@ -471,7 +471,7 @@ class SystemInitPayloadBuilder:
                 "primary_action",
                 "next_action",
                 "fallback_strategy",
-                "delivery_handoff_v1",
+                "delivery_handoff",
                 "handling_entry_catalog",
                 "extensions",
                 "runtime_handoff_surface",
@@ -581,7 +581,7 @@ class SystemInitPayloadBuilder:
                 compact_meta[key] = value
         return {
             "contract_version": str(raw.get("contract_version") or "v1"),
-            "schema_version": str(raw.get("schema_version") or "scene_ready_contract_v1"),
+            "schema_version": str(raw.get("schema_version") or "scene_ready_contract"),
             "scene_version": str(raw.get("scene_version") or ""),
             "source_schema_version": str(raw.get("source_schema_version") or ""),
             "scene_channel": str(raw.get("scene_channel") or ""),
@@ -737,38 +737,5 @@ class SystemInitPayloadBuilder:
             data["preload"].extend(preload_items)
 
     @staticmethod
-    def attach_layered_contract(data: dict) -> None:
+    def attach_product_identity(data: dict) -> None:
         data.update(runtime_product_identity())
-        role_surface = data.get("role_surface") if isinstance(data.get("role_surface"), dict) else {}
-        landing_scene_key = str(role_surface.get("landing_scene_key") or "").strip() or "workspace.home"
-        contract_version = str(data.get("contract_version") or "1.0.0")
-        schema_version = str(data.get("schema_version") or "1.0.0")
-        sections_payload = {
-            "contract_version": contract_version,
-            "schema_version": schema_version,
-            "session": {
-                "user": data.get("user"),
-                "contract_mode": data.get("contract_mode"),
-                "scene_channel": data.get("scene_channel"),
-            },
-            "nav": {
-                "nav": data.get("nav"),
-                "default_route": data.get("default_route"),
-                "nav_meta": data.get("nav_meta"),
-            },
-            "surface": {
-                "role_surface": data.get("role_surface"),
-                "role_surface_map": data.get("role_surface_map"),
-                "capabilities": data.get("capabilities"),
-                "capability_groups": data.get("capability_groups"),
-                "feature_flags": data.get("feature_flags"),
-            },
-            "bootstrap_refs": {
-                "workspace_home_ref": {
-                    "intent": "ui.contract",
-                    "scene_key": landing_scene_key,
-                }
-            },
-        }
-        data["system_init_sections_v1"] = sections_payload
-        data["init_contract_v1"] = sections_payload

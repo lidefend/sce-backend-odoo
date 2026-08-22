@@ -18,68 +18,68 @@
       "capability_open": [
         {
           "count": 0,
-          "day": "2026-04-17"
+          "day": "2026-08-14"
         },
         {
           "count": 0,
-          "day": "2026-04-18"
+          "day": "2026-08-15"
         },
         {
           "count": 0,
-          "day": "2026-04-19"
+          "day": "2026-08-16"
         },
         {
           "count": 0,
-          "day": "2026-04-20"
+          "day": "2026-08-17"
         },
         {
           "count": 0,
-          "day": "2026-04-21"
+          "day": "2026-08-18"
         },
         {
           "count": 0,
-          "day": "2026-04-22"
+          "day": "2026-08-19"
         },
         {
           "count": 0,
-          "day": "2026-04-23"
+          "day": "2026-08-20"
         }
       ],
       "scene_open": [
         {
           "count": 0,
-          "day": "2026-04-17"
+          "day": "2026-08-14"
         },
         {
           "count": 0,
-          "day": "2026-04-18"
+          "day": "2026-08-15"
         },
         {
           "count": 0,
-          "day": "2026-04-19"
+          "day": "2026-08-16"
         },
         {
           "count": 0,
-          "day": "2026-04-20"
+          "day": "2026-08-17"
         },
         {
           "count": 0,
-          "day": "2026-04-21"
+          "day": "2026-08-18"
         },
         {
-          "count": 0,
-          "day": "2026-04-22"
+          "count": 7,
+          "day": "2026-08-19"
         },
         {
-          "count": 1,
-          "day": "2026-04-23"
+          "count": 7,
+          "day": "2026-08-20"
         }
       ]
     },
     "filters": {
       "capability_key_prefix": "",
-      "day_from": "2026-04-17",
-      "day_to": "2026-04-23",
+      "day_from": "2026-08-14",
+      "day_to": "2026-08-20",
       "days": 7,
       "role_code": "",
       "scene_key_prefix": "",
@@ -89,31 +89,65 @@
     "role_top": [
       {
         "capability_open_total": 0,
+        "combined_total": 12,
+        "role_code": "pm",
+        "scene_open_total": 12
+      },
+      {
+        "capability_open_total": 0,
+        "combined_total": 5,
+        "role_code": "project_manager",
+        "scene_open_total": 5
+      },
+      {
+        "capability_open_total": 0,
         "combined_total": 1,
-        "role_code": "admin",
+        "role_code": "executive",
         "scene_open_total": 1
       }
     ],
     "scene_top": [
       {
-        "count": 1,
+        "count": 7,
         "key": "my.work"
+      },
+      {
+        "count": 7,
+        "key": "finance.payment_requests"
       }
     ],
     "totals": {
       "capability_open_total": 0,
-      "scene_open_total": 1
+      "scene_open_total": 14
     },
     "user_top": [
       {
         "capability_open_total": 0,
+        "combined_total": 6,
+        "scene_open_total": 6,
+        "user_id": 45
+      },
+      {
+        "capability_open_total": 0,
+        "combined_total": 5,
+        "scene_open_total": 5,
+        "user_id": 41
+      },
+      {
+        "capability_open_total": 0,
+        "combined_total": 2,
+        "scene_open_total": 2,
+        "user_id": 2
+      },
+      {
+        "capability_open_total": 0,
         "combined_total": 1,
         "scene_open_total": 1,
-        "user_id": 2
+        "user_id": 50
       }
     ]
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

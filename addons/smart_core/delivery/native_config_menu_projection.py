@@ -24,7 +24,7 @@ def source_authority_contract() -> dict[str, Any]:
         authorities=SOURCE_AUTHORITIES,
         no_business_fact_authority=NO_BUSINESS_FACT_AUTHORITY,
         projection_only=True,
-        runtime_carrier="delivery_engine_v1.nav/app_shell.config",
+        runtime_carrier="delivery_engine.nav/app_shell.config",
     )
 
 
