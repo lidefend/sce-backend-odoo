@@ -165,6 +165,20 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         self.assertNotIn("postData()", login.split("login intent rejected", 1)[1])
         self.assertNotIn("PASSWORD", login.split("login intent rejected", 1)[1])
 
+    def test_delivery_hardening_payment_create_uses_product_list_path(self) -> None:
+        source = (
+            ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs"
+        ).read_text(encoding="utf-8")
+        helper = source.split(
+            "async function openPaymentCreateFromList(", 1
+        )[1].split("\n}\n", 1)[0]
+        self.assertIn('[data-product-page-mode="list"][data-list-status]:visible', helper)
+        self.assertIn("name: '新建', exact: true", helper)
+        self.assertIn('data-form-model="payment.request"', helper)
+        self.assertIn('data-form-action-id="${target.action_id}"', helper)
+        self.assertIn('data-form-menu-id="${target.menu_id}"', helper)
+        self.assertNotIn("新建付款申请", source)
+
     def test_release_probes_fixture_and_http_credentials_before_frontend(self) -> None:
         fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(
             encoding="utf-8"
