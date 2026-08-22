@@ -12,7 +12,7 @@ type ProgressNode = {
 type DraftRow = { isNew?: boolean; dirty?: boolean; removed?: boolean };
 
 export function useRecordFormProgress(params: {
-  layoutNodes: ComputedRef<ProgressNode[]>;
+  layoutNodes: () => ProgressNode[];
   canonicalFormFields: ComputedRef<Record<string, FieldDescriptor>>;
   formData: Record<string, unknown>;
   originalValues: Ref<Record<string, unknown>>;
@@ -29,7 +29,7 @@ export function useRecordFormProgress(params: {
   comparableFieldValue: (name: string, value: unknown) => unknown;
 }) {
   function hasPendingInlineRelationChange() {
-    return params.layoutNodes.value.some((node) => {
+    return params.layoutNodes().some((node) => {
       if (node.kind !== 'field' || node.readonly) return false;
       const descriptor = params.canonicalFormFields.value[node.name];
       if (params.fieldType(descriptor) !== 'many2one') return false;
@@ -51,7 +51,7 @@ export function useRecordFormProgress(params: {
   }
 
   function hasOne2manyDraftChanges() {
-    return params.layoutNodes.value.some((node) => {
+    return params.layoutNodes().some((node) => {
       if (node.kind !== 'field' || node.readonly) return false;
       const descriptor = params.canonicalFormFields.value[node.name];
       return params.fieldType(descriptor) === 'one2many'
@@ -71,7 +71,7 @@ export function useRecordFormProgress(params: {
   });
 
   const intakeRequiredFields = computed(() => params.isIntakeCreateMode.value
-    ? params.layoutNodes.value
+    ? params.layoutNodes()
       .filter((node) => node.kind === 'field' && node.required && params.isFieldVisible(node.name))
       .map((node) => ({ name: node.name, label: node.label || node.name }))
     : []);

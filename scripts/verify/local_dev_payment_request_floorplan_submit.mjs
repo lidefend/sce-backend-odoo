@@ -939,6 +939,7 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
   } catch (error) {
     throw new Error(`authorized project relation journey failed: ${JSON.stringify(await runtimeDiagnostics(projectPage, {
       cause: error instanceof Error ? error.message : String(error),
+      browserErrors: projectErrors.slice(-20),
       requestCounts: {
         projectCreates: projectCreates.length,
         parentPaymentCreates: parentPaymentCreates.length,

@@ -1124,6 +1124,17 @@ const standardCreateReady = computed(() => {
   if (!isStandardIntakeMode.value) return true;
   return intakeRequiredReadyCount.value >= intakeRequiredFields.value.length;
 });
+const {
+  hasChanges, hasOne2manyDraftChanges, intakeRequiredFields, intakeRequiredReadyCount,
+  intakeMissingRequiredLabels, intakeRequiredSummary, intakeMissingSummary,
+} = useRecordFormProgress({
+  layoutNodes: () => layoutNodes.value,
+  canonicalFormFields, formData, originalValues, relationKeywords, fieldType,
+  relationInlineCreate, relationKeyword, relationModel, one2manyFieldRows,
+  isFieldWritable, isFieldVisible, isIntakeCreateMode,
+  nativeStatusbar: () => nativeStatusbar.value,
+  comparableFieldValue,
+});
 const writableFieldCount = computed(() =>
   layoutNodes.value.filter((node) => node.kind === 'field' && !node.readonly).length,
 );
@@ -1563,17 +1574,6 @@ const {
   useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore,
   validationErrors, visibleOne2manyRows,
 });
-const {
-  hasChanges, hasOne2manyDraftChanges, intakeRequiredFields, intakeRequiredReadyCount,
-  intakeMissingRequiredLabels, intakeRequiredSummary, intakeMissingSummary,
-} = useRecordFormProgress({
-  layoutNodes, canonicalFormFields, formData, originalValues, relationKeywords, fieldType,
-  relationInlineCreate, relationKeyword, relationModel, one2manyFieldRows,
-  isFieldWritable, isFieldVisible, isIntakeCreateMode,
-  nativeStatusbar: () => nativeStatusbar.value,
-  comparableFieldValue,
-});
-
 // Cutover is allowed only when every executable canonical action has one exact
 // adapter into the existing unified executor. Disabled actions remain visible
 // with their server reason and do not require an execution adapter.
