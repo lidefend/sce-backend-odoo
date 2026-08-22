@@ -512,8 +512,8 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     await chooseUniqueRelationOption(projectPage, paymentSurface, {
       fieldName: 'partner_id',
       relationModel: 'res.partner',
-      query: '德阳智能',
-      expectedLabel: '德阳智能制造产教融合项目',
+      query: '德阳某某钢材贸易',
+      expectedLabel: '德阳某某钢材贸易有限公司（示例）',
     });
     const parentAmountInput = await requireUnique(
       projectPage,
@@ -1243,8 +1243,8 @@ try {
   await chooseUniqueRelationOption(page, createSurface, {
     fieldName: 'partner_id',
     relationModel: 'res.partner',
-    query: '德阳智能',
-    expectedLabel: '德阳智能制造产教融合项目',
+    query: '德阳某某钢材贸易',
+    expectedLabel: '德阳某某钢材贸易有限公司（示例）',
   });
   check(Boolean(await createSurface.locator('[data-field-name="date_request"] input').inputValue()),
     'payment create date default is missing');
