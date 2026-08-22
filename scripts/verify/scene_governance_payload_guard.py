@@ -34,9 +34,9 @@ def _load_builder():
         raise RuntimeError(f"spec unavailable: {BUILDER_PATH}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    fn = getattr(module, "build_scene_governance_payload_v1", None)
+    fn = getattr(module, "build_scene_governance_payload", None)
     if not callable(fn):
-        raise RuntimeError("build_scene_governance_payload_v1 not found")
+        raise RuntimeError("build_scene_governance_payload not found")
     return fn
 
 
@@ -48,13 +48,13 @@ def _assert(condition: bool, message: str, errors: list[str]) -> None:
 def _validate_wiring(errors: list[str]) -> None:
     text = SYSTEM_INIT_PATH.read_text(encoding="utf-8")
     _assert(
-        "build_scene_governance_payload_v1" in text,
-        "system_init missing build_scene_governance_payload_v1 import/use",
+        "build_scene_governance_payload" in text,
+        "system_init missing build_scene_governance_payload import/use",
         errors,
     )
     _assert(
-        'data["scene_governance_v1"]' in text,
-        "system_init missing scene_governance_v1 response assignment",
+        'data["scene_governance"]' in text,
+        "system_init missing scene_governance response assignment",
         errors,
     )
 
@@ -65,7 +65,7 @@ def _validate_builder_contract(errors: list[str]) -> None:
         data={
             "scene_channel": "stable",
             "scene_contract_ref": "stable/LATEST.json",
-            "scene_ready_contract_v1": {
+            "scene_ready_contract": {
                 "meta": {
                     "scene_type_consumption_metrics": {
                         "list": {

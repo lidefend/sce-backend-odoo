@@ -1,0 +1,19 @@
+events:
+  - type: batch_started
+    at: "2026-08-22T00:00:00+08:00"
+    detail: Product iteration redirected from contract and Native expansion to the payment-request readonly golden page.
+  - type: product_path_activated
+    at: "2026-08-22T00:10:00+08:00"
+    detail: The production form host now composes the Canonical Render Model into the semantic Floorplan and renders it through TDesign.
+  - type: real_journey_passed
+    at: "2026-08-22T00:20:00+08:00"
+    detail: Governed local.dev payment data passed desktop and 390px browser verification without business mutation.
+  - type: closure_gate_stopped
+    at: "2026-08-22T00:30:00+08:00"
+    detail: The single Quick closure run passed product, build, security, generated-report and Contract V2 gates, then stopped on the unchanged ContractFormPage runtime-protocol token SubmissionFeedback.
+  - type: product_scope_completed
+    at: "2026-08-22T02:35:00+08:00"
+    detail: Governed upgrade, demo reset, snapshot, two-model readonly journey, home navigation alignment and TDesign default all passed; independent Scene baseline debt remains recorded.
+  - type: mobile_primary_action_closed
+    at: "2026-08-22T04:40:00+08:00"
+    detail: Final visual review moved the canonical primary action to a fixed 390px viewport bottom surface and added browser assertions for position, uniqueness and containment.

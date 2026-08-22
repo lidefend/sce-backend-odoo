@@ -6,7 +6,7 @@
       "intents_meta"
     ]
   },
-  "scene_governance_v1": {
+  "scene_governance": {
     "payload_keys": [
       "asset_queue",
       "auto_degrade",
@@ -23,6 +23,7 @@
       "scene_contract_ref",
       "scene_metrics",
       "scene_ready_consumption",
+      "schema_version",
       "surface_mapping"
     ]
   }

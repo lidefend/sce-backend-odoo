@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 FRONTEND_SRC = ROOT / "frontend" / "apps" / "web" / "src"
 
 ALLOWED_MARKERS = {
-    "scene_ready_contract_v1",
-    "scene_governance_v1",
+    "scene_ready_contract",
+    "scene_governance",
 }
 
 FORBIDDEN_PATTERNS = (

@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { formatDisplayValue, resolveLocalizedDisplayValue, stripInternalMigrationMetadata } from '../../frontend/apps/web/src/utils/display.ts';
+import {
+  mergeWorkspaceNavigationLinks,
+  resolveWorkspaceNavigationLink,
+} from '../../frontend/apps/web/src/app/workspaceHomeNavigation.ts';
 
 const localized = { zh_CN: '项目甲', en_US: 'Project A' };
 assert.equal(resolveLocalizedDisplayValue(localized, { locale: 'zh-CN' }), '项目甲');
@@ -36,6 +40,28 @@ assert.equal(
   '业务备注\n[migration:general_contract] legacy_record_id=e431f445',
   'only an authoritative leading internal marker may be removed',
 );
+assert.deepEqual(
+  resolveWorkspaceNavigationLink({
+    key: 'workspace',
+    label: '工作台',
+    children: [{ key: 'overview', label: '数据总览', route: '/a/42?menu_id=7' }],
+  }),
+  {
+    key: 'overview:/a/42?menu_id=7',
+    label: '数据总览',
+    detail: '工作台',
+    route: '/a/42?menu_id=7',
+  },
+  'a directory label must not be paired with a descendant route',
+);
+assert.deepEqual(
+  mergeWorkspaceNavigationLinks(
+    [{ key: 'overview', label: '数据总览', detail: '工作台', route: '/a/42?menu_id=7' }],
+    [{ key: 'legacy-shortcut', label: '工作台', detail: '数据总览', route: '/a/42?menu_id=7' }],
+  ),
+  [{ key: 'overview', label: '数据总览', detail: '工作台', route: '/a/42?menu_id=7' }],
+  'a shortcut cannot override the menu-authoritative identity for the same route',
+);
 
 const formSource = readFileSync(
   new URL('../../frontend/apps/web/src/pages/ContractFormPage.vue', import.meta.url),
@@ -46,6 +72,16 @@ assert.doesNotMatch(
   formSource,
   /showPrimaryBusinessFormAction = computed\(\(\) => canSave\.value/,
   'normalized business actions must not be hidden merely because the readonly form cannot save',
+);
+
+const listPageSource = readFileSync(
+  new URL('../../frontend/apps/web/src/pages/ListPage.vue', import.meta.url),
+  'utf8',
+);
+assert.match(
+  listPageSource,
+  /return resolveListDisplayField\(field, columnOption\(field\)\);/,
+  'list cells must consume the API display field rather than the underlying sort/filter/aggregate value field',
 );
 
 for (const relativePath of [

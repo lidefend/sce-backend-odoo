@@ -2,7 +2,11 @@
   "action": null,
   "case": "payment_enter_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": "PROJECT_NOT_FOUND",
+    "message": "项目不存在或当前账号不可访问",
+    "suggested_action": "fix_input"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,11 +17,41 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
+    "error": {
+      "code": "PROJECT_NOT_FOUND",
+      "message": "项目不存在或当前账号不可访问",
+      "suggested_action": "fix_input"
+    },
+    "meta": {
+      "elapsed_ms": 0,
       "intent": "payment.enter",
-      "runtime_snapshot": false
-    }
+      "source_authority": {
+        "adapter_layer": "industry_orchestration_adapter",
+        "authorities": [
+          "scene_runtime_service",
+          "odoo.orm"
+        ],
+        "delegated_source_authority": {
+          "authorities": [
+            "project.project",
+            "payment.request",
+            "payment.ledger",
+            "construction.contract",
+            "odoo.orm",
+            "odoo.read_group"
+          ],
+          "kind": "payment_slice_business_fact_projection",
+          "projection_only": true,
+          "runtime_carrier": "scene_entry_and_block_contract"
+        },
+        "kind": "scene_entry_runtime_projection_adapter",
+        "legacy_scene_copy_source": "legacy_scene_entry_copy_projection",
+        "no_business_fact_authority": true,
+        "projection_only": true,
+        "runtime_carrier": "scene_entry_and_block_contract"
+      }
+    },
+    "ok": false
   },
   "user": "admin",
   "user_fallback": null,

@@ -4,10 +4,7 @@ import { extractLiteContractFromIntentBody } from '../app/runtime/unifiedPageCon
 import type { UnifiedPageContractLite } from '../app/contracts/unifiedPageContractLite';
 import { LITE_PREVIEW_LEGACY_FALLBACK_MODE } from '../app/contracts/unifiedPageContractLiteCompat';
 import type { UnifiedPageContractV2 } from '../app/contracts/unifiedPageContractV2';
-import { adaptUnifiedPageContractV2Raw } from '../app/runtime/unifiedPageContractV2CompatProjection';
-import { currentContextEpoch } from '../app/contextEpoch';
-import { useSessionStore } from '../stores/session';
-import { resolveModelContractRenderProfile } from './modelContractProfile';
+import { loadActionContractV2, loadModelContractV2 } from '../app/contracts/v2/client';
 
 type LoadActionContractOptions = {
   sceneKey?: string | null;
@@ -29,65 +26,10 @@ type LoadModelContractOptions = LoadActionContractOptions & {
   viewType?: 'form' | 'tree' | 'kanban';
 };
 
-type Dict = Record<string, unknown>;
-type RawContractResponse = Awaited<ReturnType<typeof requestUnifiedPageContractV2Raw>>;
-
-const CREATE_CONTRACT_CACHE_TTL_MS = 30_000;
-const CREATE_CONTRACT_CACHE_MAX_ENTRIES = 16;
-const createContractCache = new Map<string, { expiresAt: number; response: RawContractResponse }>();
-
-function asDict(value: unknown): Dict {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Dict : {};
-}
-
-function cloneRawContractResponse(response: RawContractResponse): RawContractResponse {
-  return JSON.parse(JSON.stringify(response)) as RawContractResponse;
-}
-
-function createContractCacheKey(params: Record<string, unknown>): string {
-  const session = useSessionStore();
-  return [
-    session.sessionDb,
-    session.token || '',
-    currentContextEpoch(),
-    JSON.stringify(params),
-  ].join('|');
-}
-
-function pruneCreateContractCache(now: number) {
-  for (const [key, entry] of createContractCache) {
-    if (entry.expiresAt <= now) createContractCache.delete(key);
-  }
-  while (createContractCache.size >= CREATE_CONTRACT_CACHE_MAX_ENTRIES) {
-    const oldestKey = createContractCache.keys().next().value;
-    if (typeof oldestKey !== 'string') break;
-    createContractCache.delete(oldestKey);
-  }
-}
-
-async function requestUnifiedPageContractV2Raw(params: Record<string, unknown>) {
-  const result = await intentRequestRaw<Dict>({
-    intent: 'ui.contract.v2',
-    params: {
-      client_type: 'web_pc',
-      delivery_profile: 'full',
-      ...params,
-    },
-  });
-  const adapted = adaptUnifiedPageContractV2Raw(result, params);
-  if (!Object.keys(adapted.data || {}).length) {
-    throw new ApiError('ui.contract.v2 missing projection payload', 500, result.traceId, {
-      reasonCode: 'UNIFIED_PAGE_CONTRACT_V2_PROJECTION_MISSING',
-      kind: 'contract',
-      retryable: false,
-    });
-  }
-  return adapted;
-}
 
 export async function loadActionUnifiedPageContractV2(actionId: number, options?: LoadActionContractOptions): Promise<UnifiedPageContractV2> {
-  const result = await requestUnifiedPageContractV2Raw(buildActionContractParams(actionId, options));
-  return asDict(result.data.__unified_page_contract_v2) as UnifiedPageContractV2;
+  const result = await loadActionContractV2(actionId, options);
+  return result.snapshot as unknown as UnifiedPageContractV2;
 }
 
 function rethrowContractError(err: unknown, context: { op: 'action_open' | 'model'; model?: string; actionId?: number }): never {
@@ -121,171 +63,18 @@ function rethrowContractError(err: unknown, context: { op: 'action_open' | 'mode
   );
 }
 
-function buildActionContractParams(actionId: number, options?: LoadActionContractOptions) {
-  const params: Record<string, unknown> = { op: 'action_open', action_id: actionId };
-  const sceneKey = String(options?.sceneKey || '').trim();
-  if (sceneKey) params.scene_key = sceneKey;
-  const menuId = Number(options?.menuId || 0);
-  if (Number.isFinite(menuId) && menuId > 0) {
-    params.menu_id = menuId;
-  }
-  const viewType = String(options?.viewType || '').trim().toLowerCase();
-  if (viewType) {
-    params.view_type = viewType === 'list' ? 'tree' : viewType;
-  }
-  const viewId = Number(options?.viewId || 0);
-  if (Number.isFinite(viewId) && viewId > 0) {
-    params.view_id = viewId;
-  }
-  const recordId = Number(options?.recordId || 0);
-  if (Number.isFinite(recordId) && recordId > 0) {
-    params.record_id = recordId;
-  }
-  const profile = String(options?.renderProfile || '').trim().toLowerCase();
-  if (profile === 'create' || profile === 'edit' || profile === 'readonly') {
-    params.render_profile = profile;
-  }
-  const surface = String(options?.surface || '').trim().toLowerCase();
-  if (surface === 'user' || surface === 'native' || surface === 'hud') {
-    params.contract_surface = surface;
-    if (surface === 'hud') {
-      params.contract_mode = 'hud';
-      params.hud = 1;
-    }
-  }
-  const sourceMode = String(options?.sourceMode || '').trim();
-  if (sourceMode) {
-    params.source_mode = sourceMode;
-  }
-  if (options?.context && typeof options.context === 'object' && !Array.isArray(options.context)) {
-    params.context = options.context;
-  }
-  const contextRaw = String(options?.contextRaw || '').trim();
-  if (contextRaw) {
-    params.context_raw = contextRaw;
-  }
-  const previewToken = String(options?.previewToken || '').trim();
-  if (previewToken) params.preview_token = previewToken;
-  const previewRoleKey = String(options?.previewRoleKey || '').trim();
-  if (previewRoleKey) params.preview_role_key = previewRoleKey;
-  return params;
-}
-
-export async function loadActionContract(actionId: number, options?: LoadActionContractOptions) {
+export async function loadActionContractStore(actionId: number, options?: LoadActionContractOptions) {
   try {
-    const result = await requestUnifiedPageContractV2Raw(buildActionContractParams(actionId, options));
-    return result.data;
+    const result = await loadActionContractV2(actionId, options);
+    return result.store;
   } catch (err) {
     rethrowContractError(err, { op: 'action_open', actionId });
-  }
-}
-
-export async function loadActionContractRaw(actionId: number, options?: LoadActionContractOptions) {
-  try {
-    return await requestUnifiedPageContractV2Raw(buildActionContractParams(actionId, options));
-  } catch (err) {
-    rethrowContractError(err, { op: 'action_open', actionId });
-  }
-}
-
-function buildModelContractParams(model: string, options?: LoadModelContractOptions) {
-  const viewType = options?.viewType || 'form';
-  const recordId = Number(options?.recordId || 0);
-  const params: Record<string, unknown> = {
-    op: 'model',
-    model: String(model || '').trim(),
-    view_type: viewType,
-  };
-  const sceneKey = String(options?.sceneKey || '').trim();
-  if (sceneKey) params.scene_key = sceneKey;
-  const actionId = Number(options?.actionId || 0);
-  if (Number.isFinite(actionId) && actionId > 0) {
-    params.action_id = actionId;
-  }
-  const menuId = Number(options?.menuId || 0);
-  if (Number.isFinite(menuId) && menuId > 0) {
-    params.menu_id = menuId;
-  }
-  const viewId = Number(options?.viewId || 0);
-  if (Number.isFinite(viewId) && viewId > 0) {
-    params.view_id = viewId;
-  }
-  if (Number.isFinite(recordId) && recordId > 0) {
-    params.record_id = recordId;
-  }
-  // A form contract without a record identity is necessarily a create
-  // contract.  Normalize this at the transport boundary so an incomplete
-  // caller cannot silently request the ambiguous edit/default projection and
-  // bypass the governed create-contract cache.
-  const profile = resolveModelContractRenderProfile({
-    viewType,
-    recordId,
-    renderProfile: options?.renderProfile,
-  });
-  if (profile === 'create' || profile === 'edit' || profile === 'readonly') {
-    params.render_profile = profile;
-  }
-  const surface = String(options?.surface || '').trim().toLowerCase();
-  if (surface === 'user' || surface === 'native' || surface === 'hud') {
-    params.contract_surface = surface;
-    if (surface === 'hud') {
-      params.contract_mode = 'hud';
-      params.hud = 1;
-    }
-  }
-  const sourceMode = String(options?.sourceMode || '').trim();
-  if (sourceMode) {
-    params.source_mode = sourceMode;
-  }
-  if (options?.context && typeof options.context === 'object' && !Array.isArray(options.context)) {
-    params.context = options.context;
-  }
-  const contextRaw = String(options?.contextRaw || '').trim();
-  if (contextRaw) {
-    params.context_raw = contextRaw;
-  }
-  const previewToken = String(options?.previewToken || '').trim();
-  if (previewToken) params.preview_token = previewToken;
-  const previewRoleKey = String(options?.previewRoleKey || '').trim();
-  if (previewRoleKey) params.preview_role_key = previewRoleKey;
-  return params;
-}
-
-export async function loadModelContractRaw(model: string, options?: LoadModelContractOptions) {
-  const params = buildModelContractParams(model, options);
-  const cacheable = params.render_profile === 'create'
-    && !Number(params.record_id || 0)
-    && !String(options?.previewToken || '').trim();
-  if (cacheable) {
-    const now = Date.now();
-    pruneCreateContractCache(now);
-    const key = createContractCacheKey(params);
-    const cached = createContractCache.get(key);
-    if (cached && cached.expiresAt > now) {
-      return cloneRawContractResponse(cached.response);
-    }
-    try {
-      const response = await requestUnifiedPageContractV2Raw(params);
-      createContractCache.set(key, {
-        expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
-        response: cloneRawContractResponse(response),
-      });
-      return cloneRawContractResponse(response);
-    } catch (err) {
-      createContractCache.delete(key);
-      rethrowContractError(err, { op: 'model', model });
-    }
-  }
-  try {
-    return await requestUnifiedPageContractV2Raw(params);
-  } catch (err) {
-    rethrowContractError(err, { op: 'model', model });
   }
 }
 
 export async function loadModelUnifiedPageContractV2(model: string, options?: LoadModelContractOptions): Promise<UnifiedPageContractV2> {
-  const result = await requestUnifiedPageContractV2Raw(buildModelContractParams(model, options));
-  return asDict(result.data.__unified_page_contract_v2) as UnifiedPageContractV2;
+  const result = await loadModelContractV2(model, { ...options, viewType: options?.viewType || 'form' });
+  return result.snapshot as unknown as UnifiedPageContractV2;
 }
 
 export async function loadModelLitePreviewContract(model: string, options?: LoadModelContractOptions): Promise<UnifiedPageContractLite | null> {

@@ -68,7 +68,7 @@
                             <h1><field name="name" readonly="1"/></h1>
                             <div class="text-muted">
                                 <field name="payment_flow_label" readonly="1" class="oe_inline"/>
-                                · <field name="project_id" readonly="state not in ['draft', 'rejected']" class="oe_inline" options="{'no_create': True}"/>
+                                · <field name="project_id" readonly="state not in ['draft', 'rejected']" class="oe_inline" options="{'relation_entry': {'create_mode': 'dialog', 'action_xmlid': 'smart_construction_core.action_project_initiation', 'menu_xmlid': 'smart_construction_core.menu_sc_project_initiation'}}"/>
                                 · <field name="partner_id" readonly="state not in ['draft', 'rejected']" class="oe_inline"/>
                             </div>
                         </div>
@@ -105,7 +105,7 @@
                                 <field name="reject_reason" readonly="1" invisible="state != 'rejected'"/>
                             </group>
                             <group string="项目与收款对象">
-                                <field name="project_id" options="{'no_create': True}" readonly="state not in ['draft', 'rejected']"/>
+                                <field name="project_id" options="{'relation_entry': {'create_mode': 'dialog', 'action_xmlid': 'smart_construction_core.action_project_initiation', 'menu_xmlid': 'smart_construction_core.menu_sc_project_initiation'}}" readonly="state not in ['draft', 'rejected']"/>
                                 <field name="company_id" readonly="1"/>
                                 <field name="operation_strategy" readonly="1"/>
                                 <field name="partner_id" readonly="state not in ['draft', 'rejected']"/>

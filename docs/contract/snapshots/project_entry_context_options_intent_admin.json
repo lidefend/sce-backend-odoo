@@ -13,10 +13,208 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "project.entry.context.options",
-      "runtime_snapshot": false
+    "active_project_id": 0,
+    "company_options": [
+      {
+        "active": true,
+        "company_id": 1,
+        "company_name": "My Company"
+      }
+    ],
+    "diagnostics_summary": {
+      "available": true,
+      "message": "已提供可切换项目列表，可直接进入项目管理。",
+      "option_count": 6,
+      "resolution_path": "options_ranked",
+      "status": "options_available"
+    },
+    "lifecycle_hints": {
+      "primary_action_label": "进入项目管理",
+      "project_id": 6,
+      "stage": "project_options_available",
+      "suggested_action_intent": "project.dashboard.enter",
+      "suggested_action_title": "进入项目管理"
+    },
+    "operation_options": [
+      {
+        "active": true,
+        "disabled": false,
+        "disabled_reason": "",
+        "operation_strategy": "direct",
+        "operation_strategy_label": "公司直营"
+      },
+      {
+        "active": false,
+        "disabled": true,
+        "disabled_reason": "经营方式必须与当前项目一致",
+        "operation_strategy": "joint",
+        "operation_strategy_label": "联营项目"
+      }
+    ],
+    "options": [
+      {
+        "active": false,
+        "milestone_label": "ready",
+        "operation_strategy": "direct",
+        "operation_strategy_label": "公司直营",
+        "project_context": {
+          "company_id": 1,
+          "company_name": "My Company",
+          "execution_stage": "in_progress",
+          "execution_stage_label": "在建",
+          "milestone": "ready",
+          "milestone_label": "ready",
+          "operation_strategy": "direct",
+          "operation_strategy_label": "公司直营",
+          "project_condition": "risk",
+          "project_id": 6,
+          "project_name": "S73 风险治理演示项目",
+          "stage": "in_progress",
+          "stage_label": "在建",
+          "status": "risk"
+        },
+        "project_id": 6,
+        "project_name": "S73 风险治理演示项目",
+        "stage_label": "在建",
+        "status": "risk"
+      },
+      {
+        "active": false,
+        "milestone_label": "ready",
+        "operation_strategy": "direct",
+        "operation_strategy_label": "公司直营",
+        "project_context": {
+          "company_id": 1,
+          "company_name": "My Company",
+          "execution_stage": "in_progress",
+          "execution_stage_label": "在建",
+          "milestone": "ready",
+          "milestone_label": "ready",
+          "operation_strategy": "direct",
+          "operation_strategy_label": "公司直营",
+          "project_condition": "good",
+          "project_id": 5,
+          "project_name": "S69 支付台账演示项目",
+          "stage": "in_progress",
+          "stage_label": "在建",
+          "status": "good"
+        },
+        "project_id": 5,
+        "project_name": "S69 支付台账演示项目",
+        "stage_label": "在建",
+        "status": "good"
+      },
+      {
+        "active": false,
+        "milestone_label": "ready",
+        "operation_strategy": "direct",
+        "operation_strategy_label": "公司直营",
+        "project_context": {
+          "company_id": 1,
+          "company_name": "My Company",
+          "execution_stage": "in_progress",
+          "execution_stage_label": "在建",
+          "milestone": "ready",
+          "milestone_label": "ready",
+          "operation_strategy": "direct",
+          "operation_strategy_label": "公司直营",
+          "project_condition": "good",
+          "project_id": 4,
+          "project_name": "S65 成本资金演示项目",
+          "stage": "in_progress",
+          "stage_label": "在建",
+          "status": "good"
+        },
+        "project_id": 4,
+        "project_name": "S65 成本资金演示项目",
+        "stage_label": "在建",
+        "status": "good"
+      },
+      {
+        "active": false,
+        "milestone_label": "ready",
+        "operation_strategy": "direct",
+        "operation_strategy_label": "公司直营",
+        "project_context": {
+          "company_id": 1,
+          "company_name": "My Company",
+          "execution_stage": "in_progress",
+          "execution_stage_label": "在建",
+          "milestone": "ready",
+          "milestone_label": "ready",
+          "operation_strategy": "direct",
+          "operation_strategy_label": "公司直营",
+          "project_condition": "good",
+          "project_id": 1,
+          "project_name": "演示项目 · 城市快速路提升工程",
+          "stage": "in_progress",
+          "stage_label": "在建",
+          "status": "good"
+        },
+        "project_id": 1,
+        "project_name": "演示项目 · 城市快速路提升工程",
+        "stage_label": "在建",
+        "status": "good"
+      },
+      {
+        "active": false,
+        "milestone_label": "ready",
+        "operation_strategy": "direct",
+        "operation_strategy_label": "公司直营",
+        "project_context": {
+          "company_id": 1,
+          "company_name": "My Company",
+          "execution_stage": "draft",
+          "execution_stage_label": "筹备中",
+          "milestone": "ready",
+          "milestone_label": "ready",
+          "operation_strategy": "direct",
+          "operation_strategy_label": "公司直营",
+          "project_condition": "good",
+          "project_id": 3,
+          "project_name": "P2-空壳对照项目（演示）",
+          "stage": "draft",
+          "stage_label": "筹备中",
+          "status": "good"
+        },
+        "project_id": 3,
+        "project_name": "P2-空壳对照项目（演示）",
+        "stage_label": "筹备中",
+        "status": "good"
+      },
+      {
+        "active": false,
+        "milestone_label": "ready",
+        "operation_strategy": "direct",
+        "operation_strategy_label": "公司直营",
+        "project_context": {
+          "company_id": 1,
+          "company_name": "My Company",
+          "execution_stage": "draft",
+          "execution_stage_label": "筹备中",
+          "milestone": "ready",
+          "milestone_label": "ready",
+          "operation_strategy": "direct",
+          "operation_strategy_label": "公司直营",
+          "project_condition": "good",
+          "project_id": 2,
+          "project_name": "德阳智能制造产教融合项目",
+          "stage": "draft",
+          "stage_label": "筹备中",
+          "status": "good"
+        },
+        "project_id": 2,
+        "project_name": "德阳智能制造产教融合项目",
+        "stage_label": "筹备中",
+        "status": "good"
+      }
+    ],
+    "suggested_action": {
+      "intent": "project.dashboard.enter",
+      "params": {
+        "project_id": 6
+      },
+      "reason_code": "PROJECT_OPTIONS_AVAILABLE"
     }
   },
   "user": "admin",

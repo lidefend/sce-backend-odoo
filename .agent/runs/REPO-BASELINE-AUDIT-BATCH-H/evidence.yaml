@@ -1,0 +1,17 @@
+evidence:
+  reused_identity:
+    compose_project: sc-local-dev
+    database: sc_dev_demo
+    dbfilter: ^sc_dev_demo$
+    env_file: .env.dev
+
+  verification:
+    lifecycle_unittest:
+      status: passed
+      tests_collected: 9
+    real_contract_snapshot:
+      status: failed_semantic_validation
+      failure: empty_and_unexpected_record_error_snapshots
+
+  completion:
+    status: completed

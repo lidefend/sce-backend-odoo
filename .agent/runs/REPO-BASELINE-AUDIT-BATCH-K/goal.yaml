@@ -1,0 +1,7 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-K
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Bound form snapshot record reads to visible contract fields
+status: completed
+formal_product_layer: P4
+layer_target: scripts/contract snapshot evidence exporter
+reason: Prevent evidence generation from treating an empty field selection as an all-field ORM read.

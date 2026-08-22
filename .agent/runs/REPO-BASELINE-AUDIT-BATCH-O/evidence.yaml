@@ -1,0 +1,10 @@
+evidence:
+  baseline_commit: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  layer_target: governed contract export orchestration
+  standard_vs_user_specific: generic evidence execution mechanism
+  why_here: Selection and resume are orchestration concerns owned by the exporter and Make wrapper.
+  why_not_elsewhere: Product contracts, runtime roles, and databases are unaffected.
+  blast_radius: Optional contract snapshot case selection; default full export is unchanged.
+  validation_status: passed

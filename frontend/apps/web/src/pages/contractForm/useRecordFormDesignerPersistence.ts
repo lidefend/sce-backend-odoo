@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, watch } from 'vue';
 import type { FieldDescriptor } from '@sc/schema';
+import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { NativeLayoutLikeNode } from './nativeLayoutUtils';
 import type { LowCodeFieldSize } from './types';
@@ -8,8 +9,99 @@ import type { LowCodeFieldSize } from './types';
 type PersistenceDependencies = Record<string, any>;
 
 export function useRecordFormDesignerPersistence(dependencies: PersistenceDependencies) {
-  const { BUSINESS_CONFIG_INTENTS, BUSINESS_CONFIG_MODES, activeContractMode, activeContractModeFieldRows, applyPageStatusEvent, buildCurrentFormGroupOptions, buildFormDesignerGroupNavigatorItems, buildFormDesignerSearchableFieldRows, buildFormFieldConfigScope, buildLowCodeViewOrchestrationFromDraft, busy, busyKind, collectLowCodeLayoutFromViewOrchestration, collectNativeFieldStructureGroups, collectNativeLayoutGroupTitles, contract, contractFieldLabel, contractModeFeedback, currentBusinessCategoryLabel, currentFormDesignFieldKeys, currentFormOrderedFieldKeys, effectiveFieldGroupTitleForDraft, effectiveFieldSize, effectiveGroupColumns, effectiveGroupVisible, extractLowCodeFormFieldDraftState, extractLowCodeLayoutDraftState, fieldGroupBase, fieldGroupDraft, fieldGroupSavedBase, fieldLayoutDirtyKeys, fieldOrderDraft, fieldSizeBase, fieldSizeDraft, fieldVisibilityBase, fieldVisibilityDraft, filterFormDesignerFieldRows, formConfigAuditBusy, formConfigAuditResult, formDesignFieldLabel, formDesignerFieldSearchText, formLayoutColumnsBase, formLayoutColumnsConfigured, formLayoutColumnsDraft, formLayoutDirty, formatFormConfigAuditSummary, groupColumnsBase, groupColumnsDraft, groupLayoutDirtyKeys, groupVisibilityBase, groupVisibilityDraft, inferLowCodeLayoutColumns, intentRequest, isContractFieldOrderEditable, isReadableFieldGroupTitle, layoutHasReadableFieldGroups, lowCodeApplyBaseParams, lowCodeContractHydrating, lowCodeContractList, lowCodeContractLoaded, lowCodeFormLayoutBase, lowCodeFormSpecFromViews, lowCodeLayoutDraft, lowCodeLayoutFieldLabelFromNodes, lowCodeLayoutFromFormSpec, lowCodeScopedContractName, lowCodeSelectedContractName, lowCodeViewsFromContractResponse, mergeLowCodeLayoutWithRuntimeGroupShells, model, normalizeConfigPageLabel, normalizeContractV2ContainersForNativeFormFromTree, normalizeFieldGroupTitle, normalizeFormConfigAuditResult, normalizeLowCodeContractListRows, pageDisplayTitle, rawNativeFormLayoutNodes, readableFallbackFieldLabel, requestIntent, resolveContractV2ContainerTree, resolveSelectedFormSettingsFieldGroupTitle, resolveUnifiedPageContractV2, routeQueryText, runtimeNativeFormLayoutNodes, selectedFormSettingsFieldGroupTitleDraft, selectedFormSettingsFieldGroupTitleEdit, selectedFormSettingsFieldKey, selectedFormSettingsFieldLabel, showHud, v2ContractStore } = dependencies;
-  const typedRequestIntent = requestIntent as <T = unknown>(payload: Record<string, unknown>) => Promise<T>;
+  const {
+    BUSINESS_CONFIG_INTENTS,
+    BUSINESS_CONFIG_MODES,
+    activeContractMode,
+    activeContractModeFieldRows,
+    applyPageStatusEvent,
+    buildCurrentFormGroupOptions,
+    buildFormDesignerGroupNavigatorItems,
+    buildFormDesignerSearchableFieldRows,
+    buildFormFieldConfigScope,
+    buildLowCodeViewOrchestrationFromDraft,
+    busy,
+    busyKind,
+    collectLowCodeLayoutFromViewOrchestration,
+    collectNativeFieldStructureGroups,
+    collectNativeLayoutGroupTitles,
+    contractFieldLabel,
+    contractModeFeedback,
+    currentBusinessCategoryLabel,
+    currentFormDesignFieldKeys,
+    currentFormOrderedFieldKeys,
+    effectiveFieldGroupTitleForDraft,
+    effectiveFieldSize,
+    effectiveGroupColumns,
+    effectiveGroupVisible,
+    extractLowCodeFormFieldDraftState,
+    extractLowCodeLayoutDraftState,
+    fieldGroupBase,
+    fieldGroupDraft,
+    fieldGroupSavedBase,
+    fieldLayoutDirtyKeys,
+    fieldOrderDraft,
+    fieldSizeBase,
+    fieldSizeDraft,
+    fieldVisibilityBase,
+    fieldVisibilityDraft,
+    filterFormDesignerFieldRows,
+    formConfigAuditBusy,
+    formConfigAuditResult,
+    formDesignFieldLabel,
+    formDesignerFieldSearchText,
+    formLayoutColumnsBase,
+    formLayoutColumnsConfigured,
+    formLayoutColumnsDraft,
+    formLayoutDirty,
+    formatFormConfigAuditSummary,
+    groupColumnsBase,
+    groupColumnsDraft,
+    groupLayoutDirtyKeys,
+    groupVisibilityBase,
+    groupVisibilityDraft,
+    inferLowCodeLayoutColumns,
+    intentRequest,
+    isContractFieldOrderEditable,
+    isReadableFieldGroupTitle,
+    layoutHasReadableFieldGroups,
+    lowCodeApplyBaseParams,
+    lowCodeContractHydrating,
+    lowCodeContractList,
+    lowCodeContractLoaded,
+    lowCodeFormLayoutBase,
+    lowCodeFormSpecFromViews,
+    lowCodeLayoutDraft,
+    lowCodeLayoutFieldLabelFromNodes,
+    lowCodeLayoutFromFormSpec,
+    lowCodeScopedContractName,
+    lowCodeSelectedContractName,
+    lowCodeViewsFromContractResponse,
+    mergeLowCodeLayoutWithRuntimeGroupShells,
+    model,
+    normalizeConfigPageLabel,
+    normalizeContractV2ContainersForNativeFormFromTree,
+    normalizeFieldGroupTitle,
+    normalizeFormConfigAuditResult,
+    normalizeLowCodeContractListRows,
+    pageDisplayTitle,
+    rawNativeFormLayoutNodes,
+    readableFallbackFieldLabel,
+    requestIntent,
+    resolveContractV2ContainerTree,
+    resolveSelectedFormSettingsFieldGroupTitle,
+    routeQueryText,
+    runtimeNativeFormLayoutNodes,
+    selectedFormSettingsFieldGroupTitleDraft,
+    selectedFormSettingsFieldGroupTitleEdit,
+    selectedFormSettingsFieldKey,
+    selectedFormSettingsFieldLabel,
+    showHud,
+    v2ContractStore,
+  } = dependencies;
+  const typedRequestIntent = requestIntent as <T = unknown>(
+    payload: Record<string, unknown>,
+  ) => Promise<T>;
   async function auditCurrentFormConfiguration() {
     if (formConfigAuditBusy.value || busy.value) return;
     const params = lowCodeApplyBaseParams();
@@ -37,7 +129,12 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       });
       formConfigAuditResult.value = normalizeFormConfigAuditResult(result);
     } catch (err) {
-      applyPageStatusEvent({ kind: 'status', transaction: 'formConfig', status: 'error', errorMessage: err instanceof Error ? err.message : '表单配置检查失败' });
+      applyPageStatusEvent({
+        kind: 'status',
+        transaction: 'formConfig',
+        status: 'error',
+        errorMessage: err instanceof Error ? err.message : '表单配置检查失败',
+      });
     } finally {
       formConfigAuditBusy.value = false;
     }
@@ -51,18 +148,25 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
     return hudFlag === '1' || hudFlag === 'true' || surface === 'hud';
   });
 
-  const currentFormConfigPageLabel = computed(() => normalizeConfigPageLabel(
-    routeQueryText('page_label')
-    || routeQueryText('pageLabel')
-    || currentBusinessCategoryLabel.value
-    || pageDisplayTitle.value
-    || '当前表单',
-  ));
+  const currentFormConfigPageLabel = computed(() =>
+    normalizeConfigPageLabel(
+      routeQueryText('page_label') ||
+        routeQueryText('pageLabel') ||
+        currentBusinessCategoryLabel.value ||
+        pageDisplayTitle.value ||
+        '当前表单',
+    ),
+  );
 
-  const formFieldConfigScope = computed(() => buildFormFieldConfigScope(currentFormConfigPageLabel.value));
+  const formFieldConfigScope = computed(() =>
+    buildFormFieldConfigScope(currentFormConfigPageLabel.value),
+  );
 
   const formConfigAuditSummary = computed(() => {
-    return formatFormConfigAuditSummary(formConfigAuditResult.value, showLowCodeTechnicalDetails.value);
+    return formatFormConfigAuditSummary(
+      formConfigAuditResult.value,
+      showLowCodeTechnicalDetails.value,
+    );
   });
 
   const selectedFormSettingsFieldRow = computed(() => {
@@ -105,54 +209,65 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
     };
   });
 
-  const nativeFieldStructureGroups = computed<Array<{ key: string; title: string; fieldKeys: string[] }>>(() => {
+  const nativeFieldStructureGroups = computed<
+    Array<{ key: string; title: string; fieldKeys: string[] }>
+  >(() => {
     const lowCodeLayout = lowCodeFormLayoutBase.value;
-    const useLowCodeLayout = isContractFieldOrderEditable.value && layoutHasReadableFieldGroups(lowCodeLayout);
-    const legacyLayout = Array.isArray(contract.value?.views?.form?.layout)
-      ? contract.value?.views?.form?.layout as unknown as NativeFormLayoutNode[]
-      : [];
+    const useLowCodeLayout =
+      isContractFieldOrderEditable.value && layoutHasReadableFieldGroups(lowCodeLayout);
     const storeContainers = resolveContractV2ContainerTree(v2ContractStore.value);
-    const v2 = storeContainers.length ? null : resolveUnifiedPageContractV2(contract.value);
-    const containers = storeContainers.length
-      ? storeContainers
-      : (Array.isArray(v2?.layoutContract?.containerTree) ? v2.layoutContract.containerTree : []);
+    const containers = storeContainers;
     const baseLayout = useLowCodeLayout
       ? mergeLowCodeLayoutWithRuntimeGroupShells(lowCodeLayout, runtimeNativeFormLayoutNodes())
-      : (isContractFieldOrderEditable.value && legacyLayout.length
-        ? legacyLayout
-        : (containers.length
-          ? normalizeContractV2ContainersForNativeFormFromTree(containers as unknown as NativeLayoutLikeNode[]) as NativeFormLayoutNode[]
-          : legacyLayout));
+      : containers.length
+        ? (normalizeContractV2ContainersForNativeFormFromTree(
+            containers as unknown as NativeLayoutLikeNode[],
+          ) as NativeFormLayoutNode[])
+        : [];
     return collectNativeFieldStructureGroups(baseLayout as NativeLayoutLikeNode[]);
   });
 
-  watch(nativeFieldStructureGroups, (groups) => {
-    const nextBase: Record<string, string> = {};
-    groups.forEach((group) => {
-      const title = normalizeFieldGroupTitle(group.title || '主表区域');
-      group.fieldKeys.forEach((fieldKey) => {
-        if (fieldKey && !nextBase[fieldKey]) nextBase[fieldKey] = title;
+  watch(
+    nativeFieldStructureGroups,
+    (groups) => {
+      const nextBase: Record<string, string> = {};
+      groups.forEach((group) => {
+        const title = normalizeFieldGroupTitle(group.title || '主表区域');
+        group.fieldKeys.forEach((fieldKey) => {
+          if (fieldKey && !nextBase[fieldKey]) nextBase[fieldKey] = title;
+        });
       });
-    });
-    const preservedBase = Object.entries(fieldGroupBase.value).reduce<Record<string, string>>((acc, [fieldKey, title]) => {
-      const key = String(fieldKey || '').trim();
-      const normalized = normalizeFieldGroupTitle(title);
-      if (key && isReadableFieldGroupTitle(normalized)) acc[key] = normalized;
-      return acc;
-    }, {});
-    fieldGroupBase.value = { ...nextBase, ...preservedBase };
-    currentFormDesignFieldKeys.value.forEach((fieldKey) => {
-      if (!fieldKey) return;
-      const title = fieldGroupBase.value[fieldKey];
-      if (title && (!Object.prototype.hasOwnProperty.call(fieldGroupDraft, fieldKey) || !isReadableFieldGroupTitle(fieldGroupDraft[fieldKey]))) {
-        fieldGroupDraft[fieldKey] = title;
-      }
-    });
-  }, { immediate: true });
+      const preservedBase = Object.entries(fieldGroupBase.value).reduce<Record<string, string>>(
+        (acc, [fieldKey, title]) => {
+          const key = String(fieldKey || '').trim();
+          const normalized = normalizeFieldGroupTitle(title);
+          if (key && isReadableFieldGroupTitle(normalized)) acc[key] = normalized;
+          return acc;
+        },
+        {},
+      );
+      fieldGroupBase.value = { ...nextBase, ...preservedBase };
+      currentFormDesignFieldKeys.value.forEach((fieldKey) => {
+        if (!fieldKey) return;
+        const title = fieldGroupBase.value[fieldKey];
+        if (
+          title &&
+          (!Object.prototype.hasOwnProperty.call(fieldGroupDraft, fieldKey) ||
+            !isReadableFieldGroupTitle(fieldGroupDraft[fieldKey]))
+        ) {
+          fieldGroupDraft[fieldKey] = title;
+        }
+      });
+    },
+    { immediate: true },
+  );
 
   const currentFormDesignFieldCount = computed(() => {
     if (activeContractModeFieldRows.value.length) return activeContractModeFieldRows.value.length;
-    return nativeFieldStructureGroups.value.reduce((total, group) => total + group.fieldKeys.length, 0);
+    return nativeFieldStructureGroups.value.reduce(
+      (total, group) => total + group.fieldKeys.length,
+      0,
+    );
   });
 
   const currentFormGroupOptions = computed(() => {
@@ -173,7 +288,11 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
     });
   });
 
-  const formDesignerFieldSearchQuery = computed(() => String(formDesignerFieldSearchText.value || '').trim().toLowerCase());
+  const formDesignerFieldSearchQuery = computed(() =>
+    String(formDesignerFieldSearchText.value || '')
+      .trim()
+      .toLowerCase(),
+  );
 
   const formDesignerSearchableFieldRows = computed(() => {
     return buildFormDesignerSearchableFieldRows({
@@ -186,7 +305,10 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
   });
 
   const formDesignerFilteredFieldRows = computed(() => {
-    return filterFormDesignerFieldRows(formDesignerSearchableFieldRows.value, formDesignerFieldSearchQuery.value);
+    return filterFormDesignerFieldRows(
+      formDesignerSearchableFieldRows.value,
+      formDesignerFieldSearchQuery.value,
+    );
   });
 
   const selectedFormSettingsFieldGroupTitle = computed(() => {
@@ -198,16 +320,25 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
     });
   });
 
-  const selectedFormSettingsGroupVisible = computed(() => effectiveGroupVisible(selectedFormSettingsFieldGroupTitle.value));
-  const selectedFormSettingsGroupColumns = computed(() => effectiveGroupColumns(selectedFormSettingsFieldGroupTitle.value));
-  const selectedFormSettingsFieldSize = computed(() => effectiveFieldSize(selectedFormSettingsFieldKey.value));
+  const selectedFormSettingsGroupVisible = computed(() =>
+    effectiveGroupVisible(selectedFormSettingsFieldGroupTitle.value),
+  );
+  const selectedFormSettingsGroupColumns = computed(() =>
+    effectiveGroupColumns(selectedFormSettingsFieldGroupTitle.value),
+  );
+  const selectedFormSettingsFieldSize = computed(() =>
+    effectiveFieldSize(selectedFormSettingsFieldKey.value),
+  );
 
   watch(selectedFormSettingsFieldGroupTitle, (title) => {
     selectedFormSettingsFieldGroupTitleEdit.value = title;
   });
 
   function syncLayoutDraftFromFormSpec(formSpec: Record<string, unknown>) {
-    const runtimeColumns = inferLowCodeLayoutColumns(runtimeNativeFormLayoutNodes()) || inferLowCodeLayoutColumns(rawNativeFormLayoutNodes.value) || 3;
+    const runtimeColumns =
+      inferLowCodeLayoutColumns(runtimeNativeFormLayoutNodes()) ||
+      inferLowCodeLayoutColumns(rawNativeFormLayoutNodes.value) ||
+      3;
     const next = extractLowCodeLayoutDraftState(formSpec, runtimeColumns) as {
       columnsConfigured: boolean;
       columns: 1 | 2 | 3;
@@ -252,7 +383,8 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       visibility: Record<string, boolean>;
       groups: Record<string, string>;
     };
-    if (options.syncOrder !== false && state.orderedFieldNames.length) fieldOrderDraft.value = state.orderedFieldNames;
+    if (options.syncOrder !== false && state.orderedFieldNames.length)
+      fieldOrderDraft.value = state.orderedFieldNames;
     if (options.syncVisibility !== false) {
       Object.entries(state.visibility).forEach(([key, visible]) => {
         fieldVisibilityBase.value = { ...fieldVisibilityBase.value, [key]: visible };
@@ -262,10 +394,11 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
     Object.entries(state.groups).forEach(([key, groupTitle]) => {
       const previousDraft = normalizeFieldGroupTitle(fieldGroupDraft[key]);
       const previousBase = normalizeFieldGroupTitle(fieldGroupBase.value[key]);
-      const shouldSyncDraft = options.overwriteDraftGroups
-        || !previousDraft
-        || previousDraft === previousBase
-        || previousDraft.startsWith('默认分组');
+      const shouldSyncDraft =
+        options.overwriteDraftGroups ||
+        !previousDraft ||
+        previousDraft === previousBase ||
+        previousDraft.startsWith('默认分组');
       fieldGroupSavedBase.value = { ...fieldGroupSavedBase.value, [key]: groupTitle };
       fieldGroupBase.value = { ...fieldGroupBase.value, [key]: groupTitle };
       if (shouldSyncDraft) fieldGroupDraft[key] = groupTitle;
@@ -273,7 +406,12 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
   }
 
   function applyRuntimeInferredFormColumns() {
-    if (!isContractFieldOrderEditable.value || formLayoutColumnsConfigured.value || formLayoutDirty.value) return;
+    if (
+      !isContractFieldOrderEditable.value ||
+      formLayoutColumnsConfigured.value ||
+      formLayoutDirty.value
+    )
+      return;
     const runtimeColumns = inferLowCodeLayoutColumns(runtimeNativeFormLayoutNodes());
     if (!runtimeColumns || runtimeColumns === formLayoutColumnsBase.value) return;
     formLayoutColumnsBase.value = runtimeColumns;
@@ -283,7 +421,12 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
   }
 
   async function hydrateLowCodeDraftFromContract() {
-    if (!isContractFieldOrderEditable.value || lowCodeContractLoaded.value || lowCodeContractHydrating.value) return;
+    if (
+      !isContractFieldOrderEditable.value ||
+      lowCodeContractLoaded.value ||
+      lowCodeContractHydrating.value
+    )
+      return;
     const modelName = String(model.value || '').trim();
     if (!modelName) return;
     let hydrated = false;
@@ -297,15 +440,20 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
         intent: BUSINESS_CONFIG_INTENTS.contractList,
         params: { ...base, model: modelName, view_type: 'form' },
       }).catch(() => null);
-      const availableNames = new Set((Array.isArray(listResult?.items) ? listResult?.items || [] : [])
-        .map((row) => String(row?.name || '').trim())
-        .filter(Boolean));
+      const availableNames = new Set(
+        (Array.isArray(listResult?.items) ? listResult?.items || [] : [])
+          .map((row) => String(row?.name || '').trim())
+          .filter(Boolean),
+      );
       const contractName = availableNames.has(scopedName) ? scopedName : '';
       if (!contractName) return;
       const res = await typedRequestIntent<{
         contract_json?: {
-          objects?: Array<{ name?: string; fields?: Array<{ name?: string; visible?: boolean; order?: number }> }>;
-        }
+          objects?: Array<{
+            name?: string;
+            fields?: Array<{ name?: string; visible?: boolean; order?: number }>;
+          }>;
+        };
       }>({
         intent: BUSINESS_CONFIG_INTENTS.contractGet,
         params: { ...base, model: modelName, name: contractName, view_type: 'form' },
@@ -316,7 +464,10 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       lowCodeFormLayoutBase.value = lowCodeLayoutFromFormSpec(formSpec) as NativeFormLayoutNode[];
       syncLayoutDraftFromFormSpec(formSpec);
       syncFieldDraftFromFormSpec(formSpec, { overwriteDraftGroups: true });
-      lowCodeLayoutDraft.value = collectLowCodeLayoutFromViewOrchestration(orchestrationViews, modelName);
+      lowCodeLayoutDraft.value = collectLowCodeLayoutFromViewOrchestration(
+        orchestrationViews,
+        modelName,
+      );
       hydrated = true;
     } catch {
       // ignore low-code contract hydrate failure in form runtime
@@ -334,7 +485,7 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       const base = lowCodeApplyBaseParams();
       const scopedName = lowCodeScopedContractName(modelName, base);
       const res = await typedRequestIntent<{
-        contract_json?: { view_orchestration?: Record<string, unknown> }
+        contract_json?: { view_orchestration?: Record<string, unknown> };
       }>({
         intent: BUSINESS_CONFIG_INTENTS.contractGet,
         params: { ...base, model: modelName, name: scopedName, view_type: 'form' },
@@ -356,13 +507,22 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
     try {
       const base = lowCodeApplyBaseParams();
       const result = await typedRequestIntent<{
-        items?: Array<{ id?: number; name?: string; model?: string; status?: string; version_no?: number }>;
+        items?: Array<{
+          id?: number;
+          name?: string;
+          model?: string;
+          status?: string;
+          version_no?: number;
+        }>;
       }>({
         intent: BUSINESS_CONFIG_INTENTS.contractList,
         params: { ...base, model: modelName, view_type: 'form' },
       });
       lowCodeContractList.value = normalizeLowCodeContractListRows(result?.items);
-      if (lowCodeSelectedContractName.value && !lowCodeContractList.value.some((row) => row.name === lowCodeSelectedContractName.value)) {
+      if (
+        lowCodeSelectedContractName.value &&
+        !lowCodeContractList.value.some((row) => row.name === lowCodeSelectedContractName.value)
+      ) {
         lowCodeSelectedContractName.value = '';
       }
       if (!lowCodeSelectedContractName.value && lowCodeContractList.value.length) {
@@ -382,7 +542,7 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       const res = await typedRequestIntent<{
         contract_json?: {
           view_orchestration?: Record<string, unknown>;
-        }
+        };
       }>({
         intent: BUSINESS_CONFIG_INTENTS.contractGet,
         params: { ...base, model: modelName, name, view_type: 'form' },
@@ -393,7 +553,10 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       lowCodeFormLayoutBase.value = lowCodeLayoutFromFormSpec(formSpec) as NativeFormLayoutNode[];
       syncLayoutDraftFromFormSpec(formSpec);
       syncFieldDraftFromFormSpec(formSpec, { overwriteDraftGroups: true });
-      lowCodeLayoutDraft.value = collectLowCodeLayoutFromViewOrchestration(orchestrationViews, modelName);
+      lowCodeLayoutDraft.value = collectLowCodeLayoutFromViewOrchestration(
+        orchestrationViews,
+        modelName,
+      );
     } catch {
       // ignore
     }
@@ -413,7 +576,12 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       contractModeFeedback.value = '配置版本已发布，刷新页面后按新配置生效';
       await loadLowCodeContractList();
     } catch (err) {
-      applyPageStatusEvent({ kind: 'status', transaction: 'contractMode', status: 'error', errorMessage: err instanceof Error ? err.message : '配置版本发布失败' });
+      applyPageStatusEvent({
+        kind: 'status',
+        transaction: 'contractMode',
+        status: 'error',
+        errorMessage: err instanceof Error ? err.message : '配置版本发布失败',
+      });
     } finally {
       busyKind.value = null;
     }
@@ -434,14 +602,19 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       await loadLowCodeContractList();
       await switchLowCodeContractByName();
     } catch (err) {
-      applyPageStatusEvent({ kind: 'status', transaction: 'contractMode', status: 'error', errorMessage: err instanceof Error ? err.message : '配置版本回滚失败' });
+      applyPageStatusEvent({
+        kind: 'status',
+        transaction: 'contractMode',
+        status: 'error',
+        errorMessage: err instanceof Error ? err.message : '配置版本回滚失败',
+      });
     } finally {
       busyKind.value = null;
     }
   }
 
   function buildLowCodeViewOrchestration() {
-    const availableFields = contract.value?.fields || {};
+    const availableFields = resolveContractV2FormFieldMap(v2ContractStore.value);
     return buildLowCodeViewOrchestrationFromDraft({
       availableFieldNames: Object.keys(availableFields),
       layoutDraft: lowCodeLayoutDraft.value,
@@ -450,7 +623,8 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
       formColumns: formLayoutColumnsDraft.value,
       resolveFieldLabel: (name) => effectiveLowCodeFieldLabel(name, availableFields[name]),
       resolveFieldGroupTitle: effectiveFieldGroupTitleForDraft,
-      resolveFieldVisible: (name, groupTitle) => fieldVisibilityDraft[name] !== false && effectiveGroupVisible(groupTitle),
+      resolveFieldVisible: (name, groupTitle) =>
+        fieldVisibilityDraft[name] !== false && effectiveGroupVisible(groupTitle),
       resolveGroupVisible: effectiveGroupVisible,
       resolveGroupColumns: effectiveGroupColumns,
       resolveFieldSize: effectiveFieldSize,
@@ -458,26 +632,55 @@ export function useRecordFormDesignerPersistence(dependencies: PersistenceDepend
   }
 
   function lowCodeLayoutFieldLabel(name: string) {
-    return lowCodeLayoutFieldLabelFromNodes(name, rawNativeFormLayoutNodes.value, lowCodeFormLayoutBase.value);
+    return lowCodeLayoutFieldLabelFromNodes(
+      name,
+      rawNativeFormLayoutNodes.value,
+      lowCodeFormLayoutBase.value,
+    );
   }
 
   function effectiveLowCodeFieldLabel(name: string, descriptor?: FieldDescriptor) {
     const fieldName = String(name || '').trim();
-    return String(
-      contractFieldLabel(fieldName)
-      || lowCodeLayoutFieldLabel(fieldName)
-      || descriptor?.string
-      || readableFallbackFieldLabel(fieldName),
-    ).trim() || readableFallbackFieldLabel(fieldName);
+    return (
+      String(
+        contractFieldLabel(fieldName) ||
+          lowCodeLayoutFieldLabel(fieldName) ||
+          descriptor?.string ||
+          readableFallbackFieldLabel(fieldName),
+      ).trim() || readableFallbackFieldLabel(fieldName)
+    );
   }
 
-
   return {
-    auditCurrentFormConfiguration, showCurrentFormFieldConfigScope, showLowCodeTechnicalDetails, currentFormConfigPageLabel, formFieldConfigScope,
-    formConfigAuditSummary, selectedFormSettingsFieldRow, nativeFieldStructureGroups, currentFormDesignFieldCount, currentFormGroupOptions,
-    formDesignerGroupNavigatorItems, formDesignerFieldSearchQuery, formDesignerSearchableFieldRows, formDesignerFilteredFieldRows, selectedFormSettingsFieldGroupTitle,
-    selectedFormSettingsGroupVisible, selectedFormSettingsGroupColumns, selectedFormSettingsFieldSize, syncLayoutDraftFromFormSpec, syncFieldDraftFromFormSpec,
-    applyRuntimeInferredFormColumns, hydrateLowCodeDraftFromContract, refreshLowCodeFormLayoutBase, loadLowCodeContractList, switchLowCodeContractByName,
-    publishSelectedLowCodeContract, rollbackSelectedLowCodeContract, buildLowCodeViewOrchestration, lowCodeLayoutFieldLabel, effectiveLowCodeFieldLabel,
+    auditCurrentFormConfiguration,
+    showCurrentFormFieldConfigScope,
+    showLowCodeTechnicalDetails,
+    currentFormConfigPageLabel,
+    formFieldConfigScope,
+    formConfigAuditSummary,
+    selectedFormSettingsFieldRow,
+    nativeFieldStructureGroups,
+    currentFormDesignFieldCount,
+    currentFormGroupOptions,
+    formDesignerGroupNavigatorItems,
+    formDesignerFieldSearchQuery,
+    formDesignerSearchableFieldRows,
+    formDesignerFilteredFieldRows,
+    selectedFormSettingsFieldGroupTitle,
+    selectedFormSettingsGroupVisible,
+    selectedFormSettingsGroupColumns,
+    selectedFormSettingsFieldSize,
+    syncLayoutDraftFromFormSpec,
+    syncFieldDraftFromFormSpec,
+    applyRuntimeInferredFormColumns,
+    hydrateLowCodeDraftFromContract,
+    refreshLowCodeFormLayoutBase,
+    loadLowCodeContractList,
+    switchLowCodeContractByName,
+    publishSelectedLowCodeContract,
+    rollbackSelectedLowCodeContract,
+    buildLowCodeViewOrchestration,
+    lowCodeLayoutFieldLabel,
+    effectiveLowCodeFieldLabel,
   };
 }

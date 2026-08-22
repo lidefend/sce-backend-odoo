@@ -552,7 +552,7 @@ prod-sim 验证结果：
 - `workspace_home_contract_builder` 声明为 `workspace_home_startup_surface_projection`。
 - `workspace_home_data_provider` 声明为 `workspace_home_industry_content_provider_adapter`。
 - 首页启动面 source authority 明确：
-  - 来自 `sc.capability`、`sc.scene`、`scene_ready_contract_v1`、extension facts 与 provider adapter。
+  - 来自 `sc.capability`、`sc.scene`、`scene_ready_contract`、extension facts 与 provider adapter。
   - 本层 `projection_only = True`。
   - 本层 `no_business_fact_authority = True`。
 - `workspace_home` 契约输出增加 `source_authority`，让前端/诊断能看到首页只是启动面投影。
@@ -822,7 +822,7 @@ prod-sim 验证结果：
 已执行：
 
 - `release_navigation_contract_builder` 增加 `release_navigation_projection` source authority。
-- release navigation builder 优先消费 `delivery_engine_v1.nav`，不再在 system init 主路径中执行 FR-1 到 FR-5 的硬编码导航。
+- release navigation builder 优先消费 `delivery_engine.nav`，不再在 system init 主路径中执行 FR-1 到 FR-5 的硬编码导航。
 - 原 FR-1/FR-5 等硬编码发布导航保留为 `legacy_release_navigation_fallback`，仅在没有 delivery engine payload 时使用。
 - `system_init` 中 release navigation builder 的调用改到 delivery engine 之后，诊断记录：
   - `builder_source`
@@ -962,7 +962,7 @@ prod-sim 验证结果：
 
 边界结论：
 
-- release navigation 主事实来源应优先是 `delivery_engine_v1.nav`。
+- release navigation 主事实来源应优先是 `delivery_engine.nav`。
 - FR fallback 导航树只承担兼容展示，不能被当作产品发布事实或行业事实源。
 
 ### 2026-05-06 P0-27 第二十五轮落地
@@ -1059,7 +1059,7 @@ prod-sim 验证结果：
 - `runtime_page_contract_builder` 增加 `runtime_page_contract_projection` source authority。
 - `build_runtime_page_contracts()` 根 payload 增加：
   - `runtime_source_authority`
-- 每个页面的 `page_orchestration_v1.meta` 增加：
+- 每个页面的 `page_orchestration.meta` 增加：
   - `runtime_source_authority`
 - 新增直接边界测试，要求 runtime page contract builder 只声明页面运行时投影能力。
 

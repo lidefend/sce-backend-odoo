@@ -1,0 +1,19 @@
+events:
+  - type: batch_started
+    at: "2026-08-21T00:00:00+08:00"
+    detail: Bound the repair to P4 reachable-history governance after the product batch stopped at RH007.
+  - type: exact_object_inventory_completed
+    at: "2026-08-21T00:01:00+08:00"
+    detail: Confirmed eleven immutable oversized objects are valid governed generated JSON evidence.
+  - type: implementation_completed
+    at: "2026-08-21T00:02:00+08:00"
+    detail: Added exact tuple admission, stale-entry rejection and continued sensitive-content scanning.
+  - type: verification_pending
+    at: "2026-08-21T00:03:00+08:00"
+    detail: Full Quick and restricted gates remain to be recorded.
+  - type: verification_blocked
+    at: "2026-08-21T00:04:00+08:00"
+    detail: RH007 passed, then Quick stopped on the pre-existing product-version single-source guard outside Batch-Q scope.
+  - type: batch_closed
+    at: "2026-08-21T00:05:00+08:00"
+    detail: The scoped RH007 guard passed; the out-of-scope Quick failure was transferred to authorized Batch-R.

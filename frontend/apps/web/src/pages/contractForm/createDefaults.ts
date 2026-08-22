@@ -1,8 +1,8 @@
-import type { ActionContract } from '@sc/schema';
 import {
-  resolveUnifiedPageContractV2MainData,
-  resolveUnifiedPageContractV2SourceContext,
-} from '../../app/contracts/unifiedPageContractV2';
+  resolveContractV2FormFieldMap,
+  resolveContractV2MainData,
+  resolveContractV2SourceContext,
+} from '../../app/contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2/types';
 import { normalizeRouteDefault } from './valueUtils';
 
@@ -18,8 +18,8 @@ function createDefaultsDictionary(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function createDefaultFieldType(contract: ActionContract | null, fieldName: string): string {
-  const descriptor = contract?.fields?.[fieldName] as Record<string, unknown> | undefined;
+function createDefaultFieldType(store: ContractV2NormalizedStore | null, fieldName: string): string {
+  const descriptor = resolveContractV2FormFieldMap(store)[fieldName] as Record<string, unknown> | undefined;
   return String(descriptor?.type || descriptor?.ttype || '').trim().toLowerCase();
 }
 
@@ -125,56 +125,41 @@ export async function loadAuthoritativeCreateDefaults(params: {
 }
 
 export function formCreateContext(params: {
-  contract: ActionContract | null;
   v2ContractStore: ContractV2NormalizedStore | null;
 }) {
-  const storeContext = resolveUnifiedPageContractV2SourceContext(params.v2ContractStore);
-  return (Object.keys(storeContext).length ? storeContext : resolveUnifiedPageContractV2SourceContext(params.contract)).context || {};
+  return resolveContractV2SourceContext(params.v2ContractStore).context || {};
 }
 
 export function resolveCreateDefaults(params: {
-  contract: ActionContract | null;
   routeQuery: Record<string, unknown>;
   v2ContractStore: ContractV2NormalizedStore | null;
 }) {
-  const storeMainData = resolveUnifiedPageContractV2MainData(params.v2ContractStore);
-  const defaults: Record<string, unknown> = {
-    ...(Object.keys(storeMainData).length ? storeMainData : resolveUnifiedPageContractV2MainData(params.contract)),
-  };
+  const defaults: Record<string, unknown> = { ...resolveContractV2MainData(params.v2ContractStore) };
   Object.entries(params.routeQuery).forEach(([key, value]) => {
     if (!key.startsWith('default_')) return;
     const fieldName = routeDefaultFieldName(key);
-    if (!fieldName || hasCreateDefaultValue(defaults[fieldName], createDefaultFieldType(params.contract, fieldName))) return;
+    if (!fieldName || hasCreateDefaultValue(defaults[fieldName], createDefaultFieldType(params.v2ContractStore, fieldName))) return;
     defaults[fieldName] = normalizeRouteDefault(value);
   });
   const context = formCreateContext(params);
   Object.entries(context).forEach(([key, value]) => {
     if (!key.startsWith('default_')) return;
     const fieldName = routeDefaultFieldName(key);
-    if (!fieldName || hasCreateDefaultValue(defaults[fieldName], createDefaultFieldType(params.contract, fieldName))) return;
+    if (!fieldName || hasCreateDefaultValue(defaults[fieldName], createDefaultFieldType(params.v2ContractStore, fieldName))) return;
     defaults[fieldName] = value;
   });
-  const validator = params.contract?.validator as Record<string, unknown> | undefined;
-  const defaultsSample = validator?.defaults_sample;
-  if (defaultsSample && typeof defaultsSample === 'object' && !Array.isArray(defaultsSample)) {
-    Object.entries(defaultsSample as Record<string, unknown>).forEach(([key, value]) => {
-      if (!hasCreateDefaultValue(defaults[key], createDefaultFieldType(params.contract, key))) {
-        defaults[key] = value === 'dynamic' ? '' : value;
-      }
-    });
-  }
   return defaults;
 }
 
 export function resolveCreateRouteRelationLabels(
-  contract: ActionContract | null,
+  store: ContractV2NormalizedStore | null,
   routeQuery: Record<string, unknown>,
   defaults: Record<string, unknown>,
 ): Record<string, string> {
   return Object.entries(routeQuery).reduce<Record<string, string>>((labels, [key, value]) => {
     if (!key.startsWith('default_') || !key.endsWith('_label')) return labels;
     const fieldName = key.replace(/^default_/, '').replace(/_label$/, '').trim();
-    if (createDefaultFieldType(contract, fieldName) !== 'many2one') return labels;
+    if (createDefaultFieldType(store, fieldName) !== 'many2one') return labels;
     const relationId = Number(defaults[fieldName] || 0);
     const routeRelationId = Number(normalizeRouteDefault(routeQuery[`default_${fieldName}`]) || 0);
     const label = String(Array.isArray(value) ? value[value.length - 1] : value || '').trim();

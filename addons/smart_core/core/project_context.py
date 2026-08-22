@@ -632,7 +632,8 @@ def build_record_context_contract(env, params: dict | None = None, *, search: st
         "icon": context_config.get("icon") or "folder",
     }
     base = {
-        "contract_version": "v1",
+        "contract_version": "2.0.0",
+        "schema_version": "2.0.0",
         "enabled": False,
         "source": "system.init.record_context",
         "source_authority": source_authority_contract(),

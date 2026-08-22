@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +32,25 @@ def _norm_status(value: str) -> str:
     return status if status in ALLOWED else "FAIL"
 
 
+def _candidate_fingerprint() -> str:
+    result = subprocess.run(
+        ["bash", "scripts/ops/codex_preflight.sh"],
+        cwd=str(ROOT),
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+    )
+    match = re.search(
+        r"^CANDIDATE_FINGERPRINT_SHA256:\s*([0-9a-f]{64})$",
+        result.stdout or "",
+        re.MULTILINE,
+    )
+    if result.returncode != 0 or not match:
+        return ""
+    return match.group(1)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write delivery mainline run summary artifact")
     parser.add_argument("--profile", default="restricted")
@@ -54,10 +75,15 @@ def main() -> int:
         and governance == "PASS"
     )
 
+    candidate_fingerprint = _candidate_fingerprint()
+    if not candidate_fingerprint:
+        raise SystemExit("unable to bind delivery mainline summary to candidate fingerprint")
+
     payload = {
         "generated_at_utc": _utc_now(),
         "branch": _git(["git", "branch", "--show-current"]) or "unknown",
         "commit_ref": _git(["git", "rev-parse", "--short", "HEAD"]) or "unknown",
+        "candidate_fingerprint_sha256": candidate_fingerprint,
         "profile": str(args.profile or "restricted").strip(),
         "ok": ok,
         "steps": {
@@ -79,6 +105,7 @@ def main() -> int:
         f"- generated_at_utc: {payload['generated_at_utc']}",
         f"- branch: {payload['branch']}",
         f"- commit_ref: {payload['commit_ref']}",
+        f"- candidate_fingerprint_sha256: {payload['candidate_fingerprint_sha256']}",
         f"- profile: {payload['profile']}",
         f"- ok: {payload['ok']}",
         "",

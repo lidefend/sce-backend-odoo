@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from pathlib import Path
 
 
@@ -27,9 +28,15 @@ class _FixtureElement:
         self.attrib = element.attrib
         self.text = element.text
         self.tail = element.tail
+        self._children = [_FixtureElement(child, self) for child in element]
 
     def __iter__(self):
-        return iter([_FixtureElement(child, self) for child in self._element])
+        return iter(self._children)
+
+    def iter(self):
+        yield self
+        for child in self:
+            yield from child.iter()
 
     def get(self, key, default=None):
         return self._element.get(key, default)
@@ -157,8 +164,23 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
     def test_complex_view_types_remain_explicit_in_v2_contract(self):
         for view_type in ("pivot", "graph", "calendar", "gantt", "activity", "dashboard"):
             with self.subTest(view_type=view_type):
+                source = {"model": "x.report", "view_type": view_type, "fields": {}}
+                if view_type == "activity":
+                    root = {"tag": "activity", "native_locator": "activity", "occurrence_index": 1,
+                            "source_position": 0, "attributes": {"string": "Activities"}, "text": "", "tail": ""}
+                    templates = {"tag": "templates", "native_locator": "activity/templates", "occurrence_index": 1,
+                                 "source_position": 1, "attributes": {}, "text": "", "tail": ""}
+                    field = {"tag": "field", "name": "x_subject", "label": "Subject",
+                             "native_locator": "activity/templates/field[name=x_subject]", "occurrence_index": 1,
+                             "source_position": 2, "attributes": {"name": "x_subject", "t-name": "activity-box"}, "text": "", "tail": ""}
+                    source["views"] = {"activity": {"activity": {
+                        "field_occurrences": [field], "node_occurrences": [root, templates, field],
+                        "native_attrs": root["attributes"], "actions": [],
+                        "template": {"native_locator": "activity/templates", "occurrence_index": 1,
+                                     "names": ["activity-box"], "nodes": [{**field, "children": []}]},
+                    }}}
                 contract = assembler.assemble_unified_page_contract_v2(
-                    {"model": "x.report", "view_type": view_type, "fields": {}},
+                    source,
                     source_type="ui.contract",
                     client_type="web_pc",
                     request_id=f"test.complex.{view_type}",
@@ -173,6 +195,11 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "view_type": "form",
             "head": {
                 "render_profile": "create",
+                "permissions": {
+                    "read": True,
+                    "write": True,
+                    "create": True,
+                },
                 "context": {
                     "default_manager_id": 43,
                     "default_user_id": 43,
@@ -239,10 +266,13 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         self.assertEqual(full["statusContract"]["globalStatus"]["pageAuth"], "edit")
+        self.assertEqual(full["statusContract"]["globalStatus"]["effectiveRenderProfile"], "edit")
+        self.assertTrue(full["statusContract"]["globalStatus"]["effectiveRecordCapabilities"]["write"])
         save = next(row for row in full["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
         self.assertEqual(save["backendIdentity"], "contract_action:form.save")
         self.assertEqual(save["visibleProfiles"], ["edit"])
-        self.assertTrue(save["entitlement_evaluated"])
+        self.assertTrue(save["entitlementEvaluated"])
+        self.assertNotIn("entitlement_evaluated", save)
 
     def test_ui_contract_v2_create_form_publishes_save_only_from_explicit_create_right(self):
         base = {
@@ -375,6 +405,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                     "label": "提交",
                     "kind": "object",
                     "payload": {"method": "action_submit", "type": "object"},
+                    "presentation": {"tier": "primary", "icon": "fa-check"},
                 }
             ],
         }
@@ -395,8 +426,60 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         action_rule = full["actionContract"]["actionRuleList"][0]
         self.assertEqual(action_rule["actionKey"], "action_submit")
         self.assertEqual(action_rule["button"], {"name": "action_submit", "type": "object"})
+        self.assertEqual(action_rule["presentation"]["icon"], "fa-check")
         self.assertEqual(action_rule["targetScope"], "page")
         self.assertNotIn(action_rule["targetScope"], {"header", "toolbar", "smart", "row"})
+
+    def test_authoritative_stat_button_reaches_action_contract_once(self):
+        locator = "/form[1]/sheet[1]/div[1]/button[1]"
+        native_identity = {
+            "type": "object",
+            "name": "action_open_lines",
+            "string": "Lines",
+            "native_locator": locator,
+            "occurrence_index": 1,
+            "canonical_region": "stat_buttons",
+            "projection_region": "stat_buttons",
+            "authoritative": True,
+        }
+        source = {
+            "model": "x.record",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {"form": {
+                "layout": [{
+                    "type": "button",
+                    "name": "action_open_lines",
+                    "action": {
+                        "name": "action_open_lines",
+                        "kind": "object",
+                        "payload": {"method": "action_open_lines", "type": "object"},
+                        "native_identity": {**native_identity, "projection_region": "layout", "authoritative": False},
+                    },
+                }],
+                "stat_buttons": [{
+                    "name": "action_open_lines",
+                    "label": "Lines",
+                    "kind": "object",
+                    "payload": {"method": "action_open_lines", "type": "object"},
+                    "native_identity": native_identity,
+                }],
+            }},
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.form.stat.button.identity",
+        )
+
+        rules = [
+            row for row in full["actionContract"]["actionRuleList"]
+            if row.get("backendIdentity") == f"native_button:object:action_open_lines:{locator}:1"
+        ]
+        self.assertEqual(len(rules), 1)
+        self.assertEqual(rules[0]["label"], "Lines")
 
     def test_object_button_payload_method_is_preserved_in_v2_action_contract(self):
         source = {
@@ -620,6 +703,43 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(statuses[0]["visible"])
         self.assertTrue(statuses[0]["disabled"])
         self.assertEqual(statuses[0]["reasonCode"], "WAITING_FOR_REQUIRED_FACTS")
+
+    def test_denied_product_action_keeps_visibility_separate_from_executability(self):
+        source = {
+            "model": "x.approval",
+            "view_type": "form",
+            "fields": {},
+            "business_actions": [{
+                "key": "submit_product",
+                "label": "Submit",
+                "kind": "object",
+                "payload": {"method": "action_submit", "type": "object"},
+                "allowed": False,
+                "enabled": False,
+                "disabled": True,
+                "visible": True,
+                "reason_code": "WAITING_FOR_REQUIRED_FACTS",
+                "business_available": False,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
+                "presentation": {"tier": "primary"},
+            }],
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", client_type="web_pc",
+            request_id="test.action.denied.visible",
+        )
+
+        rule = full["actionContract"]["actionRuleList"][0]
+        status = next(
+            row for row in full["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == rule["backendIdentity"]
+        )
+        self.assertFalse(rule["allowed"])
+        self.assertTrue(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "WAITING_FOR_REQUIRED_FACTS")
 
     def test_runtime_business_action_is_promoted_to_normalized_authority(self):
         contract = assembler.assemble_unified_page_contract_v2(
@@ -1239,7 +1359,10 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         rule = full["actionContract"]["actionRuleList"][0]
-        self.assertEqual(rule["backendIdentity"], "button:object:action_review")
+        self.assertEqual(
+            rule["backendIdentity"],
+            "native_button:object:action_review:/tree[1]/button[1]:1",
+        )
         self.assertEqual(
             rule["permissionConstraints"]["clauses"][0]["requiredGroups"],
             ["base.group_system"],
@@ -1299,6 +1422,47 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(tiers["button:object:action_prepare"], "secondary")
         resolution = full["actionContract"]["primaryResolution"]
         self.assertEqual(resolution["winner"], "button:object:action_submit")
+
+    def test_single_primary_prefers_declared_presentation_authority(self):
+        contract = {
+            "actionContract": {
+                "actionRuleList": [
+                    {
+                        "actionId": "action.native",
+                        "backendIdentity": "button:object:action_continue",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentationPriority": 100,
+                        "presentation": {"tier": "primary"},
+                    },
+                    {
+                        "actionId": "action.product",
+                        "backendIdentity": "button:object:action_view_result",
+                        "allowed": True,
+                        "enabled": True,
+                        "disabled": False,
+                        "presentationPriority": 360,
+                        "presentation": {"tier": "primary"},
+                    },
+                ]
+            },
+            "statusContract": {"buttonStatus": []},
+            "dataContract": {"mainData": {}},
+        }
+
+        assembler._enforce_single_effective_primary_action(contract)
+
+        tiers = {
+            row["backendIdentity"]: row["presentation"]["tier"]
+            for row in contract["actionContract"]["actionRuleList"]
+        }
+        self.assertEqual(tiers["button:object:action_continue"], "secondary")
+        self.assertEqual(tiers["button:object:action_view_result"], "primary")
+        self.assertEqual(
+            contract["actionContract"]["primaryResolution"]["winner"],
+            "button:object:action_view_result",
+        )
 
     def test_final_modifier_hydration_recomputes_status_and_primary_from_complete_record(self):
         contract = {
@@ -1410,6 +1574,152 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         }])
         self.assertNotIn("primaryResolution", contract["actionContract"])
 
+    def test_final_modifier_hydration_restores_authorized_action_after_dependency_arrives(self):
+        contract = {
+            "actionContract": {"actionRuleList": [{
+                "actionId": "action.submit",
+                "actionKey": "submit",
+                "backendIdentity": "button:object:action_submit",
+                "allowed": False,
+                "enabled": False,
+                "disabled": True,
+                "businessAvailable": False,
+                "entitlementEvaluated": True,
+                "sourceChannel": "native_form_header",
+                "button": {"name": "action_submit", "type": "object"},
+                "nativeIdentity": {"native_locator": "/form[1]/header[1]/button[1]"},
+                "sourceTrace": [{
+                    "entitlementEvaluated": True,
+                    "authorizationAllowed": True,
+                    "businessAvailable": False,
+                }],
+                "presentation": {"tier": "primary"},
+                "visible": {"attrs": {"invisible": {
+                    "kind": "field_compare",
+                    "field": "state",
+                    "operator": "not in",
+                    "value": ["draft", "rejected"],
+                }}},
+            }]},
+            "statusContract": {"buttonStatus": [{
+                "btnId": "btn.submit",
+                "visible": False,
+                "disabled": True,
+                "reasonCode": "ACTION_NOT_ALLOWED",
+            }]},
+            "dataContract": {"mainData": {"state": "draft"}},
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        action = contract["actionContract"]["actionRuleList"][0]
+        status = contract["statusContract"]["buttonStatus"][0]
+        self.assertTrue(action["businessAvailable"])
+        self.assertTrue(action["allowed"])
+        self.assertTrue(action["enabled"])
+        self.assertFalse(action["disabled"])
+        self.assertTrue(status["visible"])
+        self.assertFalse(status["disabled"])
+        self.assertNotIn("reasonCode", status)
+
+    def test_final_modifier_hydration_does_not_override_runtime_business_unavailability(self):
+        contract = {
+            "actionContract": {"actionRuleList": [{
+                "actionId": "action.payment_execution",
+                "actionKey": "payment_execution",
+                "sourceChannel": "runtime_business_action",
+                "button": {"name": "action_create_payment_execution", "type": "object"},
+                "allowed": False,
+                "enabled": False,
+                "disabled": True,
+                "businessAvailable": False,
+                "authorizationAllowed": True,
+                "entitlementEvaluated": True,
+                "visible": {"attrs": {"invisible": {"kind": "static", "value": False}}},
+            }]},
+            "statusContract": {"buttonStatus": []},
+            "dataContract": {"mainData": {"state": "approved"}},
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        action = contract["actionContract"]["actionRuleList"][0]
+        self.assertFalse(action["businessAvailable"])
+        self.assertFalse(action["allowed"])
+        self.assertFalse(action["enabled"])
+        self.assertTrue(action["disabled"])
+
+    def test_final_modifier_hydration_applies_runtime_business_authority_to_native_occurrence(self):
+        contract = {
+            "actionContract": {"actionRuleList": [
+                {
+                    "actionId": "action.native_submit",
+                    "actionKey": "native_submit",
+                    "backendIdentity": "native_button:object:action_submit:/form[1]/header[1]/button[1]:1",
+                    "sourceChannel": "native_form_header",
+                    "button": {"name": "action_submit", "type": "object"},
+                    "nativeIdentity": {"native_locator": "/form[1]/header[1]/button[1]"},
+                    "allowed": False,
+                    "enabled": False,
+                    "disabled": True,
+                    "businessAvailable": False,
+                    "authorizationAllowed": True,
+                    "entitlementEvaluated": True,
+                    "sourceTrace": [{
+                        "entitlementEvaluated": True,
+                        "authorizationAllowed": True,
+                        "businessAvailable": False,
+                    }],
+                    "visible": {"attrs": {"invisible": {
+                        "kind": "field_compare",
+                        "field": "state",
+                        "operator": "not in",
+                        "value": ["draft", "rejected"],
+                    }}},
+                },
+                {
+                    "actionId": "action.business_submit",
+                    "actionKey": "business_submit",
+                    "backendIdentity": "button:object:action_submit",
+                    "sourceChannel": "runtime_business_action",
+                    "button": {"name": "action_submit", "type": "object"},
+                    "allowed": False,
+                    "enabled": False,
+                    "disabled": True,
+                    "businessAvailable": False,
+                    "authorizationAllowed": True,
+                    "entitlementEvaluated": True,
+                    "actionSafety": {
+                        "classification": "danger",
+                        "requires_confirm": True,
+                        "confirm_message": "确认提交？",
+                    },
+                    "refreshPolicy": {"on_success": ["scene_projection"], "mode": "reload_record"},
+                },
+            ]},
+            "statusContract": {"buttonStatus": [{
+                "btnId": "btn.native_submit",
+                "backendIdentity": "native_button:object:action_submit:/form[1]/header[1]/button[1]:1",
+                "visible": False,
+                "disabled": True,
+                "reasonCode": "ACTION_NOT_ALLOWED",
+            }]},
+            "dataContract": {"mainData": {"state": "draft"}},
+        }
+
+        assembler.hydrate_final_action_modifier_status(contract)
+
+        native_action = contract["actionContract"]["actionRuleList"][0]
+        native_status = contract["statusContract"]["buttonStatus"][0]
+        self.assertTrue(native_status["visible"])
+        self.assertTrue(native_status["disabled"])
+        self.assertFalse(native_action["businessAvailable"])
+        self.assertFalse(native_action["allowed"])
+        self.assertFalse(native_action["enabled"])
+        self.assertTrue(native_action["disabled"])
+        self.assertEqual(native_action["actionSafety"]["confirm_message"], "确认提交？")
+        self.assertEqual(native_action["refreshPolicy"]["mode"], "reload_record")
+
     def test_form_field_modifiers_are_attached_to_native_field_status(self):
         contract = assembler.assemble_unified_page_contract_v2(
             {
@@ -1435,6 +1745,90 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         self.assertFalse(status["visible"])
         self.assertTrue(status["readonly"])
+
+    def test_form_field_occurrences_keep_distinct_identity_and_dynamic_status(self):
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "fields": {
+                    "state": {"name": "state", "type": "selection"},
+                    "amount": {"name": "amount", "type": "float"},
+                },
+                "views": {"form": {"layout": [{"type": "sheet", "children": [
+                    {"type": "field", "name": "amount", "native_locator": "form/sheet/field[name=amount][1]", "occurrence_index": 1, "source_position": 1,
+                     "modifiers": {"invisible": {"kind": "field_compare", "field": "state", "operator": "=", "value": "draft"}, "readonly": {"kind": "field_compare", "field": "state", "operator": "=", "value": "draft"}, "required": False}},
+                    {"type": "field", "name": "amount", "native_locator": "form/sheet/field[name=amount][2]", "occurrence_index": 2, "source_position": 2,
+                     "modifiers": {"readonly": False, "required": {"kind": "field_compare", "field": "state", "operator": "=", "value": "draft"}}},
+                ]}]}},
+                "record": {"state": "draft", "amount": 10},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.field.occurrence.modifier",
+        )
+
+        nodes = contract["layoutContract"]["containerTree"][0]["children"]
+        self.assertEqual(len({row["widgetId"] for row in nodes}), 2)
+        self.assertEqual(
+            [row["containerId"] for row in nodes],
+            [row["widgetId"] for row in nodes],
+        )
+        self.assertEqual([row["containerType"] for row in nodes], ["field", "field"])
+        statuses = {row["widgetId"]: row for row in contract["statusContract"]["widgetStatus"]}
+        self.assertEqual(set(statuses), {row["widgetId"] for row in nodes})
+        self.assertNotIn("field.amount", statuses)
+        self.assertNotIn("field.state", statuses)
+        first, second = (statuses[row["widgetId"]] for row in nodes)
+        self.assertFalse(first["visible"])
+        self.assertTrue(second["visible"])
+        self.assertTrue(first["readonly"])
+        self.assertFalse(first["required"])
+        self.assertFalse(second["readonly"])
+        self.assertTrue(second["required"])
+
+    def test_final_layout_modifier_hydration_fails_closed_for_unknown_field_modifier(self):
+        contract = {
+            "layoutContract": {"containerTree": [{
+                "type": "field", "name": "amount", "widgetId": "field.amount.occ.test",
+                "modifiers": {"readonly": {"kind": "unsupported"}, "required": {"kind": "unsupported"}},
+            }]},
+            "statusContract": {
+                "containerStatus": [],
+                "widgetStatus": [{"widgetId": "field.amount.occ.test", "visible": True, "readonly": False, "required": False, "disabled": False}],
+            },
+            "dataContract": {"mainData": {"amount": 10}},
+        }
+        assembler.hydrate_final_layout_modifier_status(contract)
+        status = contract["statusContract"]["widgetStatus"][0]
+        self.assertTrue(status["readonly"])
+        self.assertTrue(status["required"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "NATIVE_MODIFIER_UNRESOLVED")
+
+    def test_final_layout_modifier_hydration_fails_closed_for_malformed_comparisons(self):
+        for modifier in (
+            {"kind": "field_compare", "field": "amount", "operator": "unsupported", "value": 10},
+            {"kind": "field_compare", "field": "amount", "operator": ">", "value": "not-a-number"},
+            {"kind": "static", "value": "false"},
+        ):
+            contract = {
+                "layoutContract": {"containerTree": [{
+                    "type": "field", "name": "amount", "widgetId": "field.amount.occ.test",
+                    "modifiers": {"invisible": modifier, "readonly": modifier, "required": modifier},
+                }]},
+                "statusContract": {"containerStatus": [], "widgetStatus": [{
+                    "widgetId": "field.amount.occ.test", "visible": True, "readonly": False,
+                    "required": False, "disabled": False,
+                }]},
+                "dataContract": {"mainData": {"amount": 10}},
+            }
+            assembler.hydrate_final_layout_modifier_status(contract)
+            status = contract["statusContract"]["widgetStatus"][0]
+            self.assertFalse(status["visible"])
+            self.assertTrue(status["readonly"])
+            self.assertTrue(status["required"])
+            self.assertTrue(status["disabled"])
 
     def test_native_form_layout_buttons_enter_canonical_action_authority(self):
         contract = assembler.assemble_unified_page_contract_v2(
@@ -2072,6 +2466,67 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         self.assertNotIn("compat", trimmed["meta"])
 
+    def test_web_pc_prunes_widget_status_without_delivered_widget(self):
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "fields": {
+                "name": {"name": "name", "type": "char", "string": "名称"},
+            },
+        }
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.status.reference.integrity",
+        )
+        full["statusContract"]["widgetStatus"].append({
+            "widgetId": "field.off_view_model_field",
+            "visible": True,
+            "readonly": False,
+            "required": False,
+            "disabled": False,
+            "auth": "edit",
+        })
+        occurrence_widget_id = "field.name.occ.test"
+        full["layoutContract"]["containerTree"][0]["pages"] = [{
+            "containerId": "page.test",
+            "containerType": "page",
+            "type": "page",
+            "children": [{
+                "containerId": occurrence_widget_id,
+                "containerType": "field",
+                "type": "field",
+                "name": "name",
+                "widgetId": occurrence_widget_id,
+                "children": [],
+                "widgetList": [],
+            }],
+            "widgetList": [],
+        }]
+        full["statusContract"]["widgetStatus"].append({
+            "widgetId": occurrence_widget_id,
+            "visible": True,
+            "readonly": False,
+            "required": False,
+            "disabled": False,
+            "auth": "edit",
+        })
+
+        trimmed = client.trim_unified_page_contract_v2(
+            full,
+            client_type="web_pc",
+            delivery_profile="full",
+        )
+
+        delivered_widget_ids = set(client._collect_widget_ids(trimmed["layoutContract"]["containerTree"]))
+        status_widget_ids = {
+            row["widgetId"] for row in trimmed["statusContract"]["widgetStatus"]
+        }
+        self.assertEqual(status_widget_ids, delivered_widget_ids)
+        self.assertNotIn("field.off_view_model_field", status_widget_ids)
+        self.assertIn(occurrence_widget_id, status_widget_ids)
+
     def test_ui_contract_v2_preserves_native_form_layout_tree(self):
         source = {
             "model": "project.project",
@@ -2698,7 +3153,132 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(full["searchContract"]["filters"][0]["key"], "filter_my_projects")
         self.assertEqual(full["searchContract"]["saved_filters"][0]["name"], "用户收藏")
         self.assertEqual(full["searchContract"]["group_by"][0]["field"], "manager_id")
-        self.assertEqual(full["dataContract"]["search"]["default_sort"], "write_date desc")
+        self.assertEqual(full["searchContract"]["default_sort"], "write_date desc")
+        self.assertNotIn("search", full["dataContract"])
+
+    def test_activity_projection_requires_complete_native_carrier(self):
+        occurrence = {
+            "tag": "activity", "native_locator": "activity", "occurrence_index": 1,
+            "source_position": 0, "attributes": {"string": "Activities"}, "text": "", "tail": "",
+        }
+        templates = {
+            "tag": "templates", "native_locator": "activity/templates", "occurrence_index": 1,
+            "source_position": 1, "attributes": {}, "text": "", "tail": "",
+        }
+        field = {
+            "name": "x_subject", "label": "Subject", "native_locator": "activity/templates/field[name=x_subject]",
+            "occurrence_index": 1, "source_position": 2, "attributes": {"name": "x_subject", "t-name": "activity-box"},
+            "text": "", "tail": "", "field_type": "char",
+        }
+        source = {
+            "model": "x.activity", "view_type": "activity", "fields": {"x_subject": {"type": "char"}},
+            "views": {"activity": {"activity": {
+                "activity_type_slots": {}, "deadline_slots": {}, "assignee_slots": {},
+                "field_occurrences": [field], "native_attrs": occurrence["attributes"],
+                "node_occurrences": [occurrence, templates, {**field, "tag": "field"}],
+                "template": {"native_locator": "activity/templates", "occurrence_index": 1,
+                             "names": ["activity-box"], "nodes": [{"tag": "field", **field, "children": []}]},
+                "template_qweb": "<templates/>", "actions": [],
+            }}},
+        }
+        full = assembler.assemble_unified_page_contract_v2(source, source_type="ui.contract")
+        self.assertEqual(full["layoutContract"]["activityProfile"]["actionCount"], 0)
+        broken = dict(source)
+        broken["views"] = {"activity": {"activity": {**source["views"]["activity"]["activity"], "field_occurrences": {}}}}
+        with self.assertRaisesRegex(ValueError, "field_occurrences"):
+            assembler.assemble_unified_page_contract_v2(broken, source_type="ui.contract")
+        mismatched = dict(source)
+        bad_template = {**source["views"]["activity"]["activity"]["template"]}
+        bad_template["nodes"] = [{**bad_template["nodes"][0], "source_position": 9}]
+        mismatched["views"] = {"activity": {"activity": {
+            **source["views"]["activity"]["activity"], "template": bad_template,
+        }}}
+        with self.assertRaisesRegex(ValueError, "template occurrence evidence mismatch"):
+            assembler.assemble_unified_page_contract_v2(mismatched, source_type="ui.contract")
+        button = {
+            "tag": "button", "native_locator": "activity/button[name=open_item]", "occurrence_index": 1,
+            "source_position": 3, "attributes": {"type": "object", "name": "open_item"}, "text": "", "tail": "",
+        }
+        omitted_action = dict(source)
+        omitted_action["views"] = {"activity": {"activity": {
+            **source["views"]["activity"]["activity"],
+            "node_occurrences": [*source["views"]["activity"]["activity"]["node_occurrences"], button],
+        }}}
+        with self.assertRaisesRegex(ValueError, "action occurrence parity mismatch"):
+            assembler.assemble_unified_page_contract_v2(omitted_action, source_type="ui.contract")
+
+    def test_native_form_projection_requires_explicit_authority_and_resolved_layout(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {"form": {"layout": [{
+                "type": "field", "name": "name",
+                "native_locator": "form/field[name=name]",
+                "occurrence_index": 1, "source_position": 0,
+            }]}},
+            "nativeFormProjection": {
+                "schemaVersion": "2.0",
+                "model": "x.document",
+                "viewType": "form",
+                "fieldDescriptors": {"name": {"name": "name", "type": "char", "string": "Name"}},
+                "layout": [{
+                    "type": "field", "name": "name",
+                    "native_locator": "form/field[name=name]",
+                    "occurrence_index": 1, "source_position": 0,
+                }],
+                "capabilities": {},
+                "subviews": {},
+                "headerButtons": [],
+                "sourceAuthority": {
+                    "kind": "native_form_projection",
+                    "authorities": ["ir.ui.view", "ir.model.fields", "ir.model.access", "ir.rule"],
+                    "projectionOnly": True,
+                    "noBusinessFactAuthority": True,
+                    "runtimeCarrier": "app_config_engine.page_assembler.form",
+                },
+            },
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="native_form_projection",
+        )
+        self.assertEqual(contract["meta"]["sourceType"], "native_form_projection")
+
+        camel_identity = deepcopy(source)
+        camel_field = camel_identity["nativeFormProjection"]["layout"][0]
+        camel_field["nativeLocator"] = camel_field.pop("native_locator")
+        camel_field["occurrenceIndex"] = camel_field.pop("occurrence_index")
+        camel_field["sourcePosition"] = camel_field.pop("source_position")
+        camel_contract = assembler.assemble_unified_page_contract_v2(
+            camel_identity,
+            source_type="native_form_projection",
+        )
+        self.assertEqual(camel_contract["meta"]["sourceType"], "native_form_projection")
+
+        invalid_position = deepcopy(camel_identity)
+        invalid_position["nativeFormProjection"]["layout"][0]["sourcePosition"] = -1
+        with self.assertRaisesRegex(ValueError, "source_position is invalid"):
+            assembler.assemble_unified_page_contract_v2(
+                invalid_position,
+                source_type="native_form_projection",
+            )
+
+        missing_authority = deepcopy(source)
+        missing_authority["nativeFormProjection"] = {}
+        with self.assertRaisesRegex(ValueError, "schemaVersion"):
+            assembler.assemble_unified_page_contract_v2(
+                missing_authority,
+                source_type="native_form_projection",
+            )
+
+        missing_layout = deepcopy(source)
+        missing_layout["nativeFormProjection"].pop("layout")
+        with self.assertRaisesRegex(ValueError, "resolved layout"):
+            assembler.assemble_unified_page_contract_v2(
+                missing_layout,
+                source_type="native_form_projection",
+            )
 
 
 if __name__ == "__main__":

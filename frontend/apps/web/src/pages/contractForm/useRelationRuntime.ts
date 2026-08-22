@@ -98,7 +98,7 @@ export function useRelationRuntime() {
     labels: RelationUiLabels;
     keyword: string;
     columns: RelationSearchColumn[];
-    createMode: 'none' | 'quick' | 'page';
+    createMode: 'none' | 'quick' | 'page' | 'dialog';
     loadColumns: () => Promise<RelationSearchColumn[]>;
     runSearch: () => Promise<void>;
   }) {

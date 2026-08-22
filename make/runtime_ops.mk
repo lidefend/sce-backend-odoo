@@ -1744,7 +1744,7 @@ acceptance.baseline.upgrade: guard.codex.fast.upgrade guard.prod.danger
 # ======================================================
 # ==================== Policy Ops ======================
 # ======================================================
-.PHONY: db.frontend.acceptance.ensure acceptance.frontend.fixture acceptance.frontend.release_snapshot frontend.acceptance.release.build demo.frontend.fixture verify.frontend.fixture verify.frontend.fixture.guard verify.frontend.fixture.browser verify.frontend.navigation.access verify.frontend.page_identity.browser verify.frontend.page_identity.deep.browser verify.frontend.financial_workspace.guard verify.frontend.financial_workspace.runtime verify.frontend.financial_workspace.action verify.frontend.financial_workspace.v2_contract verify.frontend.financial_workspace.browser verify.frontend.core_record_form.audit verify.frontend.core_record_form.journeys verify.frontend.product_design_system.audit verify.frontend.page_width_contract.audit verify.frontend.workspace_content_alignment.audit verify.frontend.form_canvas_wide_grid.audit verify.frontend.my_work_approval.runtime verify.frontend.my_work_approval.browser verify.frontend.delivery_hardening.browser verify.frontend.delivery_hardening.release.browser verify.frontend.dynamic_list_optional_columns.browser verify.frontend.release.unit verify.frontend.release.audit verify.frontend.shell_usability.browser policy.apply.business_full policy.apply.role_matrix policy.ensure.role_surface_demo smoke.business_full smoke.role_matrix verify.portal.role_surface_preflight.container verify.portal.role_surface_smoke.container p2.smoke p3.smoke p3.audit codex.preflight codex.merge codex.rollback codex.pr.body codex.release.note db.policy stage.preflight stage.run ops.auth.dev.apply ops.auth.dev.rollback ops.auth.dev.verify
+.PHONY: db.frontend.acceptance.ensure acceptance.frontend.fixture acceptance.frontend.release_snapshot acceptance.frontend.core_record_form.journeys frontend.acceptance.release.build demo.frontend.fixture verify.frontend.fixture verify.frontend.fixture.guard verify.frontend.fixture.browser verify.frontend.navigation.access verify.frontend.page_identity.browser verify.frontend.page_identity.deep.browser verify.frontend.financial_workspace.guard verify.frontend.financial_workspace.runtime verify.frontend.financial_workspace.action verify.frontend.financial_workspace.v2_contract verify.frontend.financial_workspace.browser verify.frontend.core_record_form.audit verify.frontend.core_record_form.journeys verify.frontend.product_design_system.audit verify.frontend.page_width_contract.audit verify.frontend.workspace_content_alignment.audit verify.frontend.form_canvas_wide_grid.audit verify.frontend.my_work_approval.runtime verify.frontend.my_work_approval.browser verify.frontend.delivery_hardening.browser verify.frontend.delivery_hardening.release.browser verify.frontend.dynamic_list_optional_columns.browser verify.frontend.release.unit verify.frontend.release.audit verify.frontend.shell_usability.browser policy.apply.business_full policy.apply.role_matrix policy.ensure.role_surface_demo smoke.business_full smoke.role_matrix verify.portal.role_surface_preflight.container verify.portal.role_surface_smoke.container p2.smoke p3.smoke p3.audit codex.preflight codex.merge codex.rollback codex.pr.body codex.release.note db.policy stage.preflight stage.run ops.auth.dev.apply ops.auth.dev.rollback ops.auth.dev.verify
 
 verify.frontend.dynamic_list_optional_columns.browser: guard.prod.forbid
 	@BASE_URL="$${BASE_URL:-}" DB_NAME="$${DB_NAME:-}" E2E_LOGIN="$${E2E_LOGIN:-}" E2E_PASSWORD="$${E2E_PASSWORD:-}" ARTIFACTS_DIR="$${ARTIFACTS_DIR:-}" DYNAMIC_LIST_TARGETS_JSON="$${DYNAMIC_LIST_TARGETS_JSON:-}" node scripts/verify/frontend_dynamic_list_optional_columns_browser.mjs
@@ -1758,6 +1758,42 @@ acceptance.frontend.fixture: guard.prod.forbid
 
 acceptance.frontend.release_snapshot: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_SOURCE_REVISION=$$(git rev-parse HEAD) ODOO_SHELL_RUN_ISOLATED=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-snapshot
+
+acceptance.frontend.core_record_form.journeys: guard.prod.forbid
+	@set -e; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; \
+	export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh core-record-form-journeys
+
+.PHONY: acceptance.frontend.activity_surface.browser verify.frontend.activity_surface.browser.internal
+acceptance.frontend.activity_surface.browser: guard.prod.forbid
+	@set -e; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh activity-surface-browser
+
+verify.frontend.activity_surface.browser.internal: guard.prod.forbid check-compose-project check-compose-env
+	@set -e; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory contract.view_structure.fingerprint; \
+	CANDIDATE_FINGERPRINT="$$(python3 -c 'import json; print(json.load(open("artifacts/contract/product_view_candidate_fingerprint.json"))["digest"])')"; \
+	CANDIDATE_GIT_HEAD="$$(python3 -c 'import json; print(json.load(open("artifacts/contract/product_view_candidate_fingerprint.json"))["git_head"])')"; \
+	CANDIDATE_SCOPE_MANIFEST="$$(python3 -c 'import json; print(json.load(open("artifacts/contract/product_view_candidate_fingerprint.json"))["scope_manifest_sha256"])')"; \
+	CANDIDATE_PATH_COUNT="$$(python3 -c 'import json; print(len(json.load(open("artifacts/contract/product_view_candidate_fingerprint.json"))["entries"]))')"; \
+	export CANDIDATE_FINGERPRINT CANDIDATE_GIT_HEAD CANDIDATE_SCOPE_MANIFEST CANDIDATE_PATH_COUNT; \
+	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
+	$(MAKE) --no-print-directory backend.acceptance.up; \
+	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_activity_surface_runtime_ids.py 2>&1 )" || { printf '%s\n' "$$target_output"; exit 1; }; \
+	target_line="$$(printf '%s\n' "$$target_output" | sed -n 's/^FRONTEND_ACTIVITY_SURFACE_TARGET_JSON=//p' | tail -n 1)"; test -n "$$target_line" || { printf '%s\n' "$$target_output"; exit 2; }; \
+	TARGET_ACTION_ID="$$(printf '%s' "$$target_line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["action_id"])')"; \
+	TARGET_MENU_ID="$$(printf '%s' "$$target_line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["menu_id"])')"; export TARGET_ACTION_ID TARGET_MENU_ID; \
+	TARGET_RECORD_ID="$$(printf '%s' "$$target_line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["record_id"])')"; \
+	TARGET_COMPANY_ID="$$(printf '%s' "$$target_line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["company_id"])')"; export TARGET_RECORD_ID TARGET_COMPANY_ID; \
+	DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" python3 scripts/verify/frontend_acceptance_login_probe.py; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
+	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} E2E_LOGIN=fixture_role_activity_accounting E2E_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" TARGET_ACTION_ID="$$TARGET_ACTION_ID" TARGET_MENU_ID="$$TARGET_MENU_ID" TARGET_RECORD_ID="$$TARGET_RECORD_ID" TARGET_COMPANY_ID="$$TARGET_COMPANY_ID" CANDIDATE_FINGERPRINT="$$CANDIDATE_FINGERPRINT" CANDIDATE_GIT_HEAD="$$CANDIDATE_GIT_HEAD" CANDIDATE_SCOPE_MANIFEST="$$CANDIDATE_SCOPE_MANIFEST" CANDIDATE_PATH_COUNT="$$CANDIDATE_PATH_COUNT" RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" REQUIRE_ACTIVITY_SURFACE=1 ARTIFACT_DIR=artifacts/frontend-activity-surface $(MAKE) --no-print-directory verify.frontend.all_list_visual.audit
 
 frontend.acceptance.release.build:
 	@VITE_ODOO_DB=$(FRONTEND_ACCEPTANCE_DB) VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance scripts/dev/pnpm_exec.sh -C frontend/apps/web exec vite build --outDir dist-release
@@ -1812,7 +1848,7 @@ verify.frontend.page_identity.browser: guard.prod.forbid check-compose-project c
 	$(MAKE) --no-print-directory backend.acceptance.up; \
 	DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" python3 scripts/verify/frontend_acceptance_login_probe.py; \
 	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
-	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ROLE_SMOKE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-page-identity FRONTEND_NAVIGATION_MANIFEST=config/frontend/authoritative_navigation_v1.json FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON="$${FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON}" node frontend/apps/web/scripts/frontend_product_maturity_audit.mjs
+	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ROLE_SMOKE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-page-identity FRONTEND_NAVIGATION_MANIFEST=config/frontend/authoritative_navigation.json FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON="$${FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON}" node frontend/apps/web/scripts/frontend_product_maturity_audit.mjs
 
 verify.frontend.page_identity.deep.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
@@ -1861,10 +1897,12 @@ verify.frontend.core_record_form.audit: guard.prod.forbid check-compose-project 
 verify.frontend.core_record_form.journeys: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
-	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_financial_workspace_runtime_ids.py 2>&1 )"; \
-	targets_line="$$(echo "$$target_output" | grep '^FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON=' | tail -1)"; test -n "$$targets_line"; export "$$targets_line"; \
-	$(MAKE) --no-print-directory backend.acceptance.up; $(MAKE) --no-print-directory frontend.acceptance.up; \
+	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory backend.acceptance.up; \
 	trap '$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); $(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
+	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_financial_workspace_runtime_ids.py 2>&1 )" || { printf '%s\n' "$$target_output"; exit 1; }; \
+	targets_line="$$(echo "$$target_output" | grep '^FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON=' | tail -1)"; test -n "$$targets_line" || { printf '%s\n' "$$target_output"; exit 2; }; export "$$targets_line"; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} ARTIFACTS_DIR=artifacts/frontend-professional/fe-pro-03/journeys FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON="$${FRONTEND_FINANCIAL_WORKSPACE_TARGETS_JSON}" node scripts/verify/frontend_core_record_form_journeys.mjs
 
 verify.frontend.product_design_system.audit: guard.prod.forbid check-compose-project check-compose-env

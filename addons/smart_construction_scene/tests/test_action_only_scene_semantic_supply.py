@@ -406,9 +406,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
             "contract.center",
         )
 
-    def test_contract_center_provider_supplies_delivery_handoff_v1(self):
+    def test_contract_center_provider_supplies_delivery_handoff(self):
         payload = contract_center_provider.build(scene_key="contract.center", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(((payload.get("primary_action") or {}).get("route")), "/s/contract.center")
         self.assertEqual(handoff.get("family"), "contracts")
@@ -519,9 +519,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
             "material.procurement",
         )
 
-    def test_material_center_provider_supplies_delivery_handoff_v1(self):
+    def test_material_center_provider_supplies_delivery_handoff(self):
         payload = material_center_provider.build(scene_key="material.center", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(((payload.get("guidance") or {}).get("title")), "物资与分包")
         self.assertEqual(((payload.get("primary_action") or {}).get("route")), "/s/material.center")
@@ -533,7 +533,7 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
 
     def test_subcontract_provider_uses_professional_subcontract_plan_entry(self):
         payload = material_center_provider.build(scene_key="subcontract.management", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(((payload.get("guidance") or {}).get("title")), "专业分包")
         self.assertEqual(
@@ -660,9 +660,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
             "safety.recheck",
         )
 
-    def test_construction_execution_provider_supplies_delivery_handoff_v1(self):
+    def test_construction_execution_provider_supplies_delivery_handoff(self):
         payload = construction_execution_provider.build(scene_key="construction.execution", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(((payload.get("guidance") or {}).get("title")), "施工管理")
         self.assertEqual(((payload.get("primary_action") or {}).get("route")), "/s/construction.execution")
@@ -691,9 +691,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
             "smart_construction_core.action_sc_safety_rectification",
         )
 
-    def test_contracts_workspace_provider_supplies_delivery_handoff_v1(self):
+    def test_contracts_workspace_provider_supplies_delivery_handoff(self):
         payload = contracts_workspace_provider.build(scene_key="contracts.workspace", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(handoff.get("family"), "contracts")
         self.assertEqual(handoff.get("runtime_entry_type"), "governed_user_flow")
@@ -741,9 +741,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         self.assertEqual(((payload.get("next_action") or {}).get("semantic")), "payment_approval_queue")
         self.assertEqual(((payload.get("fallback_strategy") or {}).get("type")), "native_action_compat")
 
-    def test_approval_workbench_provider_supplies_delivery_handoff_v1(self):
+    def test_approval_workbench_provider_supplies_delivery_handoff(self):
         payload = approval_workbench_provider.build(scene_key="payments.approval", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(handoff.get("family"), "payment_approval")
         self.assertEqual(handoff.get("runtime_entry_type"), "governed_user_flow")
@@ -760,9 +760,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         self.assertEqual(((payload.get("next_action") or {}).get("semantic")), "payment_request_list_queue")
         self.assertEqual(((payload.get("fallback_strategy") or {}).get("action_xmlid")), "smart_construction_core.action_payment_request")
 
-    def test_payment_entry_workbench_provider_supplies_delivery_handoff_v1(self):
+    def test_payment_entry_workbench_provider_supplies_delivery_handoff(self):
         payload = payment_entry_workbench_provider.build(scene_key="finance.payment_requests", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(handoff.get("family"), "payment_entry")
         self.assertEqual(handoff.get("runtime_entry_type"), "governed_user_flow")
@@ -770,9 +770,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         self.assertEqual(handoff.get("user_entry"), "menu:smart_construction_core.menu_payment_request")
         self.assertEqual(handoff.get("final_scene"), "finance.payment_requests")
 
-    def test_wave1_projects_provider_supplies_delivery_handoff_v1(self):
+    def test_wave1_projects_provider_supplies_delivery_handoff(self):
         payload = projects_list_provider.build(scene_key="projects.list", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual((payload.get("primary_action") or {}).get("action_xmlid"), "smart_construction_core.action_sc_project_list")
         self.assertEqual(handoff.get("family"), "projects")
@@ -780,9 +780,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         self.assertEqual(handoff.get("user_entry"), "menu:smart_construction_core.menu_sc_root")
         self.assertEqual(handoff.get("final_scene"), "projects.list")
 
-    def test_wave1_finance_provider_supplies_delivery_handoff_v1(self):
+    def test_wave1_finance_provider_supplies_delivery_handoff(self):
         payload = finance_center_provider.build(scene_key="finance.center", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(handoff.get("family"), "finance_center")
         self.assertEqual(handoff.get("runtime_consumer"), "family_runtime_consumer")
@@ -837,9 +837,9 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
             13,
         )
 
-    def test_wave1_task_provider_supplies_delivery_handoff_v1(self):
+    def test_wave1_task_provider_supplies_delivery_handoff(self):
         payload = task_center_provider.build(scene_key="task.center", runtime={"company_id": 9})
-        handoff = payload.get("delivery_handoff_v1") or {}
+        handoff = payload.get("delivery_handoff") or {}
 
         self.assertEqual(handoff.get("family"), "tasks")
         self.assertEqual(handoff.get("runtime_entry_type"), "governed_user_flow")

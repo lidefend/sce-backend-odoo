@@ -11,6 +11,7 @@ fi
 python3 - <<'PY'
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 
@@ -30,6 +31,7 @@ if not isinstance(cases, list):
 start_case = str(os.environ.get("START_CASE") or "").strip()
 case_only = str(os.environ.get("CASE_ONLY") or "").strip()
 started = not bool(start_case)
+case_only_found = not bool(case_only)
 if case_only and start_case:
     print("START_CASE and CASE_ONLY are mutually exclusive", file=sys.stderr)
     sys.exit(2)
@@ -41,6 +43,8 @@ for case in cases:
     case_name = str(case.get("case") or "").strip()
     if case_only and case_name != case_only:
         continue
+    if case_only:
+        case_only_found = True
     if not started:
         if case_name == start_case:
             started = True
@@ -110,7 +114,29 @@ for case in cases:
         )
         raise
 
+    snapshot_path = Path(outdir or "docs/contract/snapshots") / f"{case_name}.json"
+    if not snapshot_path.is_file() or snapshot_path.stat().st_size <= 0:
+        print(f"[export_all] invalid empty snapshot case={case_name} path={snapshot_path}", file=sys.stderr)
+        raise SystemExit(1)
+    try:
+        payload = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"[export_all] invalid JSON case={case_name} path={snapshot_path}: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    if not isinstance(payload, dict):
+        print(f"[export_all] snapshot root must be object case={case_name}", file=sys.stderr)
+        raise SystemExit(1)
+    if payload.get("error") and not case.get("allow_error_response"):
+        print(f"[export_all] unexpected error response case={case_name}", file=sys.stderr)
+        raise SystemExit(1)
+    if payload.get("record_error") and not case.get("allow_record_error"):
+        print(f"[export_all] unexpected record_error case={case_name}", file=sys.stderr)
+        raise SystemExit(1)
+
 if start_case and not started:
     print(f"START_CASE not found in cases file: {start_case}", file=sys.stderr)
+    sys.exit(2)
+if case_only and not case_only_found:
+    print(f"CASE_ONLY not found in cases file: {case_only}", file=sys.stderr)
     sys.exit(2)
 PY

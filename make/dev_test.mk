@@ -110,9 +110,9 @@ verify.project.management.productization: guard.prod.forbid verify.project.dashb
 verify.frontend.project_management.scene_bridge.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_project_management_scene_bridge_guard.py
 
-.PHONY: verify.frontend.scene_contract_v1.consumption.guard
-verify.frontend.scene_contract_v1.consumption.guard: guard.prod.forbid
-	@python3 scripts/verify/frontend_scene_contract_v1_consumption_guard.py
+.PHONY: verify.frontend.scene_contract.consumption.guard
+verify.frontend.scene_contract.consumption.guard: guard.prod.forbid
+	@python3 scripts/verify/frontend_scene_contract_consumption_guard.py
 
 .PHONY: verify.project.management.acceptance
 verify.project.management.acceptance: guard.prod.forbid verify.project.management.productization verify.frontend.project_management.scene_bridge.guard
@@ -170,6 +170,7 @@ verify.scene.ready.strict_contract.guard: guard.prod.forbid
 .PHONY: verify.contract.probe_routing.unit
 verify.contract.probe_routing.unit: guard.prod.forbid
 	@PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_contract_probe_routing
+	@python3 scripts/verify/test_app_nav_config_company_cache.py
 
 .PHONY: verify.contract.authority_hierarchy.guard
 verify.contract.authority_hierarchy.guard: guard.prod.forbid verify.contract.probe_routing.unit
@@ -674,7 +675,7 @@ verify.contract.envelope.guard: guard.prod.forbid
 verify.contract.envelope: guard.prod.forbid verify.contract.envelope.guard verify.contract.mode.smoke verify.contract.api.mode.smoke verify.scene_capability.contract.guard
 	@echo "[OK] verify.contract.envelope done"
 
-verify.scene.runtime_boundary.gate: guard.prod.forbid verify.boundary.import_guard verify.backend.boundary_guard verify.model.ui_dependency.guard verify.business.shape.guard verify.controller.boundary.guard verify.frontend.intent_channel.guard verify.frontend.no_base_contract_direct_consume.guard verify.frontend.scene_governance_consumption.guard verify.scene.provider.guard verify.scene.provider_shape.guard verify.scene.contract_v1.field_schema.guard verify.scene.engine_migration.matrix.guard verify.scene.legacy_endpoint.guard verify.intent.router.purity verify.scene.input_boundary.guard verify.scene.governance_payload.guard verify.scene.asset_queue_trend.guard verify.scene.ready.consumption_trend.guard verify.scene.governance_history_report.guard verify.scene.governance_history_archive.guard verify.scene.registry_asset_snapshot.guard verify.scene.base_contract_source_mix.guard verify.scene.source_fallback_burndown.guard verify.scene.no_action_scene.guard verify.scene.sample_registry_diff.guard verify.scene.sample_registry_diff_trend.guard verify.scene.base_contract_asset_coverage.guard verify.scene.orchestrator.input.schema.guard verify.scene.orchestrator.output.schema.guard verify.scene.orchestrator.base_fact_binding.guard verify.scene.orchestrator.industry_interface.guard verify.scene.orchestrator.merge_priority.guard verify.scene.orchestrator.scene_type_surface.guard verify.scene.orchestrator.action_surface.guard verify.scene.orchestrator.key_scene_compile.guard verify.scene.action_surface_strategy.wiring.guard verify.scene.action_surface_strategy.schema.guard verify.scene.action_surface_strategy.payload.guard verify.scene.action_surface_strategy.priority.guard verify.scene.action_surface_strategy.live_matrix.guard verify.scene.ready.scene_type_consumption_metrics.guard verify.scene.validation_recovery_strategy.guard verify.scene.validation_recovery_strategy.payload_path.guard verify.scene.validation_recovery_strategy.e2e_smoke.guard verify.scene.ui_base_contract_canonicalizer.guard verify.scene.ready.strict_contract.guard
+verify.scene.runtime_boundary.gate: guard.prod.forbid verify.boundary.import_guard verify.backend.boundary_guard verify.model.ui_dependency.guard verify.business.shape.guard verify.controller.boundary.guard verify.frontend.intent_channel.guard verify.frontend.no_base_contract_direct_consume.guard verify.frontend.scene_governance_consumption.guard verify.scene.provider.guard verify.scene.provider_shape.guard verify.scene.contract.field_schema.guard verify.scene.engine_migration.matrix.guard verify.scene.legacy_endpoint.guard verify.intent.router.purity verify.scene.input_boundary.guard verify.scene.governance_payload.guard verify.scene.asset_queue_trend.guard verify.scene.ready.consumption_trend.guard verify.scene.governance_history_report.guard verify.scene.governance_history_archive.guard verify.scene.registry_asset_snapshot.guard verify.scene.base_contract_source_mix.guard verify.scene.source_fallback_burndown.guard verify.scene.no_action_scene.guard verify.scene.sample_registry_diff.guard verify.scene.sample_registry_diff_trend.guard verify.scene.base_contract_asset_coverage.guard verify.scene.orchestrator.input.schema.guard verify.scene.orchestrator.output.schema.guard verify.scene.orchestrator.base_fact_binding.guard verify.scene.orchestrator.industry_interface.guard verify.scene.orchestrator.merge_priority.guard verify.scene.orchestrator.scene_type_surface.guard verify.scene.orchestrator.action_surface.guard verify.scene.orchestrator.key_scene_compile.guard verify.scene.action_surface_strategy.wiring.guard verify.scene.action_surface_strategy.schema.guard verify.scene.action_surface_strategy.payload.guard verify.scene.action_surface_strategy.priority.guard verify.scene.action_surface_strategy.live_matrix.guard verify.scene.ready.scene_type_consumption_metrics.guard verify.scene.validation_recovery_strategy.guard verify.scene.validation_recovery_strategy.payload_path.guard verify.scene.validation_recovery_strategy.e2e_smoke.guard verify.scene.ui_base_contract_canonicalizer.guard verify.scene.ready.strict_contract.guard
 	@echo "[OK] verify.scene.runtime_boundary.gate done"
 
 .PHONY: verify.scene.product_delivery.readiness.guard
@@ -689,12 +690,12 @@ verify.scene.delivery.readiness: guard.prod.forbid
 	SC_SCENE_ACTION_STRATEGY_LIVE_MATRIX_REQUIRE_LIVE=$${SC_SCENE_ACTION_STRATEGY_LIVE_MATRIX_REQUIRE_LIVE:-1} \
 	SC_SCENE_ACTION_SURFACE_STRATEGY_PAYLOAD_REQUIRE_LIVE=$${SC_SCENE_ACTION_SURFACE_STRATEGY_PAYLOAD_REQUIRE_LIVE:-1} \
 	SC_SCENE_READY_CONSUMPTION_TREND_REQUIRE_LIVE=$${SC_SCENE_READY_CONSUMPTION_TREND_REQUIRE_LIVE:-1} \
-	SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=$${SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL:-1} \
+	SC_SCENE_CONTRACT_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=$${SC_SCENE_CONTRACT_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL:-1} \
 	SC_SCENE_READY_STRICT_GAP_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=$${SC_SCENE_READY_STRICT_GAP_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL:-1} \
 	SC_SCENE_READY_CONSUMPTION_TREND_REQUIRE_ENABLED=$${SC_SCENE_READY_CONSUMPTION_TREND_REQUIRE_ENABLED:-1} \
 	$(MAKE) --no-print-directory verify.scene.runtime_boundary.gate
 	@SC_SCENE_READY_STRICT_GAP_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=$${SC_SCENE_READY_STRICT_GAP_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL:-1} \
-	SC_SCENE_READY_STRICT_GAP_FULL_AUDIT_STATE_FILE=$${SC_SCENE_READY_STRICT_GAP_FULL_AUDIT_STATE_FILE:-artifacts/backend/scene_contract_v1_field_schema_state.json} \
+	SC_SCENE_READY_STRICT_GAP_FULL_AUDIT_STATE_FILE=$${SC_SCENE_READY_STRICT_GAP_FULL_AUDIT_STATE_FILE:-artifacts/backend/scene_contract_field_schema_state.json} \
 	$(MAKE) --no-print-directory verify.scene.ready.strict_gap.full_audit
 	@$(MAKE) --no-print-directory verify.scene.product_delivery.readiness.guard
 	@echo "[INFO] strict guard report: docs/audit/scene_ready_strict_contract_guard_report.md"
@@ -742,10 +743,12 @@ verify.scene.multi_company.evidence.guard: guard.prod.forbid
 
 .PHONY: verify.scene.company_snapshot.collect
 verify.scene.company_snapshot.collect: guard.prod.forbid
+	@PYTHONPATH=.:scripts/verify python3 -m unittest scripts.verify.test_scene_company_snapshot_collect
 	@python3 scripts/verify/scene_company_snapshot_collect.py
 
 .PHONY: verify.scene.company_access.preflight.guard
 verify.scene.company_access.preflight.guard: guard.prod.forbid
+	@PYTHONPATH=.:scripts/verify python3 -m unittest scripts.verify.test_scene_company_access_preflight_guard
 	@python3 scripts/verify/scene_company_access_preflight_guard.py
 
 .PHONY: ops.scene.company_secondary.access
@@ -884,7 +887,7 @@ verify.scene.registry_asset_snapshot.executive: guard.prod.forbid
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1 \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE=artifacts/backend/scene_registry_asset_snapshot_state.executive.json \
 	E2E_LOGIN=$${ROLE_EXECUTIVE_LOGIN:-demo_role_executive} \
-	E2E_PASSWORD=$${ROLE_EXECUTIVE_PASSWORD:-demo} \
+	E2E_PASSWORD=$${ROLE_EXECUTIVE_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}} \
 	python3 scripts/verify/scene_registry_asset_snapshot_guard.py
 
 .PHONY: verify.scene.registry_asset_snapshot.pm
@@ -895,7 +898,7 @@ verify.scene.registry_asset_snapshot.pm: guard.prod.forbid
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1 \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE=artifacts/backend/scene_registry_asset_snapshot_state.pm.json \
 	E2E_LOGIN=$${ROLE_PM_LOGIN:-demo_role_pm} \
-	E2E_PASSWORD=$${ROLE_PM_PASSWORD:-demo} \
+	E2E_PASSWORD=$${ROLE_PM_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}} \
 	python3 scripts/verify/scene_registry_asset_snapshot_guard.py
 
 .PHONY: verify.scene.registry_asset_snapshot.finance
@@ -906,7 +909,7 @@ verify.scene.registry_asset_snapshot.finance: guard.prod.forbid
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1 \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE=artifacts/backend/scene_registry_asset_snapshot_state.finance.json \
 	E2E_LOGIN=$${ROLE_FINANCE_LOGIN:-demo_role_finance} \
-	E2E_PASSWORD=$${ROLE_FINANCE_PASSWORD:-$${ROLE_PM_PASSWORD:-demo}} \
+	E2E_PASSWORD=$${ROLE_FINANCE_PASSWORD:-$${ROLE_PM_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}}} \
 	python3 scripts/verify/scene_registry_asset_snapshot_guard.py
 
 .PHONY: verify.scene.registry_asset_snapshot.ops
@@ -917,7 +920,7 @@ verify.scene.registry_asset_snapshot.ops: guard.prod.forbid
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1 \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE=artifacts/backend/scene_registry_asset_snapshot_state.ops.json \
 	E2E_LOGIN=$${ROLE_OPS_LOGIN:-$${ROLE_EXECUTIVE_LOGIN:-demo_role_executive}} \
-	E2E_PASSWORD=$${ROLE_OPS_PASSWORD:-$${ROLE_EXECUTIVE_PASSWORD:-demo}} \
+	E2E_PASSWORD=$${ROLE_OPS_PASSWORD:-$${ROLE_EXECUTIVE_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}}} \
 	python3 scripts/verify/scene_registry_asset_snapshot_guard.py
 
 .PHONY: verify.scene.registry_asset_snapshot.company_primary
@@ -940,7 +943,7 @@ verify.scene.registry_asset_snapshot.company_secondary: guard.prod.forbid
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1 \
 	SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE=artifacts/backend/scene_registry_asset_snapshot_state.company_secondary.json \
 	E2E_LOGIN=$${COMPANY_SECONDARY_LOGIN:-$${ROLE_PM_LOGIN:-demo_role_pm}} \
-	E2E_PASSWORD=$${COMPANY_SECONDARY_PASSWORD:-$${ROLE_PM_PASSWORD:-demo}} \
+	E2E_PASSWORD=$${COMPANY_SECONDARY_PASSWORD:-$${ROLE_PM_PASSWORD:-$${SC_DEMO_USER_PASSWORD:-demo}}} \
 	E2E_COMPANY_ID=$${COMPANY_SECONDARY_ID:-2} \
 	python3 scripts/verify/scene_registry_asset_snapshot_guard.py
 
@@ -949,7 +952,7 @@ verify.scene.base_contract_source_mix.role_matrix.guard: guard.prod.forbid verif
 	@python3 scripts/verify/scene_base_contract_source_mix_role_matrix_guard.py
 
 .PHONY: verify.scene.base_contract_source_mix.company_matrix.guard
-verify.scene.base_contract_source_mix.company_matrix.guard: guard.prod.forbid verify.scene.registry_asset_snapshot.company_primary verify.scene.registry_asset_snapshot.company_secondary
+verify.scene.base_contract_source_mix.company_matrix.guard: guard.prod.forbid verify.scene.company_snapshot.collect
 	@python3 scripts/verify/scene_base_contract_source_mix_company_matrix_guard.py
 
 .PHONY: verify.scene.sample_registry_diff.guard
@@ -1649,12 +1652,15 @@ verify.backend.contract.closure.mainline.summary.schema.guard: guard.prod.forbid
 verify.product.delivery.ready: guard.prod.forbid verify.product.delivery.gap verify.product.delivery.freshness verify.product.delivery.governance_truth verify.product.delivery.productization.readiness.strict
 	@echo "[OK] verify.product.delivery.ready done"
 
-.PHONY: verify.restricted verify.product.delivery.mainline
-verify.restricted: guard.prod.forbid
+.PHONY: verify.restricted verify.product.delivery.mainline verify.contract.page_v1_zero_residue.guard
+verify.contract.page_v1_zero_residue.guard: guard.prod.forbid
+	@python3 scripts/verify/page_contract_v1_zero_residue_guard.py
+
+verify.restricted: guard.prod.forbid verify.contract.page_v1_zero_residue.guard
 	@echo "[verify.restricted] profile=restricted entry=verify.product.delivery.mainline"
 	@CI_SCENE_DELIVERY_PROFILE=restricted $(MAKE) --no-print-directory verify.product.delivery.mainline
 
-verify.product.delivery.mainline: guard.prod.forbid
+verify.product.delivery.mainline: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.unified_page_contract.v2
 	@PROFILE=$${CI_SCENE_DELIVERY_PROFILE:-restricted}; \
 	FRONTEND_STATUS=PASS; SCENE_STATUS=PASS; ACTION_STATUS=PASS; MODULE9_STATUS=PASS; CONTRACT_CLOSURE_STATUS=PASS; GOVERNANCE_STATUS=PASS; \
 	echo "[verify.product.delivery.mainline] step=frontend_gate"; \
@@ -1831,6 +1837,8 @@ verify.product.sla.baseline: guard.prod.forbid verify.platform.performance.smoke
 	@echo "[OK] verify.product.sla.baseline done"
 
 verify.product.release.ready: guard.prod.forbid \
+	verify.contract.page_v1_zero_residue.guard \
+	verify.unified_page_contract.v2 \
 	verify.backend.contract_lifecycle.authority \
 	verify.frontend.product.ready \
 	verify.docs.product_boundary \
@@ -2284,6 +2292,7 @@ verify.portal.navigation_registry_quality_guard: guard.prod.forbid
 	@python3 scripts/verify/portal_navigation_registry_quality_guard.py
 
 verify.boundary.import_guard: guard.prod.forbid
+	@python3 scripts/verify/test_boundary_import_guard.py
 	@python3 scripts/verify/boundary_import_guard.py
 	@python3 scripts/verify/boundary_import_guard_schema_guard.py
 	@python3 scripts/verify/model_ui_dependency_guard.py
@@ -2319,10 +2328,10 @@ verify.scene_orchestration.provider_shape.guard: guard.prod.forbid
 verify.scene.provider_shape.guard: guard.prod.forbid
 	@$(MAKE) --no-print-directory verify.scene_orchestration.provider_shape.guard
 
-.PHONY: verify.scene.contract_v1.field_schema.guard
-verify.scene.contract_v1.field_schema.guard: guard.prod.forbid
+.PHONY: verify.scene.contract.field_schema.guard
+verify.scene.contract.field_schema.guard: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_system_init_capability_scene_subset.py
-	@python3 scripts/verify/scene_contract_v1_field_schema_guard.py
+	@python3 scripts/verify/scene_contract_field_schema_guard.py
 
 verify.capability.provider.guard: guard.prod.forbid
 	@python3 scripts/verify/capability_provider_guard.py
@@ -2418,6 +2427,7 @@ verify.contract.preflight: guard.prod.forbid
 	@$(MAKE) --no-print-directory verify.frontend.x2many_command_semantic.guard
 	@$(MAKE) --no-print-directory verify.frontend.view_type_render_coverage.guard
 	@$(MAKE) --no-print-directory verify.native_view.semantic_page
+	@$(MAKE) --no-print-directory verify.contract.view_structure
 	@if [ "$(CONTRACT_PREFLIGHT_STRICT_VIEW_TYPES)" = "1" ]; then \
 	  $(MAKE) --no-print-directory verify.contract.view_type_semantic.strict.smoke; \
 	else \

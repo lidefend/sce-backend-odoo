@@ -151,7 +151,7 @@ def build(scene_key: str = "construction.execution", runtime: dict | None = None
         },
         "primary_action": primary_action,
         "fallback_strategy": fallback_strategy,
-        "delivery_handoff_v1": build_direct_runtime_handoff(
+        "delivery_handoff": build_direct_runtime_handoff(
             family=spec["family"],
             user_entry=f"menu:{spec.get('menu_xmlid')}",
             final_scene=scene_key,

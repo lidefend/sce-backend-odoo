@@ -1,0 +1,10 @@
+events:
+  - type: batch_started
+    at: "2026-08-21T00:00:00+08:00"
+    detail: Bound the generated contract to the governed local.clean profile and frozen formal menu policy.
+  - type: schema_identity_normalized
+    at: "2026-08-21T00:01:00+08:00"
+    detail: Standardized the schema identity on product_view_structure_contract/1.0.0 and removed the version-suffixed contract document.
+  - type: verification_pending
+    at: "2026-08-21T00:02:00+08:00"
+    detail: Targeted unit, static guard and governed local.clean drift gate remain to be recorded.

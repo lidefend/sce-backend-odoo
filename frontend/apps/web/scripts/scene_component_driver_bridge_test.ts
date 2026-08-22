@@ -49,7 +49,6 @@ assert.equal(
 
 function normalizedContract(actions: Array<Record<string, unknown>> = []) {
   return {
-    __unified_page_contract_v2: {
       pageInfo: {
         pageId: 'page.department.list',
         sceneKey: 'organization.directory',
@@ -99,7 +98,6 @@ function normalizedContract(actions: Array<Record<string, unknown>> = []) {
       dataContract: {},
       runtimeContract: {},
       meta: {},
-    },
   };
 }
 
@@ -157,8 +155,8 @@ const decision = resolveSceneComponentDriverDecision({
 });
 assert.equal(decision.eligible, true);
 assert.equal(decision.targeted, true);
-assert.equal(decision.resolution.kit, 'ui5-horizon');
-assert.equal(decision.allowUserOverride, true);
+assert.equal(decision.resolution.kit, 'tdesign-modern');
+assert.equal(decision.allowUserOverride, false);
 
 const deniedMutation = resolveSceneComponentDriverDecision({
   featureFlag: enabledFlag, actionId: 77, model: 'hr.department', sceneKey: '', viewMode: 'tree', pageAuth: 'read',
@@ -226,7 +224,7 @@ assert.equal(normalizeSceneFieldControlValue([false]), '');
 assert.equal(normalizeSceneFieldControlValue('false', 'date'), '');
 assert.equal(normalizeSceneFieldControlValue(['2026-08-17']), '2026-08-17');
 assert.deepEqual(toContractFormDriverFieldChange(driverField, 'Updated'), {
-  name: 'name', type: 'char', widget: undefined, value: 'Updated', descriptor: undefined,
+  occurrenceKey: 'name', name: 'name', type: 'char', widget: undefined, value: 'Updated', descriptor: undefined,
 });
 assert.equal(
   usesContractFormDriverField({ ...driverField, readonly: true }, 'tdesign-modern'),

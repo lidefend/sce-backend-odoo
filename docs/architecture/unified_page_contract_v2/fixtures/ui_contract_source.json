@@ -2,8 +2,11 @@
   "case": "project_form_fixture",
   "model": "project.project",
   "view_type": "form",
-  "contract_version": "v1",
+  "contract_version": "2.0.0",
   "title": "Project Form",
+  "render_profile": "edit",
+  "context_raw": "{'allowed_company_ids': [7]}",
+  "domain_raw": "[('company_id', '=', 7)]",
   "meta_fields": [
     {
       "name": "name",
@@ -28,6 +31,39 @@
     "stage_id": {
       "string": "Stage",
       "type": "many2one"
+    }
+  },
+  "search": {
+    "default_order": "name asc",
+    "filters": [{ "name": "active", "label": "Active", "domain": [["active", "=", true]] }],
+    "group_by": ["stage_id"],
+    "search_fields": [{ "name": "name", "label": "Name" }],
+    "searchpanel": { "enabled": true }
+  },
+  "views": {
+    "form": {
+      "layout": [
+        {
+          "type": "sheet",
+          "name": "fixture.sheet",
+          "children": [
+            {
+              "type": "group",
+              "name": "fixture.group",
+              "children": [
+                {
+                  "type": "field",
+                  "name": "name"
+                },
+                {
+                  "type": "field",
+                  "name": "stage_id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   "form_structure_contract": {

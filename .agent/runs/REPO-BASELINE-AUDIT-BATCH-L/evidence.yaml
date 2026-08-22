@@ -1,0 +1,10 @@
+evidence:
+  baseline_commit: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  layer_target: governed contract snapshot case registry
+  standard_vs_user_specific: evidence consumer of the P1 canonical action
+  why_here: The stale reference exists in the operational snapshot case.
+  why_not_elsewhere: The P1 action and migration already define and enforce the canonical replacement.
+  blast_radius: project_kanban_lifecycle_pm snapshot generation only.
+  validation_status: passed

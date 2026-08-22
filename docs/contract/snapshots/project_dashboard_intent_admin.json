@@ -14,21 +14,21 @@
   "ui_contract": null,
   "ui_contract_raw": {
     "completion": {
-      "next_target": "开始执行",
+      "next_target": "进入执行",
       "percent": 20
     },
     "flow_map": {
-      "current_stage": "initiation",
+      "current_stage": "execution",
       "items": [
         {
           "key": "initiation",
           "label": "立项",
-          "status": "current"
+          "status": "done"
         },
         {
           "key": "execution",
           "label": "执行",
-          "status": "todo"
+          "status": "current"
         },
         {
           "key": "cost",
@@ -70,7 +70,7 @@
     },
     "project": {
       "cost_total": "0.0",
-      "date": "2026-04-23",
+      "date": "2026-08-20",
       "evidence_refs": [],
       "evidence_summary": {},
       "fact_metrics": [
@@ -143,52 +143,78 @@
         "risk_count": 0,
         "settlement_evidence_count": 0
       },
-      "health_state": "warn",
+      "health_state": "good",
       "id": 1,
-      "lifecycle_state": "draft",
-      "manager_name": "Demo-项目经理",
-      "milestone": "",
-      "name": "演示项目 · 立项待完善",
-      "partner_name": "演示业主 · 城市建设集团",
+      "lifecycle_state": "in_progress",
+      "manager_name": "OdooBot",
+      "milestone": "ready",
+      "name": "演示项目 · 城市快速路提升工程",
+      "operation_strategy": "direct",
+      "operation_strategy_label": "公司直营",
+      "partner_name": "城市建设投资集团",
       "payment_executed_record_count": "0",
       "payment_executed_total": "0.0",
       "payment_total": "0.0",
       "progress_percent": "0.0",
-      "project_code": "DEMO-PJ-INIT",
-      "stage_name": "筹备中",
+      "project_code": "PRJ260001",
+      "stage_name": "在建",
       "state": "ready",
-      "status": "warn"
+      "status": "good"
     },
     "route_context": {
       "primary_protocol": "/s/project.management?project_id=<id>",
       "project_id": 1,
-      "query_key": "project_id"
+      "project_route": "/s/project.management?project_id=1",
+      "project_route_template": "/s/project.management?project_id={project_id}",
+      "query_key": "project_id",
+      "scene_route": "/s/project.management"
     },
     "scene": {
       "key": "project.management",
       "page": "project.management.dashboard"
     },
+    "source_authority": {
+      "authorities": [
+        "project.project",
+        "project.task",
+        "payment.request",
+        "payment.ledger",
+        "project.cost.ledger",
+        "sc.evidence.summary.service",
+        "business_projection_models",
+        "odoo.orm",
+        "odoo.read_group"
+      ],
+      "kind": "project_dashboard_business_fact_projection",
+      "no_frontend_synthetic_metrics": true,
+      "projection_only": true,
+      "scene_provider_registry": {
+        "provider_path": "/mnt/product-addons/smart_construction_scene/profiles/project_dashboard_scene_content.py",
+        "resolved": true,
+        "scene_key": "project.management"
+      }
+    },
     "state_explain": {
-      "execution_stage_explain": "项目已完成创建与立项准备，下一步应进入执行主线。",
-      "execution_stage_label": "筹备中",
-      "milestone_explain": "当前里程碑尚未进入显式执行状态。",
-      "project_condition_explain": "warn",
-      "stage_explain": "项目已完成创建与立项准备，下一步应进入执行主线。",
-      "stage_label": "筹备中",
-      "status_explain": "warn"
+      "execution_stage_explain": "项目已进入施工执行阶段，需要持续推进任务、成本与付款事实。",
+      "execution_stage_label": "在建",
+      "milestone_explain": "当前执行准备已完成，可以进入执行推进。",
+      "project_condition_explain": "good",
+      "stage_explain": "项目已进入施工执行阶段，需要持续推进任务、成本与付款事实。",
+      "stage_label": "在建",
+      "status_explain": "good"
     },
     "summary_rows": [
       {
         "copy": "主流程位置",
         "key": "stage_label",
         "label": "项目执行阶段",
-        "value": "筹备中"
+        "value": "在建"
       },
       {
         "copy": "执行推进节点",
         "key": "milestone_label",
         "label": "当前里程碑",
-        "value": ""
+        "value": "ready"
       },
       {
         "copy": "尚未形成可识别的执行进度。",
@@ -222,13 +248,13 @@
             "copy": "主流程位置",
             "key": "stage_label",
             "label": "项目执行阶段",
-            "value": "筹备中"
+            "value": "在建"
           },
           {
             "copy": "执行推进节点",
             "key": "milestone_label",
             "label": "当前里程碑",
-            "value": ""
+            "value": "ready"
           }
         ]
       },
@@ -277,7 +303,7 @@
       "header": {
         "project": {
           "cost_total": "0.0",
-          "date": "2026-04-23",
+          "date": "2026-08-20",
           "evidence_refs": [],
           "evidence_summary": {},
           "fact_metrics": [
@@ -350,37 +376,36 @@
             "risk_count": 0,
             "settlement_evidence_count": 0
           },
-          "health_state": "warn",
+          "health_state": "good",
           "id": 1,
-          "lifecycle_state": "draft",
-          "manager_name": "Demo-项目经理",
-          "milestone": "",
-          "name": "演示项目 · 立项待完善",
-          "partner_name": "演示业主 · 城市建设集团",
+          "lifecycle_state": "in_progress",
+          "manager_name": "OdooBot",
+          "milestone": "ready",
+          "name": "演示项目 · 城市快速路提升工程",
+          "operation_strategy": "direct",
+          "operation_strategy_label": "公司直营",
+          "partner_name": "城市建设投资集团",
           "payment_executed_record_count": "0",
           "payment_executed_total": "0.0",
           "payment_total": "0.0",
           "progress_percent": "0.0",
-          "project_code": "DEMO-PJ-INIT",
-          "stage_name": "筹备中",
+          "project_code": "PRJ260001",
+          "stage_name": "在建",
           "state": "ready",
-          "status": "warn"
+          "status": "good"
         },
         "resolution": {
-          "candidate_counts": {},
-          "reason": "matched explicit project_id",
-          "requested_project_id": 1,
-          "resolution_path": "explicit_project_id",
-          "resolved_project_id": 1
+          "resolution_path": "explicit_project",
+          "status": "available"
         },
         "state_explain": {
-          "execution_stage_explain": "项目已完成创建与立项准备，下一步应进入执行主线。",
-          "execution_stage_label": "筹备中",
-          "milestone_explain": "当前里程碑尚未进入显式执行状态。",
-          "project_condition_explain": "warn",
-          "stage_explain": "项目已完成创建与立项准备，下一步应进入执行主线。",
-          "stage_label": "筹备中",
-          "status_explain": "warn"
+          "execution_stage_explain": "项目已进入施工执行阶段，需要持续推进任务、成本与付款事实。",
+          "execution_stage_label": "在建",
+          "milestone_explain": "当前执行准备已完成，可以进入执行推进。",
+          "project_condition_explain": "good",
+          "stage_explain": "项目已进入施工执行阶段，需要持续推进任务、成本与付款事实。",
+          "stage_label": "在建",
+          "status_explain": "good"
         }
       },
       "metrics": {
@@ -435,6 +460,17 @@
             "code": "",
             "message": ""
           },
+          "source_authority": {
+            "authorities": [
+              "odoo.orm",
+              "odoo.read_group",
+              "project.project",
+              "business_projection_models"
+            ],
+            "block_key": "block.project.progress",
+            "kind": "business_fact_dashboard_block",
+            "projection_only": true
+          },
           "state": "ready",
           "title": "项目进度",
           "visibility": {
@@ -444,21 +480,21 @@
           }
         },
         "completion": {
-          "next_target": "开始执行",
+          "next_target": "进入执行",
           "percent": 20
         },
         "flow_map": {
-          "current_stage": "initiation",
+          "current_stage": "execution",
           "items": [
             {
               "key": "initiation",
               "label": "立项",
-              "status": "current"
+              "status": "done"
             },
             {
               "key": "execution",
               "label": "执行",
-              "status": "todo"
+              "status": "current"
             },
             {
               "key": "cost",
@@ -482,13 +518,13 @@
             "copy": "主流程位置",
             "key": "stage_label",
             "label": "项目执行阶段",
-            "value": "筹备中"
+            "value": "在建"
           },
           {
             "copy": "执行推进节点",
             "key": "milestone_label",
             "label": "当前里程碑",
-            "value": ""
+            "value": "ready"
           },
           {
             "copy": "尚未形成可识别的执行进度。",
@@ -523,13 +559,13 @@
           "data": {
             "alerts": [
               {
-                "action_key": "open_task_list",
-                "code": "ACTIVITY_OVERDUE",
-                "hint": "流程待办已逾期，请尽快闭环。",
-                "level": "warning",
-                "source": "business",
-                "title": "存在逾期待办",
-                "value": 1
+                "action_key": "open_risk_list",
+                "code": "NO_RISK_SIGNAL",
+                "hint": "当前进度与风险状态稳定。",
+                "level": "info",
+                "source": "capability_fallback",
+                "title": "暂无高优先级风险提醒",
+                "value": 0
               }
             ],
             "quick_actions": [
@@ -558,6 +594,17 @@
           "error": {
             "code": "",
             "message": ""
+          },
+          "source_authority": {
+            "authorities": [
+              "odoo.orm",
+              "odoo.read_group",
+              "project.project",
+              "business_projection_models"
+            ],
+            "block_key": "block.project.risk",
+            "kind": "business_fact_dashboard_block",
+            "projection_only": true
           },
           "state": "ready",
           "title": "风险提醒",

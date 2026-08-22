@@ -586,7 +586,8 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertIsInstance(projected, dict)
         self.assertEqual(projected["workflowContract"]["model"], "sc.expense.claim")
         self.assertEqual(projected["workflowContract"]["businessPhase"], "draft")
-        self.assertEqual(projected["runtimeContract"]["workflowContract"]["rawState"], "draft")
+        self.assertEqual(projected["workflowContract"]["rawState"], "draft")
+        self.assertNotIn("workflowContract", projected["runtimeContract"])
         self.assertEqual(projected["statusContract"]["globalStatus"]["workflowPhase"], "draft")
 
     def _action(self, contract, key):
@@ -596,7 +597,7 @@ class TestWorkflowContractBackend(TransactionCase):
         self.fail("missing workflow action: %s" % key)
 
     def _assert_workflow_contract_schema(self, contract, record):
-        self.assertEqual(contract["source"]["kind"], "sc_backend_workflow_contract_v1")
+        self.assertEqual(contract["source"]["kind"], "sc_backend_workflow_contract")
         self.assertEqual(contract["model"], record._name)
         self.assertEqual(contract["record_id"], record.id)
         self.assertEqual(contract["stateField"], self.service.PROFILE_BY_MODEL[record._name]["state_field"])

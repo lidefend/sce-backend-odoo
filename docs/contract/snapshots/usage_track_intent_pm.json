@@ -15,18 +15,21 @@
   "ui_contract_raw": {
     "event_type": "scene_open",
     "tracked": [
-      "usage.scene_open.user.2.total",
-      "usage.scene_open.user.2.my.work",
-      "usage.scene_open.user.2.daily.2026-04-23",
-      "usage.scene_open.role.admin.total",
-      "usage.scene_open.role.admin.my.work",
-      "usage.scene_open.role.admin.daily.2026-04-23",
+      "usage.scene_open.user.41.total",
+      "usage.scene_open.user.41.my.work",
+      "usage.scene_open.user.41.daily.2026-08-20",
+      "usage.scene_open.role.pm.total",
+      "usage.scene_open.role.pm.my.work",
+      "usage.scene_open.role.pm.daily.2026-08-20",
+      "usage.scene_open.role.project_manager.total",
+      "usage.scene_open.role.project_manager.my.work",
+      "usage.scene_open.role.project_manager.daily.2026-08-20",
       "usage.scene_open.total",
       "usage.scene_open.my.work",
-      "usage.scene_open.daily.2026-04-23"
+      "usage.scene_open.daily.2026-08-20"
     ]
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

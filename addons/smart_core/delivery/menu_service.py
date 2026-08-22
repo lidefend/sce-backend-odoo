@@ -32,7 +32,7 @@ def register_customer_acceptance_group_label(label: str) -> None:
 
 
 class MenuService:
-    ROUTE_AUTHORITY_CONTRACT_VERSION = "route_authority.v1"
+    ROUTE_AUTHORITY_CONTRACT_VERSION = "2.0.0"
 
     @staticmethod
     def _role_surface_menu_allowed(menu: dict, role_surface: dict | None) -> bool:
@@ -463,7 +463,7 @@ class MenuService:
                     "allowed_operation": "read",
                     "required_capability": str(meta.get("capability_key") or "menu_action_read").strip(),
                     "context_requirements": {},
-                    "source": "delivery_engine_v1.released_policy_nav",
+                    "source": "delivery_engine.released_policy_nav",
                 }
             yield from MenuService._walk_nav_action_specs(node.get("children") or [])
 
@@ -596,7 +596,8 @@ class MenuService:
         if self.env is None:
             return {
                 "contract_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
-                "source": "delivery_engine_v1.route_authority",
+                "schema_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
+                "source": "delivery_engine.route_authority",
                 "principal_scope": {},
                 **buckets,
             }
@@ -608,7 +609,8 @@ class MenuService:
         if not surface.get("exposure_policy_declared"):
             return {
                 "contract_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
-                "source": "delivery_engine_v1.route_authority",
+                "schema_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
+                "source": "delivery_engine.route_authority",
                 "principal_scope": principal_scope,
                 **buckets,
             }
@@ -703,7 +705,7 @@ class MenuService:
                 entry = self._route_entry_from_menu(
                     visible_by_pair.get(pair),
                     route_kind="DISCOVERED_PRIMARY_NAV",
-                    source="delivery_engine_v1.nav",
+                    source="delivery_engine.nav",
                 )
                 if entry:
                     buckets["primary_actions"].append(entry)
@@ -756,7 +758,8 @@ class MenuService:
             bucket.sort(key=lambda item: (str(item.get("action_xmlid") or item.get("menu_xmlid") or ""), int(item.get("menu_id") or 0)))
         return {
             "contract_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
-            "source": "delivery_engine_v1.route_authority",
+            "schema_version": self.ROUTE_AUTHORITY_CONTRACT_VERSION,
+            "source": "delivery_engine.route_authority",
             "principal_scope": principal_scope,
             **buckets,
         }
@@ -829,7 +832,7 @@ class MenuService:
             kind=cls.SOURCE_KIND,
             authorities=cls.SOURCE_AUTHORITIES,
             no_business_fact_authority=cls.NO_BUSINESS_FACT_AUTHORITY,
-            runtime_carrier="delivery_engine_v1.nav",
+            runtime_carrier="delivery_engine.nav",
         )
 
     def _is_admin_role(self, role_code: str) -> bool:
@@ -1614,7 +1617,7 @@ class MenuService:
                 "entry_target_policy": "merge_to_list_form_by_business_category",
                 "record_scope_policy": record_scope_policy,
                 "project_scope_policy": "current_project" if record_scope_policy == "current_record" else record_scope_policy,
-                "source": "delivery_engine_v1",
+                "source": "delivery_engine",
                 "source_authority": self.source_authority_contract(),
             }
             for field in ("action_id", "action_xmlid", "model", "view_modes", "entry_target"):
@@ -2255,7 +2258,7 @@ class MenuService:
         root["label"] = "系统菜单"
         root["title"] = "系统菜单"
         root["meta"] = {
-            "source": "delivery_engine_v1",
+            "source": "delivery_engine",
             "role_code": role_code,
             "role_codes": role_codes,
             "strategy": "unified_system_menu",

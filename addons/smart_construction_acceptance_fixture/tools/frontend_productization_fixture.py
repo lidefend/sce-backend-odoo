@@ -152,6 +152,27 @@ def _partner(env, suffix, company):
     )
 
 
+def _activity_move(env, company, partner, journal):
+    if not journal or journal.company_id != company or journal.type != "general":
+        raise RuntimeError("Activity fixture requires an existing governed general journal")
+    reference = "FE-ACTIVITY-JOURNAL-001"
+    return _upsert(
+        env,
+        "account.move",
+        "fe_activity_journal_entry",
+        [("ref", "=", reference), ("company_id", "=", company.id)],
+        {
+            "move_type": "entry",
+            "journal_id": journal.id,
+            "date": "2026-07-31",
+            "ref": reference,
+            "company_id": company.id,
+            "currency_id": company.currency_id.id,
+            "partner_id": partner.id,
+        },
+    )
+
+
 def _tax(env, suffix, company):
     helper = env["construction.contract"].sudo().with_company(company)
     group = helper._sc_contract_tax_group(company)
@@ -788,6 +809,12 @@ def ensure_fixture(env) -> Dict[str, Any]:
 
     company_a = _company(env, "A")
     company_b = _company(env, "B")
+    activity_journal = env["account.journal"].sudo().search(
+        [("type", "=", "general")], order="company_id,id", limit=1
+    )
+    if not activity_journal:
+        raise RuntimeError("Activity fixture requires an existing accounting company")
+    activity_company = activity_journal.company_id
 
     finance = _user(
         env,
@@ -906,6 +933,17 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [company_a],
         ["smart_construction_core.group_sc_role_business_admin"],
     )
+    activity_accounting = _user(
+        env,
+        "fixture_role_activity_accounting",
+        "Acceptance Fixture Activity Accounting",
+        activity_company,
+        [activity_company],
+        [
+            "smart_construction_core.group_sc_role_business_admin",
+            "smart_construction_core.group_sc_cap_accounting_read",
+        ],
+    )
     owner = _user(
         env,
         "fixture_role_owner",
@@ -926,6 +964,10 @@ def ensure_fixture(env) -> Dict[str, Any]:
     partner_a = _partner(env, "A", company_a)
     partner_b = _partner(env, "B", company_a)
     partner_c = _partner(env, "C", company_b)
+    activity_partner = _partner(env, "ACTIVITY", activity_company)
+    activity_move = _activity_move(
+        env, activity_company, activity_partner, activity_journal
+    )
     tax_a = _tax(env, "A", company_a)
     tax_b = _tax(env, "B", company_b)
     project_a = _project(env, "A", company_a, pm, partner_a)
@@ -1101,6 +1143,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
             contract_operator.login,
             config_admin.login,
             config_admin_peer.login,
+            activity_accounting.login,
             owner.login,
             executive.login,
         ],
@@ -1112,6 +1155,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "settlements": 3,
             "payment_requests": 4,
             "payment_executions": 2,
+            "activity_moves": 1,
         },
         "journey": {
             "settlement": journey_settlement.name,
@@ -1136,5 +1180,10 @@ def ensure_fixture(env) -> Dict[str, Any]:
             "execution_approval_policy": pfl035_execution_policy.code,
             "execution_approval_step": pfl035_execution_step.name,
             "oca_tier_definition": pfl035_execution_step.tier_definition_id.name,
+        },
+        "activity": {
+            "move_id": activity_move.id,
+            "reference": activity_move.ref,
+            "state": activity_move.state,
         },
     }

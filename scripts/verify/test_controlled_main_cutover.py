@@ -139,7 +139,7 @@ class ControlledMainCutoverTests(unittest.TestCase):
             required_checks={},
         )
         with self.assertRaisesRegex(cutover.CutoverError, "outside"):
-            cutover.create_recovery_bundle(pre, ROOT / "artifacts", "20260731T000000Z")
+            cutover.create_recovery_bundle(pre, ROOT / "addons", "20260731T000000Z")
 
     def test_script_contains_no_customer_or_production_action(self) -> None:
         text = SCRIPT.read_text(encoding="utf-8")

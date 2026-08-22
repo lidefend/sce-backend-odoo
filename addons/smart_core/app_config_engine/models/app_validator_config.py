@@ -53,7 +53,7 @@ class AppValidatorConfig(models.Model):
     # ================== 生成（聚合校验规则） ==================
 
     @api.model
-    def _generate_from_validators(self, model_name):
+    def _generate_from_validators(self, model_name, fields_get_snapshot=None):
         """
         基于 fields_get + _sql_constraints 生成可前置校验规则
         - 注意：不尝试解析 @api.constrains（无法可靠枚举）
@@ -63,7 +63,7 @@ class AppValidatorConfig(models.Model):
                 raise ValueError(_("模型不存在：%s") % model_name)
 
             Model = self.env[model_name].sudo()
-            fget = Model.fields_get()
+            fget = fields_get_snapshot if isinstance(fields_get_snapshot, dict) else Model.fields_get()
             sql_constraints = getattr(Model, '_sql_constraints', []) or []
 
             field_rules = self._collect_field_rules(fget)

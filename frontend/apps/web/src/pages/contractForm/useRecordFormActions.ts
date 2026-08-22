@@ -1,12 +1,132 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { FormSectionFieldActionPayload, FormSectionFieldSchema } from '../../components/template/formSection.types';
+import type {
+  FormSectionFieldActionPayload,
+  FormSectionFieldSchema,
+} from '../../components/template/formSection.types';
 import type { ContractAction, LayoutNode } from './types';
 
 type ActionDependencies = Record<string, any>;
 
 /** Owns save, conflict recovery, form configuration, and projection refresh actions. */
 export function useRecordFormActions(dependencies: ActionDependencies) {
-  const { ApiError, BUSINESS_CONFIG_ACTION_KEYS, BUSINESS_CONFIG_MODES, BUSINESS_CONFIG_ROUTE_FLAGS, RECORD_CONTEXT_CHANGED_EVENT, actionId, activeContractMode, activeContractModeFieldRows, appendFormConfigOperation, buildFormRequestContext, buildLowCodeApplyBaseParams, buildLowCodePreviewQuery, buildLowCodeReturnQuery, buildSaveRecordPayload, busy, busyKind, canSave, clearIntakeAutosave, closeContractPromptAction, collectPolicyValidationErrors, collectSceneValidationPrecheckErrors, collectWritableValues, comparableFieldValue, contract, contractActionRuleKey, contractFieldSequenceFromOrder, contractModeFeedback, contractV2ActionRules, createContractFormRecord, currentFormDesignFieldKeys, currentFormOrderedFieldKeys, dirtyFieldSet, draggingFieldLabel, effectiveFieldGroupTitleForDraft, ensureFormInitialReload, executeProjectionRefresh, fieldGroupTitleMatches, fieldOrderDraft, fieldVisibilityBase, fieldVisibilityDirtyKeys, fieldVisibilityDraft, focusFirstValidationError, formConfigAuditResult, formConflict, formCreateContextFromState, formData, formDesignFieldLabel, formDesignerGroupNavigatorItems, formRouteIdentity, formSettingsActiveTab, formUiLabel, handleRecordContextChanged, hasChanges, hasCurrentFormFieldDraftChanges, instanceRouteIdentity, intentConfirmationRef, isBusinessConfigMode, isBusinessConfigRuntimeModel, isComponentActive, isContractFieldOrderEditable, isFormPageRouteOwner, isTierValidationActionHiddenFromState, isWritableFieldVisible, layoutNodes, model, moveFieldOrder, navigateCreatedRecord, normalizeFieldGroupTitle, normalizeFieldValue, onContractInlineGroupRename, onErrorCaptured, onFieldOrderDragEnd, onFieldOrderDragLeave, onFieldOrderDragOver, onFieldOrderDragStart, onFieldOrderDrop, onFieldOrderGroupDrop, onFieldOrderWindowDragOver, onFieldOrderWindowDragStop, onRelationDialogDocumentKeydown, one2manyValidation, originalValues, parseMaybeJsonRecord, policyContext, recordId, recordVersionPolicy, recordVersionToken, reload, rememberFormConfigFieldLabel, renderErrorMessage, resolvePendingInlineRelationCreates, resolvePendingMany2manyTagCreates, retainedRouteIdentity, route, router, runContractRuleAction, sanitizeUiErrorMessage, saveContractFieldOrder, sceneReadyFormSurface, selectedFormSettingsFieldGroupTitle, selectedFormSettingsFieldGroupTitleDraft, selectedFormSettingsFieldGroupTitleEdit, selectedFormSettingsFieldKey, selectedFormSettingsFieldLabel, selectedFormSettingsFieldRow, session, setInlineFieldPolicy, showOne2manyErrors, status, submissionFeedback, uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore, validateBeforeSaveRecord, validateContractFormData, validationErrors, writeContractFormRecord } = dependencies;
+  const {
+    ApiError,
+    BUSINESS_CONFIG_ACTION_KEYS,
+    BUSINESS_CONFIG_MODES,
+    BUSINESS_CONFIG_ROUTE_FLAGS,
+    RECORD_CONTEXT_CHANGED_EVENT,
+    actionId,
+    activeContractMode,
+    activeContractModeFieldRows,
+    appendFormConfigOperation,
+    buildFormRequestContext,
+    buildLowCodeApplyBaseParams,
+    buildLowCodePreviewQuery,
+    buildLowCodeReturnQuery,
+    buildSaveRecordPayload,
+    busy,
+    busyKind,
+    canSave,
+    clearIntakeAutosave,
+    closeContractPromptAction,
+    collectSceneValidationPrecheckErrors,
+    collectWritableValues,
+    comparableFieldValue,
+    contract,
+    contractActionRuleKey,
+    contractActionConfirmationPrompt,
+    contractFieldSequenceFromOrder,
+    contractModeFeedback,
+    contractV2ActionRules,
+    createContractFormRecord,
+    currentFormDesignFieldKeys,
+    currentFormOrderedFieldKeys,
+    dirtyFieldSet,
+    draggingFieldLabel,
+    effectiveFieldGroupTitleForDraft,
+    ensureFormInitialReload,
+    executeProjectionRefresh,
+    fieldGroupTitleMatches,
+    fieldOrderDraft,
+    fieldVisibilityBase,
+    fieldVisibilityDirtyKeys,
+    fieldVisibilityDraft,
+    focusFirstValidationError,
+    formConfigAuditResult,
+    formConflict,
+    formCreateContextFromState,
+    formData,
+    formFields,
+    formDesignFieldLabel,
+    formDesignerGroupNavigatorItems,
+    formRouteIdentity,
+    formSettingsActiveTab,
+    formUiLabel,
+    handleRecordContextChanged,
+    hasChanges,
+    hasCurrentFormFieldDraftChanges,
+    instanceRouteIdentity,
+    intentConfirmationRef,
+    isBusinessConfigMode,
+    isBusinessConfigRuntimeModel,
+    isComponentActive,
+    isContractFieldOrderEditable,
+    isFormPageRouteOwner,
+    isTierValidationActionHiddenFromState,
+    isWritableFieldVisible,
+    layoutNodes,
+    model,
+    moveFieldOrder,
+    navigateCreatedRecord,
+    normalizeFieldGroupTitle,
+    normalizeFieldValue,
+    onContractInlineGroupRename,
+    onErrorCaptured,
+    onFieldOrderDragEnd,
+    onFieldOrderDragLeave,
+    onFieldOrderDragOver,
+    onFieldOrderDragStart,
+    onFieldOrderDrop,
+    onFieldOrderGroupDrop,
+    onFieldOrderWindowDragOver,
+    onFieldOrderWindowDragStop,
+    onRelationDialogDocumentKeydown,
+    one2manyValidation,
+    originalValues,
+    parseMaybeJsonRecord,
+    recordId,
+    recordVersionPolicy,
+    recordVersionToken,
+    reload,
+    rememberFormConfigFieldLabel,
+    renderErrorMessage,
+    resolvePendingInlineRelationCreates,
+    resolvePendingMany2manyTagCreates,
+    retainedRouteIdentity,
+    route,
+    router,
+    runContractRuleAction,
+    sanitizeUiErrorMessage,
+    saveContractFieldOrder,
+    sceneReadyFormSurface,
+    selectedFormSettingsFieldGroupTitle,
+    selectedFormSettingsFieldGroupTitleDraft,
+    selectedFormSettingsFieldGroupTitleEdit,
+    selectedFormSettingsFieldKey,
+    selectedFormSettingsFieldLabel,
+    selectedFormSettingsFieldRow,
+    session,
+    setInlineFieldPolicy,
+    showOne2manyErrors,
+    status,
+    submissionFeedback,
+    uploadPendingNativeAttachments,
+    useFormPageLifecycleRuntime,
+    v2ContractStore,
+    validateBeforeSaveRecord,
+    validationErrors,
+    writeContractFormRecord,
+  } = dependencies;
   async function discardChanges() {
     if (!hasChanges.value || busy.value) return;
     await reload();
@@ -19,10 +139,11 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   });
 
   async function confirmActionSafety(action: ContractAction) {
-    const safety = action.actionSafety;
-    if (!safety || safety.classification !== 'danger' || !safety.requiresConfirm) return true;
-    return intentConfirmationRef.value?.confirm({ actionLabel: String(action.label || '操作'),
-      message: String(safety.confirmMessage || action.hint || '该操作执行后将立即生效，请确认是否继续。') }) ?? false;
+    const prompt = contractActionConfirmationPrompt(action);
+    if (!prompt) return true;
+    return (
+      intentConfirmationRef.value?.confirm(prompt) ?? false
+    );
   }
 
   async function ensureSavedBeforeRecordAction() {
@@ -42,7 +163,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   function applyRouteConfigMode(rawMode: unknown) {
     const mode = String(rawMode || '').trim();
     if (isBusinessConfigRuntimeModel(model.value)) {
-      if (activeContractMode.value === BUSINESS_CONFIG_MODES.formFieldConfiguration || activeContractMode.value === BUSINESS_CONFIG_MODES.lowCode) {
+      if (
+        activeContractMode.value === BUSINESS_CONFIG_MODES.formFieldConfiguration ||
+        activeContractMode.value === BUSINESS_CONFIG_MODES.lowCode
+      ) {
         activeContractMode.value = '';
       }
       return;
@@ -59,7 +183,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       fieldVisibilityDraft[fieldKey] = actionValue === 'show';
       fieldVisibilityDirtyKeys[fieldKey] = true;
       formConfigAuditResult.value = null;
-      appendFormConfigOperation(actionValue === 'show' ? '显示字段' : '隐藏字段', `${formDesignFieldLabel(fieldKey)} 设置为${actionValue === 'show' ? '显示' : '隐藏'}`);
+      appendFormConfigOperation(
+        actionValue === 'show' ? '显示字段' : '隐藏字段',
+        `${formDesignFieldLabel(fieldKey)} 设置为${actionValue === 'show' ? '显示' : '隐藏'}`,
+      );
       contractModeFeedback.value = '字段显示设置已调整，保存后生效';
       return;
     }
@@ -68,7 +195,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     await runContractRuleAction(raw);
   }
 
-  function onFormSettingsFieldSelect(payload: { field: FormSectionFieldSchema; groupTitle: string }) {
+  function onFormSettingsFieldSelect(payload: {
+    field: FormSectionFieldSchema;
+    groupTitle: string;
+  }) {
     if (!isContractFieldOrderEditable.value) return;
     const fieldKey = String(payload.field.name || payload.field.key || '').trim();
     if (!fieldKey) return;
@@ -86,10 +216,8 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     }
     selectedFormSettingsFieldKey.value = fieldKey;
     selectedFormSettingsFieldLabel.value = String(payload.field.label || fieldKey).trim();
-    selectedFormSettingsFieldGroupTitleDraft.value = (
-      effectiveFieldGroupTitleForDraft(fieldKey)
-      || normalizeFieldGroupTitle(payload.groupTitle)
-    );
+    selectedFormSettingsFieldGroupTitleDraft.value =
+      effectiveFieldGroupTitleForDraft(fieldKey) || normalizeFieldGroupTitle(payload.groupTitle);
     selectedFormSettingsFieldGroupTitleEdit.value = selectedFormSettingsFieldGroupTitleDraft.value;
     formSettingsActiveTab.value = 'fields';
   }
@@ -97,9 +225,14 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   function selectFormDesignerGroup(title: string) {
     const normalizedTitle = normalizeFieldGroupTitle(title);
     if (!normalizedTitle) return;
-    const group = formDesignerGroupNavigatorItems.value.find((item) => fieldGroupTitleMatches(item.title, normalizedTitle));
-    const orderedKeys = currentFormOrderedFieldKeys.value.length ? currentFormOrderedFieldKeys.value : currentFormDesignFieldKeys.value;
-    const fieldKey = orderedKeys.find((key) => group?.fieldKeys.includes(key)) || group?.fieldKeys[0] || '';
+    const group = formDesignerGroupNavigatorItems.value.find((item) =>
+      fieldGroupTitleMatches(item.title, normalizedTitle),
+    );
+    const orderedKeys = currentFormOrderedFieldKeys.value.length
+      ? currentFormOrderedFieldKeys.value
+      : currentFormDesignFieldKeys.value;
+    const fieldKey =
+      orderedKeys.find((key) => group?.fieldKeys.includes(key)) || group?.fieldKeys[0] || '';
     if (!fieldKey) return;
     onFormSettingsFieldSelect({
       field: {
@@ -127,7 +260,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   async function onSelectedFormSettingsGroupTitleChange(event: Event) {
     const oldTitle = selectedFormSettingsFieldGroupTitle.value;
     const target = event.target as HTMLInputElement | null;
-    const newTitle = String(selectedFormSettingsFieldGroupTitleEdit.value || target?.value || '').trim();
+    const newTitle = String(
+      selectedFormSettingsFieldGroupTitleEdit.value || target?.value || '',
+    ).trim();
     if (!oldTitle || !newTitle || oldTitle === newTitle) {
       selectedFormSettingsFieldGroupTitleEdit.value = oldTitle;
       return;
@@ -150,42 +285,63 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     return fieldOrderDraft.value.indexOf(fieldKey);
   }
 
-  function onContractInlineFieldOrderMove(payload: { field: FormSectionFieldSchema; delta: number }) {
+  function onContractInlineFieldOrderMove(payload: {
+    field: FormSectionFieldSchema;
+    delta: number;
+  }) {
     const fieldKey = String(payload.field.name || '').trim();
     if (!fieldKey) return;
     moveFieldOrder(fieldKey, payload.delta);
   }
 
-  function onContractInlineFieldOrderDragStart(payload: { field: FormSectionFieldSchema; event: DragEvent }) {
+  function onContractInlineFieldOrderDragStart(payload: {
+    field: FormSectionFieldSchema;
+    event: DragEvent;
+  }) {
     const fieldKey = String(payload.field.name || '').trim();
     if (!fieldKey) return;
     rememberFormConfigFieldLabel(fieldKey, payload.field.label);
     const fieldLabel = String(payload.field.label || '').trim();
-    draggingFieldLabel.value = fieldLabel && fieldLabel !== fieldKey ? fieldLabel : formDesignFieldLabel(fieldKey);
+    draggingFieldLabel.value =
+      fieldLabel && fieldLabel !== fieldKey ? fieldLabel : formDesignFieldLabel(fieldKey);
     onFieldOrderDragStart(fieldKey, payload.event);
   }
 
-  function onContractInlineFieldOrderDragOver(payload: { field: FormSectionFieldSchema; groupTitle?: string; placement?: 'before' | 'after' | '' }) {
+  function onContractInlineFieldOrderDragOver(payload: {
+    field: FormSectionFieldSchema;
+    groupTitle?: string;
+    placement?: 'before' | 'after' | '';
+  }) {
     const fieldKey = String(payload.field.name || '').trim();
     if (!fieldKey) return;
     rememberFormConfigFieldLabel(fieldKey, payload.field.label);
     onFieldOrderDragOver(fieldKey, payload.placement);
   }
 
-  function onContractInlineFieldOrderDragLeave(payload: { field: FormSectionFieldSchema; groupTitle?: string }) {
+  function onContractInlineFieldOrderDragLeave(payload: {
+    field: FormSectionFieldSchema;
+    groupTitle?: string;
+  }) {
     const fieldKey = String(payload.field.name || '').trim();
     if (!fieldKey) return;
     onFieldOrderDragLeave(fieldKey);
   }
 
-  function onContractInlineFieldOrderDrop(payload: { field: FormSectionFieldSchema; groupTitle?: string; placement?: 'before' | 'after' | '' }) {
+  function onContractInlineFieldOrderDrop(payload: {
+    field: FormSectionFieldSchema;
+    groupTitle?: string;
+    placement?: 'before' | 'after' | '';
+  }) {
     const fieldKey = String(payload.field.name || '').trim();
     if (!fieldKey) return;
     rememberFormConfigFieldLabel(fieldKey, payload.field.label);
     onFieldOrderDrop(fieldKey, payload.groupTitle, payload.placement);
   }
 
-  function onContractInlineFieldOrderGroupDrop(payload: { groupTitle: string; groupIndex?: number }) {
+  function onContractInlineFieldOrderGroupDrop(payload: {
+    groupTitle: string;
+    groupIndex?: number;
+  }) {
     onFieldOrderGroupDrop(payload.groupTitle);
   }
 
@@ -194,7 +350,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   }
 
   function lowCodeApplyBaseParams() {
-    const configAction = contractV2ActionRules.value.find((rule) => contractActionRuleKey(rule) === BUSINESS_CONFIG_ACTION_KEYS.currentFormFieldOrderSave);
+    const configAction = contractV2ActionRules.value.find(
+      (rule) =>
+        contractActionRuleKey(rule) === BUSINESS_CONFIG_ACTION_KEYS.currentFormFieldOrderSave,
+    );
     const target = parseMaybeJsonRecord(configAction?.target);
     return buildLowCodeApplyBaseParams({
       actionId: actionId.value || route.query.action_id,
@@ -289,32 +448,22 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationErrors.value = [];
     formConflict.value = false;
     const validation = await validateBeforeSaveRecord({
-      collectPolicyValidationErrors: (submittedFields) => [
-        ...collectPolicyValidationErrors(contract.value, policyContext.value),
-        ...collectPolicyValidationErrors(contract.value, {
-          ...policyContext.value,
-          submittedFields,
-        }),
-      ],
-      collectSceneValidationPrecheckErrors: (fieldLabels) => collectSceneValidationPrecheckErrors(fieldLabels),
+      collectSceneValidationPrecheckErrors: (fieldLabels) =>
+        collectSceneValidationPrecheckErrors(fieldLabels),
       collectWritableValues: () => collectWritableValues(),
       formData,
       isWritableFieldVisible: (name) => isWritableFieldVisible(name),
       layoutNodes: layoutNodes.value,
-      layoutFieldLabels: () => (layoutNodes.value as LayoutNode[]).reduce<Record<string, string>>((acc, node) => {
-        if (node.kind === 'field') acc[node.name] = node.label || node.name;
-        return acc;
-      }, {}),
+      layoutFieldLabels: () =>
+        (layoutNodes.value as LayoutNode[]).reduce<Record<string, string>>((acc, node) => {
+          if (node.kind === 'field') acc[node.name] = node.label || node.name;
+          return acc;
+        }, {}),
       normalizeFieldValue: (name, value) => normalizeFieldValue(name, value),
       one2manyIssues: one2manyValidation.value.issues,
       recordId: recordId.value,
       resolvePendingInlineRelationCreates: () => resolvePendingInlineRelationCreates(),
       resolvePendingMany2manyTagCreates: () => resolvePendingMany2manyTagCreates(),
-      validateContractFormData: (fieldLabels, values) => validateContractFormData({
-        contract: contract.value,
-        fieldLabels,
-        values,
-      }).map((item) => item.message),
     });
     showOne2manyErrors.value = Boolean(validation.showOne2manyErrors);
     if (!validation.ok || !validation.editableMap) {
@@ -328,7 +477,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     try {
       const values = buildSaveRecordPayload({
         comparableFieldValue: (name, value) => comparableFieldValue(name, value),
-        contract: contract.value,
+        formFields: formFields.value,
         dirtyFieldSet,
         editableMap,
         formData,
@@ -353,14 +502,20 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         await applyProjectionRefreshPolicy(refreshPolicy || { on_success: ['scene_projection'] });
         return true;
       }
-      const context = buildFormRequestContext(route.query, formCreateContextFromState({ contract: contract.value, v2ContractStore: v2ContractStore.value }));
+      const context = buildFormRequestContext(
+        route.query,
+        formCreateContextFromState({
+          contract: contract.value,
+          v2ContractStore: v2ContractStore.value,
+        }),
+      );
       const created = await createContractFormRecord({ model: model.value, vals: values, context });
       if (created?.id) {
         const attachmentsUploaded = await uploadPendingNativeAttachments(Number(created.id));
         if (!attachmentsUploaded) {
           return false;
         }
-        const title = String(contract.value?.head?.title || '').trim();
+        const title = String(v2ContractStore.value?.snapshot.pageInfo.pageName || '').trim();
         submissionFeedback.value = { kind: 'success', message: `${title || '记录'}已创建` };
         clearIntakeAutosave();
         if (options.navigateAfterCreate === false) {
@@ -368,6 +523,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         }
         return await navigateCreatedRecord({
           createdId: created.id,
+          createdLabel: String(formData.display_name || formData.name || title || '').trim(),
           nextSceneKey: String(sceneReadyFormSurface.value.nextSceneKey || '').trim(),
           nextSceneRoute: String(sceneReadyFormSurface.value.nextSceneRoute || '').trim(),
           refreshPolicy,
@@ -387,7 +543,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       if (err instanceof ApiError && err.status === 409) {
         formConflict.value = true;
         validationErrors.value = ['当前记录已发生变化，请加载最新数据后重新核对本次修改。'];
-        submissionFeedback.value = { kind: 'error', message: '记录已被其他操作更新，当前输入尚未写入。' };
+        submissionFeedback.value = {
+          kind: 'error',
+          message: '记录已被其他操作更新，当前输入尚未写入。',
+        };
         await focusFirstValidationError();
         return false;
       }
@@ -403,7 +562,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   }
 
   useFormPageLifecycleRuntime({
-    contract,
     formRouteIdentity: () => formRouteIdentity(),
     handleRecordContextChanged,
     instanceRouteIdentity,

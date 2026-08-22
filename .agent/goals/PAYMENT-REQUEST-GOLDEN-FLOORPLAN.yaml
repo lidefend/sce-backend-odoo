@@ -1,0 +1,30 @@
+goal:
+  id: PAYMENT-REQUEST-GOLDEN-FLOORPLAN
+  title: payment_request_golden_product_floorplan
+  status: complete
+  formal_product_layer: P0
+  objective: deliver_the_payment_request_golden_page_through_generic_product_presentation
+  product_boundary:
+    layer_target: frontend_renderer_and_presentation
+    standard_vs_user_specific: platform_presentation_mechanism
+    why_here: canonical_semantics_require_a_generic_product_floorplan_before_ui_rendering
+    why_not_elsewhere:
+      - no_payment_model_or_role_branch_in_frontend
+      - no_ui_supplier_fact_in_contract
+      - no_new_contract_variant
+      - no_native_or_ui5_product_line_expansion
+    blast_radius:
+      - semantic_readonly_contract_forms
+      - native_compatibility_fallback_unchanged_for_other_modes
+  current_batch:
+    id: Batch-A
+    objective: activate_readonly_floorplan_and_tdesign_in_the_production_form_host
+    status: complete
+  acceptance:
+    - real_payment_request_readonly_journey
+    - unique_summary_facts
+    - current_task_without_native_structure_noise
+    - at_most_one_enabled_primary_action
+    - no_driver_or_runtime_metadata_on_product_surface
+    - desktop_and_390px_no_horizontal_overflow
+    - business_fingerprint_unchanged

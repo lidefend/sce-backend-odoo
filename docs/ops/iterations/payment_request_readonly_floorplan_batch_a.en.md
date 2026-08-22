@@ -1,0 +1,9 @@
+# Payment-request golden Floorplan Batch-A
+
+The production readonly path now runs through `Contract V2 → Canonical Render Model → Product Floorplan → semantic components → TDesign`. Payment requests deliver the full summary/task/risk/context/relation/activity-audit experience with one enabled primary action; `sc.payment.execution` proves that the same generic Floorplan is reusable by a second real model.
+
+TDesign is the product default, Native remains the compatibility/loading fallback, and the supplier chooser is removed from the user surface. Home shortcuts now take their label and route identity from the same authoritative menu node. Runtime, driver, delivery, and legacy identifiers are no longer rendered as user content. No Lite/Scene parallel contract, Native ledger expansion, UI5 product line, model-name branch, role branch, or translated-label branch was introduced.
+
+Governed `local.dev` verification passed module upgrade, the targeted backend test, demo reset, health, strict frontend type checking/build, semantic guards, and the final readonly browser journey. The browser evidence records ten payment regions, one enabled primary action, zero horizontal overflow at 390 px, a fixed viewport-bottom mobile primary-action surface, TDesign on both real models, and an unchanged business fingerprint. A recoverable database/filestore snapshot is stored at `artifacts/local-dev/snapshots/20260821T183427Z/`.
+
+Repository-wide restricted and backend guards remain conditional because the pre-existing Scene role matrix exposes only one scene per role instead of the baseline minimum, and the global snapshot exporter uses a PM account that is not authorized for `payment.request`. These failures were preserved as evidence and were not hidden by contract expansion or baseline edits.

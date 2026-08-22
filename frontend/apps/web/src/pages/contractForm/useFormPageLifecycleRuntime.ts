@@ -7,14 +7,12 @@ import {
   watch,
   type Ref,
 } from 'vue';
-import type { ActionContract } from '@sc/schema';
 
 export function isFormPageRouteOwner(routeName: unknown): boolean {
   return ['record', 'model-form', 'scene'].includes(String(routeName || ''));
 }
 
 export function useFormPageLifecycleRuntime(params: {
-  contract: Ref<ActionContract | null>;
   formRouteIdentity: () => string;
   handleRecordContextChanged: (event: Event) => void;
   instanceRouteIdentity: Ref<string>;

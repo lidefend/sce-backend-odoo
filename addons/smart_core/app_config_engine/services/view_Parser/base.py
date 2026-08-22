@@ -34,6 +34,25 @@ class _BaseViewParserMixin:
     """基础工具：视图读取、XML 保真、序列化、modifiers/toolbar 归一、工具函数"""
 
     # ---------------- 视图数据获取 ----------------
+    def _parse_arch_root(self, arch):
+        if not arch:
+            return None
+        try:
+            return etree.fromstring(arch.encode('utf-8') if isinstance(arch, str) else arch)
+        except Exception:
+            _logger.exception("view arch parse failed")
+            return None
+
+    def _view_root(self, view_data):
+        if not isinstance(view_data, dict):
+            return None
+        root = view_data.get('_arch_root')
+        if root is None:
+            root = self._parse_arch_root(view_data.get('arch') or '')
+            if root is not None:
+                view_data['_arch_root'] = root
+        return root
+
     def _safe_get_view_data(self, model, view_type):
         """
         兼容不同 Odoo 版本：
@@ -54,17 +73,21 @@ class _BaseViewParserMixin:
                             break
             data = model.get_view(view_id=view_id, view_type=view_type) if view_id else model.get_view(view_type=view_type)
             if isinstance(data, dict) and data.get('arch'):
-                return {
+                payload = {
                     "arch": data.get('arch'),
                     "fields": data.get('fields', {}),
                     "toolbar": data.get('toolbar', {}),
                 }
+                self._view_root(payload)
+                return payload
         except Exception:
             pass
 
         try:
             fv = model.fields_view_get(view_type=view_type, toolbar=True)
-            return {"arch": fv.get('arch'), "fields": fv.get('fields', {}), "toolbar": fv.get('toolbar', {})}
+            payload = {"arch": fv.get('arch'), "fields": fv.get('fields', {}), "toolbar": fv.get('toolbar', {})}
+            self._view_root(payload)
+            return payload
         except Exception as e:
             _logger.error("fields_view_get failed: %s", e)
             return {"arch": "", "fields": {}, "toolbar": {}}
@@ -127,6 +150,8 @@ class _BaseViewParserMixin:
         """将 get_view/fields_view_get 的结果转为可 JSON 序列化结构"""
         out = {}
         for k, v in (odoo_view or {}).items():
+            if str(k).startswith('_'):
+                continue
             try:
                 json.dumps(v)
                 out[k] = v
@@ -135,7 +160,7 @@ class _BaseViewParserMixin:
         return out
 
     # ---------------- modifiers 收集 ----------------
-    def _collect_modifiers(self, arch):
+    def _collect_modifiers(self, arch, root=None):
         """
         收集字段级 modifiers（为服务层后续与权限/ir.rule 合并做准备）
         - 支持 attrs/invisible/readonly/required 三类
@@ -144,9 +169,12 @@ class _BaseViewParserMixin:
         """
         res = {}
         try:
-            if not arch:
+            if root is None and not arch:
                 return {}
-            root = etree.fromstring(arch.encode('utf-8'))
+            if root is None:
+                root = self._parse_arch_root(arch)
+            if root is None:
+                return {}
             for fld in root.xpath('.//field[@name]'):
                 name = fld.get('name')
                 if not name:
@@ -225,17 +253,9 @@ class _BaseViewParserMixin:
 
     def _field_info_for_layout(self, field_name, fields_info):
         meta = (fields_info or {}).get(field_name, {}) or {}
-        return {
-            'name': field_name,
-            'label': meta.get('string', field_name),
-            'type': meta.get('type', 'char'),
-            'required': bool(meta.get('required', False)),
-            'readonly': bool(meta.get('readonly', False)),
-            'invisible': bool(meta.get('invisible', False)),
-            'help': str(meta.get('help', '') or ''),
-            'widget': self._widget_for_field(meta),
-            'domain': meta.get('domain', []),
-            'context': meta.get('context', {}),
-            'selection': meta.get('selection', []),
-            'colspan': int(meta.get('col', 1)) if str(meta.get('col', '')).isdigit() else 1,
-        }
+        from odoo.addons.smart_core.utils.native_field_descriptor import project_native_field_descriptor
+        return project_native_field_descriptor(
+            field_name,
+            meta,
+            widget=self._widget_for_field(meta),
+        )

@@ -21,6 +21,20 @@ export function normalizeActionSafety(value: unknown): ContractAction['actionSaf
   };
 }
 
+export function contractActionConfirmationPrompt(action: ContractAction): {
+  actionLabel: string;
+  message: string;
+} | null {
+  const safety = action.actionSafety;
+  if (!safety || safety.classification !== 'danger' || !safety.requiresConfirm) return null;
+  return {
+    actionLabel: String(action.label || '操作'),
+    message: String(
+      safety.confirmMessage || action.hint || '该操作执行后将立即生效，请确认是否继续。',
+    ),
+  };
+}
+
 export function normalizeRequiredParams(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value

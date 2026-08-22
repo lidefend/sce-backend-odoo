@@ -1,0 +1,40 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-A
+  goal: REPO-BASELINE-AUDIT
+  workflow: governance-change
+  capability: governance
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P4
+    layer_target: agent_engineering_context_and_execution_governance
+    module: .agent
+    standard_vs_user_specific: repository_governance_standard
+    why_here: agent_goals_decisions_workflows_and_evidence_are_execution_metadata
+    why_not_elsewhere: no_product_runtime_contract_or_business_semantics_are_changed
+    blast_radius: future_agent_task_selection_scope_freeze_parallel_change_isolation_and_evidence_reporting
+
+  batch:
+    id: Batch-A
+    objective: establish_executable_agent_context_governance_baseline
+    scope:
+      - .agent/README.md
+      - .agent/context.yaml
+      - .agent/capabilities/governance.yaml
+      - .agent/workflows/governance-change.yaml
+      - .agent/decisions/agent-workspace-governance.yaml
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT/evidence.yaml
+    exclusions:
+      - product_source
+      - contract_snapshots
+      - scripts/ci/personal_data_false_positives.json
+      - runtime_and_database_state
+
+  rollback:
+    method: revert_only_the_files_listed_in_this_batch_scope
+    preserves_preexisting_changes: true

@@ -9,7 +9,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE_PATH = ROOT / "scripts" / "verify" / "baselines" / "scene_engine_migration_matrix_guard.json"
-DEFAULT_FIELD_SCHEMA_STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_v1_field_schema_state.json"
+DEFAULT_FIELD_SCHEMA_STATE_PATH = ROOT / "artifacts" / "backend" / "scene_contract_field_schema_state.json"
 
 
 def _text(value: Any) -> str:
@@ -60,7 +60,7 @@ def _write(path: Path, content: str) -> None:
 
 
 def _derive_runtime_state_from_scene_ready(payload: dict) -> dict:
-    ready = _as_dict(payload.get("scene_ready_contract_v1")) if isinstance(payload.get("scene_ready_contract_v1"), dict) else payload
+    ready = _as_dict(payload.get("scene_ready_contract")) if isinstance(payload.get("scene_ready_contract"), dict) else payload
     if not ready:
         return {}
     scene_meta = _as_dict(ready.get("meta"))

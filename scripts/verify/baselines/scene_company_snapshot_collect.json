@@ -3,15 +3,21 @@
     {
       "key": "primary",
       "company_id": 1,
-      "login": "admin",
-      "password": "admin",
+      "login_envs": ["COMPANY_PRIMARY_LOGIN", "ADMIN_LOGIN"],
+      "login_default": "admin",
+      "password_envs": ["COMPANY_PRIMARY_PASSWORD"],
+      "password_default": "admin",
       "state_file": "artifacts/backend/scene_registry_asset_snapshot_state.company_primary.json"
     },
     {
       "key": "secondary",
-      "company_id": 2,
-      "login": "demo_role_pm",
-      "password": "demo",
+      "company_id": 0,
+      "select_non_primary_company": true,
+      "exclude_company_ids": [1],
+      "login_envs": ["COMPANY_SECONDARY_LOGIN", "ROLE_PM_LOGIN"],
+      "login_default": "demo_role_pm",
+      "password_envs": ["COMPANY_SECONDARY_PASSWORD", "ROLE_PM_PASSWORD", "SC_DEMO_USER_PASSWORD"],
+      "password_default": "demo",
       "state_file": "artifacts/backend/scene_registry_asset_snapshot_state.company_secondary.json"
     }
   ],

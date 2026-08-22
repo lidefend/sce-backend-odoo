@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import { useSceneUiKit } from '../../kits/context';
 
+defineOptions({ inheritAttrs: false });
+
 const props = withDefaults(
   defineProps<{
     tier?: 'primary' | 'secondary' | 'transparent';
@@ -27,12 +29,13 @@ function tdesignTheme(): 'primary' | 'default' {
 </script>
 
 <template>
-  <ui5-button v-if="componentModel === 'web-components'" :design="ui5Design()" :disabled="disabled" @click="emit('activate')">
+  <ui5-button v-if="componentModel === 'web-components'" v-bind="$attrs" :design="ui5Design()" :disabled="disabled" @click="emit('activate')">
     <slot />
   </ui5-button>
   <component
     :is="driverButton"
     v-else-if="componentModel === 'vue' && driverButton"
+    v-bind="$attrs"
     :theme="tdesignTheme()"
     :variant="tier === 'transparent' ? 'text' : 'base'"
     :disabled="disabled"
@@ -43,6 +46,7 @@ function tdesignTheme(): 'primary' | 'default' {
   </component>
   <button
     v-else
+    v-bind="$attrs"
     type="button"
     class="scene-native-button"
     :data-tier="tier"

@@ -18,7 +18,17 @@
         "module": "smart_construction_core",
         "version": "1.0.0"
       },
-      {}
+      {
+        "source_authority": {
+          "authorities": [
+            "module_manifest"
+          ],
+          "kind": "system_health_probe",
+          "no_business_fact_authority": true,
+          "observability_only": true,
+          "projection_only": true
+        }
+      }
     ]
   },
   "user": "admin",

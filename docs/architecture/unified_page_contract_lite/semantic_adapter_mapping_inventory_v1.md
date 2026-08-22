@@ -64,8 +64,8 @@ Phase 1 不做：
 | contract governance | `addons/smart_core/utils/contract_governance.py` | field/action/validation policies | input only |
 | `api.onchange` | `addons/smart_core/handlers/api_onchange.py` | onchange patch source | patch input |
 | x2many commands | `frontend/apps/web/src/app/x2manyCommands.ts` | 当前前端命令语义参考 | reference only |
-| `scene_contract_v1` | `addons/smart_core/core/scene_contract_builder.py` | 场景兼容来源 | compat input only |
-| `page_orchestration_v1` | `addons/smart_core/core/page_contracts_builder.py` | 编排兼容来源 | compat input only |
+| `scene_contract` | `addons/smart_core/core/scene_contract_builder.py` | 场景兼容来源 | compat input only |
+| `page_orchestration` | `addons/smart_core/core/page_contracts_builder.py` | 编排兼容来源 | compat input only |
 
 ## 4. Mapping Rules
 
@@ -171,7 +171,7 @@ Patch 只允许：
 
 1. `semantic_page` 是 Phase 1 最优先 source surface。
 2. `ui.contract` 当前仍是交付入口，但不是 Lite canonical output。
-3. `scene_contract_v1` 和 `page_orchestration_v1` 只能作为 compat input，不进入 Lite 顶层。
+3. `scene_contract` 和 `page_orchestration` 只能作为 compat input，不进入 Lite 顶层。
 4. x2many 现有前端命令逻辑只能作为参考，最终语义必须收敛到后端 adapter 和 patch。
 5. Lite adapter 后续必须是纯后端、无 ORM write、无 public intent 改名、无启动链改动。
 

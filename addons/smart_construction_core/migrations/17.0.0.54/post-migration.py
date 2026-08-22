@@ -61,8 +61,6 @@ PAYMENT_EXECUTION_FIELDS = [
     {"name": "source_kind", "sequence": 910},
     {"name": "push_result", "sequence": 920},
     {"name": "kingdee_document_no", "sequence": 930},
-    {"name": "creator_name", "sequence": 940},
-    {"name": "created_time", "sequence": 950},
 ]
 
 

@@ -397,7 +397,7 @@ class UiMenuConfigPolicy(models.Model):
                 if not isinstance(node, dict):
                     continue
                 meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-                if str(meta.get("source") or "").strip() == "delivery_engine_v1":
+                if str(meta.get("source") or "").strip() == "delivery_engine":
                     return True
                 if str(node.get("delivery_bucket") or meta.get("delivery_bucket") or "").strip() == "released_product_policy":
                     return True

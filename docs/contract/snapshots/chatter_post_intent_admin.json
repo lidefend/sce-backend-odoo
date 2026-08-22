@@ -16,7 +16,8 @@
     "result": {
       "mentioned_partner_ids": [],
       "message": "Comment posted",
-      "message_id": 679,
+      "message_id": 2063,
+      "mode": "message",
       "reason_code": "OK",
       "success": true
     }

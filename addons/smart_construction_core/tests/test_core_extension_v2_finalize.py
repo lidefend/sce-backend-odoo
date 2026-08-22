@@ -96,7 +96,12 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertEqual(field_names.count("collaborator_ids"), 1)
         self.assertIn("responsibility_ids", widget_names)
         self.assertIn("collaborator_ids", widget_names)
-        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.table.data"]["componentKey"], "sc.table.data")
+        self.assertTrue(all("field_info" not in row for row in field_nodes))
+        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.table.data"]["version"], "1.0")
+        self.assertIn(
+            "sc_project_responsibility_collaboration",
+            {row["containerId"] for row in projected["statusContract"]["containerStatus"]},
+        )
 
         second_field_nodes = self._field_nodes(projected_again["layoutContract"]["containerTree"], include_widget_list=False)
         second_field_names = [
@@ -160,6 +165,58 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         )
 
         self.assertIsNone(projected)
+
+    def test_general_contract_normalizer_preserves_native_v2_form_identity(self):
+        widget_id = "field.contract_name.occ.native"
+        contract = {
+            "pageInfo": {"model": "sc.general.contract", "viewType": "form"},
+            "layoutContract": {
+                "containerTree": [
+                    {
+                        "type": "group",
+                        "containerType": "group",
+                        "containerId": "native.group.contract",
+                        "children": [
+                            {
+                                "type": "field",
+                                "containerType": "field",
+                                "containerId": widget_id,
+                                "widgetId": widget_id,
+                                "fieldCode": "contract_name",
+                                "nativeLocator": "form/group[1]/field[name=contract_name]",
+                                "occurrenceIndex": 1,
+                                "sourcePosition": 2,
+                                "children": [],
+                                "widgetList": [],
+                            }
+                        ],
+                        "widgetList": [],
+                    }
+                ]
+            },
+            "statusContract": {
+                "widgetStatus": [
+                    {
+                        "widgetId": widget_id,
+                        "visible": True,
+                        "readonly": False,
+                        "required": True,
+                        "disabled": False,
+                        "auth": "edit",
+                    }
+                ]
+            },
+        }
+        original = deepcopy(contract)
+
+        projected = core_extension.smart_core_normalize_unified_page_contract_v2(
+            self.env,
+            contract,
+            {"source_contract": {"model": "sc.general.contract", "view_type": "form"}},
+        )
+
+        self.assertIsNone(projected)
+        self.assertEqual(contract, original)
 
     def test_standard_product_models_do_not_register_migration_aliases(self):
         for model_name in ("payment.request", "tender.doc.purchase", "construction.contract"):

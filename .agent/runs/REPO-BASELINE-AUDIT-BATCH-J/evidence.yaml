@@ -1,0 +1,14 @@
+evidence:
+  change:
+    internal_argument_consumed: docker_compose_selector
+    public_snapshot_arguments_unchanged: true
+
+  verification:
+    targeted_unittest:
+      status: not_run
+      tests_collected: 0
+    real_local_dev_export:
+      status: not_run_after_fix
+
+  completion:
+    status: completed

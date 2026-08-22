@@ -1,0 +1,19 @@
+events:
+  - type: batch_started
+    at: "2026-08-21T00:06:00+08:00"
+    detail: Owner authorized the next Quick blocker as part of the unified P4 baseline-restoration topic.
+  - type: authority_classified
+    at: "2026-08-21T00:07:00+08:00"
+    detail: VERSION remains authoritative; system-init snapshot product_version is one exact derived observation.
+  - type: implementation_completed
+    at: "2026-08-21T00:08:00+08:00"
+    detail: Removed the documentation literal and made stale, moved or duplicated snapshot observations fail closed.
+  - type: verification_pending
+    at: "2026-08-21T00:09:00+08:00"
+    detail: Product-version Make gate and complete Quick remain to be recorded.
+  - type: scoped_verification_completed
+    at: "2026-08-21T00:10:00+08:00"
+    detail: The version Make gate passed; Quick advanced to the generated complexity report drift gate.
+  - type: batch_closed
+    at: "2026-08-21T00:11:00+08:00"
+    detail: Batch-R scope passed and generated-report refresh moved to Batch-S.

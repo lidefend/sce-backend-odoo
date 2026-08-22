@@ -10,6 +10,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from python_http_smoke_utils import (
+    build_intent_url,
+    extract_login_token,
+    get_base_url,
+    http_post_json,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE_PATH = ROOT / "scripts" / "verify" / "baselines" / "scene_company_snapshot_collect.json"
@@ -45,6 +52,65 @@ def _safe_bool(value: Any, default: bool = False) -> bool:
     if text in {"0", "false", "no", "off"}:
         return False
     return default
+
+
+def _profile_value(profile: dict, key: str) -> str:
+    direct = _text(profile.get(key))
+    if direct:
+        return direct
+    env_keys = [
+        _text(item)
+        for item in _as_list(profile.get(f"{key}_envs"))
+        if _text(item)
+    ]
+    single_env_key = _text(profile.get(f"{key}_env"))
+    if single_env_key:
+        env_keys.insert(0, single_env_key)
+    for env_key in env_keys:
+        value = _text(os.getenv(env_key))
+        if value:
+            return value
+    return _text(profile.get(f"{key}_default"))
+
+
+def _select_non_primary_company_id(profile: dict, state: dict) -> int:
+    excluded = {
+        _safe_int(item, 0)
+        for item in _as_list(profile.get("exclude_company_ids"))
+        if _safe_int(item, 0) > 0
+    }
+    candidates = sorted(
+        {
+            _safe_int(item, 0)
+            for item in _as_list(state.get("allowed_company_ids"))
+            if _safe_int(item, 0) > 0 and _safe_int(item, 0) not in excluded
+        }
+    )
+    return candidates[0] if candidates else 0
+
+
+def _discover_allowed_company_ids(login: str, password: str) -> list[int]:
+    db_name = _text(os.getenv("E2E_DB") or os.getenv("DB_NAME"))
+    intent_url = build_intent_url(get_base_url(), db_name)
+    status, payload = http_post_json(
+        intent_url,
+        {
+            "intent": "login",
+            "params": {"db": db_name, "login": login, "password": password},
+        },
+        headers={"X-Anonymous-Intent": "1", "X-Odoo-DB": db_name},
+    )
+    if status >= 400 or payload.get("ok") is not True or not extract_login_token(payload):
+        return []
+    data = _as_dict(payload.get("data"))
+    user = _as_dict(data.get("user"))
+    return sorted(
+        {
+            _safe_int(item, 0)
+            for item in _as_list(user.get("allowed_company_ids"))
+            if _safe_int(item, 0) > 0
+        }
+    )
 
 
 def _load_json(path: Path) -> dict:
@@ -103,6 +169,7 @@ def _run_snapshot(
     env.pop(PROFILES_JSON_ENV, None)
     env["SC_SCENE_REGISTRY_ASSET_SNAPSHOT_STATE_FILE"] = state_file
     env["SC_SCENE_REGISTRY_ASSET_SNAPSHOT_REQUIRE_LIVE"] = "1" if require_live else "0"
+    env["SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL"] = "0"
     if company_id > 0:
         env["E2E_COMPANY_ID"] = str(company_id)
     else:
@@ -141,7 +208,7 @@ def main() -> int:
 
     profile_passwords = [
         password
-        for password in (_text(_as_dict(row).get("password")) for row in profiles)
+        for password in (_profile_value(_as_dict(row), "password") for row in profiles)
         if password
     ]
 
@@ -173,15 +240,44 @@ def main() -> int:
             continue
         company_id = _safe_int(profile.get("company_id"), 0)
         state_file = _text(profile.get("state_file"))
-        login = _text(profile.get("login"))
-        password = _text(profile.get("password"))
+        login = _profile_value(profile, "login")
+        password = _profile_value(profile, "password")
         if not state_file:
             errors.append(f"{profile_key}: state_file is required")
             continue
 
-        code, output = _run_snapshot(profile_key, company_id, state_file, require_live, login, password)
+        if _safe_bool(profile.get("select_non_primary_company"), False):
+            allowed_company_ids = _discover_allowed_company_ids(login, password)
+            selected_company_id = _select_non_primary_company_id(
+                profile,
+                {"allowed_company_ids": allowed_company_ids},
+            )
+            if selected_company_id <= 0:
+                code = 1
+                output = f"[{profile_key}] no eligible non-primary company in allowed_company_ids"
+                state_payload = {}
+            else:
+                company_id = selected_company_id
+                code, output = _run_snapshot(
+                    profile_key,
+                    company_id,
+                    state_file,
+                    require_live,
+                    login,
+                    password,
+                )
+                state_payload = _load_json(ROOT / state_file)
+        else:
+            code, output = _run_snapshot(
+                profile_key,
+                company_id,
+                state_file,
+                require_live,
+                login,
+                password,
+            )
+            state_payload = _load_json(ROOT / state_file)
         output = _redact_passwords(output, profile_passwords)
-        state_payload = _load_json(ROOT / state_file)
         effective_company_id = _safe_int(state_payload.get("company_id"), 0)
         if effective_company_id > 0:
             observed_company_ids.add(effective_company_id)

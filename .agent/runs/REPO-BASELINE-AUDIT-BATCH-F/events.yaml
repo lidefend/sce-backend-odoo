@@ -1,0 +1,15 @@
+events:
+  - type: semantic.freeze
+    result: user_id_is_project_owner_and_manager_id_is_project_manager
+  - type: change.completed
+    result: both_fields_preserved_with_distinct_labels_and_status
+  - type: verification.pending
+    result: project_layout_guard_not_rerun_yet
+  - type: verification.failed
+    result: obsolete_source_token_assertion_still_required_field_user_id_literal
+  - type: verification.completed
+    result: project_layout_and_responsibility_map_guards_passed_after_batch_g
+
+next_exact_step:
+  command: python3 scripts/verify/construction_core_extension_project_layout_split_guard.py
+  requires_explicit_validation_authorization: false

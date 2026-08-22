@@ -1,0 +1,39 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-B
+  goal: REPO-BASELINE-AUDIT
+  workflow: governance-change
+  capability: governance
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P4
+    layer_target: codex_workspace_preflight
+    module: scripts/ops
+    standard_vs_user_specific: repository_governance_standard
+    why_here: preflight_enforces_repository_execution_policy_before_mutation
+    why_not_elsewhere: product_modules_and_runtime_profiles_do_not_own_agent_preflight
+    blast_radius: codex_and_stage_preflight_behavior_only
+
+  batch:
+    id: Batch-B
+    objective: align_codex_preflight_with_current_execution_policy
+    scope:
+      - scripts/ops/codex_preflight.sh
+      - scripts/ops/stage_preflight.sh
+      - scripts/verify/test_codex_preflight.py
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-B/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-B/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-B/evidence.yaml
+    exclusions:
+      - product_source
+      - contract_snapshots
+      - runtime_profiles
+      - database_state
+      - scripts/ci/personal_data_false_positives.json
+
+  rollback:
+    method: revert_only_batch_b_scope_files
+    preserves_preexisting_changes: true

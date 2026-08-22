@@ -33,6 +33,10 @@ export function useFormAuxiliaryWatchersRuntime(params: {
     (state) => {
       if (!params.isActive()) return;
       if (!state.label) return;
+      // A typed many2one search keyword is not selected business-category
+      // authority. Only synchronize the route once a governed category code
+      // is available; the relation context switch owns that transition.
+      if (!state.code) return;
       const activeRoute = params.router.currentRoute.value;
       const activeModel = String(activeRoute.params.model || '').trim();
       const activeRecordId = Number(activeRoute.params.id || 0) || null;

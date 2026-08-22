@@ -7,7 +7,9 @@
     },
     {
       "key": "secondary",
-      "target_company_id": 2,
+      "target_company_id": 0,
+      "derive_target_from_state": true,
+      "exclude_company_ids": [1],
       "state_file": "artifacts/backend/scene_registry_asset_snapshot_state.company_secondary.json"
     }
   ],

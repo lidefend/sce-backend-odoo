@@ -29,7 +29,11 @@ class ContractSchemaMixin(models.AbstractModel):
     @api.model
     def _allowed_keys_by_view(self, vt):
         table = {
-            'tree': {'columns', 'columns_schema', 'row_actions', 'page_size', 'row_classes', 'capabilities', 'default_order', 'collection_presentation'},
+            'tree': {
+                'columns', 'columns_schema', 'column_occurrences', 'row_actions',
+                'page_size', 'row_classes', 'capabilities', 'default_order',
+                'collection_presentation',
+            },
             'form': {
                 'layout', 'statusbar',
                 'header_buttons', 'button_box', 'stat_buttons',
@@ -64,6 +68,8 @@ class ContractSchemaMixin(models.AbstractModel):
         passthrough_roots = {
             'toolbar',
             'layout',
+            'column_occurrences',
+            'row_actions',
             'header_buttons',
             'button_box',
             'stat_buttons',
@@ -74,6 +80,7 @@ class ContractSchemaMixin(models.AbstractModel):
             'widgets',
             'capabilities',
             'kanban',
+            'activity',
             'collection_presentation',
         }
 

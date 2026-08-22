@@ -1,0 +1,39 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-E
+  goal: REPO-BASELINE-AUDIT
+  workflow: governance-change
+  capability: governance
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P0
+    layer_target: strict_v2_contract_projection_guard
+    module: scripts/verify
+    standard_vs_user_specific: platform_contract_verification
+    why_here: guard_owns_the_exact_allowlist_for_schema_external_projection_fields
+    why_not_elsewhere: renderer_store_and_backend_schema_are_not_changed_to_hide_guard_drift
+    blast_radius: strict_v2_static_projection_gate_only
+
+  batch:
+    id: Batch-E
+    objective: restore_strict_v2_projection_guard_consistency
+    scope:
+      - scripts/verify/frontend_v2_policy_projection_guard.py
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/evidence.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-E/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-E/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-E/evidence.yaml
+    exclusions:
+      - frontend_runtime_behavior
+      - backend_schema
+      - store
+      - page_components
+
+  rollback:
+    method: restore_previous_exact_guard_allowlists_and_generated_reports

@@ -37,6 +37,8 @@ def get_intent_handler_contributions():
         )
         from odoo.addons.smart_construction_core.handlers.payment_request_approval import (
             PaymentRequestApproveHandler,
+            PaymentRequestCancelByContractHandler,
+            PaymentRequestCreateExecutionHandler,
             PaymentRequestDoneHandler,
             PaymentRequestRejectHandler,
             PaymentRequestSubmitHandler,
@@ -169,6 +171,8 @@ def get_intent_handler_contributions():
         ("payment.request.approve", PaymentRequestApproveHandler),
         ("payment.request.reject", PaymentRequestRejectHandler),
         ("payment.request.done", PaymentRequestDoneHandler),
+        ("payment.request.create_execution", PaymentRequestCreateExecutionHandler),
+        ("payment.request.mark_reversed", PaymentRequestCancelByContractHandler),
         ("payment.request.available_actions", PaymentRequestAvailableActionsHandler),
         ("payment.request.execute", PaymentRequestExecuteHandler),
         ("project.dashboard", ProjectDashboardHandler),

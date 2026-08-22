@@ -1,7 +1,6 @@
 {
   "action": null,
   "case": "project_dashboard_enter_intent_admin",
-  "contract_version": "v1",
   "error": null,
   "execute_error": null,
   "execute_result": null,
@@ -11,6 +10,7 @@
   "op": "intent.invoke",
   "record": null,
   "record_error": null,
+  "snapshot_schema_version": "1.0.0",
   "ui_contract": null,
   "ui_contract_raw": {
     "blocks": [
@@ -31,7 +31,7 @@
       }
     ],
     "completion": {
-      "next_target": "开始执行",
+      "next_target": "进入执行",
       "percent": 20
     },
     "evidence_refs": [],
@@ -106,17 +106,17 @@
       "settlement_evidence_count": 0
     },
     "flow_map": {
-      "current_stage": "initiation",
+      "current_stage": "execution",
       "items": [
         {
           "key": "initiation",
           "label": "立项",
-          "status": "current"
+          "status": "done"
         },
         {
           "key": "execution",
           "label": "执行",
-          "status": "todo"
+          "status": "current"
         },
         {
           "key": "cost",
@@ -134,6 +134,19 @@
           "status": "todo"
         }
       ]
+    },
+    "legacy_scene_copy_source_authority": {
+      "authorities": [
+        "scene_label",
+        "state_fallback_text",
+        "title_empty",
+        "entry_blocks",
+        "resolve_title"
+      ],
+      "kind": "legacy_scene_entry_copy_projection",
+      "legacy_compatibility": true,
+      "no_business_fact_authority": true,
+      "projection_only": true
     },
     "lifecycle_hints": {
       "next_step_label": "load dashboard progress",
@@ -162,15 +175,19 @@
       }
     ],
     "project_context": {
-      "execution_stage": "draft",
-      "execution_stage_label": "筹备中",
-      "milestone": "",
-      "milestone_label": "",
+      "company_id": 1,
+      "company_name": "My Company",
+      "execution_stage": "in_progress",
+      "execution_stage_label": "在建",
+      "milestone": "done",
+      "milestone_label": "done",
+      "operation_strategy": "direct",
+      "operation_strategy_label": "公司直营",
       "project_condition": "warn",
       "project_id": 1,
-      "project_name": "演示项目 · 立项待完善",
-      "stage": "draft",
-      "stage_label": "筹备中",
+      "project_name": "演示项目 · 城市快速路提升工程",
+      "stage": "in_progress",
+      "stage_label": "在建",
       "status": "warn"
     },
     "project_id": 1,
@@ -181,15 +198,19 @@
           "params": {
             "block_key": "next_actions",
             "project_context": {
-              "execution_stage": "draft",
-              "execution_stage_label": "筹备中",
-              "milestone": "",
-              "milestone_label": "",
+              "company_id": 1,
+              "company_name": "My Company",
+              "execution_stage": "in_progress",
+              "execution_stage_label": "在建",
+              "milestone": "done",
+              "milestone_label": "done",
+              "operation_strategy": "direct",
+              "operation_strategy_label": "公司直营",
               "project_condition": "warn",
               "project_id": 1,
-              "project_name": "演示项目 · 立项待完善",
-              "stage": "draft",
-              "stage_label": "筹备中",
+              "project_name": "演示项目 · 城市快速路提升工程",
+              "stage": "in_progress",
+              "stage_label": "在建",
               "status": "warn"
             },
             "project_id": 1
@@ -200,15 +221,19 @@
           "params": {
             "block_key": "progress",
             "project_context": {
-              "execution_stage": "draft",
-              "execution_stage_label": "筹备中",
-              "milestone": "",
-              "milestone_label": "",
+              "company_id": 1,
+              "company_name": "My Company",
+              "execution_stage": "in_progress",
+              "execution_stage_label": "在建",
+              "milestone": "done",
+              "milestone_label": "done",
+              "operation_strategy": "direct",
+              "operation_strategy_label": "公司直营",
               "project_condition": "warn",
               "project_id": 1,
-              "project_name": "演示项目 · 立项待完善",
-              "stage": "draft",
-              "stage_label": "筹备中",
+              "project_name": "演示项目 · 城市快速路提升工程",
+              "stage": "in_progress",
+              "stage_label": "在建",
               "status": "warn"
             },
             "project_id": 1
@@ -219,15 +244,19 @@
           "params": {
             "block_key": "risks",
             "project_context": {
-              "execution_stage": "draft",
-              "execution_stage_label": "筹备中",
-              "milestone": "",
-              "milestone_label": "",
+              "company_id": 1,
+              "company_name": "My Company",
+              "execution_stage": "in_progress",
+              "execution_stage_label": "在建",
+              "milestone": "done",
+              "milestone_label": "done",
+              "operation_strategy": "direct",
+              "operation_strategy_label": "公司直营",
               "project_condition": "warn",
               "project_id": 1,
-              "project_name": "演示项目 · 立项待完善",
-              "stage": "draft",
-              "stage_label": "筹备中",
+              "project_name": "演示项目 · 城市快速路提升工程",
+              "stage": "in_progress",
+              "stage_label": "在建",
               "status": "warn"
             },
             "project_id": 1
@@ -259,14 +288,26 @@
       "governance": {
         "contract_version": "scene_contract_standard_v1",
         "diagnostics_ref": "project.dashboard.enter",
+        "no_business_fact_authority": true,
         "policy_match": true,
-        "released": true
+        "released": true,
+        "source_authority": {
+          "authorities": [
+            "delivery_engine.scenes",
+            "scene_ready_contract",
+            "page_orchestration"
+          ],
+          "kind": "release_surface_scene_contract_projection",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "rebuildable": true
+        }
       },
       "identity": {
         "capability": "delivery.fr2.project_flow",
         "product_key": "fr2",
         "scene_key": "project.management",
-        "title": "项目驾驶舱：演示项目 · 立项待完善",
+        "title": "项目驾驶舱：演示项目 · 城市快速路提升工程",
         "version": "v1"
       },
       "page": {
@@ -321,13 +362,46 @@
     },
     "scene_key": "project.management",
     "scene_label": "项目驾驶舱",
+    "source_authority": {
+      "adapter_layer": "industry_orchestration_adapter",
+      "authorities": [
+        "scene_runtime_service",
+        "odoo.orm"
+      ],
+      "delegated_source_authority": {
+        "authorities": [
+          "project.project",
+          "project.task",
+          "payment.request",
+          "payment.ledger",
+          "project.cost.ledger",
+          "sc.evidence.summary.service",
+          "business_projection_models",
+          "odoo.orm",
+          "odoo.read_group"
+        ],
+        "kind": "project_dashboard_business_fact_projection",
+        "no_frontend_synthetic_metrics": true,
+        "projection_only": true,
+        "scene_provider_registry": {
+          "provider_path": "/mnt/source-addons/smart_construction_scene/profiles/project_dashboard_scene_content.py",
+          "resolved": true,
+          "scene_key": "project.management"
+        }
+      },
+      "kind": "scene_entry_runtime_projection_adapter",
+      "legacy_scene_copy_source": "legacy_scene_entry_copy_projection",
+      "no_business_fact_authority": true,
+      "projection_only": true,
+      "runtime_carrier": "scene_entry_and_block_contract"
+    },
     "state_explain": {
-      "execution_stage_explain": "项目已完成创建与立项准备，下一步应进入执行主线。",
-      "execution_stage_label": "筹备中",
-      "milestone_explain": "当前里程碑尚未进入显式执行状态。",
+      "execution_stage_explain": "项目已进入施工执行阶段，需要持续推进任务、成本与付款事实。",
+      "execution_stage_label": "在建",
+      "milestone_explain": "当前执行动作已完成，可继续检查成本、付款与结算结果。",
       "project_condition_explain": "warn",
-      "stage_explain": "项目已完成创建与立项准备，下一步应进入执行主线。",
-      "stage_label": "筹备中",
+      "stage_explain": "项目已进入施工执行阶段，需要持续推进任务、成本与付款事实。",
+      "stage_label": "在建",
       "status_explain": "warn"
     },
     "state_fallback_text": "后端未提供项目驾驶舱状态摘要",
@@ -343,14 +417,14 @@
     "summary": {
       "cost_total": "0.0",
       "health_state": "warn",
-      "lifecycle_state": "draft",
-      "manager_name": "Demo-项目经理",
-      "milestone": "",
-      "partner_name": "演示业主 · 城市建设集团",
+      "lifecycle_state": "in_progress",
+      "manager_name": "OdooBot",
+      "milestone": "done",
+      "partner_name": "城市建设投资集团",
       "payment_total": "0.0",
       "progress_percent": "0.0",
-      "project_code": "DEMO-PJ-INIT",
-      "stage_name": "筹备中",
+      "project_code": "DEMO-PJ-EXEC",
+      "stage_name": "在建",
       "status": "warn"
     },
     "summary_rows": [
@@ -358,13 +432,13 @@
         "copy": "主流程位置",
         "key": "stage_label",
         "label": "项目执行阶段",
-        "value": "筹备中"
+        "value": "在建"
       },
       {
         "copy": "执行推进节点",
         "key": "milestone_label",
         "label": "当前里程碑",
-        "value": ""
+        "value": "done"
       },
       {
         "copy": "尚未形成可识别的执行进度。",
@@ -391,7 +465,7 @@
         "value": "0.0"
       }
     ],
-    "title": "项目驾驶舱：演示项目 · 立项待完善"
+    "title": "项目驾驶舱：演示项目 · 城市快速路提升工程"
   },
   "user": "admin",
   "user_fallback": null,

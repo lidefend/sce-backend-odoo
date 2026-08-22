@@ -1,0 +1,31 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-Q
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Govern exact oversized generated-evidence history admission
+status: completed
+formal_product_layer: P4
+layer_target: repository reachable-history RH007 admission
+reason: Published generated JSON evidence must remain auditable without weakening the global blob-size guard.
+
+scope:
+  include:
+    - config/security/repository_clean_history_policy.v1.json
+    - config/security/repository_oversized_blob_exceptions.v1.json
+    - scripts/verify/repository_clean_history_guard.py
+    - scripts/verify/test_repository_clean_history_guard.py
+    - docs/ops/clean_repository_ci_governance_v1.md
+    - docs/ops/iterations/delivery_context_switch_log_v1.md
+    - docs/ops/iterations/repository_clean_history_oversized_blob_governance_batch_q.md
+    - docs/ops/iterations/repository_clean_history_oversized_blob_governance_batch_q.en.md
+    - .agent/goals/REPO-BASELINE-AUDIT.yaml
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-Q
+  exclude:
+    - product_contract_content
+    - frontend
+    - addons
+    - database_or_runtime
+    - fixture
+    - git_history_rewrite
+    - remote_state
+
+rollback:
+  method: revert only the Batch-Q policy, registry, guard, tests and governance records

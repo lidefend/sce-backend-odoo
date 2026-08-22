@@ -478,7 +478,7 @@ def build_role_focus_config(role_code: str) -> Dict[str, Any]:
     }
 
 
-def build_v1_focus_map() -> Dict[str, List[str]]:
+def build_focus_map() -> Dict[str, List[str]]:
     return {
         "pm": ["todo_list_today", "risk_alert_panel", "metric_row_core", "progress_summary_ops"],
         "finance": ["todo_list_today", "risk_alert_panel", "progress_summary_ops", "metric_row_core"],
@@ -486,7 +486,7 @@ def build_v1_focus_map() -> Dict[str, List[str]]:
     }
 
 
-def build_v1_zone_order() -> Dict[str, List[str]]:
+def build_zone_order() -> Dict[str, List[str]]:
     return {
         "pm": ["today_focus", "analysis", "quick_entries", "hero"],
         "finance": ["today_focus", "quick_entries", "analysis", "hero"],
@@ -494,7 +494,7 @@ def build_v1_zone_order() -> Dict[str, List[str]]:
     }
 
 
-def build_v1_copy_overrides() -> Dict[str, str]:
+def build_copy_overrides() -> Dict[str, str]:
     return {
         "zone.hero.title": "欢迎使用智慧施工管理平台",
         "zone.hero.description": "在这里查看项目、合同、成本、财务和待办事项，按你的角色处理日常业务。",
@@ -523,7 +523,7 @@ def build_v1_copy_overrides() -> Dict[str, str]:
     }
 
 
-def build_v1_page_profile(role_code: str) -> Dict[str, Any]:
+def build_page_profile(role_code: str) -> Dict[str, Any]:
     role = _to_text(role_code).lower()
     audience_map = {
         "pm": ["project_manager", "construction_manager"],
@@ -544,7 +544,7 @@ def build_v1_page_profile(role_code: str) -> Dict[str, Any]:
     }
 
 
-def build_v1_data_sources() -> Dict[str, Dict[str, Any]]:
+def build_data_sources() -> Dict[str, Dict[str, Any]]:
     return {
         "ds_hero": {"source_type": "computed", "provider": "workspace.hero", "section_keys": ["hero"]},
         "ds_metrics": {"source_type": "computed", "provider": "workspace.metrics.summary", "section_keys": ["metrics"]},
@@ -563,7 +563,7 @@ def build_v1_data_sources() -> Dict[str, Dict[str, Any]]:
     }
 
 
-def build_v1_state_schema() -> Dict[str, Any]:
+def build_state_schema() -> Dict[str, Any]:
     return {
         "tones": {
             "success": {"icon": "check-circle"},
@@ -582,7 +582,7 @@ def build_v1_state_schema() -> Dict[str, Any]:
     }
 
 
-def build_v1_action_specs() -> Dict[str, Dict[str, str]]:
+def build_action_specs() -> Dict[str, Dict[str, str]]:
     return {
         "open_landing": {"label": "打开默认入口", "intent": "ui.contract"},
         "open_my_work": {"label": "查看全部", "intent": "ui.contract"},
@@ -716,7 +716,7 @@ def build_legacy_blocks(role_code: str) -> List[Dict[str, Any]]:
 
 
 
-def build_v1_zones(role_code: str, audience: List[str], zone_rank: Dict[str, int]) -> List[Dict[str, Any]]:
+def build_zones(role_code: str, audience: List[str], zone_rank: Dict[str, int]) -> List[Dict[str, Any]]:
     zones: List[Dict[str, Any]] = [
         {
             "key": "hero",

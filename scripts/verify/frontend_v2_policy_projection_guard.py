@@ -25,7 +25,6 @@ CONSUMER_FILES = [
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
     ROOT / "frontend/apps/web/src/views/ActionView.vue",
     ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
-    ROOT / "frontend/apps/web/src/app/runtime/unifiedPageContractV2CompatProjection.ts",
     ROOT / "frontend/apps/web/scripts/low_code_global_stability_acceptance.mjs",
 ]
 
@@ -50,10 +49,6 @@ FORBIDDEN_DIRECT_READS = (
 )
 
 ALLOWED_DIRECT_READS = {
-    "frontend/apps/web/src/app/runtime/unifiedPageContractV2CompatProjection.ts": {
-        ".delete_policy": {"const candidate = asDict(node.delete_policy);"},
-        ".list_profile": {"const legacyListProfile = asDict(legacyProjection.list_profile);"},
-    },
     "frontend/apps/web/src/pages/ContractFormPage.vue": {
         ".field_groups": {"applyParams.field_groups = changedGroups;"},
     },
@@ -68,7 +63,6 @@ FORBIDDEN_STRICT_SCHEMA_COMPAT_ALIASES = (
     "row.field_groups",
     "row.source_authority",
     "root.form_structure_contract",
-    "root.searchContract",
     "root.data",
     "root.rawBody",
     "['page_info']",
@@ -91,7 +85,6 @@ FORBIDDEN_STRICT_TYPE_COMPAT_ALIASES = (
     "visible_fields",
     "field_groups",
     "form_structure_contract",
-    "searchContract",
     "legacyContractProjection",
     "legacy_contract_projection",
 )
@@ -187,16 +180,11 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # Native form shadow widget synthesis compatibility.
     "component_config",
     "component_key",
-    "field_info",
     "field_type",
     "relation_entry",
+    "relation_field",
     "widget_id",
     "widget_options",
-    # Source context compatibility owned by resolveContractV2SourceContext.
-    "context_raw",
-    "domain_raw",
-    "render_profile",
-    "source_context",
 }
 
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
@@ -209,11 +197,19 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "field_groups",
     "legacy_contract",
     "visible_fields",
+    # Canonical searchContract currently freezes the backend search dialect.
+    "default_order",
+    "default_sort",
+    "group_by",
+    "saved_filters",
+    "search_panel",
+    "ui_labels",
     # Native form container extension compatibility.
-    "button_type",
-    "field_info",
-    "form_structure",
-    "form_structure_role",
+    "field_type",
+    # Formal native occurrence carrier keys inside componentConfig.
+    "native_locator",
+    "occurrence_index",
+    "source_position",
 }
 
 FORBIDDEN_STRICT_ALIAS_HELPERS = (
@@ -334,6 +330,10 @@ FORBIDDEN_STRICT_STATUS_CONTRACT_ALIASES = (
 )
 
 ALLOWED_STRICT_SCHEMA_EXTENSION_FIELDS = {
+    # Action presentation metadata is projected by the backend and consumed
+    # separately from the formal execution rule fields. Keep this set exact so
+    # any new schema-external action field still fails closed.
+    "ContractV2ActionRule": set(),
     # Native form shadow rendering still consumes these container presentation
     # fields while formal V2 fields remain containerId/containerType/title/etc.
     "ContractV2Container": {
@@ -342,23 +342,28 @@ ALLOWED_STRICT_SCHEMA_EXTENSION_FIELDS = {
         "buttonType",
         "cols",
         "columns",
+        "componentConfig",
+        "componentKey",
         "fieldInfo",
-        "field_info",
+        "fieldCode",
         "formStructure",
         "formStructureRole",
         "invisible",
         "items",
-        "label",
         "modifiers",
-        "name",
         "nodes",
+        "nolabel",
+        "nativeLocator",
         "pages",
+        "occurrenceIndex",
         "readonly",
         "required",
-        "string",
+        "sourceAuthority",
+        "sourcePosition",
         "tabs",
-        "type",
+        "text",
         "widget",
+        "widgetId",
     },
     # These are display/runtime conveniences for current native-field widgets.
     "ContractV2Widget": {"fieldType", "relation"},

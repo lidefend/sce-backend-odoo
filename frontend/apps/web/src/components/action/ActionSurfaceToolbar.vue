@@ -1061,10 +1061,13 @@ onBeforeUnmount(() => {
   .action-toolbar,
   .action-toolbar--without-view {
     grid-template-columns: minmax(190px, 1fr) max-content;
-    grid-template-areas: 'search overflow';
+    grid-template-areas:
+      'search overflow'
+      'primary primary';
   }
-  .toolbar-actions { display: none; }
-  .toolbar-overflow-create { display: flex; }
+  .toolbar-actions { display: flex; justify-self: stretch; }
+  .toolbar-actions :deep(.sc-btn) { width: 100%; }
+  .toolbar-overflow-create { display: none; }
   .toolbar-search-clear,
   .toolbar-clear-all { display: none; }
   .toolbar-search-submit { width: 44px; min-height: 44px; padding-inline: 0; font-size: 0; justify-content: center; }

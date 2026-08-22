@@ -55,7 +55,7 @@ class TestRuntimePageContractBuilderBoundaries(unittest.TestCase):
         self.assertTrue(source.get("projection_only"))
         self.assertTrue(source.get("no_business_fact_authority"))
         self.assertEqual((payload.get("runtime_source_authority") or {}).get("kind"), source.get("kind"))
-        home_meta = ((((payload.get("pages") or {}).get("home") or {}).get("page_orchestration_v1") or {}).get("meta") or {})
+        home_meta = ((((payload.get("pages") or {}).get("home") or {}).get("page_orchestration") or {}).get("meta") or {})
         self.assertEqual((home_meta.get("runtime_source_authority") or {}).get("kind"), source.get("kind"))
 
 

@@ -167,9 +167,9 @@ async function runtimeProductMenus(page) {
   });
   writeJson('system_init_debug.json', {
     keys: Object.keys(nav || {}),
-    navigation_v1_sample: Array.isArray(nav?.navigation_v1?.nav) ? nav.navigation_v1.nav.slice(0, 3) : null,
+    navigation_sample: Array.isArray(nav?.navigation?.nav) ? nav.navigation.nav.slice(0, 3) : null,
   });
-  const navRows = walkNav(Array.isArray(nav?.navigation_v1?.nav) ? nav.navigation_v1.nav : []);
+  const navRows = walkNav(Array.isArray(nav?.navigation?.nav) ? nav.navigation.nav : []);
   const rows = navRows;
   const byXmlid = rows.filter((row) => TARGET_MENU_XMLIDS.includes(row.menuXmlid));
   if (byXmlid.length) return byXmlid;

@@ -61,13 +61,13 @@
       "company_id": 1,
       "lang": null,
       "name": "portal.lifecycle_dashboard",
-      "tz": null
+      "tz": "Asia/Shanghai"
     },
     "route": "/portal/lifecycle",
     "schema_version": "portal-lifecycle-v1",
     "subject": "ui.contract"
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

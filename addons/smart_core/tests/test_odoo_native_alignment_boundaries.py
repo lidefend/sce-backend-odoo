@@ -530,7 +530,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
     def test_release_navigation_prefers_delivery_engine_payload(self):
         payload = release_navigation_contract_builder.build_release_navigation_contract(
             {
-                "delivery_engine_v1": {
+                "delivery_engine": {
                     "contract_version": "v1",
                     "role_code": "operator",
                     "product_key": "platform.standard",
@@ -540,7 +540,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             }
         )
 
-        self.assertEqual(payload.get("source"), "delivery_engine_v1")
+        self.assertEqual(payload.get("source"), "delivery_engine")
         self.assertFalse((payload.get("meta") or {}).get("fallback_used"))
         self.assertEqual((payload.get("nav") or [])[0].get("key"), "platform.home")
 
@@ -788,6 +788,26 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(identity.get("action_id"), False)
         self.assertEqual(identity.get("source_view_id"), view.id)
         self.assertEqual(identity.get("projection_scope"), f"view:{view.id}:res.partner:form")
+
+    def test_view_config_projection_identity_rejects_invalid_explicit_view(self):
+        ViewConfig = self.env["app.view.config"].sudo()
+        wrong_model = self.env["ir.ui.view"].sudo().create({
+            "name": "Wrong model explicit search view",
+            "model": "res.users",
+            "type": "search",
+            "arch": '<search><field name="name"/></search>',
+        })
+        wrong_type = self.env["ir.ui.view"].sudo().create({
+            "name": "Wrong type explicit partner view",
+            "model": "res.partner",
+            "type": "form",
+            "arch": '<form><field name="name"/></form>',
+        })
+
+        for view_id in (999999999, wrong_model.id, wrong_type.id):
+            with self.subTest(view_id=view_id):
+                with self.assertRaises(ValueError):
+                    ViewConfig.with_context(contract_view_id=view_id)._projection_identity("res.partner", "search")
 
     def test_explicit_form_view_uses_lossless_parser_for_div_wrapped_fields(self):
         view = self.env["ir.ui.view"].sudo().create({
@@ -1712,6 +1732,62 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual({source.get("kind") for source in sources}, expected_kinds)
         for source in sources:
             self.assertTrue(source.get("no_business_fact_authority"))
+
+    def test_readonly_native_form_parser_failure_does_not_enter_compatibility_fallback(self):
+        class _Parser:
+            def parse_odoo_view(self, *args, **kwargs):
+                raise RuntimeError("native parser unavailable")
+
+        class _Env:
+            context = {"contract_projection_readonly": True}
+
+            def __getitem__(self, name):
+                self.assert_name = name
+                return _Parser()
+
+        class _Owner:
+            env = _Env()
+
+            @staticmethod
+            def _model_exists(name):
+                return name == "app.view.parser"
+
+            @staticmethod
+            def _looks_like_parser_wrapper(value):
+                return False
+
+        with self.assertRaisesRegex(ValueError, "compatibility fallback cannot satisfy native authority"):
+            NativeParseService(_Owner()).parse_with_primary_parser(
+                "account.account", "form", view_data={"arch": "<form/>"}
+            )
+
+    def test_non_native_readonly_parse_failure_remains_eligible_for_fallback(self):
+        class _Parser:
+            def parse_odoo_view(self, *args, **kwargs):
+                raise RuntimeError("native parser unavailable")
+
+        class _Env:
+            context = {"contract_projection_readonly": True}
+
+            def __getitem__(self, name):
+                return _Parser()
+
+        class _Owner:
+            env = _Env()
+
+            @staticmethod
+            def _model_exists(name):
+                return name == "app.view.parser"
+
+            @staticmethod
+            def _looks_like_parser_wrapper(value):
+                return False
+
+        self.assertIsNone(
+            NativeParseService(_Owner()).parse_with_primary_parser(
+                "account.account", "tree", view_data={"arch": "<tree/>"}
+            )
+        )
 
     def test_semantic_bridge_scene_runtime_and_identity_sources_are_not_business_facts(self):
         sources = (

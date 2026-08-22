@@ -30,7 +30,7 @@
 - 前端页面为 `MyWorkView`
 - 后端主数据接口为 `my.work.summary`
 - 操作接口为 `my.work.complete` / `my.work.complete_batch`
-- 有 `page_orchestration_v1` 时优先走 `PageRenderer`
+- 有 `page_orchestration` 时优先走 `PageRenderer`
 - 无法满足复杂操作时保留专用交互实现作为 fallback
 
 ### 契约仪表盘型
@@ -51,7 +51,7 @@
 - `SceneView` 识别 `dashboard.company.enter`
 - 前端通过 `SceneContractBlockGridView` 请求后端契约
 - 后端由 `dashboard.company.enter` 返回 scene contract
-- 前端转成 `PageRenderer` 可消费的 `page_orchestration_v1`
+- 前端转成 `PageRenderer` 可消费的 `page_orchestration`
 
 ## 统一入口规则
 

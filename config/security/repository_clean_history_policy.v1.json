@@ -25,6 +25,7 @@
     "e8cbc880f692d504f2849f75d099aeabd0fb7220"
   ],
   "personal_data_false_positive_registry": "scripts/ci/personal_data_false_positives.json",
+  "oversized_blob_exception_registry": "config/security/repository_oversized_blob_exceptions.v1.json",
   "forbidden_path_prefixes": [
     "addons/smart_construction_custom/",
     "artifacts/migration/",

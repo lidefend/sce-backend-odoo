@@ -1,0 +1,26 @@
+evidence:
+  baseline_commit: 58c3cfbdb3bf743f37806fec63d188fad948ade5
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  authoritative_version_source: VERSION
+  derived_observation:
+    file: docs/contract/snapshots/system_init_intent_admin.json
+    json_path: ui_contract_raw.product_version
+    expected_count: 1
+  verification:
+    targeted_product_release_tests:
+      status: passed
+      tests_collected: 11
+    product_release_version_guard:
+      status: passed
+      duplicates: 0
+      derived_observations: 1
+    ci_local_quick:
+      status: failed_after_scoped_gate_passed
+      passed_checkpoint: verify.product.release.version
+      failure_gate: ci.generated_reports.guard
+      failure_classification: generated_complexity_report_stale
+    verify_restricted:
+      status: not_run_due_to_earlier_quick_failure
+  completion:
+    status: completed_scope_followup_batch_s

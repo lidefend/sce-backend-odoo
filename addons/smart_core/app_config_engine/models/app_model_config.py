@@ -66,7 +66,7 @@ class AppModelConfig(models.Model):
         )
 
     @api.model
-    def _generate_from_ir_model(self, model_name):
+    def _generate_from_ir_model(self, model_name, fields_get_snapshot=None):
         """
         扫描 Odoo 模型字段，生成标准化字段清单：
         fields_def = { 'fields': [ {name, string, type, required, readonly, relation?}, ... ] }
@@ -78,10 +78,11 @@ class AppModelConfig(models.Model):
         if model_name not in self.env:
             raise ValueError(_('模型不存在：%s') % model_name)
 
-        self._lock_generation(model_name)
+        if not self.env.context.get('contract_projection_readonly'):
+            self._lock_generation(model_name)
 
         Model = self.env[model_name].sudo()
-        fields_get = Model.fields_get()
+        fields_get = fields_get_snapshot if isinstance(fields_get_snapshot, dict) else Model.fields_get()
 
         def to_item(name, spec):
             help_text = spec.get('help') or ''

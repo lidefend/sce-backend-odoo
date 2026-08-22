@@ -1,28 +1,101 @@
+schema_version: 1
+
 project:
   name: sce-backend-odoo
+  repository_type: odoo_vue_monorepo
+  baseline_iteration_policy: v1
+
+authority:
+  precedence:
+    - AGENTS.md
+    - docs/ops/codex_execution_allowlist.md
+    - docs/ops/codex_workspace_execution_rules.md
+    - ARCHITECTURE_GUARD.md
+    - docs/architecture/ai_development_guard.md
+    - .agent/decisions
+    - .agent/goals
+    - .agent/workflows
+  fail_closed_on_conflict: true
 
 architecture:
   backend:
     type: odoo
+    version: "17"
   frontend:
     type: vue
+    contract_driven: true
+  product_layers:
+    P0: platform_kernel_product
+    P1: construction_industry_standard_product
+    P2: specific_user_product
+    P3: low_code_configuration_product
+    P4: ops_delivery_tool
 
-authoritative:
-  contracts:
-    path: contracts/
-
-  verification:
-    path: scripts/verify/
-
-  documentation:
-    path: docs/
+authoritative_paths:
+  contracts: contracts/
+  verification: scripts/verify/
+  documentation: docs/
+  agent_context: .agent/
+  platform_module: addons/smart_core/
+  industry_module: addons/smart_construction_core/
+  customer_modules: customer_addons/
+  frontend: frontend/apps/web/
 
 important_modules:
+  - smart_core
   - smart_construction_core
+  - smart_construction_seed
   - frontend
 
-development:
-  backend:
-    port: 18081
-  acceptance:
-    port: 18082
+governed_runtime_profiles:
+  local_development:
+    make_prefix: local.dev
+    compose_project: sc-local-dev
+    database: sc_dev_demo
+    purpose: persistent_demo_backed_feature_iteration
+  local_sample:
+    make_prefix: local.sample
+    compose_project: sc-local-sample
+    database: sc_dev_sample
+    purpose: daily_data_compatibility
+  local_clean:
+    make_prefix: local.clean
+    compose_project: sc-local-clean
+    database: sc_clean
+    purpose: disposable_clean_installation
+  manual_environment_assembly_forbidden: true
+
+ports:
+  backend_development: 18081
+  acceptance: 18082
+
+execution:
+  allowed_write_branch_regex: "^(feature|fix|refactor|audit|release|codex)/.+"
+  one_writer_per_worktree: true
+  maximum_active_worktrees: 2
+  preserve_preexisting_changes: true
+  stop_on_unowned_new_change: true
+  require_formal_layer_declaration: true
+  require_single_objective_batch: true
+  require_complete_candidate_fingerprint: true
+  require_non_zero_targeted_tests: true
+  remote_writes_via_make_only: true
+
+run_statuses:
+  - planned
+  - active
+  - blocked
+  - verification_pending
+  - completed
+  - superseded
+
+evidence_defaults:
+  - branch
+  - full_baseline_sha
+  - complete_candidate_fingerprint
+  - exact_file_scope
+  - excluded_preexisting_changes
+  - commands_and_results
+  - verification_artifacts
+  - risk_and_rollback
+  - next_exact_step

@@ -1,7 +1,7 @@
 {
   "source": "docs.contract.exports.intent_catalog",
-  "canonical_count": 98,
-  "alias_count": 3,
+  "canonical_count": 106,
+  "alias_count": 4,
   "rows": [
     {
       "name": "api.data",
@@ -54,9 +54,34 @@
       "canonical": "app.open"
     },
     {
+      "name": "auth.credential.create",
+      "status": "canonical",
+      "canonical": "auth.credential.create"
+    },
+    {
+      "name": "auth.credential.list",
+      "status": "canonical",
+      "canonical": "auth.credential.list"
+    },
+    {
+      "name": "auth.credential.revoke",
+      "status": "canonical",
+      "canonical": "auth.credential.revoke"
+    },
+    {
+      "name": "auth.credential.rotate",
+      "status": "canonical",
+      "canonical": "auth.credential.rotate"
+    },
+    {
       "name": "auth.logout",
       "status": "canonical",
       "canonical": "auth.logout"
+    },
+    {
+      "name": "auth.machine.token",
+      "status": "canonical",
+      "canonical": "auth.machine.token"
     },
     {
       "name": "bootstrap",
@@ -229,6 +254,11 @@
       "canonical": "payment.request.available_actions"
     },
     {
+      "name": "payment.request.create_execution",
+      "status": "canonical",
+      "canonical": "payment.request.create_execution"
+    },
+    {
       "name": "payment.request.done",
       "status": "canonical",
       "canonical": "payment.request.done"
@@ -237,6 +267,11 @@
       "name": "payment.request.execute",
       "status": "canonical",
       "canonical": "payment.request.execute"
+    },
+    {
+      "name": "payment.request.mark_reversed",
+      "status": "canonical",
+      "canonical": "payment.request.mark_reversed"
     },
     {
       "name": "payment.request.reject",
@@ -260,8 +295,8 @@
     },
     {
       "name": "project.context.search",
-      "status": "canonical",
-      "canonical": "project.context.search"
+      "status": "alias",
+      "canonical": "record.context.search"
     },
     {
       "name": "project.dashboard",
@@ -324,6 +359,11 @@
       "canonical": "project.plan_bootstrap.enter"
     },
     {
+      "name": "record.context.search",
+      "status": "canonical",
+      "canonical": "record.context.search"
+    },
+    {
       "name": "release.operator.approve",
       "status": "canonical",
       "canonical": "release.operator.approve"
@@ -377,6 +417,11 @@
       "name": "risk.action.execute",
       "status": "canonical",
       "canonical": "risk.action.execute"
+    },
+    {
+      "name": "route.authority.validate",
+      "status": "canonical",
+      "canonical": "route.authority.validate"
     },
     {
       "name": "scene.governance.export_contract",

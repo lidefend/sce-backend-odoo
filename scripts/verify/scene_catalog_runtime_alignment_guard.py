@@ -38,7 +38,7 @@ def _extract_scene_codes(payload: dict) -> set[str]:
     if isinstance(data.get("data"), dict):
         data = data.get("data") or data
     scene_sources = [data.get("scenes") if isinstance(data.get("scenes"), list) else []]
-    scene_ready = data.get("scene_ready_contract_v1") if isinstance(data.get("scene_ready_contract_v1"), dict) else {}
+    scene_ready = data.get("scene_ready_contract") if isinstance(data.get("scene_ready_contract"), dict) else {}
     scene_sources.append(scene_ready.get("scenes") if isinstance(scene_ready.get("scenes"), list) else [])
     out: set[str] = set()
     for scenes in scene_sources:

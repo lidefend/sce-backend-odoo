@@ -15,9 +15,9 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             "build_route_authority(\n            role_surface,\n            nav=_final_navigation,",
             tail,
         )
-        self.assertIn('data["navigation_v1"] = {', tail)
+        self.assertIn('data["navigation"] = {', tail)
         self.assertIn(
-            '"route_authority_v1": _final_route_authority,',
+            '"route_authority": _final_route_authority,',
             tail,
         )
         self.assertIn(
@@ -35,12 +35,12 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         for removed in (
             '"nav",',
             '"release_navigation_v1",',
-            '"delivery_engine_v1",',
-            '"route_authority_v1",',
+            '"delivery_engine",',
+            '"route_authority",',
         ):
             self.assertIn(removed, tail)
 
-    def test_frontend_consumes_only_navigation_v1(self):
+    def test_frontend_consumes_only_navigation(self):
         source = (
             Path(__file__).resolve().parents[3]
             / "frontend"
@@ -51,12 +51,12 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             / "session.ts"
         ).read_text(encoding="utf-8")
         startup = source.split("const navigation =", 1)[1].split("this.menuTree =", 1)[0]
-        self.assertIn("navigation_v1", startup)
-        self.assertIn("navigation?.route_authority_v1", startup)
+        self.assertIn("navigation", startup)
+        self.assertIn("navigation?.route_authority", startup)
         self.assertIn("Array.isArray(navigation?.nav)", startup)
-        self.assertIn("navigation_v1 integrity check failed", startup)
+        self.assertIn("navigation integrity check failed", startup)
         self.assertNotIn("release_navigation_v1", startup)
-        self.assertNotIn("delivery_engine_v1", startup)
+        self.assertNotIn("delivery_engine", startup)
         self.assertNotIn("result.nav", startup)
 
         audit = (
@@ -67,10 +67,10 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             / "scripts"
             / "frontend_product_maturity_audit.mjs"
         ).read_text(encoding="utf-8")
-        self.assertIn("value?.navigation_v1", audit)
+        self.assertIn("value?.navigation", audit)
         self.assertIn("navigationReady", audit)
         self.assertNotIn("value?.release_navigation_v1", audit)
-        self.assertNotIn("value?.delivery_engine_v1", audit)
+        self.assertNotIn("value?.delivery_engine", audit)
 
 
 if __name__ == "__main__":

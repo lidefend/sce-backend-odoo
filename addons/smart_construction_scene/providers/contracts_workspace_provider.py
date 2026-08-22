@@ -28,7 +28,7 @@ def build(scene_key: str = "contracts.workspace", runtime: dict | None = None, c
         },
         "primary_action": primary_action,
         "fallback_strategy": fallback_strategy,
-        "delivery_handoff_v1": build_direct_runtime_handoff(
+        "delivery_handoff": build_direct_runtime_handoff(
             family="contracts",
             user_entry="route:/s/contracts.workspace",
             final_scene="contracts.workspace",

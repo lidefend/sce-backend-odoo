@@ -99,8 +99,8 @@ def _assert_user_reaches_released_targets(login, menu_xmlids):
     user_env = api.Environment(env.cr, int(user.id), dict(env.context or {}))  # noqa: F821
     delivery = FinalMenuNavigationService(user_env).build()
     convergence = (delivery.get("meta") or {}).get("delivery_convergence") or {}
-    if convergence.get("source") != "delivery_engine_v1":
-        raise AssertionError("%s did not resolve navigation through delivery_engine_v1" % login)
+    if convergence.get("source") != "delivery_engine":
+        raise AssertionError("%s did not resolve navigation through delivery_engine" % login)
     delivered_action_ids = {
         int(row.get("action_id") or 0)
         for row in ((delivery.get("nav_fact") or {}).get("flat") or [])

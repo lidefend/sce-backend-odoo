@@ -57,7 +57,7 @@ export type FormSectionFieldSchema = {
   relationOptions?: TemplateSelectOption[];
 
   // many2one-only relation entry extension
-  relationCreateMode?: 'none' | 'quick' | 'page';
+  relationCreateMode?: 'none' | 'quick' | 'page' | 'dialog';
   relationInlineCreate?: {
     enabled: boolean;
     createOnNoMatch: boolean;
@@ -74,9 +74,13 @@ export type FormSectionFieldSchema = {
   many2oneInlineCreateLabel?: string;
   descriptor?: FieldDescriptor;
   fileName?: string;
+  digits?: [number, number];
+  currencyField?: string;
+  currencyLabel?: string;
 };
 
 export type FormSectionFieldChange = {
+  occurrenceKey?: string;
   name: string;
   type: TemplateFieldType;
   widget?: string;

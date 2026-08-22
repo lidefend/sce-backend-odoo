@@ -2,7 +2,11 @@
   "action": null,
   "case": "project_execution_enter_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": "PROJECT_NOT_FOUND",
+    "message": "项目不存在或当前账号不可访问",
+    "suggested_action": "fix_input"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,10 +17,19 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "project.execution.enter",
-      "runtime_snapshot": false
+    "lifecycle_hints": {
+      "first_action": "create_project",
+      "primary_action_label": "创建项目",
+      "stage": "project_not_found",
+      "suggested_action_intent": "project.initiation.enter",
+      "suggested_action_title": "创建项目"
+    },
+    "suggested_action_payload": {
+      "intent": "project.initiation.enter",
+      "params": {
+        "reason_code": "PROJECT_NOT_FOUND"
+      },
+      "reason_code": "PROJECT_NOT_FOUND"
     }
   },
   "user": "admin",

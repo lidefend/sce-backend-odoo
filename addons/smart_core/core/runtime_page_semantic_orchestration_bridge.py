@@ -101,7 +101,7 @@ def apply_runtime_page_semantic_orchestration_bridge(
         runtime_context["search_mode"] = search_mode
     page["runtime_context"] = runtime_context
 
-    orchestration = _as_dict(page.get("page_orchestration_v1"))
+    orchestration = _as_dict(page.get("page_orchestration"))
     render_hints = _as_dict(orchestration.get("render_hints"))
     if view_type == "form":
         render_hints["runtime_preferred_columns"] = 1
@@ -123,5 +123,5 @@ def apply_runtime_page_semantic_orchestration_bridge(
         page_node["global_actions"] = semantic_actions
     orchestration["page"] = page_node
 
-    page["page_orchestration_v1"] = orchestration
+    page["page_orchestration"] = orchestration
     return page

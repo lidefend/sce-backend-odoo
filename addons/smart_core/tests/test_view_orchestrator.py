@@ -192,6 +192,37 @@ class TestViewOrchestrator(unittest.TestCase):
         self.assertIn("one2many_list", str(result["layout"]))
         self.assertEqual(env["ui.form.field.policy"].calls, [{"allow_layout_append": False}])
 
+    def test_explicit_native_form_view_blocks_legacy_layout_append(self):
+        env = _Env({
+            "ui.business.config.contract": _ConfigModel({}),
+            "ui.form.field.policy": _LegacyPolicyModel(),
+            "res.partner": _Model(),
+        })
+        source = {
+            "layout": [{
+                "type": "sheet",
+                "children": [{
+                    "type": "field",
+                    "name": "name",
+                    "native_locator": "/form/sheet[1]/field[@name='name'][1]",
+                    "occurrence_index": 1,
+                    "source_position": 0,
+                }],
+            }],
+        }
+
+        result = self.ViewOrchestrator(env).compose(
+            source,
+            model_name="res.partner",
+            view_type="form",
+            action_id=11,
+            view_id=22,
+        )
+
+        self.assertEqual(env["ui.form.field.policy"].calls, [{"allow_layout_append": False}])
+        self.assertNotIn("Legacy Contact", str(result["layout"]))
+        self.assertEqual(result["layout"], source["layout"])
+
     def test_search_view_uses_business_config_filters_and_group_by(self):
         payload = {
             "view_orchestration": {

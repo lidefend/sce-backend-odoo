@@ -7,7 +7,12 @@ import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from '.
 import { presentContractHeaderActions } from '../src/pages/contractForm/headerActionPresentation';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
 import { useFormActionRuntime } from '../src/pages/contractForm/useFormActionRuntime';
-import { evaluateNativeModifierValue, resolveNativeModifierFieldValue } from '../src/pages/contractForm/nativeLayoutUtils';
+import {
+  evaluateNativeModifierValue,
+  resolveNativeModifierFieldValue,
+  resolveNativeOccurrenceBehavior,
+  resolveNativeRelationActiveActions,
+} from '../src/pages/contractForm/nativeLayoutUtils';
 
 const action = (overrides: Record<string, unknown>) => ({
   key: 'action',
@@ -38,6 +43,55 @@ assert.equal(evaluateNativeModifierValue(
   activeRelationVisibility,
   (field) => resolveNativeModifierFieldValue({ ...modifierFormData, has_active_relation: false }, modifierMainData, field),
 ), true, 'hydrated formData remains authoritative when it contains the dependency');
+
+const evaluateDraftModifier = (value: unknown) => evaluateNativeModifierValue(
+  value,
+  (field) => resolveNativeModifierFieldValue({ state: 'draft' }, {}, field),
+);
+assert.deepEqual(resolveNativeOccurrenceBehavior({
+  type: 'field', name: 'amount', modifiers: {
+    invisible: false,
+    readonly: { kind: 'field_compare', field: 'state', operator: '=', value: 'draft' },
+    required: true,
+  },
+}, evaluateDraftModifier), {
+  invisible: false,
+  readonly: true,
+  required: true,
+}, 'first same-name occurrence evaluates its own dynamic behavior');
+assert.deepEqual(resolveNativeOccurrenceBehavior({
+  type: 'field', name: 'amount', modifiers: {
+    invisible: { kind: 'field_compare', field: 'state', operator: '=', value: 'done' },
+    readonly: false,
+    required: false,
+  },
+}, evaluateDraftModifier), {
+  invisible: false,
+  readonly: false,
+  required: false,
+}, 'second same-name occurrence remains independent from the first occurrence');
+assert.equal(resolveNativeOccurrenceBehavior({
+  type: 'field', name: 'amount', modifiers: {
+    invisible: { kind: 'field_compare', field: 'state', operator: '=', value: 'done' },
+  },
+}, (value) => evaluateNativeModifierValue(value, (field) => field === 'state' ? 'done' : undefined)).invisible, true,
+'the occurrence responds to record context changes');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'partner_id',
+  relation_active_actions: { create: false, write: true },
+}, evaluateDraftModifier), {
+  create: false,
+  write: true,
+}, 'many2one relation actions remain separate from field readonly behavior');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'reference',
+  attributes: { can_create: '0' },
+}, evaluateDraftModifier), {
+  create: null,
+  write: null,
+}, 'raw unsupported attributes never become relation action verdicts');
 
 const rule = (key: string, sourceWidgetId: string, targetScope: string, overrides: Record<string, unknown> = {}) => ({
   actionKey: key,
@@ -87,8 +141,13 @@ const built = buildContractFormActions({
     rule('second-primary', 'page.root', 'header'),
     rule('root-header-url', 'page.root', 'header', { button: {}, target: { url: '/integration/status' } }),
     rule('root-page-submit', 'page.root', 'page'),
-    rule('root-body', 'page.root', 'body'),
-    rule('root-widget', 'page.root', 'widget'),
+    rule('root-body', 'page.root', 'body', {
+      backendIdentity: 'native_button:object:action_root_body:/form/sheet/button[1]:0',
+      nativeIdentity: { canonical_region: 'layout' },
+    }),
+    rule('root-widget', 'page.root', 'widget', {
+      nativeIdentity: { canonical_region: 'stat_buttons' },
+    }),
     rule('row-action', 'page.row', 'row'),
   ],
   policyContext: {} as never,
@@ -126,7 +185,17 @@ assert.deepEqual(resolvePrimaryBusinessActionState({
   quickSubmitDisabled: false,
 }), { show: true, disabled: true });
 
-assert.deepEqual(built.map((item) => item.key), ['normalized-root', 'root-header-url', 'root-page-submit', 'second-primary']);
+assert.deepEqual(built.map((item) => item.key), [
+  'root-body', 'row-action', 'normalized-root', 'root-header-url',
+  'root-page-submit', 'second-primary', 'root-widget',
+]);
+assert.equal(built.find((item) => item.key === 'root-body')?.level, 'body');
+assert.equal(
+  built.find((item) => item.key === 'root-body')?.backendIdentity,
+  'native_button:object:action_root_body:/form/sheet/button[1]:0',
+);
+assert.equal(built.find((item) => item.key === 'root-widget')?.level, 'smart');
+assert.equal(built.find((item) => item.key === 'row-action')?.level, 'body');
 assert.deepEqual(grouped.direct.map((item) => item.key), ['normalized-root', 'native-header']);
 assert.deepEqual(grouped.overflow.map((item) => item.key), ['root-header-url', 'root-page-submit', 'second-primary']);
 const presented = presentContractHeaderActions({ direct: grouped.direct, overflow: grouped.overflow, excludedKeys: new Set() });
@@ -192,7 +261,7 @@ assert.deepEqual(normalizedWinner[0]?.actionSafety, {
   confirmMessage: 'Confirm normalized action', reasonCode: 'DANGER_ACTION',
 });
 
-const legacyFallback = buildContractFormActions({
+const rejectedLegacyFallback = buildContractFormActions({
   contract: null,
   model: 'res.partner',
   recordId: 7,
@@ -204,7 +273,7 @@ const legacyFallback = buildContractFormActions({
   evaluateNativeActionVisibility: () => true,
   isTierValidationActionHidden: () => false,
 });
-assert.equal(legacyFallback[0]?.key, 'legacy-only');
+assert.equal(rejectedLegacyFallback.length, 0, 'V2 form action presentation must reject legacy-only action rows');
 
 const normalizedRecordHandoff = buildContractFormActions({
   contract: null,
@@ -432,4 +501,4 @@ const intake = groupContractHeaderActions({
 });
 assert.deepEqual(intake, { direct: [], overflow: [], configuration: [] });
 
-console.log('[contract_header_action_presentation_test] PASS real_builder_chain=1 normalized_authority=1 full_snapshot_decode=1 danger_decode=1 submit_true=1 native_fallback=1 root_header_page_object_url=4 body_widget_row_hidden=3 primary=1 config_primary=0 denied_io=0');
+console.log('[contract_header_action_presentation_test] PASS real_builder_chain=1 normalized_authority=1 full_snapshot_decode=1 danger_decode=1 submit_true=1 native_fallback=1 root_header_page_object_url=4 body_widget_row_adapters=3 primary=1 config_primary=0 denied_io=0');

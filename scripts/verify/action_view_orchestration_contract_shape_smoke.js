@@ -41,13 +41,17 @@ function loadRuntime() {
     require: (name) => {
       if (name === 'vue') return { computed: (fn) => ({ value: fn() }) };
       if (name.endsWith('actionViewRequestRuntime')) return { uniqueFields };
-      if (name.endsWith('unifiedPageContractV2')) {
+      if (name.endsWith('contracts/v2/store')) {
         return {
-          collectUnifiedPageContractV2FieldWidgets: () => [],
-          collectUnifiedPageContractV2FieldStatus: () => ({}),
-          resolveUnifiedPageContractV2: () => null,
-          resolveUnifiedPageContractV2ListProfile: (contract) => contract?.list_profile || {},
-          resolveUnifiedPageContractV2SurfacePolicies: () => ({}),
+          collectContractV2FieldStatusByCode: () => ({}),
+          resolveContractV2FieldDescriptorMap: (store) => Object.fromEntries(
+            [...(store?.widgetsByFieldCode?.values?.() || [])].map((row) => [row.fieldCode, row]),
+          ),
+          resolveContractV2FieldWidgets: (store) => [...(store?.widgetsByFieldCode?.values?.() || [])],
+          resolveContractV2ListProfile: (store) => store?.snapshot?.layoutContract?.listProfile || {},
+          resolveContractV2PrimaryDataSource: (store) => store?.primaryDataSource || {},
+          resolveContractV2SearchContract: (store) => store?.snapshot?.searchContract || {},
+          resolveContractV2SurfacePolicies: (store) => store?.snapshot?.actionContract?.surfacePolicies || {},
         };
       }
       throw new Error(`unexpected require: ${name}`);
@@ -65,68 +69,52 @@ function assertDeepEqual(actual, expected, label) {
   }
 }
 
+function canonicalStore({ viewType = 'list', model = 'project.project', widgets = [], listProfile = {}, searchContract = {} } = {}) {
+  return {
+    snapshot: {
+      pageInfo: { viewType, model },
+      layoutContract: { listProfile },
+      actionContract: { surfacePolicies: {} },
+      searchContract,
+    },
+    widgetsByFieldCode: new Map(widgets.map((row) => [row.fieldCode, row])),
+    primaryDataSource: null,
+  };
+}
+
 function main() {
   const runtime = loadRuntime();
-  const kanban = runtime.extractKanbanFieldsFromContract({
-    views: {
-      kanban: {
-        kanban: {
-          fields: ['name'],
-          slots: { primary: ['email'], secondary: [{ field: 'phone' }] },
-        },
-      },
-    },
-  });
+  const kanbanStore = canonicalStore({ viewType: 'kanban', widgets: [
+    { fieldCode: 'name', label: '名称' },
+    { fieldCode: 'email', label: '邮箱' },
+    { fieldCode: 'phone', label: '电话' },
+  ] });
+  const kanban = runtime.extractKanbanFieldsFromContract(kanbanStore);
   assertDeepEqual(kanban, ['name', 'email', 'phone'], 'kanban nested fields and slots');
 
-  const calendar = runtime.extractAdvancedViewFieldsFromContract({
-    views: {
-      calendar: {
-        calendar: {
-          date_start: 'planned_start',
-          date_stop: 'planned_stop',
-          resource_slots: { owner: 'user_id' },
-          color_slots: { state: 'state' },
-        },
-      },
-    },
-  }, 'calendar');
+  const calendar = runtime.extractAdvancedViewFieldsFromContract(canonicalStore({ widgets: [
+    { fieldCode: 'planned_start' }, { fieldCode: 'planned_stop' }, { fieldCode: 'user_id' }, { fieldCode: 'state' },
+  ] }), 'calendar');
   assertDeepEqual(
     calendar,
-    ['planned_start', 'planned_stop', 'user_id', 'state', 'name', 'display_name', 'id'],
+    ['planned_start', 'planned_stop', 'user_id', 'state'],
     'calendar advanced fields',
   );
 
-  const dashboard = runtime.extractAdvancedViewFieldsFromContract({
-    views: {
-      dashboard: {
-        dashboard: {
-          cards: [{ field: 'project_id' }],
-          metric_slots: { primary: ['amount_total'] },
-          chart_slots: { trend: [{ field: 'date_order' }] },
-          navigation_slots: { next: 'project.dashboard.enter' },
-        },
-      },
-    },
-  }, 'dashboard');
+  const dashboard = runtime.extractAdvancedViewFieldsFromContract(canonicalStore({ widgets: [
+    { fieldCode: 'project_id' }, { fieldCode: 'amount_total' }, { fieldCode: 'date_order' },
+  ] }), 'dashboard');
   assertDeepEqual(
     dashboard,
-    ['project_id', 'amount_total', 'date_order', 'name', 'display_name', 'id'],
+    ['project_id', 'amount_total', 'date_order'],
     'dashboard advanced fields',
   );
 
   const shapeRuntime = runtime.useActionViewContractShapeRuntime({
     pageText: (_key, fallback) => fallback,
-    actionContract: {
-      value: {
-        views: {
-          graph: {
-            measures: [{ name: 'amount_total', label: '合同额' }],
-            dimensions: [{ name: 'company_id', label: '公司' }],
-          },
-        },
-      },
-    },
+    actionContract: { value: canonicalStore({ widgets: [
+      { fieldCode: 'amount_total', label: '合同额' }, { fieldCode: 'company_id', label: '公司' },
+    ] }) },
     advancedFields: { value: ['company_id', 'amount_total'] },
     activeGroupByField: { value: '' },
   });
@@ -142,37 +130,25 @@ function main() {
 
   const projectShapeRuntime = runtime.useActionViewContractShapeRuntime({
     pageText: (_key, fallback) => fallback,
-    actionContract: {
-      value: {
-        head: { model: 'project.project' },
-        views: {
-          kanban: {
-            fields: [
-              { name: 'partner_id', label: 'CODEX_PARTNER_CARD' },
-              { name: 'name', label: 'CODEX_NAME_CARD' },
-            ],
-          },
-        },
-      },
-    },
+    actionContract: { value: canonicalStore({ viewType: 'kanban', widgets: [
+      { fieldCode: 'partner_id', label: 'CODEX_PARTNER_CARD' },
+      { fieldCode: 'name', label: 'CODEX_NAME_CARD' },
+    ] }) },
     advancedFields: { value: [] },
     activeGroupByField: { value: '' },
   });
   if (projectShapeRuntime.contractColumnLabels.value.name !== 'CODEX_NAME_CARD') {
     throw new Error('project fallback labels must not overwrite orchestrated kanban labels');
   }
-  const viewLabels = runtime.extractViewFieldLabelsFromContract({
-    views: {
-      tree: { columns_schema: [{ name: 'partner_id', label: 'CODEX_PARTNER_COLUMN' }] },
-      kanban: { fields: [{ name: 'partner_id', label: 'CODEX_PARTNER_CARD' }] },
-    },
-  }, 'kanban');
+  const viewLabels = runtime.extractViewFieldLabelsFromContract(canonicalStore({ widgets: [
+    { fieldCode: 'partner_id', label: 'CODEX_PARTNER_CARD' },
+  ] }), 'kanban');
   if (viewLabels.partner_id !== 'CODEX_PARTNER_CARD') {
     throw new Error('view-specific labels must prefer the current view block');
   }
 
-  const projectListProfile = projectShapeRuntime.extractListProfile({
-    list_profile: {
+  const projectListProfile = projectShapeRuntime.extractListProfile(canonicalStore({
+    listProfile: {
       columns: ['name', 'user_id', 'manager_id'],
       hidden_columns: ['manager_id'],
       cross_device_critical_columns: ['name', 'user_id'],
@@ -182,7 +158,7 @@ function main() {
         manager_id: '项目经理',
       },
     },
-  });
+  }));
   assertDeepEqual(
     projectListProfile.cross_device_critical_columns,
     ['name', 'user_id'],

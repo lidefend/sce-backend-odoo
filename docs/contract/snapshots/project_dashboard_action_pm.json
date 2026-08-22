@@ -59,7 +59,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Active",
+      "string": "有效",
       "ttype": "boolean"
     },
     {
@@ -224,6 +224,10 @@
         [
           "followers",
           "Followers only"
+        ],
+        [
+          "employees",
+          "Authenticated Employees"
         ]
       ],
       "string": "Alias Contact Security",
@@ -622,7 +626,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Business Nature",
+      "string": "经营性质",
       "ttype": "char"
     },
     {
@@ -699,7 +703,7 @@
       "relation": "res.company",
       "required": false,
       "selection": null,
-      "string": "Company",
+      "string": "公司",
       "ttype": "many2one"
     },
     {
@@ -1040,7 +1044,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Expiration Date",
+      "string": "截止日期",
       "ttype": "date"
     },
     {
@@ -1073,7 +1077,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Detail Address",
+      "string": "项目详细地址",
       "ttype": "text"
     },
     {
@@ -1290,6 +1294,17 @@
     {
       "domain": null,
       "help": null,
+      "name": "initiation_date",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "单据日期",
+      "ttype": "date"
+    },
+    {
+      "domain": null,
+      "help": null,
       "name": "is_favorite",
       "readonly": false,
       "relation": null,
@@ -1328,7 +1343,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Last Update Color",
+      "string": "状态颜色",
       "ttype": "integer"
     },
     {
@@ -1375,205 +1390,18 @@
           "Done"
         ]
       ],
-      "string": "Last Update Status",
+      "string": "项目更新状态",
       "ttype": "selection"
     },
     {
       "domain": null,
-      "help": null,
-      "name": "legacy_attachment_ref",
-      "readonly": false,
+      "help": "仅提示建议完善的项目资料，不作为生命周期硬阻断条件。",
+      "name": "lifecycle_advisory",
+      "readonly": true,
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Legacy Attachment Ref",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_company_id",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Company",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_company_name",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Company Name",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_is_material_library",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Is Material Library",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_is_shared_base",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Is Shared Base",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_parent_id",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Parent",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_price_method",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Price Method",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_project_id",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Project",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_project_manager_name",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Project Manager Name",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_project_nature",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Project Nature",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_region_id",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Region",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_region_name",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Region Name",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_sort",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Sort",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_specialty_type_id",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Specialty Type",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_stage_id",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Stage",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_stage_name",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Stage Name",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_state",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy State",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "legacy_technical_responsibility_name",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Legacy Technical Responsibility Name",
+      "string": "完善提示",
       "ttype": "char"
     },
     {
@@ -1729,7 +1557,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Action Needed",
+      "string": "待处理消息",
       "ttype": "boolean"
     },
     {
@@ -1784,7 +1612,7 @@
       "relation": null,
       "required": true,
       "selection": null,
-      "string": "Name",
+      "string": "项目名称",
       "ttype": "char"
     },
     {
@@ -1795,30 +1623,28 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Open Task Count",
+      "string": "任务",
       "ttype": "integer"
     },
     {
       "domain": null,
-      "help": null,
-      "name": "other_system_code",
+      "help": "公司隔离之后的项目级全局经营策略维度，用于直营/联营业务事实切换、筛选和统计。",
+      "name": "operation_strategy",
       "readonly": false,
       "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Other System Code",
-      "ttype": "char"
-    },
-    {
-      "domain": null,
-      "help": null,
-      "name": "other_system_id",
-      "readonly": false,
-      "relation": null,
-      "required": false,
-      "selection": null,
-      "string": "Other System",
-      "ttype": "char"
+      "required": true,
+      "selection": [
+        [
+          "direct",
+          "公司直营"
+        ],
+        [
+          "joint",
+          "联营项目"
+        ]
+      ],
+      "string": "经营方式",
+      "ttype": "selection"
     },
     {
       "domain": null,
@@ -1850,7 +1676,7 @@
       "relation": "res.partner",
       "required": false,
       "selection": null,
-      "string": "Customer",
+      "string": "关联单位",
       "ttype": "many2one"
     },
     {
@@ -2027,7 +1853,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Project Area",
+      "string": "项目面积",
       "ttype": "char"
     },
     {
@@ -2066,7 +1892,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Project Environment",
+      "string": "项目环境",
       "ttype": "char"
     },
     {
@@ -2077,7 +1903,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Project Overview",
+      "string": "项目概况",
       "ttype": "text"
     },
     {
@@ -2088,7 +1914,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Project Profile",
+      "string": "项目简介",
       "ttype": "text"
     },
     {
@@ -2271,24 +2097,24 @@
     },
     {
       "domain": null,
-      "help": "用于标记演示项目池的入口筛选项目。",
+      "help": "项目入口优先候选标记。",
       "name": "sc_demo_showcase",
       "readonly": false,
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "演示项目池",
+      "string": "项目样板池",
       "ttype": "boolean"
     },
     {
       "domain": null,
-      "help": "用于演示入口硬筛选，仅展示数据补齐完成的项目。",
+      "help": "项目入口候选展示状态。",
       "name": "sc_demo_showcase_ready",
       "readonly": false,
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "演示项目可展示",
+      "string": "项目样板可展示",
       "ttype": "boolean"
     },
     {
@@ -2312,6 +2138,34 @@
       "selection": null,
       "string": "草稿自动保存时间",
       "ttype": "datetime"
+    },
+    {
+      "domain": null,
+      "help": "项目执行场景的轻量状态机字段，由 project.execution.advance 统一推进。",
+      "name": "sc_execution_state",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": [
+        [
+          "ready",
+          "执行就绪"
+        ],
+        [
+          "in_progress",
+          "执行中"
+        ],
+        [
+          "blocked",
+          "执行阻塞"
+        ],
+        [
+          "done",
+          "执行完成"
+        ]
+      ],
+      "string": "执行推进状态",
+      "ttype": "selection"
     },
     {
       "domain": null,
@@ -2382,6 +2236,39 @@
     {
       "domain": null,
       "help": null,
+      "name": "sc_partner_display_name",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "关联单位显示名称",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": "用于标记可作为项目入口优先候选的正式样板项目。",
+      "name": "sc_project_showcase",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "项目样板池",
+      "ttype": "boolean"
+    },
+    {
+      "domain": null,
+      "help": "用于项目入口候选硬筛选，仅展示数据补齐完成的样板项目。",
+      "name": "sc_project_showcase_ready",
+      "readonly": false,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "项目样板可展示",
+      "ttype": "boolean"
+    },
+    {
+      "domain": null,
+      "help": null,
       "name": "sc_stage_required_done",
       "readonly": true,
       "relation": null,
@@ -2420,7 +2307,7 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Sequence",
+      "string": "序号",
       "ttype": "integer"
     },
     {
@@ -2442,7 +2329,29 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Short Name",
+      "string": "项目简称",
+      "ttype": "char"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "source_created_at",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "来源录入时间",
+      "ttype": "datetime"
+    },
+    {
+      "domain": null,
+      "help": null,
+      "name": "source_created_by",
+      "readonly": true,
+      "relation": null,
+      "required": false,
+      "selection": null,
+      "string": "来源录入人",
       "ttype": "char"
     },
     {
@@ -2453,8 +2362,19 @@
       "relation": null,
       "required": false,
       "selection": null,
-      "string": "Specialty Type Name",
+      "string": "专业类型",
       "ttype": "char"
+    },
+    {
+      "domain": [],
+      "help": null,
+      "name": "stage_id",
+      "readonly": false,
+      "relation": "project.project.stage",
+      "required": true,
+      "selection": null,
+      "string": "阶段",
+      "ttype": "many2one"
     },
     {
       "domain": null,
@@ -2466,17 +2386,6 @@
       "selection": null,
       "string": "计划开工日期",
       "ttype": "date"
-    },
-    {
-      "domain": [],
-      "help": null,
-      "name": "structure_ids",
-      "readonly": false,
-      "relation": "sc.project.structure",
-      "required": false,
-      "selection": null,
-      "string": "工程结构（WBS）",
-      "ttype": "one2many"
     },
     {
       "domain": null,
@@ -2497,7 +2406,7 @@
       "relation": "project.tags",
       "required": false,
       "selection": null,
-      "string": "Tags",
+      "string": "标签",
       "ttype": "many2many"
     },
     {
@@ -2721,7 +2630,7 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {},
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

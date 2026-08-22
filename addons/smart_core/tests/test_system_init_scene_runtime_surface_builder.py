@@ -57,6 +57,51 @@ class _Env:
 
 
 class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
+    def test_full_mode_uses_complete_delivery_scene_set(self):
+        delivery_scenes = [
+            {"code": "workspace.home", "target": {"route": "/"}},
+            {"code": "projects.list", "target": {"route": "/s/projects.list"}},
+        ]
+        captured = {"scenes": []}
+
+        def _build_full_contract(**kwargs):
+            captured["scenes"] = kwargs.get("scenes") or []
+            return {"scenes": captured["scenes"]}
+
+        surface_ctx = context_module.SystemInitSceneRuntimeSurfaceContext(
+            env=_Env(),
+            params={"scene": "web", "scene_ready_mode": "full"},
+            data={
+                "nav": [],
+                "nav_meta": {},
+                "default_route": {"scene_key": "workspace.home", "route": "/"},
+                "scenes": delivery_scenes,
+                "scene_version": "2.0.0",
+                "schema_version": "2.0.0",
+            },
+            role_surface={"role_code": "project_manager"},
+            contract_mode="strict",
+            scene_channel="stable",
+            nav_tree=[],
+            platform_minimum_surface_mode=False,
+            build_platform_minimum_nav_contract_fn=lambda: {},
+            resolve_delivery_policy_runtime_fn=lambda env, params: {},
+            filter_delivery_scenes_fn=lambda scene_rows, **kwargs: {
+                "delivery_scenes": scene_rows,
+                "deep_link_scenes": [],
+                "meta": {"enabled": False},
+            },
+            startup_scene_subset_resolver_fn=lambda data, params=None: ["workspace.home"],
+            filter_startup_scenes_for_preload_fn=lambda scene_rows, subset: [scene_rows[0]],
+            bind_scene_assets_fn=lambda env, scenes, role_code=None, company_id=None: {"scenes": scenes},
+            build_scene_ready_contract_fn=_build_full_contract,
+            build_scene_nav_contract_fn=lambda data: {"nav": [], "meta": {}},
+        )
+
+        builder.SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=surface_ctx)
+
+        self.assertEqual([row.get("code") for row in captured["scenes"]], ["workspace.home", "projects.list"])
+
     def test_scene_nav_contract_kept_as_auxiliary_contract(self):
         legacy_nav = [
             {
@@ -77,7 +122,7 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
             "reason": "menu_fallback",
         }
         scene_nav_contract = {
-            "source": "scene_contract_v1",
+            "source": "scene_contract",
             "nav": [
                 {
                     "key": "root:scene_contract",
@@ -187,7 +232,7 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
         )
 
         result = builder.SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=surface_ctx)
-        contract = result["data"].get("scene_ready_contract_v1") or {}
+        contract = result["data"].get("scene_ready_contract") or {}
         first_scene = (contract.get("scenes") or [])[0]
 
         self.assertEqual(calls, {"bind": 0, "full": 0})
@@ -236,7 +281,7 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
         )
 
         result = builder.SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=surface_ctx)
-        contract = result["data"].get("scene_ready_contract_v1") or {}
+        contract = result["data"].get("scene_ready_contract") or {}
         first_scene = (contract.get("scenes") or [])[0]
 
         self.assertEqual(first_scene.get("code"), "finance.workspace")
@@ -283,7 +328,7 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
         )
 
         result = builder.SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=surface_ctx)
-        scenes = (result["data"].get("scene_ready_contract_v1") or {}).get("scenes") or []
+        scenes = (result["data"].get("scene_ready_contract") or {}).get("scenes") or []
         workspace = next(row for row in scenes if row.get("code") == "workspace.home")
 
         self.assertEqual((workspace.get("target") or {}).get("route"), "/")

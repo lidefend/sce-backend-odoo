@@ -29,4 +29,6 @@ if ! DB="$DB_NAME" bash scripts/ops/check_db_policy.sh; then
   exit 2
 fi
 
-bash scripts/ops/codex_preflight.sh
+CODEX_PREFLIGHT_REQUIRE_CLEAN=1 \
+CODEX_PREFLIGHT_REQUIRE_DOCKER=1 \
+  bash scripts/ops/codex_preflight.sh

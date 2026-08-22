@@ -363,8 +363,8 @@ async function main() {
     with: ["workspace_home"],
     root_xmlid: "smart_construction_core.menu_sc_root",
   });
-  const nav = init?.delivery_engine_v1?.nav || init?.nav || [];
-  const routeAuthority = init?.delivery_engine_v1?.route_authority_v1 || init?.route_authority_v1 || {};
+  const nav = init?.navigation?.nav || [];
+  const routeAuthority = init?.navigation?.route_authority || {};
   const results = [];
   const errors = [];
 

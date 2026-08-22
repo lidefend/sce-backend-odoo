@@ -68,6 +68,20 @@ INTENT_ALIASES = {
 API_VERSION = "v1"
 CONTRACT_VERSION = "1.0.0"
 SCHEMA_VERSION = "1.0.0"
+INTENT_CONTRACT_VERSIONS = {
+    "system.init": "2.0.0",
+}
+INTENT_SCHEMA_VERSIONS = {
+    "system.init": "2.0.0",
+}
+
+
+def _contract_version_for_intent(intent_name: str | None) -> str:
+    return INTENT_CONTRACT_VERSIONS.get(str(intent_name or "").strip(), CONTRACT_VERSION)
+
+
+def _schema_version_for_intent(intent_name: str | None) -> str:
+    return INTENT_SCHEMA_VERSIONS.get(str(intent_name or "").strip(), SCHEMA_VERSION)
 
 def _canon_intent(name: str) -> str:
     return INTENT_ALIASES.get(name or "", name or "")
@@ -131,14 +145,16 @@ def _error_response(
     trace_id: str,
     details: dict | None = None,
     error_fields: dict | None = None,
+    intent_name: str | None = None,
 ):
+    contract_version = _contract_version_for_intent(intent_name)
     payload = build_error_envelope(
         code=code,
         message=message,
         trace_id=trace_id,
         details=details,
         api_version=API_VERSION,
-        contract_version=CONTRACT_VERSION,
+        contract_version=contract_version,
     )
     if error_fields and isinstance(payload.get("error"), dict):
         payload["error"].update(error_fields)
@@ -480,8 +496,9 @@ class IntentDispatcher(http.Controller):
                 meta.setdefault("intent", intent_name)
                 meta.setdefault("elapsed_ms", int((time.time() - ts0) * 1000))
                 meta.setdefault("api_version", API_VERSION)
-                meta.setdefault("contract_version", CONTRACT_VERSION)
-                meta.setdefault("schema_version", SCHEMA_VERSION)
+                response_contract_version = _contract_version_for_intent(intent_name)
+                meta.setdefault("contract_version", response_contract_version)
+                meta.setdefault("schema_version", _schema_version_for_intent(intent_name))
 
                 # 标准化错误结构
                 if not result_is_success(result):
@@ -492,7 +509,7 @@ class IntentDispatcher(http.Controller):
                         error_envelope_builder=build_error_envelope,
                         trace_id=trace_id,
                         api_version=API_VERSION,
-                        contract_version=CONTRACT_VERSION,
+                        contract_version=response_contract_version,
                     )
                     if status < 400:
                         status = status if status and status >= 400 else 500
@@ -510,25 +527,25 @@ class IntentDispatcher(http.Controller):
                     request.env.cr.commit()
                 except Exception:
                     _logger.exception("intent commit failed: intent=%s trace=%s", intent_name, trace_id)
-                    return _error_response(INTERNAL_ERROR, "内部错误", 500, trace_id)
+                    return _error_response(INTERNAL_ERROR, "内部错误", 500, trace_id, intent_name=intent_name)
             elif tx_action == "rollback":
                 try:
                     request.env.cr.rollback()
                 except Exception:
                     _logger.exception("intent rollback failed: intent=%s trace=%s", intent_name, trace_id)
-                    return _error_response(INTERNAL_ERROR, "内部错误", 500, trace_id)
+                    return _error_response(INTERNAL_ERROR, "内部错误", 500, trace_id, intent_name=intent_name)
 
             return request.make_json_response(result, status=status, headers=headers)
         except AccessDenied:
             _rollback_request_env(intent_name, trace_id)
-            return _error_response(AUTH_REQUIRED, "认证失败或 token 无效", 401, trace_id)
+            return _error_response(AUTH_REQUIRED, "认证失败或 token 无效", 401, trace_id, intent_name=intent_name)
         except AccessError as e:
             _rollback_request_env(intent_name, trace_id)
             msg = str(e)
             if msg.startswith("FEATURE_DISABLED"):
-                return _error_response("FEATURE_DISABLED", msg, 403, trace_id)
+                return _error_response("FEATURE_DISABLED", msg, 403, trace_id, intent_name=intent_name)
             if msg.startswith("LIMIT_EXCEEDED"):
-                return _error_response("LIMIT_EXCEEDED", msg, 429, trace_id)
+                return _error_response("LIMIT_EXCEEDED", msg, 429, trace_id, intent_name=intent_name)
             return _error_response(
                 PERMISSION_DENIED,
                 msg,
@@ -539,19 +556,20 @@ class IntentDispatcher(http.Controller):
                     "reason_code": REASON_PERMISSION_DENIED,
                     **failure_meta_for_reason(REASON_PERMISSION_DENIED),
                 },
+                intent_name=intent_name,
             )
         except MissingError as e:
             _rollback_request_env(intent_name, trace_id)
-            return _error_response(INTENT_NOT_FOUND, str(e), 404, trace_id)
+            return _error_response(INTENT_NOT_FOUND, str(e), 404, trace_id, intent_name=intent_name)
         except (BadRequest, Unauthorized, Forbidden, NotFound) as e:
             _rollback_request_env(intent_name, trace_id)
             status = getattr(e, "code", 400) or 400
             code = map_http_status_to_code(status)
-            return _error_response(code, str(e), status, trace_id)
+            return _error_response(code, str(e), status, trace_id, intent_name=intent_name)
         except Exception as e:
             if isinstance(e, AccessDenied) or e.__class__.__name__ == "AccessDenied":
                 _rollback_request_env(intent_name, trace_id)
-                return _error_response(AUTH_REQUIRED, "认证失败或 token 无效", 401, trace_id)
+                return _error_response(AUTH_REQUIRED, "认证失败或 token 无效", 401, trace_id, intent_name=intent_name)
             _rollback_request_env(intent_name, trace_id)
             _logger.exception("intent dispatcher failed: %s", e)
-            return _error_response(INTERNAL_ERROR, "内部错误", 500, trace_id)
+            return _error_response(INTERNAL_ERROR, "内部错误", 500, trace_id, intent_name=intent_name)

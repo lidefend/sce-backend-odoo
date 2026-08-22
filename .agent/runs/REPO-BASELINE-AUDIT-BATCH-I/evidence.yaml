@@ -1,0 +1,20 @@
+evidence:
+  observed_failures:
+    empty_snapshots:
+      - docs/contract/snapshots/form_save_simple_pm.json
+      - docs/contract/snapshots/project_action_open_858.json
+    unexpected_record_error:
+      - project_form_pm
+      - execute_button_pm
+      - execute_button_missing_method
+
+  verification:
+    targeted_unittest:
+      status: passed_before_integration_failure
+      tests_collected: 8
+    real_local_dev_export:
+      status: failed
+      failure: internal_compose_selector_argument_leak
+
+  completion:
+    status: completed

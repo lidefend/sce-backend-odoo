@@ -91,9 +91,22 @@ def obtain_runtime_probe_token(intent_url: str, db_name: str) -> tuple[bool, str
     login = env_value("E2E_LOGIN")
     password = env_value("E2E_PASSWORD")
     if login and password:
+        login_params: dict[str, Any] = {
+            "db": db_name,
+            "login": login,
+            "password": password,
+        }
+        raw_company_id = env_value("E2E_COMPANY_ID")
+        if raw_company_id:
+            try:
+                company_id = int(raw_company_id)
+            except (TypeError, ValueError):
+                company_id = 0
+            if company_id > 0:
+                login_params["company_id"] = company_id
         status, payload = http_post_json(
             intent_url,
-            {"intent": "login", "params": {"db": db_name, "login": login, "password": password}},
+            {"intent": "login", "params": login_params},
             headers={"X-Anonymous-Intent": "1", **db_headers},
         )
         token = extract_login_token(payload) if status < 400 and payload.get("ok") is True else ""

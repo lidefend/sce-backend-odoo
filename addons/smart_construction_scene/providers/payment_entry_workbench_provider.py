@@ -34,7 +34,7 @@ def build(scene_key: str = "finance.payment_requests", runtime: dict | None = No
             "semantic": "payment_request_list_queue",
         },
         "fallback_strategy": fallback_strategy,
-        "delivery_handoff_v1": build_direct_runtime_handoff(
+        "delivery_handoff": build_direct_runtime_handoff(
             family="payment_entry",
             user_entry="menu:smart_construction_core.menu_payment_request",
             final_scene="finance.payment_requests",

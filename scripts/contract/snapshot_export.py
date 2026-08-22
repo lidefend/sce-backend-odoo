@@ -8,10 +8,64 @@ import sys
 import uuid
 import importlib
 from datetime import datetime
+from collections.abc import Iterable, Mapping
+from contextlib import contextmanager
 
 import odoo
 from odoo import api, SUPERUSER_ID
 from odoo.tools import config
+
+
+_SNAPSHOT_LAYOUT_CHILD_KEYS = ("children", "pages", "tabs", "nodes", "items", "widgetList")
+SNAPSHOT_SCHEMA_VERSION = "1.0.0"
+
+
+def _layout_field_names(layout: object, known_fields: set[str]) -> list[str]:
+    names: list[str] = []
+
+    def add(name: object) -> None:
+        token = str(name or "").strip()
+        if token and token in known_fields and token not in names:
+            names.append(token)
+
+    def walk(node: object) -> None:
+        if isinstance(node, list):
+            for child in node:
+                walk(child)
+            return
+        if not isinstance(node, Mapping):
+            return
+        node_type = str(node.get("type") or node.get("widgetType") or "").strip().lower()
+        if node_type == "field":
+            add(node.get("name") or node.get("field"))
+        for key in _SNAPSHOT_LAYOUT_CHILD_KEYS:
+            walk(node.get(key))
+
+    walk(layout)
+    return names
+
+
+def select_form_record_fields(
+    contract_data: object,
+    native_field_names: Iterable[object] = (),
+) -> list[str]:
+    """Return form-visible fields without ever falling back to all model fields."""
+    data = contract_data if isinstance(contract_data, Mapping) else {}
+    fields = data.get("fields") if isinstance(data.get("fields"), Mapping) else {}
+    known_fields = {str(name) for name in fields}
+    views = data.get("views") if isinstance(data.get("views"), Mapping) else {}
+    form = views.get("form") if isinstance(views.get("form"), Mapping) else {}
+    selected = _layout_field_names(form.get("layout"), known_fields)
+
+    if not selected:
+        for name in native_field_names:
+            token = str(name or "").strip()
+            if token and token in known_fields and token not in selected:
+                selected.append(token)
+
+    if "id" not in selected:
+        selected.insert(0, "id")
+    return selected
 
 
 def parse_args():
@@ -66,6 +120,40 @@ def find_user(env, user_ref):
     if user:
         return user
     return env["res.users"].search([("name", "=", user_ref)], limit=1)
+
+
+@contextmanager
+def snapshot_handler_principal(handler_cls, user):
+    """Bind direct shell exports to the governed snapshot user's human identity.
+
+    HTTP handlers normally resolve this identity from ``odoo.http.request``. The
+    snapshot exporter deliberately runs inside an Odoo shell, so no request-local
+    proxy exists. Patch only a handler module's imported resolver for the duration
+    of that single invocation and always restore it afterwards.
+    """
+    module = sys.modules.get(getattr(handler_cls, "__module__", ""))
+    resolver = getattr(module, "get_principal_from_token", None) if module else None
+    if not callable(resolver):
+        yield
+        return
+
+    def resolve_snapshot_principal():
+        return {
+            "user": user,
+            "auth_method": "password",
+            "principal_type": "human",
+            "credential_id": "",
+            "scopes": (),
+            "company_id": int(user.company_id.id),
+            "allowed_company_ids": tuple(user.company_ids.ids),
+            "role_xmlids": (),
+        }
+
+    setattr(module, "get_principal_from_token", resolve_snapshot_principal)
+    try:
+        yield
+    finally:
+        setattr(module, "get_principal_from_token", resolver)
 
 
 def normalize_contract(env, data, model, view_type):
@@ -311,11 +399,7 @@ def export_snapshot():
         user = find_user(su_env, args.user)
         user_fallback = None
         if not user:
-            user = find_user(su_env, "admin")
-            if user:
-                user_fallback = "admin"
-            else:
-                raise SystemExit("user not found")
+            raise SystemExit(f"user not found: {args.user}")
 
         env = api.Environment(cr, user.id, {})
         view_type = args.view_type
@@ -474,7 +558,7 @@ def export_snapshot():
                     "case": args.case,
                     "trace_id": str(uuid.uuid4()),
                     "exported_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
-                    "contract_version": "v1",
+                    "snapshot_schema_version": SNAPSHOT_SCHEMA_VERSION,
                     "model": args.model or None,
                     "view_type": view_type if payload.get("op") == "model" else None,
                     "op": payload.get("op"),
@@ -521,7 +605,8 @@ def export_snapshot():
             # For snapshot execution, pass params directly to avoid handler shape drift
             # between payload and params conventions.
             try:
-                raw_res = handler.run(payload=params_payload, ctx=intent_context)
+                with snapshot_handler_principal(handler_cls, user):
+                    raw_res = handler.run(payload=params_payload, ctx=intent_context)
             except Exception as exc:
                 if args.allow_error_response:
                     raw_res = {
@@ -586,10 +671,15 @@ def export_snapshot():
         if payload.get("op") == "model" and view_type == "form" and args.record_id:
             record = env[args.model].browse(args.record_id).exists()
             if record:
-                fields_info = data.get("fields") or {}
-                field_names = list(fields_info.keys()) if isinstance(fields_info, dict) else []
+                native_field_names = []
                 try:
-                    record_data = record.read(field_names or None)[0]
+                    native_view = env[args.model].get_view(view_type="form")
+                    native_field_names = _extract_fields_from_arch(native_view.get("arch"))
+                except Exception:
+                    native_field_names = []
+                field_names = select_form_record_fields(data, native_field_names)
+                try:
+                    record_data = record.read(field_names)[0]
                 except Exception as exc:
                     record_error = str(exc)
 
@@ -627,7 +717,7 @@ def export_snapshot():
             "case": args.case,
             "trace_id": str(uuid.uuid4()),
             "exported_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
-            "contract_version": "v1",
+            "snapshot_schema_version": SNAPSHOT_SCHEMA_VERSION,
             "model": args.model or None,
             "view_type": view_type if payload.get("op") == "model" else None,
             "op": payload.get("op"),

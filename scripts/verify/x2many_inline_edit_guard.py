@@ -8,8 +8,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 FORM_PATHS = [
     ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts',
     ROOT / 'frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts',
     ROOT / 'frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts',
+    ROOT / 'frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts',
     ROOT / 'frontend/apps/web/src/pages/contractForm/one2manyUtils.ts',
     ROOT / 'frontend/apps/web/src/pages/contractForm/valueUtils.ts',
     ROOT / 'frontend/apps/web/src/pages/contractForm/onchangeNormalization.ts',
@@ -49,7 +51,7 @@ def main() -> int:
             errors.append(f'engine missing marker: {marker}')
 
     form_markers = [
-        'const showOne2manyErrors = ref(false);',
+        'showOne2manyErrors: ref(false),',
         'const one2manyValidation = computed(() => collectOne2manyDraftValidation());',
         'function one2manyColumns(name: string): One2ManyColumn[] {',
         'export function one2manyColumnInputType(column: One2ManyColumn)',

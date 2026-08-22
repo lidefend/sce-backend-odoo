@@ -1,0 +1,16 @@
+events:
+  - type: batch_started
+    at: "2026-08-21T00:12:00+08:00"
+    detail: Quick transferred deterministic complexity-report drift to Batch-S.
+  - type: generated_report_refreshed
+    at: "2026-08-21T00:13:00+08:00"
+    detail: The existing generator rewrote the report from the current repository source inventory.
+  - type: verification_pending
+    at: "2026-08-21T00:14:00+08:00"
+    detail: Generated-report guard and complete Quick remain to be recorded.
+  - type: scoped_verification_completed
+    at: "2026-08-21T00:15:00+08:00"
+    detail: The complexity report passed and exposed its stale split-plan consumer.
+  - type: batch_closed
+    at: "2026-08-21T00:16:00+08:00"
+    detail: Complexity refresh closed; dependent queue refresh moved to Batch-T.

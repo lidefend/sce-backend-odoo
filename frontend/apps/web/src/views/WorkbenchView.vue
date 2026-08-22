@@ -208,15 +208,14 @@ const pageSectionStyle = pageContract.sectionStyle;
 const pageSectionTagIs = pageContract.sectionTagIs;
 
 const workbenchOrchestrationContract = computed<PageOrchestrationContract>(() => {
-  const contract = pageContract.contract.value?.page_orchestration_v1;
+  const contract = pageContract.contract.value?.page_orchestration;
   return (contract && typeof contract === 'object') ? contract as unknown as PageOrchestrationContract : {};
 });
 const useUnifiedWorkbenchRenderer = computed(() => {
-  if (asText(route.query.legacy_workbench) === '1') return false;
   const contract = workbenchOrchestrationContract.value || {};
-  const hasV1 = asText(contract.contract_version) === 'page_orchestration_v1';
+  const isCanonical = asText(contract.contract_version) === '2.0.0';
   const zones = Array.isArray(contract.zones) ? contract.zones : [];
-  return hasV1 && zones.length > 0;
+  return isCanonical && zones.length > 0;
 });
 const showHud = computed(() => isHudEnabled(route));
 const lastTraceId = computed(() => session.lastTraceId || '');

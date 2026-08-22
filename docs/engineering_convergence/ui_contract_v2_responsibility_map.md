@@ -6,6 +6,18 @@ Target file: `addons/smart_core/handlers/ui_contract_v2.py`
 Current size: 3,473 lines
 Phase: Stage 4 contract authority helper split
 
+## 2026-08-21 Runtime Cutover Note
+
+The Web Action/Form path consumes the strict V2 response directly through the
+normalized store. The former Web compatibility projection and projected raw
+loaders are retired and forbidden by the V2 Web guard. `ui_contract_v2.py` may
+adapt legacy backend source facts at its producer boundary, but it must not emit
+or require a legacy frontend `ActionContract` carrier or embedded V2 envelope.
+Action access, surface selection, fields/columns, filters, actions, and row
+navigation are also store-only; active V2 architecture baselines are versioned
+as V2 snapshots. P1 project-layout enrichment is validated against the same
+strict Draft 2020-12 schema used by the platform assembler gate.
+
 ## Purpose
 
 `ui_contract_v2.py` is the unified page contract v2 projection entrypoint. It
@@ -21,7 +33,7 @@ permission truth, persistence rules, or industry-owned policy.
 
 | Entry point | Responsibility | Boundary |
 | --- | --- | --- |
-| `UiContractV2Handler.handle` | Main v2 contract orchestration for `ui.contract` and `scene_contract_v1`. | May call `UiContractHandler`, assembler, extension hooks, and read-side injectors. |
+| `UiContractV2Handler.handle` | Main v2 contract orchestration for `ui.contract` and `scene_contract`. | May call `UiContractHandler`, assembler, extension hooks, and read-side injectors. |
 | `UiContractV2Handler.source_authority_contract` | Publishes source-authority metadata for v2 output. | Pure metadata. |
 | `_safe_eval_action_value` | Safely parses action domain/context values. | Pure parsing fallback; no env access. |
 | `_allowed_models_from_hook` | Reads extension hook allowlists for collaboration attachments. | Hook read only. |

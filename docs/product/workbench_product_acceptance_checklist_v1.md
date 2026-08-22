@@ -25,9 +25,9 @@
 
 ## D. 协议与兼容
 
-- [x] `page_orchestration_v1` 为主协议。
-- [x] `page_orchestration` 保留 legacy 兼容，不新增主逻辑依赖。
-- [x] contract 中存在 `contract_protocol.primary=page_orchestration_v1` 声明。
+- [x] `page_orchestration` 为唯一页面编排协议。
+- [x] 旧页面编排 carrier 与 legacy 兼容分支已移除。
+- [x] contract 使用 `2.0.0` 版本并由统一页面契约继续装配。
 
 ## E. 调试字段分层
 

@@ -1,0 +1,29 @@
+evidence:
+  baseline:
+    branch: codex/fix-project-layout-container-normalize
+    full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  adopted_changes:
+    personal_data_registry_blob:
+      expected: a4898e6dc69fc1fbd34bb299abb1811fc8c24ca4
+      observed: a4898e6dc69fc1fbd34bb299abb1811fc8c24ca4
+      status: matched
+    generated_reports:
+      status: regenerated_for_current_candidate
+      test_assets_before: 1184
+      test_assets_after: 1185
+
+  verification:
+    targeted_unittest:
+      status: passed
+      tests_collected: 25
+      command: python3 -m unittest scripts.ci.test_personal_data_scan scripts.verify.test_controlled_main_cutover scripts.verify.test_external_customer_addons_runtime_boundary -v
+    personal_data_scan:
+      status: passed
+      command: make security.personal_data_scan
+    generated_reports_guard:
+      status: passed
+      command: make ci.generated_reports.guard
+
+  completion:
+    status: completed

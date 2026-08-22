@@ -553,19 +553,7 @@ def _fund_operation_policy(title: str) -> dict:
 
 
 def _payment_execution_policy(title: str) -> dict:
-    trace = MIGRATION_TRACE_FIELDS + (
-        "legacy_attachment_ref",
-        "legacy_residual_reason",
-        "legacy_visible_document_no",
-        "legacy_visible_project_name",
-        "legacy_visible_supplier_name",
-        "legacy_visible_payment_date",
-        "legacy_visible_payment_amount",
-        "legacy_visible_payment_method",
-        "legacy_visible_payment_content",
-        "legacy_visible_request_no",
-        "legacy_visible_voucher_no",
-    )
+    trace = ("active",)
     return _policy(
         [
             _section("business_identity", "办理类型", ["business_category_id", "execution_flow_label", "state", "name"], 10),

@@ -3,6 +3,108 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-22 — Payment-request readonly product Floorplan activation
+
+- Formal Product Layer / Layer Target: P0 generic presentation mechanism /
+  frontend Canonical Model → Product Floorplan → semantic components → UI kit.
+- Product result: semantic readonly forms now enter the existing Floorplan in the
+  production host and use TDesign by default; create, edit and non-semantic forms
+  retain the Native compatibility renderer.
+- Boundary: no contract expansion, payment-model branch, role inference, backend
+  semantic change, database mutation, Lite rollout, Native ledger or UI5 growth.
+- Acceptance: governed `local.dev` payment data proves summary, current task,
+  context, risk, relation and canonical actions; desktop and 390px have no
+  horizontal overflow, technical driver text is absent and the business
+  fingerprint is unchanged.
+
+## 2026-08-21 — P4 contract-form split evidence refresh
+
+- Formal Product Layer / Layer Target / Module: P4 repository evidence /
+  contract-form split line-count lock / existing verification document.
+- Reason: complete Quick proved the route source and frontend build are valid,
+  then found the historical split evidence still recorded 1800 lines while the
+  current authoritative route contains 1774 lines.
+- Boundary: update only the two exact line-count observations. Split policy,
+  application source, contract behavior, thresholds and runtime stay unchanged.
+- Validation: the focused split-evidence guard and complete Quick are rerun;
+  outcomes are recorded in Batch-U evidence.
+
+## 2026-08-21 — P4 split-plan queue dependency refresh
+
+- Formal Product Layer / Layer Target / Module: P4 repository evidence /
+  generated split-plan queue / existing queue generator.
+- Reason: the refreshed complexity report changed authoritative line counts;
+  its deterministic split-plan consumer was consequently stale.
+- Boundary: only `docs/engineering_convergence/split_plan_queue.md` is generated.
+  Queue policy, ownership mapping, priorities, source and runtime remain unchanged.
+- Validation: `ci.generated_reports.guard` and complete Quick are rerun; results
+  are recorded in Batch-T evidence.
+
+## 2026-08-21 — P4 governed complexity report refresh
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` at
+  `58c3cfbdb3bf743f37806fec63d188fad948ade5`; Batch-Q and Batch-R are frozen.
+- Formal Product Layer / Layer Target / Module: P4 repository evidence /
+  generated complexity report / existing convergence report generator.
+- Standard vs User-Specific: deterministic repository metadata only; no budget,
+  split-plan threshold, application source, contract or runtime change.
+- Reason / Why Here: after the two governance repairs passed, Quick correctly
+  rejected a stale complexity report. The registered generator is the sole
+  authority for that derived file.
+- Why Not Elsewhere: hand-editing report rows or weakening the generated-report
+  guard would make the evidence non-reproducible.
+- Blast Radius: `docs/engineering_convergence/complexity_budget_report.md` only;
+  the diff reflects the complete current source inventory and line counts.
+- Validation: the generator write is followed by `ci.generated_reports.guard`
+  and a complete Quick rerun; outcomes are recorded in Batch-S evidence.
+
+## 2026-08-21 — P4 product-version single-source derived observation
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` at
+  `58c3cfbdb3bf743f37806fec63d188fad948ade5`; Batch-Q changes remain frozen.
+- Formal Product Layer / Layer Target / Module: P4 release governance / product
+  version single source / release guard, behavior tests, architecture record and
+  agent run evidence.
+- Standard vs User-Specific: generic release governance only. The authoritative
+  product version remains the repository-root `VERSION` file.
+- Reason / Why Here: Quick found the current version literal in an architecture
+  note and in the governed `system.init` snapshot. The note is not an authority
+  and now references `VERSION`; the snapshot is a derived backend fact that must
+  remain observable.
+- Why Not Elsewhere: deleting `ui_contract_raw.product_version`, changing the
+  actual version, or weakening the repository-wide duplicate scan would damage
+  runtime truth or release governance.
+- Blast Radius: exactly one derived JSON observation at
+  `ui_contract_raw.product_version`. It must equal `VERSION`, occur once in the
+  file and at no other JSON path; stale, moved or duplicated observations fail.
+- Validation: the product-release suite collects 11 tests including four new
+  negative cases; the live version guard reports zero duplicates and one exact
+  derived observation. Full Quick outcome is recorded in Batch-R evidence.
+
+## 2026-08-21 — P4 exact oversized generated-evidence admission
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` at
+  `58c3cfbdb3bf743f37806fec63d188fad948ade5`.
+- Formal Product Layer / Layer Target / Module: P4 repository governance /
+  reachable-history RH007 admission / `scripts/verify`, `config/security`, and
+  governance evidence.
+- Standard vs User-Specific: generic public-repository security governance. No
+  product contract, frontend, addon, customer payload, database, fixture, or
+  runtime profile changes.
+- Reason / Why Here: Quick found eleven immutable JSON evidence blobs above the
+  five-MiB limit. Rewriting published history, increasing the global limit, or
+  exempting a path would widen the boundary. The clean-history guard owns exact
+  reachable-object admission.
+- Why Not Elsewhere: generated product evidence must remain unchanged; product
+  code, Contract V2 and runtime environments cannot repair a Git-history gate.
+- Blast Radius: an exception must match RH007, one repository-relative path,
+  one full blob SHA-1 and `OVERSIZED_BLOB`; stale, duplicate, changed-path and
+  changed-content registrations fail closed. Registered objects still undergo
+  secret, personal-data and customer-boundary scanning.
+- Validation: 26 non-zero behavior tests and the real reachable-history scan
+  pass with exactly 11 reviewed exceptions and no sensitive values recorded;
+  full Quick and restricted outcomes are recorded in the Batch-Q evidence.
+
 ## 2026-08-04 — DAILY-DEV-ADDON-ROOT-AUDIT-COMPAT-01
 
 - Branch / anchor: `fix/daily-dev-addon-root-audit` from merged `main` at `95313b73be47107e09daa955e5e9f12ba23d7622`.
@@ -444,7 +546,7 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Branch: `release/tenant-rc-01-product-image`
 - Starting product commit: `2d9d187d391cfe2c1c6e085a0a96ba6d27f20793`
 - Formal Product Layer: P0 generic route-authority transport/runtime enforcement, P1 construction role policy, shared frontend consumer, and P4 verification
-- Layer Target: one fail-closed `route_authority.v1` contract separating `PRIMARY_NAV`, `ROLE_HOME_ACTION`, `CONTEXTUAL_ROUTE`, `ADMIN_ROUTE`, and `DENIED`
+- Layer Target: one fail-closed `2.0.0` contract separating `PRIMARY_NAV`, `ROLE_HOME_ACTION`, `CONTEXTUAL_ROUTE`, `ADMIN_ROUTE`, and `DENIED`
 - Module: `smart_core` identity/delivery/intent handlers, `smart_construction_core` policy declarations, frontend session/router/shell, and NAV-PRO-01R verification tooling
 - Reason: backend execution permission alone does not authorize a frontend page; administrator-only and context-only pages require explicit, stable route authority without entering the business menu tree
 - Standard vs User-Specific: generic product mechanism plus standard construction role declarations; no customer model, payload, login identity, production record, attachment, or private module enters the contract
@@ -2245,7 +2347,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   unchanged; P2, P3, P4, database migrations, and backend ACLs are unaffected.
 - Blast Radius: frontend-only fail-closed initialization and navigation. An
   authoritative bootstrap clears the prior menu/action/scene/activity snapshot;
-  navigation becomes interactive only after `route_authority_v1` is ready; one
+  navigation becomes interactive only after `route_authority` is ready; one
   click freezes and validates one immutable menu/action/scene/route/authority
   tuple. No user, role, company, password, module, schema, or business-data
   write is introduced.
@@ -4918,3 +5020,237 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   useContractV2ShadowDiagnostics.ts, keeping the empty statusbar fallback stub
   required by frontend_scene_component_bridge_guard.
 - Run registration: .agent/runs/OPS-MERGE-264 (goal/events/evidence/checkpoint).
+
+## Native-view contract capability closure bootstrap (2026-08-20)
+
+- Branch / baseline: `feature/native-view-contract-capability-closure-v1` /
+  `35f31407ab34ffff1d43de264e51de5f858a2596` from the passing `origin/main`
+  after PR #275.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product with
+  P4 evidence tooling / native-view contract pipeline and generic renderer
+  registry / `smart_core`, `frontend/apps/web`, contract and verification tools.
+- Reason / boundary: formal product views use materially more native structure,
+  modifiers, actions and collection semantics than current sample-level gates
+  can prove end to end. The topic establishes a capability-atom loss ledger,
+  then closes canonical semantics and renderers without adding P1/P2 business
+  meaning or frontend inference.
+- Why Here / Why Not Elsewhere: native normalization, semantic projection and
+  generic rendering are reusable platform mechanisms. Construction defaults
+  remain in P1, customer preferences remain in P2/P3, and P4 scripts provide
+  evidence only rather than runtime authority.
+- Blast radius / validation: bounded by the formal menu policy and the existing
+  `local.clean` profile. No new runtime identity or fixture is permitted. Each
+  batch must prove non-zero targeted tests, exact policy coverage, zero silent
+  capability loss and fingerprint-bound generated evidence.
+
+## Native one2many row modifier terminal closure (2026-08-21)
+
+- Branch / anchor: `feature/native-view-contract-capability-closure-v1` /
+  `d1637be2` before the batch.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  generic relation renderer and native modifier carrier / `smart_core` and
+  `frontend/apps/web`.
+- Reason / boundary: canonical native modifier AST and authoritative onchange
+  row verdicts now drive the same per-row visibility, readonly, required,
+  zero-write and validation decisions. No construction or customer semantics,
+  taxonomy, runtime profile or database identity was added.
+- Blast radius / validation: all generic one2many cells; non-zero collection
+  semantics tests, 15 parser/guard tests, strict TypeScript, governed
+  `local.clean` `smart_core` upgrade, and fingerprint-bound independent review.
+
+## Native search occurrence carrier closure (2026-08-21)
+
+- Branch / anchor: `feature/native-view-contract-capability-closure-v1` /
+  `4b1a7430` before the batch.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  canonical native search projection / `smart_core` `app.search.config`.
+- Reason / boundary: all formal search surfaces need duplicate-safe filter,
+  group-by and search-field occurrence identity in the existing `/data/search`
+  carrier. The batch preserves existing consumer keys and adds no frontend,
+  business-module, taxonomy, environment or database semantics.
+- Blast radius / validation: 89 formal search surfaces; model unit tests,
+  governed incremental `smart_core` upgrade, product view gates and
+  fingerprint-bound independent review.
+
+## Native capability Q2 continuation on PR #276 (2026-08-21)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `c2968fb6`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / native
+  modifier-action-permission capability evidence / `smart_core`, canonical
+  contract tooling and generic frontend consumer verification.
+- Reason: continue the existing native-view product result without waiting for
+  PR merge; promote only native atoms whose normalized and frontend paths are
+  occurrence-preserving and evidence-backed.
+- Why Here / Why Not Elsewhere: generic Odoo native-view normalization belongs
+  to P0. No construction semantics, customer preferences, frontend inference,
+  new runtime identity or professional page layout is allowed in this batch.
+- Blast radius: formal product form behavior atoms only; `login -> system.init
+  -> ui.contract`, routes, business records and visible professional layout are
+  unchanged. Existing `local.clean/sc_clean` remains the serialized authority.
+- Q2-1 outcome: the first occurrence-preserving static modifier increment is
+  verified without waiting for PR merge. The governed ledger reports `358`
+  ready, `433` fallback, `25,740` unsupported and `0` silent loss across all
+  `26,531` atoms. Dynamic modifiers, actions and permissions were deliberately
+  not promoted by this increment.
+- Q2-2 outcome: explicit form-root CRUD attributes now retain raw native
+  evidence alongside normalized capability booleans. `create/edit` add `23`
+  ready atoms; `delete` adds `18` classified fallbacks pending dedicated
+  interaction evidence. The total is `381` ready, `451` fallback, `25,699`
+  unsupported and `0` silent loss. No page layout or business permission rule
+  changed.
+- Q2-3 outcome: form button identity is now occurrence-preserving across the
+  native parser, normalized carrier and UPC V2 action contract. The previous
+  `smart -> smart` projection bug is closed as `smart -> stat_buttons`, all
+  `37` governed stat buttons are authoritative, and the assembler consumes the
+  canonical stat region exactly once. `889` exact action attributes move to
+  `CAPABILITY_ACTION_IDENTITY_REDUCED` fallback; totals are `381` ready,
+  `1,340` fallback, `24,810` unsupported and `0` silent loss. This batch does
+  not change form layout, business action semantics or public intents.
+
+## Native form action icon presentation closure (2026-08-21)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `abc94683`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / native
+  action presentation carrier and generic canonical form renderer / `smart_core`
+  and `frontend/apps/web`.
+- Reason / boundary: preserve the existing Odoo `fa-*` button icon atom through
+  `actionRule.presentation.icon`, then map the supported token to the formal
+  local SVG icon primitive while retaining the accessible text label. Unknown
+  icon dialects fail closed. The product shell has no dependency on an Odoo web
+  asset, and no business-page semantics, field ordering or action behavior
+  changed.
+- Blast radius / validation: canonical form actions only; parser and UPC V2
+  units, canonical presenter, action presentation, strict TypeScript and scene
+  bridge guards passed. This small capability batch is intentionally closed
+  without using it to claim professional form structure completion.
+
+## Payment request release static parity closure (2026-08-22)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `0bbf570e`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling / frontend
+  release static-server parity / `scripts/release` and its existing runtime test.
+- Reason / boundary: PR #276 reached the production page-identity journey, but
+  every otherwise valid page failed because the isolated release server sent
+  SPA HTML for the Odoo Font Awesome stylesheet. The production Nginx topology
+  already proxies `/web`; the governed release server now mirrors that route.
+- Why Here / Why Not Elsewhere: this is an acceptance carrier defect, not a
+  Contract V2, Floorplan, semantic-component, TDesign, Native, UI5, P1, or P2
+  behavior gap. No product rule or business inference is introduced.
+- Blast radius / validation: `/api/` behavior is unchanged; only exact `/web`
+  and `/web/*` requests join the existing backend proxy path before SPA
+  fallback. Existing runtime unit tests, scene bridge guard, production build,
+  governed page identity and the authoritative frontend release gate provide
+  containment evidence.
+
+## Payment execution acceptance baseline refresh closure (2026-08-22)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `bb45cf29`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling plus P1
+  regression coverage / governed frontend acceptance baseline lifecycle /
+  `scripts/test`, `scripts/dev`, and `smart_construction_core` tests.
+- Reason / boundary: the persistent acceptance database retained an older form
+  orchestration row. `mod.install` did not refresh already-installed module XML,
+  so the real `sc.payment.execution` readonly journey reached a synthetic
+  `creator_name` node without native occurrence identity and Contract V2
+  correctly failed closed.
+- Why Here / Why Not Elsewhere: the current P0 occurrence validator and current
+  P1 form sources are valid. The owner is the P4 baseline lifecycle, which must
+  refresh `smart_core` before `smart_construction_core` and reload the Odoo
+  registry before fixture reset. No validator weakening, fabricated locator,
+  frontend fallback, new contract variant, database, profile, or fixture was
+  introduced.
+- Blast radius / validation: only the registered `sc_frontend_acceptance`
+  ensure path and its read-only backend log access changed. The actual-outflow
+  P1 Contract V2 test, governance unit tests, governed baseline refresh, and
+  the `FE-A-PE-001` browser detail journey provide containment evidence.
+
+## My Work authoritative payment-detail target closure (2026-08-22)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `73613c63`.
+- Formal Product Layer / Layer Target / Module: P1 construction standard plus
+  P0 platform kernel / payment work-item navigation target and lossless
+  single-primary projection / `smart_construction_core`, Contract V2 schema,
+  canonical presenter and semantic action bar.
+- Reason / boundary: the product workspace declared the formal payment action
+  XMLID but emitted a model-only `/r/payment.request/<id>` route. Opening a
+  work item therefore bypassed the action-bound golden contract and reached an
+  actionless compatibility projection. The service now resolves and carries
+  the registered action/menu identity in the target and route.
+- Why Here / Why Not Elsewhere: the payment work-item service already owns this
+  P1 target. The generic frontend continues to consume the supplied route; it
+  does not infer a model, role, label or state. P0 native occurrence validation
+  remains fail-closed, and no Lite, Scene DTO, Native ledger or UI5 capability
+  is added.
+- Blast radius / validation: only `我的工作 -> 付款申请详情` navigation changes.
+  The exact service test, strict TypeScript and P1 completeness guard passed.
+  In the daily `sc_dev_demo` lane the readonly Floorplan journey proves 10
+  semantic regions and zero 390px overflow; the submit journey proves one
+  authoritative mutation, `draft -> submit`, refreshed audit presentation and
+  governed fixture restoration. Formal release evidence remains a separate,
+  explicitly opened final-acceptance lane.
+
+## Governed stale acceptance-backend replacement closure (2026-08-22)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `73613c63`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling / existing
+  frontend acceptance lifecycle / `make/dev.mk` only.
+- Reason / boundary: the runtime already implemented a fail-closed
+  `backend-replace-stale` operation, but no Make target exposed it. A diagnostic
+  iteration that froze a new commit therefore could neither reuse nor safely
+  replace the old-SHA backend through the mandated Make-only channel.
+- Why Here / Why Not Elsewhere: the new target only delegates to the existing
+  resource-identity validation and replacement operation. It introduces no
+  Compose project, database, port, volume, credential, profile, fixture or
+  product behavior, and it does not weaken full source identity checks on the
+  ordinary up/down paths.
+- Blast radius / validation: local frontend acceptance backend lifecycle only.
+  Eleven runtime-profile governance tests passed; the stale backend was replaced
+  with the frozen candidate and the complete governed frontend release audit
+  subsequently passed.
+
+## Payment request delivery identity and contract assertion closure (2026-08-22)
+
+- Branch / anchor: `feature/custom-frontend-productization-v1` / `cf9c3339`;
+  Draft PR #277 is the sole current product delivery and CI identity, while
+  #276 is marked superseded at its historical integration baseline.
+- Formal Product Layer / Layer Target / Module: P0 contract normalization, P1
+  construction-standard payment facts, and narrow P4 delivery identity /
+  existing Contract V2 assembler, payment action projection, authoritative
+  tests, and governed PR entrypoints / `smart_core`,
+  `smart_construction_core`, and PR metadata.
+- Reason / boundary: runtime payment actions now declare final visibility;
+  single-primary arbitration honors declared presentation priority with stable
+  source-order ties; the payment contract test follows current Native
+  occurrence identity and modifier-preserving structure instead of synthetic
+  `business_category_form_sheet` and legacy generic button identities.
+- Why Here / Why Not Elsewhere: visibility and action tier are backend Contract
+  V2 facts and cannot be inferred by the frontend. Native structure remains the
+  P1 form authority while Floorplan owns product composition. No schema, new
+  contract variant, payment-execution product page, UI5/Native product feature,
+  database profile, or release evidence flow was introduced.
+- Blast radius / validation: payment-request normalized form actions and the
+  generic multiple-primary conflict resolver only. Contract V2 runtime tests
+  collected `17 + 72` and passed; the governed `p1_payment_request` run
+  collected `54` tests with zero failures/errors; assembler and personal-data
+  guards passed. Daily `local.dev` evidence remains separate from formal
+  release evidence.
+
+## Linked-worktree local.dev Frontend Quick governance (2026-08-23)
+
+- Branch / anchor: `feature/custom-frontend-productization-v1` / `ccaeeeb0`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling / governed
+  linked-worktree Frontend Quick identity / `make/dev.mk`, `scripts/dev`, and
+  direct P4 verification.
+- Reason / boundary: ordinary `verify.frontend.quick.gate` intentionally uses
+  the current worktree default environment, while linked worktrees must not
+  contain their own `.env.dev`. The wrapper resolves only the primary worktree
+  authority through Git common-dir, validates its file identity, runs existing
+  `local.dev.ready`, and then executes the unchanged ordinary Quick target.
+- Why Here / Why Not Elsewhere: this closes a local verification entry gap. It
+  does not modify CI, Contract V2, renderer behavior, product pages, runtime
+  profiles, credentials, databases, ports, volumes, fixtures, or the ordinary
+  Quick target.
+- Blast radius / validation: one local.dev Make entry and its direct tests.
+  Missing, linked, incorrectly permissioned, caller-overridden, wrong-profile,
+  or caller-injected Git identities fail closed; no credential content is
+  emitted.

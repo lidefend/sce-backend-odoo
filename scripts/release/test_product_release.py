@@ -27,6 +27,9 @@ release = load(ROOT / "scripts/release/product_release.py", "product_release")
 manifest_contract = load(
     ROOT / "scripts/release/product_release_manifest.py", "product_release_manifest"
 )
+version_guard = load(
+    ROOT / "scripts/verify/product_release_version_guard.py", "product_release_version_guard"
+)
 SHA = "a" * 40
 DIGEST = "sha256:" + "c" * 64
 
@@ -207,6 +210,64 @@ class ProductReleaseTests(unittest.TestCase):
         self.assertGreater(
             release.compare_versions("1.10.0", "1.2.0"), 0
         )
+
+    def write_derived_version_snapshot(self, root: Path, payload: dict) -> None:
+        relative = next(iter(version_guard.DERIVED_VERSION_OBSERVATIONS))
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload), encoding="utf-8")
+
+    def test_derived_version_observation_matches_exact_snapshot_path(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.write_derived_version_snapshot(
+                root,
+                {"ui_contract_raw": {"product_version": release.read_version()}},
+            )
+            self.assertEqual(
+                version_guard.validate_derived_version_observations(
+                    root, release.read_version()
+                ),
+                [],
+            )
+
+    def test_derived_version_observation_rejects_stale_value(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.write_derived_version_snapshot(
+                root,
+                {"ui_contract_raw": {"product_version": "0.0.0-stale"}},
+            )
+            errors = version_guard.validate_derived_version_observations(
+                root, release.read_version()
+            )
+            self.assertTrue(any("does not match VERSION" in item for item in errors))
+
+    def test_derived_version_observation_rejects_wrong_json_path(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.write_derived_version_snapshot(
+                root,
+                {"product_version": release.read_version()},
+            )
+            errors = version_guard.validate_derived_version_observations(
+                root, release.read_version()
+            )
+            self.assertTrue(any("does not match VERSION" in item for item in errors))
+
+    def test_derived_version_observation_rejects_duplicate_value(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            version = release.read_version()
+            self.write_derived_version_snapshot(
+                root,
+                {
+                    "ui_contract_raw": {"product_version": version},
+                    "duplicate": version,
+                },
+            )
+            errors = version_guard.validate_derived_version_observations(root, version)
+            self.assertTrue(any("is not unique" in item for item in errors))
 
 
 if __name__ == "__main__":

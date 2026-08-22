@@ -770,7 +770,7 @@ class TestProjectFormGovernance(unittest.TestCase):
             [row.get("key") for row in scene_actions.get("record_actions") or []],
             [row.get("key") for row in buttons if isinstance(row, dict) and row.get("level") in {"smart", "row"}],
         )
-        scene_contract = out.get("scene_contract_v1") or {}
+        scene_contract = out.get("scene_contract") or {}
         self.assertEqual(scene_contract.get("contract_version"), "v1")
         self.assertEqual(scene_contract.get("owner_layer"), "scene_orchestration")
         self.assertEqual(
@@ -990,7 +990,7 @@ class TestProjectFormGovernance(unittest.TestCase):
         )
         self.assertEqual(list_semantics.get("row_primary"), list_profile.get("row_primary"))
         self.assertEqual(list_semantics.get("status_field"), list_profile.get("status_field"))
-        scene_contract = out.get("scene_contract_v1") or {}
+        scene_contract = out.get("scene_contract") or {}
         self.assertEqual(scene_contract.get("contract_version"), "v1")
         scene_list_semantics = ((scene_contract.get("semantic_page") or {}).get("list_semantics")) or {}
         self.assertEqual(scene_list_semantics.get("owner_layer"), "scene_orchestration")

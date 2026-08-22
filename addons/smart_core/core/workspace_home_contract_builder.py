@@ -50,7 +50,7 @@ SOURCE_KIND = "workspace_home_startup_surface_projection"
 SOURCE_AUTHORITIES = (
     "sc.capability",
     "sc.scene",
-    "scene_ready_contract_v1",
+    "scene_ready_contract",
     "extension_fact_contributions",
     "workspace_home_data_provider",
 )
@@ -318,7 +318,7 @@ def _workspace_landing_entry_label(data: Dict[str, Any], role_surface: Dict[str,
     scene_sources = []
     if isinstance(data.get("scenes"), list):
         scene_sources.append(data.get("scenes") or [])
-    scene_ready = data.get("scene_ready_contract_v1") if isinstance(data.get("scene_ready_contract_v1"), dict) else {}
+    scene_ready = data.get("scene_ready_contract") if isinstance(data.get("scene_ready_contract"), dict) else {}
     if isinstance(scene_ready.get("scenes"), list):
         scene_sources.append(scene_ready.get("scenes") or [])
     for scenes in scene_sources:
@@ -995,10 +995,10 @@ def _workspace_expected_collections(role_code: str) -> List[str]:
     return default_by_role.get(_to_text(role_code).lower(), ["today_actions", "alerts"])
 
 
-def _workspace_v1_zone_order(role_code: str) -> List[str]:
+def _workspace_zone_order(role_code: str) -> List[str]:
     provider = _load_data_provider()
     if provider is not None:
-        fn = getattr(provider, "build_v1_zone_order", None)
+        fn = getattr(provider, "build_zone_order", None)
         if callable(fn):
             try:
                 payload = fn()
@@ -1019,10 +1019,10 @@ def _workspace_v1_zone_order(role_code: str) -> List[str]:
     return list(default_order.get(_to_text(role_code).lower(), default_order["owner"]))
 
 
-def _workspace_v1_focus_map(role_code: str) -> List[str]:
+def _workspace_focus_map(role_code: str) -> List[str]:
     provider = _load_data_provider()
     if provider is not None:
-        fn = getattr(provider, "build_v1_focus_map", None)
+        fn = getattr(provider, "build_focus_map", None)
         if callable(fn):
             try:
                 payload = fn()
@@ -1043,12 +1043,12 @@ def _workspace_v1_focus_map(role_code: str) -> List[str]:
     return list(defaults.get(_to_text(role_code).lower(), defaults["owner"]))
 
 
-def _workspace_v1_copy(defaults: Dict[str, str]) -> Dict[str, str]:
+def _workspace_copy(defaults: Dict[str, str]) -> Dict[str, str]:
     out = dict(defaults or {})
     provider = _load_data_provider()
     if provider is None:
         return out
-    fn = getattr(provider, "build_v1_copy_overrides", None)
+    fn = getattr(provider, "build_copy_overrides", None)
     if not callable(fn):
         return out
     try:
@@ -2045,10 +2045,10 @@ def _role_focus_config(role_code: str) -> Dict[str, Any]:
     }
 
 
-def _v1_page_profile(role_code: str) -> Dict[str, Any]:
+def _page_profile(role_code: str) -> Dict[str, Any]:
     provider = _load_data_provider()
     if provider is not None:
-        fn = getattr(provider, "build_v1_page_profile", None)
+        fn = getattr(provider, "build_page_profile", None)
         if callable(fn):
             value = fn(role_code)
             if isinstance(value, dict) and value:
@@ -2063,10 +2063,10 @@ def _v1_page_profile(role_code: str) -> Dict[str, Any]:
     return {"audience": audience, "priority_model": priority_model, "mobile_priority": ["today_focus", "analysis", "quick_entries"]}
 
 
-def _v1_data_sources() -> Dict[str, Dict[str, Any]]:
+def _data_sources() -> Dict[str, Dict[str, Any]]:
     provider = _load_data_provider()
     if provider is not None:
-        fn = getattr(provider, "build_v1_data_sources", None)
+        fn = getattr(provider, "build_data_sources", None)
         if callable(fn):
             value = fn()
             if isinstance(value, dict) and value:
@@ -2089,10 +2089,10 @@ def _v1_data_sources() -> Dict[str, Dict[str, Any]]:
     }
 
 
-def _v1_state_schema() -> Dict[str, Any]:
+def _state_schema() -> Dict[str, Any]:
     provider = _load_data_provider()
     if provider is not None:
-        fn = getattr(provider, "build_v1_state_schema", None)
+        fn = getattr(provider, "build_state_schema", None)
         if callable(fn):
             value = fn()
             if isinstance(value, dict) and value:
@@ -2115,7 +2115,7 @@ def _v1_state_schema() -> Dict[str, Any]:
     }
 
 
-def _v1_action_schema(role_code: str) -> Dict[str, Any]:
+def _action_schema(role_code: str) -> Dict[str, Any]:
     specs: Dict[str, Dict[str, str]] = {
         "open_landing": {"label": "打开默认入口", "intent": "ui.contract"},
         "open_my_work": {"label": "查看全部", "intent": "ui.contract"},
@@ -2125,7 +2125,7 @@ def _v1_action_schema(role_code: str) -> Dict[str, Any]:
     }
     provider = _load_data_provider()
     if provider is not None:
-        fn = getattr(provider, "build_v1_action_specs", None)
+        fn = getattr(provider, "build_action_specs", None)
         if callable(fn):
             value = fn()
             if isinstance(value, dict) and value:
@@ -2154,179 +2154,12 @@ def _build_page_orchestration(role_code: str, role_source_code: str | None = Non
     role_cfg = _role_focus_config(role_code)
     zone_order = role_cfg.get("zone_order") if isinstance(role_cfg.get("zone_order"), list) else []
     zone_rank = {str(key): idx + 1 for idx, key in enumerate(zone_order)}
-    zones = [
-        {"key": "primary", "label": "主行动区", "order": zone_rank.get("primary", 1)},
-        {"key": "analysis", "label": "分析监控区", "order": zone_rank.get("analysis", 2)},
-        {"key": "support", "label": "辅助入口区", "order": zone_rank.get("support", 3)},
-    ]
-    blocks = []
-    provider = _load_data_provider()
-    if provider is not None:
-        zones_fn = getattr(provider, "build_legacy_zones", None)
-        if callable(zones_fn):
-            payload = zones_fn(role_code, zone_rank)
-            if isinstance(payload, list) and payload:
-                zones = payload
-        blocks_fn = getattr(provider, "build_legacy_blocks", None)
-        if callable(blocks_fn):
-            payload = blocks_fn(role_code)
-            if isinstance(payload, list) and payload:
-                blocks = payload
-    if not blocks:
-        blocks = [
-            {
-                "key": "record_overview",
-                "type": "record_summary",
-                "zone": "primary",
-                "order": 1,
-                "source_path": "hero",
-                "visible": True,
-                "tone": "info",
-                "progress": "running",
-            },
-            {
-                "key": "metrics_hero",
-                "type": "hero_metric",
-                "zone": "analysis",
-                "order": 2,
-                "source_path": "metrics",
-                "visible": True,
-                "tone": "neutral",
-                "progress": "running",
-            },
-            {
-                "key": "metrics_kpi",
-                "type": "metric_row",
-                "zone": "analysis",
-                "order": 3,
-                "source_path": "metrics",
-                "visible": True,
-                "tone": "info",
-                "progress": "running",
-            },
-            {
-                "key": "todo_core",
-                "type": "todo_list",
-                "zone": "primary",
-                "order": 4,
-                "source_path": "today_actions",
-                "visible": True,
-                "tone": "warning",
-                "progress": "pending",
-            },
-            {
-                "key": "risk_core",
-                "type": "alert_panel",
-                "zone": "primary",
-                "order": 5,
-                "source_path": "risk",
-                "visible": True,
-                "tone": "danger",
-                "progress": "blocked",
-            },
-            {
-                "key": "ops_progress",
-                "type": "progress_summary",
-                "zone": "analysis",
-                "order": 6,
-                "source_path": "ops",
-                "visible": True,
-                "tone": "info",
-                "progress": "running",
-            },
-            {
-                "key": "entry_grid",
-                "type": "entry_grid",
-                "zone": "support",
-                "order": 7,
-                "source_path": "scene_groups",
-                "visible": True,
-                "tone": "neutral",
-                "progress": "completed",
-            },
-            {
-                "key": "group_grid",
-                "type": "entry_grid",
-                "zone": "support",
-                "order": 8,
-                "source_path": "group_overview",
-                "visible": True,
-                "tone": "neutral",
-                "progress": "completed",
-            },
-            {
-                "key": "advice_fold",
-                "type": "accordion_group",
-                "zone": "support",
-                "order": 9,
-                "source_path": "advice",
-                "visible": True,
-                "tone": "warning",
-                "progress": "pending",
-            },
-            {
-                "key": "filters_fold",
-                "type": "accordion_group",
-                "zone": "support",
-                "order": 10,
-                "source_path": "filters",
-                "visible": role_code != "owner",
-                "tone": "neutral",
-                "progress": "completed",
-            },
-            {
-                "key": "activity_stream",
-                "type": "activity_feed",
-                "zone": "analysis",
-                "order": 11,
-                "source_path": "risk.actions",
-                "visible": True,
-                "tone": "info",
-                "progress": "running",
-            },
-        ]
-    focus_blocks = [str(key) for key in role_cfg.get("focus_blocks", []) if _to_text(key)]
-    focus_rank = {key: idx + 1 for idx, key in enumerate(focus_blocks)}
-
-    for block in blocks:
-        key = _to_text(block.get("key"))
-        if key in focus_rank:
-            block["order"] = focus_rank[key]
-            block["focus"] = True
-        else:
-            block["order"] = int(block.get("order", 100)) + 20
-            block["focus"] = False
-
-    blocks = sorted(blocks, key=lambda item: (int(item.get("order", 999)), _to_text(item.get("key"))))
-    return {
-        "schema_version": "v1",
-        "page": {
-            "key": "workspace.home",
-            "intent": "owner.dashboard.open",
-            "role_code": source_role_code,
-            "render_mode": "governed",
-        },
-        "zones": zones,
-        "blocks": blocks,
-        "role_layout": {
-            "mode": "heterogeneous_same_page",
-            "variant": role_code,
-            "focus_blocks": focus_blocks,
-        },
-    }
-
-
-def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = None) -> Dict[str, Any]:
-    source_role_code = _to_text(role_source_code).lower() or role_code
-    role_cfg = _role_focus_config(role_code)
-    zone_order = role_cfg.get("zone_order") if isinstance(role_cfg.get("zone_order"), list) else []
-    zone_rank = {str(key): idx + 1 for idx, key in enumerate(zone_order)}
-    profile = _v1_page_profile(role_code)
+    profile = _page_profile(role_code)
     audience = profile.get("audience") if isinstance(profile.get("audience"), list) and profile.get("audience") else ["owner"]
     priority_model = _to_text(profile.get("priority_model")) or (
         "task_first" if role_code == "pm" else "metric_first" if role_code == "finance" else "role_first"
     )
-    v1_copy = _workspace_v1_copy(
+    page_copy = _workspace_copy(
         {
             "zone.hero.title": "欢迎使用业务工作台",
             "zone.hero.description": "在这里查看业务入口、状态摘要、待办事项和风险提醒，按你的角色处理日常工作。",
@@ -2359,7 +2192,7 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
     zones: List[Dict[str, Any]] = []
     provider = _load_data_provider()
     if provider is not None:
-        fn = getattr(provider, "build_v1_zones", None)
+        fn = getattr(provider, "build_zones", None)
         if callable(fn):
             payload = fn(role_code, audience, zone_rank)
             if isinstance(payload, list) and payload:
@@ -2369,8 +2202,8 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
         zones = [
         {
             "key": "hero",
-            "title": v1_copy.get("zone.hero.title") or "欢迎使用业务工作台",
-            "description": v1_copy.get("zone.hero.description") or "在这里查看业务入口、状态摘要、待办事项和风险提醒，按你的角色处理日常工作。",
+            "title": page_copy.get("zone.hero.title") or "欢迎使用业务工作台",
+            "description": page_copy.get("zone.hero.description") or "在这里查看业务入口、状态摘要、待办事项和风险提醒，按你的角色处理日常工作。",
             "zone_type": "hero",
             "display_mode": "stack",
             "priority": 40,
@@ -2379,7 +2212,7 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                 {
                     "key": "hero_record_summary",
                     "block_type": "record_summary",
-                    "title": v1_copy.get("block.hero_record_summary.title") or "角色与入口摘要",
+                    "title": page_copy.get("block.hero_record_summary.title") or "角色与入口摘要",
                     "priority": 100,
                     "importance": "critical",
                     "tone": "info",
@@ -2390,15 +2223,15 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                     "refreshable": True,
                     "collapsible": False,
                     "visibility": {"roles": audience, "capabilities": [], "expr": None},
-                    "actions": [{"key": "open_landing", "label": v1_copy.get("action.open_landing.label") or "打开默认入口", "intent": "ui.contract"}],
+                    "actions": [{"key": "open_landing", "label": page_copy.get("action.open_landing.label") or "打开默认入口", "intent": "ui.contract"}],
                     "payload": {"style_variant": "default"},
                 }
             ],
         },
         {
             "key": "today_focus",
-            "title": v1_copy.get("zone.today_focus.title") or "今日优先事项",
-            "description": v1_copy.get("zone.today_focus.description") or "先处理行动项，再快速处置风险提醒。",
+            "title": page_copy.get("zone.today_focus.title") or "今日优先事项",
+            "description": page_copy.get("zone.today_focus.description") or "先处理行动项，再快速处置风险提醒。",
             "zone_type": "primary",
             "display_mode": "grid",
             "priority": 100,
@@ -2407,7 +2240,7 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                 {
                     "key": "todo_list_today",
                     "block_type": "todo_list",
-                    "title": v1_copy.get("block.todo_list_today.title") or "今日行动",
+                    "title": page_copy.get("block.todo_list_today.title") or "今日行动",
                     "priority": 98,
                     "importance": "critical",
                     "tone": "warning",
@@ -2418,13 +2251,13 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                     "refreshable": True,
                     "collapsible": False,
                     "visibility": {"roles": audience, "capabilities": [], "expr": None},
-                    "actions": [{"key": "open_my_work", "label": v1_copy.get("action.open_my_work.label") or "查看全部", "intent": "ui.contract"}],
+                    "actions": [{"key": "open_my_work", "label": page_copy.get("action.open_my_work.label") or "查看全部", "intent": "ui.contract"}],
                     "payload": {"item_layout": "card", "max_items": 4},
                 },
                 {
                     "key": "risk_alert_panel",
                     "block_type": "alert_panel",
-                    "title": v1_copy.get("block.risk_alert_panel.title") or "系统提醒（高优先）",
+                    "title": page_copy.get("block.risk_alert_panel.title") or "系统提醒（高优先）",
                     "priority": 97,
                     "importance": "critical",
                     "tone": "danger",
@@ -2435,13 +2268,13 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                     "refreshable": True,
                     "collapsible": False,
                     "visibility": {"roles": audience, "capabilities": [], "expr": None},
-                    "actions": [{"key": "open_risk_dashboard", "label": v1_copy.get("action.open_risk_dashboard.label") or "进入风险概览", "intent": "ui.contract"}],
+                    "actions": [{"key": "open_risk_dashboard", "label": page_copy.get("action.open_risk_dashboard.label") or "进入风险概览", "intent": "ui.contract"}],
                     "payload": {"group_by": "alert_level", "show_counts": True, "max_items": 3},
                 },
                 {
                     "key": "advice_fold",
                     "block_type": "accordion_group",
-                    "title": v1_copy.get("block.advice_fold.title") or "系统建议（补充）",
+                    "title": page_copy.get("block.advice_fold.title") or "系统建议（补充）",
                     "priority": 40,
                     "importance": "low",
                     "tone": "warning",
@@ -2459,8 +2292,8 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
         },
         {
             "key": "analysis",
-            "title": v1_copy.get("zone.analysis.title") or "总体状态",
-            "description": v1_copy.get("zone.analysis.description") or "关键指标、执行进展与风险动态。",
+            "title": page_copy.get("zone.analysis.title") or "总体状态",
+            "description": page_copy.get("zone.analysis.description") or "关键指标、执行进展与风险动态。",
             "zone_type": "secondary",
             "display_mode": "grid",
             "priority": 80,
@@ -2469,7 +2302,7 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                 {
                     "key": "metric_row_core",
                     "block_type": "metric_row",
-                    "title": v1_copy.get("block.metric_row_core.title") or "关键指标",
+                    "title": page_copy.get("block.metric_row_core.title") or "关键指标",
                     "priority": 80,
                     "importance": "medium",
                     "tone": "neutral",
@@ -2486,7 +2319,7 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                 {
                     "key": "progress_summary_ops",
                     "block_type": "progress_summary",
-                    "title": v1_copy.get("block.progress_summary_ops.title") or "综合进展",
+                    "title": page_copy.get("block.progress_summary_ops.title") or "综合进展",
                     "priority": 70,
                     "importance": "medium",
                     "tone": "info",
@@ -2504,8 +2337,8 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
         },
         {
             "key": "quick_entries",
-            "title": v1_copy.get("zone.quick_entries.title") or "常用功能",
-            "description": v1_copy.get("zone.quick_entries.description") or "按业务场景快速进入处理。",
+            "title": page_copy.get("zone.quick_entries.title") or "常用功能",
+            "description": page_copy.get("zone.quick_entries.description") or "按业务场景快速进入处理。",
             "zone_type": "supporting",
             "display_mode": "grid",
             "priority": 60,
@@ -2514,7 +2347,7 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                 {
                     "key": "entry_grid_scene",
                     "block_type": "entry_grid",
-                    "title": v1_copy.get("block.entry_grid_scene.title") or "菜单入口",
+                    "title": page_copy.get("block.entry_grid_scene.title") or "菜单入口",
                     "priority": 65,
                     "importance": "medium",
                     "tone": "neutral",
@@ -2541,7 +2374,7 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                 if _to_text((block or {}).get("key")) != "advice_fold"
             ]
             break
-    preferred_order = _workspace_v1_zone_order(role_code)
+    preferred_order = _workspace_zone_order(role_code)
     effective_order = preferred_order
     allowed_zone_keys = set(effective_order)
     zones = [zone for zone in zones if _to_text(zone.get("key")) in allowed_zone_keys]
@@ -2551,7 +2384,7 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
         if zone_key in priority_map:
             zone["priority"] = priority_map[zone_key]
 
-    focus_blocks = {str(key): idx + 1 for idx, key in enumerate(_workspace_v1_focus_map(role_code))}
+    focus_blocks = {str(key): idx + 1 for idx, key in enumerate(_workspace_focus_map(role_code))}
     for zone in zones:
         blocks = zone.get("blocks") if isinstance(zone.get("blocks"), list) else []
         for block in blocks:
@@ -2563,12 +2396,13 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
                 block["focus"] = False
 
     return {
-        "contract_version": "page_orchestration_v1",
+        "contract_version": "2.0.0",
+        "schema_version": "2.0.0",
         "scene_key": _workspace_scene("dashboard"),
         "page": {
             "key": "workspace.home",
-            "title": v1_copy.get("page.title") or "角色首页",
-            "subtitle": v1_copy.get("page.subtitle") or "查看业务状态并处理当前角色下的日常工作",
+            "title": page_copy.get("page.title") or "角色首页",
+            "subtitle": page_copy.get("page.subtitle") or "查看业务状态并处理当前角色下的日常工作",
             "page_type": "workspace",
             "intent": "ui.contract",
             "scene_key": _workspace_scene("dashboard"),
@@ -2577,15 +2411,15 @@ def _build_page_orchestration_v1(role_code: str, role_source_code: str | None = 
             "priority_model": priority_model,
             "status": "ready",
             "breadcrumbs": [],
-            "header": {"badges": [{"label": v1_copy.get("page.badge.runtime_ok") or "运行正常", "tone": "success"}]},
-            "global_actions": [{"key": "refresh", "label": v1_copy.get("page.action.refresh") or "刷新", "intent": "api.data"}],
+            "header": {"badges": [{"label": page_copy.get("page.badge.runtime_ok") or "运行正常", "tone": "success"}]},
+            "global_actions": [{"key": "refresh", "label": page_copy.get("page.action.refresh") or "刷新", "intent": "api.data"}],
             "filters": [],
             "context": {"role_code": source_role_code},
         },
         "zones": zones,
-        "data_sources": _v1_data_sources(),
-        "state_schema": _v1_state_schema(),
-        "action_schema": _v1_action_schema(role_code),
+        "data_sources": _data_sources(),
+        "state_schema": _state_schema(),
+        "action_schema": _action_schema(role_code),
         "render_hints": {
             "dense_mode": False,
             "preferred_columns": 4,
@@ -2733,8 +2567,8 @@ def build_workspace_home_contract(data: Dict[str, Any]) -> Dict[str, Any]:
     engine_fn = getattr(scene_engine, "build_scene_contract_from_specs", None) if scene_engine else None
     if callable(engine_fn):
         try:
-            orchestration_v1 = _build_page_orchestration_v1(role_code, role_source_code=role_source_code)
-            zones_payload = orchestration_v1.get("zones") if isinstance(orchestration_v1, dict) else []
+            orchestration = _build_page_orchestration(role_code, role_source_code=role_source_code)
+            zones_payload = orchestration.get("zones") if isinstance(orchestration, dict) else []
             zone_specs = []
             built_zones = {}
             for row in zones_payload if isinstance(zones_payload, list) else []:
@@ -2837,7 +2671,7 @@ def build_workspace_home_contract(data: Dict[str, Any]) -> Dict[str, Any]:
         "permissions": scene_contract_core.get("permissions") or {},
         "actions": scene_contract_core.get("actions") or {},
         "extensions": scene_contract_core.get("extensions") or {},
-        "schema_version": "v1",
+        "schema_version": "2.0.0",
         "source_authority": source_authority_contract(),
         "semantic_protocol": {
             "block_types": list(BLOCK_TYPES),
@@ -2990,12 +2824,7 @@ def build_workspace_home_contract(data: Dict[str, Any]) -> Dict[str, Any]:
             },
         ],
         "advice": [],
-        "contract_protocol": {
-            "primary": "page_orchestration_v1",
-            "legacy": {"key": "page_orchestration", "status": "compatibility"},
-        },
         "interaction_contract": _build_interaction_contract(),
-        "page_orchestration_v1": _build_page_orchestration_v1(role_code, role_source_code=role_source_code),
         "page_orchestration": _build_page_orchestration(role_code, role_source_code=role_source_code),
         "role_variant": {
             "role_code": role_source_code,

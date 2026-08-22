@@ -114,15 +114,15 @@ def normalize_scene_semantic_surface(data: dict) -> None:
         scene_contract_standard["governance"] = governance
         data["scene_contract_standard_v1"] = scene_contract_standard
 
-    scene_contract_v1 = _as_dict(data.get("scene_contract_v1"))
-    if scene_contract_v1:
-        scene_contract_v1["page"] = _normalize_page_surface(scene_contract_v1.get("page"))
-        diagnostics = _as_dict(scene_contract_v1.get("diagnostics"))
+    scene_contract = _as_dict(data.get("scene_contract"))
+    if scene_contract:
+        scene_contract["page"] = _normalize_page_surface(scene_contract.get("page"))
+        diagnostics = _as_dict(scene_contract.get("diagnostics"))
         parser_surface = _normalize_parser_semantic_surface(diagnostics.get("parser_semantic_surface"))
         if parser_surface:
             diagnostics["parser_semantic_surface"] = parser_surface
-        scene_contract_v1["diagnostics"] = diagnostics
-        data["scene_contract_v1"] = scene_contract_v1
+        scene_contract["diagnostics"] = diagnostics
+        data["scene_contract"] = scene_contract
 
     semantic_runtime = _as_dict(data.get("semantic_runtime"))
     if semantic_runtime:
@@ -222,7 +222,7 @@ def scene_actions_from_contract(data: dict) -> dict:
     return out
 
 
-def ensure_scene_contract_v1_envelope(data: dict) -> None:
+def ensure_scene_contract_envelope(data: dict) -> None:
     semantic_page = _as_dict(data.get("semantic_page"))
     list_profile = _as_dict(data.get("list_profile"))
     if list_profile and not _as_dict(semantic_page.get("list_semantics")):
@@ -250,8 +250,9 @@ def ensure_scene_contract_v1_envelope(data: dict) -> None:
     if not semantic_page and not search_surface and not actions:
         return
 
-    scene_contract = _as_dict(data.get("scene_contract_v1"))
-    scene_contract["contract_version"] = "v1"
+    scene_contract = _as_dict(data.get("scene_contract"))
+    scene_contract["contract_version"] = "2.0.0"
+    scene_contract["schema_version"] = "2.0.0"
     scene_contract.setdefault("owner_layer", "scene_orchestration")
     scene_contract.setdefault("source", "ui.contract.delivery_surface")
     if semantic_page:
@@ -269,4 +270,4 @@ def ensure_scene_contract_v1_envelope(data: dict) -> None:
     diagnostics.setdefault("scene_contract_supply", "ui_contract_governance_bridge")
     diagnostics.setdefault("scene_contract_supply_owner_layer", "scene_orchestration")
     scene_contract["diagnostics"] = diagnostics
-    data["scene_contract_v1"] = scene_contract
+    data["scene_contract"] = scene_contract

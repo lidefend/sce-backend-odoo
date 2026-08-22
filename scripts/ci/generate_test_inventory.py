@@ -293,7 +293,7 @@ def aggregate_target_for(path: Path, runtime: str) -> str:
         return "verify.portal.view_contract_shape.container"
     if name in {
         "frontend_scene_contract_auto_render_guard.py",
-        "frontend_scene_contract_v1_consumption_guard.py",
+        "frontend_scene_contract_consumption_guard.py",
     }:
         return "verify.frontend.quick.gate"
     if name == "formal_list_surface_no_test_placeholder_guard.py":

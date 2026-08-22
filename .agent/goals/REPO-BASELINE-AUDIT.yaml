@@ -1,35 +1,51 @@
 goal:
+  id: REPO-BASELINE-AUDIT
+  title: repository_current_state_and_agent_governance_baseline
+  status: planned
+  formal_product_layer: P4
 
-  id:
-    REPO-BASELINE-AUDIT
-
-  title:
-    repository_current_state_audit
-
-  objective:
-    create_current_repository_baseline
+  objective: establish_a_resumable_governed_repository_work_environment_baseline
 
   scope:
-
     include:
-      - architecture
-      - contracts
-      - frontend
-      - backend
-      - verification
-      - deployment
+      - architecture_inventory
+      - contract_inventory
+      - frontend_inventory
+      - backend_inventory
+      - verification_entry_inventory
+      - deployment_entry_inventory
+      - agent_context_governance
+      - parallel_work_isolation
+    exclude:
+      - product_source_change
+      - business_semantic_change
+      - contract_snapshot_regeneration
+      - runtime_or_database_mutation
+      - preexisting_dirty_files
 
   constraints:
-
-    - no_source_code_change
-    - no_business_logic_change
-    - audit_only
+    - audit_and_governance_metadata_only
+    - preserve_all_preexisting_changes
+    - no_manual_environment_assembly
+    - no_unregistered_test_or_runtime_entry
+    - one_active_batch
 
   acceptance:
-
     - repository_structure_documented
     - current_risks_identified
-    - next_iteration_direction_proposed
+    - authority_precedence_recorded
+    - governed_runtime_profiles_recorded
+    - formal_layer_and_batch_mechanism_recorded
+    - parallel_dirty_change_isolation_recorded
+    - resumable_run_record_created
+    - agent_context_guards_pass
 
-  status:
-    planned
+  current_batch:
+    id: Batch-U
+    objective: refresh_contract_form_split_line_count_evidence
+    status: planned
+
+  next_iteration_direction:
+    - paused_by_payment_request_product_floorplan_redirect
+    - strengthen_agent_context_schema_guards
+    - reconcile_legacy_readme_and_runtime_entry_documentation

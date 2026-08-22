@@ -95,7 +95,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
             },
             "next_scene": "contracts.workspace",
             "next_scene_route": "/s/contracts.workspace",
-            "delivery_handoff_v1": {
+            "delivery_handoff": {
                 "family": "contracts",
                 "runtime_entry_type": "governed_user_flow",
                 "runtime_consumer": "family_runtime_consumer",
@@ -113,7 +113,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
             },
         }
         try:
-            contract = target.build_scene_ready_contract_v1(
+            contract = target.build_scene_ready_contract(
                 scenes=[
                     {
                         "code": "contract.center",
@@ -133,7 +133,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         self.assertEqual(((row.get("fallback_strategy") or {}).get("type")), "native_menu_compat")
         self.assertEqual(row.get("next_scene"), "contracts.workspace")
         self.assertEqual(row.get("next_scene_route"), "/s/contracts.workspace")
-        self.assertEqual(((row.get("delivery_handoff_v1") or {}).get("family")), "contracts")
+        self.assertEqual(((row.get("delivery_handoff") or {}).get("family")), "contracts")
         self.assertEqual(((row.get("runtime_handoff_surface") or {}).get("final_scene")), "contract.center")
         self.assertEqual(((row.get("product_delivery_surface") or {}).get("family")), "contracts")
 
@@ -168,7 +168,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
             "extensions": {"handling_entry_catalog_v1": catalog},
         }
         try:
-            contract = target.build_scene_ready_contract_v1(
+            contract = target.build_scene_ready_contract(
                 scenes=[
                     {
                         "code": "finance.workspace",
@@ -195,7 +195,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         )
 
     def test_workspace_scene_ready_prefers_parser_semantic_view_mode(self):
-        contract = target.build_scene_ready_contract_v1(
+        contract = target.build_scene_ready_contract(
             scenes=[
                 {
                     "code": "workspace.home",
@@ -218,7 +218,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         self.assertEqual(((row.get("action_surface") or {}).get("selection_mode")), "single")
 
     def test_form_scene_ready_emits_form_surface_native_truth(self):
-        contract = target.build_scene_ready_contract_v1(
+        contract = target.build_scene_ready_contract(
             scenes=[
                 {
                     "code": "projects.detail",
@@ -262,7 +262,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         self.assertTrue(((form_surface.get("flags") or {}).get("has_statusbar")))
 
     def test_form_scene_ready_emits_scene_blocks(self):
-        contract = target.build_scene_ready_contract_v1(
+        contract = target.build_scene_ready_contract(
             scenes=[
                 {
                     "code": "projects.detail",
@@ -302,7 +302,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         self.assertEqual(((blocks[7] or {}).get("kind")), "chatter")
 
     def test_list_scene_ready_emits_optimization_composition_batch1(self):
-        contract = target.build_scene_ready_contract_v1(
+        contract = target.build_scene_ready_contract(
             scenes=[
                 {
                     "code": "projects.list",
@@ -363,7 +363,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         self.assertEqual(((switch_items[1] or {}).get("label")), "项目台账")
 
     def test_list_scene_ready_emits_scene_blocks(self):
-        contract = target.build_scene_ready_contract_v1(
+        contract = target.build_scene_ready_contract(
             scenes=[
                 {
                     "code": "projects.list",
@@ -393,7 +393,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         self.assertEqual(((blocks[4] or {}).get("kind")), "pagination")
 
     def test_kanban_scene_ready_emits_scene_blocks(self):
-        contract = target.build_scene_ready_contract_v1(
+        contract = target.build_scene_ready_contract(
             scenes=[
                 {
                     "code": "projects.board",
@@ -443,7 +443,7 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         self.assertEqual(((board_payload.get("kanban_surface") or {}).get("status_fields") or [])[0], "stage_id")
 
     def test_scene_ready_emits_scene_blocks_by_view_for_common_modes(self):
-        contract = target.build_scene_ready_contract_v1(
+        contract = target.build_scene_ready_contract(
             scenes=[
                 {
                     "code": "projects.universal",
@@ -484,8 +484,8 @@ class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
         self.assertIn("form", by_view)
         self.assertIn("list", by_view)
         self.assertIn("kanban", by_view)
-        orchestration = row.get("view_orchestration_contract_v1") or {}
-        self.assertEqual(orchestration.get("schema_version"), "view_orchestration_v1")
+        orchestration = row.get("view_orchestration_contract") or {}
+        self.assertEqual(orchestration.get("schema_version"), "2.0.0")
         self.assertEqual(((orchestration.get("views") or {}).get("list") or {}).get("sections")[0].get("kind"), "page_shell")
 
         form_kinds = [((item or {}).get("kind")) for item in (by_view.get("form") or [])]

@@ -44,6 +44,7 @@ export function usePrimaryFormActionRuntime(params: {
       });
       const result = response?.result;
       if (await params.navigateActionResponseResult(result)) {
+        await params.applyProjectionRefreshPolicy(action.refreshPolicy || { on_success: ['scene_projection'] });
         return;
       }
       params.submissionFeedback.value = { kind: 'success', message: '提交成功' };

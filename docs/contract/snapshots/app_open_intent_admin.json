@@ -13,8 +13,9 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "id": 186,
-    "subject": "menu"
+    "route": "/s/config_stage",
+    "scene_key": "config_stage",
+    "subject": "ui.contract"
   },
   "user": "admin",
   "user_fallback": null,

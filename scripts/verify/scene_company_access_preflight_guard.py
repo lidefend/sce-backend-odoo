@@ -106,7 +106,13 @@ def main() -> int:
         key = _text(row.get("key"))
         state_file = _text(row.get("state_file"))
         target_company_id = _safe_int(row.get("target_company_id"), 0)
-        if not key or not state_file or target_company_id <= 0:
+        derive_target_from_state = _text(row.get("derive_target_from_state")).lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        if not key or not state_file or (target_company_id <= 0 and not derive_target_from_state):
             errors.append(f"invalid profile config: key={key or '-'} state_file={state_file or '-'} target={target_company_id}")
             continue
 
@@ -118,6 +124,17 @@ def main() -> int:
         effective_company_id = _safe_int(state.get("company_id"), 0)
         allowed_company_ids = [_safe_int(v, 0) for v in _as_list(state.get("allowed_company_ids")) if _safe_int(v, 0) > 0]
         requested_company_id = _safe_int(state.get("login_company_id_requested"), 0)
+        if derive_target_from_state:
+            target_company_id = requested_company_id or effective_company_id
+            excluded_company_ids = {
+                _safe_int(item, 0)
+                for item in _as_list(row.get("exclude_company_ids"))
+                if _safe_int(item, 0) > 0
+            }
+            if target_company_id in excluded_company_ids:
+                errors.append(
+                    f"{key}: derived target company {target_company_id} is explicitly excluded"
+                )
         reachable = target_company_id == effective_company_id or target_company_id in allowed_company_ids
         if reachable:
             reachable_count += 1

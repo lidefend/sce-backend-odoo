@@ -129,7 +129,7 @@ export type RelationSearchDialogState = {
   rows: RelationSearchRow[];
   columns: RelationSearchColumn[];
   selectedId: number | null;
-  createMode: 'none' | 'quick' | 'page';
+  createMode: 'none' | 'quick' | 'page' | 'dialog';
   labels: RelationUiLabels;
 };
 

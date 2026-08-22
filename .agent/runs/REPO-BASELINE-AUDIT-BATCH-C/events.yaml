@@ -1,0 +1,11 @@
+events:
+  - type: ownership.accepted
+    result: previous_parallel_ci_changes_adopted_by_single_writer
+  - type: boundary.frozen
+    result: p4_ci_static_and_generated_report_scope
+  - type: verification.completed
+    result: twenty_five_targeted_tests_personal_data_scan_and_generated_report_guard_passed
+
+next_exact_step:
+  command: freeze_batch_d_project_contract_normalization_boundary
+  requires_explicit_validation_authorization: false

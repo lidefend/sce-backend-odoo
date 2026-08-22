@@ -16,7 +16,10 @@ class UiBaseContractAsset(models.Model):
 
     name = fields.Char(string="Name", required=True)
     contract_kind = fields.Selection(
-        selection=[("ui_base", "UI Base")],
+        selection=[
+            ("ui_base", "UI Base"),
+            ("runtime_source", "Runtime Source Projection"),
+        ],
         string="Contract Kind",
         default="ui_base",
         required=True,

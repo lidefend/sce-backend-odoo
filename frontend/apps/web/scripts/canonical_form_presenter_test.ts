@@ -1,18 +1,395 @@
 import assert from 'node:assert/strict';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
-import { createContractV2Store, resolveContractV2EffectiveFormCapabilities } from '../src/app/contracts/v2/store';
+import {
+  createContractV2Store, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
+} from '../src/app/contracts/v2/store';
 import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
-import { adaptUnifiedPageContractV2Raw } from '../src/app/runtime/unifiedPageContractV2CompatProjection';
 import {
   canonicalFieldToFormSection,
   canonicalNodeHasContent,
   canonicalSectionFields,
   visibleCanonicalChildren,
 } from '../src/pages/contractForm/canonicalFormRenderer';
-import { resolveCanonicalFormActionExecution, validateCanonicalFormActionExecutors } from '../src/pages/contractForm/canonicalFormActionExecutor';
-import type { ContractAction } from '../src/pages/contractForm/types';
+import {
+  collectCanonicalFormActions,
+  resolveCanonicalFormActionExecution,
+  validateCanonicalFormActionExecutors,
+} from '../src/pages/contractForm/canonicalFormActionExecutor';
+import {
+  MANY2ONE_CREATE_OPTION,
+  MANY2ONE_OPEN_RECORD_OPTION,
+  MANY2ONE_SEARCH_MORE_OPTION,
+  type ContractAction,
+} from '../src/pages/contractForm/types';
+import { contractActionConfirmationPrompt } from '../src/pages/contractForm/actionContract';
+import { canonicalFormActionIconClass } from '../src/pages/contractForm/canonicalFormActionIcon';
+import { buildCanonicalNativeFormBridge } from '../src/pages/contractForm/canonicalNativeFormBridge';
+import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
+import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor';
+import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
+import {
+  applyInternalRelationContextSwitch,
+  settleRelationSelectionContextSwitch,
+} from '../src/pages/contractForm/useRecordRelationships';
+import {
+  executeRecordFormReturn,
+  resolveRelationCreateDialogCancelMessage,
+  resolveRelationCreateDialogMessage,
+} from '../src/pages/contractForm/useCreatedRecordNavigationRuntime';
+import {
+  resolveRelationCreateDialogEvent,
+  settleRelationCreateDialog,
+  type RelationCreateDialogState,
+} from '../src/pages/contractForm/relationCreateDialogRuntime';
+import {
+  formatMonetaryDisplayValue,
+  monetaryInputStep,
+  normalizeMonetaryDigits,
+  resolveCurrencyDisplayLabel,
+} from '../src/components/template/formSection.mapper';
+import { resolveBusinessCategoryContext } from '../src/pages/contractForm/contractRuntimeVm';
+
+assert.equal(resolveBusinessCategoryContext({
+  contractRecord: null,
+  routeQuery: {},
+  relationBusinessCategoryLabel: '仅为搜索关键词',
+  relationBusinessCategorySelected: false,
+}).label, '', 'an unselected relation search keyword must not become business context authority');
+assert.equal(resolveBusinessCategoryContext({
+  contractRecord: null,
+  routeQuery: {},
+  relationBusinessCategoryLabel: '已选业务分类',
+  relationBusinessCategorySelected: true,
+}).label, '已选业务分类', 'a selected relation may supply its display label');
+
+assert.deepEqual(normalizeMonetaryDigits([16, 2]), [16, 2]);
+assert.equal(normalizeMonetaryDigits([16, -1]), undefined);
+assert.equal(normalizeMonetaryDigits([2, 3]), undefined);
+assert.equal(resolveCurrencyDisplayLabel([7, 'USD']), 'USD');
+assert.equal(resolveCurrencyDisplayLabel({ id: 7, symbol: '€', name: 'EUR' }), 'EUR');
+assert.equal(monetaryInputStep([16, 2]), '0.01');
+assert.equal(monetaryInputStep(undefined), 'any');
+assert.equal(formatMonetaryDisplayValue(1234.5, [16, 2], 'USD', 'en-US'), '$1,234.50');
+assert.equal(formatMonetaryDisplayValue(1234.5, [16, 1], '元', 'en-US'), '1,234.5 元');
+assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US'), '-');
+assert.equal(normalizeContractFieldValue({
+  name: 'amount', value: '12.345', descriptor: { type: 'monetary', digits: [16, 2] } as never,
+  originalValue: 0, buildOne2manyValue: () => [],
+}), 12.35);
+
+assert.equal(relationCreateMode({
+  relation: 'project.project',
+  relation_entry: {
+    can_read: true,
+    can_create: false,
+    create_mode: 'page',
+    action_id: 91,
+  },
+} as never), 'none', 'a readonly page entry must not be projected as a create capability');
+assert.equal(relationCreateMode({
+  relation: 'project.project',
+  relation_entry: {
+    can_read: true,
+    can_create: true,
+    create_mode: 'page',
+    action_id: 91,
+  },
+} as never), 'page', 'a backend-authorized page create entry must remain available');
+assert.equal(relationCreateMode({
+  relation: 'project.project',
+  relation_entry: {
+    can_read: true,
+    can_create: true,
+    create_mode: 'dialog',
+    action_id: 91,
+    menu_id: 12,
+  },
+} as never), 'dialog', 'a backend-authorized dialog create entry must remain in-page');
+
+for (const scenario of [
+  { managed: false, decisionMode: false, label: '返回列表', semanticIdentity: 'return-list' },
+  { managed: false, decisionMode: true, label: '返回列表', semanticIdentity: 'return-list' },
+  { managed: true, decisionMode: false, label: '取消', semanticIdentity: 'cancel-edit' },
+  { managed: true, decisionMode: true, label: '取消', semanticIdentity: 'cancel-edit' },
+] as const) {
+  assert.deepEqual(
+    resolveContractFormExitPresentation(scenario.managed),
+    { label: scenario.label, semanticIdentity: scenario.semanticIdentity },
+    `container exit presentation must stay unique when decisionMode=${scenario.decisionMode}`,
+  );
+}
+
+assert.deepEqual(resolveRelationCreateDialogMessage({
+  query: {
+    relation_create_mode: 'dialog',
+    relation_dialog_nonce: 'dialog-nonce-1234',
+    relation_return_field: 'project_id',
+    relation_return_model: 'payment.request',
+  },
+  createdId: 123,
+  relationModel: 'project.project',
+  label: '新建项目',
+}), {
+  type: 'sc.relation_record_created.v1',
+  nonce: 'dialog-nonce-1234',
+  fieldName: 'project_id',
+  parentModel: 'payment.request',
+  relationModel: 'project.project',
+  id: 123,
+  label: '新建项目',
+}, 'dialog creation must emit a scoped record identity without navigating the parent');
+
+const relationDialogQuery = {
+  relation_create_mode: 'dialog',
+  relation_dialog_nonce: 'dialog-nonce-1234',
+  relation_return_field: 'project_id',
+  relation_return_model: 'payment.request',
+};
+const relationDialogCancelMessage = resolveRelationCreateDialogCancelMessage({
+  query: relationDialogQuery,
+  relationModel: 'project.project',
+});
+assert.deepEqual(relationDialogCancelMessage, {
+  type: 'sc.relation_record_cancelled.v1',
+  nonce: 'dialog-nonce-1234',
+  fieldName: 'project_id',
+  parentModel: 'payment.request',
+  relationModel: 'project.project',
+}, 'managed relation forms must emit a scoped cancel message instead of navigating');
+let managedCancelPosts = 0;
+let managedHistoryBacks = 0;
+assert.equal(await executeRecordFormReturn({
+  query: relationDialogQuery,
+  relationModel: 'project.project',
+  embedded: true,
+  postCancel: () => { managedCancelPosts += 1; },
+  navigateBack: () => { managedHistoryBacks += 1; },
+}), 'dialog_cancel');
+assert.equal(managedCancelPosts, 1);
+assert.equal(managedHistoryBacks, 0, 'managed dialog cancel must never traverse browser history');
+let independentHistoryBacks = 0;
+assert.equal(resolveRelationCreateDialogCancelMessage({
+  query: {},
+  relationModel: 'project.project',
+}), null, 'independent relation forms must keep their normal page navigation behavior');
+assert.equal(await executeRecordFormReturn({
+  query: {},
+  relationModel: 'project.project',
+  embedded: false,
+  postCancel: () => { throw new Error('independent form must not post a dialog cancel'); },
+  navigateBack: () => { independentHistoryBacks += 1; },
+}), 'history');
+assert.equal(independentHistoryBacks, 1, 'independent form must retain its normal history return');
+
+const openRelationDialog = (): RelationCreateDialogState => ({
+  open: true,
+  title: '新建项目',
+  src: 'http://127.0.0.1:18081/f/project.project/new',
+  nonce: 'dialog-nonce-1234',
+  fieldName: 'project_id',
+  parentModel: 'payment.request',
+  relationModel: 'project.project',
+  restoreSearchOnCancel: true,
+});
+const expectedOrigin = 'http://127.0.0.1:18081';
+assert.deepEqual(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(),
+  eventOrigin: expectedOrigin,
+  expectedOrigin,
+  sourceMatches: true,
+  payload: relationDialogCancelMessage,
+}), { kind: 'cancelled' }, 'a fully scoped cancel message must be accepted');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: 'https://example.invalid', expectedOrigin, sourceMatches: true, payload: relationDialogCancelMessage,
+}), null, 'a cancel message from the wrong origin must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: false, payload: relationDialogCancelMessage,
+}), null, 'a cancel message from a stale iframe source must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: true,
+  payload: { ...relationDialogCancelMessage, nonce: 'wrong-nonce-1234' },
+}), null, 'a cancel message with the wrong nonce must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: true,
+  payload: { ...relationDialogCancelMessage, parentModel: 'other.parent' },
+}), null, 'a cancel message with the wrong parent model must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: true,
+  payload: { ...relationDialogCancelMessage, fieldName: 'other_field' },
+}), null, 'a cancel message with the wrong parent field must fail closed');
+assert.equal(resolveRelationCreateDialogEvent({
+  dialog: openRelationDialog(), eventOrigin: expectedOrigin, expectedOrigin, sourceMatches: true,
+  payload: { ...relationDialogCancelMessage, relationModel: 'other.model' },
+}), null, 'a cancel message with the wrong relation model must fail closed');
+
+const cancelDialog = openRelationDialog();
+const preservedSearch = { open: false, keyword: 'S69', rows: [7, 9], selectedId: 9 };
+const preservedParentFields = { project_id: false, partner_id: 42, amount: 37.25 };
+const preservedParentUrl = '/f/payment.request/new?menu_id=358&action_id=689';
+let restoredSearchCount = 0;
+assert.equal(settleRelationCreateDialog({
+  dialog: cancelDialog,
+  kind: 'cancelled',
+  restoreSearch: () => { preservedSearch.open = true; restoredSearchCount += 1; },
+  closeSearch: () => { throw new Error('cancel must not discard search state'); },
+}), true, 'cancel must close only the create dialog and restore its search context');
+assert.deepEqual(preservedSearch, { open: true, keyword: 'S69', rows: [7, 9], selectedId: 9 });
+assert.deepEqual(preservedParentFields, { project_id: false, partner_id: 42, amount: 37.25 });
+assert.equal(preservedParentUrl, '/f/payment.request/new?menu_id=358&action_id=689');
+assert.equal(settleRelationCreateDialog({
+  dialog: cancelDialog,
+  kind: 'cancelled',
+  restoreSearch: () => { restoredSearchCount += 1; },
+  closeSearch: () => {},
+}), false, 'duplicate cancel messages must be idempotent');
+assert.equal(restoredSearchCount, 1);
+
+const successDialog = openRelationDialog();
+let backfillCount = 0;
+let closeSearchCount = 0;
+const successEvent = resolveRelationCreateDialogEvent({
+  dialog: successDialog,
+  eventOrigin: expectedOrigin,
+  expectedOrigin,
+  sourceMatches: true,
+  payload: {
+    type: 'sc.relation_record_created.v1',
+    nonce: successDialog.nonce,
+    fieldName: successDialog.fieldName,
+    parentModel: successDialog.parentModel,
+    relationModel: successDialog.relationModel,
+    id: 123,
+    label: '新建项目',
+  },
+});
+assert.equal(successEvent?.kind, 'created');
+assert.equal(settleRelationCreateDialog({
+  dialog: successDialog,
+  kind: 'created',
+  restoreSearch: () => {},
+  closeSearch: () => { closeSearchCount += 1; },
+  onCreated: () => { backfillCount += 1; },
+}), true, 'success must backfill once and close both dialog layers');
+assert.equal(settleRelationCreateDialog({
+  dialog: successDialog,
+  kind: 'created',
+  restoreSearch: () => {},
+  closeSearch: () => { closeSearchCount += 1; },
+  onCreated: () => { backfillCount += 1; },
+}), false, 'duplicate success messages must be idempotent');
+assert.equal(backfillCount, 1);
+assert.equal(closeSearchCount, 1);
+
+const contextSwitchFormData: Record<string, unknown> = { business_category_id: 7, note: '保留未保存内容' };
+const contextSwitchKeywords: Record<string, string> = { business_category_id: '付款申请' };
+let contextCode = '';
+let contextReloads = 0;
+let valueSeenByRouteGuard: unknown = 'not-observed';
+let otherDirtyValueSeenByRouteGuard = '';
+assert.equal(await applyInternalRelationContextSwitch({
+  fieldName: 'business_category_id',
+  formData: contextSwitchFormData,
+  relationKeywords: contextSwitchKeywords,
+  previousValue: false,
+  previousKeyword: '',
+  replaceRoute: async () => {
+    valueSeenByRouteGuard = contextSwitchFormData.business_category_id;
+    otherDirtyValueSeenByRouteGuard = String(contextSwitchFormData.note || '');
+    contextCode = 'finance.payment.apply.pay';
+  },
+  contextApplied: () => contextCode === 'finance.payment.apply.pay',
+  reload: async () => { contextReloads += 1; },
+}), true);
+assert.equal(valueSeenByRouteGuard, false, 'internal context navigation must not dirty itself');
+assert.equal(otherDirtyValueSeenByRouteGuard, '保留未保存内容', 'unrelated dirty values must remain guarded');
+assert.equal(contextSwitchFormData.business_category_id, 7, 'selected required relation must survive route replacement');
+assert.equal(contextSwitchKeywords.business_category_id, '付款申请');
+assert.equal(contextReloads, 1, 'an applied internal context route must reload exactly once');
+
+contextCode = '';
+contextReloads = 0;
+assert.equal(await applyInternalRelationContextSwitch({
+  fieldName: 'business_category_id',
+  formData: contextSwitchFormData,
+  relationKeywords: contextSwitchKeywords,
+  previousValue: false,
+  previousKeyword: '',
+  replaceRoute: async () => {},
+  contextApplied: () => false,
+  reload: async () => { contextReloads += 1; },
+}), false);
+assert.equal(contextSwitchFormData.business_category_id, 7, 'cancelled navigation must preserve the selected relation');
+assert.equal(contextReloads, 0, 'cancelled navigation must not reload and clear the form');
+
+let settledDirtyCount = 0;
+let settledDependentClearCount = 0;
+let settledError = '';
+assert.equal(await settleRelationSelectionContextSwitch({
+  switchContext: async () => true,
+  finalizeUnswitchedSelection: () => {
+    settledDirtyCount += 1;
+    settledDependentClearCount += 1;
+  },
+  reportError: (error) => { settledError = String(error); },
+}), true, 'an applied context switch must remain owned by reload');
+assert.equal(settledDirtyCount, 0, 'an applied context switch must not duplicate dirty bookkeeping');
+assert.equal(settledDependentClearCount, 0, 'an applied context switch must not clear dependents twice');
+assert.equal(settledError, '');
+
+assert.equal(await settleRelationSelectionContextSwitch({
+  switchContext: async () => false,
+  finalizeUnswitchedSelection: () => {
+    settledDirtyCount += 1;
+    settledDependentClearCount += 1;
+  },
+  reportError: (error) => { settledError = String(error); },
+}), false, 'cancelled context navigation must settle as an ordinary local selection');
+assert.equal(settledDirtyCount, 1, 'cancelled navigation must mark the selection dirty exactly once');
+assert.equal(settledDependentClearCount, 1, 'cancelled navigation must clear dependents exactly once');
+assert.equal(contextSwitchFormData.business_category_id, 7, 'cancel bookkeeping must retain the selected value');
+
+const rejectedContextFormData: Record<string, unknown> = {
+  business_category_id: 11,
+  note: '拒绝后仍保留的其他未保存内容',
+};
+const rejectedContextKeywords: Record<string, string> = { business_category_id: '付款申请' };
+let rejectedReloads = 0;
+let rejectedGuardValue: unknown = 'not-observed';
+let rejectedErrorReports = 0;
+assert.equal(await settleRelationSelectionContextSwitch({
+  switchContext: () => applyInternalRelationContextSwitch({
+    fieldName: 'business_category_id',
+    formData: rejectedContextFormData,
+    relationKeywords: rejectedContextKeywords,
+    previousValue: false,
+    previousKeyword: '',
+    replaceRoute: async () => {
+      rejectedGuardValue = rejectedContextFormData.business_category_id;
+      throw new Error('ROUTE_REPLACE_REJECTED');
+    },
+    contextApplied: () => false,
+    reload: async () => { rejectedReloads += 1; },
+  }),
+  finalizeUnswitchedSelection: () => {
+    settledDirtyCount += 1;
+    settledDependentClearCount += 1;
+  },
+  reportError: (error) => {
+    rejectedErrorReports += 1;
+    settledError = error instanceof Error ? error.message : String(error);
+  },
+}), false, 'a rejected route replacement must be contained as an unswitched selection');
+assert.equal(settledDirtyCount, 2, 'rejected navigation must mark dirty exactly once');
+assert.equal(settledDependentClearCount, 2, 'rejected navigation must clear dependents exactly once');
+assert.equal(settledError, 'ROUTE_REPLACE_REJECTED', 'rejected navigation must remain diagnosable');
+assert.equal(rejectedErrorReports, 1, 'rejected navigation must report its error exactly once');
+assert.equal(rejectedGuardValue, false, 'the selected relation must not trip its own route guard');
+assert.equal(rejectedReloads, 0, 'rejected navigation must never reload');
+assert.equal(rejectedContextFormData.business_category_id, 11, 'rejected navigation must restore the selected value');
+assert.equal(rejectedContextKeywords.business_category_id, '付款申请', 'rejected navigation must restore the selected label');
+assert.equal(rejectedContextFormData.note, '拒绝后仍保留的其他未保存内容', 'other unsaved fields must remain protected');
 
 function snapshot(): ContractV2Snapshot {
   return {
@@ -68,7 +445,7 @@ function snapshot(): ContractV2Snapshot {
         actionId: 'action.submit', backendIdentity: 'button:object:action_submit', triggerType: 'click',
         sourceWidgetId: 'page.root', targetIds: [], dispatchMode: 'serverBlocking', targetScope: 'page',
         refreshMode: 'full', actionKey: 'action_submit', label: 'Submit', allowed: true, enabled: true,
-        disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'primary' },
+        disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'primary', icon: 'fa-check' },
         actionSafety: { level: 'danger', requiresConfirmation: true },
       }], dependencyGraph: { 'action.submit': ['field.name'] },
     },
@@ -117,6 +494,10 @@ function collectFields(nodes: ReturnType<typeof presentContractV2Form>['zones'][
   return nodes.flatMap((node): typeof node.fields => [...node.fields, ...collectFields(node.children)]);
 }
 
+function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['primary']): string[] {
+  return nodes.flatMap((node) => [node.text, ...collectTexts(node.children)]).filter(Boolean);
+}
+
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
@@ -124,6 +505,15 @@ assert.deepEqual(resolveContractV2EffectiveFormCapabilities(store), {
   read: true, write: true, create: true, unlink: true, duplicate: true,
 });
 assert.equal(store.snapshot.statusContract.globalStatus.effectiveRenderProfile, 'edit');
+const descriptorSelectionSnapshot = snapshot();
+descriptorSelectionSnapshot.layoutContract.containerTree[0].children[1].widgetList[0].fieldDescriptor = {
+  name: 'state', type: 'selection', widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']],
+};
+assert.deepEqual(
+  resolveContractV2FieldDescriptorMap(createContractV2Store(descriptorSelectionSnapshot)).state?.selection,
+  [['draft', 'Draft'], ['done', 'Done']],
+  'native fieldDescriptor selection must remain available to statusbar rendering',
+);
 const model = presentContractV2Form(store, 'edit');
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
@@ -138,6 +528,10 @@ assert.equal(fields.find((field) => field.fieldCode === 'state')?.visible, false
 assert.equal(model.actionBar[0]?.actionRef, store.snapshot.actionContract.actionRuleList[0]);
 assert.deepEqual(model.actionBar[0]?.actionRef, source.actionContract.actionRuleList[0]);
 assert.equal(model.actionBar[0]?.enabled, true);
+assert.equal(model.actionBar[0]?.icon, 'fa-check');
+assert.equal(canonicalFormActionIconClass(model.actionBar[0]?.icon || ''), 'check');
+assert.equal(canonicalFormActionIconClass('fa-check injected-class'), '');
+assert.equal(canonicalFormActionIconClass('oi-check'), '');
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
 
 const bodyActionSnapshot = structuredClone(snapshot());
@@ -158,6 +552,46 @@ const bodyActionNode = bodyActionModel.zones.primary[0].children.find((node) => 
 assert.equal(bodyActionNode?.action?.actionRef.backendIdentity, 'window_action:91');
 assert.equal(canonicalNodeHasContent(bodyActionNode!), true);
 assert.deepEqual(bodyActionModel.actionBar.map((action) => action.key), ['action_submit']);
+const nativeBridge = buildCanonicalNativeFormBridge(bodyActionModel);
+assert.deepEqual(
+  nativeBridge.subordinateNodes.map((node) => node.type),
+  ['notebook', 'container'],
+  'canonical native bridge must keep notebook/attachment structure while collaboration stays in its governed panel',
+);
+const notebookPage = nativeBridge.subordinateNodes[0].children?.[0];
+assert.equal(notebookPage?.type, 'page', 'a native notebook without explicit pages must retain its children in a stable default page');
+assert.deepEqual(
+  nativeBridge.fieldSchemasForNodes(notebookPage?.children || []).map((field) => [field.key, field.name]),
+  [['field.line_ids', 'line_ids']],
+  'canonical widget occurrence identity and record field name must remain separate through the native renderer bridge',
+);
+const bridgedBodyAction = nativeBridge.primaryNodes[0].children?.find((node) => node.type === 'button');
+assert.equal(
+  nativeBridge.actionForPayload(bridgedBodyAction?.action || {})?.backendIdentity,
+  'window_action:91',
+  'body action execution must resolve through the same canonical backend identity after native structure rendering',
+);
+assert.deepEqual(
+  nativeBridge.actionStateForNode(bridgedBodyAction || {} as never),
+  { disabled: false, title: '' },
+  'canonical button status must remain authoritative when the native renderer asks for interaction state',
+);
+
+const nativeOccurrenceActionSnapshot = structuredClone(snapshot());
+nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'button.native.submit', containerType: 'button', type: 'button', title: 'Submit Native', span: 24,
+  action: { native_identity: { type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1 } },
+  children: [], widgetList: [],
+});
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity = {
+  type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1,
+};
+const nativeOccurrenceModel = presentContractV2Form(createContractV2Store(nativeOccurrenceActionSnapshot), 'edit');
+assert.equal(
+  nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
+  'button:object:action_submit',
+  'native snake-case occurrence identity must resolve to the canonical action rule',
+);
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 
 const editFloorplan = composeCanonicalFormFloorplan(model);
@@ -202,6 +636,161 @@ assert.deepEqual(
 );
 assert.deepEqual(semanticReadonlyFloorplan.taskNodes, []);
 assert.deepEqual(semanticReadonlyFloorplan.contextNodes, []);
+const semanticEditModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'edit');
+const semanticEditNameNode = semanticEditModel.zones.primary[0].children.find((node) => (
+  node.fields.some((field) => field.fieldCode === 'name')
+));
+assert.ok(semanticEditNameNode, 'semantic edit fixture must expose the editable name node');
+const semanticEditNameField = semanticEditNameNode.fields.find((field) => field.fieldCode === 'name')!;
+const relationMappedField = canonicalFieldToFormSection({
+  ...semanticEditNameField,
+  widgetId: 'field.project_id',
+  fieldCode: 'project_id',
+  fieldType: 'many2one',
+  value: null,
+  required: true,
+  fieldDescriptor: {
+    relation: 'project.project',
+    relation_entry: {
+      can_read: true,
+      can_open: true,
+      can_create: true,
+      create_mode: 'page',
+      action_id: 91,
+      menu_id: 12,
+      inline_create: { enabled: true, create_on_no_match: true, name_field: 'name' },
+    },
+  },
+}, {
+  relationKeyword: () => '演示项目',
+  filteredRelationOptions: () => [{ id: 7, label: '演示项目' }],
+  selectedRelationOptions: () => [],
+  relationCreateMode: () => 'page',
+  relationInlineCreate: () => ({ enabled: true, createOnNoMatch: true, nameField: 'name' }),
+  relationCreateLabel: () => '新增并编辑',
+  relationInlineCreateLabel: () => '快速创建“演示项目”',
+  canOpenRelationRecord: () => true,
+  relationOpenLabel: () => '维护当前项',
+  relationSearchLabel: () => '搜索更多',
+});
+assert.equal(relationMappedField.many2oneTextValue, '演示项目');
+assert.deepEqual(relationMappedField.relationOptions, [{ value: 7, label: '演示项目' }]);
+assert.equal(relationMappedField.required, true, 'required many2one authority must survive canonical projection');
+assert.equal(relationMappedField.relationCreateMode, 'page');
+assert.equal(relationMappedField.many2oneCreateToken, MANY2ONE_CREATE_OPTION);
+assert.equal(relationMappedField.many2oneSearchToken, MANY2ONE_SEARCH_MORE_OPTION);
+assert.equal(relationMappedField.many2oneOpenToken, MANY2ONE_OPEN_RECORD_OPTION);
+assert.equal(relationMappedField.many2oneCreateLabel, '新增并编辑');
+assert.equal(relationMappedField.many2oneOpenLabel, '维护当前项');
+assert.equal(relationMappedField.many2oneSearchLabel, '搜索更多');
+assert.deepEqual(relationMappedField.relationInlineCreate, {
+  enabled: true, createOnNoMatch: true, nameField: 'name',
+});
+semanticEditNameNode.fields.push({
+  ...semanticEditNameField,
+  widgetId: 'field.note',
+  fieldCode: 'note',
+  label: 'Note',
+  value: null,
+  required: false,
+  semanticRole: 'context',
+  semanticSlot: 'supplement',
+  semanticGroup: 'notes',
+});
+const semanticEditFloorplan = composeCanonicalFormFloorplan(semanticEditModel);
+assert.equal(semanticEditFloorplan.decisionMode, true, 'semantic create/edit forms must enter the Product Floorplan');
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.summaryNodes).map((field) => field.fieldCode),
+  [],
+  'editable summary fields must stay in the editing canvas instead of duplicating as readonly facts',
+);
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.riskNodes).map((field) => field.fieldCode),
+  ['state'],
+  'readonly risk authority must remain factual in create/edit mode',
+);
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.coreInputNodes).map((field) => field.fieldCode),
+  ['name'],
+  'required editable fields must be directly reachable in the core-input region',
+);
+assert.deepEqual(
+  collectFields(semanticEditFloorplan.supplementaryInputNodes).map((field) => field.fieldCode),
+  ['note'],
+  'empty optional fields must stay in supplementary input instead of being inferred as required',
+);
+assert.deepEqual(
+  collectFields([
+    ...semanticEditFloorplan.summaryNodes,
+    ...semanticEditFloorplan.taskNodes,
+    ...semanticEditFloorplan.riskNodes,
+    ...semanticEditFloorplan.coreInputNodes,
+    ...semanticEditFloorplan.conditionInputNodes,
+    ...semanticEditFloorplan.preExecutionInputNodes,
+    ...semanticEditFloorplan.supplementaryInputNodes,
+    ...semanticEditFloorplan.contextNodes,
+    ...semanticEditFloorplan.overflowContextNodes,
+  ]).map((field) => field.fieldCode),
+  ['state', 'name', 'note'],
+  'create/edit Product Floorplan regions must not duplicate a field identity',
+);
+
+const businessFactSnapshot = structuredClone(semanticReadonlySnapshot);
+businessFactSnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
+  role: 'business_fact', slot: 'identity', group: 'identity',
+};
+const businessFactModel = presentContractV2Form(createContractV2Store(businessFactSnapshot), 'edit');
+const businessFactField = collectFields(businessFactModel.zones.primary).find((field) => field.fieldCode === 'name');
+assert.deepEqual(
+  [businessFactField?.semanticRole, businessFactField?.semanticSlot, businessFactField?.semanticGroup],
+  ['context', 'identity', 'identity'],
+  'existing business_fact authority must survive Canonical projection as product context metadata',
+);
+const mixedSemanticTextModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const mixedSemanticTextRoot = mixedSemanticTextModel.zones.primary[0];
+mixedSemanticTextRoot.text = 'unassigned native guidance';
+const taskProjectionChild = mixedSemanticTextRoot.children.find((node) => node.semanticRole === 'summary')!;
+taskProjectionChild.semanticRole = 'task';
+taskProjectionChild.fields = taskProjectionChild.fields.map((field) => ({ ...field, semanticRole: 'task' }));
+const mixedSemanticTextFloorplan = composeCanonicalFormFloorplan(mixedSemanticTextModel);
+assert.deepEqual(
+  collectTexts([...mixedSemanticTextFloorplan.taskNodes, ...mixedSemanticTextFloorplan.riskNodes]),
+  [],
+  'unassigned native text must not duplicate across semantic Floorplan projections',
+);
+const mixedRoleModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const mixedRoleParent = mixedRoleModel.zones.primary[0].children.find((node) => node.semanticRole === 'summary');
+assert.ok(mixedRoleParent, 'semantic summary parent is required for mixed-role projection coverage');
+const mixedRoleChild = structuredClone(mixedRoleParent);
+mixedRoleChild.nodeId = `${mixedRoleParent.nodeId}.audit-override`;
+mixedRoleChild.semanticRole = 'audit';
+mixedRoleChild.fields = mixedRoleChild.fields.map((field) => ({
+  ...field,
+  widgetId: `${field.widgetId}.audit-override`,
+  semanticRole: 'audit',
+}));
+mixedRoleChild.children = [];
+mixedRoleParent.children.push(mixedRoleChild);
+const mixedRoleFloorplan = composeCanonicalFormFloorplan(mixedRoleModel);
+assert.equal(
+  collectFields(mixedRoleFloorplan.summaryNodes).some((field) => field.widgetId.endsWith('.audit-override')),
+  false,
+  'a parent role must not absorb a descendant semantic override',
+);
+assert.equal(
+  collectFields(mixedRoleFloorplan.auditNodes).some((field) => field.widgetId.endsWith('.audit-override')),
+  true,
+  'a descendant semantic override must project into its declared Floorplan region',
+);
+const repeatedSummaryModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
+const repeatedSummaryRoot = structuredClone(repeatedSummaryModel.zones.primary[0]);
+repeatedSummaryRoot.nodeId = `${repeatedSummaryRoot.nodeId}.repeated-occurrence`;
+repeatedSummaryModel.zones.primary.push(repeatedSummaryRoot);
+assert.deepEqual(
+  collectFields(composeCanonicalFormFloorplan(repeatedSummaryModel).summaryNodes).map((field) => field.fieldCode),
+  ['name'],
+  'product summary must project one fact per canonical field even when the native layout repeats an occurrence',
+);
 
 const semanticContextSnapshot = structuredClone(semanticReadonlySnapshot);
 function addContextGroup(groupId: string, fieldCodes: string[]) {
@@ -328,6 +917,19 @@ assert.equal(
 assert.equal(createFloorplan.effectivePrimaryKey, 'form.save', 'create save must occupy the effective primary slot');
 assert.deepEqual(createFloorplan.directActions.map((action) => action.key), ['form.save']);
 assert.deepEqual(createFloorplan.overflowActions, []);
+
+const unresolvedCreateIdentitySnapshot = structuredClone(createFloorplanSnapshot);
+unresolvedCreateIdentitySnapshot.dataContract.mainData.name = 'New';
+unresolvedCreateIdentitySnapshot.statusContract.widgetStatus = unresolvedCreateIdentitySnapshot.statusContract.widgetStatus
+  .map((status) => status.widgetId === 'field.name' ? { ...status, readonly: true, required: false } : status);
+assert.equal(
+  collectFields(composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(unresolvedCreateIdentitySnapshot),
+    'create',
+  )).taskNodes).some((field) => field.fieldCode === 'name'),
+  false,
+  'create floorplan must not expose an unresolved platform identity placeholder',
+);
 
 const createBackendPrimarySnapshot = structuredClone(createFloorplanSnapshot);
 createBackendPrimarySnapshot.actionContract.actionRuleList.push({
@@ -604,6 +1206,105 @@ assert.deepEqual(
   'one canonical widget identity must render once even when legacy and product roots both carry it',
 );
 
+const duplicateOccurrences = snapshot();
+const duplicateRoot = duplicateOccurrences.layoutContract.containerTree[0];
+const duplicateBaseWidget = duplicateRoot.children[0].widgetList[0];
+duplicateRoot.widgetList = [];
+duplicateRoot.children = [
+  {
+    ...duplicateRoot.children[0],
+    fieldCode: 'name',
+    widgetId: 'field.name.occ.first',
+    nativeLocator: 'form/field[name=name][1]',
+    occurrenceIndex: 1,
+    sourcePosition: 1,
+    widgetList: [{
+      ...duplicateBaseWidget,
+      widgetId: 'field.name.occ.first',
+      fieldDescriptor: { name: 'name', type: 'char' },
+      componentConfig: {
+        ...duplicateBaseWidget.componentConfig,
+        native_locator: 'form/field[name=name][1]',
+        occurrence_index: 1,
+        source_position: 1,
+      },
+    }],
+  },
+  {
+    ...duplicateRoot.children[0],
+    fieldCode: 'name',
+    widgetId: 'field.name.occ.second',
+    nativeLocator: 'form/field[name=name][2]',
+    occurrenceIndex: 2,
+    sourcePosition: 2,
+    widgetList: [{
+      ...duplicateBaseWidget,
+      widgetId: 'field.name.occ.second',
+      fieldDescriptor: { name: 'name', type: 'char' },
+      componentConfig: {
+        ...duplicateBaseWidget.componentConfig,
+        native_locator: 'form/field[name=name][2]',
+        occurrence_index: 2,
+        source_position: 2,
+      },
+    }],
+  },
+];
+duplicateOccurrences.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.first', visible: true, readonly: true, required: false, disabled: false, auth: 'read' },
+  { widgetId: 'field.name.occ.second', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+];
+const decodedDuplicateOccurrences = decodeContractV2Snapshot(duplicateOccurrences);
+const duplicateOccurrenceStore = createContractV2Store(decodedDuplicateOccurrences);
+assert.equal(duplicateOccurrenceStore.widgetsByFieldCodeAll.get('name')?.length, 2);
+const duplicateOccurrenceFields = collectFields(
+  presentContractV2Form(duplicateOccurrenceStore, 'edit').zones.primary,
+);
+assert.deepEqual(
+  duplicateOccurrenceFields.map((field) => [field.widgetId, field.readonly, field.required]),
+  [
+    ['field.name.occ.first', true, false],
+    ['field.name.occ.second', false, true],
+  ],
+  'canonical form must preserve same-field occurrences and their independent status',
+);
+const equivalentCreateOccurrences = structuredClone(duplicateOccurrences);
+equivalentCreateOccurrences.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.first', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+  { widgetId: 'field.name.occ.second', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+];
+assert.deepEqual(
+  collectFields(composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(decodeContractV2Snapshot(equivalentCreateOccurrences)),
+    'create',
+  )).taskNodes).map((field) => field.widgetId),
+  ['field.name.occ.second'],
+  'create floorplan must merge equivalent occurrences while preserving the retained canonical identity',
+);
+
+const duplicateOccurrenceStatus = snapshot();
+const duplicateStatusRoot = duplicateOccurrenceStatus.layoutContract.containerTree[0];
+duplicateStatusRoot.widgetList = [];
+duplicateStatusRoot.children = [
+  { ...duplicateStatusRoot.children[0], widgetId: 'field.name.occ.same', nativeLocator: 'form/field[name=name][1]', occurrenceIndex: 1, sourcePosition: 1, widgetList: [] },
+  { ...duplicateStatusRoot.children[0], widgetId: 'field.name.occ.same', nativeLocator: 'form/field[name=name][2]', occurrenceIndex: 2, sourcePosition: 2, widgetList: [] },
+];
+duplicateOccurrenceStatus.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.same', visible: true, readonly: false, required: false, disabled: false },
+];
+assert.throws(() => decodeContractV2Snapshot(duplicateOccurrenceStatus), /duplicate form occurrence widgetId/);
+
+const missingOccurrenceStatus = snapshot();
+const missingStatusRoot = missingOccurrenceStatus.layoutContract.containerTree[0];
+missingStatusRoot.widgetList = [];
+missingStatusRoot.children = [{ ...missingStatusRoot.children[0], widgetId: 'field.name.occ.missing', nativeLocator: 'form/field[name=name]', occurrenceIndex: 1, sourcePosition: 1, widgetList: [] }];
+missingOccurrenceStatus.statusContract.widgetStatus = [];
+assert.throws(() => decodeContractV2Snapshot(missingOccurrenceStatus), /requires exactly one status/);
+
+const orphanOccurrenceStatus = snapshot();
+orphanOccurrenceStatus.statusContract.widgetStatus.push({ widgetId: 'field.name.occ.orphan', visible: true, readonly: false, required: false, disabled: false });
+assert.throws(() => decodeContractV2Snapshot(orphanOccurrenceStatus), /orphan form widget status/);
+
 const renderedName = canonicalFieldToFormSection(deDuplicatedFields[0]);
 assert.deepEqual(
   { key: renderedName.key, name: renderedName.name, value: renderedName.value, readonly: renderedName.readonly },
@@ -656,6 +1357,7 @@ assert.deepEqual(
   disabledSecondaryPrimaryModel.actionBar.find((action) => action.key === 'action_blocked'),
   {
     key: 'action_blocked', label: 'Submit', tier: 'primary', visible: true, enabled: false,
+    icon: 'fa-check',
     reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE', visibleProfiles: ['edit', 'readonly'],
     safety: { level: 'danger', requiresConfirmation: true },
     actionRef: disabledSecondaryPrimary.actionContract.actionRuleList[1],
@@ -676,7 +1378,104 @@ duplicatePrimary.actionContract.actionRuleList.push({
 duplicatePrimary.statusContract.buttonStatus.push({ btnId: 'action.other', visible: true, disabled: false });
 assert.throws(() => presentContractV2Form(createContractV2Store(duplicatePrimary), 'edit'), /MULTIPLE_PRIMARY_ACTIONS/);
 
+const resolvedDuplicateSubmit = snapshot();
+resolvedDuplicateSubmit.actionContract.actionRuleList[0] = {
+  ...resolvedDuplicateSubmit.actionContract.actionRuleList[0],
+  actionId: 'action.native_submit',
+  actionKey: 'native_submit',
+  backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  sourceWidgetId: 'page.header',
+  button: { name: 'action_submit', type: 'object' },
+  presentationPriority: 100,
+};
+resolvedDuplicateSubmit.actionContract.actionRuleList.push({
+  ...resolvedDuplicateSubmit.actionContract.actionRuleList[0],
+  actionId: 'action.weak_submit',
+  actionKey: 'weak_submit',
+  backendIdentity: 'button:object:action_submit',
+  sourceWidgetId: 'page.root',
+  presentationPriority: 250,
+  presentation: { tier: 'secondary' },
+});
+resolvedDuplicateSubmit.actionContract.primaryResolution = {
+  policy: 'single_effective_primary_per_record_state',
+  winner: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  demoted: [{
+    actionId: 'action.weak_submit',
+    backendIdentity: 'button:object:action_submit',
+    previousTier: 'primary',
+    effectiveTier: 'secondary',
+  }],
+};
+resolvedDuplicateSubmit.statusContract.buttonStatus = [
+  {
+    btnId: 'btn.native_submit', visible: true, disabled: false,
+    backendIdentity: 'native_button:object:action_submit:/form[1]/header[1]/button[1]:1',
+  },
+  {
+    btnId: 'btn.weak_submit', visible: true, disabled: false,
+    backendIdentity: 'button:object:action_submit',
+  },
+];
+const decodedResolvedDuplicateSubmit = decodeContractV2Snapshot(resolvedDuplicateSubmit);
+assert.deepEqual(
+  decodedResolvedDuplicateSubmit.actionContract.primaryResolution,
+  resolvedDuplicateSubmit.actionContract.primaryResolution,
+  'the normalized store must retain the backend primary-action verdict',
+);
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(decodedResolvedDuplicateSubmit), 'readonly')
+    .actionBar.map((action) => action.actionRef.actionId),
+  ['action.native_submit'],
+  'a backend-demoted duplicate must not become a second product action',
+);
+
+const prioritizedDuplicateAction = snapshot();
+prioritizedDuplicateAction.actionContract.actionRuleList[0] = {
+  ...prioritizedDuplicateAction.actionContract.actionRuleList[0],
+  actionId: 'action.native_cancel', actionKey: 'native_cancel',
+  backendIdentity: 'native_button:object:action_cancel:/form/header/button[1]:1',
+  sourceWidgetId: 'page.header', button: { name: 'action_cancel', type: 'object' },
+  presentationPriority: 100, presentationAuthority: 'native_contract',
+  presentation: { tier: 'overflow' },
+};
+prioritizedDuplicateAction.actionContract.actionRuleList.push({
+  ...prioritizedDuplicateAction.actionContract.actionRuleList[0],
+  actionId: 'action.product_cancel', actionKey: 'product_cancel',
+  backendIdentity: 'button:object:action_cancel', sourceWidgetId: 'page.root',
+  presentationPriority: 250, presentationAuthority: 'product_contract',
+  presentation: { tier: 'secondary' },
+});
+prioritizedDuplicateAction.statusContract.buttonStatus = [
+  { btnId: 'action.native_cancel', visible: true, disabled: false },
+  { btnId: 'action.product_cancel', visible: true, disabled: false },
+];
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(prioritizedDuplicateAction), 'readonly')
+    .actionBar.map((action) => action.actionRef.actionId),
+  ['action.product_cancel'],
+  'the highest backend presentation priority must own one duplicated execution identity',
+);
+
 const normalizedAction = snapshot().actionContract.actionRuleList[0];
+assert.deepEqual(
+  contractActionConfirmationPrompt({
+    key: 'action_submit', label: 'Submit', hint: '',
+    actionSafety: {
+      classification: 'danger', requiresConfirm: true,
+      confirmMessage: 'Submit this document?', reasonCode: 'NATIVE_BUTTON_DANGEROUS_ACTION',
+    },
+  } as never),
+  { actionLabel: 'Submit', message: 'Submit this document?' },
+  'native confirm message must reach the confirmation interaction unchanged',
+);
+assert.equal(
+  contractActionConfirmationPrompt({
+    key: 'action_help', label: 'Help', hint: 'Descriptive help only',
+  } as never),
+  null,
+  'button help must never manufacture a confirmation prompt',
+);
 const readonlySaveSnapshot = snapshot();
 readonlySaveSnapshot.actionContract.actionRuleList = [{
   ...readonlySaveSnapshot.actionContract.actionRuleList[0],
@@ -742,28 +1541,19 @@ assert.deepEqual(
   'an executable action without an exact unified executor adapter must block canonical cutover',
 );
 
-const implicitStateSnapshot = snapshot();
-const implicitStateProjection = adaptUnifiedPageContractV2Raw(
-  { ok: true, data: implicitStateSnapshot } as never,
-  { view_type: 'form' },
-);
-assert.equal(
-  implicitStateProjection.data?.views?.form?.statusbar,
-  undefined,
-  'a state selection without an explicit native statusbar widget must not fabricate a statusbar',
-);
-const explicitStatusbarSnapshot = snapshot();
-const explicitStatusbarField = explicitStatusbarSnapshot.layoutContract.containerTree[0]?.children[1] as unknown as Record<string, unknown>;
-explicitStatusbarField.widget = 'statusbar';
-explicitStatusbarField.fieldInfo = { widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']] };
-const explicitStatusbarProjection = adaptUnifiedPageContractV2Raw(
-  { ok: true, data: explicitStatusbarSnapshot } as never,
-  { view_type: 'form' },
+assert.deepEqual(
+  collectCanonicalFormActions(bodyActionModel).map((action) => action.actionRef.backendIdentity),
+  ['button:object:action_submit', 'window_action:91'],
+  'body-node actions must join actionBar actions in exact executor validation',
 );
 assert.deepEqual(
-  explicitStatusbarProjection.data?.views?.form?.statusbar,
-  { field: 'state', states: [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }] },
-  'an explicit native statusbar widget must remain available to the compatibility renderer',
+  validateCanonicalFormActionExecutors(collectCanonicalFormActions(bodyActionModel), [contractAction]),
+  {
+    reasonCode: 'CANONICAL_FORM_ACTION_EXECUTION_ADAPTER_MISSING',
+    actionId: 'action.open_lines',
+    backendIdentity: 'window_action:91',
+  },
+  'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=51');
+console.log('[canonical_form_presenter_test] PASS cases=89');

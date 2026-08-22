@@ -32,7 +32,6 @@ export function useActionViewLoadPreflightApplyRuntime() {
   function applyLoadPreflightContinueState(options: ApplyPreflightContinueOptions): {
     contract: unknown;
     meta: Record<string, unknown> | null;
-    typedContract: Record<string, unknown>;
     resolvedModel: string;
   } {
     const {
@@ -53,7 +52,7 @@ export function useActionViewLoadPreflightApplyRuntime() {
     } = options;
 
     contractViewTypeRef.value = result.contractViewType;
-    actionContractRef.value = result.typedContract;
+    actionContractRef.value = result.contract;
     preferredViewModeRef.value = result.preferredViewMode;
     activeContractFilterKeyRef.value = result.activeContractFilterKey;
     activeSavedFilterKeyRef.value = result.activeSavedFilterKey;
@@ -71,7 +70,6 @@ export function useActionViewLoadPreflightApplyRuntime() {
     return {
       contract: result.contract,
       meta: result.meta,
-      typedContract: result.typedContract,
       resolvedModel: result.resolvedModel,
     };
   }

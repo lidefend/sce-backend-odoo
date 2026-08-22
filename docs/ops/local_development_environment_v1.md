@@ -37,9 +37,13 @@ make local.dev.up
 make local.dev.ps
 make local.dev.logs
 make local.dev.upgrade MODULE=smart_construction_core
+make local.dev.frontend
+make verify.local.dev.frontend.quick.gate
+make verify.local.dev.payment_request.native_parity.readonly
 make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestP1PaymentRequestCapability'
 make local.dev.sync_demo
 make local.dev.verify_demo
+make local.dev.contract_snapshot
 CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO make local.dev.rebuild_demo
 make local.dev.down
 make local.dev.snapshot
@@ -91,6 +95,12 @@ CONFIRM_LOCAL_CLEAN_REBUILD=REBUILD_ISOLATED_REHEARSAL \
 Compose project、数据库、卷或端口。若 clean 凭据文件缺失但固定卷仍存在，普通 prepare/up
 必须失败关闭；只有受控 rebuild 可以生成新凭据并立即重建该隔离演练环境。
 
+链接工作树执行完整 Frontend Quick 时必须使用
+`make verify.local.dev.frontend.quick.gate`。该入口仅通过 Git common-dir 解析主工作树的固定
+`.env.dev` 权威，拒绝调用者覆盖、软链接、非 `0600` 权限、错误 owner 或错误 `local.dev`
+身份；它不会在链接工作树复制、生成或链接凭据文件。普通
+`make verify.frontend.quick.gate` 的默认语义保持不变。
+
 所有本地入口会先清除父进程继承的 project、database、dbfilter、volume 与 port 身份，再从
 对应的权威 env 文件重新装载。不得通过 shell export 覆盖身份，也不得直接调用嵌套 Make、
 Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`health`/`test`/`upgrade` 会先
@@ -99,6 +109,10 @@ Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`h
 `local.dev.snapshot` 同时保存 PostgreSQL custom dump 与对应 filestore，并生成 SHA-256
 清单。产物位于 `artifacts/local-dev/snapshots/`，不进入 Git。
 
+`local.dev.contract_snapshot` 使用同一固定 `sc-local-dev / sc_dev_demo / ^sc_dev_demo$`
+身份调用既有 `contract.export_all`，用于功能迭代后的契约快照刷新。禁止通过通用
+`codex.snapshot` 手工覆盖 Compose project、数据库或凭据来替代该入口。
+
 ## 研发节奏
 
 1. 在 `sc_dev_demo` 上增量升级目标模块、同步 demo 并做浏览器迭代。
@@ -106,3 +120,22 @@ Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`h
 3. 涉及安装、schema、迁移或导入幂等性时，在 `sc_clean` 做干净回归。
 4. 本地验收通过后才进入日常开发服务器，后者只承担正式部署前的最终验证。
 5. 镜像仅在候选发布阶段构建；本地通过源码挂载与增量前端构建迭代。
+
+## 证据通道硬隔离
+
+日常产品迭代只允许使用本页登记的 `local.dev.*` 入口和
+`verify.local.dev.*` targeted tests。它们绑定 `sc-local-dev / sc_dev_demo /
+18081`，产物只能作为开发迭代证据，不能称为 release snapshot、发布候选
+或最终验收证据，也不能据此执行 `make pr.push`。
+
+只有产品结果已经确定并明确进入最终验收，才能关闭日常写入、冻结 HEAD，
+并单独执行：
+
+```bash
+CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT \
+  make verify.frontend.release.local
+```
+
+该入口绑定独立的 `sc_frontend_acceptance` 身份域。若正式审计发现需要修改
+产品，必须停止审计、返回 `local.dev.*` 完成新一轮开发；禁止一边修改一边
+续写正式发布证据。

@@ -1,0 +1,11 @@
+events:
+  - type: boundary.frozen
+    result: one_obsolete_guard_token_only
+  - type: change.completed
+    result: field_user_id_source_literal_no_longer_required
+  - type: verification.completed
+    result: project_layout_responsibility_map_and_generated_report_guards_passed
+
+next_exact_step:
+  command: resume_batch_d_targeted_odoo_tests
+  requires_explicit_validation_authorization: false

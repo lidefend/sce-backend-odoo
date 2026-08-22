@@ -45,7 +45,7 @@ def _load_builder_module(path: Path) -> ModuleType:
 
 
 def _validate_action(page_key: str, action_key: str, action: Any, errors: list[str]) -> None:
-    prefix = f"pages.{page_key}.page_orchestration_v1.action_schema.actions.{action_key}"
+    prefix = f"pages.{page_key}.page_orchestration.action_schema.actions.{action_key}"
     if not isinstance(action, dict):
         errors.append(f"{prefix} must be object")
         return
@@ -94,20 +94,20 @@ def _validate_action(page_key: str, action_key: str, action: Any, errors: list[s
 
 
 def _validate_page(page_key: str, page_obj: dict[str, Any], errors: list[str]) -> None:
-    orch = page_obj.get("page_orchestration_v1") if isinstance(page_obj.get("page_orchestration_v1"), dict) else {}
+    orch = page_obj.get("page_orchestration") if isinstance(page_obj.get("page_orchestration"), dict) else {}
     if not isinstance(orch, dict) or not orch:
         return
 
     action_schema = orch.get("action_schema") if isinstance(orch.get("action_schema"), dict) else {}
     action_registry = action_schema.get("actions") if isinstance(action_schema.get("actions"), dict) else {}
     if not isinstance(action_registry, dict) or not action_registry:
-        errors.append(f"pages.{page_key}.page_orchestration_v1.action_schema.actions must be non-empty object")
+        errors.append(f"pages.{page_key}.page_orchestration.action_schema.actions must be non-empty object")
         return
 
     for action_key, action in action_registry.items():
         key = str(action_key or "").strip()
         if not key:
-            errors.append(f"pages.{page_key}.page_orchestration_v1.action_schema.actions contains empty key")
+            errors.append(f"pages.{page_key}.page_orchestration.action_schema.actions contains empty key")
             continue
         _validate_action(page_key, key, action, errors)
 
@@ -115,7 +115,7 @@ def _validate_page(page_key: str, page_obj: dict[str, Any], errors: list[str]) -
     global_actions = page.get("global_actions") if isinstance(page.get("global_actions"), list) else []
     seen: set[str] = set()
     for idx, action in enumerate(global_actions):
-        prefix = f"pages.{page_key}.page_orchestration_v1.page.global_actions[{idx}]"
+        prefix = f"pages.{page_key}.page_orchestration.page.global_actions[{idx}]"
         if not isinstance(action, dict):
             errors.append(f"{prefix} must be object")
             continue
@@ -165,14 +165,14 @@ def main() -> int:
         if not isinstance(page_obj, dict):
             errors.append(f"pages.{page_key} must be object")
             continue
-        orch = page_obj.get("page_orchestration_v1")
+        orch = page_obj.get("page_orchestration")
         if not isinstance(orch, dict):
             continue
         checked += 1
         _validate_page(str(page_key), page_obj, errors)
 
     if checked == 0:
-        errors.append("no page_orchestration_v1 payload found")
+        errors.append("no page_orchestration payload found")
 
     if errors:
         return _fail(errors)

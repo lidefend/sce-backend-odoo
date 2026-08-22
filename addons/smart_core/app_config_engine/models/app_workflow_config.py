@@ -49,7 +49,7 @@ class AppWorkflowConfig(models.Model):
     # ======================= 生成入口 =======================
 
     @api.model
-    def _generate_from_workflow(self, model_name):
+    def _generate_from_workflow(self, model_name, fields_get_snapshot=None, form_view_data=None):
         """
         生成/更新“工作流契约”：
         1) 如果存在旧版 workflow 引擎 → 按活动/迁移表提取（engine='legacy'）
@@ -66,7 +66,11 @@ class AppWorkflowConfig(models.Model):
                 wf_def = self._build_from_legacy_workflow(model_name)
             else:
                 # 2) 现代推断：state/stage + 按钮 states
-                wf_def = self._build_inferred_workflow(model_name)
+                wf_def = self._build_inferred_workflow(
+                    model_name,
+                    fields_get_snapshot=fields_get_snapshot,
+                    form_view_data=form_view_data,
+                )
 
             # 3) 附加：mail.activity.type 建议（如可用）
             wf_def["activities"] = self._collect_mail_activities(model_name)
@@ -255,7 +259,7 @@ class AppWorkflowConfig(models.Model):
 
     # ======================= 分支2：现代推断 =======================
 
-    def _build_inferred_workflow(self, model_name):
+    def _build_inferred_workflow(self, model_name, fields_get_snapshot=None, form_view_data=None):
         """
         现代 Odoo：无旧引擎 → 依据
         - fields_get 中的 'state'（selection）或 '...stage...'（many2one）识别状态空间
@@ -263,13 +267,18 @@ class AppWorkflowConfig(models.Model):
         - 尝试基于方法名猜测“目标状态”（不可保证命中；猜不中则 to=None）
         """
         Model = self.env[model_name].sudo()
-        fget = Model.fields_get()
+        fget = fields_get_snapshot if isinstance(fields_get_snapshot, dict) else Model.fields_get()
         # 1) 识别状态字段与状态集
         state_field, states = self._infer_states_from_fields(fget)
 
         # 2) 解析表单视图，提取 buttons（含 states/groups/context 等）
-        arch = self._get_form_arch(model_name)
-        buttons = self._parse_buttons_from_form_arch(arch) if arch else []
+        if isinstance(form_view_data, dict):
+            arch = form_view_data.get('arch') or ''
+            form_root = form_view_data.get('_arch_root')
+        else:
+            arch = self._get_form_arch(model_name)
+            form_root = None
+        buttons = self._parse_buttons_from_form_arch(arch, root=form_root) if arch or form_root is not None else []
 
         # 3) 生成 transitions
         state_keys = [s['key'] for s in states]
@@ -418,7 +427,7 @@ class AppWorkflowConfig(models.Model):
         except Exception:
             return None
 
-    def _parse_buttons_from_form_arch(self, arch):
+    def _parse_buttons_from_form_arch(self, arch, root=None):
         """
         解析 <form> 内按钮：
         - type/name/string/states/groups/domain/context
@@ -427,9 +436,10 @@ class AppWorkflowConfig(models.Model):
         out = []
         try:
             from lxml import etree
-            if not arch:
+            if root is None and not arch:
                 return out
-            root = etree.fromstring(arch.encode('utf-8'))
+            if root is None:
+                root = etree.fromstring(arch.encode('utf-8'))
             for btn in root.xpath('.//button'):
                 btype = btn.get('type') or 'object'
                 name = btn.get('name') or ''

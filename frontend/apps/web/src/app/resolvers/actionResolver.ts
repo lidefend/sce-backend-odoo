@@ -1,15 +1,15 @@
 import type { NavMeta, NavNode } from '@sc/schema';
 import { findActionMeta, findActionMetaByMenu } from '../menu';
-import { loadActionContract, loadModelLitePreviewContract } from '../../api/contract';
+import { loadActionContractStore } from '../../api/contract';
 import {
-  adaptLiteContractToActionViewContract,
-  isLiteContractPilotCandidate,
-  needsLiteContractAllTreeViewPreflight,
-} from '../runtime/unifiedPageContractLitePilot';
+  resolveContractV2PrimaryDataSource,
+  resolveContractV2SourceContext,
+  type ContractV2NormalizedStore,
+} from '../contracts/v2';
 
 export interface ActionResolution {
   meta: NavMeta;
-  contract: Awaited<ReturnType<typeof loadActionContract>>;
+  contract: Awaited<ReturnType<typeof loadActionContractStore>>;
 }
 
 function splitViewModes(raw: unknown): string[] {
@@ -24,46 +24,24 @@ function splitViewModes(raw: unknown): string[] {
     .filter(Boolean);
 }
 
-function resolveMetaFromContract(contract: unknown, actionId: number): NavMeta {
-  const normalized = (contract && typeof contract === 'object' && !Array.isArray(contract))
-    ? contract as Record<string, unknown>
-    : {};
-  const head = (normalized.head && typeof normalized.head === 'object' && !Array.isArray(normalized.head))
-    ? (normalized.head as Record<string, unknown>)
-    : {};
-  const views = (normalized.views && typeof normalized.views === 'object' && !Array.isArray(normalized.views))
-    ? (normalized.views as Record<string, unknown>)
-    : {};
-  const treeView = (views.tree && typeof views.tree === 'object' && !Array.isArray(views.tree))
-    ? (views.tree as Record<string, unknown>)
-    : {};
-  const formView = (views.form && typeof views.form === 'object' && !Array.isArray(views.form))
-    ? (views.form as Record<string, unknown>)
-    : {};
-  const kanbanView = (views.kanban && typeof views.kanban === 'object' && !Array.isArray(views.kanban))
-    ? (views.kanban as Record<string, unknown>)
-    : {};
-  const model = String(head.model || normalized.model || treeView.model || formView.model || kanbanView.model || '').trim();
-  const viewModes = splitViewModes(head.view_type || normalized.view_type || '');
-  const name = String(head.title || normalized.name || '').trim();
-  const actionType = String(normalized.action_type || head.action_type || 'ir.actions.act_window').trim();
-  const domain = head.domain ?? normalized.domain;
-  const domainRaw = head.domain_raw ?? normalized.domain_raw;
-  const context = head.context ?? normalized.context;
-  const contextRaw = head.context_raw ?? normalized.context_raw;
+function resolveMetaFromContract(contract: ContractV2NormalizedStore, actionId: number): NavMeta {
+  const pageInfo = contract.snapshot.pageInfo;
+  const primaryDataSource = resolveContractV2PrimaryDataSource(contract);
+  const sourceContext = resolveContractV2SourceContext(contract);
+  const model = String(pageInfo.model || '').trim();
+  const name = String(pageInfo.pageName || '').trim();
+  const viewType = String(pageInfo.viewType || '').trim().toLowerCase();
   const out: NavMeta = {
     action_id: Number(actionId || 0),
-    action_type: actionType || 'ir.actions.act_window',
+    action_type: 'ir.actions.act_window',
   };
   if (model) out.model = model;
   if (name) out.name = name;
-  if (viewModes.length) out.view_modes = viewModes;
-  if (Array.isArray(domain) || typeof domain === 'string') out.domain = domain;
-  if (typeof domainRaw === 'string' && domainRaw.trim()) out.domain_raw = domainRaw;
-  if ((context && typeof context === 'object' && !Array.isArray(context)) || typeof context === 'string') {
-    out.context = context as NavMeta['context'];
-  }
-  if (typeof contextRaw === 'string' && contextRaw.trim()) out.context_raw = contextRaw;
+  if (viewType) out.view_modes = [viewType === 'list' ? 'tree' : viewType];
+  if (Array.isArray(primaryDataSource.domain)) out.domain = primaryDataSource.domain;
+  if (typeof primaryDataSource.domain_raw === 'string') out.domain_raw = primaryDataSource.domain_raw;
+  if (sourceContext.context) out.context = sourceContext.context;
+  if (sourceContext.contextRaw) out.context_raw = sourceContext.contextRaw;
   return out;
 }
 
@@ -106,7 +84,7 @@ export async function resolveAction(
   const contractOptions = {
     sceneKey: String(options?.sceneKey || '').trim() || undefined,
     menuId: currentMenuId > 0 ? currentMenuId : undefined,
-    viewType: String(options?.viewType || '').trim().toLowerCase() as Parameters<typeof loadActionContract>[1] extends infer T
+    viewType: String(options?.viewType || '').trim().toLowerCase() as Parameters<typeof loadActionContractStore>[1] extends infer T
       ? T extends { viewType?: infer V } ? V : never
       : never,
     contextRaw: String(options?.contextRaw || '').trim() || undefined,
@@ -121,43 +99,8 @@ export async function resolveAction(
   // Always prefer menuTree meta to avoid stale/incomplete currentAction snapshots.
   const seedMeta = metaFromMenu || (currentMatches ? currentAction : null);
 
-  let legacyContract: Awaited<ReturnType<typeof loadActionContract>> | null = null;
-  let candidateMeta = seedMeta;
-  if (needsLiteContractAllTreeViewPreflight(seedMeta)) {
-    legacyContract = await loadActionContract(actionId, contractOptions);
-    candidateMeta = mergeMeta(seedMeta, resolveMetaFromContract(legacyContract, actionId));
-  }
-
-  const hasUnifiedV2Contract = Boolean(
-    legacyContract
-    && typeof legacyContract === 'object'
-    && !Array.isArray(legacyContract)
-    && (legacyContract as Record<string, unknown>).__unified_page_contract_v2,
-  );
-  if (hasUnifiedV2Contract) {
-    const meta = mergeMeta(seedMeta, resolveMetaFromContract(legacyContract, actionId));
-    if (!meta.action_id) meta.action_id = Number(actionId || 0);
-    return { meta, contract: legacyContract };
-  }
-
-  if (isLiteContractPilotCandidate(candidateMeta)) {
-    const liteContract = await loadModelLitePreviewContract(String(candidateMeta?.model || ''), { viewType: 'tree' });
-    if (liteContract) {
-      const contract = adaptLiteContractToActionViewContract(liteContract);
-      const fallbackMeta = resolveMetaFromContract(contract, actionId);
-      const meta = mergeMeta(candidateMeta, fallbackMeta);
-      if (!meta.action_id) {
-        meta.action_id = Number(actionId || 0);
-      }
-      return { meta, contract };
-    }
-  }
-
-  const contract = legacyContract || await loadActionContract(actionId, contractOptions);
-  const fallbackMeta = resolveMetaFromContract(contract, actionId);
-  const meta = mergeMeta(seedMeta, fallbackMeta);
-  if (!meta.action_id) {
-    meta.action_id = Number(actionId || 0);
-  }
-  return { meta, contract };
+  const canonicalStore = await loadActionContractStore(actionId, contractOptions);
+  const meta = mergeMeta(seedMeta, resolveMetaFromContract(canonicalStore, actionId));
+  if (!meta.action_id) meta.action_id = Number(actionId || 0);
+  return { meta, contract: canonicalStore };
 }

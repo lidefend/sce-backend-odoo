@@ -206,6 +206,94 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
             encoding="utf-8",
         )
 
+    def register_oversized_blob_exception(
+        self,
+        *,
+        path: str,
+        blob_id: str,
+        rule_id: str = "RH007",
+        classification: str = "OVERSIZED_BLOB",
+    ) -> None:
+        registry = "oversized-blob-exceptions.json"
+        policy = json.loads(self.policy.read_text(encoding="utf-8"))
+        policy["oversized_blob_exception_registry"] = registry
+        self.policy.write_text(json.dumps(policy) + "\n", encoding="utf-8")
+        (self.root / registry).write_text(
+            json.dumps(
+                {
+                    "schema_version": "sce.repository_oversized_blob_exceptions.v1",
+                    "entries": [
+                        {
+                            "rule_id": rule_id,
+                            "path": path,
+                            "blob_id": blob_id,
+                            "classification": classification,
+                            "reason": "reviewed generated evidence",
+                        }
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def test_exact_registered_oversized_blob_is_scanned_and_suppressed(self) -> None:
+        path = "contracts/generated/report.json"
+        self.write(path, "x" * (1024 * 1024 + 1))
+        blob_id = self.git("hash-object", path).stdout.strip()
+        self.register_oversized_blob_exception(path=path, blob_id=blob_id)
+        self.commit("add governed oversized evidence")
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("oversized_exceptions=1", result.stdout)
+
+    def test_oversized_exception_does_not_suppress_changed_blob(self) -> None:
+        path = "contracts/generated/report.json"
+        self.write(path, "x" * (1024 * 1024 + 1))
+        blob_id = self.git("hash-object", path).stdout.strip()
+        self.register_oversized_blob_exception(path=path, blob_id=blob_id)
+        self.write(path, "y" * (1024 * 1024 + 1))
+        self.commit("add changed oversized evidence")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("OVERSIZED_BLOB", result.stderr)
+        self.assertIn("STALE_OVERSIZED_BLOB_EXCEPTION", result.stderr)
+
+    def test_oversized_exception_does_not_suppress_other_path(self) -> None:
+        path = "contracts/generated/report.json"
+        self.write(path, "x" * (1024 * 1024 + 1))
+        blob_id = self.git("hash-object", path).stdout.strip()
+        self.register_oversized_blob_exception(
+            path="contracts/generated/other.json",
+            blob_id=blob_id,
+        )
+        self.commit("add path-mismatched oversized evidence")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("OVERSIZED_BLOB", result.stderr)
+        self.assertIn("STALE_OVERSIZED_BLOB_EXCEPTION", result.stderr)
+
+    def test_registered_oversized_blob_still_rejects_secret_material(self) -> None:
+        path = "contracts/generated/report.json"
+        secret_value = "ghp_" + "A" * 36
+        self.write(path, secret_value + "\n" + "x" * (1024 * 1024 + 1))
+        blob_id = self.git("hash-object", path).stdout.strip()
+        self.register_oversized_blob_exception(path=path, blob_id=blob_id)
+        self.commit("add unsafe oversized evidence")
+        result = self.run_guard()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SECRET_MATERIAL", result.stderr)
+        self.assertNotIn(secret_value, result.stdout + result.stderr)
+
+    def test_oversized_exception_requires_full_blob_identity(self) -> None:
+        self.register_oversized_blob_exception(
+            path="contracts/generated/report.json",
+            blob_id="abc123",
+        )
+        result = self.run_guard()
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("classification=ValueError", result.stderr)
+
     def test_exact_registered_synthetic_mobile_history_is_suppressed(self) -> None:
         path = "addons/smart_construction_demo/demo.py"
         self.write(path, "phone = '138" + "00000001'\n")

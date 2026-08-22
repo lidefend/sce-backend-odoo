@@ -155,7 +155,7 @@ def validate() -> list[str]:
         errors.append("menu configuration runtime must not retry through a fallback navigation authority")
     if "def _native_route_discovery_blocked" not in service_source or "reserved_pairs=reserved_pairs" not in service_source:
         errors.append("native product routes must preserve stable menu/action pair identity")
-    if "delivery_engine_v1.released_policy_nav" not in service_source:
+    if "delivery_engine.released_policy_nav" not in service_source:
         errors.append("released inactive/action-only targets must use the governed policy action projection")
     if '"policy_group_label": str(group.get("group_label") or "").strip()' not in service_source:
         errors.append("released product grouping must come from the versioned product policy")

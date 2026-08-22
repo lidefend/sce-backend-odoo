@@ -152,8 +152,16 @@ async function normalizedSubmitEvidence(response, evidenceLabel) {
   const data = envelope?.data || envelope?.result?.data || envelope?.result || {};
   const rules = Array.isArray(data?.actionContract?.actionRuleList) ? data.actionContract.actionRuleList : [];
   const statuses = Array.isArray(data?.statusContract?.buttonStatus) ? data.statusContract.buttonStatus : [];
-  const submitRules = rules.filter((row) => row?.backendIdentity === 'button:object:action_submit');
-  const submitStatuses = statuses.filter((row) => row?.backendIdentity === 'button:object:action_submit');
+  const resolution = data?.actionContract?.primaryResolution || {};
+  const winnerIdentity = String(resolution?.winner || '');
+  const submitCandidates = rules.filter((row) => row?.button?.name === 'action_submit');
+  const submitRules = submitCandidates.filter((row) => (
+    winnerIdentity
+      ? row?.backendIdentity === winnerIdentity
+      : row?.presentation?.tier === 'primary'
+  ));
+  const submitIdentities = new Set(submitRules.map((row) => String(row?.backendIdentity || '')).filter(Boolean));
+  const submitStatuses = statuses.filter((row) => submitIdentities.has(String(row?.backendIdentity || '')));
   const evidence = {
     rules: submitRules.map((row) => ({
       actionKey: row.actionKey || '', backendIdentity: row.backendIdentity || '', label: row.label || '',
@@ -206,8 +214,8 @@ async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = n
   // product header slot still carries them under the field-config designer
   // scope, so both containers are accepted here.
   const selector = [
-    '.template-page-header-actions button[data-backend-identity="button:object:action_submit"]',
-    'nav.canonical-form-action-bar button[data-backend-identity="button:object:action_submit"]',
+    '.template-page-header-actions button[data-action-method="action_submit"]',
+    '[data-canonical-action-bar] button[data-action-method="action_submit"]',
   ].join(', ');
   let submit = page.locator(selector);
   if (!(await submit.count()) || !(await submit.first().isVisible())) {
@@ -218,7 +226,7 @@ async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = n
     }
     submit = page.locator(selector);
   }
-  const actions = await page.locator('.template-page-header-actions button, nav.canonical-form-action-bar button').evaluateAll((buttons) => buttons.map((button) => ({
+  const actions = await page.locator('.template-page-header-actions button, [data-canonical-action-bar] button').evaluateAll((buttons) => buttons.map((button) => ({
     text: String(button.textContent || '').replace(/\s+/g, ' ').trim(),
     actionKey: button.getAttribute('data-action-key') || '',
     backendIdentity: button.getAttribute('data-backend-identity') || '',

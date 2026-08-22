@@ -41,7 +41,7 @@ const registrations: readonly ActionSurfaceRendererRegistration[] = [
   { semantic: 'graph', requestedRendererKey: 'core.graph', activeRendererKey: 'core.readable_records', status: 'fallback', outlet: 'standard', reasonCode: 'RENDERER_GRAPH_PLANNED' },
   { semantic: 'calendar', requestedRendererKey: 'core.calendar', activeRendererKey: 'core.readable_records', status: 'fallback', outlet: 'standard', reasonCode: 'RENDERER_CALENDAR_PLANNED' },
   { semantic: 'gantt', requestedRendererKey: 'core.gantt', activeRendererKey: 'core.readable_records', status: 'fallback', outlet: 'standard', reasonCode: 'RENDERER_GANTT_PLANNED' },
-  { semantic: 'activity', requestedRendererKey: 'core.activity', activeRendererKey: 'core.readable_records', status: 'fallback', outlet: 'standard', reasonCode: 'RENDERER_ACTIVITY_PLANNED' },
+  { semantic: 'activity', requestedRendererKey: 'core.activity', activeRendererKey: 'core.activity', status: 'ready', outlet: 'standard', reasonCode: '' },
   { semantic: 'dashboard', requestedRendererKey: 'core.dashboard', activeRendererKey: 'core.readable_records', status: 'fallback', outlet: 'standard', reasonCode: 'RENDERER_DASHBOARD_PLANNED' },
 ];
 

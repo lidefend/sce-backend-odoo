@@ -8,6 +8,9 @@ import re
 import ast
 from pathlib import Path
 
+from contract_form_semantic_identity_guard import validate_semantic_identity_projection
+from scene_audit_disclosure_guard import audit_disclosure_is_governed
+
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB_SRC = ROOT / "frontend/apps/web/src"
@@ -51,33 +54,65 @@ require(exports.get("./form") == "./src/form.ts", "form export missing")
 
 wrapper = (WEB_SRC / "components/action/SceneReadonlyCollectionRenderer.vue").read_text(encoding="utf-8")
 require("from '@sc/ui/collection'" in wrapper, "renderer must use narrow collection export")
+require(
+    "data-scene-driver-chooser" not in wrapper
+    and "scene-driver-chooser" not in wrapper,
+    "component supplier chooser returned to the ordinary collection product surface",
+)
 form_host = (WEB_SRC / "pages/contractForm/ContractFormDriverHost.vue").read_text(encoding="utf-8")
+contract_form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
+web_index = (ROOT / "frontend/apps/web/index.html").read_text(encoding="utf-8")
 object_task_page = (WEB_SRC / "pages/contractForm/ObjectTaskPage.vue").read_text(encoding="utf-8")
+canonical_action_bar = (WEB_SRC / "pages/contractForm/CanonicalActionBar.vue").read_text(encoding="utf-8")
 form_floorplan = (WEB_SRC / "app/presentation/canonicalFormFloorplan.ts").read_text(encoding="utf-8")
+canonical_native_bridge = (WEB_SRC / "pages/contractForm/canonicalNativeFormBridge.ts").read_text(encoding="utf-8")
 action_executor = (WEB_SRC / "pages/contractForm/canonicalFormActionExecutor.ts").read_text(encoding="utf-8")
+presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
 v2_assembler = (ROOT / "addons/smart_core/core/unified_page_contract_v2_assembler.py").read_text(encoding="utf-8")
 v2_handler = (ROOT / "addons/smart_core/handlers/ui_contract_v2.py").read_text(encoding="utf-8")
 v2_projection = (ROOT / "addons/smart_core/handlers/ui_contract_v2_projection.py").read_text(encoding="utf-8")
 require("from '@sc/ui/form'" in form_host, "form driver host must use narrow form export")
 require(
     "SceneUiProvider" in form_host
-    and "CanonicalFormNodeRenderer" in form_host
+    and "ObjectTaskPage" in form_host
+    and "NativeFormTreeRenderer" in form_host
+    and "buildCanonicalNativeFormBridge" in form_host
     and "data-native-contract-structure" in form_host,
-    "form driver does not directly render the normalized native structure",
+    "form driver does not retain the product floorplan plus governed native compatibility renderer",
 )
 require(
-    "composeCanonicalFormFloorplan" not in form_host
-    and "renderModel?.zones.primary" in form_host
-    and "renderModel?.zones.subordinate" in form_host,
-    "form driver still routes native structure through a frontend floorplan policy",
+    "composeCanonicalFormFloorplan" in form_host
+    and 'v-if="floorplan.decisionMode"' in form_host
+    and '<article v-else class="sc-native-contract-page"' in form_host
+    and "nativeBridge.primaryNodes" in form_host
+    and "nativeBridge.subordinateNodes" in form_host,
+    "semantic readonly forms must use the canonical floorplan while native structure remains an explicit fallback",
+)
+require("CanonicalFormNodeRenderer" in object_task_page, "object-task floorplan does not render canonical form nodes")
+require("renderModel.zones" in form_floorplan, "floorplan does not consume canonical zones")
+require(
+    "renderModel.zones.primary.map(mapNode)" in canonical_native_bridge
+    and "renderModel.zones.subordinate" in canonical_native_bridge
+    and "canonicalFieldToFormSection(field)" in canonical_native_bridge
+    and "name: field.widgetId" in canonical_native_bridge
+    and "name: field.fieldCode" in canonical_native_bridge,
+    "canonical native bridge does not preserve normalized hierarchy and field occurrence identity",
 )
 for forbidden_floorplan_fact in ("payment.request", "sc.payment.execution", "付款申请", "财务经理"):
     require(
-        forbidden_floorplan_fact not in form_floorplan and forbidden_floorplan_fact not in object_task_page,
+        forbidden_floorplan_fact not in form_floorplan
+        and forbidden_floorplan_fact not in object_task_page
+        and forbidden_floorplan_fact not in canonical_native_bridge,
         f"generic object-task floorplan contains business inference: {forbidden_floorplan_fact}",
     )
 require("SceneObjectPageContract" not in form_host, "ContractForm driver host must not consume the UI-internal SceneObjectPage DTO")
 require("data-contract-form-driver-error" in form_host, "invalid normalized form contract does not fail closed")
+require(
+    "floorplan.value.decisionMode ? 'tdesign-modern' : activeKit.value" in form_host
+    and ':kit="renderKit"' in form_host
+    and 'fallback-kit="sc-native"' in form_host,
+    "semantic readonly product pages must default to TDesign with native fallback",
+)
 require(
     "showUserDriverChooser?: boolean" in form_host
     and "props.driverConfig?.showUserDriverChooser === true" in form_host,
@@ -94,12 +129,28 @@ require(
     "form driver does not mechanically preserve normalized action tiers",
 )
 require(
+    "canonicalFormActionIconClass(action.icon)" in form_host
+    and "canonical-form-action-icon" in form_host
+    and "canonicalFormActionIconClass(action.icon)" in canonical_action_bar
+    and "canonical-action-bar__icon" in canonical_action_bar
+    and "SceneButton" in canonical_action_bar
+    and "action.actionRef" in canonical_action_bar
+    and "action.reasonCode" not in canonical_action_bar
+    and "action.presentation?.icon" in presenter,
+    "native and semantic action bars do not preserve canonical action identity and icon",
+)
+require(
+    '/web/static/lib/fontawesome/css/font-awesome.css' not in web_index
+    and '<ScIcon v-if="canonicalFormActionIconClass(action.icon)"' in form_host
+    and '<ScIcon v-if="canonicalFormActionIconClass(action.icon)"' in canonical_action_bar,
+    "canonical action icons must render locally without coupling the product shell to an Odoo web asset",
+)
+require(
     "var(--sc-semantic-surface-interactive)" in form_host
     and "var(--sc-semantic-text-on-interactive) !important" in form_host,
     "primary action does not consume the registered interactive contrast tokens",
 )
 require("actionId === 'form.save'" in action_executor, "canonical form.save is not bridged to the unified save executor")
-presenter = (WEB_SRC / "app/presentation/contractFormPresenter.ts").read_text(encoding="utf-8")
 canonical_node_renderer = (WEB_SRC / "pages/contractForm/CanonicalFormNodeRenderer.vue").read_text(encoding="utf-8")
 require(
     "mode === 'readonly' && action.actionId === 'form.save'" in presenter,
@@ -112,16 +163,25 @@ require(
 require(
     (
         "filter(isFormActionBarAction)" in presenter
-        or "filter((action) => isFormActionBarAction(action.actionRef))" in presenter
+        or "isFormActionBarAction(action.actionRef)" in presenter
     )
+    and "demotedActionIds.has(action.actionRef.actionId)" in presenter
     and "sourceWidgetId === 'page.root'" in presenter
     and "targetScope === 'footer'" in presenter,
-    "iteration one changed the cb6e276 canonical form action collection",
+    "canonical form action collection does not honor the backend primary resolution",
 )
 require(
     "actionsByIdentity.get(actionIdentity)" in presenter
     and "node.action.actionRef" in canonical_node_renderer,
     "native body action occurrences must reuse canonical action references",
+)
+recursive_node_call = canonical_node_renderer[
+    canonical_node_renderer.index("<CanonicalFormNodeRenderer"):
+    canonical_node_renderer.index("</section>")
+]
+require(
+    '@action-ref="emit(\'action-ref\', $event)"' in recursive_node_call,
+    "recursive canonical node actions do not reach the unified executor adapter",
 )
 require(
     'action_id = "form.save"' in v2_assembler
@@ -142,22 +202,40 @@ for forbidden_action_inference in ("actionRef.label", "candidate.methodName", "c
 for legacy_structure_input in (
     "ContractFormNativeCanvas",
     "layoutNodes",
-    "fieldSchemasForNodes",
-    "nativeActionStateResolver",
     "isNodeVisible",
     'v-bind="$attrs"',
 ):
     require(legacy_structure_input not in form_host, f"form driver retains legacy structure authority: {legacy_structure_input}")
 for canonical_input in ("renderModel.actionBar", "action.actionRef", "data-canonical-action-bar"):
-    require(canonical_input in form_host, f"form driver does not consume canonical authority: {canonical_input}")
+    require(
+        canonical_input in form_host or canonical_input in canonical_action_bar,
+        f"form driver does not consume canonical authority: {canonical_input}",
+    )
+require("data-canonical-form-zones" in object_task_page, "object-task floorplan does not expose canonical zone evidence")
+for semantic_region in ("summary", "current-task", "business-context", "relation", "activity", "audit"):
+    require(
+        f'data-floorplan-region="{semantic_region}"' in object_task_page,
+        f"object-task floorplan does not expose {semantic_region} semantic region",
+    )
 require(
-    "widget.formStructureRole" in presenter
-    and "semanticRole: semanticRole(container.formStructureRole)" in presenter,
+    audit_disclosure_is_governed(object_task_page),
+    "audit region must be content-backed and default-collapsed",
+)
+require(
+    not validate_semantic_identity_projection(presenter),
     "normalized form semantic roles do not survive the canonical mechanical mapping",
 )
 require(
-    "showCollaborationPanel && hasCollaborationNode" in form_host,
-    "frontend manufactures collaboration without normalized subordinate capability",
+    "props.showCollaborationPanel === true || hasCollaborationNode.value" in form_host
+    and ':show-collaboration-panel="showNativeCollaborationPanel"' in contract_form_page,
+    "collaboration region must follow the normalized runtime capability or subordinate node authority",
+)
+provider = (UI_SRC / "components/SceneUiProvider.vue").read_text(encoding="utf-8")
+require(
+    "{{ loadFailure.requestedKit }}" not in provider
+    and "{{ loadFailure.fallbackKit }}" not in provider
+    and "已切换到兼容模式" in provider,
+    "component supplier names leak into the ordinary recovery notice",
 )
 
 host = (WEB_SRC / "views/ActionView.vue").read_text(encoding="utf-8")
@@ -182,6 +260,15 @@ for reason in (
     require(reason in policy, f"fail-closed reason missing: {reason}")
 require("SCENE_DRIVER_FORM_MODE_UNSUPPORTED" in policy, "readonly entitlement does not constrain form mode")
 require("SCENE_DRIVER_FORM_MODES_MISSING" in policy, "editable form entitlement does not fail closed without explicit modes")
+require(
+    "systemDefaultKit: 'tdesign-modern'" in policy
+    and "resolution: { kit: 'tdesign-modern', source: 'safe-default' }" in policy,
+    "TDesign is not the formal safe product default",
+)
+require(
+    "allowUserOverride: false" in policy,
+    "component supplier remains a user-selectable product preference",
+)
 
 form_section = (WEB_SRC / "components/template/FormSection.vue").read_text(encoding="utf-8")
 require("from '@sc/ui/form'" in form_section, "form fields must consume the narrow driver-neutral UI export")
@@ -191,9 +278,15 @@ require(
     "driver field value bypasses the canonical empty-value normalizer",
 )
 require(
-    form_section.index('v-else-if="usesSceneFieldControl(field)"')
+    form_section.index('v-else-if="usesSceneFieldControl(field) && !(preferReadonlyFacts && field.readonly)"')
     < form_section.index('v-else-if="field.readonly"'),
     "readonly ContractForm fields bypass the selected component driver",
+)
+require(
+    "preferReadonlyFacts?: boolean" in form_section
+    and ":prefer-readonly-facts=\"preferReadonlyFacts\"" in canonical_node_renderer
+    and object_task_page.count("prefer-readonly-facts") >= 6,
+    "semantic readonly floorplan still renders disabled edit controls instead of business facts",
 )
 require(
     form_section.index('v-else-if="isRelationEditorField(field) && relationAdapter"')
@@ -274,7 +367,8 @@ require(
 )
 require(
     "validateCanonicalFormActionExecutors(" in form_page
-    and "validateCanonicalFormActionExecutors(model.actionBar, contractActions.value)" in form_page,
+    and "collectCanonicalFormActions(model)" in form_page
+    and "validateCanonicalFormActionExecutors(collectCanonicalFormActions(model), contractActions.value)" in form_page,
     "canonical cutover does not validate every executable action reference",
 )
 require(
