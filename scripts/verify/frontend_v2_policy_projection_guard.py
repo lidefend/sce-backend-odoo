@@ -189,7 +189,9 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
 
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     # Formal enum values.
+    "act_window",
     "harmony_h5",
+    "native_activity_view_projection",
     "web_pc",
     "wx_mini",
     # Explicit dataMeta forbidden-key rejection.
@@ -205,11 +207,16 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "search_panel",
     "ui_labels",
     # Native form container extension compatibility.
+    "currency_field",
     "field_type",
     # Formal native occurrence carrier keys inside componentConfig.
     "native_locator",
     "occurrence_index",
     "source_position",
+    # Governed activity projection source-authority keys.
+    "no_business_fact_authority",
+    "projection_only",
+    "runtime_carrier",
 }
 
 FORBIDDEN_STRICT_ALIAS_HELPERS = (
