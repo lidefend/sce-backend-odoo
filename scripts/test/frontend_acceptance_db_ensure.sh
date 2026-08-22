@@ -32,7 +32,7 @@ frontend_acceptance_make mod.upgrade \
   MODULE=smart_construction_core \
   CODEX_NEED_UPGRADE=1 \
   CODEX_MODULES=smart_core,smart_construction_core
-DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'
+ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'
 param = env['ir.config_parameter'].sudo().get_param('smart_core.release_operator.product_base_keys', '')
 states = {
     row.name: row.state

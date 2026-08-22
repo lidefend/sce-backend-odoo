@@ -122,10 +122,15 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         construction_upgrade = source.index(
             "frontend_acceptance_make mod.upgrade \\\n  MODULE=smart_construction_core"
         )
-        fixture_probe = source.index("DB_NAME=\"$DB_NAME\" bash scripts/ops/odoo_shell_exec.sh")
+        fixture_probe = source.index(
+            'ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh'
+        )
         self.assertLess(smart_core_upgrade, construction_upgrade)
         self.assertLess(construction_upgrade, fixture_probe)
         self.assertIn("CODEX_MODULES=smart_core,smart_construction_core", source)
+        self.assertNotIn(
+            '\nDB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh', source
+        )
         adapter = (ROOT / "scripts/common/frontend_acceptance_make_identity.sh").read_text(
             encoding="utf-8"
         )
