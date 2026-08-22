@@ -1312,6 +1312,7 @@ try {
         { enabled: true },
       );
       await editAction.click();
+      await page.waitForURL((url) => url.pathname === `/f/payment.request/${Number(item.id)}`, { timeout: 45000 });
       const variantEditSurface = await requireUnique(
         page,
         page.locator(
@@ -1324,6 +1325,20 @@ try {
       const editableFields = variantEditSurface.locator(
         'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled)',
       );
+      await page.waitForFunction(({ expectedRecord, expectedAction, expectedMenu }) => {
+        const forms = [...document.querySelectorAll(
+          `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${expectedRecord}"]`
+          + `[data-form-action-id="${expectedAction}"][data-form-menu-id="${expectedMenu}"]`,
+        )].filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+        if (forms.length !== 1) return false;
+        return forms[0].querySelectorAll(
+          'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled)',
+        ).length > 0;
+      }, {
+        expectedRecord: String(Number(item.id)),
+        expectedAction: String(actionId),
+        expectedMenu: String(menuId),
+      }, { timeout: 45000 });
       stateVariants[kind].editableFields = await editableFields.count();
       check(stateVariants[kind].editableFields > 0, 'blocked remediation path did not enter edit mode');
       stateVariants[kind].editMetrics = await collectWriteFloorplanMetrics(page, variantEditSurface);
