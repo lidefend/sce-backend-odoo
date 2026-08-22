@@ -189,6 +189,7 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         db_ensure = operation.split("  db-ensure)", 1)[1].split("    ;;", 1)[0]
         infrastructure = db_ensure.index("compose_dev up -d --wait db redis")
         carrier = db_ensure.index("compose_dev create odoo", infrastructure)
+        config = db_ensure.index("render_odoo_conf.py", carrier)
         install = db_ensure.index("frontend_acceptance_db_ensure.sh")
         pre_restart_identity = db_ensure.index(
             'validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required',
@@ -200,7 +201,8 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             healthy,
         )
         self.assertLess(infrastructure, carrier)
-        self.assertLess(carrier, install)
+        self.assertLess(carrier, config)
+        self.assertLess(config, install)
         self.assertLess(install, pre_restart_identity)
         self.assertLess(pre_restart_identity, healthy)
         self.assertLess(healthy, final_identity)

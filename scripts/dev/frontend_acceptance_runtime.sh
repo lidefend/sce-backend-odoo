@@ -359,6 +359,8 @@ case "$command" in
     # but do not start it until module refresh is complete.
     compose_dev up -d --wait db redis
     compose_dev create odoo
+    compose_dev run --rm -T --no-deps --entrypoint /bin/sh odoo -eu -c \
+      'python3 /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template "${ODOO_CONF_OUT:-/var/lib/odoo/odoo.conf}"'
     bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
     compose_dev up -d --wait odoo
     preflight

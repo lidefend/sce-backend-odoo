@@ -289,6 +289,7 @@ validate_frozen_frontend_release_ci_resources() {
         recorded = compose_calls.read_text(encoding="utf-8")
         self.assertIn("up -d --wait db redis", recorded)
         self.assertIn("create odoo", recorded)
+        self.assertIn("render_odoo_conf.py", recorded)
         self.assertNotIn("up -d --wait odoo", recorded)
 
     def test_ci_frontend_lifecycle_is_bound_to_frozen_run_process_identity(self) -> None:

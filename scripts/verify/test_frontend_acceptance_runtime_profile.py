@@ -172,11 +172,13 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         db_ensure = runtime.split("  db-ensure)", 1)[1].split("    ;;", 1)[0]
         infrastructure = db_ensure.index("compose_dev up -d --wait db redis")
         carrier = db_ensure.index("compose_dev create odoo", infrastructure)
+        config = db_ensure.index("render_odoo_conf.py", carrier)
         refresh = db_ensure.index("frontend_acceptance_db_ensure.sh")
         healthy = db_ensure.index("compose_dev up -d --wait odoo", refresh)
         runtime_check = db_ensure.index("preflight", healthy)
         self.assertLess(infrastructure, carrier)
-        self.assertLess(carrier, refresh)
+        self.assertLess(carrier, config)
+        self.assertLess(config, refresh)
         self.assertNotIn("compose_dev restart odoo", db_ensure)
         self.assertLess(healthy, runtime_check)
 
