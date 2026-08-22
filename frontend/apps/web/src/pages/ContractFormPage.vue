@@ -23,6 +23,7 @@
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
+      :continue-processing-label="continueProcessingLabel"
       :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
       :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible"
@@ -1208,12 +1209,17 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
   quickSubmitDisabled: isQuickSubmitDisabled.value,
 }));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
+const blockedCanonicalPrimary = computed(() => Boolean(
+  canonicalProductFloorplan.value?.decisionMode
+  && canonicalProductFloorplan.value.blockedActions.some((action) => action.tier === 'primary'),
+));
 const showContinueProcessing = computed(() => (
   route.name === 'record'
   && Boolean(recordId.value)
   && rights.value.write
-  && !(canonicalProductFloorplan.value?.decisionMode && canonicalProductFloorplan.value.effectivePrimaryKey)
+  && (!canonicalProductFloorplan.value?.decisionMode || blockedCanonicalPrimary.value)
 ));
+const continueProcessingLabel = computed(() => blockedCanonicalPrimary.value ? '补充资料' : '继续办理');
 function continueProcessing() {
   if (!showContinueProcessing.value || !recordId.value) return;
   void router.push(buildModelFormRouteTarget({

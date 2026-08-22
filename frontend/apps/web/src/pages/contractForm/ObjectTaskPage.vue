@@ -337,7 +337,16 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   .object-task-page--decision {
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
-  .object-task-page__summary { grid-template-columns: minmax(0, 1fr); }
+  .object-task-page--decision .object-task-page__current-task { order: -1; }
+  .object-task-page__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px;
+  }
+  .object-task-page__summary :deep(.canonical-form-node) {
+    padding: 10px;
+    overflow-wrap: anywhere;
+  }
   .object-task-page__current-task-actions {
     position: fixed;
     z-index: 40;
