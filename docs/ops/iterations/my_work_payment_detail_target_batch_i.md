@@ -53,10 +53,17 @@ payment action whose Contract V2 drives the golden Floorplan.
   is invisible before approval.
 - The first frozen release run proved the target-routing correction (no HTTP
   500) and then failed closed on the missing single primary, which produced
-  this second P1 correction. The final release evidence follows the refreshed
-  candidate.
+  the P1 visibility correction and P0 backend-verdict projection.
 - Quick relevant security and contract guards — PASS; the aggregate Quick
   target stopped later on an unrelated pre-existing product-version duplicate
   in architecture documentation and a generated snapshot.
-- Governed acceptance upgrade, fixture reset and J10 browser evidence are
-  recorded after freezing the candidate commit.
+- Governed acceptance upgrade, registry reload, fixture reset and release
+  snapshot — PASS on the frozen candidate.
+- Page identity audit — PASS, 25 role-bound product surfaces and 0 failures.
+- Delivery hardening — PASS: J09, J10 and J11; 68 responsive checks including
+  390px; 0 accessibility blockers; no console, page, unhandled or HTTP errors.
+- J10 proves the My Work target opens the action-bound golden detail, exposes
+  exactly one effective `提交审批` primary action, executes its authoritative
+  native occurrence, refreshes state, and retains relationship/activity/audit
+  evidence. The aggregate result is recorded in
+  `artifacts/frontend-release-audit/report.json`.

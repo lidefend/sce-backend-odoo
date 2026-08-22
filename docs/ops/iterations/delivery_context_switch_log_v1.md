@@ -5007,14 +5007,16 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 
 ## Native form action icon presentation closure (2026-08-21)
 
-- Branch / anchor: `codex/fix-project-layout-container-normalize` / `aff09540`.
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `abc94683`.
 - Formal Product Layer / Layer Target / Module: P0 platform kernel / native
   action presentation carrier and generic canonical form renderer / `smart_core`
   and `frontend/apps/web`.
 - Reason / boundary: preserve the existing Odoo `fa-*` button icon atom through
-  `actionRule.presentation.icon` and render it with the native Font Awesome
-  asset while retaining the accessible text label. Unknown icon dialects fail
-  closed. No business-page semantics, field ordering or action behavior changed.
+  `actionRule.presentation.icon`, then map the supported token to the formal
+  local SVG icon primitive while retaining the accessible text label. Unknown
+  icon dialects fail closed. The product shell has no dependency on an Odoo web
+  asset, and no business-page semantics, field ordering or action behavior
+  changed.
 - Blast radius / validation: canonical form actions only; parser and UPC V2
   units, canonical presenter, action presentation, strict TypeScript and scene
   bridge guards passed. This small capability batch is intentionally closed
@@ -5062,7 +5064,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 
 ## My Work authoritative payment-detail target closure (2026-08-22)
 
-- Branch / anchor: `codex/fix-project-layout-container-normalize` / `7b5b4b61`.
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `73613c63`.
 - Formal Product Layer / Layer Target / Module: P1 construction standard plus
   P0 platform kernel / payment work-item navigation target and lossless
   single-primary projection / `smart_construction_core`, Contract V2 schema,
@@ -5078,6 +5080,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   remains fail-closed, and no Lite, Scene DTO, Native ledger or UI5 capability
   is added.
 - Blast radius / validation: only `我的工作 -> 付款申请详情` navigation changes.
-  The exact service test, strict TypeScript, P1 completeness guard, governed
-  acceptance upgrade/fixture cycle and J10 browser journey provide containment
-  evidence.
+  The exact service test, strict TypeScript, P1 completeness guard, 25-surface
+  page identity audit and J09-J11 release browser journey passed. J10 proves one
+  authoritative `提交审批` primary action through confirmation, execution,
+  refresh and audit evidence at desktop and 390px; browser runtime errors and
+  accessibility blockers are both zero.
+
+## Governed stale acceptance-backend replacement closure (2026-08-22)
+
+- Branch / anchor: `codex/fix-project-layout-container-normalize` / `73613c63`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling / existing
+  frontend acceptance lifecycle / `make/dev.mk` only.
+- Reason / boundary: the runtime already implemented a fail-closed
+  `backend-replace-stale` operation, but no Make target exposed it. A diagnostic
+  iteration that froze a new commit therefore could neither reuse nor safely
+  replace the old-SHA backend through the mandated Make-only channel.
+- Why Here / Why Not Elsewhere: the new target only delegates to the existing
+  resource-identity validation and replacement operation. It introduces no
+  Compose project, database, port, volume, credential, profile, fixture or
+  product behavior, and it does not weaken full source identity checks on the
+  ordinary up/down paths.
+- Blast radius / validation: local frontend acceptance backend lifecycle only.
+  Eleven runtime-profile governance tests passed; the stale backend was replaced
+  with the frozen candidate and the complete governed frontend release audit
+  subsequently passed.
