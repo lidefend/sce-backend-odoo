@@ -38,6 +38,7 @@ make local.dev.ps
 make local.dev.logs
 make local.dev.upgrade MODULE=smart_construction_core
 make local.dev.frontend
+make verify.local.dev.frontend.quick.gate
 make verify.local.dev.payment_request.native_parity.readonly
 make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestP1PaymentRequestCapability'
 make local.dev.sync_demo
@@ -93,6 +94,12 @@ CONFIRM_LOCAL_CLEAN_REBUILD=REBUILD_ISOLATED_REHEARSAL \
 所有链接工作树必须调用上述 `local.dev.*` / `local.sample.*` / `local.clean.*` 入口，不得在各工作树生成同名凭据文件，也不得手工组合
 Compose project、数据库、卷或端口。若 clean 凭据文件缺失但固定卷仍存在，普通 prepare/up
 必须失败关闭；只有受控 rebuild 可以生成新凭据并立即重建该隔离演练环境。
+
+链接工作树执行完整 Frontend Quick 时必须使用
+`make verify.local.dev.frontend.quick.gate`。该入口仅通过 Git common-dir 解析主工作树的固定
+`.env.dev` 权威，拒绝调用者覆盖、软链接、非 `0600` 权限、错误 owner 或错误 `local.dev`
+身份；它不会在链接工作树复制、生成或链接凭据文件。普通
+`make verify.frontend.quick.gate` 的默认语义保持不变。
 
 所有本地入口会先清除父进程继承的 project、database、dbfilter、volume 与 port 身份，再从
 对应的权威 env 文件重新装载。不得通过 shell export 覆盖身份，也不得直接调用嵌套 Make、
