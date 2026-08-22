@@ -461,6 +461,19 @@ assert.equal(createFloorplan.effectivePrimaryKey, 'form.save', 'create save must
 assert.deepEqual(createFloorplan.directActions.map((action) => action.key), ['form.save']);
 assert.deepEqual(createFloorplan.overflowActions, []);
 
+const unresolvedCreateIdentitySnapshot = structuredClone(createFloorplanSnapshot);
+unresolvedCreateIdentitySnapshot.dataContract.mainData.name = 'New';
+unresolvedCreateIdentitySnapshot.statusContract.widgetStatus = unresolvedCreateIdentitySnapshot.statusContract.widgetStatus
+  .map((status) => status.widgetId === 'field.name' ? { ...status, readonly: true, required: false } : status);
+assert.equal(
+  collectFields(composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(unresolvedCreateIdentitySnapshot),
+    'create',
+  )).taskNodes).some((field) => field.fieldCode === 'name'),
+  false,
+  'create floorplan must not expose an unresolved platform identity placeholder',
+);
+
 const createBackendPrimarySnapshot = structuredClone(createFloorplanSnapshot);
 createBackendPrimarySnapshot.actionContract.actionRuleList.push({
   ...createBackendPrimarySnapshot.actionContract.actionRuleList[0],
@@ -797,6 +810,19 @@ assert.deepEqual(
     ['field.name.occ.second', false, true],
   ],
   'canonical form must preserve same-field occurrences and their independent status',
+);
+const equivalentCreateOccurrences = structuredClone(duplicateOccurrences);
+equivalentCreateOccurrences.statusContract.widgetStatus = [
+  { widgetId: 'field.name.occ.first', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+  { widgetId: 'field.name.occ.second', visible: true, readonly: false, required: true, disabled: false, auth: 'edit' },
+];
+assert.deepEqual(
+  collectFields(composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(decodeContractV2Snapshot(equivalentCreateOccurrences)),
+    'create',
+  )).taskNodes).map((field) => field.widgetId),
+  ['field.name.occ.second'],
+  'create floorplan must merge equivalent occurrences while preserving the retained canonical identity',
 );
 
 const duplicateOccurrenceStatus = snapshot();

@@ -188,6 +188,38 @@ try {
   check(emptyCreateCount === 1, 'authorized empty payment list must expose exactly one create action', report.emptyState);
   await page.screenshot({ path: path.join(outputDir, 'payment-request-list-empty-desktop.png'), fullPage: true });
 
+  await emptySurface.getByRole('button', { name: /^新建$/ }).click();
+  const createSurface = page.locator('[data-product-page-mode="form"]').first();
+  await createSurface.waitFor({ timeout: 45000 });
+  await createSurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
+  const createEditableFields = await createSurface.locator(
+    'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled)',
+  ).count();
+  const createText = normalize(await createSurface.innerText());
+  const createInternalIdentityPlaceholders = await createSurface.locator(
+    '[data-field-state="readonly"] input, [data-field-state="readonly"] textarea',
+  ).evaluateAll((nodes) => nodes
+    .map((node) => String(node.value || '').trim())
+    .filter((value) => ['new', '/'].includes(value.toLowerCase())));
+  const createFieldOccurrences = await createSurface.locator('[data-field-name]').evaluateAll((nodes) => nodes.map((node) => ({
+    name: node.getAttribute('data-field-name'),
+    state: node.getAttribute('data-field-state'),
+    nodeId: node.closest('[data-canonical-node-id]')?.getAttribute('data-canonical-node-id') || '',
+  })));
+  report.emptyState.createPath = {
+    url: page.url(),
+    editableFields: createEditableFields,
+    text: createText,
+    internalIdentityPlaceholders: createInternalIdentityPlaceholders,
+    fieldOccurrences: createFieldOccurrences,
+  };
+  check(createEditableFields > 0, 'empty-state create action did not open an editable business form', report.emptyState.createPath);
+  check(!createText.split('\n').some((line) => /^[.·•:_-]+$/.test(line.trim())),
+    'create Floorplan exposed native punctuation placeholders', report.emptyState.createPath);
+  check(createInternalIdentityPlaceholders.length === 0,
+    'create Floorplan exposed an internal untranslated identity placeholder', report.emptyState.createPath);
+  await page.screenshot({ path: path.join(outputDir, 'payment-request-create-desktop.png'), fullPage: true });
+
   await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
   await targetRow.waitFor({ timeout: 45000 });
@@ -201,7 +233,9 @@ try {
 
   const systemInit = (intentBodies.get('system.init') || []).at(-1);
   const listContract = (intentBodies.get('ui.contract.v2') || []).find((body) => ['tree', 'list'].includes(findKey(body, 'viewType')));
-  const formContract = (intentBodies.get('ui.contract.v2') || []).find((body) => findKey(body, 'viewType') === 'form');
+  const formContract = (intentBodies.get('ui.contract.v2') || [])
+    .filter((body) => findKey(body, 'viewType') === 'form')
+    .at(-1);
   check(systemInit, 'system.init response was not observed');
   check(findKey(systemInit, 'role_surface'), 'system.init omitted role_surface');
   check(findKey(systemInit, 'default_route'), 'system.init omitted default_route');

@@ -49,18 +49,92 @@ function nodeHasContent(node: CanonicalFormNode): boolean {
   return node.children.some(nodeHasContent);
 }
 
-function createReadyNode(node: CanonicalFormNode): CanonicalFormNode {
-  return {
+function punctuationOnly(value: string): boolean {
+  return /^[\s.·•:_-]+$/.test(value);
+}
+
+function createNodeHasContent(node: CanonicalFormNode): boolean {
+  if (!node.visible) return false;
+  if (node.fields.some((field) => field.visible)) return true;
+  if (node.action || node.nativeWidget) return true;
+  if (node.text.trim() && !punctuationOnly(node.text)) return true;
+  if (['chatter', 'activity', 'attachment'].includes(node.kind.trim().toLowerCase())) return true;
+  return node.children.some(createNodeHasContent);
+}
+
+function unresolvedCreateIdentity(field: CanonicalFormNode['fields'][number]): boolean {
+  const code = field.fieldCode.trim().toLowerCase();
+  const value = String(field.value ?? '').trim().toLowerCase();
+  return field.readonly && ['name', 'display_name'].includes(code) && ['new', '/'].includes(value);
+}
+
+function createReadyNode(node: CanonicalFormNode, readonlyTitleAncestor = false): CanonicalFormNode {
+  const shellOwnsReadonlyTitle = readonlyTitleAncestor || node.kind.trim().toLowerCase() === 'h1';
+  const projected = {
     ...node,
+    text: punctuationOnly(node.text) ? '' : node.text,
     fields: node.fields.filter((field) => (
-      !field.visible
-      || !field.readonly
-      || field.required
-      || Boolean(field.reasonCode)
-      || hasPresentableValue(field)
+      !unresolvedCreateIdentity(field)
+      && !(shellOwnsReadonlyTitle && field.readonly)
+      && (
+        !field.visible
+        || !field.readonly
+        || field.required
+        || Boolean(field.reasonCode)
+        || hasPresentableValue(field)
+      )
     )),
-    children: node.children.map(createReadyNode),
+    children: node.children.map((child) => createReadyNode(child, shellOwnsReadonlyTitle)),
   };
+  return {
+    ...projected,
+    children: projected.children.filter(createNodeHasContent),
+  };
+}
+
+function createFieldOccurrenceSignature(field: CanonicalFormNode['fields'][number]): string {
+  const occurrenceIdentityKeys = new Set([
+    'native_locator', 'nativeLocator', 'occurrence_index', 'occurrenceIndex', 'source_position', 'sourcePosition',
+  ]);
+  function occurrenceNeutral(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(occurrenceNeutral);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !occurrenceIdentityKeys.has(key))
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => [key, occurrenceNeutral(item)]));
+  }
+  return [
+    field.fieldCode, field.label, field.fieldType, field.componentKey, String(field.span), String(field.hideLabel),
+    String(field.visible), String(field.readonly), String(field.required), String(field.disabled),
+    field.reasonCode, field.semanticRole,
+    JSON.stringify(occurrenceNeutral(field.componentConfig)), JSON.stringify(occurrenceNeutral(field.fieldDescriptor)),
+  ].join('|');
+}
+
+function deduplicateEquivalentCreateFields(nodes: CanonicalFormNode[]): CanonicalFormNode[] {
+  const retainedWidgetBySignature = new Map<string, string>();
+  function collect(node: CanonicalFormNode) {
+    node.fields.forEach((field) => {
+      if (field.visible) retainedWidgetBySignature.set(createFieldOccurrenceSignature(field), field.widgetId);
+    });
+    node.children.forEach(collect);
+  }
+  nodes.forEach(collect);
+  function project(node: CanonicalFormNode): CanonicalFormNode {
+    const projected = {
+      ...node,
+      fields: node.fields.filter((field) => (
+        !field.visible || retainedWidgetBySignature.get(createFieldOccurrenceSignature(field)) === field.widgetId
+      )),
+      children: node.children.map(project),
+    };
+    return {
+      ...projected,
+      children: projected.children.filter(createNodeHasContent),
+    };
+  }
+  return nodes.map(project).filter(createNodeHasContent);
 }
 
 function nodeHasSemanticRole(node: CanonicalFormNode): boolean {
@@ -238,7 +312,10 @@ function visibleNodes(nodes: CanonicalFormNode[], mode: CanonicalFormRenderModel
 export function composeCanonicalFormFloorplan(
   renderModel: CanonicalFormRenderModel,
 ): CanonicalFormFloorplan {
-  const primaryNodes = visibleNodes(renderModel.zones.primary, renderModel.identity.mode);
+  const visiblePrimaryNodes = visibleNodes(renderModel.zones.primary, renderModel.identity.mode);
+  const primaryNodes = renderModel.identity.mode === 'create'
+    ? deduplicateEquivalentCreateFields(visiblePrimaryNodes)
+    : visiblePrimaryNodes;
   const editableNodes = primaryNodes.filter(hasEditableField);
   const semanticReadonly = renderModel.identity.mode === 'readonly' && primaryNodes.some(nodeHasSemanticRole);
   const summaryNodes = semanticReadonly

@@ -210,7 +210,18 @@ const directActions = computed(() => visibleActions.value.filter((action) => ['p
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
 const hasCollaboration = computed(() => props.showCollaborationPanel === true || hasCollaborationNode.value);
-const nativeBridge = computed(() => props.renderModel ? buildCanonicalNativeFormBridge(props.renderModel) : null);
+const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
+  const model = props.renderModel;
+  if (!model || model.identity.mode !== 'create') return model;
+  return {
+    ...model,
+    zones: {
+      primary: floorplan.value.taskNodes,
+      subordinate: floorplan.value.subordinateNodes,
+    },
+  };
+});
+const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNativeFormBridge(nativeBridgeModel.value) : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
