@@ -137,8 +137,10 @@ require(
     "native and semantic action bars do not preserve canonical action identity and icon",
 )
 require(
-    '/web/static/lib/fontawesome/css/font-awesome.css' in web_index,
-    "canonical action icons do not load the Odoo native Font Awesome asset",
+    '/web/static/lib/fontawesome/css/font-awesome.css' not in web_index
+    and '<ScIcon v-if="canonicalFormActionIconClass(action.icon)"' in form_host
+    and '<ScIcon v-if="canonicalFormActionIconClass(action.icon)"' in canonical_action_bar,
+    "canonical action icons must render locally without coupling the product shell to an Odoo web asset",
 )
 require(
     "var(--sc-semantic-surface-interactive)" in form_host

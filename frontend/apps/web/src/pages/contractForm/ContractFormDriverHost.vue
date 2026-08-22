@@ -109,7 +109,7 @@
               :data-action-enabled="String(action.enabled)"
               @click="action.enabled && emit('action-ref', action.actionRef)"
             >
-              <span v-if="canonicalFormActionIconClass(action.icon)" :class="['canonical-form-action-icon', canonicalFormActionIconClass(action.icon)]" aria-hidden="true" />
+              <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-form-action-icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
               <span>{{ action.label }}</span>
             </button>
             <details v-if="overflowActions.length" class="canonical-form-action-overflow">
@@ -128,7 +128,7 @@
                   :data-action-enabled="String(action.enabled)"
                   @click="action.enabled && emit('action-ref', action.actionRef)"
                 >
-                  <span v-if="canonicalFormActionIconClass(action.icon)" :class="['canonical-form-action-icon', canonicalFormActionIconClass(action.icon)]" aria-hidden="true" />
+                  <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-form-action-icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
                   <span>{{ action.label }}</span>
                 </button>
               </div>
@@ -148,6 +148,7 @@ import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../.
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
+import ScIcon from '../../components/design-system/ScIcon.vue';
 import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
 import CanonicalActionBar from './CanonicalActionBar.vue';

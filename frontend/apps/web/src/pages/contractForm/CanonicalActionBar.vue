@@ -16,7 +16,7 @@
       :data-visible-profiles="action.visibleProfiles.join(',')"
       @activate="action.enabled && emit('action-ref', action.actionRef)"
     >
-      <span v-if="canonicalFormActionIconClass(action.icon)" :class="['canonical-action-bar__icon', canonicalFormActionIconClass(action.icon)]" aria-hidden="true" />
+      <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-action-bar__icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
       <span>{{ action.label }}</span>
     </SceneButton>
     <details v-if="overflowActions.length" class="canonical-action-bar__overflow">
@@ -37,7 +37,7 @@
           :data-visible-profiles="action.visibleProfiles.join(',')"
           @activate="action.enabled && emit('action-ref', action.actionRef)"
         >
-          <span v-if="canonicalFormActionIconClass(action.icon)" :class="['canonical-action-bar__icon', canonicalFormActionIconClass(action.icon)]" aria-hidden="true" />
+          <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-action-bar__icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
           <span>{{ action.label }}</span>
         </SceneButton>
       </div>
@@ -49,6 +49,7 @@
 import { SceneButton } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
+import ScIcon from '../../components/design-system/ScIcon.vue';
 import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
 
 defineProps<{

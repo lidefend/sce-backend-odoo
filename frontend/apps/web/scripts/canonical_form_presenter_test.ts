@@ -182,7 +182,7 @@ assert.equal(model.actionBar[0]?.actionRef, store.snapshot.actionContract.action
 assert.deepEqual(model.actionBar[0]?.actionRef, source.actionContract.actionRuleList[0]);
 assert.equal(model.actionBar[0]?.enabled, true);
 assert.equal(model.actionBar[0]?.icon, 'fa-check');
-assert.equal(canonicalFormActionIconClass(model.actionBar[0]?.icon || ''), 'fa fa-check');
+assert.equal(canonicalFormActionIconClass(model.actionBar[0]?.icon || ''), 'check');
 assert.equal(canonicalFormActionIconClass('fa-check injected-class'), '');
 assert.equal(canonicalFormActionIconClass('oi-check'), '');
 assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
