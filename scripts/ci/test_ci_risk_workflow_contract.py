@@ -55,14 +55,16 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("make ci.professional.backend", text)
         self.assertNotIn("run: make ci\n", text)
         self.assertIn("steps.risk.outputs.backend_changed == 'true'", text)
-        self.assertIn("actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020", text)
-        self.assertIn("node-version: 22.17.0", text)
-        self.assertIn("corepack prepare pnpm@9.12.3 --activate", text)
-        self.assertIn("pnpm -C frontend install --frozen-lockfile", text)
+        self.assertNotIn("pnpm -C frontend install", text)
         self.assertIn("make test.unit test.contract test.e2e.preflight", text)
         self.assertIn("make verify.product.release.version", text)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
+
+        makefile = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
+        professional_target = makefile.split("ci.professional.backend:", 1)[1].split("\n", 1)[0]
+        self.assertIn("verify.unified_page_contract.v2.professional_backend", professional_target)
+        self.assertNotIn("verify.unified_page_contract.v2.frontend_static", professional_target)
 
     def test_cache_keys_bind_lockfile_and_runtime(self) -> None:
         text = self.text("frontend_release_gate.yml")
