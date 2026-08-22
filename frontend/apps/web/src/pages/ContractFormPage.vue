@@ -1137,7 +1137,7 @@ const {
   isFieldVisible: (name) => isFieldVisible(name),
   isIntakeCreateMode,
   nativeStatusbar: () => nativeStatusbar.value,
-  comparableFieldValue,
+  comparableFieldValue: (name, value) => comparableFieldValue(name, value),
 });
 const writableFieldCount = computed(() =>
   layoutNodes.value.filter((node) => node.kind === 'field' && !node.readonly).length,
