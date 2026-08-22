@@ -2,7 +2,7 @@
 # ==================== Frontend ========================
 # ======================================================
 .PHONY: fe.install fe.dev fe.gate verify.frontend.build prod.frontend.build verify.frontend.typecheck.strict verify.frontend.lint.src verify.frontend.page_width_contract.guard verify.frontend.quick.gate verify.frontend.contract_header_action.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.contract.operation_gateway.guard verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.catalog verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.all verify.portal.scene_observability.structure_guard verify.portal.scene_observability.structure_guard.update
-.PHONY: fe.install.cached verify.frontend.release.local verify.frontend.ui5_scene_spike verify.frontend.scene_component_drivers verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser
+.PHONY: fe.install.cached confirm.frontend.release.audit verify.frontend.release.local verify.frontend.ui5_scene_spike verify.frontend.scene_component_drivers verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser
 
 fe.install:
 	@scripts/dev/pnpm_exec.sh -C frontend install
@@ -10,7 +10,14 @@ fe.install:
 fe.install.cached: guard.prod.forbid
 	@bash scripts/dev/frontend_cached_dependencies_restore.sh
 
-verify.frontend.release.local: guard.prod.forbid
+confirm.frontend.release.audit: guard.prod.forbid
+	@test "$(CONFIRM_FRONTEND_RELEASE_AUDIT)" = "RUN_FROZEN_FRONTEND_RELEASE_AUDIT" || { \
+	  echo "[frontend.release.lane] DENY formal release audit is not a daily-development target" >&2; \
+	  echo "[frontend.release.lane] use local.dev.* and targeted verification until final acceptance is explicitly opened" >&2; \
+	  exit 2; \
+	}
+
+verify.frontend.release.local: guard.prod.forbid confirm.frontend.release.audit
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-preflight
 	@$(MAKE) --no-print-directory fe.install.cached
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-audit

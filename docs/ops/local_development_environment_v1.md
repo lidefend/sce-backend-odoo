@@ -113,3 +113,22 @@ Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`h
 3. 涉及安装、schema、迁移或导入幂等性时，在 `sc_clean` 做干净回归。
 4. 本地验收通过后才进入日常开发服务器，后者只承担正式部署前的最终验证。
 5. 镜像仅在候选发布阶段构建；本地通过源码挂载与增量前端构建迭代。
+
+## 证据通道硬隔离
+
+日常产品迭代只允许使用本页登记的 `local.dev.*` 入口和
+`verify.local.dev.*` targeted tests。它们绑定 `sc-local-dev / sc_dev_demo /
+18081`，产物只能作为开发迭代证据，不能称为 release snapshot、发布候选
+或最终验收证据，也不能据此执行 `make pr.push`。
+
+只有产品结果已经确定并明确进入最终验收，才能关闭日常写入、冻结 HEAD，
+并单独执行：
+
+```bash
+CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT \
+  make verify.frontend.release.local
+```
+
+该入口绑定独立的 `sc_frontend_acceptance` 身份域。若正式审计发现需要修改
+产品，必须停止审计、返回 `local.dev.*` 完成新一轮开发；禁止一边修改一边
+续写正式发布证据。

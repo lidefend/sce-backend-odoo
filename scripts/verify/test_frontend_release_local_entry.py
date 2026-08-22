@@ -24,6 +24,7 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
     def test_local_release_entry_orders_cache_preflight_and_real_audit(self) -> None:
         source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
         block = source.split("verify.frontend.release.local:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("confirm.frontend.release.audit", block.splitlines()[0])
         self.assertIn("fe.install.cached", block)
         self.assertLess(block.index("release-preflight"), block.index("fe.install.cached"))
         self.assertIn("frontend_acceptance_operation_entry.sh release-audit", block)
@@ -37,6 +38,15 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         release_preflight = runtime.split("release-preflight)", 1)[1].split(";;", 1)[0]
         self.assertIn("frontend lifecycle is active owner=", release_preflight)
         self.assertIn("untracked frontend listener", release_preflight)
+
+    def test_local_release_entry_requires_explicit_frozen_lane_confirmation(self) -> None:
+        source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        confirmation = source.split("confirm.frontend.release.audit:", 1)[1].split(
+            "verify.frontend.release.local:", 1
+        )[0]
+        self.assertIn("CONFIRM_FRONTEND_RELEASE_AUDIT", confirmation)
+        self.assertIn("RUN_FROZEN_FRONTEND_RELEASE_AUDIT", confirmation)
+        self.assertIn("not a daily-development target", confirmation)
 
     def test_direct_runtime_is_denied_before_any_mutator(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

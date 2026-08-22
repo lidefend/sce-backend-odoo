@@ -5080,11 +5080,12 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   remains fail-closed, and no Lite, Scene DTO, Native ledger or UI5 capability
   is added.
 - Blast radius / validation: only `我的工作 -> 付款申请详情` navigation changes.
-  The exact service test, strict TypeScript, P1 completeness guard, 25-surface
-  page identity audit and J09-J11 release browser journey passed. J10 proves one
-  authoritative `提交审批` primary action through confirmation, execution,
-  refresh and audit evidence at desktop and 390px; browser runtime errors and
-  accessibility blockers are both zero.
+  The exact service test, strict TypeScript and P1 completeness guard passed.
+  In the daily `sc_dev_demo` lane the readonly Floorplan journey proves 10
+  semantic regions and zero 390px overflow; the submit journey proves one
+  authoritative mutation, `draft -> submit`, refreshed audit presentation and
+  governed fixture restoration. Formal release evidence remains a separate,
+  explicitly opened final-acceptance lane.
 
 ## Governed stale acceptance-backend replacement closure (2026-08-22)
 

@@ -57,13 +57,13 @@ payment action whose Contract V2 drives the golden Floorplan.
 - Quick relevant security and contract guards — PASS; the aggregate Quick
   target stopped later on an unrelated pre-existing product-version duplicate
   in architecture documentation and a generated snapshot.
-- Governed acceptance upgrade, registry reload, fixture reset and release
-  snapshot — PASS on the frozen candidate.
-- Page identity audit — PASS, 25 role-bound product surfaces and 0 failures.
-- Delivery hardening — PASS: J09, J10 and J11; 68 responsive checks including
-  390px; 0 accessibility blockers; no console, page, unhandled or HTTP errors.
-- J10 proves the My Work target opens the action-bound golden detail, exposes
-  exactly one effective `提交审批` primary action, executes its authoritative
-  native occurrence, refreshes state, and retains relationship/activity/audit
-  evidence. The aggregate result is recorded in
-  `artifacts/frontend-release-audit/report.json`.
+- Daily `sc-local-dev / sc_dev_demo / 18081` module upgrade, demo sync and demo
+  integrity verification — PASS.
+- Daily readonly Floorplan journey — PASS: 10 semantic regions, blocked record
+  exposes no false primary action, 390px overflow is zero, and the business
+  fingerprint is unchanged.
+- Daily submit journey — PASS: one authoritative mutation, state transition
+  `draft -> submit`, refreshed audit presentation, then governed fixture reset
+  restores the same payment request to draft.
+- Formal release evidence is deliberately not claimed in this development
+  batch. It requires a separately opened, frozen final-acceptance lane.
