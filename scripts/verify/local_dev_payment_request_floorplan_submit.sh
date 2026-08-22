@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 ENV_FILE="${ENV_FILE:?ENV_FILE is required}"
 [[ -f "$ENV_FILE" ]] || { echo "local.dev env file not found: $ENV_FILE" >&2; exit 2; }
+LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"
 
 set -a
 # shellcheck disable=SC1090
@@ -46,7 +47,8 @@ print("[local.dev.payment.floorplan.submit] authoritative transition draft -> su
 PY
 
 reset_status=0
-make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo || reset_status=$?
+ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE" \
+  make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo || reset_status=$?
 reset="$(resolve_target)"
 BEFORE_JSON="$before" RESET_JSON="$reset" python3 - <<'PY' || reset_status=$?
 import json

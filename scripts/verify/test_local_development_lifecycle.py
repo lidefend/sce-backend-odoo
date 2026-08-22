@@ -157,6 +157,14 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("REBUILD_ISOLATED_REHEARSAL", docs)
         self.assertNotIn("REBUILD_SC_CLEAN", docs)
 
+    def test_payment_submit_reset_keeps_canonical_env_authority(self):
+        submit = (
+            ROOT / "scripts/verify/local_dev_payment_request_floorplan_submit.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', submit)
+        self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', submit)
+        self.assertIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', submit)
+
     def test_sample_prepare_creates_distinct_technical_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
