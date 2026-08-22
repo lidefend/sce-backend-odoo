@@ -3304,7 +3304,7 @@ onActivated(() => {
     void Promise.resolve(requestLoadPage()).then(() => {
       retainedRouteFullPath.value = requestedRouteFullPath;
     });
-  }
+  } else if (retainedRouteFullPath.value && status.value !== 'loading') void requestLoadPage();
 });
 
 onDeactivated(() => {

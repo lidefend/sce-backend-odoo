@@ -10,6 +10,7 @@ const login = String(target?.user?.login || '');
 const actionId = Number(target?.action?.id || 0);
 const menuId = Number(target?.menu?.id || 0);
 const record = target?.actionable_record || {};
+const candidateInventory = Array.isArray(target?.candidate_inventory) ? target.candidate_inventory : [];
 const recordId = Number(record.id || 0);
 const outputDir = path.resolve('artifacts/playwright/local-dev-payment-request-floorplan-submit');
 
@@ -23,12 +24,22 @@ function intentOf(response) {
   try { return String(JSON.parse(response.request().postData() || '{}').intent || ''); } catch { return ''; }
 }
 
+function isListDataResponse(response) {
+  if (intentOf(response) !== 'api.data') return false;
+  try {
+    const body = JSON.parse(response.request().postData() || '{}');
+    return String(body?.params?.op || body?.op || '') === 'list';
+  } catch {
+    return false;
+  }
+}
+
 check(frontendUrl && database && password && login, 'local.dev submit identity is incomplete');
 check(actionId > 0 && menuId > 0 && recordId > 0 && record.state === 'draft', 'submit-ready target is invalid', record);
 fs.mkdirSync(outputDir, { recursive: true });
 
 const browser = await launchChromium({ headless: true });
-const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
+const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
 const page = await context.newPage();
 const errors = [];
 const mutations = [];
@@ -56,10 +67,77 @@ try {
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
 
-  await page.goto(`${frontendUrl}/r/payment.request/${recordId}?menu_id=${menuId}&action_id=${actionId}`, {
-    waitUntil: 'domcontentloaded', timeout: 45000,
-  });
+  await page.goto(`${frontendUrl}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const homeSurface = page.locator('[data-role-home]').first();
+  await homeSurface.waitFor({ timeout: 45000 });
+  await homeSurface.locator('.role-home-surface__tasks .role-home-surface__state, .role-home-surface__task-list').waitFor({ timeout: 45000 });
+  const homeBefore = {
+    tasks: await homeSurface.locator('.role-home-surface__task-list article').allTextContents(),
+    summaries: await homeSurface.locator('.role-home-surface__summary-list article').allTextContents(),
+  };
+
+  const listUrl = `${frontendUrl}/a/${actionId}?menu_id=${menuId}`;
+  await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const listSurface = page.locator('[data-product-page-mode="list"]').first();
+  await listSurface.waitFor({ timeout: 45000 });
+  const actionableRow = listSurface.locator('tbody tr').filter({ hasText: record.name }).first();
+  await actionableRow.waitFor({ timeout: 45000 });
+  const listRowBefore = (await actionableRow.innerText()).replace(/\s+/g, ' ').trim();
+  await listSurface.getByRole('button', { name: /^新建$/ }).click();
+  const createSurface = page.locator('[data-product-page-mode="form"]').first();
+  await createSurface.waitFor({ timeout: 45000 });
+  await createSurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
+  const createEditableFieldLocator = createSurface.locator(
+    'input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled)',
+  );
+  await createEditableFieldLocator.first().waitFor({ timeout: 15000 });
+  const createEditableFields = await createEditableFieldLocator.count();
+  check(createEditableFields > 0, 'payment create entry did not open an editable form', createEditableFields);
+  await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
+
+  const blocked = candidateInventory.find((item) => item.state === 'draft' && item.submit_enabled === false);
+  const terminal = candidateInventory.find((item) => ['done', 'paid'].includes(item.state)
+    || /已足额付款|已完成/.test(String(item.legal_next_action || '')));
+  check(blocked?.id && terminal?.id, 'payment state variant fixtures are incomplete', candidateInventory);
+  const stateVariants = {};
+  for (const [kind, item] of [['blocked', blocked], ['terminal', terminal]]) {
+    await page.goto(`${frontendUrl}/r/payment.request/${item.id}?menu_id=${menuId}&action_id=${actionId}`, {
+      waitUntil: 'domcontentloaded', timeout: 45000,
+    });
+    await page.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
+    const enabledPrimaryCount = await page.locator(
+      '[data-object-task-page] [data-action-tier="primary"][data-action-enabled="true"]',
+    ).count();
+    const taskText = (await page.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
+    stateVariants[kind] = { id: item.id, name: item.name, enabledPrimaryCount, taskText };
+    check(enabledPrimaryCount === 0, `${kind} payment record exposed a misleading primary action`, stateVariants[kind]);
+    if (kind === 'blocked') {
+      check(/缺少|请补充|请维护/.test(taskText), 'blocked payment has no repair path', stateVariants[kind]);
+      const editAction = page.locator('[data-form-mode-action="edit"]:visible');
+      check(await editAction.count() === 1, 'blocked payment must expose one remediation edit path');
+      await editAction.click();
+      const editableFields = page.locator(
+        '[data-product-page-mode="form"] input:not([type="hidden"]):not(:disabled), '
+        + '[data-product-page-mode="form"] textarea:not(:disabled), [data-product-page-mode="form"] select:not(:disabled)',
+      );
+      await editableFields.first().waitFor({ timeout: 15000 });
+      stateVariants[kind].editableFields = await editableFields.count();
+      check(stateVariants[kind].editableFields > 0, 'blocked remediation path did not enter edit mode');
+    }
+  }
+
+  await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
+  const journeyRow = page.locator('[data-product-page-mode="list"] tbody tr').filter({ hasText: record.name }).first();
+  await journeyRow.waitFor({ timeout: 45000 });
+  await journeyRow.click();
+  await page.waitForURL((url) => url.pathname === `/r/payment.request/${recordId}`, { timeout: 45000 });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(300);
   await page.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
+
+  check(page.url().includes(`/r/payment.request/${recordId}`), 'list row did not open the actionable payment detail', page.url());
   const surface = page.locator('[data-mobile-action-surface]').first();
   const primary = surface.locator('[data-action-tier="primary"][data-action-enabled="true"]');
   check(await primary.count() === 1, 'submit-ready fixture must expose one enabled primary action');
@@ -137,6 +215,41 @@ try {
   check(mutations.length === 1 && mutations[0].params?.button?.name === 'action_submit', 'journey emitted unexpected mutations', mutations);
   check(errors.length === 0, 'browser errors detected', errors);
   await page.screenshot({ path: path.join(outputDir, 'after-submit-390-full.png'), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 960 });
+  const listRefreshResponse = page.waitForResponse(isListDataResponse, { timeout: 45000 });
+  await page.getByRole('button', { name: /返回列表/ }).first().click();
+  await page.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
+  await listRefreshResponse;
+  await page.waitForFunction(
+    ({ name, before }) => {
+      const row = [...document.querySelectorAll('[data-product-page-mode="list"] tbody tr')]
+        .find((node) => String(node.textContent || '').includes(name));
+      return row && String(row.textContent || '').replace(/\s+/g, ' ').trim() !== before;
+    },
+    { name: record.name, before: listRowBefore },
+    { timeout: 45000 },
+  );
+  const refreshedRow = page.locator('[data-product-page-mode="list"] tbody tr').filter({ hasText: record.name }).first();
+  await refreshedRow.waitFor({ timeout: 45000 });
+  const listRowAfter = (await refreshedRow.innerText()).replace(/\s+/g, ' ').trim();
+  check(/提交|待审批/.test(listRowAfter) && listRowAfter !== listRowBefore,
+    'payment list retained the pre-submit state', { listRowBefore, listRowAfter });
+  await page.screenshot({ path: path.join(outputDir, 'after-submit-list-desktop.png'), fullPage: true });
+
+  await page.goto(`${frontendUrl}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const refreshedHome = page.locator('[data-role-home]').first();
+  await refreshedHome.waitFor({ timeout: 45000 });
+  await refreshedHome.locator('.role-home-surface__tasks .role-home-surface__state, .role-home-surface__task-list').waitFor({ timeout: 45000 });
+  const homeAfter = {
+    tasks: await refreshedHome.locator('.role-home-surface__task-list article').allTextContents(),
+    summaries: await refreshedHome.locator('.role-home-surface__summary-list article').allTextContents(),
+  };
+  const staleHomeTask = homeAfter.tasks.find((text) => text.includes(record.name) && /草稿/.test(text));
+  check(!staleHomeTask, 'home todo retained the pre-submit payment state', { homeBefore, homeAfter });
+  const executeIntentIndexForHome = observedIntents.lastIndexOf('execute_button');
+  check(observedIntents.slice(executeIntentIndexForHome + 1).includes('my.work.summary'),
+    'home todo was not reloaded after the payment transition', observedIntents);
+  await page.screenshot({ path: path.join(outputDir, 'after-submit-home-desktop.png'), fullPage: true });
   report.regions = regions;
   report.statusSummary = statusSummaryText;
   report.currentTask = currentTaskText;
@@ -144,6 +257,10 @@ try {
   report.mutations = mutations;
   report.errors = errors;
   report.observedIntents = observedIntents;
+  report.stateVariants = stateVariants;
+  report.list = { before: listRowBefore, after: listRowAfter };
+  report.create = { editableFields: createEditableFields };
+  report.home = { before: homeBefore, after: homeAfter };
   report.pass = true;
   fs.writeFileSync(path.join(outputDir, 'summary.json'), `${JSON.stringify(report, null, 2)}\n`);
   console.log(`[local.dev.payment.floorplan.submit] PASS record=${recordId} transition=draft->submit mutations=${mutations.length}`);

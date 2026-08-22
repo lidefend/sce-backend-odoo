@@ -715,6 +715,7 @@ const v2ContractDecodeError = ref('');
 function formRouteIdentity() {
   const query = route.query as Record<string, unknown>;
   return [
+    String(route.name || ''),
     String(route.params.model || ''),
     String(route.params.id || ''),
     String(query.action_id || ''),
