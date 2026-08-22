@@ -1,0 +1,135 @@
+:root {
+  --sc-shell-header-height: 48px;
+  --sc-shell-tabs-height: 38px;
+  --sc-shell-sidebar-width: 232px;
+  --sc-shell-sidebar-compact-width: 64px;
+  --sc-workspace-gutter: 20px;
+  --sc-workspace-section-gap: 16px;
+  --sc-control-height: 32px;
+  --sc-table-header-height: 40px;
+  --sc-table-row-height: 44px;
+  --sc-radius-control: 4px;
+  --sc-radius-panel: 6px;
+  --sc-surface-page: var(--td-bg-color-page);
+  --sc-surface-workspace: var(--td-bg-color-container);
+  --sc-surface-subtle: var(--td-bg-color-secondarycontainer);
+  --sc-border: var(--td-border-level-1-color);
+  --sc-border-strong: var(--td-border-level-2-color);
+  --sc-text-primary: var(--td-text-color-primary);
+  --sc-text-secondary: var(--td-text-color-secondary);
+  --sc-text-muted: var(--td-text-color-placeholder);
+  --sc-shadow-overlay: 0 12px 36px rgb(0 0 0 / 14%);
+}
+
+html,
+body,
+#app {
+  background: var(--sc-surface-page);
+  color: var(--sc-text-primary);
+}
+
+.tdesign-starter-header-layout,
+.tdesign-starter-header-layout .t-head-menu,
+.tdesign-starter-header-layout .t-head-menu__inner,
+.t-layout__header {
+  min-height: var(--sc-shell-header-height);
+  height: var(--sc-shell-header-height);
+}
+
+.tdesign-starter-header-layout .t-head-menu__inner {
+  padding-right: 12px;
+  border-bottom: 1px solid var(--sc-border);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 2%);
+}
+
+.tdesign-starter-header-layout .t-button {
+  min-height: var(--sc-control-height);
+}
+
+.tdesign-starter-layout {
+  height: calc(100vh - var(--sc-shell-header-height));
+  background: var(--sc-surface-page);
+}
+
+.tdesign-starter-content-layout {
+  padding: var(--sc-workspace-gutter);
+}
+
+.tdesign-starter-layout-tabs-nav {
+  min-height: var(--sc-shell-tabs-height);
+  background: var(--sc-surface-subtle);
+  border-bottom: 1px solid var(--sc-border);
+}
+
+.tdesign-starter-layout-tabs-nav + .tdesign-starter-content-layout {
+  padding-top: var(--sc-workspace-gutter);
+}
+
+.tdesign-starter-layout-tabs-nav .t-tabs__nav-item {
+  min-height: var(--sc-shell-tabs-height);
+  font-size: 12px;
+}
+
+.tdesign-starter-side-nav .t-menu__item,
+.tdesign-starter-side-nav .t-submenu__title {
+  height: 38px;
+  min-height: 38px;
+  font-size: 13px;
+}
+
+.tdesign-starter-side-nav .t-menu__item.t-is-active {
+  font-weight: 600;
+}
+
+.tdesign-starter-content-layout > .t-breadcrumb {
+  margin-bottom: 12px;
+}
+
+.t-button,
+.t-input,
+.t-select-input,
+.t-date-picker {
+  border-radius: var(--sc-radius-control);
+}
+
+.t-table {
+  border-radius: var(--sc-radius-panel);
+}
+
+.t-table th {
+  height: var(--sc-table-header-height);
+  color: var(--sc-text-secondary);
+  background: var(--sc-surface-subtle);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.t-table td {
+  height: var(--sc-table-row-height);
+  font-size: 13px;
+}
+
+.t-table .t-table__row:hover > td {
+  background: var(--td-bg-color-container-hover);
+}
+
+.t-dialog,
+.t-drawer {
+  box-shadow: var(--sc-shadow-overlay);
+}
+
+@media (width <= 992px) {
+  :root {
+    --sc-workspace-gutter: 16px;
+  }
+}
+
+@media (width <= 720px) {
+  :root {
+    --sc-workspace-gutter: 12px;
+  }
+
+  .tdesign-starter-content-layout {
+    padding: var(--sc-workspace-gutter);
+  }
+}

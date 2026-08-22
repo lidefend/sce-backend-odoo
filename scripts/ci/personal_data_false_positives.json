@@ -3,6 +3,34 @@
   "entries": [
     {
       "rule_id": "PD002",
+      "path": "frontend/tdesign-admin/mock/index.ts",
+      "blob_id": "916c23f297d21e4db69f1c7abbd8551bc85304f9",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "synthetic_starter_demo_contact_replaced_before_merge"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "frontend/tdesign-admin/src/locales/lang/en_US.json",
+      "blob_id": "014a18cd8cdacdd3b6b2339e7e5584768754b6e7",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "synthetic_starter_demo_contact_replaced_before_merge"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "frontend/tdesign-admin/src/locales/lang/zh_CN.json",
+      "blob_id": "d248d45b557a8e89d6035fdffe9ab93448699b35",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "synthetic_starter_demo_contact_replaced_before_merge"
+    },
+    {
+      "rule_id": "PD002",
+      "path": "frontend/tdesign-admin/src/pages/user/constants.ts",
+      "blob_id": "9b8b2be6ddb690a18998ce2bfada247defd215e2",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "synthetic_starter_demo_contact_replaced_before_merge"
+    },
+    {
+      "rule_id": "PD002",
       "path": "addons/smart_construction_demo/seed/steps/step_formal_product_surfaces.py",
       "blob_id": "7f9dcb7a1a3300a0399628722487b1a8e2257aeb",
       "classification": "MOBILE_PHONE_PATTERN",
