@@ -5462,3 +5462,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   part of this product-menu change.
 - Rollback: revert this menu record and repeat the governed module upgrade. No
   fixture reset or database repair is required.
+
+## Platform-company guard source discovery (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `aa495234`.
+- Formal Product Layer / Layer Target / Module: P4 ops verification / platform
+  company-access manifest guard and its direct tests.
+- Reason / boundary: the guard hardcoded two retired source files and one
+  customer module path that never existed in the clean product tree. Customer
+  security policies are now discovered only beneath the formal
+  `customer_addons/*/models/security_policy.py` boundary. Explicit retired paths
+  may be absent, but are still scanned if restored; every other required guard
+  source remains fail-closed when missing.
+- Why Here / Why Not Elsewhere: this is verification topology, not product
+  authorization. No menu, ACL, group, role resolver or customer module was
+  created to satisfy the guard.
+- Blast radius / validation: one guard, its existing Make target and six direct
+  positive/negative tests. Tests cover optional module absence, formal customer
+  discovery, compliant and legacy policies, restored retired files and
+  unexpected missing sources. The guard advanced past all path failures and
+  exposed the next real product finding in `platform_menu_api.py`.
+- Rollback: revert this P4 commit; product runtime and database state are
+  unaffected.
