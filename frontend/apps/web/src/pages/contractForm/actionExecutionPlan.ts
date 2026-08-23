@@ -23,6 +23,11 @@ export type FormActionExecutionPlan =
     recordId: number;
     methodName: string;
     buttonType: 'object' | 'server';
+    authorityActionId: string;
+    backendIdentity: string;
+    sourceWidgetId: string;
+    serverActionId: number | null;
+    serverActionXmlId: string;
     context?: Record<string, unknown>;
     refreshPolicy?: ContractAction['refreshPolicy'];
   }
@@ -93,6 +98,11 @@ export function buildFormActionExecutionPlan(params: {
       recordId: params.recordId,
       methodName: action.methodName,
       buttonType: action.kind === 'server' ? 'server' : 'object',
+      authorityActionId: String(action.authorityActionId || '').trim(),
+      backendIdentity: String(action.backendIdentity || '').trim(),
+      sourceWidgetId: String(action.sourceWidgetId || '').trim(),
+      serverActionId: action.serverActionId || null,
+      serverActionXmlId: String(action.serverActionXmlId || '').trim(),
       context: action.context,
       refreshPolicy: action.refreshPolicy,
     };

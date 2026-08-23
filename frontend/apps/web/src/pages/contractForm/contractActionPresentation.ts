@@ -34,6 +34,7 @@ export function buildContractFormActions(params: {
     const requiresSavedRecord = ['object', 'server', 'mutation'].includes(kind) && !params.recordId;
     return {
       key,
+      authorityActionId: '',
       backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
       label: String(row.label || key),
       kind,
@@ -41,6 +42,8 @@ export function buildContractFormActions(params: {
       selection: 'none',
       actionId,
       methodName: detectObjectMethodFromActionKey(key, String(target.method || '').trim()),
+      serverActionId: null,
+      serverActionXmlId: '',
       targetModel: String(target.model || params.model || '').trim(),
       context: parseMaybeJsonRecord(target.context_raw),
       domainRaw: String(target.domain_raw || '').trim(),
@@ -98,6 +101,7 @@ export function buildContractFormActions(params: {
       const buttonType = String(button.type || button.buttonType || '').trim();
       merged.push({
         key,
+        authorityActionId: String(row.actionId || row.action_id || '').trim(),
         backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
         label: String(row.label || key).trim() || key,
         kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : buttonName ? 'object' : clientMode ? 'client' : 'open',
@@ -110,6 +114,8 @@ export function buildContractFormActions(params: {
         payload: {
           method: buttonName,
           type: buttonType,
+          server_action_id: button.server_action_id ?? button.serverActionId,
+          xml_id: button.xml_id ?? button.xmlId,
           action_id: target.action_id,
           ref: target.ref,
           url: target.url || target.route,
@@ -189,6 +195,7 @@ export function buildContractFormActions(params: {
     const enabled = authorizationAllowed && !requiresSavedRecord;
     out.push({
       key,
+      authorityActionId: String(row.authorityActionId || row.actionId || row.action_id || '').trim(),
       backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
       label: normalizeActionLabel(row.label, key),
       kind: effectiveKind,
@@ -196,6 +203,8 @@ export function buildContractFormActions(params: {
       selection,
       actionId,
       methodName,
+      serverActionId: toPositiveInt(payload.server_action_id || payload.serverActionId),
+      serverActionXmlId: String(payload.xml_id || payload.xmlId || '').trim(),
       targetModel: String(row.target_model || row.model || params.model || '').trim(),
       context: parseMaybeJsonRecord(payload.context_raw),
       domainRaw: String(payload.domain_raw || '').trim(),

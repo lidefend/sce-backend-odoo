@@ -17,6 +17,7 @@ export const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 
 export type ContractAction = {
   key: string;
+  authorityActionId?: string;
   backendIdentity?: string;
   label: string;
   kind: string;
@@ -24,6 +25,8 @@ export type ContractAction = {
   selection: 'none' | 'single' | 'multi';
   actionId: number | null;
   methodName: string;
+  serverActionId?: number | null;
+  serverActionXmlId?: string;
   targetModel: string;
   context: Record<string, unknown>;
   domainRaw: string;

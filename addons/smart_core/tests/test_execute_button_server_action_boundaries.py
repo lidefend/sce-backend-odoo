@@ -7,9 +7,12 @@ from pathlib import Path
 
 
 class _BaseIntentHandler:
-    def __init__(self, env=None, params=None, context=None):
+    def __init__(self, env=None, su_env=None, request=None, params=None, context=None, payload=None):
         self.env = env
-        self.params = params or {}
+        self.su_env = su_env or env
+        self.request = request
+        self.payload = payload or ({"params": params or {}} if params is not None else {})
+        self.params = self.payload.get("params", self.payload) if isinstance(self.payload, dict) else {}
         self.context = context or {}
 
 
@@ -26,7 +29,13 @@ class _Action:
         return self
 
     def sudo(self):
-        return self
+        raise AssertionError("server action must not be escalated with sudo")
+
+    def check_access_rights(self, mode):
+        return True
+
+    def check_access_rule(self, mode):
+        return True
 
     def with_context(self, context):
         return self
@@ -41,14 +50,66 @@ class _ActionModel:
         self.action = action
 
     def sudo(self):
-        return self
+        raise AssertionError("server action model must not be escalated with sudo")
 
     def browse(self, action_id):
         return self.action
 
 
 class _Env(dict):
-    pass
+    user = types.SimpleNamespace(groups_id=set())
+
+
+def _authorized_contract(*, disabled=False, duplicate=False, method="action_confirm", button_type="object"):
+    backend_identity = "server_action:7" if button_type == "server" else f"button:{button_type}:{method}"
+    rule = {
+        "actionId": "action.confirm",
+        "actionKey": "confirm",
+        "backendIdentity": backend_identity,
+        "sourceWidgetId": "page.header",
+        "button": {
+            "name": method,
+            "type": button_type,
+            **({"server_action_id": 7} if button_type == "server" else {}),
+        },
+        "allowed": True,
+        "enabled": not disabled,
+        "disabled": disabled,
+        "entitlementEvaluated": True,
+    }
+    rules = [rule, dict(rule)] if duplicate else [rule]
+    return {
+        "actionContract": {"actionRuleList": rules},
+        "statusContract": {"buttonStatus": [{
+            "btnId": "btn.confirm",
+            "backendIdentity": rule["backendIdentity"],
+            "visible": True,
+            "disabled": disabled,
+            **({"reasonCode": "ACTION_BLOCKED"} if disabled else {}),
+        }]},
+    }
+
+
+def _authority_button(method="action_confirm", button_type="object"):
+    backend_identity = "server_action:7" if button_type == "server" else f"button:{button_type}:{method}"
+    return {
+        "name": method,
+        "type": button_type,
+        "action_id": "action.confirm",
+        "backend_identity": backend_identity,
+        "source_widget_id": "page.header",
+        **({"server_action_id": 7} if button_type == "server" else {}),
+    }
+
+
+def _authority_handler(module, contract):
+    handler = module.ExecuteButtonHandler(
+        env=_Env({}),
+        payload={"params": {}, "meta": {"action_id": 41, "menu_id": 51}},
+        context={},
+    )
+    handler._load_current_action_contract = lambda **_kwargs: contract
+    return handler
 
 
 class _Recordset:
@@ -156,6 +217,87 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(action.run_calls, 1)
 
+    def test_contract_action_authority_requires_exact_identity_and_status(self):
+        module = _load_handler()
+        handler = _authority_handler(module, _authorized_contract())
+
+        handler._authorize_contract_action(
+            _authority_button(),
+            model="x.model",
+            record_id=3,
+            method_name="action_confirm",
+            button_type="object",
+        )
+
+    def test_contract_action_authority_rejects_missing_identity(self):
+        module = _load_handler()
+        handler = _authority_handler(module, _authorized_contract())
+        button = _authority_button()
+        button.pop("backend_identity")
+
+        with self.assertRaisesRegex(module.AccessError, "ACTION_CONTRACT_AUTHORITY_MISSING"):
+            handler._authorize_contract_action(
+                button,
+                model="x.model",
+                record_id=3,
+                method_name="action_confirm",
+                button_type="object",
+            )
+
+    def test_contract_action_authority_rejects_forged_method(self):
+        module = _load_handler()
+        handler = _authority_handler(module, _authorized_contract())
+
+        with self.assertRaisesRegex(module.AccessError, "ACTION_CONTRACT_BUTTON_MISMATCH"):
+            handler._authorize_contract_action(
+                _authority_button(),
+                model="x.model",
+                record_id=3,
+                method_name="unlink",
+                button_type="object",
+            )
+
+    def test_contract_action_authority_rejects_ambiguous_identity(self):
+        module = _load_handler()
+        handler = _authority_handler(module, _authorized_contract(duplicate=True))
+
+        with self.assertRaisesRegex(module.AccessError, "ACTION_CONTRACT_AUTHORITY_AMBIGUOUS"):
+            handler._authorize_contract_action(
+                _authority_button(),
+                model="x.model",
+                record_id=3,
+                method_name="action_confirm",
+                button_type="object",
+            )
+
+    def test_contract_action_authority_rejects_disabled_action_with_reason(self):
+        module = _load_handler()
+        handler = _authority_handler(module, _authorized_contract(disabled=True))
+
+        with self.assertRaisesRegex(module.AccessError, "ACTION_CONTRACT_NOT_AUTHORIZED"):
+            handler._authorize_contract_action(
+                _authority_button(),
+                model="x.model",
+                record_id=3,
+                method_name="action_confirm",
+                button_type="object",
+            )
+
+    def test_contract_action_authority_rejects_forged_server_action_id(self):
+        module = _load_handler()
+        handler = _authority_handler(module, _authorized_contract(button_type="server"))
+        button = _authority_button(button_type="server")
+        button["server_action_id"] = 8
+
+        with self.assertRaisesRegex(module.AccessError, "ACTION_CONTRACT_SERVER_ACTION_MISMATCH"):
+            handler._authorize_contract_action(
+                button,
+                model="x.model",
+                record_id=3,
+                method_name="action_confirm",
+                button_type="server",
+            )
+
     def test_server_action_navigation_result_has_entry_target(self):
         module = _load_handler()
         action = _Action(
@@ -196,7 +338,7 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["message"], "record_id 无效")
         self.assertEqual(result["meta"]["trace_id"], "trace")
 
-    def test_invalid_server_action_id_returns_bad_request(self):
+    def test_legacy_server_action_request_without_contract_authority_is_denied(self):
         module = _load_handler()
         handler = module.ExecuteButtonHandler(
             env=_Env({"x.model": _ButtonModel()}),
@@ -211,8 +353,8 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
         result = handler.handle()
 
         self.assertFalse(result["ok"])
-        self.assertEqual(result["code"], 400)
-        self.assertEqual(result["error"]["message"], "server_action_id 无效")
+        self.assertEqual(result["code"], 403)
+        self.assertEqual(result["error"]["message"], "ACTION_CONTRACT_AUTHORITY_MISSING")
 
 
 if __name__ == "__main__":

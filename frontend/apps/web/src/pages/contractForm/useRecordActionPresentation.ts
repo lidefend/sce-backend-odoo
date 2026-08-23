@@ -113,12 +113,16 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     const needRecord = kind === 'object' || kind === 'server' || level === 'row' || level === 'smart';
     return applyWorkflowContractToAction({
       key,
+      authorityActionId: String(nativeAction.actionId || row.actionId || row.action_id || '').trim(),
+      backendIdentity: String(nativeAction.backendIdentity || row.backendIdentity || row.backend_identity || '').trim() || undefined,
       label: rowLabel || key,
       kind,
       level,
       selection: 'none',
       actionId,
       methodName,
+      serverActionId: toPositiveInt(payload.server_action_id || payload.serverActionId),
+      serverActionXmlId: String(payload.xml_id || payload.xmlId || '').trim(),
       targetModel: String(row.target_model || row.model || payload.model || model.value || '').trim(),
       context: parseMaybeJsonRecord(payload.context_raw || row.context),
       domainRaw: String(payload.domain_raw || row.domain_raw || '').trim(),
@@ -195,7 +199,15 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
         const response = await executeButton({
           model: action.targetModel || model.value,
           res_id: recordId.value,
-          button: { name: action.methodName, type: action.kind === 'server' ? 'server' : 'object' },
+          button: {
+            name: action.methodName,
+            type: action.kind === 'server' ? 'server' : 'object',
+            action_id: String(action.authorityActionId || '').trim(),
+            backend_identity: String(action.backendIdentity || '').trim(),
+            source_widget_id: String(action.sourceWidgetId || '').trim(),
+            server_action_id: action.serverActionId || undefined,
+            xml_id: action.serverActionXmlId || undefined,
+          },
           context: action.context,
           meta: {
             menu_id: Number(route.query.menu_id || 0) || undefined,

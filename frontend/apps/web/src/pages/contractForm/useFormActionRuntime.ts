@@ -134,7 +134,15 @@ export function useFormActionRuntime(params: {
         const response = await executeButton({
           model: plan.model,
           res_id: plan.recordId,
-          button: { name: plan.methodName, type: plan.buttonType },
+          button: {
+            name: plan.methodName,
+            type: plan.buttonType,
+            action_id: plan.authorityActionId,
+            backend_identity: plan.backendIdentity,
+            source_widget_id: plan.sourceWidgetId,
+            server_action_id: plan.serverActionId || undefined,
+            xml_id: plan.serverActionXmlId || undefined,
+          },
           context: plan.context,
           meta: {
             menu_id: Number(params.routeMenuId() || 0) || undefined,

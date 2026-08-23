@@ -470,6 +470,11 @@ export interface ExecuteButtonRequest {
   button: {
     name: string;
     type?: string;
+    action_id?: string;
+    backend_identity?: string;
+    source_widget_id?: string;
+    server_action_id?: number;
+    xml_id?: string;
   };
   context?: Record<string, unknown>;
   meta?: Record<string, unknown>;
