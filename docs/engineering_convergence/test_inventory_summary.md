@@ -4,19 +4,19 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1223`
+- Total assets: `1224`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `171`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `827`
+- PR dedupe candidates: `828`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 461 |
+| governance | 462 |
 | contract | 353 |
 | unit | 208 |
 | odoo_integration | 101 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1046 |
+| pr_candidate | 1047 |
 | integration_candidate | 126 |
 | release_candidate | 42 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 827 |
+| deduplicate_before_required | 828 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 125 |
 | keep_release_only | 42 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1048 |
+| <5m | 1049 |
 | 10-30m | 127 |
 | 30-60m | 44 |
 | unknown | 3 |
@@ -152,7 +152,7 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 461 |
+| architecture owner | 462 |
 | platform owner | 353 |
 | test owner | 209 |
 | backend owner | 101 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1093 |
+| scripts/verify | 1094 |
 | scripts/ops | 67 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 14 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-190 | governance | `scripts/verify/business_shape_assembly_guard.py` | architecture owner |
 | T-ASSET-191 | contract | `scripts/verify/capability_core_health_report_schema_guard.py` | platform owner |
 | T-ASSET-192 | governance | `scripts/verify/capability_dormant_explain_guard.py` | architecture owner |
-| ... | ... | 747 more | ... |
+| ... | ... | 748 more | ... |
 
 ## Dedupe Hotspots
 
