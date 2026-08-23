@@ -338,6 +338,30 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["message"], "record_id 无效")
         self.assertEqual(result["meta"]["trace_id"], "trace")
 
+    def test_multiple_record_ids_are_denied_before_contract_authority_is_reused(self):
+        module = _load_handler()
+        handler = module.ExecuteButtonHandler(
+            env=_Env({"x.model": _ButtonModel()}),
+            payload={
+                "params": {
+                    "model": "x.model",
+                    "record_id": [3, 4],
+                    "button": _authority_button(),
+                },
+                "meta": {"action_id": 41, "menu_id": 51},
+            },
+            context={"trace_id": "trace"},
+        )
+        handler._load_current_action_contract = lambda **_kwargs: self.fail(
+            "multi-record requests must be rejected before one record is used as authority"
+        )
+
+        result = handler.handle()
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["code"], 403)
+        self.assertEqual(result["error"]["message"], "ACTION_CONTRACT_SINGLE_RECORD_REQUIRED")
+
     def test_legacy_server_action_request_without_contract_authority_is_denied(self):
         module = _load_handler()
         handler = module.ExecuteButtonHandler(

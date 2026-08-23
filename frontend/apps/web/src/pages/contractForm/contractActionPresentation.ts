@@ -142,14 +142,15 @@ export function buildContractFormActions(params: {
     const presentationSemantic = String(presentation.semantic || '').trim();
     if (row.visible === false || row.invisible === true || !params.evaluateNativeActionVisibility(row)) continue;
     const status = resolveV2ButtonStatus(key, params.v2ButtonStatus);
+    if (!status || typeof status.visible !== 'boolean' || typeof status.disabled !== 'boolean') continue;
     if (status?.backendIdentity && status.backendIdentity !== backendIdentity) continue;
-    if (status?.visible === false) continue;
+    if (status.visible === false) continue;
     const contractAllowed = row.allowed === true;
     const contractEnabled = row.enabled === true;
     const contractDisabled = row.disabled === true;
     const needRecord = ['object', 'server', 'mutation'].includes(effectiveKind) || ['row', 'smart'].includes(level);
     const authorizationAllowed = contractAllowed && contractEnabled && !contractDisabled
-      && status?.disabled !== true;
+      && status.disabled !== true;
     const requiresSavedRecord = needRecord && !params.recordId;
     const enabled = authorizationAllowed && !requiresSavedRecord;
     out.push({
@@ -172,7 +173,7 @@ export function buildContractFormActions(params: {
       enabled,
       authorizationAllowed,
       requiresSavedRecord,
-      hint: status?.disabled === true
+      hint: status.disabled === true
         ? status.reasonCode || 'disabled_by_status_contract'
         : needRecord && !params.recordId
           ? 'requires record id'

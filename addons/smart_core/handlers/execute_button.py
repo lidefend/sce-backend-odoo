@@ -232,6 +232,11 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     status_code=400,
                 )
 
+            # Contract V2 action availability is record-specific.  Never use
+            # one record's authority to mutate a larger client-supplied set.
+            if len(res_ids) != 1:
+                raise AccessError("ACTION_CONTRACT_SINGLE_RECORD_REQUIRED")
+
             if button_type not in ("object", "action", "server", "server_action"):
                 return _failure_result(
                     model=model,

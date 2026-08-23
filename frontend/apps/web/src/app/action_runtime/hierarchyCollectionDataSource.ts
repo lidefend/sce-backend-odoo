@@ -1,5 +1,6 @@
 import { listRecords } from '../../api/data';
 import { executeButton } from '../../api/executeButton';
+import type { ExecuteButtonRequest } from '@sc/schema';
 
 export type HierarchyDict = Record<string, unknown>;
 export type HierarchyLevelConfig = {
@@ -37,7 +38,59 @@ export type HierarchyCommand = {
   placement?: 'toolbar' | 'overflow';
   group?: string;
   availability_field?: string;
+  authority_action_id?: string;
+  backend_identity?: string;
+  source_widget_id?: string;
+  route_action_id?: number;
+  menu_id?: number;
+  allowed?: boolean;
+  enabled?: boolean;
+  disabled?: boolean;
+  entitlement_evaluated?: boolean;
 };
+
+function positiveInt(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+}
+
+export function normalizeHierarchyCommand(value: unknown): HierarchyCommand {
+  const row = value && typeof value === 'object' && !Array.isArray(value) ? value as HierarchyDict : {};
+  return {
+    key: String(row.key || '').trim(),
+    label: String(row.label || '').trim(),
+    method: String(row.method || '').trim(),
+    placement: row.placement === 'overflow' ? 'overflow' : 'toolbar',
+    group: String(row.group || '').trim(),
+    availability_field: String(row.availability_field || row.availabilityField || '').trim(),
+    authority_action_id: String(row.authority_action_id || row.authorityActionId || '').trim(),
+    backend_identity: String(row.backend_identity || row.backendIdentity || '').trim(),
+    source_widget_id: String(row.source_widget_id || row.sourceWidgetId || '').trim(),
+    route_action_id: positiveInt(row.route_action_id || row.routeActionId),
+    menu_id: positiveInt(row.menu_id || row.menuId),
+    allowed: row.allowed as boolean | undefined,
+    enabled: row.enabled as boolean | undefined,
+    disabled: row.disabled as boolean | undefined,
+    entitlement_evaluated: (row.entitlement_evaluated ?? row.entitlementEvaluated) as boolean | undefined,
+  };
+}
+
+export function hierarchyCommandHasExecutableAuthority(command: HierarchyCommand): boolean {
+  return Boolean(
+    command.key
+    && command.label
+    && command.method
+    && command.authority_action_id
+    && command.backend_identity
+    && command.source_widget_id
+    && positiveInt(command.route_action_id)
+    && positiveInt(command.menu_id)
+    && command.allowed === true
+    && command.enabled === true
+    && command.disabled === false
+    && command.entitlement_evaluated === true,
+  );
+}
 
 function normalizeRows(value: unknown): HierarchyDict[] {
   const payload = value && typeof value === 'object' ? value as HierarchyDict : {};
@@ -125,10 +178,31 @@ export async function executeHierarchyCommand(options: {
   recordId: number;
   command: HierarchyCommand;
 }): Promise<void> {
-  await executeButton({
+  await executeButton(buildHierarchyCommandRequest(options));
+}
+
+export function buildHierarchyCommandRequest(options: {
+  model: string;
+  recordId: number;
+  command: HierarchyCommand;
+}): ExecuteButtonRequest {
+  if (!hierarchyCommandHasExecutableAuthority(options.command)) {
+    throw new Error('HIERARCHY_COMMAND_AUTHORITY_MISSING');
+  }
+  return {
     model: options.model,
     res_id: options.recordId,
-    button: { name: options.command.method, type: 'object' },
+    button: {
+      name: options.command.method,
+      type: 'object',
+      action_id: options.command.authority_action_id,
+      backend_identity: options.command.backend_identity,
+      source_widget_id: options.command.source_widget_id,
+    },
     context: {},
-  });
+    meta: {
+      action_id: positiveInt(options.command.route_action_id),
+      menu_id: positiveInt(options.command.menu_id),
+    },
+  };
 }

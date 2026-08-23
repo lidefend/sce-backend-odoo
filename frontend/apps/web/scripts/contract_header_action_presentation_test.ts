@@ -110,6 +110,16 @@ const rule = (key: string, sourceWidgetId: string, targetScope: string, override
   ...overrides,
 });
 
+const explicitStatuses = (...rows: Array<Record<string, unknown>>) => Object.fromEntries(rows.map((row) => {
+  const key = String(row.actionKey || row.key || row.actionId || '').trim();
+  return [`btn.${key}`, {
+    btnId: `btn.${key}`,
+    backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim(),
+    visible: true,
+    disabled: false,
+  }];
+}));
+
 const decodeSnapshotWithActions = (actionRuleList: Array<Record<string, unknown>>) => decodeContractV2Snapshot({
   pageInfo: {
     pageId: 'x.document.form', sceneKey: 'x.document.form', pageName: 'Document', model: 'x.document',
@@ -118,7 +128,17 @@ const decodeSnapshotWithActions = (actionRuleList: Array<Record<string, unknown>
   layoutContract: {
     pageId: 'x.document.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {}, componentRegistry: {},
   },
-  statusContract: { globalStatus: { pageVisible: true }, widgetStatus: [], buttonStatus: [], containerStatus: [], selectorStatus: [] },
+  statusContract: {
+    globalStatus: { pageVisible: true },
+    widgetStatus: [],
+    buttonStatus: actionRuleList.map((row) => ({
+      btnId: `btn.${String(row.actionKey || row.key || row.actionId || '').trim()}`,
+      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim(),
+      visible: true,
+      disabled: false,
+    })),
+    containerStatus: [], selectorStatus: [],
+  },
   actionContract: { actionRuleList, dependencyGraph: {} },
   dataContract: { mainData: {}, tableRows: {}, relationRows: {}, dictData: {}, pagination: {}, dataSource: {}, dataMeta: {} },
   runtimeContract: { patchStrategy: 'incremental', cachePolicy: 'etag', optimistic: false, lazyContainer: [], virtualization: {}, retryPolicy: {} },
@@ -134,28 +154,29 @@ const decodeSnapshotWithActions = (actionRuleList: Array<Record<string, unknown>
   },
 });
 
+const builtRules = [
+  rule('normalized-root', 'page.root', 'header'),
+  rule('second-primary', 'page.root', 'header'),
+  rule('root-header-url', 'page.root', 'header', { button: {}, target: { url: '/integration/status' } }),
+  rule('root-page-submit', 'page.root', 'page'),
+  rule('root-body', 'page.root', 'body', {
+    backendIdentity: 'native_button:object:action_root_body:/form/sheet/button[1]:0',
+    nativeIdentity: { canonical_region: 'layout' },
+  }),
+  rule('root-widget', 'page.root', 'widget', {
+    nativeIdentity: { canonical_region: 'stat_buttons' },
+  }),
+  rule('row-action', 'page.row', 'row'),
+];
 const built = buildContractFormActions({
   contract: null,
   model: 'res.partner',
   recordId: 7,
   renderProfile: 'readonly',
   sceneReadyActions: [],
-  v2ButtonStatus: {},
+  v2ButtonStatus: explicitStatuses(...builtRules),
   workflowActionRows: [],
-  v2ActionRuleList: [
-    rule('normalized-root', 'page.root', 'header'),
-    rule('second-primary', 'page.root', 'header'),
-    rule('root-header-url', 'page.root', 'header', { button: {}, target: { url: '/integration/status' } }),
-    rule('root-page-submit', 'page.root', 'page'),
-    rule('root-body', 'page.root', 'body', {
-      backendIdentity: 'native_button:object:action_root_body:/form/sheet/button[1]:0',
-      nativeIdentity: { canonical_region: 'layout' },
-    }),
-    rule('root-widget', 'page.root', 'widget', {
-      nativeIdentity: { canonical_region: 'stat_buttons' },
-    }),
-    rule('row-action', 'page.row', 'row'),
-  ],
+  v2ActionRuleList: builtRules,
   policyContext: {} as never,
   evaluateNativeActionVisibility: () => true,
   isTierValidationActionHidden: () => false,
@@ -230,28 +251,29 @@ const disabledConfigurationRuntime = useFormActionRuntime({
 await disabledConfigurationRuntime.runAction(configurationDoesNotClaimPrimary.configuration[0] as never);
 assert.equal(disabledConfigurationIo, 0);
 
+const normalizedWinnerRule = rule('same-action', 'page.root', 'page', {
+  label: 'Normalized winner',
+  backendIdentity: 'button:object:action_same',
+  visibleProfiles: ['readonly'],
+  actionSafety: {
+    classification: 'danger', requiresConfirm: true,
+    confirmMessage: 'Confirm normalized action', reasonCode: 'DANGER_ACTION',
+  },
+  allowed: true,
+  enabled: false,
+});
 const normalizedWinner = buildContractFormActions({
   contract: null,
   model: 'res.partner',
   recordId: 7,
   renderProfile: 'readonly',
   sceneReadyActions: [action({ key: 'same-action', label: 'scene loser', intent: 'execute_button' })],
-  v2ButtonStatus: {},
+  v2ButtonStatus: explicitStatuses(normalizedWinnerRule),
   workflowActionRows: [{
     key: 'same-action', label: 'native loser', kind: 'object', level: 'header',
     payload: { method: 'action_same' }, allowed: false,
   }],
-  v2ActionRuleList: [rule('same-action', 'page.root', 'page', {
-    label: 'Normalized winner',
-    backendIdentity: 'button:object:action_same',
-    visibleProfiles: ['readonly'],
-    actionSafety: {
-      classification: 'danger', requiresConfirm: true,
-      confirmMessage: 'Confirm normalized action', reasonCode: 'DANGER_ACTION',
-    },
-    allowed: true,
-    enabled: false,
-  })],
+  v2ActionRuleList: [normalizedWinnerRule],
   policyContext: {} as never,
   evaluateNativeActionVisibility: () => true,
   isTierValidationActionHidden: () => false,
@@ -281,23 +303,24 @@ const rejectedLegacyFallback = buildContractFormActions({
 });
 assert.equal(rejectedLegacyFallback.length, 0, 'V2 form action presentation must reject legacy-only action rows');
 
+const normalizedRecordHandoffRule = rule('open_followup', 'page.header', 'header', {
+  label: 'Open follow-up',
+  button: {},
+  target: { url: '/f/x.followup/new', target: 'self' },
+  visibleProfiles: ['readonly'],
+  presentation: { tier: 'secondary' },
+  allowed: true,
+  enabled: true,
+});
 const normalizedRecordHandoff = buildContractFormActions({
   contract: null,
   model: 'x.document',
   recordId: 81,
   renderProfile: 'readonly',
   sceneReadyActions: [],
-  v2ButtonStatus: {},
+  v2ButtonStatus: explicitStatuses(normalizedRecordHandoffRule),
   workflowActionRows: [],
-  v2ActionRuleList: [rule('open_followup', 'page.header', 'header', {
-    label: 'Open follow-up',
-    button: {},
-    target: { url: '/f/x.followup/new', target: 'self' },
-    visibleProfiles: ['readonly'],
-    presentation: { tier: 'secondary' },
-    allowed: true,
-    enabled: true,
-  })],
+  v2ActionRuleList: [normalizedRecordHandoffRule],
   policyContext: {} as never,
   evaluateNativeActionVisibility: () => true,
   isTierValidationActionHidden: () => false,
@@ -327,7 +350,7 @@ const decodedRuntimeOpenActions = buildContractFormActions({
   recordId: 7,
   renderProfile: 'readonly',
   sceneReadyActions: [],
-  v2ButtonStatus: {},
+  v2ButtonStatus: explicitStatuses(...decodedRuntimeOpenSnapshot.actionContract.actionRuleList as unknown as Array<Record<string, unknown>>),
   workflowActionRows: [],
   v2ActionRuleList: decodedRuntimeOpenSnapshot.actionContract.actionRuleList as unknown as Array<Record<string, unknown>>,
   policyContext: {} as never,
@@ -362,6 +385,13 @@ const sceneCannotCreateAuthority = buildContractFormActions({
   evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(sceneCannotCreateAuthority, [], 'Scene presentation rows cannot create executable authority');
+
+const missingButtonStatusRejected = buildContractFormActions({
+  model: 'res.partner', recordId: 7, renderProfile: 'readonly', sceneReadyActions: [],
+  v2ButtonStatus: {}, v2ActionRuleList: [rule('missing-status', 'page.header', 'page')],
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.deepEqual(missingButtonStatusRejected, [], 'missing button status must fail closed');
 
 for (const missingKey of ['actionId', 'backendIdentity', 'sourceWidgetId', 'allowed', 'enabled', 'disabled', 'entitlementEvaluated']) {
   const missing = rule(`missing-${missingKey}`, 'page.header', 'page');
@@ -448,7 +478,11 @@ const decodedDeniedBuilt = buildContractFormActions({
   recordId: 0,
   renderProfile: 'create',
   sceneReadyActions: [],
-  v2ButtonStatus: {},
+  v2ButtonStatus: {
+    'btn.decoded-denied-submit': {
+      btnId: 'btn.decoded-denied-submit', visible: true, disabled: true, reasonCode: 'DENIED',
+    },
+  },
   workflowActionRows: [],
   v2ActionRuleList: [decodedDeniedRule as unknown as Record<string, unknown>],
   policyContext: {} as never,
@@ -479,15 +513,16 @@ const deniedExistingPresentation = groupContractHeaderActions({
 assert.equal(deniedExistingPresentation.direct[0]?.key, 'denied-existing-submit');
 assert.equal(deniedExistingPresentation.direct[0]?.enabled, false);
 
+const allowedCreateRule = rule('allowed-page-submit', 'page.root', 'page');
 const allowedCreateBuilt = buildContractFormActions({
   contract: null,
   model: 'res.partner',
   recordId: 0,
   renderProfile: 'create',
   sceneReadyActions: [],
-  v2ButtonStatus: {},
+  v2ButtonStatus: explicitStatuses(allowedCreateRule),
   workflowActionRows: [],
-  v2ActionRuleList: [rule('allowed-page-submit', 'page.root', 'page')],
+  v2ActionRuleList: [allowedCreateRule],
   policyContext: {} as never,
   evaluateNativeActionVisibility: () => true,
   isTierValidationActionHidden: () => false,

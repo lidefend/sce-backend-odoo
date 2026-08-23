@@ -208,8 +208,12 @@ codex.snapshot: guard.prod.forbid check-compose-project check-compose-env
 codex.snapshot.export: guard.prod.forbid
 	@$(MAKE) --no-print-directory codex.snapshot
 
-verify.backend.guard: guard.prod.forbid
+verify.backend.guard: guard.prod.forbid verify.execute_button.authority.unit
 	@$(MAKE) --no-print-directory verify.boundary.guard
+
+.PHONY: verify.execute_button.authority.unit
+verify.execute_button.authority.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_execute_button_server_action_boundaries.py
 
 verify.portal.smoke: guard.prod.forbid check-compose-project check-compose-env
 	@$(MAKE) --no-print-directory verify.portal.fe_smoke.container

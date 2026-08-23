@@ -1017,6 +1017,7 @@ const createBlockedPrimarySnapshot = structuredClone(createBackendPrimarySnapsho
 createBlockedPrimarySnapshot.statusContract.buttonStatus = [
   { btnId: 'form.save', visible: true, disabled: false },
   { btnId: 'action.submit', visible: true, disabled: true, reasonCode: 'ACTION_NOT_AVAILABLE_IN_STATE' },
+  { btnId: 'action.navigation', visible: true, disabled: false },
 ];
 const createBlockedPrimaryFloorplan = composeCanonicalFormFloorplan(presentContractV2Form(
   createContractV2Store(createBlockedPrimarySnapshot),
@@ -1389,6 +1390,14 @@ assert.deepEqual(
   'an action without explicit entitlement authority must not enter the canonical action bar',
 );
 
+const missingCanonicalButtonStatus = snapshot();
+missingCanonicalButtonStatus.statusContract.buttonStatus = [];
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(missingCanonicalButtonStatus), 'edit').actionBar,
+  [],
+  'an action without a matching explicit button status must not enter the canonical action bar',
+);
+
 const ambiguousCanonicalIdentity = snapshot();
 ambiguousCanonicalIdentity.actionContract.actionRuleList.push({
   ...ambiguousCanonicalIdentity.actionContract.actionRuleList[0],
@@ -1632,4 +1641,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=89');
+console.log('[canonical_form_presenter_test] PASS cases=90');

@@ -350,6 +350,9 @@ function presentAction(
   const profiles = (action.visibleProfiles || ['create', 'edit', 'readonly'])
     .filter((profile): profile is CanonicalFormRenderMode => ['create', 'edit', 'readonly'].includes(profile));
   const explicitAuthority = identityUnique
+    && Boolean(status)
+    && typeof status?.visible === 'boolean'
+    && typeof status?.disabled === 'boolean'
     && action.entitlementEvaluated === true
     && typeof action.allowed === 'boolean'
     && typeof action.enabled === 'boolean'
