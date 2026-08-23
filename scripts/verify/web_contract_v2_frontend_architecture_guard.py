@@ -303,10 +303,14 @@ FORBIDDEN_FORM_LOCAL_SELECTOR_TOKENS: tuple[str, ...] = (
 
 REQUIRED_WORKFLOW_CONTRACT_PROJECTION_TOKENS: tuple[tuple[str, str], ...] = (
     ("app/contracts/v2/store.ts", "resolveContractV2WorkflowContract"),
-    ("pages/ContractFormPage.vue", "currentWorkflowContract"),
-    ("pages/ContractFormPage.vue", "workflowContractActionRows"),
+    ("pages/contractForm/useRecordActionPresentation.ts", "resolveWorkflowContractFromStore(v2ContractStore.value)"),
+    ("pages/contractForm/useRecordActionPresentation.ts", "normalizeWorkflowEvidenceGateRows"),
     ("pages/ContractFormPage.vue", "workflowEvidenceGateRows"),
-    ("pages/ContractFormPage.vue", "resolveNativeActionState"),
+    ("app/presentation/contractFormPresenter.ts", "const explicitAuthority = identityUnique"),
+    ("pages/contractForm/contractActionPresentation.ts", "row.entitlementEvaluated !== true"),
+    ("pages/contractForm/contractActionPresentation.ts", "resolveContractActionForNativeOccurrence"),
+    ("pages/contractForm/useRecordActionPresentation.ts", "resolveNativeActionState"),
+    ("pages/ContractFormPage.vue", "useRecordActionPresentation"),
 )
 
 REQUIRED_WORKFLOW_STATUSBAR_CONTRACT_TOKENS: tuple[tuple[Path, str], ...] = (
