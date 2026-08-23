@@ -5254,3 +5254,52 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Missing, linked, incorrectly permissioned, caller-overridden, wrong-profile,
   or caller-injected Git identities fail closed; no credential content is
   emitted.
+
+## P0 backend effective-authority convergence (2026-08-23)
+
+- Branch / anchor: `feature/custom-frontend-productization-v1` / `d67b982b`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / effective
+  Odoo view, bound-action projection, permission/workflow/search compatibility
+  carriers, Contract V2 action assembly, and generic Canonical action consumer /
+  `smart_core` plus generic Web frontend action presentation.
+- Reason / boundary: the previous runtime could scan raw views again for
+  actions, flatten record-rule algebra, cache user/action favorites in a model
+  singleton, infer workflow transitions, re-expand parallel action carriers,
+  execute server actions while reading a contract, and reconstruct a Native
+  executable action from method/label data. These are one architecture defect:
+  multiple layers interpreted authority independently.
+- Why Here / Why Not Elsewhere: effective structure and executable authority
+  are P0 mechanisms. Construction modules continue to provide business facts;
+  the frontend only consumes the normalized result and does not repair backend
+  ambiguity with model, role, label or state rules.
+- Blast radius / validation: all Contract V2 form action projections and the
+  compatibility config summaries for permission, workflow and search. The
+  payment-request submit action remains the real J10 carrier. Containment is
+  proven by structural guards, non-zero targeted Odoo tests, Canonical presenter
+  tests, strict TypeScript, governed module upgrade, Frontend Quick and one final
+  J10 browser run after static gates are green.
+- Completed verification: action/config Odoo matrix `87` post-tests / `95`
+  assertions passed; intent-envelope and execute-button authority unit suites
+  passed `8 + 12`; Canonical Presenter passed `98`; strict TypeScript and the
+  governed `verify.local.dev.frontend.quick.gate` passed. The single final J10
+  browser run passed on governed `sc-local-dev / sc_dev_demo`: payment request
+  `154` transitioned `draft -> submit`, execute mutation count was exactly `1`,
+  and the fixture reset restored the authoritative draft baseline.
+- Evidence: `artifacts/playwright/local-dev-payment-request-floorplan-submit/summary.json`
+  and its bound screenshots. The earlier failed trace
+  `8aae32b7-ab0e-49c6-b2c6-dcc42f27ddb0` proved two generic carrier gaps:
+  Canonical primary execution omitted action identity and the intent router
+  discarded top-level envelope meta. Both now have direct positive/negative
+  tests and retain fail-closed execution.
+- Known independent baseline issue: the broad `verify.backend.guard` reaches a
+  role-scoped live scene schema check whose PM contract currently contains one
+  scene while its baseline requires four. This batch did not change that guard,
+  its baseline, or scene product behavior; it is not used as substitute evidence
+  for the targeted authority chain.
+- Rollback: revert the responsibility commits in reverse order, run governed
+  `smart_core` incremental upgrade when model code changes are reverted, then
+  `make local.dev.sync_demo` to restore the persistent demo authority. No
+  database-specific repair or frontend business fallback is required.
+- Next batch: reconcile the role-scoped scene schema baseline with its declared
+  product delivery semantics as an independent governance decision; do not fold
+  that work into payment request product behavior.
