@@ -265,8 +265,9 @@ class ExecuteButtonHandler(BaseIntentHandler):
                 button_type=str(button_type),
             )
 
+            normalized_button_type = _normalized_button_type(button_type)
             env_model = self.env[model]
-            access_mode = self._button_access_mode(env_model, method_name)
+            access_mode = "write" if normalized_button_type == "server" else self._button_access_mode(env_model, method_name)
             env_model.check_access_rights(access_mode)
 
             recordset = env_model.browse(res_ids)
@@ -291,29 +292,18 @@ class ExecuteButtonHandler(BaseIntentHandler):
 
             recordset.check_access_rule(access_mode)
 
-            method = getattr(recordset.with_context(self.context), method_name, None)
-            if not callable(method):
-                server_action_result = self._run_server_action(button, model=model, res_ids=res_ids)
-                if server_action_result is not None:
-                    return server_action_result
-                server_action_id = button.get("server_action_id") or button.get("serverActionId")
-                if server_action_id and not _positive_int(server_action_id):
+            method = None
+            if normalized_button_type != "server":
+                method = getattr(recordset.with_context(self.context), method_name, None)
+                if not callable(method):
                     return _failure_result(
                         model=model,
                         res_id=res_ids[0],
-                        reason_code=REASON_MISSING_PARAMS,
-                        message="server_action_id 无效",
+                        reason_code=REASON_METHOD_NOT_CALLABLE,
+                        message=f"后端不可调用按钮方法: {method_name}",
                         trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
                         status_code=400,
                     )
-                return _failure_result(
-                    model=model,
-                    res_id=res_ids[0],
-                    reason_code=REASON_METHOD_NOT_CALLABLE,
-                    message=f"后端不可调用按钮方法: {method_name}",
-                    trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
-                    status_code=400,
-                )
 
             if dry_run:
                 payload = {
@@ -336,6 +326,29 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     "data": {"result": payload, "effect": effect},
                     "meta": {"trace_id": self.context.get("trace_id") if isinstance(self.context, dict) else "", "source_authority": self._source_authority_contract(model, method_name, button_type)},
                 }
+
+            if normalized_button_type == "server":
+                server_action_result = self._run_server_action(button, model=model, res_ids=res_ids)
+                if server_action_result is not None:
+                    return server_action_result
+                server_action_id = button.get("server_action_id") or button.get("serverActionId")
+                if server_action_id and not _positive_int(server_action_id):
+                    return _failure_result(
+                        model=model,
+                        res_id=res_ids[0],
+                        reason_code=REASON_MISSING_PARAMS,
+                        message="server_action_id 无效",
+                        trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
+                        status_code=400,
+                    )
+                return _failure_result(
+                    model=model,
+                    res_id=res_ids[0],
+                    reason_code=REASON_METHOD_NOT_CALLABLE,
+                    message=f"后端不可调用服务端动作: {method_name}",
+                    trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
+                    status_code=400,
+                )
 
             result = method()
 

@@ -94,4 +94,3 @@ native capability atom
 - `native_view` 与 `semantic_page` 形成唯一规范运行时结构。
 - 前端 renderer 只按正式契约语义选择组件。
 - clean install、定向测试、契约漂移和用户旅程证据全部绑定同一候选指纹。
-

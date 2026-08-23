@@ -61,7 +61,8 @@ class _Env(dict):
 
 
 def _authorized_contract(*, disabled=False, duplicate=False, method="action_confirm", button_type="object"):
-    backend_identity = "server_action:7" if button_type == "server" else f"button:{button_type}:{method}"
+    is_server = button_type in {"server", "server_action"}
+    backend_identity = "server_action:7" if is_server else f"button:{button_type}:{method}"
     rule = {
         "actionId": "action.confirm",
         "actionKey": "confirm",
@@ -70,7 +71,7 @@ def _authorized_contract(*, disabled=False, duplicate=False, method="action_conf
         "button": {
             "name": method,
             "type": button_type,
-            **({"server_action_id": 7} if button_type == "server" else {}),
+            **({"server_action_id": 7} if is_server else {}),
         },
         "allowed": True,
         "enabled": not disabled,
@@ -91,14 +92,15 @@ def _authorized_contract(*, disabled=False, duplicate=False, method="action_conf
 
 
 def _authority_button(method="action_confirm", button_type="object"):
-    backend_identity = "server_action:7" if button_type == "server" else f"button:{button_type}:{method}"
+    is_server = button_type in {"server", "server_action"}
+    backend_identity = "server_action:7" if is_server else f"button:{button_type}:{method}"
     return {
         "name": method,
         "type": button_type,
         "action_id": "action.confirm",
         "backend_identity": backend_identity,
         "source_widget_id": "page.header",
-        **({"server_action_id": 7} if button_type == "server" else {}),
+        **({"server_action_id": 7} if is_server else {}),
     }
 
 
@@ -115,6 +117,9 @@ def _authority_handler(module, contract):
 class _Recordset:
     id = 3
 
+    def __init__(self):
+        self.method_calls = 0
+
     def exists(self):
         return self
 
@@ -127,13 +132,23 @@ class _Recordset:
     def with_context(self, context):
         return self
 
+    def shared_action(self):
+        self.method_calls += 1
+        return None
+
 
 class _ButtonModel:
+    def __init__(self, recordset=None, readonly_methods=()):
+        self.recordset = recordset or _Recordset()
+        self._sc_readonly_navigation_button_methods = readonly_methods
+        self.access_modes = []
+
     def check_access_rights(self, mode):
+        self.access_modes.append(mode)
         return True
 
     def browse(self, ids):
-        return _Recordset()
+        return self.recordset
 
 
 def _load_handler():
@@ -216,6 +231,105 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
 
         self.assertTrue(result["ok"])
         self.assertEqual(action.run_calls, 1)
+
+    def test_handle_server_action_name_collision_runs_only_server_action(self):
+        module = _load_handler()
+        for button_type in ("server", "server_action"):
+            with self.subTest(button_type=button_type):
+                action = _Action("x.model")
+                recordset = _Recordset()
+                button_model = _ButtonModel(recordset, readonly_methods=("shared_action",))
+                env = _Env({
+                    "x.model": button_model,
+                    "ir.actions.server": _ActionModel(action),
+                })
+                handler = module.ExecuteButtonHandler(
+                    env=env,
+                    payload={
+                        "params": {
+                            "model": "x.model",
+                            "record_id": 3,
+                            "button": _authority_button(method="shared_action", button_type=button_type),
+                        },
+                        "meta": {"action_id": 41, "menu_id": 51},
+                    },
+                    context={"trace_id": "trace"},
+                )
+                handler._load_current_action_contract = lambda **_kwargs: _authorized_contract(
+                    method="shared_action",
+                    button_type=button_type,
+                )
+
+                result = handler.handle()
+
+                self.assertTrue(result["ok"])
+                self.assertEqual(recordset.method_calls, 0)
+                self.assertEqual(action.run_calls, 1)
+                self.assertEqual(button_model.access_modes, ["write"])
+
+    def test_handle_server_action_dry_run_executes_neither_collision_target(self):
+        module = _load_handler()
+        action = _Action("x.model")
+        recordset = _Recordset()
+        env = _Env({
+            "x.model": _ButtonModel(recordset),
+            "ir.actions.server": _ActionModel(action),
+        })
+        handler = module.ExecuteButtonHandler(
+            env=env,
+            payload={
+                "params": {
+                    "model": "x.model",
+                    "record_id": 3,
+                    "dry_run": True,
+                    "button": _authority_button(method="shared_action", button_type="server"),
+                },
+                "meta": {"action_id": 41, "menu_id": 51},
+            },
+            context={"trace_id": "trace"},
+        )
+        handler._load_current_action_contract = lambda **_kwargs: _authorized_contract(
+            method="shared_action",
+            button_type="server",
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(recordset.method_calls, 0)
+        self.assertEqual(action.run_calls, 0)
+        self.assertEqual(result["data"]["result"]["reason_code"], "DRY_RUN")
+
+    def test_handle_object_action_name_collision_runs_only_model_method(self):
+        module = _load_handler()
+        action = _Action("x.model")
+        recordset = _Recordset()
+        env = _Env({
+            "x.model": _ButtonModel(recordset),
+            "ir.actions.server": _ActionModel(action),
+        })
+        handler = module.ExecuteButtonHandler(
+            env=env,
+            payload={
+                "params": {
+                    "model": "x.model",
+                    "record_id": 3,
+                    "button": _authority_button(method="shared_action", button_type="object"),
+                },
+                "meta": {"action_id": 41, "menu_id": 51},
+            },
+            context={"trace_id": "trace"},
+        )
+        handler._load_current_action_contract = lambda **_kwargs: _authorized_contract(
+            method="shared_action",
+            button_type="object",
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(recordset.method_calls, 1)
+        self.assertEqual(action.run_calls, 0)
 
     def test_contract_action_authority_requires_exact_identity_and_status(self):
         module = _load_handler()

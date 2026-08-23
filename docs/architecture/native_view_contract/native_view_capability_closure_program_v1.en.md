@@ -83,4 +83,3 @@ missing and reasonless fallback states are forbidden.
 - Frontend component selection driven only by formal contract semantics.
 - Clean-install, targeted-test, contract-drift and user-journey evidence bound
   to the same complete candidate fingerprint.
-
