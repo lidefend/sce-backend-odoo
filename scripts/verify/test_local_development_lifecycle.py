@@ -222,6 +222,18 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         )
         self.assertIn("local.dev.test: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.upgrade: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn(
+            "local.dev.verify_authority: guard.prod.forbid local.dev.ready",
+            make_text,
+        )
+        upgrade = make_text.split("local.dev.upgrade:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("mod.upgrade", upgrade)
+        self.assertIn("local.dev.verify_authority", upgrade)
+        verify_authority = make_text.split(
+            "local.dev.verify_authority:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("SC_ENVIRONMENT=demo", verify_authority)
+        self.assertIn("SC_ALLOW_DEMO_DATA=1", verify_authority)
         self.assertIn("local.dev.snapshot: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.contract_snapshot: guard.prod.forbid local.dev.ready", make_text)
         contract_snapshot = make_text.split("local.dev.contract_snapshot:", 1)[1].split("\n\n", 1)[0]
@@ -283,6 +295,69 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("/var/lib/odoo/demo_install.log", reset)
         self.assertLess(reset.index("set +e"), reset.index("odoo --config"))
         self.assertLess(reset.index("rc=${PIPESTATUS[0]}"), reset.index("set -e\nif"))
+        self.assertIn("ensure_local_demo_product_baseline.py", reset)
+        self.assertLess(
+            reset.index("ensure_local_demo_product_baseline.py"),
+            reset.index("-i smart_construction_demo"),
+        )
+        self.assertNotIn(
+            "-i smart_construction_core,smart_construction_seed,smart_construction_demo",
+            reset,
+        )
+        self.assertIn(
+            'ODOO_ADDONS_PATH="/usr/lib/python3/dist-packages/odoo/addons,'
+            '/mnt/source-addons,/mnt/demo-addons,/mnt/extra-addons,'
+            '${ADDONS_EXTERNAL_MOUNT}"',
+            reset,
+        )
+        self.assertNotIn('ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH:-', reset)
+        self.assertIn("local_dev_demo_authority_verify.sh", reset)
+        self.assertLess(
+            reset.rindex("-i smart_construction_demo"),
+            reset.rindex("local_dev_demo_authority_verify.sh"),
+        )
+
+        load_full = (ROOT / "scripts/demo/load_full.sh").read_text(encoding="utf-8")
+        self.assertIn("local_dev_demo_authority_verify.sh", load_full)
+        self.assertLess(
+            load_full.index("local_dev_demo_authority_verify.sh"),
+            load_full.index("scripts/demo/load_all.sh"),
+        )
+        authority_verify = (
+            ROOT / "scripts/dev/local_dev_demo_authority_verify.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn("guard_demo_data_scope", authority_verify)
+        self.assertIn("guard_prod_forbid", authority_verify)
+        self.assertIn("local_dev_demo_authority_preflight.py", authority_verify)
+        self.assertIn("/mnt/source-addons,/mnt/demo-addons", authority_verify)
+        authority = (
+            ROOT / "scripts/dev/local_dev_demo_authority_preflight.py"
+        ).read_text(encoding="utf-8")
+        for required in (
+            "DEMO_AUTHORITY_MODULE_MISSING",
+            "DEMO_AUTHORITY_FINANCE_ROLE_XMLID_MISSING",
+            "DEMO_AUTHORITY_FINANCE_ROLE_IDENTITY_INVALID",
+            "DEMO_AUTHORITY_FINANCE_GROUP_XMLID_MISSING",
+            "DEMO_AUTHORITY_FINANCE_ROLE_MEMBERSHIP_MISSING",
+            "DEMO_AUTHORITY_COMPANY_CNY_MISSING",
+            "DEMO_AUTHORITY_SALE_TAX_9_MISSING",
+            'demo_module.state == "installed"',
+            '"smart_construction_demo.user_demo_role_finance"',
+            '"smart_construction_core.group_sc_role_finance_manager"',
+        ):
+            self.assertIn(required, authority)
+
+        baseline = (
+            ROOT / "scripts/ops/ensure_local_demo_product_baseline.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("ensure_core_taxes(env)", baseline)
+        self.assertIn('env["res.company"]._sc_ensure_cny_currency()', baseline)
+        self.assertIn("LOCAL_DEMO_PRODUCT_BASELINE_CNY_MISSING", baseline)
+        self.assertLess(
+            baseline.index("LOCAL_DEMO_PRODUCT_BASELINE_TAX_MISSING"),
+            baseline.index("env.cr.commit()"),
+        )
+        self.assertNotIn(".create(", baseline)
 
         hook = (ROOT / "demo_addons/smart_construction_demo/hooks.py").read_text(
             encoding="utf-8"
