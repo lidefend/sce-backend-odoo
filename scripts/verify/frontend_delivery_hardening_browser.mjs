@@ -1088,7 +1088,31 @@ async function openPaymentCreateFromList(page, target, label) {
   );
   await paymentCreateSurface.waitFor({ state: 'visible', timeout: 45000 });
   check(await paymentCreateSurface.count() === 1, `${label}: payment create form identity is not unique`);
-  await paymentCreateSurface.locator('[data-field-name="amount"] input').waitFor({ state: 'visible', timeout: 45000 });
+  try {
+    await paymentCreateSurface.locator('[data-field-name="amount"] input').waitFor({ state: 'visible', timeout: 45000 });
+  } catch (error) {
+    const diagnostic = await paymentCreateSurface.evaluate((surface) => ({
+      shadowError: surface.getAttribute('data-v2-shadow-error') || '',
+      shadowActions: surface.getAttribute('data-v2-shadow-actions') || '',
+      shadowButtonStatuses: surface.getAttribute('data-v2-shadow-button-statuses') || '',
+      driverErrors: [...surface.querySelectorAll('[data-contract-form-driver-error]')]
+        .map((node) => String(node.textContent || '').trim()).filter(Boolean),
+      statusPanels: [...surface.querySelectorAll('.sc-state-panel[role="alert"]')]
+        .map((node) => String(node.textContent || '').trim()).filter(Boolean),
+      fieldNames: [...new Set([...surface.querySelectorAll('[data-field-name]')]
+        .map((node) => String(node.getAttribute('data-field-name') || '').trim()).filter(Boolean))],
+      canonicalActions: [...surface.querySelectorAll('[data-canonical-action-id]')]
+        .map((node) => ({
+          actionId: String(node.getAttribute('data-canonical-action-id') || '').trim(),
+          backendIdentity: String(node.getAttribute('data-canonical-backend-identity') || '').trim(),
+          disabled: node.hasAttribute('disabled'),
+        })),
+    }));
+    throw new Error(
+      `${label}: payment create amount field unavailable diagnostic=${JSON.stringify(diagnostic)}`
+      + ` cause=${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 main().catch((error) => { console.error(`[verify.frontend.delivery_hardening.browser] FAIL ${error.stack || error.message}`); process.exitCode = 1; });
