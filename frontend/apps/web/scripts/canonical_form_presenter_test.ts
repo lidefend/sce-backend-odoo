@@ -30,6 +30,10 @@ import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtil
 import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor';
 import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
 import {
+  buildContractFormActions,
+  resolveContractActionForNativeOccurrence,
+} from '../src/pages/contractForm/contractActionPresentation';
+import {
   applyInternalRelationContextSwitch,
   settleRelationSelectionContextSwitch,
 } from '../src/pages/contractForm/relationSelectionRuntime';
@@ -573,6 +577,33 @@ assert.equal(canonicalFormActionIconClass(model.actionBar[0]?.icon || ''), 'chec
 assert.equal(canonicalFormActionIconClass('fa-check injected-class'), '');
 assert.equal(canonicalFormActionIconClass('oi-check'), '');
 assert.deepEqual(presentContractV2Form(store, 'create').actionBar, []);
+
+const runtimeScopedActionSnapshot = structuredClone(snapshot());
+runtimeScopedActionSnapshot.actionContract.actionRuleList.push({
+  actionId: 'action.form_configuration_apply', backendIdentity: 'contract_action:form_configuration_apply',
+  triggerType: 'click', sourceWidgetId: 'mode.form_field_configuration', targetIds: [],
+  dispatchMode: 'server', targetScope: 'runtime', refreshMode: 'partial',
+  actionKey: 'form_configuration_apply', label: 'Apply configuration',
+  allowed: true, enabled: true, disabled: false, entitlementEvaluated: true,
+  visibleProfiles: ['edit'], presentation: { tier: 'configuration' },
+});
+runtimeScopedActionSnapshot.statusContract.buttonStatus.push({
+  btnId: 'action.form_configuration_apply', visible: true, disabled: false,
+});
+const runtimeScopedActionModel = presentContractV2Form(
+  createContractV2Store(runtimeScopedActionSnapshot),
+  'edit',
+);
+assert.deepEqual(
+  runtimeScopedActionModel.actionBar.map((action) => action.key),
+  ['action_submit'],
+  'a mode-local runtime action must never be promoted into the product action bar',
+);
+assert.deepEqual(
+  collectCanonicalFormActions(runtimeScopedActionModel).map((action) => action.key),
+  ['action_submit'],
+  'a runtime orchestration action must not enter product executor validation',
+);
 
 const bodyActionSnapshot = structuredClone(snapshot());
 bodyActionSnapshot.layoutContract.containerTree[0].children.push({
@@ -1420,6 +1451,34 @@ assert.deepEqual(
   'a mismatched status identity must fail closed before canonical action placement',
 );
 
+const mergedWinnerStatusByIdentity = snapshot();
+mergedWinnerStatusByIdentity.actionContract.actionRuleList[0].actionId = 'action.runtime_submit_winner';
+mergedWinnerStatusByIdentity.actionContract.actionRuleList[0].actionKey = 'runtime_submit_winner';
+mergedWinnerStatusByIdentity.statusContract.buttonStatus = [{
+  btnId: 'btn.native_submit_occurrence',
+  backendIdentity: 'button:object:action_submit',
+  visible: true,
+  disabled: false,
+}];
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(mergedWinnerStatusByIdentity), 'edit').actionBar.map((action) => action.key),
+  ['runtime_submit_winner'],
+  'a merged action winner must join authoritative status by backend identity, not an incidental source key',
+);
+
+const ambiguousStatusIdentity = structuredClone(mergedWinnerStatusByIdentity);
+ambiguousStatusIdentity.statusContract.buttonStatus.push({
+  btnId: 'btn.duplicate_submit_status',
+  backendIdentity: 'button:object:action_submit',
+  visible: true,
+  disabled: false,
+});
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(ambiguousStatusIdentity), 'edit').actionBar,
+  [],
+  'duplicate status rows for one backend identity must fail closed',
+);
+
 const disabledSecondaryPrimary = snapshot();
 disabledSecondaryPrimary.actionContract.actionRuleList.push({
   ...disabledSecondaryPrimary.actionContract.actionRuleList[0],
@@ -1585,6 +1644,81 @@ const contractAction = {
   context: {}, domainRaw: '', target: '', url: '', enabled: true, hint: '', intent: '', semantic: '',
   sourceWidgetId: 'page.root', clientMode: '', visibleProfiles: ['edit', 'readonly'], requiredParams: [], requiresReason: false,
 } satisfies ContractAction;
+const occurrenceIdentity = {
+  type: 'object', name: 'action_submit', native_locator: '/form/header/button[1]', occurrence_index: 1,
+};
+const occurrenceAction = {
+  ...contractAction,
+  authorityActionId: 'action.submit',
+  nativeIdentity: occurrenceIdentity,
+};
+const mergedWinner = {
+  ...snapshot().actionContract.actionRuleList[0],
+  actionId: 'action.product_submit',
+  actionKey: 'product_action_submit',
+  button: { name: 'action_submit', type: 'object' },
+};
+const mergedWinnerStatus = {
+  btnId: 'native_action_submit', visible: true, disabled: false,
+  backendIdentity: 'button:object:action_submit',
+};
+const runtimeActions = buildContractFormActions({
+  model: 'x.document', recordId: 7, renderProfile: 'edit', sceneReadyActions: [],
+  v2ButtonStatus: { native_action_submit: mergedWinnerStatus },
+  v2ActionRuleList: [mergedWinner],
+});
+assert.deepEqual(
+  runtimeActions.map((action) => action.authorityActionId),
+  ['action.product_submit'],
+  'runtime action projection must join merged winners to status by backend identity',
+);
+assert.deepEqual(
+  buildContractFormActions({
+    model: 'x.document', recordId: 7, renderProfile: 'edit', sceneReadyActions: [],
+    v2ButtonStatus: {
+      first: mergedWinnerStatus,
+      second: { ...mergedWinnerStatus, btnId: 'duplicate_action_submit' },
+    },
+    v2ActionRuleList: [mergedWinner],
+  }),
+  [],
+  'ambiguous status authority for one backend identity must fail closed',
+);
+assert.equal(
+  resolveContractActionForNativeOccurrence([occurrenceAction], {
+    action: { backendIdentity: 'button:object:action_submit' },
+  }),
+  occurrenceAction,
+  'native rendering must resolve the already-authorized action by exact backend identity',
+);
+assert.equal(
+  resolveContractActionForNativeOccurrence([occurrenceAction, { ...occurrenceAction }], {
+    action: { backendIdentity: 'button:object:action_submit' },
+  }),
+  null,
+  'ambiguous backend identity must fail closed',
+);
+assert.equal(
+  resolveContractActionForNativeOccurrence([occurrenceAction], {
+    action: { actionId: 'action.submit' },
+  }),
+  occurrenceAction,
+  'native rendering may resolve the exact normalized action identity',
+);
+assert.equal(
+  resolveContractActionForNativeOccurrence([occurrenceAction], {
+    action: { nativeIdentity: occurrenceIdentity },
+  }),
+  occurrenceAction,
+  'native rendering may resolve the exact effective-view occurrence identity',
+);
+assert.equal(
+  resolveContractActionForNativeOccurrence([occurrenceAction], {
+    action: { name: 'action_submit', label: 'Submit' },
+  }),
+  null,
+  'method names and labels must never reconstruct executable authority',
+);
 assert.deepEqual(
   resolveCanonicalFormActionExecution(
     { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' },
@@ -1641,4 +1775,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=90');
+console.log('[canonical_form_presenter_test] PASS cases=98');

@@ -12,6 +12,40 @@ import type { ContractAction } from './types';
 
 export type AuthorizedWindowActionTarget = { actionId: number; menuId: number };
 
+function nativeOccurrenceKey(value: unknown): string {
+  const identity = parseMaybeJsonRecord(value);
+  const type = String(identity.type || '').trim().toLowerCase();
+  const name = String(identity.name || '').trim();
+  const locator = String(identity.native_locator || identity.nativeLocator || '').trim();
+  const occurrence = toPositiveInt(identity.occurrence_index || identity.occurrenceIndex) || 0;
+  return type && name && locator && occurrence > 0 ? `${type}|${name}|${locator}|${occurrence}` : '';
+}
+
+export function resolveContractActionForNativeOccurrence(
+  actions: ContractAction[],
+  row: Record<string, unknown>,
+): ContractAction | null {
+  const nativeAction = parseMaybeJsonRecord(row.action);
+  const backendIdentity = String(
+    nativeAction.backendIdentity || nativeAction.backend_identity
+    || row.backendIdentity || row.backend_identity || '',
+  ).trim();
+  const authorityActionId = String(
+    nativeAction.actionId || nativeAction.action_id || row.actionId || row.action_id || '',
+  ).trim();
+  const occurrenceKey = nativeOccurrenceKey(
+    nativeAction.nativeIdentity || nativeAction.native_identity
+    || row.nativeIdentity || row.native_identity,
+  );
+  if (!backendIdentity && !authorityActionId && !occurrenceKey) return null;
+  const candidates = actions.filter((candidate) => {
+    if (backendIdentity) return candidate.backendIdentity === backendIdentity;
+    if (authorityActionId) return candidate.authorityActionId === authorityActionId;
+    return nativeOccurrenceKey(candidate.nativeIdentity) === occurrenceKey;
+  });
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
 export function resolveAuthorizedWindowActionTarget(
   entries: RouteAuthorityEntry[],
   requested: { actionId: number | null; actionReference: string; menuId: number | null },
@@ -44,8 +78,6 @@ export function buildContractFormActions(params: {
   v2ButtonStatus: Record<string, ContractV2ButtonStatus>;
   v2ActionRuleList: Array<Record<string, unknown>>;
   resolveActionReference?: (requested: { actionId: number | null; actionReference: string; menuId: number | null }) => AuthorizedWindowActionTarget | null;
-  evaluateNativeActionVisibility: (row: Record<string, unknown>) => boolean;
-  isTierValidationActionHidden: (methodName: string) => boolean;
 }): ContractAction[] {
   const merged: Array<Record<string, unknown>> = [];
   (params.v2ActionRuleList || []).forEach((raw) => {
@@ -81,6 +113,7 @@ export function buildContractFormActions(params: {
         key,
         authorityActionId: String(row.actionId || row.action_id || '').trim(),
         backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
+        nativeIdentity,
         label: String(row.label || key).trim() || key,
         kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : buttonName ? 'object' : clientMode ? 'client' : 'open',
         intent: String(row.intent || '').trim(),
@@ -172,7 +205,6 @@ export function buildContractFormActions(params: {
     const openUrl = String(payload.url || row.url || '').trim();
     if (effectiveKind === 'open' && !actionId && !openUrl) continue;
     const methodName = detectObjectMethodFromActionKey(key, String(payload.method || row.method || '').trim());
-    if (params.isTierValidationActionHidden(methodName)) continue;
     const selectionRaw = String(row.selection || 'none').trim().toLowerCase();
     const selection = selectionRaw === 'single' || selectionRaw === 'multi' ? selectionRaw : 'none';
     const visibleProfiles = (Array.isArray(row.visible_profiles) ? row.visible_profiles : ['create', 'edit'])
@@ -182,8 +214,16 @@ export function buildContractFormActions(params: {
     const presentation = parseMaybeJsonRecord(row.presentation);
     const presentationTier = String(presentation.tier || '').trim().toLowerCase();
     const presentationSemantic = String(presentation.semantic || '').trim();
-    if (row.visible === false || row.invisible === true || !params.evaluateNativeActionVisibility(row)) continue;
-    const status = resolveV2ButtonStatus(key, params.v2ButtonStatus);
+    if (row.visible === false || row.invisible === true) continue;
+    const statuses = [...new Set(Object.values(params.v2ButtonStatus))];
+    const identityStatuses = statuses.filter((candidate) => (
+      String(candidate?.backendIdentity || '').trim() === backendIdentity
+    ));
+    const status = identityStatuses.length === 1
+      ? identityStatuses[0]
+      : identityStatuses.length > 1
+        ? undefined
+        : resolveV2ButtonStatus(key, params.v2ButtonStatus);
     if (!status || typeof status.visible !== 'boolean' || typeof status.disabled !== 'boolean') continue;
     if (status?.backendIdentity && status.backendIdentity !== backendIdentity) continue;
     if (status.visible === false) continue;

@@ -195,8 +195,6 @@ const built = buildContractFormActions({
   workflowActionRows: [],
   v2ActionRuleList: builtRules,
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 
 const grouped = groupContractHeaderActions({
@@ -292,8 +290,6 @@ const normalizedWinner = buildContractFormActions({
   }],
   v2ActionRuleList: [normalizedWinnerRule],
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 assert.equal(normalizedWinner.length, 1);
 assert.equal(normalizedWinner[0]?.label, 'Normalized winner');
@@ -315,8 +311,6 @@ const rejectedLegacyFallback = buildContractFormActions({
   v2ButtonStatus: {},
   workflowActionRows: [{ key: 'legacy-only', label: 'Legacy only', kind: 'object', level: 'header' }],
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 assert.equal(rejectedLegacyFallback.length, 0, 'V2 form action presentation must reject legacy-only action rows');
 
@@ -339,8 +333,6 @@ const normalizedRecordHandoff = buildContractFormActions({
   workflowActionRows: [],
   v2ActionRuleList: [normalizedRecordHandoffRule],
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 assert.equal(normalizedRecordHandoff.length, 1);
 assert.equal(normalizedRecordHandoff[0]?.label, 'Open follow-up');
@@ -367,7 +359,6 @@ const governedWindowAction = buildContractFormActions({
   resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
     [routeEntry(619, 'smart.action_payment_records', 545)], requested, { query: {} },
   ),
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.equal(governedWindowAction.length, 1, 'the existing Contract V2 action_ref carrier creates one governed adapter');
 assert.equal(governedWindowAction[0]?.actionId, 619);
@@ -408,7 +399,6 @@ const xmlidWindowAction = buildContractFormActions({
   resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
     [routeEntry(88, 'base.action_partner_form', 32)], requested, { query: {} },
   ),
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.equal(xmlidWindowAction.length, 1, 'a legitimate XMLID action_ref carrier must not be discarded');
 assert.deepEqual(buildFormActionExecutionPlan({
@@ -431,7 +421,6 @@ const targetXmlidWindowAction = buildContractFormActions({
   resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
     [routeEntry(91, 'project.open_view_project_all', 44)], requested, { query: {} },
   ),
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.equal(targetXmlidWindowAction[0]?.actionId, 91, 'target.xml_id uses the same authorized resolver');
 assert.equal(targetXmlidWindowAction[0]?.menuId, 44);
@@ -441,7 +430,6 @@ assert.deepEqual(buildContractFormActions({
   v2ButtonStatus: explicitStatuses(xmlidWindowActionRule),
   v2ActionRuleList: [xmlidWindowActionRule as unknown as Record<string, unknown>],
   resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget([], requested, { query: {} }),
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 }), [], 'an XMLID absent from the authorized menu carrier remains fail closed');
 
 assert.equal(resolveAuthorizedWindowActionTarget([
@@ -463,7 +451,6 @@ const urlWithSingleAuthorizedRoute = buildContractFormActions({
   resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
     [routeEntry(88, 'base.action_partner_form', 32)], requested, { query: {} },
   ),
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(buildFormActionExecutionPlan({
   action: urlWithSingleAuthorizedRoute[0], modelName: 'x.document', recordId: 7,
@@ -486,7 +473,6 @@ const buildContextualAction = (query: Record<string, unknown>) => buildContractF
   resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
     [contextualEntry], requested, { query },
   ),
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(buildContextualAction({}), [],
 'a contextual route missing its required query cannot enter presentation');
@@ -504,7 +490,6 @@ assert.deepEqual(buildContractFormActions({
   model: 'payment.request', recordId: 0, renderProfile: 'create', sceneReadyActions: [],
   v2ButtonStatus: explicitStatuses(emptyWindowActionRule),
   v2ActionRuleList: [emptyWindowActionRule as unknown as Record<string, unknown>],
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 }), [], 'a genuinely empty open target remains fail closed');
 
 const decodedRuntimeOpenSnapshot = decodeSnapshotWithActions([{
@@ -530,8 +515,6 @@ const decodedRuntimeOpenActions = buildContractFormActions({
   workflowActionRows: [],
   v2ActionRuleList: decodedRuntimeOpenSnapshot.actionContract.actionRuleList as unknown as Array<Record<string, unknown>>,
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 assert.equal(decodedRuntimeOpenActions[0]?.kind, 'open');
 assert.equal(decodedRuntimeOpenActions[0]?.url, '/f/x.followup/new');
@@ -545,8 +528,6 @@ const explicitEmptyNormalizedAuthority = buildContractFormActions({
   workflowActionRows: [{ key: 'must-not-leak', label: 'Must not leak', kind: 'object', level: 'header' }],
   v2ActionRuleList: [],
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(explicitEmptyNormalizedAuthority, []);
 
@@ -558,14 +539,12 @@ const sceneCannotCreateAuthority = buildContractFormActions({
     target: { method: 'action_scene_only' },
   }],
   v2ButtonStatus: {}, v2ActionRuleList: [],
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(sceneCannotCreateAuthority, [], 'Scene presentation rows cannot create executable authority');
 
 const missingButtonStatusRejected = buildContractFormActions({
   model: 'res.partner', recordId: 7, renderProfile: 'readonly', sceneReadyActions: [],
   v2ButtonStatus: {}, v2ActionRuleList: [rule('missing-status', 'page.header', 'page')],
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(missingButtonStatusRejected, [], 'missing button status must fail closed');
 
@@ -575,7 +554,6 @@ for (const missingKey of ['actionId', 'backendIdentity', 'sourceWidgetId', 'allo
   const rejected = buildContractFormActions({
     model: 'res.partner', recordId: 7, renderProfile: 'readonly', sceneReadyActions: [],
     v2ButtonStatus: {}, v2ActionRuleList: [missing],
-    evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
   });
   assert.deepEqual(rejected, [], `missing ${missingKey} must fail closed`);
 }
@@ -586,7 +564,6 @@ const duplicateIdentityRejected = buildContractFormActions({
     rule('duplicate-one', 'page.header', 'page', { backendIdentity: 'button:object:duplicate' }),
     rule('duplicate-two', 'page.header', 'page', { backendIdentity: 'button:object:duplicate' }),
   ],
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(duplicateIdentityRejected, [], 'ambiguous backend identity must fail closed');
 
@@ -598,7 +575,6 @@ const statusIdentityMismatchRejected = buildContractFormActions({
     },
   },
   v2ActionRuleList: [rule('status-mismatch', 'page.header', 'page')],
-  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(statusIdentityMismatchRejected, [], 'status identity mismatch must fail closed');
 
@@ -612,8 +588,6 @@ const deniedBuilt = buildContractFormActions({
   workflowActionRows: [],
   v2ActionRuleList: [rule('denied-page-submit', 'page.root', 'page')],
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 assert.equal(deniedBuilt.length, 1);
 assert.equal(deniedBuilt[0]?.enabled, false);
@@ -662,8 +636,6 @@ const decodedDeniedBuilt = buildContractFormActions({
   workflowActionRows: [],
   v2ActionRuleList: [decodedDeniedRule as unknown as Record<string, unknown>],
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 assert.equal(decodedDeniedBuilt[0]?.enabled, false);
 const deniedExistingBuilt = buildContractFormActions({
@@ -676,8 +648,6 @@ const deniedExistingBuilt = buildContractFormActions({
   workflowActionRows: [],
   v2ActionRuleList: [rule('denied-existing-submit', 'page.root', 'page')],
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 const deniedExistingPresentation = groupContractHeaderActions({
   actions: deniedExistingBuilt,
@@ -700,8 +670,6 @@ const allowedCreateBuilt = buildContractFormActions({
   workflowActionRows: [],
   v2ActionRuleList: [allowedCreateRule],
   policyContext: {} as never,
-  evaluateNativeActionVisibility: () => true,
-  isTierValidationActionHidden: () => false,
 });
 assert.equal(allowedCreateBuilt[0]?.authorizationAllowed, true);
 assert.equal(allowedCreateBuilt[0]?.requiresSavedRecord, true);

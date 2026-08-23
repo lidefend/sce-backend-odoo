@@ -6,41 +6,23 @@ import type { FormSectionFieldChange } from '../../components/template/formSecti
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
-import { resolveAuthorizedWindowActionTarget } from './contractActionPresentation';
+import { resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
 
 type PresentationDependencies = Record<string, any>;
 
 /** Owns authoritative action presentation and field interaction adapters. */
 export function useRecordActionPresentation(dependencies: PresentationDependencies) {
-  const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, applyWorkflowAvailability, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline, confirmActionSafety, contract, detectObjectMethodFromActionKey, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, isTierValidationActionHidden, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeActionKind, normalizeActionSafety, normalizeRequiredParams, normalizeWorkflowActionRows, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, parseMaybeJsonRecord, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, resolveContractFormFieldLabels, resolveContractV2ActionRules, resolveContractV2RuntimeContract, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveWorkflowContractFromStore, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, shouldShowWorkflowAction, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, toPositiveInt, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
+  const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline, confirmActionSafety, contract, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, parseMaybeJsonRecord, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, resolveContractFormFieldLabels, resolveContractV2ActionRules, resolveContractV2RuntimeContract, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveWorkflowContractFromStore, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, toPositiveInt, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
   const chatterTimelineHasMore = dependencies.chatterTimelineHasMore;
   const chatterTimelineLoading = dependencies.chatterTimelineLoading;
   const loadMoreNativeChatterTimeline = dependencies.loadMoreNativeChatterTimeline;
   const formFields = computed(() => resolveContractV2FormFieldMap(v2ContractStore.value));
 
-  function currentWorkflowContract(): Record<string, unknown> {
-    return resolveWorkflowContractFromStore(v2ContractStore.value);
-  }
-
-  function workflowContractActionRows(): Array<Record<string, unknown>> {
-    if (!recordId.value) return [];
-    return normalizeWorkflowActionRows(currentWorkflowContract(), model.value);
-  }
-
-  function blockingWorkflowEvidenceMessage() {
-    const row = workflowEvidenceGateRows.value.find((item) => item.blocking);
-    return row?.message || '';
-  }
-
-  function applyWorkflowContractToAction(action: ContractAction): ContractAction {
-    return applyWorkflowAvailability({ action, workflow: currentWorkflowContract(), recordId: recordId.value, blockingMessage: blockingWorkflowEvidenceMessage() });
-  }
-
-  function shouldShowWorkflowNativeAction(methodName: string) {
-    return shouldShowWorkflowAction(currentWorkflowContract(), recordId.value, methodName);
-  }
-
-  const workflowEvidenceGateRows = computed(() => normalizeWorkflowEvidenceGateRows(currentWorkflowContract()));
+  // Workflow evidence is display-only. Executable availability is already
+  // joined into Contract V2 action authority and must not be recomputed here.
+  const workflowEvidenceGateRows = computed(() => normalizeWorkflowEvidenceGateRows(
+    resolveWorkflowContractFromStore(v2ContractStore.value),
+  ));
 
   const contractActions = computed<ContractAction[]>(() => {
     const sceneReadyActions = useSceneFormAugmentations.value && Array.isArray(sceneReadyFormSurface.value.actions)
@@ -63,8 +45,6 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
           selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
         },
       ),
-      evaluateNativeActionVisibility,
-      isTierValidationActionHidden,
     });
   });
 
@@ -103,53 +83,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   }
 
   function contractActionFromNativeRow(row: Record<string, unknown>): ContractAction | null {
-    const nativeAction = row.action && typeof row.action === 'object' && !Array.isArray(row.action)
-      ? row.action as Record<string, unknown>
-      : {};
-    const payload = parseMaybeJsonRecord(nativeAction.payload || row.payload);
-    const rowName = String(nativeAction.name || row.name || payload.method || payload.ref || '').trim();
-    const rowLabel = String(nativeAction.label || row.label || '').trim();
-    const key = String(nativeAction.key || row.key || rowName || rowLabel || '').trim();
-    if (!key) return null;
-    const kind = normalizeActionKind(
-      nativeAction.kind || row.kind || row.buttonType || payload.type || row.type || (rowName ? 'object' : ''),
-    );
-    const level = String(nativeAction.level || row.level || 'body').trim().toLowerCase();
-    const actionId = toPositiveInt(payload.action_id) ?? toPositiveInt(payload.ref) ?? toPositiveInt(row.action_id) ?? toPositiveInt(row.ref);
-    const methodName = detectObjectMethodFromActionKey(
-      key,
-      String(payload.method || row.method || (kind === 'object' || kind === 'server' ? rowName : '') || '').trim(),
-    );
-    if (!shouldShowWorkflowNativeAction(methodName)) return null;
-    const needRecord = kind === 'object' || kind === 'server' || level === 'row' || level === 'smart';
-    return applyWorkflowContractToAction({
-      key,
-      authorityActionId: String(nativeAction.actionId || row.actionId || row.action_id || '').trim(),
-      backendIdentity: String(nativeAction.backendIdentity || row.backendIdentity || row.backend_identity || '').trim() || undefined,
-      label: rowLabel || key,
-      kind,
-      level,
-      selection: 'none',
-      actionId,
-      methodName,
-      serverActionId: toPositiveInt(payload.server_action_id || payload.serverActionId),
-      serverActionXmlId: String(payload.xml_id || payload.xmlId || '').trim(),
-      targetModel: String(row.target_model || row.model || payload.model || model.value || '').trim(),
-      context: parseMaybeJsonRecord(payload.context_raw || row.context),
-      domainRaw: String(payload.domain_raw || row.domain_raw || '').trim(),
-      target: String(payload.target || row.target || '').trim(),
-      url: String(payload.url || row.url || '').trim(),
-      enabled: !needRecord || Boolean(recordId.value),
-      hint: needRecord && !recordId.value ? 'requires record id' : '',
-      intent: String(nativeAction.intent || row.intent || '').trim(),
-      semantic: '',
-      sourceWidgetId: String(row.sourceWidgetId || row.source_widget_id || '').trim(),
-      clientMode: '',
-      visibleProfiles: ['create', 'edit', 'readonly'],
-      requiredParams: normalizeRequiredParams(nativeAction.required_params || row.required_params),
-      requiresReason: nativeAction.requires_reason === true || row.requires_reason === true,
-      actionSafety: normalizeActionSafety(nativeAction.action_safety || row.action_safety),
-    });
+    return resolveContractActionForNativeOccurrence(contractActions.value, row);
   }
 
   function resolveNativeActionState(row: Record<string, unknown>) {
@@ -380,11 +314,6 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
 
 
   return {
-    currentWorkflowContract,
-    workflowContractActionRows,
-    blockingWorkflowEvidenceMessage,
-    applyWorkflowContractToAction,
-    shouldShowWorkflowNativeAction,
     workflowEvidenceGateRows,
     contractActions,
     headerActions,

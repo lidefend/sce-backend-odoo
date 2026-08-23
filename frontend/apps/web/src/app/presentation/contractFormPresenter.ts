@@ -334,6 +334,14 @@ function actionStatus(
   store: ContractV2NormalizedStore,
   action: ContractV2ActionRule,
 ): ContractV2ButtonStatus | undefined {
+  const backendIdentity = text(action.backendIdentity);
+  if (backendIdentity) {
+    const identityMatches = store.snapshot.statusContract.buttonStatus.filter((status) => (
+      text(status.backendIdentity) === backendIdentity
+    ));
+    if (identityMatches.length === 1) return identityMatches[0];
+    if (identityMatches.length > 1) return undefined;
+  }
   const actionKey = text(action.actionKey);
   const statusKey = actionKey.startsWith('btn.') ? actionKey : `btn.${actionKey}`;
   return store.buttonStatusById.get(action.actionId)

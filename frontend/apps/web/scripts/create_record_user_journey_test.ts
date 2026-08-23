@@ -79,6 +79,7 @@ events.push('save-draft');
 const recordId = ref(501);
 const action = {
   key: 'submit', label: 'Submit', kind: 'object', level: 'header', selection: 'single',
+  authorityActionId: 'action.submit', backendIdentity: 'button:object:action_submit',
   actionId: null, methodName: 'action_submit', targetModel: 'x.document', context: {},
   domainRaw: '', target: '', url: '', enabled: true, hint: '', intent: '', semantic: 'primary_action',
   sourceWidgetId: 'page.root', clientMode: '', visibleProfiles: ['edit'], requiredParams: [],
@@ -121,7 +122,15 @@ const runtime = usePrimaryFormActionRuntime({
     events.push('submit');
     assert.equal(request.model, 'x.document');
     assert.equal(request.res_id, 501);
-    assert.deepEqual(request.button, { name: 'action_submit', type: 'object' });
+    assert.deepEqual(request.button, {
+      name: 'action_submit',
+      type: 'object',
+      action_id: 'action.submit',
+      backend_identity: 'button:object:action_submit',
+      source_widget_id: 'page.root',
+      server_action_id: undefined,
+      xml_id: undefined,
+    });
     stored.state = 'submit';
     return { result: null } as never;
   },

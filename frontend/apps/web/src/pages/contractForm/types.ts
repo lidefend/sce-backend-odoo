@@ -19,6 +19,7 @@ export type ContractAction = {
   key: string;
   authorityActionId?: string;
   backendIdentity?: string;
+  nativeIdentity?: Record<string, unknown>;
   label: string;
   kind: string;
   level: string;

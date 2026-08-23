@@ -72,7 +72,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     isComponentActive,
     isContractFieldOrderEditable,
     isFormPageRouteOwner,
-    isTierValidationActionHiddenFromState,
     isWritableFieldVisible,
     layoutNodes,
     model,
@@ -410,14 +409,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     });
   }
 
-  function isTierValidationActionHidden(methodName: string): boolean {
-    return isTierValidationActionHiddenFromState({
-      methodName,
-      validationStatus: formData.validation_status,
-      canReview: formData.can_review,
-    });
-  }
-
   async function applyProjectionRefreshPolicy(policy?: ContractAction['refreshPolicy']) {
     if (!policy || !Array.isArray(policy.on_success) || !policy.on_success.length) {
       return;
@@ -606,7 +597,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     previewLowCodeConfiguredPage,
     previewCurrentFormConfiguration,
     returnToBusinessConfigDesigner,
-    isTierValidationActionHidden,
     applyProjectionRefreshPolicy,
     saveRecord,
   };

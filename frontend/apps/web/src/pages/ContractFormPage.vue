@@ -387,7 +387,6 @@ import {
   contractActionRuleClientMode,
   contractActionRuleControl,
   contractActionRuleKey,
-  isTierValidationActionHidden as isTierValidationActionHiddenFromState,
   normalizeActionSafety,
   normalizeActionLabel,
   normalizeRequiredParams,
@@ -1510,7 +1509,6 @@ function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
   });
 }
 const {
-  currentWorkflowContract, workflowContractActionRows, blockingWorkflowEvidenceMessage, applyWorkflowContractToAction, shouldShowWorkflowNativeAction,
   workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
   contractFieldLabel, activeActivityAction, nativeAttachmentMaxBytes, nativeChatterActions, nativeAttachments,
   nativeCollaborationPanelProps, nativeCollaborationPanelListeners, resolveNativeAttachmentLabel, hasNativeChatterNode, nativeLayoutContainsType,
@@ -1546,7 +1544,7 @@ const {
   filteredRelationOptions, focusProductFormValidationError, formConflict,
   formData, formLayoutColumnsDraft, inputFieldValue,
   intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue,
-  isIntakeCreateMode, isQuickIntakeMode, isTierValidationActionHidden: (methodName: string) => isTierValidationActionHidden(methodName),
+  isIntakeCreateMode, isQuickIntakeMode,
   layoutContainsType, loadCollaborationUsers, loadMoreNativeChatterTimeline, lowCodeFormLayoutBase,
   many2oneValue, markFieldChanged, model,
   nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision,
@@ -1712,7 +1710,7 @@ const {
   onSelectedFormSettingsFieldLabelChange, contractInlineFieldOrderIndex, onContractInlineFieldOrderMove, onContractInlineFieldOrderDragStart, onContractInlineFieldOrderDragOver,
   onContractInlineFieldOrderDragLeave, onContractInlineFieldOrderDrop, onContractInlineFieldOrderGroupDrop, onContractInlineFieldOrderDragEnd, lowCodeApplyBaseParams,
   contractFieldSequence, fieldGroupTitleForDraft, routeQueryText, lowCodeReturnQuery, previewLowCodeConfiguredPage,
-  previewCurrentFormConfiguration, returnToBusinessConfigDesigner, isTierValidationActionHidden, applyProjectionRefreshPolicy, saveRecord,
+  previewCurrentFormConfiguration, returnToBusinessConfigDesigner, applyProjectionRefreshPolicy, saveRecord,
 } = useRecordFormActions({
   ApiError, BUSINESS_CONFIG_ACTION_KEYS, BUSINESS_CONFIG_MODES,
   BUSINESS_CONFIG_ROUTE_FLAGS, RECORD_CONTEXT_CHANGED_EVENT, actionId,
@@ -1734,7 +1732,7 @@ const {
   hasChanges, hasCurrentFormFieldDraftChanges, instanceRouteIdentity,
   intentConfirmationRef, isBusinessConfigMode, isBusinessConfigRuntimeModel,
   isComponentActive, isContractFieldOrderEditable, isFormPageRouteOwner,
-  isStandardIntakeMode, isTierValidationActionHiddenFromState, isWritableFieldVisible,
+  isStandardIntakeMode, isWritableFieldVisible,
   layoutNodes, model, moveFieldOrder,
   navigateCreatedRecord, normalizeFieldGroupTitle, normalizeFieldValue,
   onContractInlineGroupRename, onErrorCaptured, onFieldOrderDragEnd,
