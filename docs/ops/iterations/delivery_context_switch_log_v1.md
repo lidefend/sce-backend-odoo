@@ -5484,3 +5484,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   exposed the next real product finding in `platform_menu_api.py`.
 - Rollback: revert this P4 commit; product runtime and database state are
   unaffected.
+
+## General menu API authority classification (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `59d959cc`.
+- Formal Product Layer / Layer Target / Module: P4 architecture verification /
+  platform-company access guard classification for the P0 menu API.
+- Reason / boundary: `platform_menu_api.py` was incorrectly listed among files
+  that must call `user_is_platform_admin`. The API is the authenticated menu
+  entry for every user and delegates user-scoped filtering to
+  `FinalMenuNavigationService`; adding an administrator gate would break normal
+  product navigation. The guard now explicitly requires that delegation and
+  rejects platform-admin or `base.group_system` gates on this surface.
+- Why Here / Why Not Elsewhere: no product controller behavior was missing. The
+  defect was the guard's ownership classification, so neither the controller nor
+  frontend received an artificial permission branch.
+- Blast radius / validation: one guard and its direct tests. Seven guard tests,
+  three request-environment tests and the complete platform-company access
+  manifest guard passed.
+- Rollback: revert the guard classification commit; runtime and database state
+  are unaffected.

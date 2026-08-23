@@ -16,7 +16,11 @@ BODY = [
         isinstance(node, ast.Assign)
         and any(
             isinstance(target, ast.Name)
-            and target.id in {"CUSTOM_SECURITY_POLICY_GLOB", "OPTIONAL_RETIRED_GUARD_SOURCE_PATHS"}
+            and target.id in {
+                "CUSTOM_SECURITY_POLICY_GLOB",
+                "OPTIONAL_RETIRED_GUARD_SOURCE_PATHS",
+                "GENERAL_AUTHENTICATED_NAVIGATION_SURFACES",
+            }
             for target in node.targets
         )
     )
@@ -34,6 +38,7 @@ exec(compile(ast.Module(body=BODY, type_ignores=[]), str(MODULE_PATH), "exec"), 
 custom_security_policy_paths = NAMESPACE["_custom_security_policy_paths"]
 custom_security_policy_errors = NAMESPACE["_custom_security_policy_errors"]
 guard_source_text = NAMESPACE["_guard_source_text"]
+general_authenticated_navigation_surfaces = NAMESPACE["GENERAL_AUTHENTICATED_NAVIGATION_SURFACES"]
 
 
 class PlatformCompanyAccessManifestGuardTest(unittest.TestCase):
@@ -82,6 +87,12 @@ class PlatformCompanyAccessManifestGuardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(FileNotFoundError, "required guard source is missing"):
                 guard_source_text(Path(directory), "addons/current/models/security.py")
+
+    def test_platform_menu_api_is_governed_as_general_authenticated_navigation(self):
+        self.assertEqual(
+            general_authenticated_navigation_surfaces,
+            {"addons/smart_core/controllers/platform_menu_api.py"},
+        )
 
 
 if __name__ == "__main__":
