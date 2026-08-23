@@ -71,7 +71,6 @@ FORBIDDEN_STRICT_SCHEMA_COMPAT_ALIASES = (
     "['action_contract']",
     "['data_contract']",
     "['runtime_contract']",
-    "unified_page_contract_v2",
     "__unified_page_contract_v2",
     "legacyContractProjection",
     "legacy_contract_projection",
@@ -84,7 +83,6 @@ FORBIDDEN_STRICT_TYPE_COMPAT_ALIASES = (
     "business_operation_profile",
     "visible_fields",
     "field_groups",
-    "form_structure_contract",
     "legacyContractProjection",
     "legacy_contract_projection",
 )
@@ -177,19 +175,19 @@ FORBIDDEN_STRICT_STORE_META_EXTENSION_TOKENS = (
 ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # ContractV2ValueSource.kind; not a payload field read.
     "main_data",
-    # Native form shadow widget synthesis compatibility.
-    "component_config",
-    "component_key",
-    "field_type",
+    # Formal relation and widget-option carrier keys.
     "relation_entry",
     "relation_field",
-    "widget_id",
     "widget_options",
 }
 
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
+    # Canonical role registry symbols; not payload aliases.
+    "CONTRACT_V2_FORM_STRUCTURE_ROLES",
+    "FORM_STRUCTURE_ROLE_SET",
     # Formal enum values.
     "act_window",
+    "business_form",
     "harmony_h5",
     "native_activity_view_projection",
     "web_pc",
@@ -207,6 +205,7 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "search_panel",
     "ui_labels",
     # Native form container extension compatibility.
+    "column_invisible",
     "currency_field",
     "field_type",
     # Formal native occurrence carrier keys inside componentConfig.
@@ -217,6 +216,13 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "no_business_fact_authority",
     "projection_only",
     "runtime_carrier",
+    # Formal form-structure source-authority carrier keys and values.
+    "form_structure_contract",
+    "governance_source",
+    "governed_form_structure",
+    "unified_page_contract_v2",
+    "version_no",
+    "view_type",
 }
 
 FORBIDDEN_STRICT_ALIAS_HELPERS = (
@@ -356,18 +362,14 @@ ALLOWED_STRICT_SCHEMA_EXTENSION_FIELDS = {
         "formStructure",
         "formStructureRole",
         "invisible",
-        "items",
         "modifiers",
-        "nodes",
         "nolabel",
         "nativeLocator",
-        "pages",
         "occurrenceIndex",
         "readonly",
         "required",
         "sourceAuthority",
         "sourcePosition",
-        "tabs",
         "text",
         "widget",
         "widgetId",

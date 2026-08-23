@@ -18,6 +18,8 @@ import type {
   ContractV2Widget,
   ContractV2WidgetStatus,
 } from '../contracts/v2/types';
+import type { ContractV2FormStructureRoleName } from '../contracts/v2/types';
+import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructureRoles';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -31,15 +33,10 @@ function bool(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
-const FORM_SEMANTIC_ROLES = new Set<CanonicalFormSemanticRole>([
-  'summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit',
-]);
-
 function semanticRole(value: unknown): CanonicalFormSemanticRole | '' {
   const structure = asDict(value);
-  const rawRole = text(structure.role).toLowerCase();
-  const role = (rawRole === 'business_fact' ? 'context' : rawRole) as CanonicalFormSemanticRole;
-  return FORM_SEMANTIC_ROLES.has(role) ? role : '';
+  const role = text(structure.role) as ContractV2FormStructureRoleName;
+  return role ? canonicalRoleForFormStructureRole(role) : '';
 }
 
 function semanticIdentity(value: unknown): { role: CanonicalFormSemanticRole | ''; slot: string; group: string } {
@@ -157,54 +154,6 @@ function fieldFromWidget(
   };
 }
 
-function childCollections(container: ContractV2Container): ContractV2Container[] {
-  return [
-    ...container.children,
-    ...(container.pages || []),
-    ...(container.tabs || []),
-    ...(container.nodes || []),
-    ...(container.items || []),
-  ];
-}
-
-function descendantWidgetIds(container: ContractV2Container, store: ContractV2NormalizedStore): Set<string> {
-  const ids = new Set<string>();
-  childCollections(container).forEach((child) => {
-    child.widgetList.forEach((widget) => ids.add(widget.widgetId));
-    const kind = text(child.type || child.containerType).toLowerCase();
-    if (kind === 'field') {
-      const fieldInfo = asDict(child.fieldInfo);
-      const fieldCode = text(child.name || fieldInfo.name || child.attributes?.name);
-      const explicit = child.widgetId ? store.widgetsById.get(child.widgetId) : undefined;
-      if (explicit) ids.add(explicit.widgetId);
-      else {
-        const candidates = store.widgetsByFieldCodeAll.get(fieldCode) || [];
-        if (candidates.length === 1) ids.add(candidates[0].widgetId);
-      }
-    }
-    descendantWidgetIds(child, store).forEach((widgetId) => ids.add(widgetId));
-  });
-  return ids;
-}
-
-function widgetsOwnedByContainer(
-  container: ContractV2Container,
-  store: ContractV2NormalizedStore,
-): ContractV2Widget[] {
-  const descendants = descendantWidgetIds(container, store);
-  const direct = container.widgetList.filter((widget) => !descendants.has(widget.widgetId));
-  if (direct.length) return direct;
-  const kind = text(container.type || container.containerType).toLowerCase();
-  if (kind !== 'field') return [];
-  const fieldInfo = asDict(container.fieldInfo);
-  const fieldCode = text(container.name || fieldInfo.name || container.attributes?.name);
-  const widget = (container.widgetId ? store.widgetsById.get(container.widgetId) : undefined)
-    || ((store.widgetsByFieldCodeAll.get(fieldCode) || []).length === 1
-      ? (store.widgetsByFieldCodeAll.get(fieldCode) || [])[0]
-      : undefined);
-  return widget ? [widget] : [];
-}
-
 function presentNode(
   container: ContractV2Container,
   inheritedRole: CanonicalFormZoneRole,
@@ -216,7 +165,6 @@ function presentNode(
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
-  claimedWidgetIds: Set<string>,
   actionsByIdentity: ReadonlyMap<string, CanonicalFormAction>,
   actionsByNativeOccurrence: ReadonlyMap<string, CanonicalFormAction>,
   ancestorTitle = '',
@@ -226,10 +174,8 @@ function presentNode(
   const status: ContractV2ContainerStatus | undefined = store.containerStatusById.get(container.containerId);
   const visible = ancestorVisible && bool(status?.visible, true);
   const disabled = ancestorDisabled || bool(status?.disabled, false);
-  const widgets = widgetsOwnedByContainer(container, store).flatMap((widget) => {
-    if (claimedWidgetIds.has(widget.widgetId)) return [];
-    claimedWidgetIds.add(widget.widgetId);
-    return [fieldFromWidget(
+  const widgets = (store.widgetsByOwnerContainerId.get(container.containerId) || []).map((widget) => (
+    fieldFromWidget(
       widget,
       container,
       store.widgetStatusById.get(widget.widgetId),
@@ -239,8 +185,8 @@ function presentNode(
       pageCanEdit,
       visible,
       disabled,
-    )];
-  });
+    )
+  ));
   const nodeKind = text(container.type || container.containerType) || 'container';
   // A native field `string`/`label` labels the control; it is not a container
   // heading. Keeping those facts separate prevents duplicate field titles.
@@ -275,10 +221,10 @@ function presentNode(
       || null,
     nativeWidget: nodeKind === 'widget' ? text(container.widget || container.name) : '',
     fields: widgets,
-    children: childCollections(container).map((child, childIndex) => (
+    children: container.children.map((child, childIndex) => (
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
-        mode, pageCanEdit, visible, disabled, claimedWidgetIds, actionsByIdentity, actionsByNativeOccurrence,
+        mode, pageCanEdit, visible, disabled, actionsByIdentity, actionsByNativeOccurrence,
         rawTitle || ancestorTitle,
       )
     )),
@@ -401,7 +347,6 @@ export function presentContractV2Form(
   const pageVisible = bool(globalStatus.pageVisible, true);
   const pageAuth = text(globalStatus.pageAuth);
   const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
-  const claimedWidgetIds = new Set<string>();
   const actionIdentityCounts = new Map<string, number>();
   const actionIdCounts = new Map<string, number>();
   snapshot.actionContract.actionRuleList.forEach((action) => {
@@ -433,7 +378,7 @@ export function presentContractV2Form(
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, zoneRole(container), index, store, contractValues, runtimeValues, mode, pageCanEdit,
-      pageVisible, pageAuth === 'none', claimedWidgetIds, actionsByIdentity, actionsByNativeOccurrence,
+      pageVisible, pageAuth === 'none', actionsByIdentity, actionsByNativeOccurrence,
     )
   ));
   const demotedActionIds = new Set(

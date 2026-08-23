@@ -227,7 +227,9 @@ REQUIRED_V2_BOUNDARY_FILES: dict[str, tuple[str, ...]] = {
         "ContractV2Snapshot",
         "ContractV2NormalizedStore",
         "ContractV2UnsupportedFeature",
-        "formStructureContract?: ContractV2Dictionary",
+        "ContractV2FormStructureContract",
+        "ContractV2FormStructureRole",
+        "formStructureContract?: ContractV2FormStructureContract",
         "businessOperationProfile?: ContractV2Dictionary",
         "visibleFields?: ContractV2VisibleFields",
         "fieldGroups?: ContractV2FieldGroups",
@@ -235,12 +237,13 @@ REQUIRED_V2_BOUNDARY_FILES: dict[str, tuple[str, ...]] = {
         "surfacePolicies?: ContractV2Dictionary",
         "listProfile?: ContractV2Dictionary",
         "formStructure?: ContractV2Dictionary",
-        "formStructureRole?: ContractV2Dictionary",
+        "formStructureRole?: ContractV2FormStructureRole",
     ),
     "app/contracts/v2/schema.ts": (
         "decodeContractV2Snapshot",
         "ContractV2DecodeError",
-        "must be semantic version 2.x.y",
+        "/^2\\.(0|1|2)\\.\\d+$/",
+        "must be a negotiated 2.0, 2.1, or 2.2 version",
         "formStructureContract",
         "formStructureRole",
         "decodeDataMeta",
@@ -270,6 +273,13 @@ REQUIRED_V2_BOUNDARY_FILES: dict[str, tuple[str, ...]] = {
     "app/contracts/v2/runtime.ts": (
         "resolveContractV2ActionPlan",
         "resolveContractV2DataSourcePlan",
+    ),
+}
+
+FORBIDDEN_V2_BOUNDARY_TOKENS: dict[str, tuple[str, ...]] = {
+    "app/contracts/v2/types.ts": (
+        "formStructureContract?: ContractV2Dictionary",
+        "formStructureRole?: ContractV2Dictionary",
     ),
 }
 
@@ -409,6 +419,9 @@ def validate_v2_boundary() -> list[str]:
         for token in tokens:
             if token not in text:
                 errors.append(f"v2 boundary file {relative_path} missing token: {token}")
+        for token in FORBIDDEN_V2_BOUNDARY_TOKENS.get(relative_path, ()):
+            if token in text:
+                errors.append(f"v2 boundary file {relative_path} retains loose token: {token}")
         if relative_path.startswith("app/contracts/v2/") and "api/contract" in text:
             errors.append(f"v2 boundary file {relative_path} must not import legacy api/contract projection")
     return errors

@@ -35,8 +35,7 @@ export function useContractV2ShadowDiagnostics(input: {
     v2ShadowLegacyFieldMissingPreview: computed(() => missingLegacyFields.value.slice(0, 8).join(',') || '-'),
     v2ShadowFormStructureContract: formStructureContract,
     v2ShadowFormStructureSlotCount: computed(() => {
-      const slots = formStructureContract.value.slots;
-      return Array.isArray(slots) ? slots.length : 0;
+      return formStructureContract.value?.slots.length || 0;
     }),
     v2ShadowLayoutSourceKind: computed(() => {
       if (resolveContractV2ContainerTree(input.store.value).length) return 'v2_store';

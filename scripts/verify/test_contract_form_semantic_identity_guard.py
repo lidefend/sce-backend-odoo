@@ -37,7 +37,6 @@ function fieldFromWidget(widget: Widget, container: Container) {
     semanticGroup: fieldSemantics.group,
   };
 }
-function childCollections() { return []; }
 function presentNode(container: Container) {
   const nodeSemantics = semanticIdentity(container.formStructureRole);
   return {

@@ -5,11 +5,15 @@ from copy import deepcopy
 from typing import Any
 
 from .source_authority import build_source_authority_contract
+from .unified_page_contract_v2_form_structure import CANONICAL_FORM_STRUCTURE_ROLES
 
 PATCH_OPERATIONS = ("replace", "merge", "append", "remove", "reorder", "invalidate")
 SOURCE_KIND = "unified_page_contract_v2_runtime_projection"
 SOURCE_AUTHORITIES = ("unified_page_contract_v2", "runtime_contract_schema")
 NO_BUSINESS_FACT_AUTHORITY = True
+FORM_STRUCTURE_ROLES = frozenset(CANONICAL_FORM_STRUCTURE_ROLES)
+FORM_STRUCTURE_SOURCE = "ui.contract.v2.form_structure_contract"
+FORM_STRUCTURE_RUNTIME_CARRIER = "ui.contract.v2.form_structure_contract"
 
 
 def source_authority_contract() -> dict[str, Any]:
@@ -56,8 +60,7 @@ def _count_containers(rows: Any) -> int:
         if not isinstance(row, dict):
             continue
         total += 1
-        for key in ("children", "pages", "tabs", "nodes", "items"):
-            total += _count_containers(row.get(key))
+        total += _count_containers(row.get("children"))
     return total
 
 
@@ -69,16 +72,7 @@ def _count_widgets(rows: Any) -> int:
         widget_list = _list(row.get("widgetList"))
         if widget_list:
             total += len(widget_list)
-        elif _text(row.get("type") or row.get("kind")).lower() == "field":
-            total += 1
-        else:
-            total += len([child for child in _list(row.get("children")) if isinstance(child, dict) and _text(child.get("type") or child.get("kind")).lower() == "field"])
-            total += len([child for child in _list(row.get("pages")) if isinstance(child, dict) and _text(child.get("type") or child.get("kind")).lower() == "field"])
-            total += len([child for child in _list(row.get("tabs")) if isinstance(child, dict) and _text(child.get("type") or child.get("kind")).lower() == "field"])
-            total += len([child for child in _list(row.get("nodes")) if isinstance(child, dict) and _text(child.get("type") or child.get("kind")).lower() == "field"])
-            total += len([child for child in _list(row.get("items")) if isinstance(child, dict) and _text(child.get("type") or child.get("kind")).lower() == "field"])
-        for key in ("children", "pages", "tabs", "nodes", "items"):
-            total += _count_widgets(row.get(key))
+        total += _count_widgets(row.get("children"))
     return total
 
 
@@ -341,16 +335,94 @@ def find_form_structure_contract_issues(contract: dict[str, Any]) -> list[str]:
     structure = _dict(contract.get("formStructureContract") or contract.get("form_structure_contract"))
     if not structure:
         return issues
-    if _text(structure.get("source")) != "ui.contract.v2.form_structure_contract":
-        issues.append("formStructureContract.source must be ui.contract.v2.form_structure_contract")
-    if _text(structure.get("viewType") or structure.get("view_type")) not in {"", "form"}:
+    if _text(structure.get("source")) != FORM_STRUCTURE_SOURCE:
+        issues.append(f"formStructureContract.source must be {FORM_STRUCTURE_SOURCE}")
+    if _text(structure.get("viewType")) != "form":
         issues.append("formStructureContract.viewType must be form")
-    source_authority = _dict(structure.get("sourceAuthority") or structure.get("source_authority"))
+    source_authority = _dict(structure.get("sourceAuthority"))
+    if not source_authority:
+        issues.append("formStructureContract.sourceAuthority is required")
+    if source_authority and _text(source_authority.get("kind")) != "unified_page_contract_v2":
+        issues.append("formStructureContract.sourceAuthority.kind must be unified_page_contract_v2")
+    if source_authority and _text(source_authority.get("runtime_carrier")) != FORM_STRUCTURE_RUNTIME_CARRIER:
+        issues.append(
+            "formStructureContract.sourceAuthority.runtime_carrier must be "
+            f"{FORM_STRUCTURE_RUNTIME_CARRIER}"
+        )
+    if source_authority and source_authority.get("projection_only") is not True:
+        issues.append("formStructureContract.sourceAuthority.projection_only must be true")
+    if source_authority and source_authority.get("no_business_fact_authority") is not True:
+        issues.append("formStructureContract.sourceAuthority.no_business_fact_authority must be true")
     if source_authority and source_authority.get("governed_form_structure") is not True:
         issues.append("formStructureContract.sourceAuthority.governed_form_structure must be true")
     governance_source = _dict(source_authority.get("governance_source"))
     if source_authority and not governance_source:
         issues.append("formStructureContract.sourceAuthority.governance_source is required")
+    elif governance_source and not _text(governance_source.get("source")):
+        issues.append("formStructureContract.sourceAuthority.governance_source.source is required")
+
+    layout_roots = _list(_dict(contract.get("layoutContract")).get("containerTree"))
+    container_ids: set[str] = set()
+    widget_owners: dict[str, str] = {}
+
+    def collect_layout_identity(nodes: list[Any], path: str) -> None:
+        for index, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                issues.append(f"{path}[{index}] must be an object")
+                continue
+            node_path = f"{path}[{index}]"
+            container_id = _text(node.get("containerId"))
+            if not container_id:
+                issues.append(f"{node_path}.containerId is required")
+            elif container_id in container_ids:
+                issues.append(f"duplicate layout containerId: {container_id}")
+            else:
+                container_ids.add(container_id)
+            for legacy_key in ("pages", "tabs", "nodes", "items"):
+                if legacy_key in node:
+                    issues.append(f"{node_path}.{legacy_key} is forbidden in normalized Contract V2")
+            if not isinstance(node.get("children"), list):
+                issues.append(f"{node_path}.children must be an array")
+            if not isinstance(node.get("widgetList"), list):
+                issues.append(f"{node_path}.widgetList must be an array")
+            collect_layout_identity(_list(node.get("children")), f"{node_path}.children")
+
+    def validate_widget_identity(nodes: list[Any], path: str) -> None:
+        for index, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                continue
+            node_path = f"{path}[{index}]"
+            for widget_index, widget in enumerate(_list(node.get("widgetList"))):
+                widget_path = f"{node_path}.widgetList[{widget_index}]"
+                if not isinstance(widget, dict):
+                    issues.append(f"{widget_path} must be an object")
+                    continue
+                widget_id = _text(widget.get("widgetId"))
+                owner_id = _text(widget.get("ownerContainerId"))
+                if not widget_id:
+                    issues.append(f"{widget_path}.widgetId is required")
+                if not owner_id:
+                    issues.append(f"{widget_path}.ownerContainerId is required")
+                elif owner_id not in container_ids:
+                    issues.append(f"{widget_path}.ownerContainerId references unknown container {owner_id}")
+                if widget_id in widget_owners:
+                    issues.append(f"widget {widget_id} has duplicate ownership")
+                elif widget_id:
+                    widget_owners[widget_id] = owner_id
+                native_locator = _text(widget.get("nativeLocator"))
+                occurrence_index = widget.get("occurrenceIndex")
+                if bool(native_locator) != bool(
+                    isinstance(occurrence_index, int)
+                    and not isinstance(occurrence_index, bool)
+                    and occurrence_index > 0
+                ):
+                    issues.append(
+                        f"{widget_path}.nativeLocator and occurrenceIndex must be supplied together"
+                    )
+            validate_widget_identity(_list(node.get("children")), f"{node_path}.children")
+
+    collect_layout_identity(layout_roots, "layoutContract.containerTree")
+    validate_widget_identity(layout_roots, "layoutContract.containerTree")
 
     fields = _dict(_dict(contract.get("dataContract")).get("dataMeta")).get("fields")
     known_fields = set(_dict(fields).keys())
@@ -377,10 +449,10 @@ def find_form_structure_contract_issues(contract: dict[str, Any]) -> list[str]:
             field_slots.setdefault(field_name, set()).add(slot_name)
             field_slot_counts[(field_name, slot_name)] = field_slot_counts.get((field_name, slot_name), 0) + 1
 
-    field_roles = _dict(structure.get("fieldRoles") or structure.get("field_roles"))
+    field_roles = _dict(structure.get("fieldRoles"))
     governance_field_names = {
         _text(item)
-        for item in _list(governance_source.get("field_names") or governance_source.get("fieldNames"))
+        for item in _list(governance_source.get("fieldNames"))
         if _text(item)
     }
     for field_name, role in field_roles.items():
@@ -391,9 +463,18 @@ def find_form_structure_contract_issues(contract: dict[str, Any]) -> list[str]:
             continue
         if known_fields and name not in known_fields:
             issues.append(f"formStructureContract.fieldRoles.{name} references unknown field")
+        role_name = _text(role_dict.get("role"))
+        if role_name not in FORM_STRUCTURE_ROLES:
+            issues.append(
+                f"formStructureContract.fieldRoles.{name}.role is unsupported: {role_name or '<empty>'}"
+            )
         role_slot = _text(role_dict.get("slot"))
+        if not role_slot:
+            issues.append(f"formStructureContract.fieldRoles.{name}.slot is required")
         if role_slot and slot_names and role_slot not in slot_names:
             issues.append(f"formStructureContract.fieldRoles.{name}.slot references unknown slot {role_slot}")
+        if not _text(role_dict.get("group")):
+            issues.append(f"formStructureContract.fieldRoles.{name}.group is required")
 
     seen_fields: set[str] = set()
     duplicate_fields: set[str] = set()
@@ -526,7 +607,7 @@ def _is_form_structure_internal_field(name: str) -> bool:
 
 
 def _field_refs_from_structure_row(row: dict[str, Any]) -> list[str]:
-    refs = [_text(item) for item in _list(row.get("fieldRefs") or row.get("field_refs") or row.get("fields"))]
+    refs = [_text(item) for item in _list(row.get("fieldRefs"))]
     out = [name for name in refs if name]
     for group in _list(row.get("groups")):
         if isinstance(group, dict):
@@ -543,13 +624,12 @@ def _collect_layout_field_names(rows: list[Any]) -> set[str]:
             name = _text(row.get("name") or row.get("fieldCode") or row.get("field_code"))
             if name:
                 out.add(name)
-        for widget in _list(row.get("widgetList") or row.get("widget_list")):
+        for widget in _list(row.get("widgetList")):
             widget_dict = _dict(widget)
-            name = _text(widget_dict.get("fieldCode") or widget_dict.get("field_code"))
+            name = _text(widget_dict.get("fieldCode"))
             if name:
                 out.add(name)
-        for key in ("children", "pages", "tabs", "nodes", "items"):
-            out.update(_collect_layout_field_names(_list(row.get(key))))
+        out.update(_collect_layout_field_names(_list(row.get("children"))))
     return out
 
 

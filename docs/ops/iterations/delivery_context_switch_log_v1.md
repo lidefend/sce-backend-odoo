@@ -5303,3 +5303,53 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Next batch: reconcile the role-scoped scene schema baseline with its declared
   product delivery semantics as an independent governance decision; do not fold
   that work into payment request product behavior.
+
+## Contract V2 form-layout DSL convergence (2026-08-23)
+
+- Branch / anchor: `feature/layout-contract-dsl-convergence-v1` /
+  `c0a6e9e2`; the batch remains an uncommitted verification candidate.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel, with a P1
+  producer adapter / Contract V2 form-structure assembly, JSON Schema,
+  decoder/store and Canonical Presenter / `smart_core`, generic Web frontend,
+  and `smart_construction_core` layout-role normalization at its producer edge.
+- Reason / boundary: the formal wire vocabulary now contains only
+  `summary/task/context/risk/relation/activity/audit`; historical producer roles
+  are normalized before the canonical carrier. Contract 2.2 requires one
+  ordered `children` channel and explicit widget ownership, while the production
+  client normalizes governed 2.0/2.1 legacy carriers before strict decoding.
+  No new contract family, business-model branch, renderer, page feature, route,
+  database profile or fixture system was introduced.
+- Why Here / Why Not Elsewhere: form-structure identity, version compatibility
+  and fail-closed decoding are generic P0 contract responsibilities. Industry
+  code may translate its source vocabulary but cannot extend the canonical role
+  enum. The Presenter consumes explicit ownership and no longer resolves field
+  placement through descendant or label heuristics.
+- Blast radius / validation: Contract V2 form-layout payloads and their generic
+  Canonical form projection. `verify.unified_page_contract.v2`, 87 boundary
+  cases, 140 Presenter cases, strict TypeScript, lifecycle authority checks,
+  production build and the recovered Frontend Quick chain passed. Negative
+  coverage rejects unknown roles, malformed legacy child carriers, duplicate
+  ownership and future unadvertised versions. The pre-document full worktree
+  fingerprint was
+  `c76d13bca6823d84492918121e812665828909818fa644d935ec594b198e270f`;
+  it is superseded by the post-document fingerprint recorded at batch handoff.
+- Runtime result: the foreign payment-execution fixture owner was corrected in
+  its own branch at `3f867321` by making reconciler-created XMLIDs immutable
+  and repairing existing mutable identities. After governed
+  `local.dev.sync_demo`, the `smart_core,smart_construction_core` incremental
+  upgrade and a second full demo synchronization passed on `sc_dev_demo`; no
+  record deletion, database rebuild or permission bypass was used.
+- Known downstream blocker: full Contract snapshot export now reaches the R10
+  authority boundary. Governed operator cases recover with `sc_test_admin`, but
+  the historical `execute_button_intent_dry_run_pm` case still invokes
+  `res.partner.write` without a Contract V2 action identity and is correctly
+  rejected with `ACTION_CONTRACT_AUTHORITY_MISSING`. This belongs to the
+  snapshot/execute-authority evidence carrier, not the layout DSL. Generated
+  partial snapshots were restored, and browser/release evidence remains unrun.
+- Rollback: revert this batch as one layout-DSL unit and run the governed
+  incremental module upgrade. Contract 2.0/2.1 compatibility remains
+  decoder-side and requires no database repair or product fallback.
+- Next batch: redesign the stale execute-button dry-run snapshot around an
+  existing authorized Contract V2 action, with a direct negative case proving
+  identity-free methods remain denied. Resume the layout candidate from the
+  Contract snapshot gate only after that independent evidence carrier passes.

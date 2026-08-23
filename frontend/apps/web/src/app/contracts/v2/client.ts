@@ -94,13 +94,14 @@ function applyCommonOptions(params: ContractV2Dictionary, options: ContractV2Loa
   if (options.previewRoleKey) params.preview_role_key = options.previewRoleKey;
   params.delivery_profile = 'full';
   params.client_type = 'web_pc';
-  params.accepted_contract_versions = ['2.0.x'];
+  params.accepted_contract_versions = ['2.0.x', '2.1.x', '2.2.x'];
   params.client_contract_capabilities = [
     'container_tree.v2',
     'data_source.v2',
     'action_rule.v2',
     'relation_entry.v2',
     'status_contract.v2',
+    'form_layout.children_owner.v1',
   ];
   return params;
 }

@@ -123,7 +123,12 @@
       "kind": "unified_page_contract_v2",
       "runtime_carrier": "ui.contract.v2.form_structure_contract",
       "projection_only": true,
-      "no_business_fact_authority": true
+      "no_business_fact_authority": true,
+      "governed_form_structure": true,
+      "governance_source": {
+        "source": "business_view_orchestration",
+        "ownerLayer": "business_view_orchestration"
+      }
     }
   }
 }

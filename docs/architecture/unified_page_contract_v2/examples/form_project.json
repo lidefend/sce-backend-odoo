@@ -33,7 +33,8 @@
             "capabilities": [
               "clearable"
             ],
-            "componentConfig": {}
+            "componentConfig": {},
+            "ownerContainerId": "main.basic"
           },
           {
             "widgetId": "field.stage_id",
@@ -47,7 +48,8 @@
             ],
             "componentConfig": {
               "dictKey": "project_stage"
-            }
+            },
+            "ownerContainerId": "main.basic"
           }
         ]
       }
@@ -226,7 +228,7 @@
       "definition": {
         "schemaId": "smart_core.unified_page_contract_v2",
         "schemaVersion": "2.2.0",
-        "schemaSha256": "b4a2614f4aa0f5ad052b6fc0f1351fb74cf511825c5fdee3036afdb0122ee419",
+        "schemaSha256": "f1b4fa4db76f166be90f0166da6fe39fe639dc927a77c0692d6ca80db59f864c",
         "contractVersion": "2.2.0",
         "normativeStatus": "stable"
       },
@@ -244,7 +246,7 @@
       },
       "integrity": {
         "algorithm": "sha256",
-        "contractSha256": "c5e22672ab0e43d4aaf87378590a511b7132917bd7df3b6d2883d80dcae02526"
+          "contractSha256": "f6eb58dd3844d903fde55c4b7e1b00b11d4168f4b49d95d5ccca7909ffda0625"
       },
       "authority": {
         "kind": "documentation_example",
