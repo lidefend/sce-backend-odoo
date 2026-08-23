@@ -36,7 +36,8 @@
             ],
             "componentConfig": {
               "dataKey": "project_tree"
-            }
+            },
+            "ownerContainerId": "main.structure"
           }
         ]
       }
@@ -140,7 +141,7 @@
       "definition": {
         "schemaId": "smart_core.unified_page_contract_v2",
         "schemaVersion": "2.2.0",
-        "schemaSha256": "b4a2614f4aa0f5ad052b6fc0f1351fb74cf511825c5fdee3036afdb0122ee419",
+        "schemaSha256": "f1b4fa4db76f166be90f0166da6fe39fe639dc927a77c0692d6ca80db59f864c",
         "contractVersion": "2.2.0",
         "normativeStatus": "stable"
       },
@@ -158,7 +159,7 @@
       },
       "integrity": {
         "algorithm": "sha256",
-        "contractSha256": "96a6880b07b04db6ddf8cfb11819cbed9eeb3489cc2bc7e7592aa47604586b16"
+          "contractSha256": "147d2aa3cfc221198eecf20f247d12e64682ffe97b0ebb3878f34f519d423be8"
       },
       "authority": {
         "kind": "documentation_example",

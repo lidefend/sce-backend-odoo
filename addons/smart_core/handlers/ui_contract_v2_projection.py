@@ -51,6 +51,19 @@ def normalize_post_projected_container_tree(
                 out.append(raw_node)
                 continue
             node = raw_node
+            for producer_key, canonical_key in (
+                ("native_locator", "nativeLocator"),
+                ("occurrence_index", "occurrenceIndex"),
+                ("source_position", "sourcePosition"),
+            ):
+                if producer_key not in node:
+                    continue
+                if canonical_key in node and node.get(canonical_key) != node.get(producer_key):
+                    raise ValueError(
+                        f"layout node {parent_id or '<root>'} has conflicting {producer_key}/{canonical_key}"
+                    )
+                node[canonical_key] = deepcopy(node.get(producer_key))
+                node.pop(producer_key, None)
             node_type = str(node.get("containerType") or node.get("type") or "section").strip().lower() or "section"
             formal_type = "section" if node_type == "sheet" else node_type
             fallback = f"{parent_id}.{formal_type}.{index}" if parent_id else f"{formal_type}.{index}"
@@ -83,14 +96,67 @@ def normalize_post_projected_container_tree(
             node["title"] = label
             span = node.get("span")
             node["span"] = span if isinstance(span, int) and not isinstance(span, bool) and 1 <= span <= 24 else 24
-            if not isinstance(node.get("widgetList"), list):
-                node["widgetList"] = []
+            if "widgetList" in node and not isinstance(node.get("widgetList"), list):
+                raise ValueError(f"layout node {container_id} widgetList must be an array")
+            node.setdefault("widgetList", [])
+            child_carriers: list[tuple[str, list[Any]]] = []
             for key in _CONTAINER_CHILD_KEYS:
-                children = node.get(key)
-                if isinstance(children, list):
-                    node[key] = normalize(children, container_id)
-            if not isinstance(node.get("children"), list):
-                node["children"] = []
+                if key in node and not isinstance(node.get(key), list):
+                    raise ValueError(f"layout node {container_id} {key} must be an array")
+                rows = node.get(key) if isinstance(node.get(key), list) else []
+                if rows:
+                    child_carriers.append((key, rows))
+            if len(child_carriers) > 1:
+                carriers = ",".join(key for key, _rows in child_carriers)
+                raise ValueError(
+                    f"layout node {container_id} has ambiguous parallel child carriers: {carriers}"
+                )
+            canonical_children = child_carriers[0][1] if child_carriers else []
+            node["children"] = normalize(canonical_children, container_id)
+            for key in _CONTAINER_CHILD_KEYS[1:]:
+                node.pop(key, None)
+
+            direct_field_owners: dict[str, list[dict[str, Any]]] = {}
+            for child in node["children"]:
+                if not isinstance(child, dict):
+                    continue
+                child_type = str(child.get("containerType") or child.get("type") or "").strip().lower()
+                child_widget_id = str(child.get("widgetId") or "").strip()
+                if child_type == "field" and child_widget_id:
+                    direct_field_owners.setdefault(child_widget_id, []).append(child)
+            normalized_widgets: list[dict[str, Any]] = []
+            for widget_index, raw_widget in enumerate(node["widgetList"]):
+                if not isinstance(raw_widget, dict):
+                    raise ValueError(
+                        f"layout node {container_id} widgetList[{widget_index}] must be an object"
+                    )
+                widget = raw_widget
+                widget_id = str(widget.get("widgetId") or "").strip()
+                if not widget_id:
+                    raise ValueError(
+                        f"layout node {container_id} widgetList[{widget_index}].widgetId is required"
+                    )
+                owner_matches = direct_field_owners.get(widget_id, [])
+                if len(owner_matches) > 1:
+                    raise ValueError(f"widget {widget_id} has ambiguous direct field owners")
+                owner = owner_matches[0] if owner_matches else node
+                owner_id = str(owner.get("containerId") or "").strip()
+                existing_owner = str(widget.get("ownerContainerId") or "").strip()
+                if existing_owner and existing_owner != owner_id:
+                    raise ValueError(
+                        f"widget {widget_id} owner conflicts: {existing_owner} != {owner_id}"
+                    )
+                widget["ownerContainerId"] = owner_id
+                for source_key, widget_key in (
+                    ("nativeLocator", "nativeLocator"),
+                    ("occurrenceIndex", "occurrenceIndex"),
+                    ("sourcePosition", "sourcePosition"),
+                    ("formStructureRole", "formStructureRole"),
+                ):
+                    if source_key in owner and widget_key not in widget:
+                        widget[widget_key] = deepcopy(owner.get(source_key))
+                normalized_widgets.append(widget)
+            node["widgetList"] = normalized_widgets
             if container_id not in status_ids:
                 container_status.append({"containerId": container_id, "visible": True, "disabled": False})
                 status_ids.add(container_id)
@@ -98,6 +164,21 @@ def normalize_post_projected_container_tree(
         return out
 
     normalized = normalize(container_tree, "")
+    widget_owners: dict[str, str] = {}
+
+    def validate_widget_owners(nodes: list[Any]) -> None:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            for widget in node.get("widgetList") if isinstance(node.get("widgetList"), list) else []:
+                widget_id = str(widget.get("widgetId") or "").strip() if isinstance(widget, dict) else ""
+                owner_id = str(widget.get("ownerContainerId") or "").strip() if isinstance(widget, dict) else ""
+                if widget_id in widget_owners:
+                    raise ValueError(f"duplicate layout widgetId: {widget_id}")
+                widget_owners[widget_id] = owner_id
+            validate_widget_owners(node.get("children") if isinstance(node.get("children"), list) else [])
+
+    validate_widget_owners(normalized)
     status_contract["containerStatus"] = container_status
     contract["statusContract"] = status_contract
     return normalized
@@ -559,6 +640,12 @@ def apply_business_config_form_groups(
     container_tree = layout_contract.get("containerTree") if isinstance(layout_contract.get("containerTree"), list) else []
     if not container_tree:
         return
+    structure = contract.get("formStructureContract") if isinstance(contract.get("formStructureContract"), dict) else {}
+    contract_field_roles = (
+        structure.get("fieldRoles")
+        if isinstance(structure.get("fieldRoles"), dict)
+        else {}
+    )
     field_semantic_roles = {
         str(name): str(role).strip().lower()
         for name, role in (
@@ -579,24 +666,29 @@ def apply_business_config_form_groups(
                 continue
             name = node_field_name(node)
             role = field_semantic_roles.get(name)
-            if role:
-                existing_role = node.get("formStructureRole") if isinstance(node.get("formStructureRole"), dict) else {}
-                node["formStructureRole"] = {**existing_role, "role": role}
+            existing_role = (
+                node.get("formStructureRole")
+                if isinstance(node.get("formStructureRole"), dict)
+                else {}
+            )
+            authority_role = (
+                contract_field_roles.get(name)
+                if isinstance(contract_field_roles.get(name), dict)
+                else {}
+            )
+            if role and authority_role:
+                # Slot/group remain the normalized structure authority, while
+                # the governed semantic anchor owns the canonical product
+                # role. Persist their merge in both carriers so the final wire
+                # never exposes a node/fieldRoles split authority.
+                merged_role = {**authority_role, "role": role}
+                contract_field_roles[name] = deepcopy(merged_role)
+                if existing_role:
+                    node["formStructureRole"] = deepcopy(merged_role)
             for key in (*_CONTAINER_CHILD_KEYS, "widgetList"):
                 apply_product_field_roles(node.get(key))
 
     apply_product_field_roles(container_tree)
-    structure = contract.get("formStructureContract") if isinstance(contract.get("formStructureContract"), dict) else {}
-    if field_semantic_roles:
-        roles = structure.get("fieldRoles") if isinstance(structure.get("fieldRoles"), dict) else {}
-        structure["fieldRoles"] = {
-            **roles,
-            **{
-                name: {**(roles.get(name) if isinstance(roles.get(name), dict) else {}), "role": role}
-                for name, role in field_semantic_roles.items()
-            },
-        }
-        contract["formStructureContract"] = structure
     # Product intent may annotate native nodes, but it must not use field lists
     # to move them, manufacture groups, infer relation regions, or normalize
     # the tree a second time.  The effective parsed Odoo view is the structural

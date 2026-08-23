@@ -147,7 +147,7 @@
         },
         "contractVersion": {
           "type": "string",
-          "pattern": "^2\\.[0-9]+\\.[0-9]+$"
+          "pattern": "^2\\.(0|1|2)\\.[0-9]+$"
         },
         "clientType": {
           "enum": [
@@ -446,7 +446,9 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "type"
+        "type",
+        "children",
+        "widgetList"
       ],
       "properties": {
         "type": {"type": "string", "minLength": 1},
@@ -500,22 +502,6 @@
           "type": "array",
           "items": {"$ref": "#/$defs/layoutNode"}
         },
-        "pages": {
-          "type": "array",
-          "items": {"$ref": "#/$defs/layoutNode"}
-        },
-        "tabs": {
-          "type": "array",
-          "items": {"$ref": "#/$defs/layoutNode"}
-        },
-        "nodes": {
-          "type": "array",
-          "items": {"$ref": "#/$defs/layoutNode"}
-        },
-        "items": {
-          "type": "array",
-          "items": {"$ref": "#/$defs/layoutNode"}
-        },
         "widgetList": {
           "type": "array",
           "items": {"$ref": "#/$defs/widget"}
@@ -537,7 +523,8 @@
         "span",
         "componentKey",
         "capabilities",
-        "componentConfig"
+        "componentConfig",
+        "ownerContainerId"
       ],
       "properties": {
         "widgetId": {
@@ -586,6 +573,10 @@
         "componentConfig": {
           "type": "object"
         },
+        "ownerContainerId": {"$ref": "#/$defs/id"},
+        "nativeLocator": {"type": "string", "minLength": 1},
+        "occurrenceIndex": {"type": "integer", "minimum": 1},
+        "sourcePosition": {"type": "integer", "minimum": 0},
         "fieldDescriptor": {
           "type": "object"
         },
@@ -615,25 +606,38 @@
           "const": "ui.contract.v2.form_structure_contract"
         },
         "structureVersion": {
-          "type": "string"
+          "const": "1.0"
         },
         "model": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "viewType": {
           "const": "form"
         },
         "mode": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "layoutPolicy": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
+        "columns": {"type": "integer", "minimum": 1},
         "objectProfile": {
-          "type": "object"
+          "$ref": "#/$defs/formStructureObjectProfile"
         },
         "navigation": {
-          "type": "object"
+          "$ref": "#/$defs/formStructureNavigation"
+        },
+        "sourceSectionTitles": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "fieldLabels": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
         },
         "slots": {
           "type": "array",
@@ -649,9 +653,25 @@
           }
         },
         "sourceAuthority": {
-          "type": "object"
+          "$ref": "#/$defs/formStructureSourceAuthority"
         }
       }
+    },
+    "formStructureObjectProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "kind", "factAuthority"],
+      "properties": {
+        "model": {"type": "string", "minLength": 1},
+        "kind": {"const": "business_form"},
+        "factAuthority": {"type": "string", "minLength": 1}
+      }
+    },
+    "formStructureNavigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title"],
+      "properties": {"title": {"type": "string"}}
     },
     "formStructureSlot": {
       "type": "object",
@@ -669,7 +689,7 @@
           "type": "string"
         },
         "role": {
-          "type": "string"
+          "$ref": "#/$defs/formStructureRoleName"
         },
         "readonly": {
           "type": "boolean"
@@ -706,7 +726,7 @@
           "type": "string"
         },
         "role": {
-          "type": "string"
+          "$ref": "#/$defs/formStructureRoleName"
         },
         "fieldRefs": {
           "type": "array",
@@ -714,7 +734,12 @@
             "$ref": "#/$defs/id"
           },
           "uniqueItems": true
-        }
+        },
+        "fieldLabels": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        },
+        "columns": {"type": "integer", "minimum": 1}
       }
     },
     "formStructureRole": {
@@ -727,7 +752,7 @@
       ],
       "properties": {
         "role": {
-          "type": "string"
+          "$ref": "#/$defs/formStructureRoleName"
         },
         "slot": {
           "$ref": "#/$defs/id"
@@ -735,6 +760,92 @@
         "group": {
           "$ref": "#/$defs/id"
         }
+      }
+    },
+    "formStructureRoleName": {
+      "enum": [
+        "summary", "task", "context", "risk", "relation", "activity", "audit"
+      ]
+    },
+    "formStructureSourceAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "runtime_carrier", "projection_only", "no_business_fact_authority",
+        "governed_form_structure", "governance_source"
+      ],
+      "properties": {
+        "kind": {"const": "unified_page_contract_v2"},
+        "runtime_carrier": {"const": "ui.contract.v2.form_structure_contract"},
+        "projection_only": {"const": true},
+        "no_business_fact_authority": {"const": true},
+        "governed_form_structure": {"const": true},
+        "governance_source": {"$ref": "#/$defs/formStructureGovernanceSource"}
+      }
+    },
+    "formStructureGovernanceSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source"],
+      "properties": {
+        "source": {"type": "string", "minLength": 1},
+        "ownerLayer": {"type": "string", "minLength": 1},
+        "businessConfigContracts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/formStructureGovernanceContract"}
+        },
+        "legacyFieldPolicyOverlay": {"type": "boolean"},
+        "formLayoutOverlay": {"type": "boolean"},
+        "formStructureAuthority": {"type": "string"},
+        "fieldNames": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "fieldLabels": {"type": "object", "additionalProperties": {"type": "string"}},
+        "fieldSemanticRoles": {
+          "type": "object",
+          "additionalProperties": {"enum": ["summary", "task", "context", "risk", "relation", "activity", "audit"]}
+        },
+        "sectionSemanticRoles": {
+          "type": "object",
+          "additionalProperties": {"enum": ["summary", "task", "context", "risk", "relation", "activity", "audit"]}
+        },
+        "configuredSections": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/formStructureConfiguredSection"}
+        },
+        "sectionTitles": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "fieldGroups": {
+          "type": "object",
+          "additionalProperties": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true}
+        },
+        "hiddenFieldNames": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "formColumns": {"type": "integer", "minimum": 1},
+        "groupColumns": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1}},
+        "groupVisibility": {"type": "object", "additionalProperties": {"type": "boolean"}},
+        "categoryId": {"type": "integer", "minimum": 1},
+        "categoryCode": {"type": "string", "minLength": 1},
+        "targetModel": {"type": "string", "minLength": 1}
+      }
+    },
+    "formStructureGovernanceContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": {"type": "integer", "minimum": 1},
+        "name": {"type": "string", "minLength": 1},
+        "priority": {"type": "integer"},
+        "view_type": {"type": "string"},
+        "version_no": {"type": "integer"}
+      }
+    },
+    "formStructureConfiguredSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "key", "title", "fields"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 1},
+        "key": {"type": "string"},
+        "title": {"type": "string", "minLength": 1},
+        "fields": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true}
       }
     },
     "componentRegistryEntry": {

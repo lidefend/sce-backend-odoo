@@ -1723,7 +1723,7 @@ class UiContractV2Handler(BaseIntentHandler):
         if not slots:
             return
         source_contract["form_structure_contract"] = {
-            "source": "ui.contract.v2.business_category_form_policy",
+            "source": "ui.contract.v2.form_structure_contract",
             "structureVersion": "1.0",
             "model": model,
             "viewType": "form",
@@ -1738,25 +1738,24 @@ class UiContractV2Handler(BaseIntentHandler):
                 "title": str(policy.get("category_name") or "业务办理").strip() or "业务办理",
             },
             "sourceSectionTitles": source_titles,
-            "field_labels": {
+            "fieldLabels": {
                 name: str(label or "").strip()
                 for name, label in policy_field_labels.items()
                 if str(name or "").strip() and str(label or "").strip()
             },
             "slots": slots,
             "fieldRoles": field_roles,
-            "fieldPolicies": field_policies,
             "sourceAuthority": {
                 "kind": self.SOURCE_KIND,
-                "runtime_carrier": "ui.contract.v2.business_category_form_policy",
+                "runtime_carrier": "ui.contract.v2.form_structure_contract",
                 "projection_only": True,
                 "no_business_fact_authority": True,
                 "governed_form_structure": True,
                 "governance_source": {
-                    "source": policy.get("source"),
-                    "category_id": policy.get("category_id"),
-                    "category_code": policy.get("category_code"),
-                    "target_model": policy.get("target_model"),
+                    "source": str(policy.get("source") or "business_category_form_policy"),
+                    **({"categoryId": int(policy.get("category_id"))} if policy.get("category_id") else {}),
+                    **({"categoryCode": str(policy.get("category_code"))} if policy.get("category_code") else {}),
+                    **({"targetModel": str(policy.get("target_model"))} if policy.get("target_model") else {}),
                 },
             },
         }
@@ -2497,11 +2496,43 @@ class UiContractV2Handler(BaseIntentHandler):
             except Exception:
                 return str(name or "").strip()
 
+        def formal_governance_source(value: dict[str, Any] | None) -> dict[str, Any]:
+            row = value if isinstance(value, dict) else {}
+            out: dict[str, Any] = {
+                "source": str(row.get("source") or "business_operation_profile"),
+                "ownerLayer": str(row.get("owner_layer") or "business_operation_profile"),
+            }
+            mappings = {
+                "business_config_contracts": "businessConfigContracts",
+                "legacy_field_policy_overlay": "legacyFieldPolicyOverlay",
+                "form_layout_overlay": "formLayoutOverlay",
+                "form_structure_authority": "formStructureAuthority",
+                "field_names": "fieldNames",
+                "field_labels": "fieldLabels",
+                "field_semantic_roles": "fieldSemanticRoles",
+                "section_semantic_roles": "sectionSemanticRoles",
+                "configured_sections": "configuredSections",
+                "section_titles": "sectionTitles",
+                "field_groups": "fieldGroups",
+                "hidden_field_names": "hiddenFieldNames",
+                "form_columns": "formColumns",
+                "group_columns": "groupColumns",
+                "group_visibility": "groupVisibility",
+                "category_id": "categoryId",
+                "category_code": "categoryCode",
+                "target_model": "targetModel",
+            }
+            for source_key, target_key in mappings.items():
+                if source_key in row:
+                    out[target_key] = row[source_key]
+            return out
+
         configured_field_groups = (
             governance.get("field_groups")
             if isinstance(governance, dict) and isinstance(governance.get("field_groups"), dict)
             else {}
         )
+        governance_source = formal_governance_source(governance)
         if configured_field_groups:
             group_rows: list[dict[str, Any]] = []
             configured_roles: dict[str, dict[str, Any]] = {}
@@ -2540,7 +2571,6 @@ class UiContractV2Handler(BaseIntentHandler):
                 }
                 columns = self._form_layout_columns_from_governance(governance, title)
                 if columns:
-                    row["cols"] = columns
                     row["columns"] = columns
                 group_rows.append(row)
             if group_rows:
@@ -2573,7 +2603,7 @@ class UiContractV2Handler(BaseIntentHandler):
                         "projection_only": True,
                         "no_business_fact_authority": True,
                         "governed_form_structure": True,
-                        "governance_source": dict(governance or {}),
+                        "governance_source": governance_source,
                     },
                 }
 
@@ -2778,7 +2808,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "projection_only": True,
                 "no_business_fact_authority": True,
                 "governed_form_structure": True,
-                "governance_source": dict(governance or {}),
+                "governance_source": governance_source,
             },
         }
 

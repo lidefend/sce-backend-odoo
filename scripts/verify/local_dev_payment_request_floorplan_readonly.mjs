@@ -70,6 +70,7 @@ const errors = [];
 const mutations = [];
 const intentBodies = new Map();
 const dataListExchanges = [];
+const chatterTimelineExchanges = [];
 
 page.on('console', (message) => {
   if (message.type() === 'error' && !message.text().includes('favicon')) errors.push(message.text());
@@ -94,6 +95,10 @@ page.on('response', async (response) => {
   const operation = String(payload?.params?.op || payload?.op || '');
   if (intent === 'api.data' && operation === 'list') {
     try { dataListExchanges.push({ request: payload, response: await response.json() }); } catch {}
+    return;
+  }
+  if (intent === 'chatter.timeline') {
+    try { chatterTimelineExchanges.push({ request: payload, response: await response.json() }); } catch {}
     return;
   }
   if (!['system.init', 'ui.contract.v2'].includes(intent)) return;
@@ -230,6 +235,9 @@ try {
     && url.searchParams.get('menu_id') === String(menuId)
   ), { timeout: 45000 });
   await page.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
+  await page.waitForFunction(() => (
+    document.querySelectorAll('[data-object-task-page] [data-floorplan-region="audit"] [data-audit-event]').length > 0
+  ), undefined, { timeout: 45000 });
 
   const systemInit = (intentBodies.get('system.init') || []).at(-1);
   const listContract = (intentBodies.get('ui.contract.v2') || []).find((body) => ['tree', 'list'].includes(findKey(body, 'viewType')));
@@ -318,6 +326,7 @@ try {
     duplicateSemanticTitles,
     effectivePrimaryActions: enabledPrimary + continueProcessing,
     canonicalActions,
+    chatterTimelineExchanges,
     overflow: desktop.scrollWidth - desktop.width,
   };
   check(report.desktop.driver === 'tdesign-modern', 'readonly product driver is not TDesign', report.desktop);
@@ -338,8 +347,8 @@ try {
   check(duplicateSemanticTitles.length === 0,
     'readonly product surface repeats semantic section titles', duplicateSemanticTitles);
   check(enabledPrimary + continueProcessing === 1, 'more than one product primary action is visible', { enabledPrimary, continueProcessing });
-  check(canonicalActions.filter((action) => action.label === '取消').length === 1,
-    'the same authoritative cancel operation appeared twice', canonicalActions);
+  check(canonicalActions.filter((action) => action.label === '取消').length === 0,
+    'readonly product surface exposed an edit/dialog cancel operation', canonicalActions);
   check(report.desktop.overflow <= 0, 'desktop has horizontal overflow', report.desktop);
   check(await page.locator('[data-contract-form-driver-chooser]').count() === 0, 'component supplier chooser reached product surface');
   check(await page.locator('.workflow-evidence-block').count() === 0,
@@ -379,36 +388,22 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'payment-request-desktop.png'), fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() => document.documentElement.clientWidth === 390, undefined, { timeout: 15000 });
   const mobile = await page.evaluate(() => ({ width: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }));
-  const mobileActionSurface = page.locator('[data-mobile-action-surface]').first();
-  const mobilePrimary = mobileActionSurface.locator('[data-action-tier="primary"][data-action-enabled="true"]');
-  const mobileActionMetrics = await mobileActionSurface.evaluate((node) => {
-    const rect = node.getBoundingClientRect();
-    const style = getComputedStyle(node);
-    return {
-      position: style.position,
-      top: rect.top,
-      right: rect.right,
-      bottom: rect.bottom,
-      left: rect.left,
-      viewportHeight: window.innerHeight,
-      viewportWidth: window.innerWidth,
-    };
-  });
+  const mobileActionSurfaceCount = await page.locator('[data-object-task-page] [data-mobile-action-surface]').count();
+  const mobilePrimaryCount = await page.locator(
+    '[data-object-task-page] [data-action-tier="primary"][data-action-enabled="true"]',
+  ).count();
   report.mobile = {
     ...mobile,
     overflow: mobile.scrollWidth - mobile.width,
-    enabledPrimary: await mobilePrimary.count(),
-    actionSurface: mobileActionMetrics,
+    enabledPrimary: mobilePrimaryCount,
+    actionSurfaceCount: mobileActionSurfaceCount,
   };
   check(report.mobile.overflow <= 0, '390px viewport has horizontal overflow', report.mobile);
   check(report.mobile.enabledPrimary === 0, '390px action surface exposed a false executable primary action', report.mobile);
-  check(mobileActionMetrics.position === 'fixed', '390px action surface is not fixed to the viewport', report.mobile);
-  check(mobileActionMetrics.left >= -1 && mobileActionMetrics.right <= mobileActionMetrics.viewportWidth + 1,
-    '390px action surface exceeds the viewport width', report.mobile);
-  check(Math.abs(mobileActionMetrics.bottom - mobileActionMetrics.viewportHeight) <= 1,
-    '390px action surface is not anchored to the viewport bottom', report.mobile);
+  check(report.mobile.actionSurfaceCount === 0,
+    'blocked readonly surface rendered an empty mobile action bar', report.mobile);
   await page.screenshot({ path: path.join(outputDir, 'payment-request-390.png') });
   await page.screenshot({ path: path.join(outputDir, 'payment-request-390-full.png'), fullPage: true });
 

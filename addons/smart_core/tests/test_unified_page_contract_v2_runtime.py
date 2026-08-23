@@ -54,8 +54,8 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
                     },
                 ],
                 "fieldRoles": {
-                    "name": {"role": "identity", "slot": "overview", "group": "overview"},
-                    "subject": {"role": "identity", "slot": "primary_facts", "group": "identity"},
+                    "name": {"role": "context", "slot": "overview", "group": "overview"},
+                    "subject": {"role": "context", "slot": "primary_facts", "group": "identity"},
                 },
                 "sourceAuthority": {
                     "kind": "unified_page_contract_v2",
@@ -65,7 +65,7 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
                     "governed_form_structure": True,
                     "governance_source": {
                         "source": "business_view_orchestration",
-                        "field_names": ["name", "subject"],
+                        "fieldNames": ["name", "subject"],
                     },
                 },
             },
@@ -73,9 +73,24 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
                 "containerTree": [
                     {
                         "type": "sheet",
+                        "containerId": "fixture.sheet",
+                        "containerType": "section",
+                        "widgetList": [],
                         "children": [
-                            {"type": "field", "name": "name"},
-                            {"type": "field", "name": "subject"},
+                            {
+                                "type": "field",
+                                "name": "name",
+                                "containerId": "field.name",
+                                "children": [],
+                                "widgetList": [],
+                            },
+                            {
+                                "type": "field",
+                                "name": "subject",
+                                "containerId": "field.subject",
+                                "children": [],
+                                "widgetList": [],
+                            },
                         ],
                     }
                 ],
@@ -305,7 +320,7 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
     def test_form_structure_contract_rejects_unknown_duplicate_and_unprojected_fields(self):
         contract = self._contract()
         contract["formStructureContract"]["slots"][1]["groups"][0]["fieldRefs"].extend(["subject", "missing_field"])
-        contract["formStructureContract"]["fieldRoles"]["missing_role"] = {"role": "identity", "slot": "missing_slot"}
+        contract["formStructureContract"]["fieldRoles"]["missing_role"] = {"role": "context", "slot": "missing_slot"}
 
         issues = runtime.find_form_structure_contract_issues(contract)
 

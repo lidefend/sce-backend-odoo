@@ -32,7 +32,8 @@
             "capabilities": [
               "clearable"
             ],
-            "componentConfig": {}
+            "componentConfig": {},
+            "ownerContainerId": "main.basic"
           }
         ]
       }
@@ -148,7 +149,7 @@
       {
         "slot": "overview",
         "title": "办理总览",
-        "role": "overview",
+        "role": "summary",
         "readonly": true,
         "fieldRefs": [
           "name"
@@ -157,7 +158,7 @@
     ],
     "fieldRoles": {
       "name": {
-        "role": "identity",
+        "role": "context",
         "slot": "overview",
         "group": "overview"
       }
@@ -170,15 +171,15 @@
       "governed_form_structure": true,
       "governance_source": {
         "source": "business_view_orchestration",
-        "owner_layer": "business_view_orchestration",
-        "business_config_contracts": [
+        "ownerLayer": "business_view_orchestration",
+        "businessConfigContracts": [
           {
             "id": 1,
             "name": "fixture-form-structure",
             "version_no": 1
           }
         ],
-        "legacy_field_policy_overlay": false
+        "legacyFieldPolicyOverlay": false
       }
     }
   },

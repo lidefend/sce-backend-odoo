@@ -117,7 +117,7 @@ def validate_semantic_identity_projection(source: str) -> list[str]:
             ):
                 errors.append(f"field semantics do not preserve widget-first {member} authority")
 
-    field_projection = _section(code, "fieldFromWidget", "childCollections")
+    field_projection = _section(code, "fieldFromWidget", "presentNode")
     field_match = re.search(
         r"\bconst\s+(\w+)\s*=\s*fieldSemanticIdentity\s*\(\s*widget\s*,\s*container\s*\)",
         field_projection,

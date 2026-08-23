@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
+import contractV2Schema from '../../../../docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
   createContractV2Store, resolveContractV2EffectiveFormCapabilities, resolveContractV2FieldDescriptorMap,
 } from '../src/app/contracts/v2/store';
-import type { ContractV2Snapshot } from '../src/app/contracts/v2/types';
+import type { ContractV2FormStructureRoleName, ContractV2Snapshot } from '../src/app/contracts/v2/types';
+import {
+  CONTRACT_V2_FORM_STRUCTURE_ROLES,
+  canonicalRoleForFormStructureRole,
+} from '../src/app/contracts/v2/formStructureRoles';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
 import {
@@ -55,6 +60,7 @@ import {
 } from '../src/components/template/formSection.mapper';
 import { resolveBusinessCategoryContext } from '../src/pages/contractForm/contractRuntimeVm';
 import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
+import { collectUnifiedPageContractV2FieldWidgets } from '../src/app/contracts/unifiedPageContractV2';
 
 const relationRuntime = useRelationRuntime();
 relationRuntime.relationSearchDialog.fieldName = 'project_id';
@@ -439,7 +445,7 @@ function snapshot(): ContractV2Snapshot {
     pageInfo: {
       pageId: 'page.x.document.form', sceneKey: 'x.document.form', pageName: 'Document',
       model: 'x.document', viewType: 'form', layoutType: 'form', renderMode: 'governed',
-      contractVersion: '2.0.0', clientType: 'web_pc',
+      contractVersion: '2.2.0', clientType: 'web_pc',
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
@@ -452,19 +458,17 @@ function snapshot(): ContractV2Snapshot {
           children: [], widgetList: [{
             widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
             componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+            ownerContainerId: 'field.name',
           }],
         }, {
           containerId: 'field.state', containerType: 'field', type: 'field', name: 'state', title: '', span: 12,
           children: [], widgetList: [{
             widgetId: 'field.state', widgetType: 'selection', fieldCode: 'state', label: 'State', span: 12,
             componentKey: 'sc.display.status', capabilities: [], componentConfig: {}, fieldType: 'selection',
+            ownerContainerId: 'field.state',
           }],
         }],
-        // Aggregated widgets must not duplicate descendant fields.
-        widgetList: [{
-          widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
-          componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
-        }],
+        widgetList: [],
       }, {
         containerId: 'native.notebook', containerType: 'notebook', type: 'notebook', title: 'Related', span: 24,
         sourceAuthority: { projection_only: true, no_business_fact_authority: true },
@@ -473,6 +477,7 @@ function snapshot(): ContractV2Snapshot {
           children: [], widgetList: [{
             widgetId: 'field.line_ids', widgetType: 'one2many', fieldCode: 'line_ids', label: 'Lines', span: 24,
             componentKey: 'sc.relation.table', capabilities: [], componentConfig: {}, fieldType: 'one2many',
+            ownerContainerId: 'field.line_ids',
           }],
         }], widgetList: [],
       }, {
@@ -545,6 +550,137 @@ function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
+
+for (const legacyVersion of ['2.0.0', '2.1.0']) {
+  const legacyServerSnapshot = snapshot() as ContractV2Snapshot & {
+    layoutContract: { containerTree: Array<Record<string, unknown>> };
+  };
+  legacyServerSnapshot.pageInfo.contractVersion = legacyVersion;
+  const legacyRoot = legacyServerSnapshot.layoutContract.containerTree[0];
+  const legacyChildren = legacyRoot.children as Array<Record<string, unknown>>;
+  legacyRoot.children = [legacyChildren[0]];
+  legacyRoot.tabs = [legacyChildren[1]];
+  for (const child of [...legacyRoot.children as Array<Record<string, unknown>>, ...legacyRoot.tabs as Array<Record<string, unknown>>]) {
+    for (const widget of child.widgetList as Array<Record<string, unknown>>) delete widget.ownerContainerId;
+  }
+  const normalizedLegacyStore = createContractV2Store(decodeContractV2Snapshot(legacyServerSnapshot));
+  assert.deepEqual(
+    collectFields(presentContractV2Form(normalizedLegacyStore, 'edit').zones.primary).map((field) => field.fieldCode),
+    ['name', 'state'],
+    `a new client must normalize an old ${legacyVersion} child carrier and ownership before the strict store`,
+  );
+}
+
+const malformedLegacyChildCarrier = snapshot() as ContractV2Snapshot & {
+  layoutContract: { containerTree: Array<Record<string, unknown>> };
+};
+malformedLegacyChildCarrier.pageInfo.contractVersion = '2.0.0';
+malformedLegacyChildCarrier.layoutContract.containerTree[0].tabs = { invalid: true };
+assert.throws(
+  () => decodeContractV2Snapshot(malformedLegacyChildCarrier),
+  /tabs is not allowed/,
+  'legacy compatibility must not erase a malformed child carrier before strict decoding',
+);
+const unsupportedFutureVersion = snapshot();
+unsupportedFutureVersion.pageInfo.contractVersion = '2.3.0';
+assert.throws(
+  () => decodeContractV2Snapshot(unsupportedFutureVersion),
+  /must be a negotiated 2\.0, 2\.1, or 2\.2 version/,
+  'an unadvertised future minor must fail closed instead of using the 2.2 decoder',
+);
+assert.deepEqual(
+  collectUnifiedPageContractV2FieldWidgets(snapshot()).map((widget) => widget.fieldCode),
+  ['name', 'state', 'line_ids'],
+  'the previous client collector must remain able to consume the new children-only 2.2 payload',
+);
+
+function governedFormStructure(role: ContractV2FormStructureRoleName) {
+  return {
+    source: 'ui.contract.v2.form_structure_contract' as const,
+    structureVersion: '1.0' as const,
+    model: 'x.document',
+    viewType: 'form' as const,
+    mode: 'business_task_form',
+    layoutPolicy: 'governed_slots',
+    objectProfile: {
+      model: 'x.document', kind: 'business_form' as const, factAuthority: 'business_object_model_and_view',
+    },
+    navigation: { title: 'Document' },
+    slots: [{ slot: 'governed', title: 'Governed', role, fieldRefs: ['name'] }],
+    fieldRoles: { name: { role, slot: 'governed', group: 'governed' } },
+    sourceAuthority: {
+      kind: 'unified_page_contract_v2' as const,
+      runtime_carrier: 'ui.contract.v2.form_structure_contract' as const,
+      projection_only: true as const,
+      no_business_fact_authority: true as const,
+      governed_form_structure: true as const,
+      governance_source: { source: 'business_view_orchestration', ownerLayer: 'smart_core' },
+    },
+  };
+}
+
+for (const role of CONTRACT_V2_FORM_STRUCTURE_ROLES) {
+  const roleSnapshot = snapshot();
+  roleSnapshot.formStructureContract = governedFormStructure(role);
+  roleSnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
+    role, slot: 'governed', group: 'governed',
+  };
+  roleSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].formStructureRole = {
+    role, slot: 'governed', group: 'governed',
+  };
+  const decoded = decodeContractV2Snapshot(roleSnapshot);
+  const projected = collectFields(presentContractV2Form(createContractV2Store(decoded), 'readonly').zones.primary)
+    .find((field) => field.fieldCode === 'name');
+  assert.equal(
+    projected?.semanticRole,
+    canonicalRoleForFormStructureRole(role),
+    `form structure role ${role} must survive decoder/store/presenter projection`,
+  );
+}
+
+const schemaFormStructureRoles = (
+  contractV2Schema.$defs.formStructureRoleName.enum as string[]
+);
+assert.deepEqual(
+  [...CONTRACT_V2_FORM_STRUCTURE_ROLES].sort(),
+  [...schemaFormStructureRoles].sort(),
+  'TypeScript and JSON Schema canonical form-structure role vocabularies must remain identical',
+);
+
+const invalidRoleSnapshot = snapshot() as ContractV2Snapshot & { formStructureContract?: Record<string, unknown> };
+invalidRoleSnapshot.formStructureContract = governedFormStructure('context') as unknown as Record<string, unknown>;
+((invalidRoleSnapshot.formStructureContract.fieldRoles as Record<string, Record<string, unknown>>).name).role = 'invented_role';
+assert.throws(() => decodeContractV2Snapshot(invalidRoleSnapshot), /unsupported form structure role invented_role/);
+
+const unknownStructureFieldSnapshot = snapshot() as ContractV2Snapshot & { formStructureContract?: Record<string, unknown> };
+unknownStructureFieldSnapshot.formStructureContract = {
+  ...governedFormStructure('context'), presentationColor: 'red',
+};
+assert.throws(() => decodeContractV2Snapshot(unknownStructureFieldSnapshot), /presentationColor is not allowed/);
+
+const missingStructureAuthoritySnapshot = snapshot() as ContractV2Snapshot & { formStructureContract?: Record<string, unknown> };
+missingStructureAuthoritySnapshot.formStructureContract = governedFormStructure('context') as unknown as Record<string, unknown>;
+delete missingStructureAuthoritySnapshot.formStructureContract.sourceAuthority;
+assert.throws(() => decodeContractV2Snapshot(missingStructureAuthoritySnapshot), /sourceAuthority.*must be an object/);
+
+const legacyChildCarrierSnapshot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+legacyChildCarrierSnapshot.layoutContract.containerTree[0].tabs = [];
+assert.throws(() => decodeContractV2Snapshot(legacyChildCarrierSnapshot), /tabs is not allowed/);
+
+const invalidChildrenSnapshot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
+invalidChildrenSnapshot.layoutContract.containerTree[0].children = 'not-an-array';
+assert.throws(() => decodeContractV2Snapshot(invalidChildrenSnapshot), /children must be an array/);
+
+const unknownOwnerSnapshot = snapshot();
+unknownOwnerSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].ownerContainerId = 'missing.owner';
+assert.throws(() => decodeContractV2Snapshot(unknownOwnerSnapshot), /references unknown owner missing.owner/);
+
+const duplicateWidgetSnapshot = snapshot();
+duplicateWidgetSnapshot.layoutContract.containerTree[0].children[1].widgetList.push({
+  ...duplicateWidgetSnapshot.layoutContract.containerTree[0].children[0].widgetList[0],
+  ownerContainerId: 'field.state',
+});
+assert.throws(() => decodeContractV2Snapshot(duplicateWidgetSnapshot), /duplicate widget identity field.name/);
 assert.deepEqual(resolveContractV2EffectiveFormCapabilities(store), {
   read: true, write: true, create: true, unlink: true, duplicate: true,
 });
@@ -814,14 +950,14 @@ assert.deepEqual(
 
 const businessFactSnapshot = structuredClone(semanticReadonlySnapshot);
 businessFactSnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
-  role: 'business_fact', slot: 'identity', group: 'identity',
+  role: 'context', slot: 'identity', group: 'identity',
 };
 const businessFactModel = presentContractV2Form(createContractV2Store(businessFactSnapshot), 'edit');
 const businessFactField = collectFields(businessFactModel.zones.primary).find((field) => field.fieldCode === 'name');
 assert.deepEqual(
   [businessFactField?.semanticRole, businessFactField?.semanticSlot, businessFactField?.semanticGroup],
   ['context', 'identity', 'identity'],
-  'existing business_fact authority must survive Canonical projection as product context metadata',
+  'canonical context authority must survive Canonical projection as product context metadata',
 );
 const mixedSemanticTextModel = presentContractV2Form(createContractV2Store(semanticReadonlySnapshot), 'readonly');
 const mixedSemanticTextRoot = mixedSemanticTextModel.zones.primary[0];
@@ -876,6 +1012,7 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
     children: [], widgetList: [{
       widgetId: `field.${fieldCode}`, widgetType: 'char', fieldCode, label: fieldCode, span: 12,
       componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+      ownerContainerId: `field.${fieldCode}`,
     }],
   }));
   semanticContextSnapshot.layoutContract.containerTree.splice(-3, 0, {
@@ -970,6 +1107,7 @@ createFloorplanSnapshot.layoutContract.containerTree[0].children.push({
   children: [], widgetList: [{
     widgetId: 'field.empty_context', widgetType: 'char', fieldCode: 'empty_context', label: 'Empty context', span: 12,
     componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+    ownerContainerId: 'field.empty_context',
   }],
 });
 createFloorplanSnapshot.statusContract.widgetStatus.push({
@@ -1075,6 +1213,7 @@ contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
     children: [], widgetList: [{
       widgetId: 'field.reference', widgetType: 'char', fieldCode: 'reference', label: 'Reference', span: 24,
       componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+      ownerContainerId: 'field.reference',
     }],
   }], widgetList: [],
 });
@@ -1106,6 +1245,7 @@ relationSnapshot.layoutContract.containerTree[0].children.push({
     widgetId: 'field.project_id', widgetType: 'many2one', fieldCode: 'project_id', label: 'Project', span: 12,
     componentKey: 'sc.relation.many2one', capabilities: [],
     componentConfig: { relation: 'project.project' }, fieldType: 'many2one',
+    ownerContainerId: 'field.project_id',
   }],
 });
 relationSnapshot.statusContract.widgetStatus.push({
@@ -1221,6 +1361,7 @@ assert.equal(normalizedNativeChild.span, 24);
 const anonymousNativeContainer = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 const anonymousGroup = anonymousNativeContainer.layoutContract.containerTree[0].children[0] as Record<string, unknown>;
 anonymousGroup.containerId = 'container.native.0.children.0';
+((anonymousGroup.widgetList as Array<Record<string, unknown>>)[0]).ownerContainerId = 'container.native.0.children.0';
 anonymousGroup.containerType = 'group';
 anonymousGroup.type = 'group';
 delete anonymousGroup.title;
@@ -1265,7 +1406,11 @@ assert.deepEqual(
 const aggregatedNativeChildren = snapshot();
 aggregatedNativeChildren.layoutContract.containerTree[0].children[0].widgetList = [];
 const aggregatedFields = collectFields(presentContractV2Form(createContractV2Store(aggregatedNativeChildren), 'edit').zones.primary);
-assert.deepEqual(aggregatedFields.map((field) => field.fieldCode), ['name', 'state']);
+assert.deepEqual(
+  aggregatedFields.map((field) => field.fieldCode),
+  ['state'],
+  'normalized store must not synthesize a missing widget from a native field node',
+);
 
 const duplicateAcrossRoots = snapshot();
 duplicateAcrossRoots.layoutContract.containerTree.splice(1, 0, {
@@ -1273,15 +1418,13 @@ duplicateAcrossRoots.layoutContract.containerTree.splice(1, 0, {
   children: [], widgetList: [{
     widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
     componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+    ownerContainerId: 'legacy.identity.mirror',
   }],
 });
-const deDuplicatedFields = collectFields(
-  presentContractV2Form(createContractV2Store(duplicateAcrossRoots), 'edit').zones.primary,
-);
-assert.deepEqual(
-  deDuplicatedFields.map((field) => field.widgetId),
-  ['field.name', 'field.state'],
-  'one canonical widget identity must render once even when legacy and product roots both carry it',
+assert.throws(
+  () => decodeContractV2Snapshot(duplicateAcrossRoots),
+  /duplicate widget identity field.name/,
+  'the decoder must reject duplicate widget ownership instead of relying on presenter de-duplication',
 );
 
 const duplicateOccurrences = snapshot();
@@ -1291,6 +1434,7 @@ duplicateRoot.widgetList = [];
 duplicateRoot.children = [
   {
     ...duplicateRoot.children[0],
+    containerId: 'field.name.occ.first',
     fieldCode: 'name',
     widgetId: 'field.name.occ.first',
     nativeLocator: 'form/field[name=name][1]',
@@ -1299,6 +1443,7 @@ duplicateRoot.children = [
     widgetList: [{
       ...duplicateBaseWidget,
       widgetId: 'field.name.occ.first',
+      ownerContainerId: 'field.name.occ.first',
       fieldDescriptor: { name: 'name', type: 'char' },
       componentConfig: {
         ...duplicateBaseWidget.componentConfig,
@@ -1310,6 +1455,7 @@ duplicateRoot.children = [
   },
   {
     ...duplicateRoot.children[0],
+    containerId: 'field.name.occ.second',
     fieldCode: 'name',
     widgetId: 'field.name.occ.second',
     nativeLocator: 'form/field[name=name][2]',
@@ -1318,6 +1464,7 @@ duplicateRoot.children = [
     widgetList: [{
       ...duplicateBaseWidget,
       widgetId: 'field.name.occ.second',
+      ownerContainerId: 'field.name.occ.second',
       fieldDescriptor: { name: 'name', type: 'char' },
       componentConfig: {
         ...duplicateBaseWidget.componentConfig,
@@ -1383,7 +1530,7 @@ const orphanOccurrenceStatus = snapshot();
 orphanOccurrenceStatus.statusContract.widgetStatus.push({ widgetId: 'field.name.occ.orphan', visible: true, readonly: false, required: false, disabled: false });
 assert.throws(() => decodeContractV2Snapshot(orphanOccurrenceStatus), /orphan form widget status/);
 
-const renderedName = canonicalFieldToFormSection(deDuplicatedFields[0]);
+const renderedName = canonicalFieldToFormSection(fields.find((field) => field.fieldCode === 'name')!);
 assert.deepEqual(
   { key: renderedName.key, name: renderedName.name, value: renderedName.value, readonly: renderedName.readonly },
   { key: 'field.name', name: 'name', value: 'D-001', readonly: false },
@@ -1775,4 +1922,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=98');
+console.log('[canonical_form_presenter_test] PASS cases=140');

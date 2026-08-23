@@ -12,6 +12,7 @@ from .source_authority import build_source_authority_contract
 from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
 from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
 from .unified_page_contract_v2_action import normalize_target_scope, normalize_trigger_type
+from .unified_page_contract_v2_form_structure import normalize_form_structure_contract_roles
 
 CONTRACT_VERSION = "2.2.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
@@ -353,6 +354,94 @@ def _base_contract(
     }
 
 
+def _finalize_layout_dsl(contract: dict[str, Any]) -> None:
+    layout = _dict(contract.get("layoutContract"))
+    roots = layout.get("containerTree")
+    if not isinstance(roots, list):
+        raise ValueError("layoutContract.containerTree must be an array")
+    container_ids: set[str] = set()
+    widget_owners: dict[str, str] = {}
+
+    def normalize(nodes: list[Any], path: str) -> None:
+        for index, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                raise ValueError(f"{path}[{index}] must be an object")
+            node_path = f"{path}[{index}]"
+            container_id = _text(
+                node.get("containerId")
+                or node.get("widgetId")
+                or node.get("nativeLocator")
+                or node.get("name")
+            )
+            if not container_id:
+                raise ValueError(f"{node_path}.containerId is required")
+            node["containerId"] = container_id
+            if container_id in container_ids:
+                raise ValueError(f"duplicate layout containerId: {container_id}")
+            container_ids.add(container_id)
+            child_carriers: list[tuple[str, list[Any]]] = []
+            for key in ("children", "pages", "tabs", "nodes", "items"):
+                if key in node and not isinstance(node.get(key), list):
+                    raise ValueError(f"{node_path}.{key} must be an array")
+                rows = node.get(key) if isinstance(node.get(key), list) else []
+                if rows:
+                    child_carriers.append((key, rows))
+            if len(child_carriers) > 1:
+                carriers = ",".join(key for key, _rows in child_carriers)
+                raise ValueError(f"{node_path} has ambiguous parallel child carriers: {carriers}")
+            node["children"] = child_carriers[0][1] if child_carriers else []
+            for legacy_key in ("pages", "tabs", "nodes", "items"):
+                node.pop(legacy_key, None)
+            if "widgetList" in node and not isinstance(node.get("widgetList"), list):
+                raise ValueError(f"{node_path}.widgetList must be an array")
+            node.setdefault("widgetList", [])
+            normalize(node["children"], f"{node_path}.children")
+
+    def bind_owners(nodes: list[Any], path: str) -> None:
+        for index, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                continue
+            node_path = f"{path}[{index}]"
+            child_owners: dict[str, list[dict[str, Any]]] = {}
+            for child in _list(node.get("children")):
+                if not isinstance(child, dict):
+                    continue
+                if _text(child.get("containerType") or child.get("type")).lower() != "field":
+                    continue
+                child_widget_id = _text(child.get("widgetId"))
+                if child_widget_id:
+                    child_owners.setdefault(child_widget_id, []).append(child)
+            for widget_index, widget in enumerate(_list(node.get("widgetList"))):
+                if not isinstance(widget, dict):
+                    raise ValueError(f"{node_path}.widgetList[{widget_index}] must be an object")
+                widget_id = _text(widget.get("widgetId"))
+                if not widget_id:
+                    raise ValueError(f"{node_path}.widgetList[{widget_index}].widgetId is required")
+                matches = child_owners.get(widget_id, [])
+                if len(matches) > 1:
+                    raise ValueError(f"widget {widget_id} has ambiguous field owners")
+                owner = matches[0] if matches else node
+                owner_id = _text(owner.get("containerId"))
+                existing_owner = _text(widget.get("ownerContainerId"))
+                if existing_owner and existing_owner != owner_id:
+                    raise ValueError(f"widget {widget_id} owner conflicts: {existing_owner} != {owner_id}")
+                if widget_id in widget_owners:
+                    raise ValueError(f"duplicate layout widgetId: {widget_id}")
+                widget_owners[widget_id] = owner_id
+                widget["ownerContainerId"] = owner_id
+                for source_name in (
+                    "nativeLocator", "occurrenceIndex", "sourcePosition", "formStructureRole",
+                ):
+                    if source_name in owner and source_name not in widget:
+                        widget[source_name] = deepcopy(owner.get(source_name))
+            bind_owners(_list(node.get("children")), f"{node_path}.children")
+
+    normalize(roots, "layoutContract.containerTree")
+    bind_owners(roots, "layoutContract.containerTree")
+    layout["containerTree"] = roots
+    contract["layoutContract"] = layout
+
+
 def assemble_unified_page_contract_v2(
     source_contract: dict[str, Any],
     *,
@@ -389,6 +478,7 @@ def assemble_unified_page_contract_v2(
     _merge_action_rules_by_backend_identity(contract)
     actions_merged_at = time.monotonic()
     _bind_native_layout_action_references(contract)
+    _finalize_layout_dsl(contract)
     actions_bound_at = time.monotonic()
     sealed = seal_unified_page_contract(
         contract,
@@ -696,7 +786,11 @@ def _assemble_ui_contract(
                 },
             })
     form_subviews = _dict(form_layout.get("subviews"))
-    form_structure_contract = _dict(source.get("formStructureContract") or source.get("form_structure_contract"))
+    form_structure_contract = deepcopy(
+        _dict(source.get("formStructureContract") or source.get("form_structure_contract"))
+    )
+    if form_structure_contract:
+        normalize_form_structure_contract_roles(form_structure_contract)
     form_structure_applied = False
     if layout_type == "form" and native_layout_rows:
         native_widget_status: list[dict[str, Any]] = []
@@ -715,6 +809,11 @@ def _assemble_ui_contract(
         # must not survive beside the exact occurrence rows.
         contract["statusContract"]["widgetStatus"] = native_widget_status
         if form_structure_contract:
+            form_structure_contract = _project_form_structure_to_layout(
+                form_structure_contract,
+                container_tree,
+                set(fields_by_name),
+            )
             _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
             form_structure_applied = True
     elif layout_type == "form":
@@ -769,6 +868,11 @@ def _assemble_ui_contract(
             {"containerId": group_id, "visible": True, "disabled": False},
         ])
         if form_structure_contract:
+            form_structure_contract = _project_form_structure_to_layout(
+                form_structure_contract,
+                container_tree,
+                set(fields_by_name),
+            )
             _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
             form_structure_applied = True
     else:
@@ -1347,6 +1451,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
         "native_locator", "occurrence_index", "source_position", "modifiers",
+        "relation_active_actions",
     ):
         if key in field:
             component_config[key] = deepcopy(field.get(key))
@@ -1361,6 +1466,9 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     relation_entry = _dict(field.get("relation_entry"))
     if relation_entry:
         component_config["relationEntry"] = deepcopy(relation_entry)
+    relation_active_actions = _dict(field.get("relation_active_actions"))
+    if relation_active_actions:
+        component_config["relationActiveActions"] = deepcopy(relation_active_actions)
     widget_options = _dict(field.get("widget_options") or field.get("options"))
     if widget_options:
         component_config["widgetOptions"] = deepcopy(widget_options)
@@ -1393,7 +1501,10 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     field_info = _dict(node.get("fieldInfo") or node.get("field_info"))
     field_source.update({k: deepcopy(v) for k, v in field_info.items() if k not in {"label", "string"}})
     field_source["name"] = field_name
-    for key in ("native_locator", "occurrence_index", "source_position", "modifiers"):
+    for key in (
+        "native_locator", "occurrence_index", "source_position", "modifiers", "relation_entry",
+        "relation_active_actions",
+    ):
         if key in node:
             field_source[key] = deepcopy(node.get(key))
     field_source.setdefault("string", label)
@@ -1423,6 +1534,15 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
         out["nativeLocator"] = native_locator
         out["occurrenceIndex"] = _positive_int(field_source.get("occurrence_index"), 0)
         out["sourcePosition"] = field_source.get("source_position")
+    # Native parser evidence is snake_case at the producer boundary, while the
+    # normalized V2 layout wire is camelCase.  Do not leave both spellings on
+    # the strict layout node: componentConfig retains the producer evidence and
+    # the canonical node fields above carry its governed projection.
+    for producer_key in (
+        "native_locator", "occurrence_index", "source_position", "relation_entry",
+        "relation_active_actions",
+    ):
+        out.pop(producer_key, None)
     return out
 
 
@@ -1441,10 +1561,18 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
         "currency_field", "precision", "aggregate", "aggregate_label",
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
-        "native_locator", "occurrence_index", "source_position", "modifiers",
+        "native_locator", "occurrence_index", "source_position", "modifiers", "relation_entry",
+        "relation_active_actions",
     ):
         if key in node:
             field_source[key] = deepcopy(node.get(key))
+    for canonical_key, producer_key in (
+        ("nativeLocator", "native_locator"),
+        ("occurrenceIndex", "occurrence_index"),
+        ("sourcePosition", "source_position"),
+    ):
+        if canonical_key in node:
+            field_source[producer_key] = deepcopy(node.get(canonical_key))
     field_source["name"] = field_name
     field_source.setdefault("string", _text(node.get("string") or node.get("label") or field_info.get("label"), field_name))
     field_source.setdefault("label", field_source.get("string", field_name))
@@ -1542,7 +1670,11 @@ def _normalize_native_layout_nodes(
                 raise ValueError("native form field container identity is duplicated")
             used_container_ids.add(container_id)
             normalized["containerId"] = container_id
-            normalized["containerType"] = "field"
+            # A native field occurrence is a layout node, not a formal
+            # container registry member. Its type remains authoritative.
+            normalized.pop("containerType", None)
+            normalized["children"] = []
+            normalized["widgetList"] = []
             component_keys.add(widget["componentKey"])
             widget_status.append(_field_status(
                 widget_source,
@@ -1569,26 +1701,59 @@ def _normalize_native_layout_nodes(
         node.setdefault("title", label)
         node.setdefault("label", label)
         container_status.append({"containerId": container_id, "visible": not bool(invisible), "disabled": False})
+        child_carriers: list[tuple[str, list[Any]]] = []
         for key in ("children", "pages", "tabs", "nodes", "items"):
-            child_rows = _list(node.get(key))
+            if key in node and not isinstance(node.get(key), list):
+                raise ValueError(f"native layout node {node_path}.{key} must be an array")
+            child_rows = node.get(key) if isinstance(node.get(key), list) else []
             if child_rows:
-                node[key] = _normalize_native_layout_nodes(
-                    [item for item in child_rows if isinstance(item, dict)],
-                    fields_by_name,
-                    layout_type=layout_type,
-                    form_subviews=form_subviews,
-                    component_keys=component_keys,
-                    container_status=container_status,
-                    widget_status=widget_status,
-                    context=context,
-                    path=f"{node_path}.{key}",
-                    container_ids=used_container_ids,
-                )
-        direct_widgets: list[dict[str, Any]] = []
-        for key in ("children", "pages", "tabs", "nodes", "items"):
-            direct_widgets.extend(_direct_field_widgets_from_nodes(_list(node.get(key)), fields_by_name, layout_type=layout_type))
+                child_carriers.append((key, child_rows))
+        if len(child_carriers) > 1:
+            carriers = ",".join(key for key, _rows in child_carriers)
+            raise ValueError(
+                f"native layout node {node_path} has ambiguous parallel child carriers: {carriers}"
+            )
+        source_key, source_children = child_carriers[0] if child_carriers else ("children", [])
+        if any(not isinstance(item, dict) for item in source_children):
+            raise ValueError(f"native layout node {node_path}.{source_key} must contain objects")
+        node["children"] = _normalize_native_layout_nodes(
+            source_children,
+            fields_by_name,
+            layout_type=layout_type,
+            form_subviews=form_subviews,
+            component_keys=component_keys,
+            container_status=container_status,
+            widget_status=widget_status,
+            context=context,
+            path=f"{node_path}.{source_key}",
+            container_ids=used_container_ids,
+        )
+        for legacy_key in ("pages", "tabs", "nodes", "items"):
+            node.pop(legacy_key, None)
+        direct_widgets = _direct_field_widgets_from_nodes(
+            _list(node.get("children")), fields_by_name, layout_type=layout_type,
+        )
         if direct_widgets:
-            node["widgetList"] = direct_widgets
+            child_by_widget_id = {
+                _text(child.get("widgetId")): child
+                for child in _list(node.get("children"))
+                if isinstance(child, dict) and _text(child.get("widgetId"))
+            }
+            normalized_direct_widgets: list[dict[str, Any]] = []
+            for widget in direct_widgets:
+                owner = child_by_widget_id.get(_text(widget.get("widgetId")))
+                if not owner:
+                    raise ValueError(
+                        f"native layout widget {_text(widget.get('widgetId'))} has no direct owner"
+                    )
+                widget["ownerContainerId"] = _text(owner.get("containerId"))
+                for source_name in (
+                    "nativeLocator", "occurrenceIndex", "sourcePosition", "formStructureRole",
+                ):
+                    if source_name in owner:
+                        widget[source_name] = deepcopy(owner.get(source_name))
+                normalized_direct_widgets.append(widget)
+            node["widgetList"] = normalized_direct_widgets
             for widget in direct_widgets:
                 component_keys.add(widget["componentKey"])
         elif not isinstance(node.get("widgetList"), list):
@@ -2190,6 +2355,59 @@ def _apply_form_structure_roles_to_tree(
     for row in container_tree:
         if isinstance(row, dict):
             apply(row)
+
+
+def _project_form_structure_to_layout(
+    structure_contract: dict[str, Any],
+    container_tree: list[dict[str, Any]],
+    available_fields: set[str],
+) -> dict[str, Any]:
+    """Bind the semantic structure to fields owned by the final native tree."""
+    projected_fields: set[str] = set()
+
+    def collect(nodes: Any) -> None:
+        for node in _list(nodes):
+            if not isinstance(node, dict):
+                continue
+            if _text(node.get("type") or node.get("containerType")).lower() == "field":
+                field_name = _text(node.get("name") or node.get("fieldCode"))
+                if field_name:
+                    projected_fields.add(field_name)
+            collect(node.get("children"))
+
+    collect(container_tree)
+    out = deepcopy(structure_contract)
+
+    def project_refs(value: Any, path: str) -> list[str]:
+        refs: list[str] = []
+        for raw in _list(value):
+            field_name = _text(raw)
+            if not field_name or field_name not in available_fields:
+                raise ValueError(f"{path} references unknown field: {field_name or '<empty>'}")
+            if field_name in projected_fields and field_name not in refs:
+                refs.append(field_name)
+        return refs
+
+    for slot_index, slot in enumerate(_list(out.get("slots"))):
+        if not isinstance(slot, dict):
+            continue
+        slot["fieldRefs"] = project_refs(
+            slot.get("fieldRefs"), f"formStructureContract.slots[{slot_index}].fieldRefs",
+        )
+        for group_index, group in enumerate(_list(slot.get("groups"))):
+            if not isinstance(group, dict):
+                continue
+            group["fieldRefs"] = project_refs(
+                group.get("fieldRefs"),
+                f"formStructureContract.slots[{slot_index}].groups[{group_index}].fieldRefs",
+            )
+    field_roles = _dict(out.get("fieldRoles"))
+    out["fieldRoles"] = {
+        field_name: deepcopy(role)
+        for field_name, role in field_roles.items()
+        if field_name in projected_fields
+    }
+    return out
 
 
 def _form_structure_layout_columns(value: Any) -> int | None:

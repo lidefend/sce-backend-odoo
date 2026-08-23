@@ -14,6 +14,111 @@ export type ContractV2PatchOperation = 'replace' | 'merge' | 'append' | 'remove'
 export type ContractV2PageRenderMode = 'governed';
 export type ContractV2Dictionary = Record<string, unknown>;
 
+export type ContractV2CanonicalFormSemanticRole =
+  | 'summary'
+  | 'task'
+  | 'context'
+  | 'risk'
+  | 'relation'
+  | 'activity'
+  | 'audit';
+
+export type ContractV2FormStructureRoleName = ContractV2CanonicalFormSemanticRole;
+
+export interface ContractV2FormStructureRole {
+  role: ContractV2FormStructureRoleName;
+  slot: string;
+  group: string;
+}
+
+export interface ContractV2FormStructureGroup {
+  name: string;
+  title: string;
+  role: ContractV2FormStructureRoleName;
+  fieldRefs: string[];
+  fieldLabels?: Record<string, string>;
+  columns?: number;
+}
+
+export interface ContractV2FormStructureSlot {
+  slot: string;
+  title: string;
+  role: ContractV2FormStructureRoleName;
+  readonly?: boolean;
+  fieldRefs?: string[];
+  groups?: ContractV2FormStructureGroup[];
+}
+
+export interface ContractV2FormStructureGovernanceContract {
+  id: number;
+  name: string;
+  priority?: number;
+  view_type?: string;
+  version_no?: number;
+}
+
+export interface ContractV2FormStructureConfiguredSection {
+  identity: string;
+  key: string;
+  title: string;
+  fields: string[];
+}
+
+export interface ContractV2FormStructureGovernanceSource {
+  source: string;
+  ownerLayer?: string;
+  businessConfigContracts?: ContractV2FormStructureGovernanceContract[];
+  legacyFieldPolicyOverlay?: boolean;
+  formLayoutOverlay?: boolean;
+  formStructureAuthority?: string;
+  fieldNames?: string[];
+  fieldLabels?: Record<string, string>;
+  fieldSemanticRoles?: Record<string, ContractV2CanonicalFormSemanticRole>;
+  sectionSemanticRoles?: Record<string, ContractV2CanonicalFormSemanticRole>;
+  configuredSections?: ContractV2FormStructureConfiguredSection[];
+  sectionTitles?: string[];
+  fieldGroups?: Record<string, string[]>;
+  hiddenFieldNames?: string[];
+  formColumns?: number;
+  groupColumns?: Record<string, number>;
+  groupVisibility?: Record<string, boolean>;
+  categoryId?: number;
+  categoryCode?: string;
+  targetModel?: string;
+}
+
+export interface ContractV2FormStructureSourceAuthority {
+  kind: 'unified_page_contract_v2';
+  runtime_carrier: 'ui.contract.v2.form_structure_contract';
+  projection_only: true;
+  no_business_fact_authority: true;
+  governed_form_structure: true;
+  governance_source: ContractV2FormStructureGovernanceSource;
+}
+
+export interface ContractV2FormStructureContract {
+  source: 'ui.contract.v2.form_structure_contract';
+  structureVersion: '1.0';
+  model: string;
+  viewType: 'form';
+  mode: string;
+  layoutPolicy: string;
+  columns?: number;
+  objectProfile: {
+    model: string;
+    kind: 'business_form';
+    factAuthority: string;
+  };
+  navigation: {
+    title: string;
+  };
+  sourceSectionTitles?: string[];
+  fieldLabels?: Record<string, string>;
+  slots: ContractV2FormStructureSlot[];
+  fieldRoles: Record<string, ContractV2FormStructureRole>;
+  sourceAuthority: ContractV2FormStructureSourceAuthority;
+}
+
 export interface ContractV2PageInfo {
   pageId: string;
   sceneKey: string;
@@ -35,10 +140,14 @@ export interface ContractV2Widget {
   componentKey: string;
   capabilities: string[];
   componentConfig: ContractV2Dictionary;
+  ownerContainerId: string;
+  nativeLocator?: string;
+  occurrenceIndex?: number;
+  sourcePosition?: number;
   fieldDescriptor?: ContractV2Dictionary;
   fieldType?: string;
   relation?: string;
-  formStructureRole?: ContractV2Dictionary;
+  formStructureRole?: ContractV2FormStructureRole;
 }
 
 export interface ContractV2FieldDescriptor {
@@ -62,7 +171,7 @@ export interface ContractV2FieldDescriptor {
   semanticType?: string;
   surfaceRole?: string;
   technical?: boolean;
-  formStructureRole?: ContractV2Dictionary;
+  formStructureRole?: ContractV2FormStructureRole;
 }
 
 export type ContractV2FieldDescriptorMap = Record<string, ContractV2FieldDescriptor>;
@@ -116,13 +225,9 @@ export interface ContractV2Container {
   readonly?: unknown;
   required?: unknown;
   formStructure?: ContractV2Dictionary;
-  formStructureRole?: ContractV2Dictionary;
+  formStructureRole?: ContractV2FormStructureRole;
   sourceAuthority?: ContractV2Dictionary;
   children: ContractV2Container[];
-  pages?: ContractV2Container[];
-  tabs?: ContractV2Container[];
-  nodes?: ContractV2Container[];
-  items?: ContractV2Container[];
   widgetList: ContractV2Widget[];
 }
 
@@ -410,7 +515,7 @@ export interface ContractV2Snapshot {
   dataContract: ContractV2DataContract;
   runtimeContract: ContractV2RuntimeContract;
   meta: ContractV2Meta;
-  formStructureContract?: ContractV2Dictionary;
+  formStructureContract?: ContractV2FormStructureContract;
   searchContract?: ContractV2Dictionary;
   workflowContract?: ContractV2Dictionary;
 }
@@ -426,6 +531,7 @@ export interface ContractV2NormalizedStore {
   widgetsById: ReadonlyMap<string, ContractV2Widget>;
   widgetsByFieldCode: ReadonlyMap<string, ContractV2Widget>;
   widgetsByFieldCodeAll: ReadonlyMap<string, readonly ContractV2Widget[]>;
+  widgetsByOwnerContainerId: ReadonlyMap<string, readonly ContractV2Widget[]>;
   actionsById: ReadonlyMap<string, ContractV2ActionRule>;
   widgetStatusById: ReadonlyMap<string, ContractV2WidgetStatus>;
   buttonStatusById: ReadonlyMap<string, ContractV2ButtonStatus>;

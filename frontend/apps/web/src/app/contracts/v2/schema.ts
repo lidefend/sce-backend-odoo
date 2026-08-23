@@ -16,6 +16,15 @@ import type {
   ContractV2Dictionary,
   ContractV2DispatchMode,
   ContractV2FieldGroups,
+  ContractV2FormStructureConfiguredSection,
+  ContractV2FormStructureContract,
+  ContractV2FormStructureGovernanceContract,
+  ContractV2FormStructureGovernanceSource,
+  ContractV2FormStructureGroup,
+  ContractV2FormStructureRole,
+  ContractV2FormStructureRoleName,
+  ContractV2FormStructureSlot,
+  ContractV2FormStructureSourceAuthority,
   ContractV2GlobalStatus,
   ContractV2LayoutType,
   ContractV2LayoutContract,
@@ -23,6 +32,7 @@ import type {
   ContractV2PageRenderMode,
   ContractV2PageInfo,
   ContractV2CachePolicy,
+  ContractV2CanonicalFormSemanticRole,
   ContractV2PatchOperation,
   ContractV2PatchStrategy,
   ContractV2SelectorStatus,
@@ -39,6 +49,8 @@ import type {
   ContractV2Widget,
   ContractV2WidgetStatus,
 } from './types';
+import { CONTRACT_V2_FORM_STRUCTURE_ROLES } from './formStructureRoles';
+import { normalizeLegacyContractV2Snapshot } from './legacyLayoutNormalizer';
 
 type DecodeIssue = {
   path: string;
@@ -316,7 +328,7 @@ function requiredActivityInteger(
   return minimum;
 }
 
-function rejectUnknownActivityKeys(
+function rejectUnknownKeys(
   source: ContractV2Dictionary,
   allowedKeys: readonly string[],
   path: string,
@@ -328,6 +340,123 @@ function rejectUnknownActivityKeys(
   });
 }
 
+const FORM_STRUCTURE_ROLE_SET = new Set<ContractV2FormStructureRoleName>(
+  CONTRACT_V2_FORM_STRUCTURE_ROLES,
+);
+
+function decodeFormStructureRoleName(
+  value: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureRoleName {
+  const role = asString(value) as ContractV2FormStructureRoleName;
+  if (FORM_STRUCTURE_ROLE_SET.has(role)) return role;
+  issues.push({ path, message: `unsupported form structure role ${role || '<empty>'}` });
+  return 'context';
+}
+
+function decodeFormStructureRole(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureRole | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['role', 'slot', 'group'], path, issues);
+  return {
+    role: decodeFormStructureRoleName(raw.role, `${path}.role`, issues),
+    slot: requiredString(raw, 'slot', path, issues),
+    group: requiredString(raw, 'group', path, issues),
+  };
+}
+
+function decodeUniqueStringArray(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): string[] {
+  if (!Array.isArray(raw)) {
+    issues.push({ path, message: 'must be an array' });
+    return [];
+  }
+  const rows: string[] = [];
+  raw.forEach((item, index) => {
+    if (typeof item !== 'string' || !item.trim()) {
+      issues.push({ path: `${path}[${index}]`, message: 'must be a non-empty string' });
+      return;
+    }
+    const value = item.trim();
+    if (rows.includes(value)) {
+      issues.push({ path: `${path}[${index}]`, message: `duplicates ${value}` });
+      return;
+    }
+    rows.push(value);
+  });
+  return rows;
+}
+
+function decodeStringMap(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): Record<string, string> {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return {};
+  }
+  const out: Record<string, string> = {};
+  Object.entries(raw).forEach(([key, value]) => {
+    if (!key.trim() || typeof value !== 'string') {
+      issues.push({ path: `${path}.${key}`, message: 'must be a string keyed by a non-empty identity' });
+      return;
+    }
+    out[key] = value;
+  });
+  return out;
+}
+
+function decodeBooleanMap(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): Record<string, boolean> {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return {};
+  }
+  const out: Record<string, boolean> = {};
+  Object.entries(raw).forEach(([key, value]) => {
+    if (!key.trim() || typeof value !== 'boolean') {
+      issues.push({ path: `${path}.${key}`, message: 'must be a boolean keyed by a non-empty identity' });
+      return;
+    }
+    out[key] = value;
+  });
+  return out;
+}
+
+function decodePositiveIntegerMap(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): Record<string, number> {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return {};
+  }
+  const out: Record<string, number> = {};
+  Object.entries(raw).forEach(([key, value]) => {
+    if (!key.trim() || typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+      issues.push({ path: `${path}.${key}`, message: 'must be a positive integer keyed by a non-empty identity' });
+      return;
+    }
+    out[key] = value;
+  });
+  return out;
+}
+
 function requiredIntegerInRange(
   source: ContractV2Dictionary,
   key: string,
@@ -335,16 +464,16 @@ function requiredIntegerInRange(
   issues: DecodeIssue[],
   fallback: number,
 ): number {
-  const value = Number(source[key]);
-  if (Number.isInteger(value) && value >= 1 && value <= 24) return value;
+  const value = source[key];
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 24) return value;
   issues.push({ path: `${path}.${key}`, message: 'must be an integer between 1 and 24' });
   return fallback;
 }
 
 function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2PageInfo {
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
-  if (!/^2\.\d+\.\d+$/.test(contractVersion)) {
-    issues.push({ path: 'pageInfo.contractVersion', message: 'must be semantic version 2.x.y' });
+  if (!/^2\.(0|1|2)\.\d+$/.test(contractVersion)) {
+    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0, 2.1, or 2.2 version' });
   }
   return {
     pageId: requiredString(source, 'pageId', 'pageInfo', issues),
@@ -364,12 +493,33 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     issues.push({ path, message: 'widget must be an object' });
     return null;
   }
+  rejectUnknownKeys(raw, [
+    'widgetId', 'widgetType', 'fieldCode', 'label', 'span', 'componentKey', 'capabilities',
+    'componentConfig', 'fieldDescriptor', 'fieldType', 'relation', 'formStructureRole',
+    'ownerContainerId', 'nativeLocator', 'occurrenceIndex', 'sourcePosition',
+  ], path, issues);
   const componentConfig = requiredRecord(raw, 'componentConfig', path, issues);
   const fieldCode = requiredString(raw, 'fieldCode', path, issues);
   const widgetId = requiredString(raw, 'widgetId', path, issues);
   const widgetType = requiredString(raw, 'widgetType', path, issues);
   const componentKey = requiredString(raw, 'componentKey', path, issues);
-  if (!widgetId || !fieldCode) return null;
+  const ownerContainerId = requiredString(raw, 'ownerContainerId', path, issues);
+  const formStructureRole = raw.formStructureRole === undefined
+    ? null
+    : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
+  const nativeLocator = optionalString(raw, 'nativeLocator');
+  const occurrenceIndex = raw.occurrenceIndex;
+  const sourcePosition = raw.sourcePosition;
+  if (occurrenceIndex !== undefined && (
+    typeof occurrenceIndex !== 'number' || !Number.isInteger(occurrenceIndex) || occurrenceIndex < 1
+  )) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
+  if (sourcePosition !== undefined && (
+    typeof sourcePosition !== 'number' || !Number.isInteger(sourcePosition) || sourcePosition < 0
+  )) issues.push({ path: `${path}.sourcePosition`, message: 'must be a non-negative integer' });
+  if (Boolean(nativeLocator) !== (occurrenceIndex !== undefined)) {
+    issues.push({ path, message: 'nativeLocator and occurrenceIndex must be supplied together' });
+  }
+  if (!widgetId || !fieldCode || !ownerContainerId) return null;
   return {
     widgetId,
     widgetType,
@@ -377,12 +527,16 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     label: requiredString(raw, 'label', path, issues),
     span: requiredIntegerInRange(raw, 'span', path, issues, 24),
     componentKey,
-    capabilities: asStringArray(raw.capabilities),
+    capabilities: decodeUniqueStringArray(raw.capabilities, `${path}.capabilities`, issues),
     componentConfig,
+    ownerContainerId,
+    ...(nativeLocator ? { nativeLocator } : {}),
+    ...(typeof occurrenceIndex === 'number' && Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
+    ...(typeof sourcePosition === 'number' && Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
     ...(isRecord(raw.fieldDescriptor) ? { fieldDescriptor: raw.fieldDescriptor } : {}),
     ...(asString(raw.fieldType || raw.field_type) ? { fieldType: asString(raw.fieldType || raw.field_type) } : {}),
     ...(asString(raw.relation) ? { relation: asString(raw.relation) } : {}),
-    ...(isRecord(raw.formStructureRole) ? { formStructureRole: raw.formStructureRole } : {}),
+    ...(formStructureRole ? { formStructureRole } : {}),
   };
 }
 
@@ -409,6 +563,15 @@ function decodeContainer(
     issues.push({ path, message: 'container must be an object' });
     return null;
   }
+  rejectUnknownKeys(raw, [
+    'containerId', 'containerType', 'type', 'name', 'string', 'label', 'nolabel', 'text', 'title',
+    'displayLabel', 'semanticTitle', 'semanticAnchor', 'span', 'styleToken', 'cols', 'columns',
+    'widget', 'widgetId', 'fieldCode', 'nativeLocator', 'occurrenceIndex', 'sourcePosition',
+    'componentKey', 'componentConfig', 'attributes', 'fieldInfo', 'filename', 'buttonType',
+    'action', 'badge', 'modifiers', 'invisible', 'readonly', 'required', 'column_invisible',
+    'domain', 'context', 'options', 'visible', 'col', 'class', 'className', 'fieldSize', 'size',
+    'formStructure', 'formStructureRole', 'sourceAuthority', 'children', 'widgetList', 'fields',
+  ], path, issues);
   const containerId = nestedNativeNode
     ? structuralContainerText(raw, 'containerId')
     : requiredString(raw, 'containerId', path, issues);
@@ -418,40 +581,29 @@ function decodeContainer(
   if (nestedNativeNode && !containerId) issues.push({ path: `${path}.containerId`, message: 'requires a stable native identity' });
   if (nestedNativeNode && !containerType) issues.push({ path: `${path}.containerType`, message: 'requires a native node type' });
   if (!containerId || !containerType) return null;
-  const childRows = nestedNativeNode && !Object.prototype.hasOwnProperty.call(raw, 'children')
-    ? []
-    : requiredArray(raw, 'children', path, issues);
+  const childRows = requiredArray(raw, 'children', path, issues);
   const children = childRows
     .map((item, index) => decodeContainer(item, `${path}.children[${index}]`, issues, true))
     .filter((item): item is ContractV2Container => Boolean(item));
-  const decodeNodeList = (key: 'pages' | 'tabs' | 'nodes' | 'items'): ContractV2Container[] => (
-    Array.isArray(raw[key]) ? raw[key] : []
-  )
-    .map((item, index) => decodeContainer(item, `${path}.${key}[${index}]`, issues, true))
-    .filter((item): item is ContractV2Container => Boolean(item));
-  const widgetRows = nestedNativeNode && !Object.prototype.hasOwnProperty.call(raw, 'widgetList')
-    ? []
-    : requiredArray(raw, 'widgetList', path, issues);
+  const widgetRows = requiredArray(raw, 'widgetList', path, issues);
   const widgetList = widgetRows
     .map((item, index) => decodeWidget(item, `${path}.widgetList[${index}]`, issues))
     .filter((item): item is ContractV2Widget => Boolean(item));
-  const pages = decodeNodeList('pages');
-  const tabs = decodeNodeList('tabs');
-  const nodes = decodeNodeList('nodes');
-  const items = decodeNodeList('items');
   const attributes = asRecord(raw.attributes);
   const fieldInfo = asRecord(raw.fieldInfo);
   const action = asRecord(raw.action);
   const modifiers = asRecord(raw.modifiers);
   const formStructure = asRecord(raw.formStructure);
-  const formStructureRole = asRecord(raw.formStructureRole);
+  const formStructureRole = raw.formStructureRole === undefined
+    ? null
+    : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
   const sourceAuthority = asRecord(raw.sourceAuthority);
   const componentConfig = asRecord(raw.componentConfig);
   const fieldCode = asString(raw.fieldCode || raw.name);
   const widgetId = asString(raw.widgetId);
   const nativeLocator = asString(raw.nativeLocator);
-  const occurrenceIndex = Number(raw.occurrenceIndex);
-  const sourcePosition = Number(raw.sourcePosition);
+  const occurrenceIndex = raw.occurrenceIndex;
+  const sourcePosition = raw.sourcePosition;
   if (nestedNativeNode && containerType.toLowerCase() === 'field' && widgetId.includes('.occ.')) {
     if (!nativeLocator) issues.push({ path: `${path}.nativeLocator`, message: 'form field occurrence requires nativeLocator' });
     if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
@@ -474,8 +626,8 @@ function decodeContainer(
       ? 24
       : requiredIntegerInRange(raw, 'span', path, issues, 24),
     ...(asString(raw.styleToken) ? { styleToken: asString(raw.styleToken) } : {}),
-    ...(Number(raw.cols || raw.col) ? { cols: Number(raw.cols || raw.col) } : {}),
-    ...(Number(raw.columns) ? { columns: Number(raw.columns) } : {}),
+    ...(typeof raw.cols === 'number' && Number.isInteger(raw.cols) && raw.cols > 0 ? { cols: raw.cols } : {}),
+    ...(typeof raw.columns === 'number' && Number.isInteger(raw.columns) && raw.columns > 0 ? { columns: raw.columns } : {}),
     ...(asString(raw.widget) ? { widget: asString(raw.widget) } : {}),
     ...(widgetId ? { widgetId } : {}),
     ...(nativeLocator ? { nativeLocator } : {}),
@@ -486,19 +638,15 @@ function decodeContainer(
     ...(Object.keys(attributes).length ? { attributes } : {}),
     ...(Object.keys(fieldInfo).length ? { fieldInfo } : {}),
     ...(asString(raw.buttonType) ? { buttonType: asString(raw.buttonType) } : {}),
-    ...(Object.keys(action).length ? { action } : {}),
+    ...(raw.action === null ? { action: null } : Object.keys(action).length ? { action } : {}),
     ...(Object.keys(modifiers).length ? { modifiers } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'invisible') ? { invisible: raw.invisible } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'readonly') ? { readonly: raw.readonly } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'required') ? { required: raw.required } : {}),
     ...(Object.keys(formStructure).length ? { formStructure } : {}),
-    ...(Object.keys(formStructureRole).length ? { formStructureRole } : {}),
+    ...(formStructureRole ? { formStructureRole } : {}),
     ...(Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
     children,
-    ...(pages.length ? { pages } : {}),
-    ...(tabs.length ? { tabs } : {}),
-    ...(nodes.length ? { nodes } : {}),
-    ...(items.length ? { items } : {}),
     widgetList,
   };
 }
@@ -508,7 +656,7 @@ function decodeActivityNode(raw: unknown, path: string, issues: DecodeIssue[]): 
     issues.push({ path, message: 'activity node must be an object' });
     return null;
   }
-  rejectUnknownActivityKeys(raw, [
+  rejectUnknownKeys(raw, [
     'tag', 'native_locator', 'occurrence_index', 'source_position', 'attributes', 'text', 'tail', 'children',
   ], path, issues);
   const tag = requiredActivityNonEmptyString(raw, 'tag', path, issues);
@@ -538,7 +686,7 @@ function decodeActivityNodeOccurrence(raw: unknown, path: string, issues: Decode
     issues.push({ path, message: 'activity node occurrence must be an object' });
     return null;
   }
-  rejectUnknownActivityKeys(raw, [
+  rejectUnknownKeys(raw, [
     'tag', 'native_locator', 'occurrence_index', 'source_position', 'attributes', 'text', 'tail',
   ], path, issues);
   const tag = requiredActivityNonEmptyString(raw, 'tag', path, issues);
@@ -568,7 +716,7 @@ function decodeActivitySourceAuthority(
     issues.push({ path, message: 'must be an object' });
     return undefined;
   }
-  rejectUnknownActivityKeys(raw, [
+  rejectUnknownKeys(raw, [
     'kind', 'authorities', 'projection_only', 'no_business_fact_authority', 'runtime_carrier',
   ], path, issues);
   const authorities = raw.authorities;
@@ -611,7 +759,7 @@ function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2A
     issues.push({ path, message: 'must be an object' });
     return undefined;
   }
-  rejectUnknownActivityKeys(raw, [
+  rejectUnknownKeys(raw, [
     'activityTypeSlots', 'deadlineSlots', 'assigneeSlots', 'fieldOccurrences', 'nativeAttrs',
     'nodeOccurrences', 'template', 'templateQwebPresent', 'actions', 'actionCount', 'sourceAuthority',
   ], path, issues);
@@ -622,7 +770,7 @@ function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2A
       issues.push({ path: itemPath, message: 'must be an object' });
       return null;
     }
-    rejectUnknownActivityKeys(item, [
+    rejectUnknownKeys(item, [
       'name', 'label', 'widget', 'native_locator', 'occurrence_index', 'source_position', 'attributes',
       'text', 'tail', 'modifiers', 'decorations', 'field_type', 'currency_field', 'digits',
     ], itemPath, issues);
@@ -667,7 +815,7 @@ function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2A
     };
   }).filter((item): item is NonNullable<typeof item> => Boolean(item));
   const templateRaw = requiredRecord(raw, 'template', path, issues);
-  rejectUnknownActivityKeys(templateRaw, ['native_locator', 'occurrence_index', 'names', 'nodes'], `${path}.template`, issues);
+  rejectUnknownKeys(templateRaw, ['native_locator', 'occurrence_index', 'names', 'nodes'], `${path}.template`, issues);
   const templateNodes = requiredArray(templateRaw, 'nodes', `${path}.template`, issues)
     .map((item, index) => decodeActivityNode(item, `${path}.template.nodes[${index}]`, issues))
     .filter((item): item is ContractV2ActivityNode => Boolean(item));
@@ -728,6 +876,412 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
     ...(source.activityProfile !== undefined
       ? { activityProfile: decodeActivityProfile(source.activityProfile, issues) }
       : {}),
+  };
+}
+
+function decodeFormStructureGovernanceContract(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureGovernanceContract | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['id', 'name', 'priority', 'view_type', 'version_no'], path, issues);
+  const id = raw.id;
+  if (typeof id !== 'number' || !Number.isInteger(id) || id < 1) {
+    issues.push({ path: `${path}.id`, message: 'must be a positive integer' });
+  }
+  const decodeOptionalInteger = (key: 'priority' | 'version_no'): number | undefined => {
+    if (raw[key] === undefined) return undefined;
+    if (typeof raw[key] === 'number' && Number.isInteger(raw[key])) return raw[key] as number;
+    issues.push({ path: `${path}.${key}`, message: 'must be an integer' });
+    return undefined;
+  };
+  return {
+    id: typeof id === 'number' && Number.isInteger(id) ? id : 0,
+    name: requiredString(raw, 'name', path, issues),
+    ...(decodeOptionalInteger('priority') !== undefined ? { priority: decodeOptionalInteger('priority') } : {}),
+    ...(optionalString(raw, 'view_type') ? { view_type: optionalString(raw, 'view_type') } : {}),
+    ...(decodeOptionalInteger('version_no') !== undefined ? { version_no: decodeOptionalInteger('version_no') } : {}),
+  };
+}
+
+function decodeFormStructureConfiguredSection(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureConfiguredSection | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['identity', 'key', 'title', 'fields'], path, issues);
+  return {
+    identity: requiredString(raw, 'identity', path, issues),
+    key: typeof raw.key === 'string' ? raw.key : '',
+    title: requiredString(raw, 'title', path, issues),
+    fields: decodeUniqueStringArray(raw.fields, `${path}.fields`, issues),
+  };
+}
+
+function decodeFormStructureGovernanceSource(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureGovernanceSource | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, [
+    'source', 'ownerLayer', 'businessConfigContracts', 'legacyFieldPolicyOverlay',
+    'formLayoutOverlay', 'formStructureAuthority', 'fieldNames', 'fieldLabels',
+    'fieldSemanticRoles', 'sectionSemanticRoles', 'configuredSections', 'sectionTitles',
+    'fieldGroups', 'hiddenFieldNames', 'formColumns', 'groupColumns', 'groupVisibility',
+    'categoryId', 'categoryCode', 'targetModel',
+  ], path, issues);
+  const source = requiredString(raw, 'source', path, issues);
+  const businessContracts = raw.businessConfigContracts === undefined
+    ? undefined
+    : requiredArray(raw, 'businessConfigContracts', path, issues)
+      .map((item, index) => decodeFormStructureGovernanceContract(
+        item, `${path}.businessConfigContracts[${index}]`, issues,
+      ))
+      .filter((item): item is ContractV2FormStructureGovernanceContract => Boolean(item));
+  const semanticRoleMap = (
+    value: unknown,
+    rolePath: string,
+  ): Record<string, ContractV2CanonicalFormSemanticRole> | undefined => {
+    if (value === undefined) return undefined;
+    if (!isRecord(value)) {
+      issues.push({ path: rolePath, message: 'must be an object' });
+      return undefined;
+    }
+    const out: Record<string, ContractV2CanonicalFormSemanticRole> = {};
+    Object.entries(value).forEach(([key, role]) => {
+      const decoded = decodeFormStructureRoleName(role, `${rolePath}.${key}`, issues);
+      if (!['summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit'].includes(decoded)) {
+        issues.push({ path: `${rolePath}.${key}`, message: 'must be a canonical semantic role' });
+        return;
+      }
+      out[key] = decoded as ContractV2CanonicalFormSemanticRole;
+    });
+    return out;
+  };
+  const fieldGroups: Record<string, string[]> | undefined = raw.fieldGroups === undefined
+    ? undefined
+    : (() => {
+      if (!isRecord(raw.fieldGroups)) {
+        issues.push({ path: `${path}.fieldGroups`, message: 'must be an object' });
+        return undefined;
+      }
+      return Object.fromEntries(Object.entries(raw.fieldGroups).map(([key, value]) => [
+        key,
+        decodeUniqueStringArray(value, `${path}.fieldGroups.${key}`, issues),
+      ]));
+    })();
+  const configuredSections = raw.configuredSections === undefined
+    ? undefined
+    : requiredArray(raw, 'configuredSections', path, issues)
+      .map((item, index) => decodeFormStructureConfiguredSection(
+        item, `${path}.configuredSections[${index}]`, issues,
+      ))
+      .filter((item): item is ContractV2FormStructureConfiguredSection => Boolean(item));
+  const optionalBooleanField = (key: string): boolean | undefined => {
+    if (raw[key] === undefined) return undefined;
+    if (typeof raw[key] === 'boolean') return raw[key] as boolean;
+    issues.push({ path: `${path}.${key}`, message: 'must be a boolean' });
+    return undefined;
+  };
+  const formColumns = raw.formColumns;
+  if (formColumns !== undefined && (
+    typeof formColumns !== 'number' || !Number.isInteger(formColumns) || formColumns < 1
+  )) issues.push({ path: `${path}.formColumns`, message: 'must be a positive integer' });
+  const categoryId = raw.categoryId;
+  if (categoryId !== undefined && (
+    typeof categoryId !== 'number' || !Number.isInteger(categoryId) || categoryId < 1
+  )) issues.push({ path: `${path}.categoryId`, message: 'must be a positive integer' });
+  const legacyFieldPolicyOverlay = optionalBooleanField('legacyFieldPolicyOverlay');
+  const formLayoutOverlay = optionalBooleanField('formLayoutOverlay');
+  const fieldSemanticRoles = semanticRoleMap(raw.fieldSemanticRoles, `${path}.fieldSemanticRoles`);
+  const sectionSemanticRoles = semanticRoleMap(raw.sectionSemanticRoles, `${path}.sectionSemanticRoles`);
+  return {
+    source,
+    ...(optionalString(raw, 'ownerLayer') ? { ownerLayer: optionalString(raw, 'ownerLayer') } : {}),
+    ...(businessContracts ? { businessConfigContracts: businessContracts } : {}),
+    ...(legacyFieldPolicyOverlay !== undefined
+      ? { legacyFieldPolicyOverlay }
+      : {}),
+    ...(formLayoutOverlay !== undefined
+      ? { formLayoutOverlay }
+      : {}),
+    ...(optionalString(raw, 'formStructureAuthority')
+      ? { formStructureAuthority: optionalString(raw, 'formStructureAuthority') }
+      : {}),
+    ...(raw.fieldNames !== undefined
+      ? { fieldNames: decodeUniqueStringArray(raw.fieldNames, `${path}.fieldNames`, issues) }
+      : {}),
+    ...(raw.fieldLabels !== undefined
+      ? { fieldLabels: decodeStringMap(raw.fieldLabels, `${path}.fieldLabels`, issues) }
+      : {}),
+    ...(fieldSemanticRoles
+      ? { fieldSemanticRoles }
+      : {}),
+    ...(sectionSemanticRoles
+      ? { sectionSemanticRoles }
+      : {}),
+    ...(configuredSections ? { configuredSections } : {}),
+    ...(raw.sectionTitles !== undefined
+      ? { sectionTitles: decodeUniqueStringArray(raw.sectionTitles, `${path}.sectionTitles`, issues) }
+      : {}),
+    ...(fieldGroups ? { fieldGroups } : {}),
+    ...(raw.hiddenFieldNames !== undefined
+      ? { hiddenFieldNames: decodeUniqueStringArray(raw.hiddenFieldNames, `${path}.hiddenFieldNames`, issues) }
+      : {}),
+    ...(typeof formColumns === 'number' && Number.isInteger(formColumns) && formColumns > 0
+      ? { formColumns }
+      : {}),
+    ...(raw.groupColumns !== undefined
+      ? { groupColumns: decodePositiveIntegerMap(raw.groupColumns, `${path}.groupColumns`, issues) }
+      : {}),
+    ...(raw.groupVisibility !== undefined
+      ? { groupVisibility: decodeBooleanMap(raw.groupVisibility, `${path}.groupVisibility`, issues) }
+      : {}),
+    ...(typeof categoryId === 'number' && Number.isInteger(categoryId) && categoryId > 0
+      ? { categoryId }
+      : {}),
+    ...(optionalString(raw, 'categoryCode') ? { categoryCode: optionalString(raw, 'categoryCode') } : {}),
+    ...(optionalString(raw, 'targetModel') ? { targetModel: optionalString(raw, 'targetModel') } : {}),
+  };
+}
+
+function decodeFormStructureSourceAuthority(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureSourceAuthority | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, [
+    'kind', 'runtime_carrier', 'projection_only', 'no_business_fact_authority',
+    'governed_form_structure', 'governance_source',
+  ], path, issues);
+  const expectConst = (key: string, expected: unknown) => {
+    if (raw[key] !== expected) issues.push({ path: `${path}.${key}`, message: `must equal ${String(expected)}` });
+  };
+  expectConst('kind', 'unified_page_contract_v2');
+  expectConst('runtime_carrier', 'ui.contract.v2.form_structure_contract');
+  expectConst('projection_only', true);
+  expectConst('no_business_fact_authority', true);
+  expectConst('governed_form_structure', true);
+  const governanceSource = decodeFormStructureGovernanceSource(
+    raw.governance_source, `${path}.governance_source`, issues,
+  );
+  if (!governanceSource) return null;
+  return {
+    kind: 'unified_page_contract_v2',
+    runtime_carrier: 'ui.contract.v2.form_structure_contract',
+    projection_only: true,
+    no_business_fact_authority: true,
+    governed_form_structure: true,
+    governance_source: governanceSource,
+  };
+}
+
+function decodeFormStructureGroup(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureGroup | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['name', 'title', 'role', 'fieldRefs', 'fieldLabels', 'columns'], path, issues);
+  const columns = raw.columns;
+  if (columns !== undefined && (
+    typeof columns !== 'number' || !Number.isInteger(columns) || columns < 1
+  )) issues.push({ path: `${path}.columns`, message: 'must be a positive integer' });
+  return {
+    name: requiredString(raw, 'name', path, issues),
+    title: requiredDisplayString(raw, 'title', path, issues),
+    role: decodeFormStructureRoleName(raw.role, `${path}.role`, issues),
+    fieldRefs: decodeUniqueStringArray(raw.fieldRefs, `${path}.fieldRefs`, issues),
+    ...(raw.fieldLabels !== undefined
+      ? { fieldLabels: decodeStringMap(raw.fieldLabels, `${path}.fieldLabels`, issues) }
+      : {}),
+    ...(typeof columns === 'number' && Number.isInteger(columns) && columns > 0 ? { columns } : {}),
+  };
+}
+
+function decodeFormStructureSlot(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2FormStructureSlot | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['slot', 'title', 'role', 'readonly', 'fieldRefs', 'groups'], path, issues);
+  const readonly = optionalBoolean(raw.readonly);
+  if (raw.readonly !== undefined && readonly === undefined) {
+    issues.push({ path: `${path}.readonly`, message: 'must be a boolean' });
+  }
+  const groups = raw.groups === undefined
+    ? undefined
+    : requiredArray(raw, 'groups', path, issues)
+      .map((item, index) => decodeFormStructureGroup(item, `${path}.groups[${index}]`, issues))
+      .filter((item): item is ContractV2FormStructureGroup => Boolean(item));
+  return {
+    slot: requiredString(raw, 'slot', path, issues),
+    title: requiredDisplayString(raw, 'title', path, issues),
+    role: decodeFormStructureRoleName(raw.role, `${path}.role`, issues),
+    ...(readonly !== undefined ? { readonly } : {}),
+    ...(raw.fieldRefs !== undefined
+      ? { fieldRefs: decodeUniqueStringArray(raw.fieldRefs, `${path}.fieldRefs`, issues) }
+      : {}),
+    ...(groups ? { groups } : {}),
+  };
+}
+
+function collectLayoutFieldCodes(containers: ContractV2Container[]): Set<string> {
+  const out = new Set<string>();
+  const visit = (container: ContractV2Container) => {
+    if ((container.type || container.containerType).toLowerCase() === 'field' && container.fieldCode) {
+      out.add(container.fieldCode);
+    }
+    container.widgetList.forEach((widget) => out.add(widget.fieldCode));
+    container.children.forEach(visit);
+  };
+  containers.forEach(visit);
+  return out;
+}
+
+function decodeFormStructureContract(
+  raw: unknown,
+  pageInfo: ContractV2PageInfo,
+  layoutContract: ContractV2LayoutContract,
+  issues: DecodeIssue[],
+): ContractV2FormStructureContract | undefined {
+  if (raw === undefined) return undefined;
+  const path = '$.formStructureContract';
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  rejectUnknownKeys(raw, [
+    'source', 'structureVersion', 'model', 'viewType', 'mode', 'layoutPolicy', 'columns',
+    'objectProfile', 'navigation', 'sourceSectionTitles', 'fieldLabels', 'slots', 'fieldRoles',
+    'sourceAuthority',
+  ], path, issues);
+  if (raw.source !== 'ui.contract.v2.form_structure_contract') {
+    issues.push({ path: `${path}.source`, message: 'must equal ui.contract.v2.form_structure_contract' });
+  }
+  if (raw.structureVersion !== '1.0') {
+    issues.push({ path: `${path}.structureVersion`, message: 'must equal 1.0' });
+  }
+  const model = requiredString(raw, 'model', path, issues);
+  if (model && model !== pageInfo.model) issues.push({ path: `${path}.model`, message: 'must match pageInfo.model' });
+  if (raw.viewType !== 'form') issues.push({ path: `${path}.viewType`, message: 'must equal form' });
+  const columns = raw.columns;
+  if (columns !== undefined && (
+    typeof columns !== 'number' || !Number.isInteger(columns) || columns < 1
+  )) issues.push({ path: `${path}.columns`, message: 'must be a positive integer' });
+  const objectProfileRaw = requiredRecord(raw, 'objectProfile', path, issues);
+  rejectUnknownKeys(objectProfileRaw, ['model', 'kind', 'factAuthority'], `${path}.objectProfile`, issues);
+  const objectProfileModel = requiredString(objectProfileRaw, 'model', `${path}.objectProfile`, issues);
+  if (objectProfileModel && objectProfileModel !== model) {
+    issues.push({ path: `${path}.objectProfile.model`, message: 'must match formStructureContract.model' });
+  }
+  if (objectProfileRaw.kind !== 'business_form') {
+    issues.push({ path: `${path}.objectProfile.kind`, message: 'must equal business_form' });
+  }
+  const navigationRaw = requiredRecord(raw, 'navigation', path, issues);
+  rejectUnknownKeys(navigationRaw, ['title'], `${path}.navigation`, issues);
+  const slots = requiredArray(raw, 'slots', path, issues)
+    .map((item, index) => decodeFormStructureSlot(item, `${path}.slots[${index}]`, issues))
+    .filter((item): item is ContractV2FormStructureSlot => Boolean(item));
+  if (!slots.length) issues.push({ path: `${path}.slots`, message: 'must contain at least one slot' });
+  const slotNames = new Set<string>();
+  const groupNamesBySlot = new Map<string, Set<string>>();
+  const referencedFields = new Set<string>();
+  slots.forEach((slot, slotIndex) => {
+    if (slotNames.has(slot.slot)) issues.push({ path: `${path}.slots[${slotIndex}].slot`, message: 'must be unique' });
+    slotNames.add(slot.slot);
+    const groups = new Set<string>();
+    (slot.fieldRefs || []).forEach((fieldCode) => referencedFields.add(fieldCode));
+    (slot.groups || []).forEach((group, groupIndex) => {
+      if (groups.has(group.name)) {
+        issues.push({ path: `${path}.slots[${slotIndex}].groups[${groupIndex}].name`, message: 'must be unique within slot' });
+      }
+      groups.add(group.name);
+      group.fieldRefs.forEach((fieldCode) => referencedFields.add(fieldCode));
+    });
+    groupNamesBySlot.set(slot.slot, groups);
+  });
+  const fieldRolesRaw = requiredRecord(raw, 'fieldRoles', path, issues);
+  const fieldRoles: Record<string, ContractV2FormStructureRole> = {};
+  Object.entries(fieldRolesRaw).forEach(([fieldCode, roleRaw]) => {
+    if (!fieldCode.trim()) {
+      issues.push({ path: `${path}.fieldRoles`, message: 'contains a blank field identity' });
+      return;
+    }
+    const role = decodeFormStructureRole(roleRaw, `${path}.fieldRoles.${fieldCode}`, issues);
+    if (!role) return;
+    fieldRoles[fieldCode] = role;
+    if (!slotNames.has(role.slot)) {
+      issues.push({ path: `${path}.fieldRoles.${fieldCode}.slot`, message: `references unknown slot ${role.slot}` });
+    } else {
+      const validGroups = groupNamesBySlot.get(role.slot) || new Set<string>();
+      if (role.group !== role.slot && !validGroups.has(role.group)) {
+        issues.push({ path: `${path}.fieldRoles.${fieldCode}.group`, message: `references unknown group ${role.group}` });
+      }
+    }
+    if (!referencedFields.has(fieldCode)) {
+      issues.push({ path: `${path}.fieldRoles.${fieldCode}`, message: 'is not referenced by a slot or group' });
+    }
+  });
+  referencedFields.forEach((fieldCode) => {
+    if (!fieldRoles[fieldCode]) issues.push({ path: `${path}.fieldRoles.${fieldCode}`, message: 'is required' });
+  });
+  const layoutFields = collectLayoutFieldCodes(layoutContract.containerTree);
+  referencedFields.forEach((fieldCode) => {
+    if (!layoutFields.has(fieldCode)) {
+      issues.push({ path: `${path}.slots`, message: `references field not projected by layout: ${fieldCode}` });
+    }
+  });
+  const sourceAuthority = decodeFormStructureSourceAuthority(
+    raw.sourceAuthority, `${path}.sourceAuthority`, issues,
+  );
+  if (!sourceAuthority) return undefined;
+  return {
+    source: 'ui.contract.v2.form_structure_contract',
+    structureVersion: '1.0',
+    model,
+    viewType: 'form',
+    mode: requiredString(raw, 'mode', path, issues),
+    layoutPolicy: requiredString(raw, 'layoutPolicy', path, issues),
+    ...(typeof columns === 'number' && Number.isInteger(columns) && columns > 0 ? { columns } : {}),
+    objectProfile: {
+      model: objectProfileModel,
+      kind: 'business_form',
+      factAuthority: requiredString(objectProfileRaw, 'factAuthority', `${path}.objectProfile`, issues),
+    },
+    navigation: { title: requiredDisplayString(navigationRaw, 'title', `${path}.navigation`, issues) },
+    ...(raw.sourceSectionTitles !== undefined
+      ? { sourceSectionTitles: decodeUniqueStringArray(raw.sourceSectionTitles, `${path}.sourceSectionTitles`, issues) }
+      : {}),
+    ...(raw.fieldLabels !== undefined
+      ? { fieldLabels: decodeStringMap(raw.fieldLabels, `${path}.fieldLabels`, issues) }
+      : {}),
+    slots,
+    fieldRoles,
+    sourceAuthority,
   };
 }
 
@@ -1077,17 +1631,43 @@ function validateFormOccurrenceAuthority(
 ): void {
   const occurrenceContainers = new Map<string, ContractV2Container>();
   const widgetsById = new Map<string, ContractV2Widget>();
+  const containerIds = new Set<string>();
+  const widgets: ContractV2Widget[] = [];
   const formFieldContainers: ContractV2Container[] = [];
   const walk = (rows: ContractV2Container[]) => rows.forEach((row) => {
-    row.widgetList.forEach((widget) => widgetsById.set(widget.widgetId, widget));
-    if (row.containerType.toLowerCase() === 'field') formFieldContainers.push(row);
+    if (containerIds.has(row.containerId)) {
+      issues.push({ path: 'layoutContract.containerTree', message: `duplicate container identity ${row.containerId}` });
+    }
+    containerIds.add(row.containerId);
+    row.widgetList.forEach((widget) => {
+      widgets.push(widget);
+      if (widgetsById.has(widget.widgetId)) {
+        issues.push({ path: 'layoutContract.containerTree', message: `duplicate widget identity ${widget.widgetId}` });
+        return;
+      }
+      widgetsById.set(widget.widgetId, widget);
+    });
+    if (String(row.type || row.containerType).toLowerCase() === 'field') formFieldContainers.push(row);
     walk(row.children);
-    walk(row.pages || []);
-    walk(row.tabs || []);
-    walk(row.nodes || []);
-    walk(row.items || []);
   });
   walk(layoutContract.containerTree);
+  widgets.forEach((widget) => {
+    if (!containerIds.has(widget.ownerContainerId)) {
+      issues.push({
+        path: 'layoutContract.containerTree',
+        message: `widget ${widget.widgetId} references unknown owner ${widget.ownerContainerId}`,
+      });
+    }
+  });
+  formFieldContainers.forEach((row) => {
+    if (!row.widgetId) return;
+    const widget = widgetsById.get(row.widgetId);
+    if (!widget) {
+      issues.push({ path: 'layoutContract.containerTree', message: `field owner ${row.containerId} has no widget ${row.widgetId}` });
+    } else if (widget.ownerContainerId !== row.containerId) {
+      issues.push({ path: 'layoutContract.containerTree', message: `widget ${row.widgetId} is not owned by ${row.containerId}` });
+    }
+  });
 
   const fieldCodeCounts = new Map<string, number>();
   formFieldContainers.forEach((row) => {
@@ -1275,7 +1855,7 @@ function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2
 }
 
 export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
-  const root = asRecord(value);
+  const root = asRecord(normalizeLegacyContractV2Snapshot(value));
   const issues: DecodeIssue[] = [];
   const pageInfo = decodePageInfo(readAliasedObject(root, 'pageInfo', [], '$', issues), issues);
   const layoutContract = decodeLayoutContract(readAliasedObject(root, 'layoutContract', [], '$', issues), issues);
@@ -1284,7 +1864,12 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
   const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);
   const meta = decodeMeta(readAliasedObject(root, 'meta', [], '$', issues), issues);
-  const formStructureContract = optionalRecord(root, 'formStructureContract', '$', issues);
+  const formStructureContract = decodeFormStructureContract(
+    root.formStructureContract,
+    pageInfo,
+    layoutContract,
+    issues,
+  );
   const searchContract = decodeSearchContract(root.searchContract, issues);
   const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);

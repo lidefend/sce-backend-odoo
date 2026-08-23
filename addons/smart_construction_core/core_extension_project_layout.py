@@ -58,7 +58,14 @@ def sc_prune_and_label_project_nodes(value):
     return node
 
 
-def sc_project_field_widget(field_name: str, label: str, field_type: str, *, relation: str = "") -> dict:
+def sc_project_field_widget(
+    field_name: str,
+    label: str,
+    field_type: str,
+    *,
+    relation: str = "",
+    owner_container_id: str = "",
+) -> dict:
     config = {"fieldType": field_type}
     if relation:
         config["relation"] = relation
@@ -71,6 +78,7 @@ def sc_project_field_widget(field_name: str, label: str, field_type: str, *, rel
         "componentKey": "sc.table.data" if field_type in {"one2many", "many2many"} else "sc.select.remote",
         "capabilities": [],
         "componentConfig": config,
+        "ownerContainerId": owner_container_id or "field.%s" % field_name,
     }
 
 
@@ -93,6 +101,9 @@ def sc_project_field_node(field_name: str, label: str, field_type: str, *, relat
         "componentKey": widget["componentKey"],
         "componentConfig": deepcopy(widget["componentConfig"]),
         "widgetId": widget["widgetId"],
+        "containerId": widget["widgetId"],
+        "children": [],
+        "widgetList": [],
     }
 
 

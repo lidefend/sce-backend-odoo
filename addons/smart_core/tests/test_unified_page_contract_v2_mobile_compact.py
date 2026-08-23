@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import importlib.util
+import json
 import sys
 import types
 import unittest
@@ -9,6 +10,7 @@ from pathlib import Path
 
 
 CORE_DIR = Path(__file__).resolve().parents[1] / "core"
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _load_module(module_name: str, path: Path):
@@ -121,6 +123,9 @@ assembler = _load_module(
     "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
     CORE_DIR / "unified_page_contract_v2_assembler.py",
 )
+form_structure_roles = sys.modules[
+    "odoo.addons.smart_core.core.unified_page_contract_v2_form_structure"
+]
 status_projection = _load_module(
     "odoo.addons.smart_core.core.unified_page_contract_v2_status",
     CORE_DIR / "unified_page_contract_v2_status.py",
@@ -273,6 +278,225 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(save["visibleProfiles"], ["edit"])
         self.assertTrue(save["entitlementEvaluated"])
         self.assertNotIn("entitlement_evaluated", save)
+
+    def test_layout_dsl_normalizes_one_child_carrier_and_binds_widget_owner(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {"form": {"layout": [{
+                "type": "sheet",
+                "tabs": [{
+                    "type": "field",
+                    "name": "name",
+                    "native_locator": "/form[1]/sheet[1]/field[1]",
+                    "occurrence_index": 1,
+                    "source_position": 3,
+                    "relation_entry": {"can_read": True, "can_open": False, "can_create": False},
+                    "relation_active_actions": {"create": False, "write": True},
+                }],
+            }]}},
+        }
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            request_id="test.layout.dsl.single.child.carrier",
+        )
+        root = full["layoutContract"]["containerTree"][0]
+        self.assertNotIn("tabs", root)
+        field_node = root["children"][0]
+        self.assertEqual(field_node["type"], "field")
+        self.assertEqual(field_node["nativeLocator"], "/form[1]/sheet[1]/field[1]")
+        self.assertEqual(field_node["occurrenceIndex"], 1)
+        self.assertEqual(field_node["sourcePosition"], 3)
+        self.assertNotIn("native_locator", field_node)
+        self.assertNotIn("occurrence_index", field_node)
+        self.assertNotIn("source_position", field_node)
+        self.assertNotIn("relation_entry", field_node)
+        self.assertNotIn("relation_active_actions", field_node)
+        self.assertEqual(
+            field_node["componentConfig"]["relationEntry"],
+            {"can_read": True, "can_open": False, "can_create": False},
+        )
+        self.assertEqual(
+            field_node["componentConfig"]["relationActiveActions"],
+            {"create": False, "write": True},
+        )
+        widgets = [
+            widget
+            for node in full["layoutContract"]["containerTree"]
+            for widget in node.get("widgetList", [])
+        ]
+        # The recursive field projection owns its widget even when the widget
+        # is carried by an ancestor container.
+        all_widgets = []
+
+        def collect(nodes):
+            for node in nodes:
+                all_widgets.extend(node.get("widgetList", []))
+                collect(node.get("children", []))
+
+        collect(full["layoutContract"]["containerTree"])
+        self.assertGreater(len(all_widgets), len(widgets) - 1)
+        self.assertEqual(all_widgets[0]["ownerContainerId"], root["children"][0]["containerId"])
+
+    def test_layout_dsl_rejects_parallel_child_carriers(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {
+                "name": {"name": "name", "type": "char"},
+                "subject": {"name": "subject", "type": "char"},
+            },
+            "views": {"form": {"layout": [{
+                "type": "sheet",
+                "children": [{"type": "field", "name": "name"}],
+                "tabs": [{"type": "field", "name": "subject"}],
+            }]}},
+        }
+        with self.assertRaisesRegex(ValueError, "parallel child carriers"):
+            assembler.assemble_unified_page_contract_v2(
+                source,
+                source_type="ui.contract",
+                request_id="test.layout.dsl.parallel.child.carriers",
+            )
+
+    def test_form_structure_projects_only_fields_owned_by_final_layout(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {
+                "name": {"name": "name", "type": "char"},
+                "computed_summary": {"name": "computed_summary", "type": "char"},
+            },
+            "views": {"form": {"layout": [{
+                "type": "sheet",
+                "children": [{"type": "field", "name": "name"}],
+            }]}},
+            "form_structure_contract": {
+                "source": "ui.contract.v2.form_structure_contract",
+                "structureVersion": "1.0",
+                "model": "x.document",
+                "viewType": "form",
+                "mode": "readonly",
+                "layoutPolicy": "native_authority",
+                "objectProfile": {"titleField": "name", "stateField": "", "factAuthority": "orm"},
+                "navigation": {"title": "Document"},
+                "slots": [{
+                    "slot": "body", "title": "Body", "role": "context",
+                    "fieldRefs": ["name", "computed_summary"], "groups": [],
+                }],
+                "fieldRoles": {
+                    "name": {"role": "context", "slot": "body", "group": "body"},
+                    "computed_summary": {"role": "context", "slot": "body", "group": "body"},
+                },
+                "sourceAuthority": {
+                    "kind": "form_structure_contract",
+                    "authorities": ["ir.ui.view"],
+                    "projectionOnly": True,
+                    "noBusinessFactAuthority": True,
+                },
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", request_id="test.form.structure.layout.ownership",
+        )
+
+        structure = full["formStructureContract"]
+        self.assertEqual(structure["slots"][0]["fieldRefs"], ["name"])
+        self.assertEqual(set(structure["fieldRoles"]), {"name"})
+
+    def test_form_structure_rejects_unknown_field_reference(self):
+        structure = {
+            "slots": [{"slot": "body", "fieldRefs": ["missing"], "groups": []}],
+            "fieldRoles": {"missing": {"role": "context", "slot": "body", "group": "body"}},
+        }
+        with self.assertRaisesRegex(ValueError, "references unknown field: missing"):
+            assembler._project_form_structure_to_layout(
+                structure,
+                [{"type": "field", "name": "name", "children": []}],
+                {"name"},
+            )
+
+    def test_layout_dsl_rejects_non_object_child_without_filtering_it(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char"}},
+            "views": {"form": {"layout": [{
+                "type": "sheet",
+                "children": [{"type": "field", "name": "name"}, "invalid-child"],
+            }]}},
+        }
+        with self.assertRaisesRegex(ValueError, "children must contain objects"):
+            assembler.assemble_unified_page_contract_v2(
+                source,
+                source_type="ui.contract",
+                request_id="test.layout.dsl.non.object.child",
+            )
+
+    def test_layout_dsl_rejects_duplicate_widget_identity_with_same_owner(self):
+        widget = {
+            "widgetId": "field.name",
+            "fieldCode": "name",
+            "ownerContainerId": "sheet.root",
+        }
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "sheet.root",
+                    "containerType": "section",
+                    "children": [],
+                    "widgetList": [deepcopy(widget), deepcopy(widget)],
+                }],
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "duplicate layout widgetId: field.name"):
+            assembler._finalize_layout_dsl(contract)
+
+    def test_form_structure_source_roles_normalize_to_canonical_wire_roles(self):
+        for source_role, canonical_role in form_structure_roles.FORM_STRUCTURE_SOURCE_ROLE_MAP.items():
+            with self.subTest(source_role=source_role):
+                source = {
+                    "model": "x.document",
+                    "view_type": "form",
+                    "fields": {"name": {"name": "name", "type": "char"}},
+                    "form_structure_contract": {
+                        "source": "ui.contract.v2.form_structure_contract",
+                        "viewType": "form",
+                        "slots": [{
+                            "slot": "governed",
+                            "title": "Governed",
+                            "role": source_role,
+                            "fieldRefs": ["name"],
+                        }],
+                        "fieldRoles": {
+                            "name": {"role": source_role, "slot": "governed", "group": "governed"},
+                        },
+                    },
+                }
+                full = assembler.assemble_unified_page_contract_v2(
+                    source,
+                    source_type="ui.contract",
+                    request_id="test.form.structure.role.%s" % source_role,
+                )
+                structure = full["formStructureContract"]
+                self.assertEqual(structure["slots"][0]["role"], canonical_role)
+                self.assertEqual(structure["fieldRoles"]["name"]["role"], canonical_role)
+
+    def test_form_structure_canonical_roles_match_json_schema(self):
+        schema = json.loads(
+            (
+                REPO_ROOT
+                / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+            ).read_text(encoding="utf-8")
+        )
+        schema_roles = schema["$defs"]["formStructureRoleName"]["enum"]
+        self.assertEqual(
+            list(form_structure_roles.CANONICAL_FORM_STRUCTURE_ROLES),
+            schema_roles,
+        )
 
     def test_ui_contract_v2_create_form_publishes_save_only_from_explicit_create_right(self):
         base = {
@@ -1855,7 +2079,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             [row["containerId"] for row in nodes],
             [row["widgetId"] for row in nodes],
         )
-        self.assertEqual([row["containerType"] for row in nodes], ["field", "field"])
+        self.assertEqual([row["type"] for row in nodes], ["field", "field"])
+        self.assertTrue(all("containerType" not in row for row in nodes))
         statuses = {row["widgetId"]: row for row in contract["statusContract"]["widgetStatus"]}
         self.assertEqual(set(statuses), {row["widgetId"] for row in nodes})
         self.assertNotIn("field.amount", statuses)
@@ -2701,11 +2926,11 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(tree[1]["children"][1]["type"], "div")
         self.assertEqual(tree[1]["children"][1]["modifiers"], {"invisible": [["risk_note", "=", False]]})
         self.assertEqual(tree[1]["children"][2]["type"], "notebook")
-        self.assertEqual(tree[1]["children"][2]["tabs"][0]["type"], "page")
+        self.assertEqual(tree[1]["children"][2]["children"][0]["type"], "page")
         core_group = tree[1]["children"][0]
         self.assertEqual([node["name"] for node in core_group["children"]], ["name", "manager_id"])
         self.assertEqual([widget["fieldCode"] for widget in core_group["widgetList"]], ["name", "manager_id"])
-        page_group = tree[1]["children"][2]["tabs"][0]["children"][0]
+        page_group = tree[1]["children"][2]["children"][0]["children"][0]
         self.assertEqual([node["name"] for node in page_group["children"]], ["company_id", "task_ids"])
         self.assertEqual(page_group["children"][0]["fieldInfo"]["label"], "公司")
         self.assertEqual(page_group["children"][1]["fieldInfo"]["type"], "one2many")
@@ -2804,7 +3029,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(tree[1]["name"], "native_sheet")
         native_name = tree[1]["children"][0]["children"][0]
         self.assertEqual(native_name["name"], "name")
-        self.assertEqual(native_name["formStructureRole"]["role"], "identity")
+        self.assertEqual(native_name["formStructureRole"]["role"], "context")
         self.assertEqual(tree[2]["name"], "hidden_native_group")
         self.assertEqual(tree[2]["children"][0]["name"], "hidden_internal_note")
         self.assertNotIn("subject", str(tree))
