@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 import ast
+import sys
 import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts.verify.app_config_engine_boundary_guard import (
     _call_has_true_keyword,
