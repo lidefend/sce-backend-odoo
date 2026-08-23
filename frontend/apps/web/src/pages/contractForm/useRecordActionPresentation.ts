@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
+import { routeAuthorityEntries } from '../../app/routeAuthority';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
+import { resolveAuthorizedWindowActionTarget } from './contractActionPresentation';
 
 type PresentationDependencies = Record<string, any>;
 
@@ -52,6 +54,15 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       sceneReadyActions,
       v2ButtonStatus,
       v2ActionRuleList: resolveContractV2ActionRules(v2ContractStore.value) as Array<Record<string, unknown>>,
+      resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
+        routeAuthorityEntries(session.routeAuthority),
+        requested,
+        {
+          query: route.query as Record<string, unknown>,
+          companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+          selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
+        },
+      ),
       evaluateNativeActionVisibility,
       isTierValidationActionHidden,
     });

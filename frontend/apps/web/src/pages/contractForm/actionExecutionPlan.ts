@@ -5,7 +5,7 @@ export type FormActionExecutionPlan =
   | { kind: 'local_mode'; mode: string; toggle: boolean }
   | { kind: 'save'; refreshPolicy?: ContractAction['refreshPolicy'] }
   | { kind: 'cancel' }
-  | { kind: 'open_action'; actionId: number; target?: string; domainRaw?: string }
+  | { kind: 'open_action'; actionId: number; menuId?: number; target?: string; domainRaw?: string }
   | { kind: 'open_url'; url: string; target?: string }
   | { kind: 'open_missing_target' }
   | {
@@ -67,6 +67,7 @@ export function buildFormActionExecutionPlan(params: {
       return {
         kind: 'open_action',
         actionId: action.actionId,
+        menuId: action.menuId || undefined,
         target: action.target || undefined,
         domainRaw: action.domainRaw || undefined,
       };

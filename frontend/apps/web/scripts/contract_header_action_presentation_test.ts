@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 
-import { buildContractFormActions } from '../src/pages/contractForm/contractActionPresentation';
+import { buildContractFormActions, resolveAuthorizedWindowActionTarget } from '../src/pages/contractForm/contractActionPresentation';
+import { findRouteAuthority, type RouteAuthorityContract, type RouteAuthorityEntry } from '../src/app/routeAuthority';
 import { decodeContractV2ActionRule, decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { resolvePrimaryCreateFooterAction } from '../src/pages/contractForm/actionContract';
 import { groupContractHeaderActions, resolvePrimaryBusinessActionState } from '../src/pages/contractForm/contractHeaderActionPresentation';
 import { presentContractHeaderActions } from '../src/pages/contractForm/headerActionPresentation';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime';
 import { useFormActionRuntime } from '../src/pages/contractForm/useFormActionRuntime';
+import { buildFormActionExecutionPlan } from '../src/pages/contractForm/actionExecutionPlan';
+import { resolveCanonicalFormActionExecution } from '../src/pages/contractForm/canonicalFormActionExecutor';
 import {
   evaluateNativeModifierValue,
   resolveNativeModifierFieldValue,
@@ -152,6 +155,20 @@ const decodeSnapshotWithActions = (actionRuleList: Array<Record<string, unknown>
       integrity: { algorithm: 'sha256', contractSha256: 'test' }, authority: {},
     },
   },
+});
+
+const routeEntry = (actionId: number, actionXmlid: string, menuId: number): RouteAuthorityEntry => ({
+  action_id: actionId, action_xmlid: actionXmlid, menu_id: menuId, menu_xmlid: menuId ? `menu.${menuId}` : '',
+  route_kind: menuId ? 'PRIMARY_NAV' : 'CONTEXTUAL_ROUTE', name: actionXmlid, model: 'x.document',
+  view_modes: ['form'], domain: '', context: '', route: '', allowed_operation: '', required_capability: '',
+  context_requirements: {}, source: 'test',
+});
+const routeContract = (entries: RouteAuthorityEntry[]): RouteAuthorityContract => ({
+  contract_version: '2.0.0', schema_version: '2.0.0', source: 'test',
+  principal_scope: { user_id: 7, company_id: 3, role_code: 'tester' },
+  primary_actions: entries.filter((entry) => entry.route_kind === 'PRIMARY_NAV'),
+  role_home_actions: [], contextual_actions: entries.filter((entry) => entry.route_kind === 'CONTEXTUAL_ROUTE'),
+  admin_actions: [], denied_actions: [], menu_containers: [],
 });
 
 const builtRules = [
@@ -330,6 +347,165 @@ assert.equal(normalizedRecordHandoff[0]?.label, 'Open follow-up');
 assert.equal(normalizedRecordHandoff[0]?.url, '/f/x.followup/new');
 assert.equal(normalizedRecordHandoff[0]?.enabled, true);
 assert.deepEqual(normalizedRecordHandoff[0]?.visibleProfiles, ['readonly']);
+
+const governedWindowActionSnapshot = decodeSnapshotWithActions([{
+  ...rule('act_619_payment_records', 'page.root', 'page', {
+  actionId: 'action.act_619_payment_records',
+  backendIdentity: 'window_action:619',
+  button: {},
+  target: { action_ref: '619', model: 'payment.request', view_type: 'tree' },
+  visibleProfiles: ['create', 'edit', 'readonly'],
+  presentation: { tier: 'overflow' },
+  }),
+  targetIds: [], dispatchMode: 'server', refreshMode: 'partial',
+}]);
+const governedWindowActionRule = governedWindowActionSnapshot.actionContract.actionRuleList[0];
+const governedWindowAction = buildContractFormActions({
+  model: 'payment.request', recordId: 0, renderProfile: 'create', sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(governedWindowActionRule),
+  v2ActionRuleList: [governedWindowActionRule as unknown as Record<string, unknown>],
+  resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
+    [routeEntry(619, 'smart.action_payment_records', 545)], requested, { query: {} },
+  ),
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.equal(governedWindowAction.length, 1, 'the existing Contract V2 action_ref carrier creates one governed adapter');
+assert.equal(governedWindowAction[0]?.actionId, 619);
+assert.equal(governedWindowAction[0]?.menuId, 545);
+assert.equal(governedWindowAction[0]?.backendIdentity, 'window_action:619');
+assert.equal(governedWindowAction[0]?.enabled, true);
+assert.equal(governedWindowAction[0]?.authorizationAllowed, true);
+const governedWindowExecution = resolveCanonicalFormActionExecution(governedWindowActionRule, governedWindowAction);
+assert.equal(governedWindowExecution.kind, 'contract-action');
+assert.deepEqual(buildFormActionExecutionPlan({
+  action: governedWindowAction[0], modelName: 'payment.request', recordId: null,
+}), { kind: 'open_action', actionId: 619, menuId: 545, target: undefined, domainRaw: undefined });
+let governedWindowRoute: Record<string, unknown> | null = null;
+const governedWindowRuntime = useFormActionRuntime({
+  confirmActionSafety: async () => true,
+  currentQuery: () => ({ menu_id: 111, action_id: 222 }),
+  modelName: () => 'payment.request', recordId: () => null,
+  router: { push: async (route: Record<string, unknown>) => { governedWindowRoute = route; } },
+} as never);
+await governedWindowRuntime.runAction(governedWindowAction[0]);
+assert.deepEqual(governedWindowRoute, {
+  name: 'action', params: { actionId: '619' }, query: { menu_id: 545, action_id: 619 },
+}, 'window action navigation replaces the source pair with the authorized target pair');
+
+const xmlidWindowActionSnapshot = decodeSnapshotWithActions([{
+  ...rule('xmlid-window-action', 'page.root', 'page', {
+  backendIdentity: 'window_action_ref:base.action_partner_form',
+  button: {},
+  target: { action_ref: 'base.action_partner_form', model: 'res.partner', view_type: 'form' },
+  }),
+  targetIds: [], dispatchMode: 'server', refreshMode: 'partial',
+}]);
+const xmlidWindowActionRule = xmlidWindowActionSnapshot.actionContract.actionRuleList[0];
+const xmlidWindowAction = buildContractFormActions({
+  model: 'res.partner', recordId: 0, renderProfile: 'create', sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(xmlidWindowActionRule),
+  v2ActionRuleList: [xmlidWindowActionRule as unknown as Record<string, unknown>],
+  resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
+    [routeEntry(88, 'base.action_partner_form', 32)], requested, { query: {} },
+  ),
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.equal(xmlidWindowAction.length, 1, 'a legitimate XMLID action_ref carrier must not be discarded');
+assert.deepEqual(buildFormActionExecutionPlan({
+  action: xmlidWindowAction[0], modelName: 'res.partner', recordId: null,
+}), { kind: 'open_action', actionId: 88, menuId: 32, target: undefined, domainRaw: undefined },
+'an XMLID resolves only through the authorized menu carrier');
+
+const targetXmlidWindowActionSnapshot = decodeSnapshotWithActions([{
+  ...rule('target-xmlid-window-action', 'page.root', 'page', {
+    backendIdentity: 'window_action_ref:project.open_view_project_all',
+    button: {}, target: { xml_id: 'project.open_view_project_all', model: 'project.project', view_type: 'tree' },
+  }),
+  targetIds: [], dispatchMode: 'server', refreshMode: 'partial',
+}]);
+const targetXmlidWindowActionRule = targetXmlidWindowActionSnapshot.actionContract.actionRuleList[0];
+const targetXmlidWindowAction = buildContractFormActions({
+  model: 'project.project', recordId: 0, renderProfile: 'create', sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(targetXmlidWindowActionRule),
+  v2ActionRuleList: [targetXmlidWindowActionRule as unknown as Record<string, unknown>],
+  resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
+    [routeEntry(91, 'project.open_view_project_all', 44)], requested, { query: {} },
+  ),
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.equal(targetXmlidWindowAction[0]?.actionId, 91, 'target.xml_id uses the same authorized resolver');
+assert.equal(targetXmlidWindowAction[0]?.menuId, 44);
+
+assert.deepEqual(buildContractFormActions({
+  model: 'res.partner', recordId: 0, renderProfile: 'create', sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(xmlidWindowActionRule),
+  v2ActionRuleList: [xmlidWindowActionRule as unknown as Record<string, unknown>],
+  resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget([], requested, { query: {} }),
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+}), [], 'an XMLID absent from the authorized menu carrier remains fail closed');
+
+assert.equal(resolveAuthorizedWindowActionTarget([
+  routeEntry(88, 'base.action_partner_form', 32), routeEntry(88, 'base.action_partner_form', 33),
+], { actionId: null, actionReference: 'base.action_partner_form', menuId: null }, { query: {} }), null,
+'the same action under two menus is an ambiguous authority pair');
+assert.deepEqual(resolveAuthorizedWindowActionTarget([
+  routeEntry(88, 'base.action_partner_form', 32), routeEntry(88, 'base.action_partner_form', 33),
+], { actionId: null, actionReference: 'base.action_partner_form', menuId: 33 }, { query: {} }), { actionId: 88, menuId: 33 },
+'an explicit target menu validates one exact authority pair');
+assert.ok(findRouteAuthority(routeContract([routeEntry(88, 'base.action_partner_form', 32)]), {
+  actionId: 88, menuId: 32, query: { action_id: 88, menu_id: 32 },
+}), 'the projected menu/action pair passes the production route authority gate');
+
+const urlWithSingleAuthorizedRoute = buildContractFormActions({
+  model: 'x.document', recordId: 7, renderProfile: 'readonly', sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(normalizedRecordHandoffRule),
+  v2ActionRuleList: [normalizedRecordHandoffRule],
+  resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
+    [routeEntry(88, 'base.action_partner_form', 32)], requested, { query: {} },
+  ),
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.deepEqual(buildFormActionExecutionPlan({
+  action: urlWithSingleAuthorizedRoute[0], modelName: 'x.document', recordId: 7,
+}), { kind: 'open_url', url: '/f/x.followup/new', target: 'self' },
+'a URL-only action never borrows the principal\'s sole window-action pair');
+
+const contextualEntry = routeEntry(77, 'x.action_contextual', 0);
+contextualEntry.context_requirements = { required_query: ['project_id'] };
+const contextualRuleSnapshot = decodeSnapshotWithActions([{
+  ...rule('contextual-window-action', 'page.root', 'page', {
+    backendIdentity: 'window_action:77', button: {}, target: { action_ref: '77' },
+  }),
+  targetIds: [], dispatchMode: 'server', refreshMode: 'partial',
+}]);
+const contextualRule = contextualRuleSnapshot.actionContract.actionRuleList[0];
+const buildContextualAction = (query: Record<string, unknown>) => buildContractFormActions({
+  model: 'x.document', recordId: 7, renderProfile: 'readonly', sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(contextualRule),
+  v2ActionRuleList: [contextualRule as unknown as Record<string, unknown>],
+  resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
+    [contextualEntry], requested, { query },
+  ),
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.deepEqual(buildContextualAction({}), [],
+'a contextual route missing its required query cannot enter presentation');
+assert.equal(buildContextualAction({ project_id: 9 })[0]?.actionId, 77,
+'a contextual route enters presentation when its authority context is satisfied');
+
+const emptyWindowActionSnapshot = decodeSnapshotWithActions([{
+  ...rule('empty-window-action', 'page.root', 'page', {
+    backendIdentity: 'contract_action:empty-window-action', button: {}, target: {},
+  }),
+  targetIds: [], dispatchMode: 'server', refreshMode: 'partial',
+}]);
+const emptyWindowActionRule = emptyWindowActionSnapshot.actionContract.actionRuleList[0];
+assert.deepEqual(buildContractFormActions({
+  model: 'payment.request', recordId: 0, renderProfile: 'create', sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(emptyWindowActionRule),
+  v2ActionRuleList: [emptyWindowActionRule as unknown as Record<string, unknown>],
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+}), [], 'a genuinely empty open target remains fail closed');
 
 const decodedRuntimeOpenSnapshot = decodeSnapshotWithActions([{
   ...rule('open-runtime-followup', 'page.header', 'page', {

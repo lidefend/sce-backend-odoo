@@ -24,6 +24,7 @@ export type ContractAction = {
   level: string;
   selection: 'none' | 'single' | 'multi';
   actionId: number | null;
+  menuId?: number | null;
   methodName: string;
   serverActionId?: number | null;
   serverActionXmlId?: string;

@@ -1,4 +1,5 @@
 import type { ContractV2ButtonStatus } from '../../app/contracts/v2/types';
+import { routeAuthorityContextAllowed, type RouteAuthorityEntry } from '../../app/routeAuthority';
 import { detectObjectMethodFromActionKey, normalizeActionKind, parseMaybeJsonRecord, toPositiveInt } from '../../app/contractRuntime';
 import { normalizeSceneActionProtocol } from '../../app/sceneActionProtocol';
 import {
@@ -9,6 +10,32 @@ import {
 } from './actionContract';
 import type { ContractAction } from './types';
 
+export type AuthorizedWindowActionTarget = { actionId: number; menuId: number };
+
+export function resolveAuthorizedWindowActionTarget(
+  entries: RouteAuthorityEntry[],
+  requested: { actionId: number | null; actionReference: string; menuId: number | null },
+  context: { query: Record<string, unknown>; companyId?: number | null; selectedRecordId?: number | null },
+): AuthorizedWindowActionTarget | null {
+  const referenceIsNumeric = Boolean(toPositiveInt(requested.actionReference));
+  const candidates = entries.filter((entry) => {
+    const actionId = toPositiveInt(entry.action_id);
+    const menuId = toPositiveInt(entry.menu_id) || 0;
+    if (!actionId) return false;
+    if (requested.actionId && actionId !== requested.actionId) return false;
+    if (!referenceIsNumeric && requested.actionReference
+      && String(entry.action_xmlid || '').trim() !== requested.actionReference) return false;
+    if (requested.menuId && menuId !== requested.menuId) return false;
+    return routeAuthorityContextAllowed(entry, context.query, context);
+  });
+  const pairs = new Map<string, AuthorizedWindowActionTarget>();
+  candidates.forEach((entry) => {
+    const pair = { actionId: toPositiveInt(entry.action_id) as number, menuId: toPositiveInt(entry.menu_id) || 0 };
+    pairs.set(`${pair.menuId}:${pair.actionId}`, pair);
+  });
+  return pairs.size === 1 ? [...pairs.values()][0] : null;
+}
+
 export function buildContractFormActions(params: {
   model: string;
   recordId: number;
@@ -16,6 +43,7 @@ export function buildContractFormActions(params: {
   sceneReadyActions: Array<Record<string, unknown>>;
   v2ButtonStatus: Record<string, ContractV2ButtonStatus>;
   v2ActionRuleList: Array<Record<string, unknown>>;
+  resolveActionReference?: (requested: { actionId: number | null; actionReference: string; menuId: number | null }) => AuthorizedWindowActionTarget | null;
   evaluateNativeActionVisibility: (row: Record<string, unknown>) => boolean;
   isTierValidationActionHidden: (methodName: string) => boolean;
 }): ContractAction[] {
@@ -67,7 +95,7 @@ export function buildContractFormActions(params: {
           server_action_id: button.server_action_id ?? button.serverActionId,
           xml_id: button.xml_id ?? button.xmlId,
           action_id: target.action_id,
-          ref: target.ref,
+          ref: target.ref || target.action_ref || target.xml_id || target.xmlid,
           url: target.url || target.route,
           target: target.target,
           mode: clientMode,
@@ -128,7 +156,21 @@ export function buildContractFormActions(params: {
     const targetRaw = parseMaybeJsonRecord(row.target);
     const effectiveKind = protocol?.mutation ? 'mutation' : normalizeActionKind(row.kind);
     const level = String(row.level || 'body').trim().toLowerCase();
-    const actionId = toPositiveInt(payload.action_id) ?? toPositiveInt(payload.ref) ?? toPositiveInt(row.actionId) ?? toPositiveInt(row.action_id);
+    const actionReference = String(payload.ref || '').trim();
+    const requestedActionId = toPositiveInt(payload.action_id)
+      ?? toPositiveInt(actionReference)
+      ?? toPositiveInt(row.actionId)
+      ?? toPositiveInt(row.action_id);
+    const requestedMenuId = toPositiveInt(targetRaw.menu_id || targetRaw.menuId);
+    const hasWindowActionSelector = Boolean(requestedActionId || actionReference || requestedMenuId);
+    const authorizedWindowTarget = effectiveKind === 'open' && hasWindowActionSelector && params.resolveActionReference
+      ? params.resolveActionReference({ actionId: requestedActionId, actionReference, menuId: requestedMenuId })
+      : null;
+    const requiresAuthorizedResolution = Boolean(params.resolveActionReference && hasWindowActionSelector);
+    const actionId = authorizedWindowTarget?.actionId ?? (requiresAuthorizedResolution ? null : requestedActionId);
+    const menuId = authorizedWindowTarget?.menuId ?? (requiresAuthorizedResolution ? null : requestedMenuId);
+    const openUrl = String(payload.url || row.url || '').trim();
+    if (effectiveKind === 'open' && !actionId && !openUrl) continue;
     const methodName = detectObjectMethodFromActionKey(key, String(payload.method || row.method || '').trim());
     if (params.isTierValidationActionHidden(methodName)) continue;
     const selectionRaw = String(row.selection || 'none').trim().toLowerCase();
@@ -162,14 +204,15 @@ export function buildContractFormActions(params: {
       level,
       selection,
       actionId,
+      menuId,
       methodName,
       serverActionId: toPositiveInt(payload.server_action_id || payload.serverActionId),
       serverActionXmlId: String(payload.xml_id || payload.xmlId || '').trim(),
       targetModel: String(row.target_model || row.model || params.model || '').trim(),
       context: parseMaybeJsonRecord(payload.context_raw),
       domainRaw: String(payload.domain_raw || '').trim(),
-      target: String(payload.target || row.target || '').trim(),
-      url: String(payload.url || row.url || '').trim(),
+      target: String(payload.target || targetRaw.target || '').trim(),
+      url: openUrl,
       enabled,
       authorizationAllowed,
       requiresSavedRecord,

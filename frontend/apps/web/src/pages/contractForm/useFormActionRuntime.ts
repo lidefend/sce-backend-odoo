@@ -69,6 +69,7 @@ export function useFormActionRuntime(params: {
         params: { actionId: String(plan.actionId) },
         query: pickContractNavQuery(params.currentQuery() as Record<string, unknown>, {
           action_id: plan.actionId,
+          menu_id: plan.menuId || undefined,
           target: plan.target || undefined,
           domain_raw: plan.domainRaw || undefined,
         }),
