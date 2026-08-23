@@ -13,7 +13,7 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 4192 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 4167 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4178 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4052 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4045 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 3684 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -142,7 +142,7 @@ Generated from repository source files. This report is informational during the 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
 | 4192 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 4167 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4178 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4052 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4045 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 3684 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
