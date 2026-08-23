@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3844`
+- Scanned files: `3845`
 - Files requiring split plan: `42`
 - Files above warning threshold: `77`
 
@@ -41,9 +41,9 @@ Generated from repository source files. This report is informational during the 
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1800 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1791 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1757 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1746 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1738 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 1722 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1710 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1697 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1693 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
@@ -129,7 +129,7 @@ Generated from repository source files. This report is informational during the 
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 584 | YAML workflow | `scripts/verify/registry.yaml` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
-| 440 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 445 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
@@ -170,10 +170,10 @@ Generated from repository source files. This report is informational during the 
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1800 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1791 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1757 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1746 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1738 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1738 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 1722 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1710 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1697 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1693 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
