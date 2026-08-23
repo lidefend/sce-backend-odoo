@@ -94,13 +94,19 @@ assert.deepEqual(resolveNativeRelationActiveActions({
 }, 'raw unsupported attributes never become relation action verdicts');
 
 const rule = (key: string, sourceWidgetId: string, targetScope: string, overrides: Record<string, unknown> = {}) => ({
+  actionId: `action.${key}`,
   actionKey: key,
+  backendIdentity: `button:object:action_${key}`,
   label: key,
   triggerType: 'click',
   sourceWidgetId,
   targetScope,
   button: { name: `action_${key}`, type: 'object' },
   presentation: { tier: 'primary' },
+  allowed: true,
+  enabled: true,
+  disabled: false,
+  entitlementEvaluated: true,
   ...overrides,
 });
 
@@ -344,6 +350,51 @@ const explicitEmptyNormalizedAuthority = buildContractFormActions({
   isTierValidationActionHidden: () => false,
 });
 assert.deepEqual(explicitEmptyNormalizedAuthority, []);
+
+const sceneCannotCreateAuthority = buildContractFormActions({
+  model: 'res.partner', recordId: 7, renderProfile: 'readonly',
+  sceneReadyActions: [{
+    key: 'scene-only', actionId: 'action.scene-only', backendIdentity: 'button:object:action_scene_only',
+    sourceWidgetId: 'page.header', allowed: true, enabled: true, disabled: false, entitlementEvaluated: true,
+    target: { method: 'action_scene_only' },
+  }],
+  v2ButtonStatus: {}, v2ActionRuleList: [],
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.deepEqual(sceneCannotCreateAuthority, [], 'Scene presentation rows cannot create executable authority');
+
+for (const missingKey of ['actionId', 'backendIdentity', 'sourceWidgetId', 'allowed', 'enabled', 'disabled', 'entitlementEvaluated']) {
+  const missing = rule(`missing-${missingKey}`, 'page.header', 'page');
+  delete missing[missingKey as keyof typeof missing];
+  const rejected = buildContractFormActions({
+    model: 'res.partner', recordId: 7, renderProfile: 'readonly', sceneReadyActions: [],
+    v2ButtonStatus: {}, v2ActionRuleList: [missing],
+    evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+  });
+  assert.deepEqual(rejected, [], `missing ${missingKey} must fail closed`);
+}
+
+const duplicateIdentityRejected = buildContractFormActions({
+  model: 'res.partner', recordId: 7, renderProfile: 'readonly', sceneReadyActions: [], v2ButtonStatus: {},
+  v2ActionRuleList: [
+    rule('duplicate-one', 'page.header', 'page', { backendIdentity: 'button:object:duplicate' }),
+    rule('duplicate-two', 'page.header', 'page', { backendIdentity: 'button:object:duplicate' }),
+  ],
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.deepEqual(duplicateIdentityRejected, [], 'ambiguous backend identity must fail closed');
+
+const statusIdentityMismatchRejected = buildContractFormActions({
+  model: 'res.partner', recordId: 7, renderProfile: 'readonly', sceneReadyActions: [],
+  v2ButtonStatus: {
+    'btn.status-mismatch': {
+      btnId: 'btn.status-mismatch', backendIdentity: 'button:object:another_action', visible: true, disabled: false,
+    },
+  },
+  v2ActionRuleList: [rule('status-mismatch', 'page.header', 'page')],
+  evaluateNativeActionVisibility: () => true, isTierValidationActionHidden: () => false,
+});
+assert.deepEqual(statusIdentityMismatchRejected, [], 'status identity mismatch must fail closed');
 
 const deniedBuilt = buildContractFormActions({
   contract: null,

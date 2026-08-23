@@ -345,10 +345,17 @@ function presentAction(
   action: ContractV2ActionRule,
   status: ContractV2ButtonStatus | undefined,
   mode: CanonicalFormRenderMode,
+  identityUnique: boolean,
 ): CanonicalFormAction {
   const profiles = (action.visibleProfiles || ['create', 'edit', 'readonly'])
     .filter((profile): profile is CanonicalFormRenderMode => ['create', 'edit', 'readonly'].includes(profile));
-  const allowed = action.allowed === true;
+  const explicitAuthority = identityUnique
+    && action.entitlementEvaluated === true
+    && typeof action.allowed === 'boolean'
+    && typeof action.enabled === 'boolean'
+    && typeof action.disabled === 'boolean'
+    && (!status?.backendIdentity || status.backendIdentity === text(action.backendIdentity));
+  const allowed = explicitAuthority && action.allowed === true;
   const enabled = action.enabled === true && action.disabled !== true && status?.disabled !== true;
   if (!text(action.actionId) || !text(action.backendIdentity)) {
     throw new Error('CANONICAL_FORM_ACTION_REFERENCE_MISSING');
@@ -358,7 +365,8 @@ function presentAction(
     label: text(action.label || action.actionKey || action.actionId),
     icon: text(action.presentation?.icon),
     tier: actionTier(action),
-    visible: profiles.includes(mode)
+    visible: explicitAuthority
+      && profiles.includes(mode)
       && status?.visible !== false
       && !(mode === 'readonly' && action.actionId === 'form.save'),
     enabled: allowed && enabled,
@@ -383,11 +391,26 @@ export function presentContractV2Form(
   const pageAuth = text(globalStatus.pageAuth);
   const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
   const claimedWidgetIds = new Set<string>();
+  const actionIdentityCounts = new Map<string, number>();
+  const actionIdCounts = new Map<string, number>();
+  snapshot.actionContract.actionRuleList.forEach((action) => {
+    const identity = text(action.backendIdentity);
+    const actionId = text(action.actionId);
+    if (identity) actionIdentityCounts.set(identity, (actionIdentityCounts.get(identity) || 0) + 1);
+    if (actionId) actionIdCounts.set(actionId, (actionIdCounts.get(actionId) || 0) + 1);
+  });
   const allActions = snapshot.actionContract.actionRuleList.map((action) => (
-    presentAction(action, actionStatus(store, action), mode)
+    presentAction(
+      action,
+      actionStatus(store, action),
+      mode,
+      actionIdentityCounts.get(text(action.backendIdentity)) === 1
+        && actionIdCounts.get(text(action.actionId)) === 1,
+    )
   ));
-  const actionsByIdentity = new Map(allActions.map((action) => [text(action.actionRef.backendIdentity), action]));
-  const actionsByNativeOccurrence = new Map(allActions.flatMap((action) => {
+  const visibleActions = allActions.filter((action) => action.visible);
+  const actionsByIdentity = new Map(visibleActions.map((action) => [text(action.actionRef.backendIdentity), action]));
+  const actionsByNativeOccurrence = new Map(visibleActions.flatMap((action) => {
     const nativeIdentity = asDict(action.actionRef.nativeIdentity);
     const key = [
       text(nativeIdentity.type), text(nativeIdentity.name),
@@ -411,6 +434,8 @@ export function presentContractV2Form(
       .filter(Boolean),
   );
   const actionCandidates = allActions.filter((action) => (
+    action.visible
+    &&
     isFormActionBarAction(action.actionRef)
     && !demotedActionIds.has(action.actionRef.actionId)
   ));

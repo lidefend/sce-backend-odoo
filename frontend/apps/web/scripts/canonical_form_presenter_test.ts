@@ -484,7 +484,8 @@ function snapshot(): ContractV2Snapshot {
         actionId: 'action.submit', backendIdentity: 'button:object:action_submit', triggerType: 'click',
         sourceWidgetId: 'page.root', targetIds: [], dispatchMode: 'serverBlocking', targetScope: 'page',
         refreshMode: 'full', actionKey: 'action_submit', label: 'Submit', allowed: true, enabled: true,
-        disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'primary', icon: 'fa-check' },
+        disabled: false, entitlementEvaluated: true,
+        visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'primary', icon: 'fa-check' },
         actionSafety: { level: 'danger', requiresConfirmation: true },
       }], dependencyGraph: { 'action.submit': ['field.name'] },
     },
@@ -571,7 +572,7 @@ assert.equal(model.actionBar[0]?.icon, 'fa-check');
 assert.equal(canonicalFormActionIconClass(model.actionBar[0]?.icon || ''), 'check');
 assert.equal(canonicalFormActionIconClass('fa-check injected-class'), '');
 assert.equal(canonicalFormActionIconClass('oi-check'), '');
-assert.equal(presentContractV2Form(store, 'create').actionBar[0]?.visible, false);
+assert.deepEqual(presentContractV2Form(store, 'create').actionBar, []);
 
 const bodyActionSnapshot = structuredClone(snapshot());
 bodyActionSnapshot.layoutContract.containerTree[0].children.push({
@@ -583,7 +584,8 @@ bodyActionSnapshot.actionContract.actionRuleList.push({
   actionId: 'action.open_lines', backendIdentity: 'window_action:91', triggerType: 'click',
   sourceWidgetId: 'button.action_open_lines', targetIds: [], dispatchMode: 'clientRoute', targetScope: 'page',
   refreshMode: 'none', actionKey: 'open_lines', label: 'Open Lines', allowed: true, enabled: true,
-  disabled: false, visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'overflow' },
+  disabled: false, entitlementEvaluated: true,
+  visibleProfiles: ['edit', 'readonly'], presentation: { tier: 'overflow' },
 });
 bodyActionSnapshot.statusContract.buttonStatus.push({ btnId: 'action.open_lines', visible: true, disabled: false });
 const bodyActionModel = presentContractV2Form(createContractV2Store(bodyActionSnapshot), 'readonly');
@@ -1374,6 +1376,36 @@ const missingIdentity = snapshot();
 delete missingIdentity.actionContract.actionRuleList[0].backendIdentity;
 assert.throws(() => presentContractV2Form(createContractV2Store(missingIdentity), 'edit'), /ACTION_REFERENCE_MISSING/);
 
+const missingEntitlement = snapshot();
+delete missingEntitlement.actionContract.actionRuleList[0].entitlementEvaluated;
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(missingEntitlement), 'edit').actionBar,
+  [],
+  'an action without explicit entitlement authority must not enter the canonical action bar',
+);
+
+const ambiguousCanonicalIdentity = snapshot();
+ambiguousCanonicalIdentity.actionContract.actionRuleList.push({
+  ...ambiguousCanonicalIdentity.actionContract.actionRuleList[0],
+  actionId: 'action.submit.alias', actionKey: 'action_submit_alias',
+});
+ambiguousCanonicalIdentity.statusContract.buttonStatus.push({
+  btnId: 'action.submit.alias', visible: true, disabled: false,
+});
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(ambiguousCanonicalIdentity), 'edit').actionBar,
+  [],
+  'an ambiguous backend identity must fail closed before canonical action placement',
+);
+
+const mismatchedCanonicalStatus = snapshot();
+mismatchedCanonicalStatus.statusContract.buttonStatus[0].backendIdentity = 'button:object:another_action';
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(mismatchedCanonicalStatus), 'edit').actionBar,
+  [],
+  'a mismatched status identity must fail closed before canonical action placement',
+);
+
 const disabledSecondaryPrimary = snapshot();
 disabledSecondaryPrimary.actionContract.actionRuleList.push({
   ...disabledSecondaryPrimary.actionContract.actionRuleList[0],
@@ -1522,9 +1554,9 @@ readonlySaveSnapshot.actionContract.actionRuleList = [{
   visibleProfiles: ['create', 'edit', 'readonly'],
 }];
 readonlySaveSnapshot.statusContract.buttonStatus = [{ btnId: 'form.save', visible: true, disabled: false }];
-assert.equal(
-  presentContractV2Form(createContractV2Store(readonlySaveSnapshot), 'readonly').actionBar[0]?.visible,
-  false,
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(readonlySaveSnapshot), 'readonly').actionBar,
+  [],
   'iteration one must retain the cb6e276 readonly save suppression behavior',
 );
 assert.equal(
