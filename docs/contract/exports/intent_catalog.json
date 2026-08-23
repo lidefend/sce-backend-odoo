@@ -2820,7 +2820,10 @@
       "test_refs": 7,
       "request_schema_hint": [
         "button",
+        "button.actionId",
+        "button.backendIdentity",
         "button.name",
+        "button.sourceWidgetId",
         "button.type",
         "button_name",
         "button_type",
@@ -2856,7 +2859,10 @@
           "snapshot_file": "docs/contract/snapshots/execute_button_intent_dry_run_pm.json",
           "request_keys": [
             "button",
+            "button.actionId",
+            "button.backendIdentity",
             "button.name",
+            "button.sourceWidgetId",
             "button.type",
             "dry_run",
             "model",
@@ -3221,8 +3227,9 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 25,
+      "test_refs": 27,
       "request_schema_hint": [
+        "_normalized_include_parts",
         "action_id",
         "include",
         "menu_id",
@@ -25406,7 +25413,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 439,
+      "test_refs": 440,
       "request_schema_hint": [
         "company_id",
         "credential",
@@ -37199,7 +37206,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 96,
+      "test_refs": 106,
       "request_schema_hint": [
         "op",
         "source_mode"
@@ -37519,6 +37526,7 @@
         "context_raw",
         "domainRaw",
         "domain_raw",
+        "menuId",
         "menu_id",
         "model",
         "op",
@@ -37529,14 +37537,18 @@
         "render_profile",
         "requestId",
         "request_id",
+        "resId",
+        "res_id",
         "sceneKey",
         "scene_key",
         "sourceType",
         "source_type",
+        "subject",
         "viewId",
         "viewType",
         "view_id",
-        "view_type"
+        "view_type",
+        "view_types"
       ],
       "response_data_schema_hint": [
         "actionContract",

@@ -82,6 +82,8 @@ for case in cases:
         cmd += ["--intent", case["intent"]]
     if "intent_params" in case:
         cmd += ["--intent_params", json.dumps(case.get("intent_params") or {}, ensure_ascii=False, sort_keys=True)]
+    if "intent_authority" in case:
+        cmd += ["--intent_authority", json.dumps(case.get("intent_authority") or {}, ensure_ascii=False, sort_keys=True)]
     outdir = case.get("outdir") or os.environ.get("OUTDIR")
     if outdir:
         cmd += ["--outdir", outdir]

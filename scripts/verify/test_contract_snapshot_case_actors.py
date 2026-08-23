@@ -14,6 +14,7 @@ PRIVILEGED_INTENTS = {
     "chatter.activity.schedule",
     "chatter.activity.update",
     "chatter.post",
+    "execute_button",
     "file.upload",
     "global.message.read",
     "global.message.send",

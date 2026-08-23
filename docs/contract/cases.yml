@@ -741,17 +741,17 @@
   },
   {
     "case": "execute_button_intent_dry_run_pm",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "execute_button",
-    "intent_params": {
-      "model": "res.partner",
-      "res_id": 1,
-      "dry_run": true,
-      "button": {
-        "type": "object",
-        "name": "write"
-      }
+    "intent_authority": {
+      "source": "ui.contract.v2",
+      "record_xmlid": "smart_construction_demo.payment_request_floorplan_demo_record",
+      "action_xmlid": "smart_construction_core.action_payment_request_user_payment_apply",
+      "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply",
+      "view_type": "form",
+      "button_type": "object",
+      "method": "action_submit"
     }
   },
   {

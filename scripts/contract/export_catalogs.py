@@ -246,6 +246,20 @@ def build_intent_catalog(repo_root: Path, rows: list[IntentRow], cases_file: Pat
         for case in cases_for_intent:
             case_name = str(case.get("case", "")).strip()
             intent_params = case.get("intent_params") if isinstance(case.get("intent_params"), dict) else {}
+            authority = case.get("intent_authority") if isinstance(case.get("intent_authority"), dict) else {}
+            if authority:
+                intent_params = {
+                    "model": "<resolved-record-model>",
+                    "res_id": "<resolved-record-id>",
+                    "dry_run": True,
+                    "button": {
+                        "type": authority.get("button_type"),
+                        "name": authority.get("method"),
+                        "actionId": "<contract-action-id>",
+                        "backendIdentity": "<contract-backend-identity>",
+                        "sourceWidgetId": "<contract-source-widget-id>",
+                    },
+                }
             request_paths.update(dotted_paths(intent_params))
             snapshot = snapshot_payloads.get(case_name) or {}
             response_data = snapshot.get("ui_contract_raw")
