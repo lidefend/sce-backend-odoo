@@ -8,10 +8,10 @@
         "success": true,
         "reason_code": "DRY_RUN",
         "type": "dry_run",
-        "method": "write",
+        "method": "action_submit",
         "button_type": "object"
       },
-      "fingerprint": "a1b5fdaa32f1db49"
+      "fingerprint": "6ef2ac75ff7bcf08"
     },
     "portal_execute_button_not_allowed": {
       "source": "docs/contract/snapshots/portal_execute_button_not_allowed.json",

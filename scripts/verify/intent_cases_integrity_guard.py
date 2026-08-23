@@ -31,6 +31,7 @@ ALLOWED_CASE_KEYS = {
     "id",
     "include_meta",
     "intent",
+    "intent_authority",
     "intent_params",
     "menu_id",
     "model",
@@ -164,6 +165,44 @@ def main() -> int:
                 invalid.append(f"{case_name}: missing intent for op=intent.invoke")
             if "intent_params" in item and not isinstance(item.get("intent_params"), dict):
                 invalid.append(f"{case_name}: intent_params must be object")
+            authority = item.get("intent_authority")
+            if authority is not None:
+                if intent != "execute_button":
+                    invalid.append(f"{case_name}: intent_authority requires execute_button")
+                if "intent_params" in item:
+                    invalid.append(f"{case_name}: intent_authority forbids static intent_params")
+                fixed_carriers = sorted(
+                    key for key in ("id", "menu_id", "model", "action_xmlid") if key in item
+                )
+                if fixed_carriers:
+                    invalid.append(
+                        f"{case_name}: intent_authority forbids static carriers: "
+                        + ", ".join(fixed_carriers)
+                    )
+                expected_keys = {
+                    "source",
+                    "record_xmlid",
+                    "action_xmlid",
+                    "menu_xmlid",
+                    "view_type",
+                    "button_type",
+                    "method",
+                }
+                if not isinstance(authority, dict) or set(authority) != expected_keys:
+                    invalid.append(f"{case_name}: invalid intent_authority shape")
+                elif any(not _as_str(authority.get(key)) for key in expected_keys):
+                    invalid.append(f"{case_name}: intent_authority values must be non-empty")
+                else:
+                    if authority.get("source") != "ui.contract.v2":
+                        invalid.append(f"{case_name}: invalid intent_authority source")
+                    if authority.get("view_type") != "form":
+                        invalid.append(f"{case_name}: invalid intent_authority view_type")
+                    if authority.get("button_type") != "object":
+                        invalid.append(f"{case_name}: invalid intent_authority button_type")
+                    for key in ("record_xmlid", "action_xmlid", "menu_xmlid"):
+                        value = _as_str(authority.get(key))
+                        if "." not in value or value.isdigit():
+                            invalid.append(f"{case_name}: {key} must be XMLID")
 
     if duplicated:
         invalid.append("duplicate case names: " + ", ".join(sorted(duplicated)))

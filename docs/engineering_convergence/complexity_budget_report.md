@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3852`
+- Scanned files: `3853`
 - Files requiring split plan: `43`
-- Files above warning threshold: `76`
+- Files above warning threshold: `77`
 
 ## Split Plan Required
 
@@ -99,6 +99,7 @@ Generated from repository source files. This report is informational during the 
 | 1076 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1070 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1053 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
+| 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1020 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |

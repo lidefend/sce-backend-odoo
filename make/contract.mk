@@ -176,6 +176,7 @@ verify.contract.catalog: guard.prod.forbid
 	@python3 scripts/verify/intent_cases_integrity_guard.py --cases-file docs/contract/cases.yml
 	@python3 scripts/verify/test_contract_catalog_paths.py
 	@python3 scripts/verify/test_contract_snapshot_principal.py
+	@python3 scripts/verify/test_contract_snapshot_execute_authority.py
 	@python3 scripts/verify/test_construction_intent_contribution_registry.py
 	@$(MAKE) --no-print-directory contract.catalog.export
 	@test -s docs/contract/exports/intent_catalog.json || (echo "❌ intent_catalog.json missing" && exit 2)

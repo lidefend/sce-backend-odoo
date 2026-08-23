@@ -1,16 +1,28 @@
 {
   "action": null,
   "case": "execute_button_intent_dry_run_pm",
-  "contract_version": "v1",
   "error": null,
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
+  "intent_authority": {
+    "actionId": "action.payment_submit",
+    "actionXmlid": "smart_construction_core.action_payment_request_user_payment_apply",
+    "backendIdentity": "native_button:object:action_submit:/form[1]/header[1]/button[1]:1",
+    "menuXmlid": "smart_construction_core.menu_sc_user_payment_apply",
+    "method": "action_submit",
+    "recordStateUnchanged": true,
+    "recordXmlid": "smart_construction_demo.payment_request_floorplan_demo_record",
+    "source": "ui.contract.v2",
+    "sourceWidgetId": "page.header",
+    "statusBtnId": "btn.payment_submit"
+  },
   "meta_fields": null,
   "model": null,
   "op": "intent.invoke",
   "record": null,
   "record_error": null,
+  "snapshot_schema_version": "1.0.0",
   "ui_contract": null,
   "ui_contract_raw": {
     "effect": {
@@ -20,16 +32,16 @@
     "result": {
       "button_type": "object",
       "message": "后端已完成 dry run 校验",
-      "method": "write",
+      "method": "action_submit",
       "reason_code": "DRY_RUN",
-      "res_id": 1,
-      "res_model": "res.partner",
+      "res_id": 166,
+      "res_model": "payment.request",
       "status": "success",
       "success": true,
       "type": "dry_run"
     }
   },
-  "user": "admin",
+  "user": "sc_test_admin",
   "user_fallback": null,
   "view_type": null
 }

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import json
 import sys
@@ -18,6 +19,249 @@ from odoo.tools import config
 
 _SNAPSHOT_LAYOUT_CHILD_KEYS = ("children", "pages", "tabs", "nodes", "items", "widgetList")
 SNAPSHOT_SCHEMA_VERSION = "1.0.0"
+_INTENT_AUTHORITY_KEYS = {
+    "source",
+    "record_xmlid",
+    "action_xmlid",
+    "menu_xmlid",
+    "view_type",
+    "button_type",
+    "method",
+}
+_CONTRACT_V2_CAPABILITIES = [
+    "container_tree.v2",
+    "data_source.v2",
+    "action_rule.v2",
+    "relation_entry.v2",
+    "status_contract.v2",
+]
+
+
+class SnapshotIntentAuthorityError(RuntimeError):
+    """Fail-closed error raised before an intent handler may execute."""
+
+
+def _authority_text(value: object) -> str:
+    return str(value or "").strip()
+
+
+def validate_intent_authority_spec(raw: object) -> dict[str, str]:
+    if not isinstance(raw, Mapping):
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_INVALID_SPEC")
+    unknown = sorted(set(raw) - _INTENT_AUTHORITY_KEYS)
+    missing = sorted(_INTENT_AUTHORITY_KEYS - set(raw))
+    if unknown or missing:
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_INVALID_SPEC")
+    spec = {key: _authority_text(raw.get(key)) for key in _INTENT_AUTHORITY_KEYS}
+    if any(not value for value in spec.values()):
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_INVALID_SPEC")
+    if spec["source"] != "ui.contract.v2":
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_INVALID_SOURCE")
+    if spec["view_type"] != "form":
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_INVALID_VIEW_TYPE")
+    if spec["button_type"] != "object":
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_INVALID_BUTTON_TYPE")
+    for key in ("record_xmlid", "action_xmlid", "menu_xmlid"):
+        value = spec[key]
+        if "." not in value or value.isdigit():
+            raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_XMLID_REQUIRED")
+    return spec
+
+
+def select_contract_execute_authority(
+    contract: object,
+    *,
+    button_type: str,
+    method: str,
+) -> tuple[dict, dict]:
+    if not isinstance(contract, Mapping):
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_CONTRACT_INVALID")
+    action_contract = contract.get("actionContract")
+    status_contract = contract.get("statusContract")
+    if not isinstance(action_contract, Mapping) or not isinstance(status_contract, Mapping):
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_CONTRACT_INVALID")
+    rules = action_contract.get("actionRuleList")
+    statuses = status_contract.get("buttonStatus")
+    if not isinstance(rules, list) or not isinstance(statuses, list):
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_CONTRACT_INVALID")
+
+    matches = []
+    for row in rules:
+        button = row.get("button") if isinstance(row, Mapping) else None
+        if not isinstance(button, Mapping):
+            continue
+        if _authority_text(button.get("type")) != button_type:
+            continue
+        if _authority_text(button.get("name") or button.get("method")) != method:
+            continue
+        matches.append(row)
+    if len(matches) != 1:
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_RULE_AMBIGUOUS")
+    rule = dict(matches[0])
+    for key in ("actionId", "backendIdentity", "sourceWidgetId"):
+        if not _authority_text(rule.get(key)):
+            raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_IDENTITY_MISSING")
+    if not (
+        rule.get("allowed") is True
+        and rule.get("enabled") is True
+        and rule.get("disabled") is False
+        and rule.get("entitlementEvaluated") is True
+    ):
+        raise SnapshotIntentAuthorityError(
+            _authority_text(rule.get("reasonCode")) or "INTENT_AUTHORITY_ACTION_NOT_ALLOWED"
+        )
+
+    action_id = _authority_text(rule.get("actionId"))
+    action_key = _authority_text(rule.get("actionKey"))
+    backend_identity = _authority_text(rule.get("backendIdentity"))
+    status_ids = {action_id, f"btn.{action_id}"}
+    if action_key:
+        status_ids.update({action_key, f"btn.{action_key}"})
+    status_matches = [
+        row
+        for row in statuses
+        if isinstance(row, Mapping)
+        and (
+            _authority_text(row.get("backendIdentity")) == backend_identity
+            or _authority_text(row.get("btnId")) in status_ids
+        )
+    ]
+    if len(status_matches) != 1:
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_STATUS_AMBIGUOUS")
+    status = dict(status_matches[0])
+    if status.get("visible") is not True or status.get("disabled") is not False:
+        raise SnapshotIntentAuthorityError(
+            _authority_text(status.get("reasonCode")) or "INTENT_AUTHORITY_STATUS_NOT_ALLOWED"
+        )
+    return rule, status
+
+
+def _check_record_read_access(record, authority_name: str) -> None:
+    record.check_access_rights("read")
+    record.check_access_rule("read")
+    if not record.exists():
+        raise SnapshotIntentAuthorityError(f"INTENT_AUTHORITY_{authority_name}_NOT_FOUND")
+
+
+def _record_state_fingerprint(record) -> str:
+    field_names = sorted(
+        name
+        for name, field in record._fields.items()
+        if getattr(field, "store", False) and getattr(field, "type", "") != "binary"
+    )
+    payload = record.read(field_names)[0]
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _load_contract_v2_for_intent_authority(env, su_env, *, record, action, menu, view_type):
+    from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+    result = UiContractV2Handler(
+        env,
+        su_env=su_env,
+        request=None,
+        context={},
+        payload={
+            "params": {
+                "op": "model",
+                "model": record._name,
+                "view_type": view_type,
+                "record_id": int(record.id),
+                "render_profile": "readonly",
+                "action_id": int(action.id),
+                "menu_id": int(menu.id),
+                "delivery_profile": "full",
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.0.x"],
+                "client_contract_capabilities": list(_CONTRACT_V2_CAPABILITIES),
+            }
+        },
+    ).handle()
+    envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+    if not isinstance(envelope, Mapping) or envelope.get("ok") is not True:
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_CONTRACT_LOAD_FAILED")
+    contract = envelope.get("data")
+    if not isinstance(contract, Mapping):
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_CONTRACT_LOAD_FAILED")
+    return dict(contract)
+
+
+def resolve_snapshot_execute_authority(env, su_env, raw_spec: object, *, contract_loader=None) -> dict:
+    spec = validate_intent_authority_spec(raw_spec)
+    record = env.ref(spec["record_xmlid"], raise_if_not_found=False)
+    action = env.ref(spec["action_xmlid"], raise_if_not_found=False)
+    menu = env.ref(spec["menu_xmlid"], raise_if_not_found=False)
+    if not record:
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_RECORD_NOT_FOUND")
+    if not action or getattr(action, "_name", "") != "ir.actions.act_window":
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_ACTION_NOT_FOUND")
+    if not menu or getattr(menu, "_name", "") != "ir.ui.menu":
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_MENU_NOT_FOUND")
+    _check_record_read_access(record, "RECORD")
+    _check_record_read_access(action, "ACTION")
+    _check_record_read_access(menu, "MENU")
+    if _authority_text(action.res_model) != _authority_text(record._name):
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_RECORD_MODEL_MISMATCH")
+    menu_action = menu.action
+    if (
+        not menu_action
+        or getattr(menu_action, "_name", "") != getattr(action, "_name", "")
+        or int(menu_action.id) != int(action.id)
+    ):
+        raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_ACTION_MENU_MISMATCH")
+
+    visible_menu_ids = set(env["ir.ui.menu"]._visible_menu_ids(debug=False))
+    current = menu
+    while current:
+        if int(current.id) not in visible_menu_ids:
+            raise SnapshotIntentAuthorityError("INTENT_AUTHORITY_MENU_NOT_REACHABLE")
+        current = current.parent_id
+
+    loader = contract_loader or _load_contract_v2_for_intent_authority
+    contract = loader(
+        env,
+        su_env,
+        record=record,
+        action=action,
+        menu=menu,
+        view_type=spec["view_type"],
+    )
+    rule, status = select_contract_execute_authority(
+        contract,
+        button_type=spec["button_type"],
+        method=spec["method"],
+    )
+    button = dict(rule.get("button") or {})
+    button.update(
+        {
+            "actionId": rule["actionId"],
+            "backendIdentity": rule["backendIdentity"],
+            "sourceWidgetId": rule["sourceWidgetId"],
+        }
+    )
+    return {
+        "record": record,
+        "record_fingerprint": _record_state_fingerprint(record),
+        "params": {
+            "model": record._name,
+            "res_id": int(record.id),
+            "dry_run": True,
+            "button": button,
+        },
+        "meta": {"action_id": int(action.id), "menu_id": int(menu.id)},
+        "evidence": {
+            "source": spec["source"],
+            "recordXmlid": spec["record_xmlid"],
+            "actionXmlid": spec["action_xmlid"],
+            "menuXmlid": spec["menu_xmlid"],
+            "method": spec["method"],
+            "actionId": rule["actionId"],
+            "backendIdentity": rule["backendIdentity"],
+            "sourceWidgetId": rule["sourceWidgetId"],
+            "statusBtnId": status.get("btnId"),
+        },
+    }
 
 
 def _layout_field_names(layout: object, known_fields: set[str]) -> list[str]:
@@ -91,6 +335,11 @@ def parse_args():
     )
     parser.add_argument("--intent", default="", help="Intent name for op=intent.invoke")
     parser.add_argument("--intent_params", default="", help="JSON string params for op=intent.invoke")
+    parser.add_argument(
+        "--intent_authority",
+        default="",
+        help="JSON XMLID authority resolver config for governed execute_button snapshots",
+    )
     parser.add_argument("--route", default="", help="Route for ui.contract (required when op=ui.contract)")
     parser.add_argument("--trace_id", default="", help="Trace id override for ui.contract (optional)")
     parser.add_argument("--execute_method", default="", help="Execute object method (optional)")
@@ -418,6 +667,7 @@ def export_snapshot():
                 payload.update({"trace_id": args.trace_id})
 
         action_data = None
+        resolved_authority = None
         if op == "menu" or args.menu_id:
             if not args.menu_id:
                 raise SystemExit("menu_id required for op=menu")
@@ -501,6 +751,22 @@ def export_snapshot():
                 raise SystemExit(f"invalid intent_params JSON: {exc}")
             if not isinstance(params_payload, dict):
                 raise SystemExit("intent_params must be JSON object")
+            try:
+                authority_payload = (
+                    json.loads(args.intent_authority) if args.intent_authority else None
+                )
+            except Exception as exc:
+                raise SystemExit(f"invalid intent_authority JSON: {exc}")
+            if authority_payload is not None and intent_name != "execute_button":
+                raise SystemExit("intent_authority is only valid for execute_button")
+            if authority_payload is not None and (
+                args.intent_params
+                or args.model
+                or args.record_id
+                or args.menu_id
+                or args.action_xmlid
+            ):
+                raise SystemExit("intent_authority forbids static record/action/menu parameters")
             from odoo.addons.smart_core.core.handler_registry import HANDLER_REGISTRY
             from odoo.addons.smart_core.core.extension_loader import load_extensions
             from odoo.addons.smart_core.core.intent_router import resolve_handler
@@ -590,11 +856,23 @@ def export_snapshot():
                     print(outpath)
                 return
             intent_context = {"trace_id": args.trace_id} if args.trace_id else {}
+            if authority_payload is not None:
+                try:
+                    resolved_authority = resolve_snapshot_execute_authority(
+                        env,
+                        api.Environment(cr, SUPERUSER_ID, dict(env.context)),
+                        authority_payload,
+                    )
+                except SnapshotIntentAuthorityError as exc:
+                    raise SystemExit(str(exc))
+                params_payload = resolved_authority["params"]
             intent_payload = {
                 "intent": intent_name,
                 "params": params_payload,
                 "context": intent_context,
             }
+            if resolved_authority is not None:
+                intent_payload["meta"] = resolved_authority["meta"]
             handler = handler_cls(
                 env=env,
                 su_env=api.Environment(cr, SUPERUSER_ID, dict(env.context)),
@@ -633,6 +911,15 @@ def export_snapshot():
                 res = raw_res
             else:
                 res = {"data": {"raw": raw_res}}
+            if resolved_authority is not None:
+                current_fingerprint = _record_state_fingerprint(resolved_authority["record"])
+                if current_fingerprint != resolved_authority["record_fingerprint"]:
+                    raise SystemExit("INTENT_AUTHORITY_DRY_RUN_MUTATED_RECORD")
+                result_data = res.get("data") if isinstance(res, Mapping) else None
+                result = result_data.get("result") if isinstance(result_data, Mapping) else None
+                if not isinstance(result, Mapping) or result.get("reason_code") != "DRY_RUN":
+                    raise SystemExit("INTENT_AUTHORITY_DRY_RUN_RESULT_MISSING")
+                resolved_authority["evidence"]["recordStateUnchanged"] = True
         else:
             handler = UiContractHandler(env, request=None, payload=payload)
             try:
@@ -734,6 +1021,8 @@ def export_snapshot():
             "execute_result": execute_result,
             "execute_error": execute_error,
         }
+        if resolved_authority is not None:
+            snapshot["intent_authority"] = resolved_authority["evidence"]
 
         snapshot["meta_fields"] = _normalize_meta_fields(snapshot.get("meta_fields"))
         if stable:

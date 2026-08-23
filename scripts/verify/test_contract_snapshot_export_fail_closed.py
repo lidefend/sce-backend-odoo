@@ -195,6 +195,76 @@ class ContractSnapshotExportFailClosedTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_case_integrity_guard_rejects_fixed_ids_for_execute_authority(self) -> None:
+        cases = self.repo / "fixed-authority-cases.json"
+        cases.write_text(
+            json.dumps(
+                [
+                    {
+                        "case": "fixed_authority_case",
+                        "user": "sc_test_admin",
+                        "op": "intent.invoke",
+                        "intent": "execute_button",
+                        "intent_params": {"res_id": 41, "action_id": 52, "menu_id": 63},
+                        "intent_authority": {
+                            "source": "ui.contract.v2",
+                            "record_xmlid": "demo.record",
+                            "action_xmlid": "core.action",
+                            "menu_xmlid": "core.menu",
+                            "view_type": "form",
+                            "button_type": "object",
+                            "method": "action_submit",
+                        },
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            ["python3", str(INTENT_CASE_GUARD), "--cases-file", str(cases)],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("forbids static intent_params", result.stderr)
+
+    def test_case_integrity_guard_rejects_top_level_fixed_record_carrier(self) -> None:
+        cases = self.repo / "fixed-record-carrier-cases.json"
+        cases.write_text(
+            json.dumps(
+                [
+                    {
+                        "case": "fixed_record_carrier_case",
+                        "user": "sc_test_admin",
+                        "op": "intent.invoke",
+                        "intent": "execute_button",
+                        "id": 41,
+                        "intent_authority": {
+                            "source": "ui.contract.v2",
+                            "record_xmlid": "demo.record",
+                            "action_xmlid": "core.action",
+                            "menu_xmlid": "core.menu",
+                            "view_type": "form",
+                            "button_type": "object",
+                            "method": "action_submit",
+                        },
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            ["python3", str(INTENT_CASE_GUARD), "--cases-file", str(cases)],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("forbids static carriers: id", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

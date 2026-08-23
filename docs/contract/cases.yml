@@ -229,7 +229,7 @@
   },
   {
     "case": "system_ping_construction_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "system.ping.construction",
     "intent_params": {}
@@ -265,7 +265,7 @@
   },
   {
     "case": "api_onchange_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "api.onchange",
     "intent_params": {
@@ -327,7 +327,7 @@
   },
   {
     "case": "risk_action_execute_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "risk.action.execute",
     "intent_params": {
@@ -360,7 +360,7 @@
   },
   {
     "case": "payment_request_submit_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "payment.request.submit",
     "allow_error_response": true,
@@ -434,7 +434,7 @@
   },
   {
     "case": "scene_package_list_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "compare_mode": "shape",
     "op": "intent.invoke",
     "intent": "scene.package.list",
@@ -442,7 +442,7 @@
   },
   {
     "case": "scene_packages_installed_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "compare_mode": "shape",
     "op": "intent.invoke",
     "intent": "scene.packages.installed",
@@ -450,7 +450,7 @@
   },
   {
     "case": "scene_governance_set_channel_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "scene.governance.set_channel",
     "intent_params": {
@@ -460,7 +460,7 @@
   },
   {
     "case": "scene_governance_rollback_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "scene.governance.rollback",
     "intent_params": {
@@ -469,7 +469,7 @@
   },
   {
     "case": "scene_governance_export_contract_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "scene.governance.export_contract",
     "intent_params": {
@@ -479,7 +479,7 @@
   },
   {
     "case": "scene_package_export_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "compare_mode": "shape",
     "op": "intent.invoke",
     "intent": "scene.package.export",
@@ -492,7 +492,7 @@
   },
   {
     "case": "scene_package_dry_run_import_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "scene.package.dry_run_import",
     "intent_params": {
@@ -540,7 +540,7 @@
   },
   {
     "case": "scene_package_import_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "scene.package.import",
     "intent_params": {
@@ -637,7 +637,7 @@
   },
   {
     "case": "chatter_post_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "chatter.post",
     "intent_params": {
@@ -671,7 +671,7 @@
   },
   {
     "case": "file_upload_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "file.upload",
     "allow_error_response": true,
@@ -719,7 +719,7 @@
   },
   {
     "case": "scene_governance_pin_stable_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "scene.governance.pin_stable",
     "allow_error_response": true,
@@ -741,17 +741,17 @@
   },
   {
     "case": "execute_button_intent_dry_run_pm",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "execute_button",
-    "intent_params": {
-      "model": "res.partner",
-      "res_id": 1,
-      "dry_run": true,
-      "button": {
-        "type": "object",
-        "name": "write"
-      }
+    "intent_authority": {
+      "source": "ui.contract.v2",
+      "record_xmlid": "smart_construction_demo.payment_request_floorplan_demo_record",
+      "action_xmlid": "smart_construction_core.action_payment_request_user_payment_apply",
+      "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply",
+      "view_type": "form",
+      "button_type": "object",
+      "method": "action_submit"
     }
   },
   {
@@ -922,7 +922,7 @@
   },
   {
     "case": "chatter_activity_schedule_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "chatter.activity.schedule",
     "allow_error_response": true,
@@ -930,7 +930,7 @@
   },
   {
     "case": "chatter_activity_update_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "chatter.activity.update",
     "allow_error_response": true,
@@ -982,14 +982,14 @@
   },
   {
     "case": "global_message_read_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "global.message.read",
     "intent_params": {}
   },
   {
     "case": "global_message_send_intent_admin",
-    "user": "admin",
+    "user": "sc_test_admin",
     "op": "intent.invoke",
     "intent": "global.message.send",
     "allow_error_response": true,
