@@ -44,6 +44,7 @@ jobs:
       CI_REMOTE_URL: https://github.com/lidefend/sce-backend-odoo.git
       HEAD_REF: ${{ github.event.inputs.head_ref || github.ref_name }}
       HEAD_SHA: ${{ github.sha }}
+      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}
       COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}
       DB_NAME: sc_suite_ci
       TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
@@ -224,4 +225,4 @@ jobs:
         if: always()
         run: |
           docker compose down -v --remove-orphans || true
-          bash scripts/ci/self_hosted_runner_cleanup.sh || true
+          bash scripts/ci/self_hosted_runner_cleanup.sh
