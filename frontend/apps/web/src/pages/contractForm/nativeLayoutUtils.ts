@@ -1016,10 +1016,15 @@ export function resolveNativeRelationActiveActions(
   node: NativeLayoutLikeNode,
   evaluateAction: (value: unknown) => boolean,
 ): NativeRelationActiveActions {
-  const actions = node.relation_active_actions
-    && typeof node.relation_active_actions === 'object'
-    && !Array.isArray(node.relation_active_actions)
-    ? node.relation_active_actions as Record<string, unknown>
+  const componentConfig = node.componentConfig
+    && typeof node.componentConfig === 'object'
+    && !Array.isArray(node.componentConfig)
+    ? node.componentConfig as Record<string, unknown>
+    : {};
+  const actions = componentConfig.relationActiveActions
+    && typeof componentConfig.relationActiveActions === 'object'
+    && !Array.isArray(componentConfig.relationActiveActions)
+    ? componentConfig.relationActiveActions as Record<string, unknown>
     : {};
   const verdict = (key: string): boolean | null => Object.prototype.hasOwnProperty.call(actions, key)
     ? evaluateAction(actions[key])

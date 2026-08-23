@@ -3,6 +3,25 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-23 — Contract V2 layout DSL convergence
+
+- Branch / anchor: `feature/layout-contract-dsl-convergence-v1` at
+  `3546294cce3418bfc4027afce2938f0b5ff8e1b6`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel /
+  normalized Contract V2 form layout assembly and generic frontend consumption /
+  `smart_core` plus the Canonical form renderer.
+- Standard vs User-Specific: generic layout identity, ownership and semantic-role
+  normalization only; no construction model, customer preference or runtime
+  configuration is introduced.
+- Why Here / Why Not Elsewhere: the assembler owns canonical wire normalization
+  and explicit field ownership; the frontend only consumes that normalized
+  carrier. Business models, UI kits and verification scripts must not infer or
+  recreate layout authority.
+- Blast Radius: strict form layout payloads, field occurrence ownership,
+  relation capability projection and Canonical form regions. Contract/runtime
+  guards, presenter tests and the governed readonly journey prove containment;
+  business records remain unchanged.
+
 ## 2026-08-22 — Payment-request readonly product Floorplan activation
 
 - Formal Product Layer / Layer Target: P0 generic presentation mechanism /

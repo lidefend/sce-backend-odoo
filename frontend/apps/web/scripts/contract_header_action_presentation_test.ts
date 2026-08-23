@@ -82,7 +82,7 @@ assert.equal(resolveNativeOccurrenceBehavior({
 assert.deepEqual(resolveNativeRelationActiveActions({
   type: 'field',
   name: 'partner_id',
-  relation_active_actions: { create: false, write: true },
+  componentConfig: { relationActiveActions: { create: false, write: true } },
 }, evaluateDraftModifier), {
   create: false,
   write: true,

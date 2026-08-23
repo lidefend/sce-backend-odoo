@@ -286,7 +286,15 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
             "views": {"form": {"layout": [{
                 "type": "sheet",
-                "tabs": [{"type": "field", "name": "name"}],
+                "tabs": [{
+                    "type": "field",
+                    "name": "name",
+                    "native_locator": "/form[1]/sheet[1]/field[1]",
+                    "occurrence_index": 1,
+                    "source_position": 3,
+                    "relation_entry": {"can_read": True, "can_open": False, "can_create": False},
+                    "relation_active_actions": {"create": False, "write": True},
+                }],
             }]}},
         }
         full = assembler.assemble_unified_page_contract_v2(
@@ -296,7 +304,24 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         root = full["layoutContract"]["containerTree"][0]
         self.assertNotIn("tabs", root)
-        self.assertEqual(root["children"][0]["type"], "field")
+        field_node = root["children"][0]
+        self.assertEqual(field_node["type"], "field")
+        self.assertEqual(field_node["nativeLocator"], "/form[1]/sheet[1]/field[1]")
+        self.assertEqual(field_node["occurrenceIndex"], 1)
+        self.assertEqual(field_node["sourcePosition"], 3)
+        self.assertNotIn("native_locator", field_node)
+        self.assertNotIn("occurrence_index", field_node)
+        self.assertNotIn("source_position", field_node)
+        self.assertNotIn("relation_entry", field_node)
+        self.assertNotIn("relation_active_actions", field_node)
+        self.assertEqual(
+            field_node["componentConfig"]["relationEntry"],
+            {"can_read": True, "can_open": False, "can_create": False},
+        )
+        self.assertEqual(
+            field_node["componentConfig"]["relationActiveActions"],
+            {"create": False, "write": True},
+        )
         widgets = [
             widget
             for node in full["layoutContract"]["containerTree"]
@@ -334,6 +359,64 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 source,
                 source_type="ui.contract",
                 request_id="test.layout.dsl.parallel.child.carriers",
+            )
+
+    def test_form_structure_projects_only_fields_owned_by_final_layout(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {
+                "name": {"name": "name", "type": "char"},
+                "computed_summary": {"name": "computed_summary", "type": "char"},
+            },
+            "views": {"form": {"layout": [{
+                "type": "sheet",
+                "children": [{"type": "field", "name": "name"}],
+            }]}},
+            "form_structure_contract": {
+                "source": "ui.contract.v2.form_structure_contract",
+                "structureVersion": "1.0",
+                "model": "x.document",
+                "viewType": "form",
+                "mode": "readonly",
+                "layoutPolicy": "native_authority",
+                "objectProfile": {"titleField": "name", "stateField": "", "factAuthority": "orm"},
+                "navigation": {"title": "Document"},
+                "slots": [{
+                    "slot": "body", "title": "Body", "role": "context",
+                    "fieldRefs": ["name", "computed_summary"], "groups": [],
+                }],
+                "fieldRoles": {
+                    "name": {"role": "context", "slot": "body", "group": "body"},
+                    "computed_summary": {"role": "context", "slot": "body", "group": "body"},
+                },
+                "sourceAuthority": {
+                    "kind": "form_structure_contract",
+                    "authorities": ["ir.ui.view"],
+                    "projectionOnly": True,
+                    "noBusinessFactAuthority": True,
+                },
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source, source_type="ui.contract", request_id="test.form.structure.layout.ownership",
+        )
+
+        structure = full["formStructureContract"]
+        self.assertEqual(structure["slots"][0]["fieldRefs"], ["name"])
+        self.assertEqual(set(structure["fieldRoles"]), {"name"})
+
+    def test_form_structure_rejects_unknown_field_reference(self):
+        structure = {
+            "slots": [{"slot": "body", "fieldRefs": ["missing"], "groups": []}],
+            "fieldRoles": {"missing": {"role": "context", "slot": "body", "group": "body"}},
+        }
+        with self.assertRaisesRegex(ValueError, "references unknown field: missing"):
+            assembler._project_form_structure_to_layout(
+                structure,
+                [{"type": "field", "name": "name", "children": []}],
+                {"name"},
             )
 
     def test_layout_dsl_rejects_non_object_child_without_filtering_it(self):

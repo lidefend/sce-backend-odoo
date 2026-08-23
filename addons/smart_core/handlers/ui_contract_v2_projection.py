@@ -51,6 +51,19 @@ def normalize_post_projected_container_tree(
                 out.append(raw_node)
                 continue
             node = raw_node
+            for producer_key, canonical_key in (
+                ("native_locator", "nativeLocator"),
+                ("occurrence_index", "occurrenceIndex"),
+                ("source_position", "sourcePosition"),
+            ):
+                if producer_key not in node:
+                    continue
+                if canonical_key in node and node.get(canonical_key) != node.get(producer_key):
+                    raise ValueError(
+                        f"layout node {parent_id or '<root>'} has conflicting {producer_key}/{canonical_key}"
+                    )
+                node[canonical_key] = deepcopy(node.get(producer_key))
+                node.pop(producer_key, None)
             node_type = str(node.get("containerType") or node.get("type") or "section").strip().lower() or "section"
             formal_type = "section" if node_type == "sheet" else node_type
             fallback = f"{parent_id}.{formal_type}.{index}" if parent_id else f"{formal_type}.{index}"
@@ -627,6 +640,12 @@ def apply_business_config_form_groups(
     container_tree = layout_contract.get("containerTree") if isinstance(layout_contract.get("containerTree"), list) else []
     if not container_tree:
         return
+    structure = contract.get("formStructureContract") if isinstance(contract.get("formStructureContract"), dict) else {}
+    contract_field_roles = (
+        structure.get("fieldRoles")
+        if isinstance(structure.get("fieldRoles"), dict)
+        else {}
+    )
     field_semantic_roles = {
         str(name): str(role).strip().lower()
         for name, role in (
@@ -647,24 +666,29 @@ def apply_business_config_form_groups(
                 continue
             name = node_field_name(node)
             role = field_semantic_roles.get(name)
-            if role:
-                existing_role = node.get("formStructureRole") if isinstance(node.get("formStructureRole"), dict) else {}
-                node["formStructureRole"] = {**existing_role, "role": role}
+            existing_role = (
+                node.get("formStructureRole")
+                if isinstance(node.get("formStructureRole"), dict)
+                else {}
+            )
+            authority_role = (
+                contract_field_roles.get(name)
+                if isinstance(contract_field_roles.get(name), dict)
+                else {}
+            )
+            if role and authority_role:
+                # Slot/group remain the normalized structure authority, while
+                # the governed semantic anchor owns the canonical product
+                # role. Persist their merge in both carriers so the final wire
+                # never exposes a node/fieldRoles split authority.
+                merged_role = {**authority_role, "role": role}
+                contract_field_roles[name] = deepcopy(merged_role)
+                if existing_role:
+                    node["formStructureRole"] = deepcopy(merged_role)
             for key in (*_CONTAINER_CHILD_KEYS, "widgetList"):
                 apply_product_field_roles(node.get(key))
 
     apply_product_field_roles(container_tree)
-    structure = contract.get("formStructureContract") if isinstance(contract.get("formStructureContract"), dict) else {}
-    if field_semantic_roles:
-        roles = structure.get("fieldRoles") if isinstance(structure.get("fieldRoles"), dict) else {}
-        structure["fieldRoles"] = {
-            **roles,
-            **{
-                name: {**(roles.get(name) if isinstance(roles.get(name), dict) else {}), "role": role}
-                for name, role in field_semantic_roles.items()
-            },
-        }
-        contract["formStructureContract"] = structure
     # Product intent may annotate native nodes, but it must not use field lists
     # to move them, manufacture groups, infer relation regions, or normalize
     # the tree a second time.  The effective parsed Odoo view is the structural

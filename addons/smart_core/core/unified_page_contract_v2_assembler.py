@@ -809,6 +809,11 @@ def _assemble_ui_contract(
         # must not survive beside the exact occurrence rows.
         contract["statusContract"]["widgetStatus"] = native_widget_status
         if form_structure_contract:
+            form_structure_contract = _project_form_structure_to_layout(
+                form_structure_contract,
+                container_tree,
+                set(fields_by_name),
+            )
             _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
             form_structure_applied = True
     elif layout_type == "form":
@@ -863,6 +868,11 @@ def _assemble_ui_contract(
             {"containerId": group_id, "visible": True, "disabled": False},
         ])
         if form_structure_contract:
+            form_structure_contract = _project_form_structure_to_layout(
+                form_structure_contract,
+                container_tree,
+                set(fields_by_name),
+            )
             _apply_form_structure_roles_to_tree(container_tree, form_structure_contract)
             form_structure_applied = True
     else:
@@ -1441,6 +1451,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
         "native_locator", "occurrence_index", "source_position", "modifiers",
+        "relation_active_actions",
     ):
         if key in field:
             component_config[key] = deepcopy(field.get(key))
@@ -1455,6 +1466,9 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     relation_entry = _dict(field.get("relation_entry"))
     if relation_entry:
         component_config["relationEntry"] = deepcopy(relation_entry)
+    relation_active_actions = _dict(field.get("relation_active_actions"))
+    if relation_active_actions:
+        component_config["relationActiveActions"] = deepcopy(relation_active_actions)
     widget_options = _dict(field.get("widget_options") or field.get("options"))
     if widget_options:
         component_config["widgetOptions"] = deepcopy(widget_options)
@@ -1487,7 +1501,10 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     field_info = _dict(node.get("fieldInfo") or node.get("field_info"))
     field_source.update({k: deepcopy(v) for k, v in field_info.items() if k not in {"label", "string"}})
     field_source["name"] = field_name
-    for key in ("native_locator", "occurrence_index", "source_position", "modifiers"):
+    for key in (
+        "native_locator", "occurrence_index", "source_position", "modifiers", "relation_entry",
+        "relation_active_actions",
+    ):
         if key in node:
             field_source[key] = deepcopy(node.get(key))
     field_source.setdefault("string", label)
@@ -1517,6 +1534,15 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
         out["nativeLocator"] = native_locator
         out["occurrenceIndex"] = _positive_int(field_source.get("occurrence_index"), 0)
         out["sourcePosition"] = field_source.get("source_position")
+    # Native parser evidence is snake_case at the producer boundary, while the
+    # normalized V2 layout wire is camelCase.  Do not leave both spellings on
+    # the strict layout node: componentConfig retains the producer evidence and
+    # the canonical node fields above carry its governed projection.
+    for producer_key in (
+        "native_locator", "occurrence_index", "source_position", "relation_entry",
+        "relation_active_actions",
+    ):
+        out.pop(producer_key, None)
     return out
 
 
@@ -1535,10 +1561,18 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
         "currency_field", "precision", "aggregate", "aggregate_label",
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
-        "native_locator", "occurrence_index", "source_position", "modifiers",
+        "native_locator", "occurrence_index", "source_position", "modifiers", "relation_entry",
+        "relation_active_actions",
     ):
         if key in node:
             field_source[key] = deepcopy(node.get(key))
+    for canonical_key, producer_key in (
+        ("nativeLocator", "native_locator"),
+        ("occurrenceIndex", "occurrence_index"),
+        ("sourcePosition", "source_position"),
+    ):
+        if canonical_key in node:
+            field_source[producer_key] = deepcopy(node.get(canonical_key))
     field_source["name"] = field_name
     field_source.setdefault("string", _text(node.get("string") or node.get("label") or field_info.get("label"), field_name))
     field_source.setdefault("label", field_source.get("string", field_name))
@@ -2321,6 +2355,59 @@ def _apply_form_structure_roles_to_tree(
     for row in container_tree:
         if isinstance(row, dict):
             apply(row)
+
+
+def _project_form_structure_to_layout(
+    structure_contract: dict[str, Any],
+    container_tree: list[dict[str, Any]],
+    available_fields: set[str],
+) -> dict[str, Any]:
+    """Bind the semantic structure to fields owned by the final native tree."""
+    projected_fields: set[str] = set()
+
+    def collect(nodes: Any) -> None:
+        for node in _list(nodes):
+            if not isinstance(node, dict):
+                continue
+            if _text(node.get("type") or node.get("containerType")).lower() == "field":
+                field_name = _text(node.get("name") or node.get("fieldCode"))
+                if field_name:
+                    projected_fields.add(field_name)
+            collect(node.get("children"))
+
+    collect(container_tree)
+    out = deepcopy(structure_contract)
+
+    def project_refs(value: Any, path: str) -> list[str]:
+        refs: list[str] = []
+        for raw in _list(value):
+            field_name = _text(raw)
+            if not field_name or field_name not in available_fields:
+                raise ValueError(f"{path} references unknown field: {field_name or '<empty>'}")
+            if field_name in projected_fields and field_name not in refs:
+                refs.append(field_name)
+        return refs
+
+    for slot_index, slot in enumerate(_list(out.get("slots"))):
+        if not isinstance(slot, dict):
+            continue
+        slot["fieldRefs"] = project_refs(
+            slot.get("fieldRefs"), f"formStructureContract.slots[{slot_index}].fieldRefs",
+        )
+        for group_index, group in enumerate(_list(slot.get("groups"))):
+            if not isinstance(group, dict):
+                continue
+            group["fieldRefs"] = project_refs(
+                group.get("fieldRefs"),
+                f"formStructureContract.slots[{slot_index}].groups[{group_index}].fieldRefs",
+            )
+    field_roles = _dict(out.get("fieldRoles"))
+    out["fieldRoles"] = {
+        field_name: deepcopy(role)
+        for field_name, role in field_roles.items()
+        if field_name in projected_fields
+    }
+    return out
 
 
 def _form_structure_layout_columns(value: Any) -> int | None:
