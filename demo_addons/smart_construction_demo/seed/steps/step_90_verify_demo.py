@@ -41,7 +41,11 @@ def _verify_full_product_principal(env):
 
 
 def _verify_payment_request_floorplan_fixture(env):
-    records = env["payment.request"].sudo().search([("name", "=", "DEMO-PR-FLOORPLAN-001")])
+    owned = env.ref(
+        "smart_construction_demo.payment_request_floorplan_demo_record",
+        raise_if_not_found=False,
+    )
+    records = owned if owned and owned._name == "payment.request" else env["payment.request"].browse()
     if len(records) != 1:
         raise UserError("Floorplan payment fixture must resolve to exactly one record.")
     if records.state != "draft" or not records.contract_id or records.amount <= 0:
