@@ -1046,6 +1046,65 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertTrue(statuses[0]["visible"])
         self.assertFalse(statuses[0]["disabled"])
 
+    def test_runtime_action_is_absorbed_by_authoritative_native_occurrence(self):
+        native_identity = {
+            "authoritative": True,
+            "canonical_region": "form.header",
+            "native_locator": "/form[1]/header[1]/button[1]",
+            "occurrence_index": 1,
+            "type": "object",
+            "name": "action_submit",
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "views": {"form": {"layout": [], "header_buttons": [{
+                    "key": "native_submit",
+                    "label": "Submit",
+                    "kind": "object",
+                    "payload": {"method": "action_submit", "type": "object"},
+                    "native_identity": native_identity,
+                    "allowed": True,
+                    "enabled": True,
+                    "entitlement_evaluated": True,
+                }]}},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.native.occurrence.absorption",
+        )
+        contract["runtimeContract"]["businessActions"] = [{
+            "key": "runtime_submit",
+            "label": "Submit safely",
+            "kind": "mutation",
+            "method": "action_submit",
+            "allowed": True,
+            "enabled": False,
+            "reason_code": "RUNTIME_PRECONDITION_BLOCKED",
+        }]
+
+        assembler.project_runtime_business_actions(contract)
+        matching = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if (row.get("button") or {}).get("name") == "action_submit"
+        ]
+
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(
+            matching[0]["backendIdentity"],
+            "native_button:object:action_submit:/form[1]/header[1]/button[1]:1",
+        )
+        self.assertFalse(matching[0]["enabled"])
+        self.assertEqual(
+            {trace.get("sourceChannel") for trace in matching[0]["sourceTrace"]},
+            {"native_form_header", "runtime_business_action"},
+        )
+        self.assertFalse(any(
+            row.get("backendIdentity") == "button:object:action_submit"
+            for row in contract["actionContract"]["actionRuleList"]
+        ))
+
     def test_runtime_business_action_identity_matrix_and_final_seal(self):
         contract = assembler.assemble_unified_page_contract_v2(
             {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},

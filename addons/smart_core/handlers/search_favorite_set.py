@@ -127,10 +127,14 @@ class SearchFavoriteSetHandler(BaseIntentHandler):
         }
         if action_id:
             vals["action_id"] = action_id
+        else:
+            vals["action_id"] = False
+        action_scope_domain = ("action_id", "=", action_id or False)
         existing = Filter.search([
             ("model_id", "=", model),
             ("name", "=", name),
             ("user_id", "=", False if is_shared else self.env.uid),
+            action_scope_domain,
         ], limit=1)
         if is_default:
             default_domain = [
@@ -138,8 +142,7 @@ class SearchFavoriteSetHandler(BaseIntentHandler):
                 ("user_id", "=", False if is_shared else self.env.uid),
                 ("is_default", "=", True),
             ]
-            if action_id:
-                default_domain.append(("action_id", "=", action_id))
+            default_domain.append(action_scope_domain)
             Filter.search(default_domain).write({"is_default": False})
         if existing:
             existing.write(vals)

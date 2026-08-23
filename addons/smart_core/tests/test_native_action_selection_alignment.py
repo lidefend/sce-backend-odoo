@@ -75,12 +75,12 @@ class TestNativeActionSelectionAlignment(TransactionCase):
         self.assertEqual(list_scope.get("selection"), "multi")
         self.assertEqual(list_scope.get("visible_profiles"), ["readonly", "list"])
         self.assertEqual(form_scope.get("selection"), "none")
-        self.assertEqual(form_scope.get("visible_profiles"), ["create", "edit", "readonly"])
+        self.assertEqual(form_scope.get("visible_profiles"), ["edit", "readonly"])
         self.assertEqual(mixed_scope.get("selection"), "multi")
-        self.assertEqual(mixed_scope.get("visible_profiles"), ["readonly", "list"])
+        self.assertEqual(mixed_scope.get("visible_profiles"), ["edit", "readonly", "list"])
 
-    def test_app_action_config_record_bound_stat_action_excludes_create(self):
-        config = self.env["app.action.config"]
+    def test_parser_record_bound_stat_action_excludes_create(self):
+        parser = self.env["app.view.parser"]
         root = etree.fromstring(
             b"""
             <form string="Demo">
@@ -92,13 +92,13 @@ class TestNativeActionSelectionAlignment(TransactionCase):
             """
         )
 
-        scope = config._native_button_contract_scope(root.xpath(".//button")[0])
+        row = parser._button_to_action(root.xpath(".//button")[0], level="smart")
 
-        self.assertEqual(scope.get("level"), "smart")
-        self.assertEqual(scope.get("visible_profiles"), ["edit", "readonly"])
+        self.assertEqual(row.get("level"), "smart")
+        self.assertEqual(row.get("visible_profiles"), ["edit", "readonly"])
 
-    def test_app_action_config_independent_stat_action_preserves_create(self):
-        config = self.env["app.action.config"]
+    def test_parser_independent_stat_action_preserves_create(self):
+        parser = self.env["app.view.parser"]
         root = etree.fromstring(
             b"""
             <form string="Demo">
@@ -109,7 +109,40 @@ class TestNativeActionSelectionAlignment(TransactionCase):
             """
         )
 
-        scope = config._native_button_contract_scope(root.xpath(".//button")[0])
+        row = parser._button_to_action(root.xpath(".//button")[0], level="smart")
 
-        self.assertEqual(scope.get("level"), "smart")
-        self.assertEqual(scope.get("visible_profiles"), ["create", "edit", "readonly"])
+        self.assertEqual(row.get("level"), "smart")
+        self.assertEqual(row.get("visible_profiles"), ["create", "edit", "readonly"])
+
+    def test_app_action_config_only_projects_explicit_model_bindings(self):
+        model = self.env["ir.model"]._get("res.partner")
+        bound = self.env["ir.actions.act_window"].sudo().create({
+            "name": "Bound partner helper",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+            "binding_model_id": model.id,
+        })
+        unbound = self.env["ir.actions.act_window"].sudo().create({
+            "name": "Unbound partner entry",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+
+        config = self.env["app.action.config"].with_context(
+            contract_projection_readonly=True,
+        )._generate_from_ir_actions("res.partner")
+        action_ids = {
+            (row.get("payload") or {}).get("action_id")
+            for row in (config.actions_def or [])
+            if isinstance(row, dict)
+        }
+
+        self.assertIn(bound.id, action_ids)
+        self.assertNotIn(unbound.id, action_ids)
+        bound_row = next(
+            row for row in config.actions_def
+            if (row.get("payload") or {}).get("action_id") == bound.id
+        )
+        self.assertNotIn("create", bound_row.get("visible_profiles") or [])
+        self.assertEqual(bound_row.get("visible_profiles"), ["edit", "readonly", "list"])
+        self.assertFalse(hasattr(config, "_scan_view_buttons"))

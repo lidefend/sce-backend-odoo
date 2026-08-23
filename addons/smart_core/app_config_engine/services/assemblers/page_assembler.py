@@ -473,8 +473,13 @@ class PageAssembler:
             scfg = env['app.search.config']._generate_from_search(
                 model,
                 fields_get_snapshot=model_fields_snapshot,
+                search_view_data=view_projection_sources.get("search"),
             )
-            data["search"] = scfg.get_search_contract(filter_runtime=True, include_user_filters=True)
+            data["search"] = scfg.get_search_contract(
+                filter_runtime=True,
+                include_user_filters=True,
+                action_id=action.get("id") if isinstance(action, dict) else p.get("action_id") or p.get("actionId"),
+            )
             versions["search"] = scfg.version
         except KeyError:
             mark_missing("app.search.config")
@@ -532,7 +537,10 @@ class PageAssembler:
         # 6) 动作按钮 + 工具栏（元数据可 su_env，最终显隐由前端结合 groups/permissions 再次裁剪）
         try:
             acfg = su['app.action.config']._generate_from_ir_actions(model)
-            buttons_data = acfg.with_env(env).get_action_contract()
+            buttons_data = acfg.with_env(env).get_action_contract(
+                filter_runtime=True,
+                check_model_acl=True,
+            )
             versions["actions"] = acfg.version if getattr(acfg, 'version', None) else 1
         except KeyError:
             mark_missing("app.action.config")
@@ -1289,53 +1297,41 @@ class PageAssembler:
             },
         }
 
-    def _native_action_needs_existing_record(self, action: dict) -> bool:
+    @staticmethod
+    def _action_visible_in_render_profile(action: dict, profile: str) -> bool:
+        """Consume parser/config scope; never infer scope from action kind or name."""
         if not isinstance(action, dict):
             return False
-        payload = action.get("payload") if isinstance(action.get("payload"), dict) else {}
-        kind = str(action.get("kind") or "").strip().lower()
-        level = str(action.get("level") or "").strip().lower()
-        intent = str(action.get("intent") or "").strip().lower()
-        button_type = str(action.get("buttonType") or action.get("button_type") or payload.get("type") or "").strip().lower()
-        method = str(action.get("method") or action.get("name") or payload.get("method") or "").strip()
-        has_open_target = bool(
-            action.get("action_id")
-            or action.get("actionId")
-            or payload.get("action_id")
-            or payload.get("ref")
-            or payload.get("url")
-            or action.get("url")
-        )
-        if kind in {"open", "url", "client"} or button_type in {"action", "url"} or intent in {"open", "url"}:
-            return False
-        if intent.startswith("ui."):
-            return False
-        if has_open_target and kind not in {"object", "server", "mutation"} and button_type not in {"object"}:
-            return False
-        if kind in {"object", "server", "mutation"} or button_type == "object":
-            return True
-        if level in {"row", "smart"}:
-            return True
-        if method:
-            return True
-        return not kind and not button_type
+        normalized = str(profile or "").strip().lower()
+        if normalized in {"read", "view"}:
+            normalized = "readonly"
+        raw_profiles = action.get("visible_profiles")
+        if not isinstance(raw_profiles, list) or not raw_profiles:
+            # Existing records may carry old projections.  Create is the only
+            # profile where displaying an unscoped record action can execute
+            # against a non-existent record, so it fails closed.
+            return normalized != "create"
+        profiles = {
+            str(value or "").strip().lower()
+            for value in raw_profiles
+            if str(value or "").strip()
+        }
+        return normalized in profiles
 
     def _filter_render_profile_actions(self, rows, *, profile: str, record_id=None):
         if not isinstance(rows, list):
             return []
-        if profile != "create" or record_id:
+        if not profile:
             return rows
-        out = []
-        for row in rows:
-            if isinstance(row, dict) and self._native_action_needs_existing_record(row):
-                continue
-            out.append(row)
-        return out
+        return [
+            row for row in rows
+            if isinstance(row, dict) and self._action_visible_in_render_profile(row, profile)
+        ]
 
     def _filter_render_profile_layout_nodes(self, nodes, *, profile: str, record_id=None):
         if not isinstance(nodes, list):
             return []
-        if profile != "create" or record_id:
+        if not profile:
             return nodes
         child_keys = ("children", "pages", "tabs", "nodes", "items")
         out = []
@@ -1350,7 +1346,7 @@ class PageAssembler:
                 button_payload["buttonType"] = node.get("buttonType")
             if node.get("name") and "name" not in button_payload:
                 button_payload["name"] = node.get("name")
-            if node_type == "button" and self._native_action_needs_existing_record(button_payload):
+            if node_type == "button" and not self._action_visible_in_render_profile(button_payload, profile):
                 continue
             copied = dict(node)
             for key in child_keys:
@@ -1370,32 +1366,18 @@ class PageAssembler:
         profile = str(render_profile or data.get("render_profile") or "").strip().lower()
         if profile in {"read", "view"}:
             profile = "readonly"
-        if profile != "create" or record_id:
+        if profile not in {"create", "edit", "readonly"}:
             return
-        model_name = str(
-            data.get("model")
-            or ((data.get("head") or {}).get("model") if isinstance(data.get("head"), dict) else "")
-            or ""
-        ).strip()
-        try:
-            preserve_transient_actions = bool(model_name and getattr(self.env[model_name], "_transient", False))
-        except Exception:
-            preserve_transient_actions = False
-        if not preserve_transient_actions:
-            data["buttons"] = self._filter_render_profile_actions(data.get("buttons"), profile=profile, record_id=record_id)
+        data["buttons"] = self._filter_render_profile_actions(data.get("buttons"), profile=profile, record_id=record_id)
         toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
         for key in ("header", "sidebar", "footer"):
-            if not preserve_transient_actions:
-                toolbar[key] = self._filter_render_profile_actions(toolbar.get(key), profile=profile, record_id=record_id)
+            toolbar[key] = self._filter_render_profile_actions(toolbar.get(key), profile=profile, record_id=record_id)
         data["toolbar"] = toolbar if isinstance(toolbar, dict) else {"header": [], "sidebar": [], "footer": []}
         views = data.get("views") if isinstance(data.get("views"), dict) else {}
         form = views.get("form") if isinstance(views.get("form"), dict) else {}
         for key in ("header_buttons", "button_box", "stat_buttons", "business_actions"):
-            if key == "header_buttons" and preserve_transient_actions:
-                continue
             form[key] = self._filter_render_profile_actions(form.get(key), profile=profile, record_id=record_id)
-        if not preserve_transient_actions:
-            form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
+        form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
         views["form"] = form
         data["views"] = views
 

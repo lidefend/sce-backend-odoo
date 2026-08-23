@@ -42,6 +42,23 @@
    - 对已经解析/装配好的契约做运行态治理过滤。
    - 不生产业务事实。
 
+## Single Authority Projection
+
+兼容配置模型必须遵循“定义可全量读取、运行时事实按请求投影、执行仍回到 Odoo 权威”的统一规则：
+
+| 载体 | 唯一输入 | 允许的输出 | 禁止的平行解释 |
+|---|---|---|---|
+| `app.view.config` | 当前用户、action/view 作用域下的 effective `get_view` | 原生结构与 modifier 投影 | 扫描同模型全部 `ir.ui.view.arch_db` |
+| `app.action.config` | 显式 `binding_model_id` 动作 | 与当前用户 groups/模型 ACL 求交后的绑定动作 | 再扫描视图按钮、根据方法名猜 create/edit 作用域 |
+| `app.workflow.config` | state/stage 元数据和有效视图的显式观察 | 状态空间、诊断性 transition observation | 根据方法名猜目标状态或动作可用性 |
+| `app.permission.config` | `ir.model.access`、`ir.rule`、字段 groups | ACL 摘要与 global-AND/group-OR 规则投影 | 把全部记录规则展平成 OR，或替代 ORM 执行 |
+| `app.search.config` | effective search view；当前用户与当前 action 的 `ir.filters` | 搜索结构和请求级收藏 | 在 model 单例缓存用户/action 收藏，造成跨入口泄漏 |
+| server action resolution | 显式受管 server→window mapping | 可审查的页面目标 | 在读取菜单或契约时 probe/run server action |
+
+Contract V2 只消费一次这些最终投影：有效视图按钮来自 `app.view.config`，显式绑定动作来自 `app.action.config`，P0 本地模式动作来自带 `source_authority` 的受管 action group。顶层 toolbar、业务 action group 和原生节点不得被重复展开为第二组可执行动作。
+
+执行层不信任前端重建的 method、label 或状态枚举。可执行动作必须携带唯一 `actionId + backendIdentity + sourceWidgetId`，并在执行前重新加载同一 action/menu/record 上下文的 Contract V2 权威；未映射、缺失或歧义均 fail closed。
+
 ## No Business Fact Authority
 
 `app_config_engine` 的所有核心入口都必须保持 `NO_BUSINESS_FACT_AUTHORITY = True`。

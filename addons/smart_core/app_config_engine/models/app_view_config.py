@@ -183,6 +183,49 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             "projection_scope": "generic:%s:%s" % (model_name, view_type),
         }
 
+    @api.model
+    def _refine_projection_identity_from_view_data(self, identity, view_data, model_name, view_type):
+        """Bind default ``get_view`` resolution back to its native view.
+
+        Actions commonly declare ``(False, 'tree')`` and let Odoo choose the
+        model's effective view.  The returned payload carries that resolved
+        view id; dropping it makes an action-specific projection look generic
+        even though its architecture came from a concrete native authority.
+        """
+        current = dict(identity or {})
+        raw_view_id = view_data.get("_source_view_id") if isinstance(view_data, dict) else None
+        try:
+            resolved_view_id = int(raw_view_id or 0)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("resolved view id is invalid") from exc
+        if resolved_view_id <= 0:
+            return current
+        view = self.env["ir.ui.view"].sudo().browse(resolved_view_id).exists()
+        expected_type = "tree" if view_type == "list" else view_type
+        actual_type = "tree" if view and view.type == "list" else view.type if view else ""
+        if not view or view.model != model_name or actual_type != expected_type:
+            raise ValueError(
+                "resolved view %s does not match %s.%s"
+                % (resolved_view_id, model_name, expected_type)
+            )
+        declared_view_id = int(current.get("source_view_id") or 0)
+        if declared_view_id and declared_view_id != resolved_view_id:
+            raise ValueError(
+                "resolved view %s conflicts with declared view %s"
+                % (resolved_view_id, declared_view_id)
+            )
+        action_id = int(current.get("action_id") or 0)
+        return {
+            "action_id": action_id or False,
+            "source_view_id": resolved_view_id,
+            "projection_scope": (
+                "action:%s:%s:%s:view:%s"
+                % (action_id, model_name, expected_type, resolved_view_id)
+                if action_id
+                else "view:%s:%s:%s" % (resolved_view_id, model_name, expected_type)
+            ),
+        }
+
     # ========= 契约键白名单（类级常量） =========
     _ALLOWED_BY_VT = {
         "common": {"modifiers", "toolbar", "search", "order"},
@@ -344,6 +387,12 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             view_data = view_data if isinstance(view_data, dict) else self._safe_get_view_data(model_name, view_type)
             if not view_data:
                 raise ValueError(_("无法解析视图：%s.%s") % (model_name, view_type))
+            identity = self._refine_projection_identity_from_view_data(
+                identity,
+                view_data,
+                model_name,
+                view_type,
+            )
 
             _logger.debug(
                 "VIEW_PARSE_DEBUG: model=%s view_type=%s view_data_keys=%s",
@@ -618,6 +667,15 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 'fields': raw.get('fields', {}),
                 'toolbar': raw.get('toolbar', {}),
             }
+            raw_view_id = raw.get('id') or raw.get('view_id')
+            if raw_view_id not in (None, False, ''):
+                try:
+                    source_view_id = int(raw_view_id)
+                except (TypeError, ValueError) as exc:
+                    raise ValueError("resolved view id is invalid") from exc
+                if source_view_id <= 0:
+                    raise ValueError("resolved view id must be a positive integer")
+                payload['_source_view_id'] = source_view_id
             try:
                 payload['_arch_root'] = etree.fromstring(payload['arch'].encode('utf-8'))
             except Exception as exc:

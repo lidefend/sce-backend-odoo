@@ -52,16 +52,17 @@ class AppPermissionConfig(models.Model):
         "amount_total": {"groups_ids":[1,3], "groups_xmlids":["base.group_user"]},
         ...
       },
-      "rules": {                               # 记录规则（来自 ir.rule），按操作桶分组
+      "rules": {                               # 记录规则（来自 ir.rule），按 Odoo 代数分组
         "read": {
-          "mode": "OR",
-          "clauses": [
+          "mode": "GLOBAL_AND_GROUP_OR",
+          "global_clauses": [],                 # 全局规则之间 AND
+          "group_clauses": [                    # 当前用户命中的组规则之间 OR
             {"id": 12, "name":"My Records", "domain_raw":"[('user_id','=',user.id)]", "domain":[["user_id","=",["uid"]]], "groups_xmlids": ["base.group_user"], "global": false}
           ]
         },
-        "write": {"mode": "OR", "clauses": []},
-        "create": {"mode": "OR", "clauses": []},
-        "unlink": {"mode": "OR", "clauses": []}
+        "write": {"mode": "GLOBAL_AND_GROUP_OR", "global_clauses": [], "group_clauses": []},
+        "create": {"mode": "GLOBAL_AND_GROUP_OR", "global_clauses": [], "group_clauses": []},
+        "unlink": {"mode": "GLOBAL_AND_GROUP_OR", "global_clauses": [], "group_clauses": []}
       },
       "order_default": "id desc",
       "domain_default": []
@@ -189,13 +190,18 @@ class AppPermissionConfig(models.Model):
           "groups": [1,3],
           "rights": {"read":true,"write":true,"create":true,"unlink":false},
           "rules": {
-            "read": {"mode":"OR","clauses":[...]},   # 仅保留对该用户命中的规则子集
+            "read": {                            # 仅保留对该用户生效的规则
+              "mode":"GLOBAL_AND_GROUP_OR",
+              "global_clauses":[...],
+              "group_clauses":[...]
+            },
             "write": {...}, "create": {...}, "unlink": {...}
           }
         }
         说明：
         - ACL 合并策略：只要命中任一“允许该操作”的分组或 __all__，即该操作为 True
-        - 规则合并策略：取 groups 为空（全局）或与用户组有交集的 rule，操作维度下用 OR 列表返回（不做求值）
+        - 规则合并策略：全局规则之间 AND，命中的组规则之间 OR，
+          两组再 AND。本投影不替代 ORM 的 ``check_access_rule`` 执行权威。
         """
         self.ensure_one()
         uid = uid or self.env.uid
@@ -248,15 +254,36 @@ class AppPermissionConfig(models.Model):
                 _apply_acl_for(gkey)
 
         # 2) 过滤命中记录规则（按操作分桶；规则域仍由服务层在具体查询时 AND/OR 计算）
-        def _hit_clause(clause):
+        def _hit_group_clause(clause):
+            group_ids = {
+                int(value) for value in (clause.get('groups_ids') or [])
+                if isinstance(value, int) or str(value).isdigit()
+            }
             xids = set(clause.get('groups_xmlids') or [])
-            return (not xids) or bool({xmlid_to_id.get(x) for x in xids} & user_groups)
+            return bool(group_ids & user_groups) or bool({xmlid_to_id.get(x) for x in xids} & user_groups)
 
         eff_rules = {}
         for op in ('read', 'write', 'create', 'unlink'):
-            bucket = rules.get(op) or {"mode": "OR", "clauses": []}
-            clauses = [c for c in (bucket.get('clauses') or []) if _hit_clause(c)]
-            eff_rules[op] = {"mode": bucket.get('mode') or 'OR', "clauses": clauses}
+            bucket = rules.get(op) or {}
+            global_clauses = [
+                dict(clause)
+                for clause in (bucket.get('global_clauses') or [])
+                if isinstance(clause, dict)
+            ]
+            group_clauses = [
+                dict(clause)
+                for clause in (bucket.get('group_clauses') or [])
+                if isinstance(clause, dict) and _hit_group_clause(clause)
+            ]
+            eff_rules[op] = {
+                "mode": "GLOBAL_AND_GROUP_OR",
+                "global_clauses": global_clauses,
+                "group_clauses": group_clauses,
+                # Compatibility carrier for read-only diagnostics.  The mode
+                # above is mandatory; consumers must not OR this flat list.
+                "clauses": [*global_clauses, *group_clauses],
+                "execution_authority": "odoo.orm.check_access_rule",
+            }
 
         return {
             "groups": list(user_groups),
@@ -313,16 +340,27 @@ class AppPermissionConfig(models.Model):
     def _collect_record_rules(self, model_name):
         """
         采集 ir.rule（记录规则），按操作分桶：
-        - Odoo 的规则在同一操作上通常以 OR 组合（命中任一条即放行）
-        - 这里不做求值，仅把 domain_raw 与可解析的 domain（若安全）都下发，交由服务层在具体场景组合
+        - 全局规则（无 groups）之间 AND。
+        - 用户命中的组规则之间 OR，再与全局规则 AND。
+        - 这里仅做可审计投影，运行时执行仍由 Odoo ORM 负责。
         """
         Rule = self.env['ir.rule'].sudo()
         rules = Rule.search([('model_id.model', '=', model_name), ('active', '=', True)]) if self._field_exists(Rule, 'active') \
                 else Rule.search([('model_id.model', '=', model_name)])
-        buckets = {op: {"mode": "OR", "clauses": []} for op in ('read', 'write', 'create', 'unlink')}
+        buckets = {
+            op: {
+                "mode": "GLOBAL_AND_GROUP_OR",
+                "global_clauses": [],
+                "group_clauses": [],
+                "clauses": [],
+                "execution_authority": "odoo.orm.check_access_rule",
+            }
+            for op in ('read', 'write', 'create', 'unlink')
+        }
 
         for r in rules:
             # 规则绑定的组
+            group_ids = list(r.groups.ids)
             xids = []
             try:
                 if hasattr(r.groups, 'get_external_id'):
@@ -335,20 +373,24 @@ class AppPermissionConfig(models.Model):
                 xids = []
             # 域
             raw = r.domain_force or '[]'
-            dom = []
+            dom = None
+            domain_decoded = False
             try:
                 val = safe_eval(raw, {})
                 if isinstance(val, (list, tuple)):
                     dom = list(val)
+                    domain_decoded = True
             except Exception:
-                dom = []
+                dom = None
             clause = {
                 "id": r.id,
                 "name": r.name or '',
                 "domain_raw": raw,
                 "domain": dom,
+                "domain_decoded": domain_decoded,
+                "groups_ids": group_ids,
                 "groups_xmlids": xids,
-                "global": not bool(xids)  # 没有 groups → 全局规则
+                "global": not bool(group_ids)  # 没有 groups → 全局规则
             }
 
             # 分配到操作桶
@@ -356,10 +398,14 @@ class AppPermissionConfig(models.Model):
             for op, fld in (('read', 'perm_read'), ('write', 'perm_write'), ('create', 'perm_create'), ('unlink', 'perm_unlink')):
                 if self._field_exists(r, fld):
                     if getattr(r, fld):
+                        target = "global_clauses" if clause["global"] else "group_clauses"
+                        buckets[op][target].append(dict(clause))
                         buckets[op]["clauses"].append(dict(clause))
                         has_perm_flags = True
             # 兼容老版本：没有 perm_* 字段 → 默认归到 read
             if not has_perm_flags:
+                target = "global_clauses" if clause["global"] else "group_clauses"
+                buckets['read'][target].append(dict(clause))
                 buckets['read']["clauses"].append(dict(clause))
 
         return buckets

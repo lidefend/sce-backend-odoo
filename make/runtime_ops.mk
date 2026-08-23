@@ -489,6 +489,7 @@ verify.view.orchestration_product_boundary_guard: guard.prod.forbid
 verify.app_config_engine.boundary_guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/app_config_engine_boundary_guard.py
 	@python3 scripts/verify/app_config_engine_boundary_guard.py
+	@python3 -m unittest scripts.verify.test_app_config_engine_authority_guard
 
 verify.form_view.scope.boundary_guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/form_view_scope_boundary_guard.py

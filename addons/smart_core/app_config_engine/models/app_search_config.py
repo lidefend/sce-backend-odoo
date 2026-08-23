@@ -50,7 +50,7 @@ class AppSearchConfig(models.Model):
     # ======================= 生成（聚合） =======================
 
     @api.model
-    def _generate_from_search(self, model_name, fields_get_snapshot=None):
+    def _generate_from_search(self, model_name, fields_get_snapshot=None, search_view_data=None):
         """
         生成/更新 “搜索契约”：
         1) 解析 search 视图：filters（含 domain/context/groups）、默认 group_by
@@ -63,12 +63,13 @@ class AppSearchConfig(models.Model):
                 raise ValueError(_("模型不存在：%s") % model_name)
 
             # 1) 视图解析
-            view = self._safe_get_search_view(model_name)
+            view = search_view_data if isinstance(search_view_data, dict) else self._safe_get_search_view(model_name)
             arch = (view or {}).get('arch') or ''
             view_filters, view_groupbys, view_fields = self._parse_search_view(arch)
 
-            # 2) ir.filters（收藏/共享）
-            saved_filters = self._collect_ir_filters(model_name)
+            # 2) ir.filters 是用户/action 作用域运行时事实，不写入
+            # model 级单例缓存。get_search_contract() 按当前请求动态投影。
+            saved_filters = []
 
             # 3) group_by 候选（基于字段元数据）
             groupby_candidates = self._infer_groupby_candidates(
@@ -133,7 +134,7 @@ class AppSearchConfig(models.Model):
 
     # ======================= 标准化输出 =======================
 
-    def get_search_contract(self, filter_runtime=True, include_user_filters=True):
+    def get_search_contract(self, filter_runtime=True, include_user_filters=True, action_id=None):
         """
         返回标准化搜索契约：
         - filter_runtime=True：按当前用户组过滤“视图内置 filter”（基于 groups_xmlids）
@@ -191,11 +192,12 @@ class AppSearchConfig(models.Model):
                     filtered.append(f)
             data['filters'] = filtered
 
-        # 只保留当前用户可见的 saved_filters（本人 + 共享）
+        # saved filters 不从 model 级缓存读取。每次按当前用户与
+        # action scope 重建，防止同模型多 action 之间串收藏。
         if include_user_filters:
             uid = self.env.uid
             visible_saved = []
-            for sf in data.get('saved_filters', []):
+            for sf in self._collect_ir_filters(self.model, action_id=action_id):
                 owner = sf.get('owner')
                 shared = sf.get('is_shared', False)
                 if shared or (owner and int(owner) == uid):
@@ -442,7 +444,7 @@ class AppSearchConfig(models.Model):
 
     # ======================= ir.filters 收集 =======================
 
-    def _collect_ir_filters(self, model_name):
+    def _collect_ir_filters(self, model_name, action_id=None):
         """
         收集 ir.filters（收藏筛选器）：
         - user_id = False → 共享
@@ -453,8 +455,17 @@ class AppSearchConfig(models.Model):
         if 'ir.filters' not in self.env:
             return res
         F = self.env['ir.filters'].sudo()
-        # 只按 model_id 匹配；不过期望不同版本字段名相同
-        flt = F.search([('model_id', '=', model_name)])
+        try:
+            scoped_action_id = int(action_id or 0)
+        except (TypeError, ValueError):
+            scoped_action_id = 0
+        domain = [('model_id', '=', model_name)]
+        if 'action_id' in F._fields:
+            if scoped_action_id > 0:
+                domain.append(('action_id', 'in', [False, scoped_action_id]))
+            else:
+                domain.append(('action_id', '=', False))
+        flt = F.search(domain)
         for r in flt:
             # domain/context 在 ir.filters 中通常为字符串；契约层统一补出结构化值，
             # 前端只消费契约，不解析 Odoo domain/context 表达式。

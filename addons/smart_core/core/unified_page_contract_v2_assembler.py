@@ -3001,7 +3001,43 @@ def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]
     )
 
     if normalized:
-        _append_actions(contract, normalized, source_widget_id="page.header")
+        existing_rules = [
+            row
+            for row in _list(_dict(contract.get("actionContract")).get("actionRuleList"))
+            if isinstance(row, dict)
+        ]
+        projected: list[dict[str, Any]] = []
+        for runtime_action in normalized:
+            runtime_button = _dict(runtime_action.get("button"))
+            runtime_name = _text(runtime_button.get("name") or runtime_button.get("method"))
+            runtime_type = _text(
+                runtime_button.get("type") or runtime_button.get("buttonType"),
+                "object",
+            ).lower()
+            native_occurrences = [
+                row
+                for row in existing_rules
+                if runtime_name
+                and _text(_dict(row.get("button")).get("name") or _dict(row.get("button")).get("method")) == runtime_name
+                and _text(
+                    _dict(row.get("button")).get("type") or _dict(row.get("button")).get("buttonType"),
+                    "object",
+                ).lower() == runtime_type
+                and _dict(row.get("nativeIdentity") or row.get("native_identity")).get("authoritative") is True
+                and _text(_dict(row.get("nativeIdentity") or row.get("native_identity")).get("native_locator"))
+            ]
+            if native_occurrences and not _dict(
+                runtime_action.get("nativeIdentity") or runtime_action.get("native_identity")
+            ):
+                projected.extend({
+                    **deepcopy(runtime_action),
+                    "native_identity": deepcopy(
+                        _dict(native_rule.get("nativeIdentity") or native_rule.get("native_identity"))
+                    ),
+                } for native_rule in native_occurrences)
+            else:
+                projected.append(runtime_action)
+        _append_actions(contract, projected, source_widget_id="page.header")
         _merge_action_rules_by_backend_identity(contract)
     return contract
 
@@ -3751,6 +3787,43 @@ def _append_action_schema(contract: dict[str, Any], actions: dict[str, Any], *, 
         contract["statusContract"]["buttonStatus"].append({"btnId": f"btn.{action_key}", "visible": True, "disabled": False})
 
 
+def _governed_platform_action_group_rows(ui: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return only P0-local mode actions from their single governed carrier."""
+    rows: list[dict[str, Any]] = []
+    for raw_group in _list(ui.get("action_groups")):
+        group = _dict(raw_group)
+        authority = _dict(group.get("source_authority"))
+        if not (
+            authority.get("projection_only") is True
+            and authority.get("no_business_fact_authority") is True
+            and _text(authority.get("owner_layer")) == "business_view_orchestration"
+        ):
+            continue
+        for raw_action in _list(group.get("actions")):
+            action = _dict(raw_action)
+            intent = _text(action.get("intent"))
+            source_widget_id = _text(action.get("sourceWidgetId") or action.get("source_widget_id"))
+            target_scope = _text(action.get("target_scope") or action.get("targetScope"))
+            if not (
+                intent.startswith("ui.")
+                and target_scope in {"mode", "widget"}
+                and (source_widget_id.startswith("mode.") or source_widget_id.startswith("field."))
+            ):
+                continue
+            rows.append({
+                **action,
+                # ``mode`` is a PageAssembler-local orchestration scope.  It
+                # maps to the closed V2 runtime scope; falling through the
+                # generic normalizer would incorrectly promote it to page.
+                "target_scope": "runtime" if target_scope == "mode" else "widget",
+                "source_authority": authority,
+                "_source_channel": "governed_platform_action_group",
+                "_presentation_priority": 100,
+                "_presentation_authority": "native_contract",
+            })
+    return rows
+
+
 def _append_ui_contract_actions(
     contract: dict[str, Any],
     ui: dict[str, Any],
@@ -3814,15 +3887,22 @@ def _append_ui_contract_actions(
             if isinstance(row, dict):
                 rows.append({**row, "_source_channel": f"native_view_toolbar.{slot}"})
     if not explicit_form_view:
+        # Without an effective native form carrier these top-level contract
+        # rows are the only action source and retain their existing semantics.
         for key, priority, authority in (
             ("buttons", 100, "native_contract"),
             ("business_actions", 300, "product_contract"),
         ):
             for row in _list(ui.get(key)):
                 if isinstance(row, dict):
+                    source_kind = _text(_dict(row.get("source_authority")).get("kind"))
                     rows.append({
                         **row,
-                        "_source_channel": key,
+                        "_source_channel": (
+                            "bound_model_action"
+                            if source_kind == "odoo_native_bound_action_projection"
+                            else key
+                        ),
                         "_presentation_priority": priority,
                         "_presentation_authority": authority,
                     })
@@ -3832,8 +3912,14 @@ def _append_ui_contract_actions(
                 if isinstance(row, dict):
                     rows.append({**row, "_source_channel": f"contract_toolbar.{key}"})
         for group in _list(ui.get("action_groups")):
-            group_row = _dict(group)
-            for row in _list(group_row.get("actions")):
+            authority = _dict(_dict(group).get("source_authority"))
+            if (
+                authority.get("projection_only") is True
+                and authority.get("no_business_fact_authority") is True
+                and _text(authority.get("owner_layer")) == "business_view_orchestration"
+            ):
+                continue
+            for row in _list(_dict(group).get("actions")):
                 if isinstance(row, dict):
                     rows.append({
                         **row,
@@ -3841,6 +3927,33 @@ def _append_ui_contract_actions(
                         "_presentation_priority": 250,
                         "_presentation_authority": "product_contract",
                     })
+    else:
+        # An effective native form already owns business buttons.  Only
+        # explicitly bound Odoo actions and P0 projection-only controls may
+        # enter from top-level carriers; ungoverned overlays fail closed.
+        for row in _list(ui.get("buttons")):
+            if not isinstance(row, dict):
+                continue
+            source_authority = _dict(row.get("source_authority"))
+            source_kind = _text(source_authority.get("kind"))
+            governed_projection = (
+                source_authority.get("projection_only") is True
+                and source_authority.get("no_business_fact_authority") is True
+                and _text(source_authority.get("owner_layer")) == "business_view_orchestration"
+            )
+            if source_kind != "odoo_native_bound_action_projection" and not governed_projection:
+                continue
+            rows.append({
+                **row,
+                "_source_channel": (
+                    "bound_model_action"
+                    if source_kind == "odoo_native_bound_action_projection"
+                    else "governed_platform_action"
+                ),
+                "_presentation_priority": 100,
+                "_presentation_authority": "native_contract",
+            })
+    rows.extend(_governed_platform_action_group_rows(ui))
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:

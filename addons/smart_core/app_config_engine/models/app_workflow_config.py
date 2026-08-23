@@ -12,7 +12,7 @@ class AppWorkflowConfig(models.Model):
     _rec_name = 'model'
     _order = 'model'
     SOURCE_KIND = "odoo_native_workflow_projection"
-    SOURCE_AUTHORITIES = ("ir.ui.view:form.buttons", "ir.model.fields:state", "mail.activity.type")
+    SOURCE_AUTHORITIES = ("ir.model.fields:state", "mail.activity.type")
 
     # ===== 基础信息 =====
     model = fields.Char('Model', required=True, index=True)
@@ -43,6 +43,7 @@ class AppWorkflowConfig(models.Model):
             "projection_only": True,
             "rebuildable": True,
             "runtime_authority": "odoo_model_methods_and_mail_activity",
+            "observed_inputs": ["ir.ui.view:form.buttons"],
             "no_business_fact_authority": True,
         }
 
@@ -263,8 +264,11 @@ class AppWorkflowConfig(models.Model):
         """
         现代 Odoo：无旧引擎 → 依据
         - fields_get 中的 'state'（selection）或 '...stage...'（many2one）识别状态空间
-        - 解析 form 视图按钮的 states 属性，推断“允许的起始状态”
-        - 尝试基于方法名猜测“目标状态”（不可保证命中；猜不中则 to=None）
+        - 解析有效 form 视图按钮的显式 ``states`` 属性，仅作可重建的
+          展示/诊断投影。
+
+        该配置不是工作流运行时权威：未显式声明 ``states`` 不等于
+        “任意状态可用”，方法名也不能推导目标状态。
         """
         Model = self.env[model_name].sudo()
         fget = fields_get_snapshot if isinstance(fields_get_snapshot, dict) else Model.fields_get()
@@ -285,14 +289,9 @@ class AppWorkflowConfig(models.Model):
         transitions = []
         for b in buttons:
             from_states = [s for s in (b.get('states') or []) if s in state_keys]  # 限制到有效状态
-            if not from_states and state_keys:
-                # 未声明 states → 允许从任意状态
-                from_states = state_keys[:]
-
-            to_state = self._guess_to_state(b.get('name') or '', state_keys)
             transitions.append({
                 "from": sorted(list(set(from_states))),
-                "to": to_state,  # 可能为 None（未知）
+                "to": None,
                 "trigger": {
                     "kind": "object" if b.get('type') == 'object' else "open",
                     "name": b.get('name') or '',
@@ -304,7 +303,12 @@ class AppWorkflowConfig(models.Model):
                     "states_attr": b.get('states') or []
                 },
                 "groups_xmlids": b.get('groups_xmlids') or [],
-                "notes": "inferred from form buttons"
+                "authority": {
+                    "availability": "unresolved",
+                    "target_state": "unresolved",
+                    "runtime_authority": "odoo_model_method",
+                },
+                "notes": "observed from effective form button; not runtime authority"
             })
 
         return self._build_workflow_def(
@@ -313,7 +317,10 @@ class AppWorkflowConfig(models.Model):
             states=states,
             state_field=state_field,
             transitions=transitions,
-            extra={"source": "fields_get + form.buttons"}
+            extra={
+                "source": "fields_get + effective_form_button_observation",
+                "transition_authority": "diagnostic_only",
+            }
         )
 
     # ======================= 采集：mail 活动建议 =======================
@@ -375,37 +382,6 @@ class AppWorkflowConfig(models.Model):
         for fname, meta in (fget or {}).items():
             if meta.get('type') == 'many2one' and ('stage' in fname or (meta.get('relation') or '').endswith('.stage')):
                 return fname
-        return None
-
-    def _guess_to_state(self, method_name, available_states):
-        """
-        基于常见方法名启发式猜测目标状态（猜不中返回 None）：
-        - confirm/approve/validate -> sale/confirmed/approved/done 中择优
-        - cancel -> cancel
-        - set_to_done/mark_done/done -> done
-        - reset/draft -> draft
-        - refuse/reject -> refuse/cancel
-        """
-        name = (method_name or '').lower()
-        if not name or not available_states:
-            return None
-
-        def pick(candidates):
-            for c in candidates:
-                if c in available_states:
-                    return c
-            return None
-
-        if any(k in name for k in ('confirm', 'approve', 'validate', 'accept')):
-            return pick(['sale', 'confirmed', 'approved', 'done'])
-        if 'cancel' in name or 'reject' in name or 'refuse' in name:
-            return pick(['cancel', 'rejected', 'refused'])
-        if 'done' in name or 'complete' in name or 'close' in name:
-            return pick(['done', 'closed'])
-        if 'draft' in name or 'reset' in name or 'set_to_draft' in name:
-            return pick(['draft'])
-        if 'send' in name:
-            return pick(['sent'])
         return None
 
     # ======================= 工具：表单按钮解析 =======================
