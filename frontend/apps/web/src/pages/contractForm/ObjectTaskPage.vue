@@ -97,13 +97,13 @@
       />
     </section>
     <section
-      v-if="preExecutionInputNodes.length"
+      v-if="preExecutionInputTitle && preExecutionInputNodes.length"
       class="object-task-page__pre-execution-input"
-      aria-label="付款执行前补齐"
+      :aria-label="preExecutionInputTitle"
       data-floorplan-region="pre-execution-input"
       data-canonical-zone="primary"
     >
-      <strong class="object-task-page__section-title">付款执行前补齐</strong>
+      <strong class="object-task-page__section-title">{{ preExecutionInputTitle }}</strong>
       <CanonicalFormNodeRenderer
         v-for="node in preExecutionInputNodes"
         :key="node.nodeId"
@@ -269,6 +269,7 @@ defineProps<{
   coreInputNodes: CanonicalFormNode[];
   conditionInputNodes: CanonicalFormNode[];
   preExecutionInputNodes: CanonicalFormNode[];
+  preExecutionInputTitle?: string;
   supplementaryInputNodes: CanonicalFormNode[];
   contextNodes: CanonicalFormNode[];
   overflowContextNodes: CanonicalFormNode[];

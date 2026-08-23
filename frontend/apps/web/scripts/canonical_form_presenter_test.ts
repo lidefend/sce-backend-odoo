@@ -740,6 +740,11 @@ semanticEditNameNode.fields.push({
 });
 const semanticEditFloorplan = composeCanonicalFormFloorplan(semanticEditModel);
 assert.equal(semanticEditFloorplan.decisionMode, true, 'semantic create/edit forms must enter the Product Floorplan');
+assert.equal(
+  semanticEditFloorplan.preExecutionInputTitle,
+  '',
+  'a later-stage section must not render a platform-authored business title without contract authority',
+);
 assert.deepEqual(
   collectFields(semanticEditFloorplan.summaryNodes).map((field) => field.fieldCode),
   [],

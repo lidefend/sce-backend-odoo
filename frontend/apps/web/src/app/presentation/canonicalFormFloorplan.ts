@@ -11,6 +11,7 @@ export type CanonicalFormFloorplan = {
   coreInputNodes: CanonicalFormNode[];
   conditionInputNodes: CanonicalFormNode[];
   preExecutionInputNodes: CanonicalFormNode[];
+  preExecutionInputTitle: string;
   supplementaryInputNodes: CanonicalFormNode[];
   contextNodes: CanonicalFormNode[];
   overflowContextNodes: CanonicalFormNode[];
@@ -318,6 +319,11 @@ function suppressRepeatedTitles(nodes: CanonicalFormNode[], seen: Set<string>): 
   return nodes.map(project);
 }
 
+function authoritativeSectionTitle(nodes: CanonicalFormNode[]): string {
+  const titles = [...new Set(nodes.map((node) => node.title.trim()).filter(Boolean))];
+  return titles.length === 1 ? titles[0] : '';
+}
+
 function projectContextNode(node: CanonicalFormNode): CanonicalFormNode {
   const nodeKind = node.kind.trim().toLowerCase();
   if ((node.semanticRole && !['context', 'activity'].includes(node.semanticRole)) || nodeKind === 'relation') {
@@ -501,6 +507,7 @@ export function composeCanonicalFormFloorplan(
   const titledCoreNodes = suppressRepeatedTitles(coreInputNodes, titleRegistry);
   const titledConditionNodes = suppressRepeatedTitles(conditionInputNodes, titleRegistry);
   const titledPreExecutionNodes = suppressRepeatedTitles(preExecutionInputNodes, titleRegistry);
+  const preExecutionInputTitle = authoritativeSectionTitle(preExecutionInputNodes);
   const titledSupplementaryNodes = suppressRepeatedTitles(supplementaryInputNodes, titleRegistry);
   const titledContextNodes = suppressRepeatedTitles(contextPartition.direct, titleRegistry);
   const titledOverflowContextNodes = suppressRepeatedTitles(
@@ -522,6 +529,7 @@ export function composeCanonicalFormFloorplan(
     coreInputNodes: titledCoreNodes,
     conditionInputNodes: titledConditionNodes,
     preExecutionInputNodes: titledPreExecutionNodes,
+    preExecutionInputTitle,
     supplementaryInputNodes: titledSupplementaryNodes,
     contextNodes: titledContextNodes,
     overflowContextNodes: titledOverflowContextNodes,

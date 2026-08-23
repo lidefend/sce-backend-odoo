@@ -32,6 +32,7 @@
         :core-input-nodes="floorplan.coreInputNodes"
         :condition-input-nodes="floorplan.conditionInputNodes"
         :pre-execution-input-nodes="floorplan.preExecutionInputNodes"
+        :pre-execution-input-title="floorplan.preExecutionInputTitle"
         :supplementary-input-nodes="floorplan.supplementaryInputNodes"
         :context-nodes="floorplan.contextNodes"
         :overflow-context-nodes="floorplan.overflowContextNodes"
@@ -211,7 +212,7 @@ const fieldCount = computed(() => props.renderModel
   : 0);
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'tdesign-modern');
 const emptyFloorplan: CanonicalFormFloorplan = {
-    summaryNodes: [], taskNodes: [], coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], supplementaryInputNodes: [],
+    summaryNodes: [], taskNodes: [], coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], preExecutionInputTitle: '', supplementaryInputNodes: [],
     contextNodes: [], overflowContextNodes: [], riskNodes: [], auditNodes: [], auditDeclared: false,
   relationNodes: [], subordinateNodes: [], blockedActions: [], directActions: [], overflowActions: [],
   effectivePrimaryKey: '', decisionMode: false,
