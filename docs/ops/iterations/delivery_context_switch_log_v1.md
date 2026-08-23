@@ -5436,3 +5436,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   principal.
 - Rollback: revert the cases, ten snapshots, catalog delta and principal test as
   one evidence-carrier unit. No database restore is required.
+
+## Runtime user-management menu authority alignment (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `7305c0c3`.
+- Formal Product Layer / Layer Target / Module: P1 construction product surface
+  consuming P0 authority / runtime user-management menu declaration /
+  `smart_construction_core`.
+- Reason / boundary: the action already admitted both the tenant business
+  configuration administrator and canonical platform administrator, while its
+  menu admitted only the tenant administrator. The menu now carries both group
+  XMLIDs, preserving tenant administration and making the action/menu authority
+  pair consistent. No ACL, record rule, model method or user membership changed.
+- Why Here / Why Not Elsewhere: an industry module owns this product menu, but
+  the platform-administrator identity remains the P0 XMLID
+  `smart_core.group_smart_core_admin`. The frontend and runtime policy must not
+  synthesize access to compensate for a missing XML declaration.
+- Blast radius / validation: one menu XML record. XML parsing passed; the
+  platform-company manifest guard advanced beyond the corrected assertion; and
+  the governed `smart_construction_core` incremental upgrade plus local demo
+  authority verification passed on `sc-local-dev / sc_dev_demo`.
+- Independent guard blocker: the same broad guard subsequently reads the stale
+  path `addons/smart_construction_custom/models/security_policy.py`, which is
+  absent from the current repository layout. That P4 guard-path defect is not
+  part of this product-menu change.
+- Rollback: revert this menu record and repeat the governed module upgrade. No
+  fixture reset or database repair is required.
