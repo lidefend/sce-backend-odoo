@@ -2,6 +2,7 @@
 
 import ast
 from contextlib import contextmanager
+import json
 import sys
 import types
 import unittest
@@ -38,6 +39,19 @@ class _User:
 
 
 class ContractSnapshotPrincipalTest(unittest.TestCase):
+    def test_release_operator_cases_use_governed_platform_admin(self):
+        cases = json.loads((ROOT / "docs" / "contract" / "cases.yml").read_text(encoding="utf-8"))
+        release_operator_cases = [
+            case
+            for case in cases
+            if str(case.get("intent") or "").startswith("release.operator.")
+        ]
+        self.assertEqual(len(release_operator_cases), 10)
+        self.assertEqual(
+            {case.get("user") for case in release_operator_cases},
+            {"sc_test_admin"},
+        )
+
     def test_shell_principal_is_bound_and_resolver_is_restored(self):
         module_name = "snapshot_principal_fixture"
         original = lambda: {"principal_type": "machine"}

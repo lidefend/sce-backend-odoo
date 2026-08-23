@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[2]
+CUSTOM_SECURITY_POLICY_GLOB = "customer_addons/*/models/security_policy.py"
 
 PLATFORM_DATA_FILES = {
     "data/sc_subscription_default.xml",
@@ -183,10 +184,13 @@ FORBIDDEN_LEGACY_ADMIN_CHECKS = {
     "addons/smart_construction_core/models/support/sc_workflow.py",
     "addons/smart_construction_custom/models/security_policy.py",
 }
+OPTIONAL_RETIRED_GUARD_SOURCE_PATHS = {
+    "addons/smart_construction_core/models/support/history_todo.py",
+    "addons/smart_construction_custom/models/security_policy.py",
+}
 FORBIDDEN_DIRECT_SYSTEM_ADMIN_CHECKS = {
     "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py",
     "addons/smart_core/controllers/intent_dispatcher.py",
-    "addons/smart_core/controllers/platform_menu_api.py",
     "addons/smart_core/core/base_handler.py",
     "addons/smart_core/core/request_diagnostics.py",
     "addons/smart_core/handlers/usage_track.py",
@@ -199,12 +203,39 @@ FORBIDDEN_DIRECT_SYSTEM_ADMIN_CHECKS = {
     "addons/smart_construction_core/models/support/scene_orchestration.py",
     "addons/smart_construction_portal/services/portal_contract_service.py",
 }
+GENERAL_AUTHENTICATED_NAVIGATION_SURFACES = {
+    "addons/smart_core/controllers/platform_menu_api.py",
+}
 
 
 def _manifest_data(module: str) -> list[str]:
     path = ROOT / "addons" / module / "__manifest__.py"
     payload = ast.literal_eval(path.read_text(encoding="utf-8"))
     return list(payload.get("data") or [])
+
+
+def _custom_security_policy_paths(root: Path) -> list[Path]:
+    return sorted(root.glob(CUSTOM_SECURITY_POLICY_GLOB))
+
+
+def _custom_security_policy_errors(path: Path, text: str) -> list[str]:
+    errors = []
+    if "platform_admin_group_xmlids" not in text:
+        errors.append(f"{path}: must consume platform admin group xmlids from smart_core.security.platform_admin")
+    if '"smart_construction_core.group_sc_cap_config_admin"' in text or (
+        "'smart_construction_core.group_sc_cap_config_admin'" in text
+    ):
+        errors.append(f"{path}: must not hardcode the legacy construction platform-admin group")
+    return errors
+
+
+def _guard_source_text(root: Path, rel_path: str) -> str | None:
+    path = root / rel_path
+    if path.exists():
+        return path.read_text(encoding="utf-8")
+    if rel_path in OPTIONAL_RETIRED_GUARD_SOURCE_PATHS:
+        return None
+    raise FileNotFoundError(f"required guard source is missing: {rel_path}")
 
 
 def _xml_ids(path: Path) -> set[str]:
@@ -470,12 +501,12 @@ for rel_path in (
         'env.get("sc.entitlement")' not in text and 'env.get("sc.usage.counter")' not in text,
         f"{rel_path}: must consume platform company access through smart_core.security.platform_company_access",
     )
-custom_security_policy_text = (ROOT / "addons/smart_construction_custom/models/security_policy.py").read_text(encoding="utf-8")
-assert_true(
-    "platform_admin_group_xmlids" in custom_security_policy_text
-    and '"smart_construction_core.group_sc_cap_config_admin"' not in custom_security_policy_text,
-    "custom security policy must consume platform admin group xmlids from smart_core.security.platform_admin",
-)
+for custom_security_policy_path in _custom_security_policy_paths(ROOT):
+    custom_security_policy_errors = _custom_security_policy_errors(
+        custom_security_policy_path.relative_to(ROOT),
+        custom_security_policy_path.read_text(encoding="utf-8"),
+    )
+    assert_true(not custom_security_policy_errors, "; ".join(custom_security_policy_errors))
 release_approval_policy_text = (ROOT / RELEASE_APPROVAL_POLICY_SERVICE).read_text(encoding="utf-8")
 assert_true(
     "smart_core.security.platform_admin" in release_approval_policy_text
@@ -491,7 +522,9 @@ assert_true(
 )
 
 for rel_path in sorted(FORBIDDEN_LEGACY_ADMIN_CHECKS):
-    text = (ROOT / rel_path).read_text(encoding="utf-8")
+    text = _guard_source_text(ROOT, rel_path)
+    if text is None:
+        continue
     assert_true(
         'has_group("smart_construction_core.group_sc_cap_config_admin")' not in text
         and "has_group('smart_construction_core.group_sc_cap_config_admin')" not in text,
@@ -501,7 +534,9 @@ for rel_path in sorted(FORBIDDEN_LEGACY_ADMIN_CHECKS):
     assert_true("CONFIG_GROUP" not in text, f"{rel_path}: must use named platform_admin helper, not CONFIG_GROUP")
 
 for rel_path in sorted(FORBIDDEN_DIRECT_SYSTEM_ADMIN_CHECKS):
-    text = (ROOT / rel_path).read_text(encoding="utf-8")
+    text = _guard_source_text(ROOT, rel_path)
+    if text is None:
+        continue
     assert_true(
         "user_is_platform_admin" in text,
         f"{rel_path}: must consume smart_core.security.platform_admin helper",
@@ -509,6 +544,20 @@ for rel_path in sorted(FORBIDDEN_DIRECT_SYSTEM_ADMIN_CHECKS):
     assert_true(
         'has_group("base.group_system")' not in text and "has_group('base.group_system')" not in text,
         f"{rel_path}: must not hardcode base.group_system as platform-admin authority",
+    )
+
+for rel_path in sorted(GENERAL_AUTHENTICATED_NAVIGATION_SURFACES):
+    text = _guard_source_text(ROOT, rel_path)
+    assert_true(text is not None, f"{rel_path}: authenticated navigation source is required")
+    assert_true(
+        "FinalMenuNavigationService" in text and "_resolve_request_env" in text,
+        f"{rel_path}: must delegate authenticated menu filtering to FinalMenuNavigationService",
+    )
+    assert_true(
+        "user_is_platform_admin" not in text
+        and 'has_group("base.group_system")' not in text
+        and "has_group('base.group_system')" not in text,
+        f"{rel_path}: general authenticated navigation must not add a platform-admin gate",
     )
 
 print(

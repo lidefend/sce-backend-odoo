@@ -215,6 +215,7 @@ verify.tender_optional_scope_metadata.probe: check-compose-project check-compose
 
 verify.platform_company_access_manifest.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/platform_company_access_manifest_guard.py
+	@python3 scripts/verify/test_platform_company_access_manifest_guard.py
 	@python3 scripts/verify/platform_company_access_manifest_guard.py
 
 verify.platform_company_access_kernel.probe: verify.platform_company_access_manifest.guard check-compose-project check-compose-env

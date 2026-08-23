@@ -1614,6 +1614,7 @@ def _normalize_native_layout_nodes(
     context: dict[str, Any] | None = None,
     path: str = "native",
     container_ids: set[str] | None = None,
+    root_level: bool = True,
 ) -> list[dict[str, Any]]:
     used_container_ids = container_ids if container_ids is not None else set()
     out: list[dict[str, Any]] = []
@@ -1674,7 +1675,17 @@ def _normalize_native_layout_nodes(
             # container registry member. Its type remains authoritative.
             normalized.pop("containerType", None)
             normalized["children"] = []
-            normalized["widgetList"] = []
+            # A field nested below a container is carried by that parent's
+            # widgetList.  A parser/governance producer may, however, emit a
+            # field at the form root.  Such an occurrence has no parent to
+            # carry its descriptor, so it must own the exact same strict
+            # widget itself instead of leaking an ownerless occurrence into
+            # the formal V2 wire.
+            if root_level:
+                widget["ownerContainerId"] = container_id
+                normalized["widgetList"] = [widget]
+            else:
+                normalized["widgetList"] = []
             component_keys.add(widget["componentKey"])
             widget_status.append(_field_status(
                 widget_source,
@@ -1727,6 +1738,7 @@ def _normalize_native_layout_nodes(
             context=context,
             path=f"{node_path}.{source_key}",
             container_ids=used_container_ids,
+            root_level=False,
         )
         for legacy_key in ("pages", "tabs", "nodes", "items"):
             node.pop(legacy_key, None)
@@ -3275,7 +3287,10 @@ def _action_backend_identity(rule: dict[str, Any]) -> str:
         server_action_id = _positive_int(button.get("server_action_id"), 0)
         if server_action_id:
             return f"server_action:{server_action_id}"
-    if method:
+    # ``type=action`` names are Odoo action references, not model methods.
+    # Keep the stable window-action identity so the same backend authority is
+    # shared by Contract V2, Canonical presentation and execution.
+    if method and button_type != "action":
         return f"button:{button_type}:{method}"
     target = _dict(rule.get("target"))
     raw_action_ref = _text(
@@ -4175,6 +4190,7 @@ def _append_ui_contract_actions(
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:
+        source_channel = _text(row.get("_source_channel"), "contract_action")
         native_identity = _dict(row.get("native_identity") or row.get("nativeIdentity"))
         if native_identity and native_identity.get("authoritative") is False:
             continue
@@ -4263,7 +4279,28 @@ def _append_ui_contract_actions(
                 "route": payload.get("route") or row.get("route"),
                 "target": payload.get("target"),
             }
-            button = {}
+            # Model-bound window actions and native ``type=action`` buttons
+            # execute inside the current record authority.  They are not menu
+            # routes, so preserve the Odoo action-button identity for the
+            # governed execute_button adapter instead of flattening them into
+            # an unauthorised /a/:id navigation.
+            action_button = (
+                source_channel == "bound_model_action"
+                or (
+                    source_channel == "native_form_header"
+                    and _text(payload.get("type")).lower() == "action"
+                )
+            )
+            button = ({
+                "name": _text(
+                    target.get("action_id")
+                    or target.get("action_ref")
+                    or target.get("xml_id")
+                ),
+                "type": "action",
+            } if action_button else {})
+            if action_button:
+                action_intent = "execute_button"
         else:
             action_intent = _text(row.get("intent"), "execute_button")
             target = deepcopy(_dict(row.get("target")))
@@ -4324,7 +4361,7 @@ def _append_ui_contract_actions(
                 ),
                 "permission_constraints": permission_constraints,
                 "entitlement_evaluated": entitlement_evaluated,
-                "source_channel": _text(row.get("_source_channel"), "contract_action"),
+                "source_channel": source_channel,
                 "presentation_priority": _positive_int(
                     policy.get("presentation_priority")
                     or row.get("presentation_priority")

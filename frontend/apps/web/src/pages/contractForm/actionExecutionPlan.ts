@@ -22,7 +22,7 @@ export type FormActionExecutionPlan =
     model: string;
     recordId: number;
     methodName: string;
-    buttonType: 'object' | 'server';
+    buttonType: 'object' | 'action' | 'server';
     authorityActionId: string;
     backendIdentity: string;
     sourceWidgetId: string;
@@ -92,13 +92,13 @@ export function buildFormActionExecutionPlan(params: {
       refreshPolicy: action.refreshPolicy,
     };
   }
-  if ((action.kind === 'object' || action.kind === 'server') && action.methodName && params.recordId) {
+  if ((action.kind === 'object' || action.kind === 'action' || action.kind === 'server') && action.methodName && params.recordId) {
     return {
       kind: 'record_button',
       model: action.targetModel || params.modelName,
       recordId: params.recordId,
       methodName: action.methodName,
-      buttonType: action.kind === 'server' ? 'server' : 'object',
+      buttonType: action.kind === 'server' ? 'server' : action.kind === 'action' ? 'action' : 'object',
       authorityActionId: String(action.authorityActionId || '').trim(),
       backendIdentity: String(action.backendIdentity || '').trim(),
       sourceWidgetId: String(action.sourceWidgetId || '').trim(),

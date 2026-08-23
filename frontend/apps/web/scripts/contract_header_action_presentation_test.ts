@@ -383,6 +383,50 @@ assert.deepEqual(governedWindowRoute, {
   name: 'action', params: { actionId: '619' }, query: { menu_id: 545, action_id: 619 },
 }, 'window action navigation replaces the source pair with the authorized target pair');
 
+const boundWindowActionSnapshot = decodeSnapshotWithActions([{
+  ...rule('project.project_share_wizard_action', 'page.root', 'page', {
+    actionId: 'action.project.project_share_wizard_action',
+    backendIdentity: 'window_action:338',
+    button: { name: '338', type: 'action' },
+    target: {
+      action_id: 338,
+      xml_id: 'project.project_share_wizard_action',
+      model: 'project.share.wizard',
+      view_type: 'form',
+      context_raw: "{'dialog_size': 'medium'}",
+    },
+    visibleProfiles: ['readonly'],
+  }),
+  targetIds: [], dispatchMode: 'server', refreshMode: 'partial',
+}]);
+const boundWindowActionRule = boundWindowActionSnapshot.actionContract.actionRuleList[0];
+const boundWindowActions = buildContractFormActions({
+  model: 'project.project', recordId: 2, renderProfile: 'readonly', sceneReadyActions: [],
+  v2ButtonStatus: explicitStatuses(boundWindowActionRule),
+  v2ActionRuleList: [boundWindowActionRule as unknown as Record<string, unknown>],
+  resolveActionReference: () => null,
+});
+assert.equal(boundWindowActions.length, 1, 'a model-bound action uses its current Contract authority without menu routing');
+assert.equal(boundWindowActions[0]?.kind, 'action');
+assert.equal(boundWindowActions[0]?.backendIdentity, 'window_action:338');
+assert.equal(resolveCanonicalFormActionExecution(boundWindowActionRule, boundWindowActions).kind, 'contract-action');
+assert.deepEqual(buildFormActionExecutionPlan({
+  action: boundWindowActions[0], modelName: 'project.project', recordId: 2,
+}), {
+  kind: 'record_button',
+  model: 'project.project',
+  recordId: 2,
+  methodName: '338',
+  buttonType: 'action',
+  authorityActionId: 'action.project.project_share_wizard_action',
+  backendIdentity: 'window_action:338',
+  sourceWidgetId: 'page.root',
+  serverActionId: null,
+  serverActionXmlId: '',
+  context: {},
+  refreshPolicy: undefined,
+});
+
 const xmlidWindowActionSnapshot = decodeSnapshotWithActions([{
   ...rule('xmlid-window-action', 'page.root', 'page', {
   backendIdentity: 'window_action_ref:base.action_partner_form',

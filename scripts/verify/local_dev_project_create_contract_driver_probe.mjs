@@ -12,14 +12,25 @@ if (!frontendUrl || !password || !database || !login || !target.action_id || !ta
 const browser = await launchChromium({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
 const mutations = [];
+const executeRequests = [];
 const contractActions = [];
+const browserErrors = [];
+page.on('console', (message) => {
+  if (message.type() === 'error') browserErrors.push(`console:${message.text()}`);
+});
+page.on('pageerror', (error) => browserErrors.push(`pageerror:${error.message}`));
 page.on('request', (request) => {
   if (request.method() !== 'POST') return;
   let payload = {};
   try { payload = JSON.parse(request.postData() || '{}'); } catch {}
   const intent = String(payload.intent || '');
   const op = String(payload?.params?.op || payload.op || '');
-  if (['create', 'write', 'unlink', 'execute_button'].includes(op)) mutations.push({ intent, op });
+  if (intent === 'execute_button') executeRequests.push({
+    model: payload?.params?.model,
+    recordId: payload?.params?.res_id,
+    button: payload?.params?.button,
+  });
+  if (['create', 'write', 'unlink'].includes(op)) mutations.push({ intent, op });
 });
 page.on('response', async (response) => {
   if (!response.url().includes('/api/v1/intent')) return;
@@ -137,11 +148,31 @@ try {
     project: projectResult,
     payment: paymentResult,
     mutations,
+    executeRequests,
+    browserErrors,
   }));
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
     throw new Error(`payment record canonical driver did not load: ${JSON.stringify(paymentResult)}`);
   }
   if (mutations.length) throw new Error('read-only project create driver probe observed mutation');
+  if (executeRequests.length) throw new Error(`read-only browser driver probe observed execute request: ${executeRequests.length}`);
+  if (browserErrors.length) throw new Error(`browser errors observed: ${JSON.stringify(browserErrors)}`);
+} catch (error) {
+  const diagnostics = {
+    url: page.url(),
+    surfaces: await page.locator('[data-product-page-mode], [data-contract-form-driver-error]').evaluateAll((nodes) => (
+      nodes.map((node) => ({
+        tag: node.tagName,
+        text: (node.textContent || '').trim().slice(0, 300),
+        attributes: Object.fromEntries([...node.attributes].map((attribute) => [attribute.name, attribute.value])),
+      }))
+    )).catch(() => []),
+    browserErrors,
+    executeRequests,
+    mutations,
+  };
+  console.error('LOCAL_DEV_CONTRACT_DRIVER_FAILURE=' + JSON.stringify(diagnostics));
+  throw error;
 } finally {
   await browser.close();
 }

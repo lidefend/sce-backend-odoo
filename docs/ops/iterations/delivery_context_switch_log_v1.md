@@ -5372,3 +5372,135 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   existing authorized Contract V2 action, with a direct negative case proving
   identity-free methods remain denied. Resume the layout candidate from the
   Contract snapshot gate only after that independent evidence carrier passes.
+
+## Contract V2 form authority runtime closure (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `8a93853c`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / Contract V2
+  form-structure assembly and record-bound action execution / `smart_core` plus
+  the generic Web Contract form action adapter.
+- Reason / boundary: zero `formColumns` is not positive governance authority;
+  root field occurrences require strict self-owned widget descriptors; and a
+  Contract-authorized `type=action` window action must execute with its exact
+  action identity instead of being treated as a menu route. No project-model,
+  label, action-ID, menu-ID or state special case was added.
+- Why Here / Why Not Elsewhere: these are generic carrier integrity and action
+  authority rules. Construction modules continue to own business actions and
+  forms; the frontend only preserves the authoritative Contract identity, and
+  UI kits do not participate in the decision.
+- Blast radius / validation: Contract V2 form payloads containing root field
+  occurrences and bound window actions, plus the generic action presentation
+  and execution adapter. Backend boundary suites passed `90 + 84 + 17` cases;
+  Contract header action presentation, Canonical Presenter `140` cases, strict
+  TypeScript, governed Frontend Quick and the read-only project-create action
+  scope probe passed. The production handler resolved action `338` to the
+  governed project-share wizard with the current project as active record,
+  performed no mutation and left the source record fingerprint unchanged.
+- Runtime evidence: governed `sc-local-dev / sc_dev_demo` was rebuilt and the
+  affected form pages loaded through the Canonical driver without browser
+  errors. The read-only browser probe reported no mutation requests.
+- Independent evidence blocker: the broad Contract snapshot export reaches the
+  unrelated `release_operator_surface_intent_admin` case, whose historical
+  `admin` principal is not a platform administrator and is correctly denied.
+  The partial generated snapshots were restored. This daily-development batch
+  does not modify release-operator identity, snapshot principals or permission
+  policy, and does not claim release evidence from that failed broad export.
+- Rollback: revert this batch as one P0 carrier/action unit and run the governed
+  `smart_core` incremental upgrade. No database repair, fixture rewrite or
+  frontend business fallback is required.
+
+## Release-operator snapshot principal authority (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `73a2513b`.
+- Formal Product Layer / Layer Target / Module: P0 authority evidence carrier /
+  governed Contract snapshot cases and principal regression test / contract
+  verification assets only.
+- Reason / boundary: the release-operator handler correctly requires
+  `smart_core.group_smart_core_admin`, while its historical snapshot cases still
+  executed as Odoo technical user `admin`. Technical administration is not the
+  platform-administrator product identity. The cases now use the existing
+  demo-owned `sc_test_admin`, whose stable XMLID is
+  `smart_construction_demo.sc_demo_user_test_admin` and whose governed scenario
+  replay supplies the canonical platform-admin group.
+- Why Here / Why Not Elsewhere: the defect was in the validation principal, not
+  in handler authorization or the demo user's role definition. The fix does not
+  grant `admin` a new group, use `sudo()`, weaken release permissions, or convert
+  the expected success case into an allowed error.
+- Blast radius / validation: the ten `release.operator.*` snapshot cases and
+  their direct catalog evidence. All ten case exports completed under
+  `sc_test_admin`; the surface case succeeded, and the write cases reached their
+  expected parameter validation. A governed resume from the former failure case
+  through the end of the cases file passed on `sc-local-dev / sc_dev_demo`.
+- Upgrade strategy: none. No module source, XML data or database record changed;
+  the existing `local.dev.sync_demo` authority remains the source of the demo
+  principal.
+- Rollback: revert the cases, ten snapshots, catalog delta and principal test as
+  one evidence-carrier unit. No database restore is required.
+
+## Runtime user-management menu authority alignment (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `7305c0c3`.
+- Formal Product Layer / Layer Target / Module: P1 construction product surface
+  consuming P0 authority / runtime user-management menu declaration /
+  `smart_construction_core`.
+- Reason / boundary: the action already admitted both the tenant business
+  configuration administrator and canonical platform administrator, while its
+  menu admitted only the tenant administrator. The menu now carries both group
+  XMLIDs, preserving tenant administration and making the action/menu authority
+  pair consistent. No ACL, record rule, model method or user membership changed.
+- Why Here / Why Not Elsewhere: an industry module owns this product menu, but
+  the platform-administrator identity remains the P0 XMLID
+  `smart_core.group_smart_core_admin`. The frontend and runtime policy must not
+  synthesize access to compensate for a missing XML declaration.
+- Blast radius / validation: one menu XML record. XML parsing passed; the
+  platform-company manifest guard advanced beyond the corrected assertion; and
+  the governed `smart_construction_core` incremental upgrade plus local demo
+  authority verification passed on `sc-local-dev / sc_dev_demo`.
+- Independent guard blocker: the same broad guard subsequently reads the stale
+  path `addons/smart_construction_custom/models/security_policy.py`, which is
+  absent from the current repository layout. That P4 guard-path defect is not
+  part of this product-menu change.
+- Rollback: revert this menu record and repeat the governed module upgrade. No
+  fixture reset or database repair is required.
+
+## Platform-company guard source discovery (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `aa495234`.
+- Formal Product Layer / Layer Target / Module: P4 ops verification / platform
+  company-access manifest guard and its direct tests.
+- Reason / boundary: the guard hardcoded two retired source files and one
+  customer module path that never existed in the clean product tree. Customer
+  security policies are now discovered only beneath the formal
+  `customer_addons/*/models/security_policy.py` boundary. Explicit retired paths
+  may be absent, but are still scanned if restored; every other required guard
+  source remains fail-closed when missing.
+- Why Here / Why Not Elsewhere: this is verification topology, not product
+  authorization. No menu, ACL, group, role resolver or customer module was
+  created to satisfy the guard.
+- Blast radius / validation: one guard, its existing Make target and six direct
+  positive/negative tests. Tests cover optional module absence, formal customer
+  discovery, compliant and legacy policies, restored retired files and
+  unexpected missing sources. The guard advanced past all path failures and
+  exposed the next real product finding in `platform_menu_api.py`.
+- Rollback: revert this P4 commit; product runtime and database state are
+  unaffected.
+
+## General menu API authority classification (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `59d959cc`.
+- Formal Product Layer / Layer Target / Module: P4 architecture verification /
+  platform-company access guard classification for the P0 menu API.
+- Reason / boundary: `platform_menu_api.py` was incorrectly listed among files
+  that must call `user_is_platform_admin`. The API is the authenticated menu
+  entry for every user and delegates user-scoped filtering to
+  `FinalMenuNavigationService`; adding an administrator gate would break normal
+  product navigation. The guard now explicitly requires that delegation and
+  rejects platform-admin or `base.group_system` gates on this surface.
+- Why Here / Why Not Elsewhere: no product controller behavior was missing. The
+  defect was the guard's ownership classification, so neither the controller nor
+  frontend received an artificial permission branch.
+- Blast radius / validation: one guard and its direct tests. Seven guard tests,
+  three request-environment tests and the complete platform-company access
+  manifest guard passed.
+- Rollback: revert the guard classification commit; runtime and database state
+  are unaffected.

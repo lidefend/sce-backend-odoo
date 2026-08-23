@@ -123,7 +123,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
         record_id: int,
         method_name: str,
         button_type: str,
-    ) -> None:
+    ) -> Dict[str, Any]:
         payload_meta = self.payload.get("meta") if isinstance(self.payload, dict) else {}
         meta = payload_meta if isinstance(payload_meta, dict) else {}
         action_id = _positive_int(meta.get("action_id") or meta.get("actionId"))
@@ -178,6 +178,18 @@ class ExecuteButtonHandler(BaseIntentHandler):
             if expected_server_id != requested_server_id or expected_xml_id != requested_xml_id:
                 raise AccessError("ACTION_CONTRACT_SERVER_ACTION_MISMATCH")
 
+        if expected_type == "action":
+            target = rule.get("target") if isinstance(rule.get("target"), dict) else {}
+            expected_target = str(
+                target.get("action_id")
+                or target.get("actionId")
+                or target.get("action_ref")
+                or target.get("xml_id")
+                or ""
+            ).strip()
+            if not expected_target or expected_target != method_name:
+                raise AccessError("ACTION_CONTRACT_WINDOW_ACTION_MISMATCH")
+
         status_contract = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
         statuses = status_contract.get("buttonStatus") if isinstance(status_contract.get("buttonStatus"), list) else []
         action_key = str(rule.get("actionKey") or "").strip()
@@ -199,6 +211,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
         status = status_matches[0]
         if status.get("visible") is not True or status.get("disabled") is not False:
             raise AccessError(str(status.get("reasonCode") or "ACTION_STATUS_NOT_AUTHORIZED"))
+        return rule
 
     def handle(self, payload=None, ctx=None):
         params = self.params if isinstance(self.params, dict) else {}
@@ -257,7 +270,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     status_code=404,
                 )
 
-            self._authorize_contract_action(
+            authorized_rule = self._authorize_contract_action(
                 button,
                 model=str(model),
                 record_id=res_ids[0],
@@ -267,7 +280,13 @@ class ExecuteButtonHandler(BaseIntentHandler):
 
             normalized_button_type = _normalized_button_type(button_type)
             env_model = self.env[model]
-            access_mode = "write" if normalized_button_type == "server" else self._button_access_mode(env_model, method_name)
+            access_mode = (
+                "write"
+                if normalized_button_type == "server"
+                else "read"
+                if normalized_button_type == "action"
+                else self._button_access_mode(env_model, method_name)
+            )
             env_model.check_access_rights(access_mode)
 
             recordset = env_model.browse(res_ids)
@@ -293,7 +312,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
             recordset.check_access_rule(access_mode)
 
             method = None
-            if normalized_button_type != "server":
+            if normalized_button_type == "object":
                 method = getattr(recordset.with_context(self.context), method_name, None)
                 if not callable(method):
                     return _failure_result(
@@ -346,6 +365,23 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     res_id=res_ids[0],
                     reason_code=REASON_METHOD_NOT_CALLABLE,
                     message=f"后端不可调用服务端动作: {method_name}",
+                    trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
+                    status_code=400,
+                )
+
+            if normalized_button_type == "action":
+                window_action_result = self._run_window_action(
+                    authorized_rule,
+                    model=model,
+                    res_ids=res_ids,
+                )
+                if window_action_result is not None:
+                    return window_action_result
+                return _failure_result(
+                    model=model,
+                    res_id=res_ids[0],
+                    reason_code=REASON_UNSUPPORTED_BUTTON_TYPE,
+                    message="后端无法加载当前契约授权的窗口动作",
                     trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
                     status_code=400,
                 )
@@ -487,6 +523,101 @@ class ExecuteButtonHandler(BaseIntentHandler):
             "meta": {
                 "trace_id": self.context.get("trace_id") if isinstance(self.context, dict) else "",
                 "source_authority": self._source_authority_contract(model, str(action.id), "server_action"),
+            },
+        }
+
+    def _run_window_action(self, rule: dict, *, model: str, res_ids: List[int]):
+        target = rule.get("target") if isinstance(rule.get("target"), dict) else {}
+        action_id = _positive_int(
+            target.get("action_id")
+            or target.get("actionId")
+            or target.get("action_ref")
+        )
+        action_xmlid = str(target.get("xml_id") or "").strip()
+        action = None
+        if action_id:
+            try:
+                action = self.env["ir.actions.act_window"].browse(action_id).exists()
+            except Exception:
+                action = None
+        elif action_xmlid:
+            try:
+                resolved = self.env.ref(action_xmlid, raise_if_not_found=False)
+                if resolved and resolved._name == "ir.actions.act_window":
+                    action = resolved
+                    action_id = int(action.id)
+            except Exception:
+                action = None
+        if not action:
+            return None
+        action.check_access_rights("read")
+        action.check_access_rule("read")
+        execution_context = {
+            **(self.context if isinstance(self.context, dict) else {}),
+            "active_model": model,
+            "active_id": res_ids[0] if res_ids else False,
+            "active_ids": list(res_ids),
+        }
+        context_raw = target.get("context_raw")
+        if context_raw not in (None, False, ""):
+            try:
+                from odoo.tools.safe_eval import safe_eval
+
+                evaluated_context = safe_eval(
+                    str(context_raw),
+                    {
+                        **execution_context,
+                        "context": dict(execution_context),
+                    },
+                )
+            except Exception as exc:
+                raise AccessError("ACTION_CONTRACT_WINDOW_CONTEXT_INVALID") from exc
+            if not isinstance(evaluated_context, dict):
+                raise AccessError("ACTION_CONTRACT_WINDOW_CONTEXT_INVALID")
+            execution_context.update(evaluated_context)
+        action_rows = action.with_context(execution_context).read()
+        if not isinstance(action_rows, list) or len(action_rows) != 1 or not isinstance(action_rows[0], dict):
+            return None
+        raw_action = dict(action_rows[0])
+        raw_action.setdefault("id", action_id)
+        raw_action.setdefault("type", "ir.actions.act_window")
+        raw_action["context"] = execution_context
+        normalized_action = normalize_odoo_action_result(
+            self.env,
+            raw_action,
+            source_model=model,
+            source_record_id=res_ids[0] if res_ids else None,
+        ) or raw_action
+        payload = {
+            "type": "refresh",
+            "status": "success",
+            "success": True,
+            "reason_code": REASON_OK,
+            "message": "后端已加载窗口动作",
+            "res_model": model,
+            "res_id": res_ids[0] if res_ids else None,
+            "window_action_id": action_id,
+            "raw_action": normalized_action,
+        }
+        _enrich_payload_with_action_navigation(payload, normalized_action)
+        entry_target = normalized_action.get("entry_target") if isinstance(normalized_action.get("entry_target"), dict) else {}
+        if entry_target:
+            payload["entry_target"] = entry_target
+        return {
+            "ok": True,
+            "data": {
+                "result": payload,
+                "effect": _effect_from_normalized_action(
+                    normalized_action,
+                    fallback_effect={
+                        "type": "reload_record",
+                        "target": {"kind": "record", "model": model, "id": res_ids[0] if res_ids else None},
+                    },
+                ),
+            },
+            "meta": {
+                "trace_id": self.context.get("trace_id") if isinstance(self.context, dict) else "",
+                "source_authority": self._source_authority_contract(model, str(action_id), "action"),
             },
         }
 

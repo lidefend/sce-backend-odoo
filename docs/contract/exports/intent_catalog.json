@@ -2817,7 +2817,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 7,
+      "test_refs": 8,
       "request_schema_hint": [
         "button",
         "button.actionId",
@@ -37206,7 +37206,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 106,
+      "test_refs": 115,
       "request_schema_hint": [
         "op",
         "source_mode"
@@ -37516,7 +37516,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 16,
+      "test_refs": 18,
       "request_schema_hint": [
         "actionId",
         "action_id",
