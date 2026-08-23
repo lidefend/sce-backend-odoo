@@ -886,8 +886,8 @@
     "include_meta": true
   },
   {
-    "case": "payment_request_action_pm",
-    "user": "demo_role_pm",
+    "case": "payment_request_action_finance",
+    "user": "demo_role_finance",
     "op": "action_open",
     "model": "payment.request",
     "view_type": "list",
@@ -895,8 +895,8 @@
     "include_meta": true
   },
   {
-    "case": "operating_risk_drill_action_pm",
-    "user": "demo_role_pm",
+    "case": "operating_risk_drill_action_finance",
+    "user": "demo_role_finance",
     "op": "action_open",
     "model": "payment.request",
     "view_type": "list",

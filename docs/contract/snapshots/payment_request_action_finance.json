@@ -1,7 +1,6 @@
 {
   "action": null,
-  "case": "payment_request_action_pm",
-  "contract_version": "v1",
+  "case": "payment_request_action_finance",
   "error": null,
   "execute_error": null,
   "execute_result": null,
@@ -1982,9 +1981,10 @@
   "op": "action_open",
   "record": null,
   "record_error": null,
+  "snapshot_schema_version": "1.0.0",
   "ui_contract": null,
   "ui_contract_raw": {},
-  "user": "demo_role_pm",
+  "user": "demo_role_finance",
   "user_fallback": null,
   "view_type": null
 }
