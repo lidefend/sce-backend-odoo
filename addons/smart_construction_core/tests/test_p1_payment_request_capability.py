@@ -291,9 +291,25 @@ class TestP1PaymentRequestCapability(TransactionCase):
             row.get("backendIdentity"): row
             for row in contract["statusContract"]["buttonStatus"]
         }
-        view_identity = "button:object:action_view_payment_execution"
-        view_rules = [row for row in rules if row.get("backendIdentity") == view_identity]
+        view_rules = [
+            row
+            for row in rules
+            if (row.get("button") or {}).get("type") == "object"
+            and (row.get("button") or {}).get("name")
+            == "action_view_payment_execution"
+        ]
         self.assertEqual(len(view_rules), 1, rules)
+        view_identity = view_rules[0].get("backendIdentity")
+        self.assertTrue(
+            str(view_identity or "").startswith(
+                "native_button:object:action_view_payment_execution:"
+            ),
+            view_rules[0],
+        )
+        self.assertTrue(
+            (view_rules[0].get("nativeIdentity") or {}).get("authoritative"),
+            view_rules[0],
+        )
         self.assertTrue(view_rules[0].get("allowed"), view_rules[0])
         self.assertTrue(view_rules[0].get("enabled"), view_rules[0])
         self.assertEqual((view_rules[0].get("presentation") or {}).get("tier"), "primary")
