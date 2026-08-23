@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 from odoo.tools.safe_eval import safe_eval
 import json, hashlib, logging
 from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
+from odoo.addons.smart_core.utils.native_action_scope import native_stat_button_requires_record
 
 _logger = logging.getLogger(__name__)
 
@@ -162,10 +163,13 @@ class AppActionConfig(models.Model):
     def _native_button_contract_scope(self, btn_node):
         classes = [c.strip() for c in (btn_node.get('class') or '').split() if c.strip()]
         if 'oe_stat_button' in classes or 'oe_stat_info' in classes:
+            visible_profiles = ["create", "edit", "readonly"]
+            if native_stat_button_requires_record(btn_node):
+                visible_profiles = ["edit", "readonly"]
             return {
                 "level": "smart",
                 "selection": "none",
-                "visible_profiles": ["create", "edit", "readonly"],
+                "visible_profiles": visible_profiles,
             }
 
         in_header = False

@@ -117,6 +117,14 @@ def _install_odoo_shim():
     native_modifier_spec = importlib.util.spec_from_file_location(native_modifier_module_name, native_modifier_path)
     native_modifier_mod = importlib.util.module_from_spec(native_modifier_spec)
     native_modifier_spec.loader.exec_module(native_modifier_mod)
+    native_action_scope_module_name = "odoo.addons.smart_core.utils.native_action_scope"
+    native_action_scope_path = Path(__file__).resolve().parents[1] / "utils" / "native_action_scope.py"
+    native_action_scope_spec = importlib.util.spec_from_file_location(
+        native_action_scope_module_name,
+        native_action_scope_path,
+    )
+    native_action_scope_mod = importlib.util.module_from_spec(native_action_scope_spec)
+    native_action_scope_spec.loader.exec_module(native_action_scope_mod)
     sys.modules["odoo"] = odoo_mod
     sys.modules["odoo.tools"] = tools_mod
     sys.modules["odoo.tools.safe_eval"] = safe_eval_mod
@@ -125,6 +133,7 @@ def _install_odoo_shim():
     sys.modules["odoo.addons.smart_core.utils"] = utils_mod
     sys.modules[descriptor_module_name] = descriptor_mod
     sys.modules[native_modifier_module_name] = native_modifier_mod
+    sys.modules[native_action_scope_module_name] = native_action_scope_mod
 
 
 def _load_calendar_mixin():
@@ -552,6 +561,11 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertFalse(
             self.tree_form_parser._native_expr_references_current_record(
                 "{'default_manager_id': uid, 'label': 'active_id'}"
+            )
+        )
+        self.assertTrue(
+            self.tree_form_parser._native_expr_references_current_record(
+                "{'default_request_id': context.get('active_id')"
             )
         )
 

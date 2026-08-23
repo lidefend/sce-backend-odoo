@@ -78,3 +78,38 @@ class TestNativeActionSelectionAlignment(TransactionCase):
         self.assertEqual(form_scope.get("visible_profiles"), ["create", "edit", "readonly"])
         self.assertEqual(mixed_scope.get("selection"), "multi")
         self.assertEqual(mixed_scope.get("visible_profiles"), ["readonly", "list"])
+
+    def test_app_action_config_record_bound_stat_action_excludes_create(self):
+        config = self.env["app.action.config"]
+        root = etree.fromstring(
+            b"""
+            <form string="Demo">
+              <div class="oe_button_box">
+                <button name="91" type="action" string="Lines" class="oe_stat_button"
+                  context="{'default_record_id': context.get('active_id')}"/>
+              </div>
+            </form>
+            """
+        )
+
+        scope = config._native_button_contract_scope(root.xpath(".//button")[0])
+
+        self.assertEqual(scope.get("level"), "smart")
+        self.assertEqual(scope.get("visible_profiles"), ["edit", "readonly"])
+
+    def test_app_action_config_independent_stat_action_preserves_create(self):
+        config = self.env["app.action.config"]
+        root = etree.fromstring(
+            b"""
+            <form string="Demo">
+              <div class="oe_button_box">
+                <button name="92" type="action" string="Quick create" class="oe_stat_button"/>
+              </div>
+            </form>
+            """
+        )
+
+        scope = config._native_button_contract_scope(root.xpath(".//button")[0])
+
+        self.assertEqual(scope.get("level"), "smart")
+        self.assertEqual(scope.get("visible_profiles"), ["create", "edit", "readonly"])

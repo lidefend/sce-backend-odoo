@@ -18,6 +18,10 @@ import ast
 import json
 import re
 from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
+from odoo.addons.smart_core.utils.native_action_scope import (
+    native_expression_references_current_record,
+    native_stat_button_requires_record,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -241,49 +245,10 @@ class _TreeFormParserMixin:
         return class_name in self._class_list(node)
 
     def _native_expr_references_current_record(self, raw_expr):
-        raw = str(raw_expr or '').strip()
-        if not raw:
-            return False
-        try:
-            parsed = ast.parse(raw, mode='eval')
-        except (SyntaxError, ValueError, TypeError):
-            # A malformed native expression is not sufficient authority to
-            # expose a stat action while the parent record does not yet exist.
-            return True
-
-        record_names = {'id', 'active_id', 'active_ids', 'active_model'}
-        for node in ast.walk(parsed):
-            if isinstance(node, ast.Name) and node.id in record_names:
-                return True
-            if (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute)
-                and node.func.attr == 'get'
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == 'context'
-                and node.args
-                and isinstance(node.args[0], ast.Constant)
-                and node.args[0].value in record_names
-            ):
-                return True
-            if (
-                isinstance(node, ast.Subscript)
-                and isinstance(node.value, ast.Name)
-                and node.value.id == 'context'
-                and isinstance(node.slice, ast.Constant)
-                and node.slice.value in record_names
-            ):
-                return True
-        return False
+        return native_expression_references_current_record(raw_expr)
 
     def _native_stat_button_requires_record(self, btn_node):
-        btype = (btn_node.get('type') or 'object').strip().lower()
-        if btype == 'object':
-            return True
-        return any(
-            self._native_expr_references_current_record(btn_node.get(attribute))
-            for attribute in ('context', 'domain')
-        )
+        return native_stat_button_requires_record(btn_node)
 
     def _native_button_contract_scope(self, btn_node, level='header'):
         classes = [c.strip() for c in (btn_node.get('class') or '').split() if c.strip()]
