@@ -201,6 +201,33 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             self.assertLess(backend, login_probe, target)
             self.assertLess(login_probe, frontend, target)
 
+    def test_release_performance_probe_uses_governed_acceptance_identity_only(self) -> None:
+        runtime_make = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        target = runtime_make.split(
+            "verify.frontend.delivery_hardening.release.performance_probe:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn(
+            "frontend_acceptance_operation_entry.sh delivery-hardening-runtime-ids",
+            target,
+        )
+        self.assertIn("DELIVERY_HARDENING_PERF_ONLY=1", target)
+        self.assertNotIn("DELIVERY_HARDENING_SKIP_PERF=1", target)
+        runtime_id_line = next(
+            line for line in target.splitlines() if "target_output=" in line
+        )
+        self.assertNotIn("$(RUN_ENV)", runtime_id_line)
+
+        for relative_path in (
+            "scripts/dev/frontend_acceptance_runtime.sh",
+            "scripts/dev/frontend_acceptance_operation_entry.sh",
+        ):
+            source = (ROOT / relative_path).read_text(encoding="utf-8")
+            operation = source.split("delivery-hardening-runtime-ids)", 1)[1].split(
+                ";;", 1
+            )[0]
+            self.assertIn("frontend_delivery_hardening_runtime_ids.py", operation)
+            self.assertIn("ODOO_SHELL_RUN_ISOLATED=1", operation)
+
     def test_ci_starts_http_carrier_after_install_and_stops_after_first_browser_failure(self) -> None:
         operation = (
             ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh"
