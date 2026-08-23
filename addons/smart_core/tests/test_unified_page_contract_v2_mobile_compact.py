@@ -431,40 +431,21 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertNotIn(action_rule["targetScope"], {"header", "toolbar", "smart", "row"})
 
     def test_authoritative_stat_button_reaches_action_contract_once(self):
-        locator = "/form[1]/sheet[1]/div[1]/button[1]"
-        native_identity = {
-            "type": "object",
-            "name": "action_open_lines",
-            "string": "Lines",
-            "native_locator": locator,
-            "occurrence_index": 1,
-            "canonical_region": "stat_buttons",
-            "projection_region": "stat_buttons",
-            "authoritative": True,
-        }
+        parser = _NativeTreeFormFixtureParser()
+        fields = {"name": {"name": "name", "type": "char", "string": "Name"}}
+        parsed_action = parser._button_to_action(
+            _FixtureElement(
+                ET.fromstring(
+                    '<button name="action_open_lines" string="Lines" type="object" class="oe_stat_button"/>'
+                )
+            ),
+            level="smart",
+        )
         source = {
             "model": "x.record",
             "view_type": "form",
-            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
-            "views": {"form": {
-                "layout": [{
-                    "type": "button",
-                    "name": "action_open_lines",
-                    "action": {
-                        "name": "action_open_lines",
-                        "kind": "object",
-                        "payload": {"method": "action_open_lines", "type": "object"},
-                        "native_identity": {**native_identity, "projection_region": "layout", "authoritative": False},
-                    },
-                }],
-                "stat_buttons": [{
-                    "name": "action_open_lines",
-                    "label": "Lines",
-                    "kind": "object",
-                    "payload": {"method": "action_open_lines", "type": "object"},
-                    "native_identity": native_identity,
-                }],
-            }},
+            "fields": fields,
+            "views": {"form": {"layout": [], "stat_buttons": [parsed_action]}},
         }
 
         full = assembler.assemble_unified_page_contract_v2(
@@ -476,10 +457,51 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
         rules = [
             row for row in full["actionContract"]["actionRuleList"]
-            if row.get("backendIdentity") == f"native_button:object:action_open_lines:{locator}:1"
+            if row.get("backendIdentity")
+            == "native_button:object:action_open_lines:/button[1]:1"
         ]
         self.assertEqual(len(rules), 1)
         self.assertEqual(rules[0]["label"], "Lines")
+        self.assertEqual(rules[0]["visibleProfiles"], ["edit", "readonly"])
+
+    def test_stat_window_action_profiles_survive_parser_to_contract(self):
+        parser = _NativeTreeFormFixtureParser()
+        fields = {"name": {"name": "name", "type": "char", "string": "Name"}}
+        cases = (
+            (
+                "addons/smart_construction_core/views/core/payment_request_views.xml",
+                "view_payment_request_form",
+                ["edit", "readonly"],
+            ),
+            (
+                "addons/smart_construction_core/views/core/project_views.xml",
+                "view_project_create_form",
+                ["create", "edit", "readonly"],
+            ),
+        )
+        for index, (relative_path, record_id, expected_profiles) in enumerate(cases):
+            with self.subTest(record_id=record_id):
+                arch = ET.fromstring(_native_view_fixture_arch(relative_path, record_id))
+                button = arch.find(".//button[@class='oe_stat_button']")
+                self.assertIsNotNone(button)
+                parsed_action = parser._button_to_action(
+                    _FixtureElement(button),
+                    level="smart",
+                )
+                full = assembler.assemble_unified_page_contract_v2(
+                    {
+                        "model": "x.record",
+                        "view_type": "form",
+                        "fields": fields,
+                        "views": {"form": {"layout": [], "stat_buttons": [parsed_action]}},
+                    },
+                    source_type="ui.contract",
+                    client_type="web_pc",
+                    request_id=f"test.web.form.stat.window.profile.{index}",
+                )
+                rules = full["actionContract"]["actionRuleList"]
+                self.assertEqual(len(rules), 1)
+                self.assertEqual(rules[0]["visibleProfiles"], expected_profiles)
 
     def test_object_button_payload_method_is_preserved_in_v2_action_contract(self):
         source = {

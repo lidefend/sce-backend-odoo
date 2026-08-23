@@ -240,13 +240,65 @@ class _TreeFormParserMixin:
     def _has_class(self, node, class_name):
         return class_name in self._class_list(node)
 
+    def _native_expr_references_current_record(self, raw_expr):
+        raw = str(raw_expr or '').strip()
+        if not raw:
+            return False
+        try:
+            parsed = ast.parse(raw, mode='eval')
+        except (SyntaxError, ValueError, TypeError):
+            # A malformed native expression is not sufficient authority to
+            # expose a stat action while the parent record does not yet exist.
+            return True
+
+        record_names = {'id', 'active_id', 'active_ids', 'active_model'}
+        for node in ast.walk(parsed):
+            if isinstance(node, ast.Name) and node.id in record_names:
+                return True
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == 'get'
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == 'context'
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and node.args[0].value in record_names
+            ):
+                return True
+            if (
+                isinstance(node, ast.Subscript)
+                and isinstance(node.value, ast.Name)
+                and node.value.id == 'context'
+                and isinstance(node.slice, ast.Constant)
+                and node.slice.value in record_names
+            ):
+                return True
+        return False
+
+    def _native_stat_button_requires_record(self, btn_node):
+        btype = (btn_node.get('type') or 'object').strip().lower()
+        if btype == 'object':
+            return True
+        return any(
+            self._native_expr_references_current_record(btn_node.get(attribute))
+            for attribute in ('context', 'domain')
+        )
+
     def _native_button_contract_scope(self, btn_node, level='header'):
         classes = [c.strip() for c in (btn_node.get('class') or '').split() if c.strip()]
         if 'oe_stat_button' in classes or 'oe_stat_info' in classes:
+            visible_profiles = ['create', 'edit', 'readonly']
+            if self._native_stat_button_requires_record(btn_node):
+                visible_profiles = ['edit', 'readonly']
             return {
                 "level": "smart",
                 "selection": "none",
-                "visible_profiles": ["create", "edit", "readonly"],
+                # Preserve the native execution mechanism: object buttons and
+                # actions whose context/domain references the current record
+                # cannot execute before that record exists. Independent window
+                # actions (for example a target=new wizard) remain create-safe.
+                "visible_profiles": visible_profiles,
             }
 
         in_header = False

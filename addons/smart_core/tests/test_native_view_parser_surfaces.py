@@ -519,6 +519,41 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(identity["canonical_region"], "stat_buttons")
         self.assertEqual(identity["projection_region"], "stat_buttons")
         self.assertTrue(identity["authoritative"])
+        self.assertEqual(action["level"], "smart")
+        self.assertEqual(action["visible_profiles"], ["edit", "readonly"])
+
+    def test_record_bound_stat_window_action_excludes_create_profile(self):
+        element = _parse_test_xml(
+            '<button class="oe_stat_button" type="action" name="%(action_payment_ledger)d" '
+            'string="Ledger" context="{\'default_request_id\': context.get(\'active_id\')}"/>'
+        )
+
+        action = self.tree_form_parser._button_to_action(element, level="smart")
+
+        self.assertEqual(action["visible_profiles"], ["edit", "readonly"])
+
+    def test_independent_stat_window_action_preserves_create_profile(self):
+        element = _parse_test_xml(
+            '<button class="oe_stat_button" type="action" name="%(action_quick_create_wizard)d" '
+            'string="Quick create"/>'
+        )
+
+        action = self.tree_form_parser._button_to_action(element, level="smart")
+
+        self.assertEqual(action["visible_profiles"], ["create", "edit", "readonly"])
+
+    def test_record_bound_stat_action_expression_detection_is_structural(self):
+        self.assertTrue(self.tree_form_parser._native_expr_references_current_record("{'x': id}"))
+        self.assertTrue(
+            self.tree_form_parser._native_expr_references_current_record(
+                "[('request_id', '=', context['active_id'])]"
+            )
+        )
+        self.assertFalse(
+            self.tree_form_parser._native_expr_references_current_record(
+                "{'default_manager_id': uid, 'label': 'active_id'}"
+            )
+        )
 
 
     def test_x2many_inline_tree_reuses_occurrence_aware_parser(self):
