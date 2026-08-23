@@ -3593,6 +3593,12 @@ class PageAssembler:
             return "RELATION_ENTRY_OVERRIDE_AUTHORITY_TARGET_MISMATCH"
         if not menu.action or menu.action.id != action.id:
             return "RELATION_ENTRY_OVERRIDE_AUTHORITY_PAIR_MISMATCH"
+        try:
+            visible_menu_ids = set(self.env["ir.ui.menu"]._visible_menu_ids())
+        except Exception:
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
+        if not self._relation_menu_chain_is_visible(menu, visible_menu_ids):
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
         user = self.env.user
         if not user._is_admin():
             if action.groups_id and not (action.groups_id & user.groups_id):
@@ -3600,6 +3606,18 @@ class PageAssembler:
             if menu.groups_id and not (menu.groups_id & user.groups_id):
                 return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
         return ""
+
+    @staticmethod
+    def _relation_menu_chain_is_visible(menu, visible_menu_ids):
+        current = menu
+        visited = set()
+        while current:
+            current_id = int(getattr(current, "id", 0) or 0)
+            if not current_id or current_id in visited or current_id not in visible_menu_ids:
+                return False
+            visited.add(current_id)
+            current = getattr(current, "parent_id", None)
+        return True
 
     def _build_relation_search_dialog_contract(self, relation, model_name=""):
         relation = str(relation or "").strip()
@@ -3780,34 +3798,27 @@ class PageAssembler:
                 }
 
         entry_map = {}
-        Act = self.su_env["ir.actions.act_window"]
-        actions = Act.search([("res_model", "in", relation_models)], order="id desc")
+        try:
+            visible_menu_ids = set(self.env["ir.ui.menu"]._visible_menu_ids())
+        except Exception:
+            visible_menu_ids = set()
         action_by_model = {}
-        for act in actions:
-            if not _allowed_by_groups(act):
+        menu_by_action = {}
+        menus = self.env["ir.ui.menu"].browse(sorted(visible_menu_ids)).exists()
+        menus = menus.sorted(key=lambda row: (row.sequence, row.id))
+        for menu in menus:
+            if not self._relation_menu_chain_is_visible(menu, visible_menu_ids):
+                continue
+            act = menu.action
+            if not act or act._name != "ir.actions.act_window":
+                continue
+            if not _allowed_by_groups(menu) or not _allowed_by_groups(act):
                 continue
             model_name = str(act.res_model or "").strip()
-            if not model_name or model_name in action_by_model:
+            if model_name not in relation_models or model_name in action_by_model:
                 continue
             action_by_model[model_name] = act
-
-        action_ids = [act.id for act in action_by_model.values()]
-        menu_by_action = {}
-        if action_ids:
-            action_refs = [f"ir.actions.act_window,{aid}" for aid in action_ids]
-            menus = self.su_env["ir.ui.menu"].search([("action", "in", action_refs)], order="sequence,id")
-            for menu in menus:
-                if not _allowed_by_groups(menu):
-                    continue
-                action_ref = str(menu.action or "").strip()
-                if not action_ref.startswith("ir.actions.act_window,"):
-                    continue
-                try:
-                    aid = int(action_ref.split(",")[1])
-                except Exception:
-                    continue
-                if aid not in menu_by_action:
-                    menu_by_action[aid] = menu.id
+            menu_by_action[act.id] = menu.id
 
         for relation in relation_models:
             act = action_by_model.get(relation)

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 
+from odoo import api
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import (
@@ -138,6 +139,88 @@ class TestRelationEntryOverrideFailClosed(TransactionCase):
         self.assertEqual(first["fieldInfo"]["relation_entry"], entry)
         self.assertEqual(second["relation_entry"], entry)
         self.assertEqual(second["fieldInfo"]["relation_entry"], entry)
+
+    def _restricted_relation_assembler(self):
+        hidden_group = self.env["res.groups"].create({"name": "Hidden relation menu test"})
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Relation authority user",
+            "login": "relation-authority-user",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        user_env = api.Environment(self.env.cr, user.id, {})
+        assembler = PageAssembler(user_env, self.env["ir.model"].sudo().env)
+        return assembler, hidden_group
+
+    def test_override_rejects_leaf_menu_below_inaccessible_parent(self):
+        assembler, hidden_group = self._restricted_relation_assembler()
+        action = self.env["ir.actions.act_window"].create({
+            "name": "Restricted partner relation",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+        parent = self.env["ir.ui.menu"].create({
+            "name": "Restricted relation parent",
+            "groups_id": [(6, 0, [hidden_group.id])],
+        })
+        child = self.env["ir.ui.menu"].create({
+            "name": "Apparently open relation child",
+            "parent_id": parent.id,
+            "action": "ir.actions.act_window,%s" % action.id,
+        })
+
+        self.assertEqual(
+            assembler._relation_entry_authority_pair_error(action.id, child.id, "res.partner"),
+            "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED",
+        )
+
+    def test_auto_discovery_uses_only_fully_visible_menu_chain(self):
+        assembler, hidden_group = self._restricted_relation_assembler()
+        hidden_action = self.env["ir.actions.act_window"].create({
+            "name": "Hidden company relation",
+            "res_model": "res.company",
+            "view_mode": "tree,form",
+        })
+        hidden_parent = self.env["ir.ui.menu"].create({
+            "name": "Hidden company parent",
+            "groups_id": [(6, 0, [hidden_group.id])],
+        })
+        self.env["ir.ui.menu"].create({
+            "name": "Hidden company child",
+            "parent_id": hidden_parent.id,
+            "action": "ir.actions.act_window,%s" % hidden_action.id,
+        })
+
+        entry = assembler._build_relation_entry_map(["res.company"])["res.company"]
+
+        self.assertIsNone(entry["action_id"])
+        self.assertIsNone(entry["menu_id"])
+        self.assertEqual(entry["reason_code"], "NO_VISIBLE_ACTION")
+
+    def test_auto_discovery_preserves_visible_action_menu_pair(self):
+        assembler, _hidden_group = self._restricted_relation_assembler()
+        action = self.env["ir.actions.act_window"].create({
+            "name": "Visible partner relation",
+            "res_model": "res.partner",
+            "view_mode": "tree,form",
+        })
+        parent = self.env["ir.ui.menu"].create({
+            "name": "Visible relation parent",
+            "sequence": -100,
+        })
+        child = self.env["ir.ui.menu"].create({
+            "name": "Visible relation child",
+            "parent_id": parent.id,
+            "sequence": -100,
+            "action": "ir.actions.act_window,%s" % action.id,
+        })
+
+        self.assertEqual(
+            assembler._relation_entry_authority_pair_error(action.id, child.id, "res.partner"),
+            "",
+        )
+        entry = assembler._build_relation_entry_map(["res.partner"])["res.partner"]
+        self.assertEqual(entry["action_id"], action.id)
+        self.assertEqual(entry["menu_id"], child.id)
 
 
 @tagged("post_install", "-at_install", "smart_core", "runtime_view_contract")
