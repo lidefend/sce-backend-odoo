@@ -5408,3 +5408,31 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Rollback: revert this batch as one P0 carrier/action unit and run the governed
   `smart_core` incremental upgrade. No database repair, fixture rewrite or
   frontend business fallback is required.
+
+## Release-operator snapshot principal authority (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `73a2513b`.
+- Formal Product Layer / Layer Target / Module: P0 authority evidence carrier /
+  governed Contract snapshot cases and principal regression test / contract
+  verification assets only.
+- Reason / boundary: the release-operator handler correctly requires
+  `smart_core.group_smart_core_admin`, while its historical snapshot cases still
+  executed as Odoo technical user `admin`. Technical administration is not the
+  platform-administrator product identity. The cases now use the existing
+  demo-owned `sc_test_admin`, whose stable XMLID is
+  `smart_construction_demo.sc_demo_user_test_admin` and whose governed scenario
+  replay supplies the canonical platform-admin group.
+- Why Here / Why Not Elsewhere: the defect was in the validation principal, not
+  in handler authorization or the demo user's role definition. The fix does not
+  grant `admin` a new group, use `sudo()`, weaken release permissions, or convert
+  the expected success case into an allowed error.
+- Blast radius / validation: the ten `release.operator.*` snapshot cases and
+  their direct catalog evidence. All ten case exports completed under
+  `sc_test_admin`; the surface case succeeded, and the write cases reached their
+  expected parameter validation. A governed resume from the former failure case
+  through the end of the cases file passed on `sc-local-dev / sc_dev_demo`.
+- Upgrade strategy: none. No module source, XML data or database record changed;
+  the existing `local.dev.sync_demo` authority remains the source of the demo
+  principal.
+- Rollback: revert the cases, ten snapshots, catalog delta and principal test as
+  one evidence-carrier unit. No database restore is required.

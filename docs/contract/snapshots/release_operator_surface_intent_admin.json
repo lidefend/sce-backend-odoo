@@ -1,7 +1,6 @@
 {
   "action": null,
   "case": "release_operator_surface_intent_admin",
-  "contract_version": "v1",
   "error": null,
   "execute_error": null,
   "execute_result": null,
@@ -11,6 +10,7 @@
   "op": "intent.invoke",
   "record": null,
   "record_error": null,
+  "snapshot_schema_version": "1.0.0",
   "ui_contract": null,
   "ui_contract_raw": {
     "available_actions": {
@@ -26,10 +26,10 @@
         "reason_code": "OK",
         "role_context": {
           "actor_role_codes": [
-            "admin",
-            "executive"
+            "executive",
+            "pm"
           ],
-          "role_source": "platform_admin_groups",
+          "role_source": "extension_hook",
           "source_authority": {
             "authorities": [
               "release_action_policy",
@@ -57,10 +57,10 @@
         "reason_code": "ROLLBACK_TARGET_NOT_FOUND",
         "role_context": {
           "actor_role_codes": [
-            "admin",
-            "executive"
+            "executive",
+            "pm"
           ],
-          "role_source": "platform_admin_groups",
+          "role_source": "extension_hook",
           "source_authority": {
             "authorities": [
               "release_action_policy",
@@ -86,10 +86,10 @@
         "reason_code": "OK",
         "role_context": {
           "actor_role_codes": [
-            "admin",
-            "executive"
+            "executive",
+            "pm"
           ],
-          "role_source": "platform_admin_groups",
+          "role_source": "extension_hook",
           "source_authority": {
             "authorities": [
               "release_action_policy",
@@ -115,10 +115,10 @@
         "reason_code": "OK",
         "role_context": {
           "actor_role_codes": [
-            "admin",
-            "executive"
+            "executive",
+            "pm"
           ],
-          "role_source": "platform_admin_groups",
+          "role_source": "extension_hook",
           "source_authority": {
             "authorities": [
               "release_action_policy",
@@ -146,10 +146,10 @@
         "reason_code": "OK",
         "role_context": {
           "actor_role_codes": [
-            "admin",
-            "executive"
+            "executive",
+            "pm"
           ],
-          "role_source": "platform_admin_groups",
+          "role_source": "extension_hook",
           "source_authority": {
             "authorities": [
               "release_action_policy",
@@ -175,10 +175,10 @@
         "reason_code": "OK",
         "role_context": {
           "actor_role_codes": [
-            "admin",
-            "executive"
+            "executive",
+            "pm"
           ],
-          "role_source": "platform_admin_groups",
+          "role_source": "extension_hook",
           "source_authority": {
             "authorities": [
               "release_action_policy",
@@ -204,10 +204,10 @@
         "reason_code": "OK",
         "role_context": {
           "actor_role_codes": [
-            "admin",
-            "executive"
+            "executive",
+            "pm"
           ],
-          "role_source": "platform_admin_groups",
+          "role_source": "extension_hook",
           "source_authority": {
             "authorities": [
               "release_action_policy",
@@ -557,10 +557,10 @@
     "read_model_v1": {
       "actor_role_context": {
         "actor_role_codes": [
-          "admin",
-          "executive"
+          "executive",
+          "pm"
         ],
-        "role_source": "platform_admin_groups",
+        "role_source": "extension_hook",
         "source_authority": {
           "authorities": [
             "release_action_policy",
@@ -586,10 +586,10 @@
           "reason_code": "OK",
           "role_context": {
             "actor_role_codes": [
-              "admin",
-              "executive"
+              "executive",
+              "pm"
             ],
-            "role_source": "platform_admin_groups",
+            "role_source": "extension_hook",
             "source_authority": {
               "authorities": [
                 "release_action_policy",
@@ -617,10 +617,10 @@
           "reason_code": "ROLLBACK_TARGET_NOT_FOUND",
           "role_context": {
             "actor_role_codes": [
-              "admin",
-              "executive"
+              "executive",
+              "pm"
             ],
-            "role_source": "platform_admin_groups",
+            "role_source": "extension_hook",
             "source_authority": {
               "authorities": [
                 "release_action_policy",
@@ -646,10 +646,10 @@
           "reason_code": "OK",
           "role_context": {
             "actor_role_codes": [
-              "admin",
-              "executive"
+              "executive",
+              "pm"
             ],
-            "role_source": "platform_admin_groups",
+            "role_source": "extension_hook",
             "source_authority": {
               "authorities": [
                 "release_action_policy",
@@ -675,10 +675,10 @@
           "reason_code": "OK",
           "role_context": {
             "actor_role_codes": [
-              "admin",
-              "executive"
+              "executive",
+              "pm"
             ],
-            "role_source": "platform_admin_groups",
+            "role_source": "extension_hook",
             "source_authority": {
               "authorities": [
                 "release_action_policy",
@@ -706,10 +706,10 @@
           "reason_code": "OK",
           "role_context": {
             "actor_role_codes": [
-              "admin",
-              "executive"
+              "executive",
+              "pm"
             ],
-            "role_source": "platform_admin_groups",
+            "role_source": "extension_hook",
             "source_authority": {
               "authorities": [
                 "release_action_policy",
@@ -735,10 +735,10 @@
           "reason_code": "OK",
           "role_context": {
             "actor_role_codes": [
-              "admin",
-              "executive"
+              "executive",
+              "pm"
             ],
-            "role_source": "platform_admin_groups",
+            "role_source": "extension_hook",
             "source_authority": {
               "authorities": [
                 "release_action_policy",
@@ -764,10 +764,10 @@
           "reason_code": "OK",
           "role_context": {
             "actor_role_codes": [
-              "admin",
-              "executive"
+              "executive",
+              "pm"
             ],
-            "role_source": "platform_admin_groups",
+            "role_source": "extension_hook",
             "source_authority": {
               "authorities": [
                 "release_action_policy",
@@ -1504,7 +1504,7 @@
       "runtime_carrier": "release_operator_surface"
     }
   },
-  "user": "admin",
+  "user": "sc_test_admin",
   "user_fallback": null,
   "view_type": null
 }

@@ -1,7 +1,6 @@
 {
   "action": null,
   "case": "release_operator_freeze_intent_admin",
-  "contract_version": "v1",
   "error": {
     "code": 500,
     "message": "PRODUCT_KEY_REQUIRED",
@@ -15,6 +14,7 @@
   "op": "intent.invoke",
   "record": null,
   "record_error": null,
+  "snapshot_schema_version": "1.0.0",
   "ui_contract": null,
   "ui_contract_raw": {
     "error": {
@@ -24,7 +24,7 @@
     },
     "ok": false
   },
-  "user": "admin",
+  "user": "sc_test_admin",
   "user_fallback": null,
   "view_type": null
 }
