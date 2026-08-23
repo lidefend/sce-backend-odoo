@@ -73,6 +73,8 @@
                 ref('base.group_user'),
                 ref('project.group_project_manager'),
                 ref('smart_core.group_smart_core_admin'),
+                ref('smart_core.group_smart_core_finance_approver'),
+                ref('smart_core.group_smart_core_scene_admin'),
                 ref('smart_construction_core.group_sc_super_admin')
             ])]"/>
         </record>
