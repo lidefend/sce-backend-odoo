@@ -340,6 +340,42 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertGreater(len(all_widgets), len(widgets) - 1)
         self.assertEqual(all_widgets[0]["ownerContainerId"], root["children"][0]["containerId"])
 
+    def test_layout_dsl_root_field_owns_its_strict_widget_descriptor(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {
+                "analytic_account_id": {
+                    "name": "analytic_account_id",
+                    "type": "many2one",
+                    "relation": "account.analytic.account",
+                    "string": "Analytic Account",
+                },
+            },
+            "views": {"form": {"layout": [{
+                "type": "field",
+                "name": "analytic_account_id",
+                "native_locator": "/form[1]/field[1]",
+                "occurrence_index": 1,
+                "source_position": 9,
+            }]}},
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            request_id="test.layout.dsl.root.field.owner",
+        )
+
+        field_node = full["layoutContract"]["containerTree"][0]
+        self.assertEqual(field_node["type"], "field")
+        self.assertEqual(len(field_node["widgetList"]), 1)
+        widget = field_node["widgetList"][0]
+        self.assertEqual(widget["widgetId"], field_node["widgetId"])
+        self.assertEqual(widget["ownerContainerId"], field_node["containerId"])
+        self.assertEqual(widget["fieldDescriptor"]["name"], "analytic_account_id")
+        self.assertEqual(widget["fieldDescriptor"]["type"], "many2one")
+
     def test_layout_dsl_rejects_parallel_child_carriers(self):
         source = {
             "model": "x.document",
@@ -1466,6 +1502,48 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "route:/help/product",
             "server_action:91",
         })
+
+    def test_model_bound_window_action_preserves_record_execution_identity(self):
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {},
+            "buttons": [{
+                "key": "x.share_action",
+                "label": "Share",
+                "kind": "open",
+                "payload": {
+                    "action_id": 338,
+                    "xml_id": "x.share_action",
+                    "type": "action",
+                    "context_raw": "{'dialog_size': 'medium'}",
+                },
+                "allowed": True,
+                "enabled": True,
+                "disabled": False,
+                "entitlement_evaluated": True,
+                "source_authority": {
+                    "kind": "odoo_native_bound_action_projection",
+                },
+            }],
+        }
+
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.model.bound.window.action",
+        )
+
+        rule = next(
+            row
+            for row in contract["actionContract"]["actionRuleList"]
+            if row["backendIdentity"] == "window_action:338"
+        )
+        self.assertEqual(rule["sourceChannel"], "bound_model_action")
+        self.assertEqual(rule["intent"], "execute_button")
+        self.assertEqual(rule["button"], {"name": "338", "type": "action"})
+        self.assertEqual(rule["target"]["action_id"], 338)
 
     def test_window_action_xmlid_refs_do_not_collapse_without_numeric_id(self):
         source = {

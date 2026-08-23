@@ -56,13 +56,66 @@ class _ActionModel:
         return self.action
 
 
+class _WindowAction:
+    _name = "ir.actions.act_window"
+    id = 338
+
+    def __init__(self):
+        self.read_calls = 0
+        self.execution_context = {}
+
+    def exists(self):
+        return self
+
+    def check_access_rights(self, mode):
+        if mode != "read":
+            raise AssertionError("window actions must use current-user read authority")
+
+    def check_access_rule(self, mode):
+        if mode != "read":
+            raise AssertionError("window actions must use current-user read authority")
+
+    def with_context(self, context):
+        self.execution_context = dict(context)
+        return self
+
+    def read(self):
+        self.read_calls += 1
+        return [{
+            "id": self.id,
+            "type": "ir.actions.act_window",
+            "name": "Share",
+            "res_model": "x.share.wizard",
+            "view_mode": "form",
+            "target": "new",
+        }]
+
+
+class _WindowActionModel:
+    def __init__(self, action):
+        self.action = action
+
+    def sudo(self):
+        raise AssertionError("window action must not be escalated with sudo")
+
+    def browse(self, action_id):
+        return self.action if action_id == self.action.id else None
+
+
 class _Env(dict):
     user = types.SimpleNamespace(groups_id=set())
 
 
 def _authorized_contract(*, disabled=False, duplicate=False, method="action_confirm", button_type="object"):
     is_server = button_type in {"server", "server_action"}
-    backend_identity = "server_action:7" if is_server else f"button:{button_type}:{method}"
+    is_window = button_type == "action"
+    backend_identity = (
+        "server_action:7"
+        if is_server
+        else "window_action:338"
+        if is_window
+        else f"button:{button_type}:{method}"
+    )
     rule = {
         "actionId": "action.confirm",
         "actionKey": "confirm",
@@ -73,6 +126,13 @@ def _authorized_contract(*, disabled=False, duplicate=False, method="action_conf
             "type": button_type,
             **({"server_action_id": 7} if is_server else {}),
         },
+        **({
+            "target": {
+                "action_id": 338,
+                "xml_id": "project.share_action",
+                "context_raw": "{'dialog_size': 'medium'}",
+            },
+        } if is_window else {}),
         "allowed": True,
         "enabled": not disabled,
         "disabled": disabled,
@@ -93,7 +153,13 @@ def _authorized_contract(*, disabled=False, duplicate=False, method="action_conf
 
 def _authority_button(method="action_confirm", button_type="object"):
     is_server = button_type in {"server", "server_action"}
-    backend_identity = "server_action:7" if is_server else f"button:{button_type}:{method}"
+    backend_identity = (
+        "server_action:7"
+        if is_server
+        else "window_action:338"
+        if button_type == "action"
+        else f"button:{button_type}:{method}"
+    )
     return {
         "name": method,
         "type": button_type,
@@ -165,6 +231,13 @@ def _load_handler():
     handlers_mod = types.ModuleType("odoo.addons.smart_core.handlers")
     core_mod = types.ModuleType("odoo.addons.smart_core.core")
     utils_mod = types.ModuleType("odoo.addons.smart_core.utils")
+    tools_mod = types.ModuleType("odoo.tools")
+    safe_eval_mod = types.ModuleType("odoo.tools.safe_eval")
+    safe_eval_mod.safe_eval = lambda expression, _globals: (
+        {"dialog_size": "medium"}
+        if expression == "{'dialog_size': 'medium'}"
+        else {}
+    )
     smart_core_mod.__path__ = [str(root)]
     handlers_mod.__path__ = [str(root / "handlers")]
     core_mod.__path__ = [str(root / "core")]
@@ -183,6 +256,8 @@ def _load_handler():
         {
             "odoo": odoo_mod,
             "odoo.exceptions": exc_mod,
+            "odoo.tools": tools_mod,
+            "odoo.tools.safe_eval": safe_eval_mod,
             "odoo.addons": addons_mod,
             "odoo.addons.smart_core": smart_core_mod,
             "odoo.addons.smart_core.handlers": handlers_mod,
@@ -411,6 +486,61 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
                 method_name="action_confirm",
                 button_type="server",
             )
+
+    def test_contract_window_action_authority_rejects_target_mismatch(self):
+        module = _load_handler()
+        contract = _authorized_contract(method="338", button_type="action")
+        contract["actionContract"]["actionRuleList"][0]["target"]["action_id"] = 339
+        handler = _authority_handler(module, contract)
+
+        with self.assertRaisesRegex(module.AccessError, "ACTION_CONTRACT_WINDOW_ACTION_MISMATCH"):
+            handler._authorize_contract_action(
+                _authority_button(method="338", button_type="action"),
+                model="x.model",
+                record_id=3,
+                method_name="338",
+                button_type="action",
+            )
+
+    def test_handle_contract_window_action_loads_wizard_without_model_method_or_sudo(self):
+        module = _load_handler()
+        window_action = _WindowAction()
+        recordset = _Recordset()
+        button_model = _ButtonModel(recordset)
+        env = _Env({
+            "x.model": button_model,
+            "ir.actions.act_window": _WindowActionModel(window_action),
+        })
+        handler = module.ExecuteButtonHandler(
+            env=env,
+            payload={
+                "params": {
+                    "model": "x.model",
+                    "record_id": 3,
+                    "button": _authority_button(method="338", button_type="action"),
+                },
+                "meta": {"action_id": 41, "menu_id": 51},
+            },
+            context={"trace_id": "trace"},
+        )
+        handler._load_current_action_contract = lambda **_kwargs: _authorized_contract(
+            method="338",
+            button_type="action",
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(recordset.method_calls, 0)
+        self.assertEqual(button_model.access_modes, ["read"])
+        self.assertEqual(window_action.read_calls, 1)
+        self.assertEqual(window_action.execution_context["active_model"], "x.model")
+        self.assertEqual(window_action.execution_context["active_id"], 3)
+        self.assertEqual(window_action.execution_context["active_ids"], [3])
+        self.assertEqual(window_action.execution_context["dialog_size"], "medium")
+        raw_action = result["data"]["result"]["raw_action"]
+        self.assertEqual(raw_action["entry_target"]["route"], "/f/x.share.wizard/new")
+        self.assertEqual(result["data"]["effect"]["target"]["kind"], "entry_target")
 
     def test_server_action_navigation_result_has_entry_target(self):
         module = _load_handler()

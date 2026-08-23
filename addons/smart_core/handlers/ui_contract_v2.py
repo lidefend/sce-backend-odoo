@@ -2515,7 +2515,6 @@ class UiContractV2Handler(BaseIntentHandler):
                 "section_titles": "sectionTitles",
                 "field_groups": "fieldGroups",
                 "hidden_field_names": "hiddenFieldNames",
-                "form_columns": "formColumns",
                 "group_columns": "groupColumns",
                 "group_visibility": "groupVisibility",
                 "category_id": "categoryId",
@@ -2525,6 +2524,9 @@ class UiContractV2Handler(BaseIntentHandler):
             for source_key, target_key in mappings.items():
                 if source_key in row:
                     out[target_key] = row[source_key]
+            form_columns = self._form_layout_columns_from_governance(row)
+            if form_columns > 0:
+                out["formColumns"] = form_columns
             return out
 
         configured_field_groups = (

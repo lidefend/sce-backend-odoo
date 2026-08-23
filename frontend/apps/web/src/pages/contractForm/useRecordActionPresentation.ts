@@ -136,7 +136,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   async function runNativeLayoutAction(row: Record<string, unknown>) {
     const action = contractActionFromNativeRow(row);
     if (!action) return;
-    if ((action.kind === 'object' || action.kind === 'server') && action.methodName && recordId.value) {
+    if ((action.kind === 'object' || action.kind === 'action' || action.kind === 'server') && action.methodName && recordId.value) {
       if (!action.enabled || !await confirmActionSafety(action)) return;
       if (!await ensureSavedBeforeRecordAction()) return;
       busyKind.value = 'action';
@@ -146,7 +146,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
           res_id: recordId.value,
           button: {
             name: action.methodName,
-            type: action.kind === 'server' ? 'server' : 'object',
+            type: action.kind === 'server' ? 'server' : action.kind === 'action' ? 'action' : 'object',
             action_id: String(action.authorityActionId || '').trim(),
             backend_identity: String(action.backendIdentity || '').trim(),
             source_widget_id: String(action.sourceWidgetId || '').trim(),

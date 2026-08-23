@@ -115,7 +115,15 @@ export function buildContractFormActions(params: {
         backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
         nativeIdentity,
         label: String(row.label || key).trim() || key,
-        kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : buttonName ? 'object' : clientMode ? 'client' : 'open',
+        kind: buttonType === 'server' || buttonType === 'server_action'
+          ? 'server'
+          : buttonType === 'action'
+            ? 'action'
+            : buttonName
+              ? 'object'
+              : clientMode
+                ? 'client'
+                : 'open',
         intent: String(row.intent || '').trim(),
         level,
         selection: 'none',
@@ -230,7 +238,7 @@ export function buildContractFormActions(params: {
     const contractAllowed = row.allowed === true;
     const contractEnabled = row.enabled === true;
     const contractDisabled = row.disabled === true;
-    const needRecord = ['object', 'server', 'mutation'].includes(effectiveKind) || ['row', 'smart'].includes(level);
+    const needRecord = ['object', 'server', 'action', 'mutation'].includes(effectiveKind) || ['row', 'smart'].includes(level);
     const authorizationAllowed = contractAllowed && contractEnabled && !contractDisabled
       && status.disabled !== true;
     const requiresSavedRecord = needRecord && !params.recordId;
@@ -248,7 +256,12 @@ export function buildContractFormActions(params: {
       methodName,
       serverActionId: toPositiveInt(payload.server_action_id || payload.serverActionId),
       serverActionXmlId: String(payload.xml_id || payload.xmlId || '').trim(),
-      targetModel: String(row.target_model || row.model || params.model || '').trim(),
+      // A type=action button is authorised against the current source record;
+      // target.model names the window destination (often a transient wizard),
+      // not the record whose Contract V2 authority is being executed.
+      targetModel: effectiveKind === 'action'
+        ? params.model
+        : String(row.target_model || row.model || params.model || '').trim(),
       context: parseMaybeJsonRecord(payload.context_raw),
       domainRaw: String(payload.domain_raw || '').trim(),
       target: String(payload.target || targetRaw.target || '').trim(),

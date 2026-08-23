@@ -5372,3 +5372,39 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   existing authorized Contract V2 action, with a direct negative case proving
   identity-free methods remain denied. Resume the layout candidate from the
   Contract snapshot gate only after that independent evidence carrier passes.
+
+## Contract V2 form authority runtime closure (2026-08-24)
+
+- Branch / anchor: `fix/contract-v2-form-columns-authority-v1` / `8a93853c`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / Contract V2
+  form-structure assembly and record-bound action execution / `smart_core` plus
+  the generic Web Contract form action adapter.
+- Reason / boundary: zero `formColumns` is not positive governance authority;
+  root field occurrences require strict self-owned widget descriptors; and a
+  Contract-authorized `type=action` window action must execute with its exact
+  action identity instead of being treated as a menu route. No project-model,
+  label, action-ID, menu-ID or state special case was added.
+- Why Here / Why Not Elsewhere: these are generic carrier integrity and action
+  authority rules. Construction modules continue to own business actions and
+  forms; the frontend only preserves the authoritative Contract identity, and
+  UI kits do not participate in the decision.
+- Blast radius / validation: Contract V2 form payloads containing root field
+  occurrences and bound window actions, plus the generic action presentation
+  and execution adapter. Backend boundary suites passed `90 + 84 + 17` cases;
+  Contract header action presentation, Canonical Presenter `140` cases, strict
+  TypeScript, governed Frontend Quick and the read-only project-create action
+  scope probe passed. The production handler resolved action `338` to the
+  governed project-share wizard with the current project as active record,
+  performed no mutation and left the source record fingerprint unchanged.
+- Runtime evidence: governed `sc-local-dev / sc_dev_demo` was rebuilt and the
+  affected form pages loaded through the Canonical driver without browser
+  errors. The read-only browser probe reported no mutation requests.
+- Independent evidence blocker: the broad Contract snapshot export reaches the
+  unrelated `release_operator_surface_intent_admin` case, whose historical
+  `admin` principal is not a platform administrator and is correctly denied.
+  The partial generated snapshots were restored. This daily-development batch
+  does not modify release-operator identity, snapshot principals or permission
+  policy, and does not claim release evidence from that failed broad export.
+- Rollback: revert this batch as one P0 carrier/action unit and run the governed
+  `smart_core` incremental upgrade. No database repair, fixture rewrite or
+  frontend business fallback is required.

@@ -2628,6 +2628,35 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(structure["slots"][2]["groups"][0]["title"], "金额信息")
         self.assertIn("line_ids", structure["slots"][4]["groups"][0]["fieldRefs"])
 
+    def test_form_structure_contract_omits_undeclared_governance_form_columns(self):
+        handler = self.module.UiContractV2Handler(env=object())
+
+        def build(form_columns):
+            return handler._build_form_structure_contract(
+                model="demo.business",
+                profile={
+                    "common_fields": ["name"],
+                    "amount_fields": [],
+                    "date_fields": [],
+                    "status_field": "",
+                    "note_field": "",
+                    "attachment_field": "",
+                    "detail_fields": [],
+                },
+                field_type=lambda _name: "char",
+                unique=lambda items: list(dict.fromkeys(items)),
+                governance={
+                    "source": "business_view_orchestration",
+                    "form_columns": form_columns,
+                },
+            )
+
+        undeclared_source = build(0)["sourceAuthority"]["governance_source"]
+        self.assertNotIn("formColumns", undeclared_source)
+
+        declared_source = build(2)["sourceAuthority"]["governance_source"]
+        self.assertEqual(declared_source["formColumns"], 2)
+
     def test_platform_contract_has_no_model_specific_business_section_registry(self):
         self.assertFalse(hasattr(self.module, "BUSINESS_FORM_SECTION_ALIASES_BY_MODEL"))
         self.assertFalse(hasattr(self.module, "BUSINESS_FORM_STRUCTURE_P1_VISIBLE_FIELD_MODELS"))
