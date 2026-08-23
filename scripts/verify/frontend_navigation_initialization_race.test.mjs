@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import { createNavigationSelectionSnapshot } from '../../frontend/apps/web/src/app/navigationSelectionCore.js';
 
 const authority = {
-  contract_version: 'route_authority.v1',
+  contract_version: '2.0.0',
+  schema_version: '2.0.0',
   primary_actions: [],
   role_home_actions: [],
   contextual_actions: [],

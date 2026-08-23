@@ -24,6 +24,7 @@ export function useOne2manyRuntime(params: {
   resolveColumns: (fieldName: string) => One2ManyColumn[];
   resolvePrimaryColumn: (fieldName: string) => string;
   resolveRelationOptions: (fieldName: string) => RelationOption[];
+  parentValues: () => Record<string, unknown>;
   markFieldChanged: (fieldName: string) => void;
 }) {
   const rowsByField = reactive<Record<string, One2ManyInlineRow[]>>({});
@@ -62,7 +63,9 @@ export function useOne2manyRuntime(params: {
   }
 
   function setRowField(fieldName: string, rowKey: string, column: One2ManyColumn, value: unknown) {
-    const changed = setOne2manyDraftRowField({ rowsByField, fieldName, rowKey, column, value });
+    const changed = setOne2manyDraftRowField({
+      rowsByField, fieldName, rowKey, column, value, parentValues: params.parentValues(),
+    });
     if (changed) params.markFieldChanged(fieldName);
   }
 
@@ -100,6 +103,7 @@ export function useOne2manyRuntime(params: {
       recordId: params.recordId(),
       resolvePrimaryColumn: params.resolvePrimaryColumn,
       resolveColumns: params.resolveColumns,
+      parentValues: params.parentValues(),
     });
   }
 
@@ -111,7 +115,13 @@ export function useOne2manyRuntime(params: {
     });
   }
 
-  function applyLinePatches(linePatches: Array<{ field?: unknown; row_key?: unknown; row_id?: unknown; patch?: unknown }>) {
+  function applyLinePatches(linePatches: Array<{
+    field?: unknown;
+    row_key?: unknown;
+    row_id?: unknown;
+    patch?: unknown;
+    modifiers_patch?: unknown;
+  }>) {
     if (!Array.isArray(linePatches) || !linePatches.length) return;
     linePatches.forEach((line) => {
       const fieldName = String(line.field || '').trim();
@@ -126,6 +136,13 @@ export function useOne2manyRuntime(params: {
         row.values = {
           ...(row.values || {}),
           ...(patch as Record<string, unknown>),
+        };
+      }
+      const modifierPatch = line.modifiers_patch;
+      if (modifierPatch && typeof modifierPatch === 'object' && !Array.isArray(modifierPatch)) {
+        row.modifierPatches = {
+          ...(row.modifierPatches || {}),
+          ...(modifierPatch as Record<string, Record<string, unknown>>),
         };
       }
     });

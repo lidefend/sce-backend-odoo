@@ -13,10 +13,10 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "content": "section,key,count,extra\nmeta,export_filtered_only,1,\nmeta,day_from,2026-04-17,\nmeta,day_to,2026-04-23,\nmeta,role_code,,\nmeta,user_id,0,\ntotal,scene_open_total,2,\ntotal,capability_open_total,0,\nscene_top,my.work,2,\nrole_top,admin,2,2/0\nuser_top,2,2,2/0\nscene_daily,2026-04-17,0,\nscene_daily,2026-04-18,0,\nscene_daily,2026-04-19,0,\nscene_daily,2026-04-20,0,\nscene_daily,2026-04-21,0,\nscene_daily,2026-04-22,0,\nscene_daily,2026-04-23,2,\ncapability_daily,2026-04-17,0,\ncapability_daily,2026-04-18,0,\ncapability_daily,2026-04-19,0,\ncapability_daily,2026-04-20,0,\ncapability_daily,2026-04-21,0,\ncapability_daily,2026-04-22,0,\ncapability_daily,2026-04-23,0,\ncapability_visibility,total,5,\ncapability_visibility,visible,1,\ncapability_visibility,hidden,4,\nreason_count,PERMISSION_DENIED,4,\nhidden_sample,project.board.open,0,PERMISSION_DENIED\nhidden_sample,contract.center.open,0,PERMISSION_DENIED\nhidden_sample,cost.ledger.open,0,PERMISSION_DENIED\nhidden_sample,finance.payment_request.list,0,PERMISSION_DENIED",
-    "filename": "usage-analytics-2026-04-17-2026-04-23.csv"
+    "content": "section,key,count,extra\nmeta,export_filtered_only,1,\nmeta,day_from,2026-08-14,\nmeta,day_to,2026-08-20,\nmeta,role_code,,\nmeta,user_id,0,\ntotal,scene_open_total,15,\ntotal,capability_open_total,0,\nscene_top,my.work,8,\nscene_top,finance.payment_requests,7,\nrole_top,pm,13,13/0\nrole_top,project_manager,6,6/0\nrole_top,executive,1,1/0\nuser_top,41,6,6/0\nuser_top,45,6,6/0\nuser_top,2,2,2/0\nuser_top,50,1,1/0\nscene_daily,2026-08-14,0,\nscene_daily,2026-08-15,0,\nscene_daily,2026-08-16,0,\nscene_daily,2026-08-17,0,\nscene_daily,2026-08-18,0,\nscene_daily,2026-08-19,7,\nscene_daily,2026-08-20,8,\ncapability_daily,2026-08-14,0,\ncapability_daily,2026-08-15,0,\ncapability_daily,2026-08-16,0,\ncapability_daily,2026-08-17,0,\ncapability_daily,2026-08-18,0,\ncapability_daily,2026-08-19,0,\ncapability_daily,2026-08-20,0,\ncapability_visibility,total,6,\ncapability_visibility,visible,5,\ncapability_visibility,hidden,1,\nreason_count,CAPABILITY_SCOPE_MISSING,1,\nreason_count,PERMISSION_DENIED,1,\nhidden_sample,finance.payment_request.list,0,PERMISSION_DENIED",
+    "filename": "usage-analytics-2026-08-14-2026-08-20.csv"
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

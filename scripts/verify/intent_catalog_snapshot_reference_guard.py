@@ -24,6 +24,7 @@ def main() -> int:
 
     repo_root = Path.cwd()
     missing: list[str] = []
+    invalid: list[str] = []
     for item in intents:
         if not isinstance(item, dict):
             continue
@@ -38,9 +39,20 @@ def main() -> int:
             snapshot_path = repo_root / snapshot_file
             if not snapshot_path.exists():
                 missing.append(f"{intent}:{snapshot_file}")
+                continue
+            try:
+                snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+            except Exception as exc:
+                invalid.append(f"{intent}:{snapshot_file}:invalid-json:{exc.__class__.__name__}")
+                continue
+            error = snapshot.get("error") if isinstance(snapshot, dict) else None
+            if isinstance(error, dict) and str(error.get("type") or "").strip() == "HandlerNotFound":
+                invalid.append(f"{intent}:{snapshot_file}:HandlerNotFound")
 
     if missing:
         raise SystemExit("❌ missing snapshot references: " + ", ".join(sorted(set(missing))))
+    if invalid:
+        raise SystemExit("❌ invalid snapshot references: " + ", ".join(sorted(set(invalid))))
 
     print("[verify.intent_catalog.snapshot_reference_guard] PASS")
     return 0

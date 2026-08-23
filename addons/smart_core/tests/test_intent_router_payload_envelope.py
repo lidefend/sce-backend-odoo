@@ -161,13 +161,51 @@ class TestIntentRouterPayloadEnvelope(unittest.TestCase):
 
         router = _load_router(_FakeRequest(), Handler)
 
-        result = router._dispatch("demo.intent", {"x": 1}, {"trace": "t"})
+        result = router._dispatch(
+            "demo.intent",
+            {"x": 1},
+            {"trace": "t"},
+            {"action_id": 41, "menu_id": 51},
+        )
 
-        expected = {"intent": "demo.intent", "params": {"x": 1}, "context": {"trace": "t"}}
+        expected = {
+            "intent": "demo.intent",
+            "params": {"x": 1},
+            "context": {"trace": "t"},
+            "meta": {"action_id": 41, "menu_id": 51},
+        }
         self.assertEqual(result, {"ok": True})
         self.assertEqual(seen["init_payload"], expected)
         self.assertEqual(seen["run_payload"], expected)
         self.assertEqual(seen["ctx"], {"trace": "t"})
+
+    def test_route_intent_payload_preserves_top_level_meta(self):
+        seen = {}
+
+        class Handler:
+            def __init__(self, **kwargs):
+                seen["init_payload"] = kwargs.get("payload")
+                self.registry = None
+                self.cr = None
+                self.uid = None
+
+            def run(self, payload=None, ctx=None):
+                seen["run_payload"] = payload
+                return {"ok": True}
+
+        router = _load_router(_FakeRequest(), Handler)
+        payload = {
+            "intent": "demo.intent",
+            "params": {"x": 1},
+            "context": {"trace": "t"},
+            "meta": {"action_id": 41, "menu_id": 51},
+        }
+
+        result = router.route_intent_payload(payload, ctx=object())
+
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(seen["init_payload"], payload)
+        self.assertEqual(seen["run_payload"], payload)
 
     def test_machine_credential_payload_cannot_select_another_registry(self):
         class Handler:

@@ -12,6 +12,7 @@ import threading
 import types
 from hashlib import md5
 
+from lxml import etree
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError
 from odoo.tools.safe_eval import safe_eval
@@ -113,17 +114,30 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
     def _projection_identity(self, model_name, view_type):
         context = dict(self.env.context or {})
         action_id = context.get('contract_action_id')
-        requested_view_id = context.get('contract_view_id') or context.get('requested_view_id')
+        requested_view_raw = context.get('contract_view_id')
+        if requested_view_raw in (None, False, ''):
+            requested_view_raw = context.get('requested_view_id')
+        requested_view_explicit = requested_view_raw not in (None, False, '')
+        requested_view_id = requested_view_raw
         action = None
         source_view_id = False
         try:
             requested_view_id = int(requested_view_id or 0)
-        except Exception:
-            requested_view_id = 0
-        if requested_view_id:
+        except Exception as exc:
+            raise ValueError("explicit view id is invalid") from exc
+        if requested_view_explicit:
+            if requested_view_id <= 0:
+                raise ValueError("explicit view id must be a positive integer")
             view = self.env['ir.ui.view'].sudo().browse(requested_view_id)
-            if view.exists() and view.model == model_name and view.type == view_type:
-                source_view_id = view.id
+            if not view.exists():
+                raise ValueError("explicit view %s does not exist" % requested_view_id)
+            actual_type = 'tree' if view.type == 'list' else view.type
+            expected_type = 'tree' if view_type == 'list' else view_type
+            if view.model != model_name or actual_type != expected_type:
+                raise ValueError(
+                    "explicit view %s does not match %s.%s" % (requested_view_id, model_name, expected_type)
+                )
+            source_view_id = view.id
         try:
             action_id = int(action_id or 0)
         except Exception:
@@ -134,8 +148,15 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 if not source_view_id:
                     for view_spec in (action.views or []):
                         if view_spec and len(view_spec) >= 2 and view_spec[1] == view_type:
-                            source_view_id = int(view_spec[0] or 0) or False
-                            break
+                            candidate_view_id = int(view_spec[0] or 0) or 0
+                            if candidate_view_id:
+                                source_view_id = candidate_view_id
+                                break
+                    if not source_view_id:
+                        action_view = action.view_id or False
+                        if action_view and action_view.exists():
+                            if action_view.type == view_type and action_view.model == model_name:
+                                source_view_id = int(action_view.id or 0) or False
                 return {
                     "action_id": action.id,
                     "source_view_id": source_view_id,
@@ -162,10 +183,53 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             "projection_scope": "generic:%s:%s" % (model_name, view_type),
         }
 
+    @api.model
+    def _refine_projection_identity_from_view_data(self, identity, view_data, model_name, view_type):
+        """Bind default ``get_view`` resolution back to its native view.
+
+        Actions commonly declare ``(False, 'tree')`` and let Odoo choose the
+        model's effective view.  The returned payload carries that resolved
+        view id; dropping it makes an action-specific projection look generic
+        even though its architecture came from a concrete native authority.
+        """
+        current = dict(identity or {})
+        raw_view_id = view_data.get("_source_view_id") if isinstance(view_data, dict) else None
+        try:
+            resolved_view_id = int(raw_view_id or 0)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("resolved view id is invalid") from exc
+        if resolved_view_id <= 0:
+            return current
+        view = self.env["ir.ui.view"].sudo().browse(resolved_view_id).exists()
+        expected_type = "tree" if view_type == "list" else view_type
+        actual_type = "tree" if view and view.type == "list" else view.type if view else ""
+        if not view or view.model != model_name or actual_type != expected_type:
+            raise ValueError(
+                "resolved view %s does not match %s.%s"
+                % (resolved_view_id, model_name, expected_type)
+            )
+        declared_view_id = int(current.get("source_view_id") or 0)
+        if declared_view_id and declared_view_id != resolved_view_id:
+            raise ValueError(
+                "resolved view %s conflicts with declared view %s"
+                % (resolved_view_id, declared_view_id)
+            )
+        action_id = int(current.get("action_id") or 0)
+        return {
+            "action_id": action_id or False,
+            "source_view_id": resolved_view_id,
+            "projection_scope": (
+                "action:%s:%s:%s:view:%s"
+                % (action_id, model_name, expected_type, resolved_view_id)
+                if action_id
+                else "view:%s:%s:%s" % (resolved_view_id, model_name, expected_type)
+            ),
+        }
+
     # ========= 契约键白名单（类级常量） =========
     _ALLOWED_BY_VT = {
         "common": {"modifiers", "toolbar", "search", "order"},
-        "tree": {"columns", "columns_schema", "row_actions", "page_size", "row_classes", "capabilities", "default_order", "collection_presentation"},
+        "tree": {"columns", "columns_schema", "column_occurrences", "row_actions", "page_size", "row_classes", "capabilities", "default_order", "collection_presentation"},
         "form": {
             "layout", "statusbar",
             "header_buttons", "button_box", "stat_buttons",
@@ -310,7 +374,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
     # ====================== 生成契约（解析 + 降级） ======================
 
     @api.model
-    def _generate_from_fields_view_get(self, model_name, view_type='form'):
+    def _generate_from_fields_view_get(self, model_name, view_type='form', view_data=None):
         """
         解析 Odoo 视图为“契约 2.0 视图块”。
         - 优先调用 app.view.parser.parse_odoo_view(model_name, view_type)
@@ -320,9 +384,15 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         try:
             identity = self._projection_identity(model_name, view_type)
             # 1) 拿到合并后的最终视图
-            view_data = self._safe_get_view_data(model_name, view_type)
+            view_data = view_data if isinstance(view_data, dict) else self._safe_get_view_data(model_name, view_type)
             if not view_data:
                 raise ValueError(_("无法解析视图：%s.%s") % (model_name, view_type))
+            identity = self._refine_projection_identity_from_view_data(
+                identity,
+                view_data,
+                model_name,
+                view_type,
+            )
 
             _logger.debug(
                 "VIEW_PARSE_DEBUG: model=%s view_type=%s view_data_keys=%s",
@@ -354,9 +424,8 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
 
             # 3) 降级/合并默认排序（tree）
             if view_type == 'tree' and view_data and view_data.get('arch'):
-                import xml.etree.ElementTree as ET
                 try:
-                    root = ET.fromstring(view_data['arch'])
+                    root = view_data.get('_arch_root')
                     tag_ok = (root.tag in ('tree', 'list'))
                     if tag_ok and root.get('default_order'):
                         parsed_json['order'] = root.get('default_order')
@@ -366,11 +435,10 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
 
             # 3.2) 仅在解析器未给 columns 时，才用原始视图可见字段覆盖（保持保真）
             if view_type == 'tree' and view_data and view_data.get('arch') and not parsed_json.get('columns'):
-                import xml.etree.ElementTree as ET
                 try:
-                    root = ET.fromstring(view_data['arch'])
+                    root = view_data.get('_arch_root')
                     visible_fields = []
-                    for field in root.findall('.//field[@name]'):
+                    for field in root.xpath('.//field[@name]'):
                         fname = field.get('name')
                         is_invisible = field.get('column_invisible')
                         if fname and is_invisible not in ('True', '1'):
@@ -497,6 +565,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         if vt == 'tree':
             block['columns'] = vp.get('columns', ['id'])
             block['columns_schema'] = vp.get('columns_schema', [])
+            block['column_occurrences'] = vp.get('column_occurrences', [])
             block['row_actions'] = vp.get('row_actions', [{'name': 'open_form', 'label': _('Open'), 'intent': 'form.open'}])
             block['page_size'] = vp.get('page_size', 50)
             block['row_classes'] = vp.get('row_classes', [])
@@ -548,7 +617,10 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         elif vt == 'gantt':
             block['gantt'] = vp.get('gantt', {'date_start': 'date_start', 'date_stop': 'date_end', 'progress': 'progress'})
         elif vt == 'activity':
-            block['activity'] = vp.get('activity', {'templates': None})
+            activity = vp.get('activity')
+            if not isinstance(activity, dict) or not activity.get('node_occurrences') or not activity.get('template'):
+                raise ValueError('activity native projection evidence is required')
+            block['activity'] = activity
         elif vt == 'dashboard':
             block['dashboard'] = vp.get('dashboard', {'cards': []})
         return block
@@ -585,6 +657,30 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         # below are still performed with sudo.
         Model = self.env[model_name]
         data = {}
+        view_id = False
+
+        def _prepared_view_data(raw):
+            if not isinstance(raw, dict) or not raw.get('arch'):
+                return None
+            payload = {
+                'arch': raw.get('arch'),
+                'fields': raw.get('fields', {}),
+                'toolbar': raw.get('toolbar', {}),
+            }
+            raw_view_id = raw.get('id') or raw.get('view_id')
+            if raw_view_id not in (None, False, ''):
+                try:
+                    source_view_id = int(raw_view_id)
+                except (TypeError, ValueError) as exc:
+                    raise ValueError("resolved view id is invalid") from exc
+                if source_view_id <= 0:
+                    raise ValueError("resolved view id must be a positive integer")
+                payload['_source_view_id'] = source_view_id
+            try:
+                payload['_arch_root'] = etree.fromstring(payload['arch'].encode('utf-8'))
+            except Exception as exc:
+                _logger.warning("XML解析失败，仍然使用视图数据: %s", exc)
+            return payload
 
         # a) 尝试跟随当前动作绑定的视图（优先精准 view_id）
         try:
@@ -594,36 +690,26 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             if view_id:
                 _logger.debug("使用指定视图ID %s 加载 %s.%s 视图", view_id, model_name, view_type)
                 data = Model.with_context(load_all_views=True).get_view(view_id=view_id, view_type=view_type)
-                if isinstance(data, dict) and data.get('arch'):
-                    return {
-                        'arch': data.get('arch'),
-                        'fields': data.get('fields', {}),
-                        'toolbar': data.get('toolbar', {}),
-                    }
+                prepared = _prepared_view_data(data)
+                if prepared:
+                    return prepared
         except Exception as e:
             if self.env.context.get('contract_projection_readonly'):
                 _logger.debug("加载指定视图ID失败: %s", e)
             else:
                 _logger.warning("加载指定视图ID失败: %s", e)
+        if view_id and self.env.context.get('contract_projection_readonly'):
+            raise ValueError("specified view %s unavailable for %s.%s" % (view_id, model_name, view_type))
 
         # b) 标准方式（按类型）
         try:
             data = Model.get_view(view_type=view_type)
-            if isinstance(data, dict) and data.get('arch'):
-                arch = data.get('arch', '')
-                if arch:
-                    import xml.etree.ElementTree as ET
-                    try:
-                        root = ET.fromstring(arch)
-                        if root.tag != view_type and not (view_type == 'tree' and root.tag == 'list'):
-                            _logger.warning("视图类型不匹配: 请求 %s 但获得 %s", view_type, root.tag)
-                    except Exception as e:
-                        _logger.warning("XML解析失败，仍然使用视图数据: %s", e)
-                return {
-                    'arch': data.get('arch'),
-                    'fields': data.get('fields', {}),
-                    'toolbar': data.get('toolbar', {}),
-                }
+            prepared = _prepared_view_data(data)
+            if prepared:
+                root = prepared.get('_arch_root')
+                if root is not None and root.tag != view_type and not (view_type == 'tree' and root.tag == 'list'):
+                    _logger.warning("视图类型不匹配: 请求 %s 但获得 %s", view_type, root.tag)
+                return prepared
         except Exception as e:
             if self.env.context.get('contract_projection_readonly'):
                 _logger.debug("get_view 失败: %s", e)
@@ -633,7 +719,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         # c) 回退 fields_view_get（低版本 Odoo 有；若没有则捕获异常返回 None）
         try:
             fv = Model.fields_view_get(view_type=view_type, toolbar=True)
-            return {'arch': fv.get('arch'), 'fields': fv.get('fields', {}), 'toolbar': fv.get('toolbar', {})}
+            return _prepared_view_data(fv)
         except Exception as e:
             if self.env.context.get('contract_projection_readonly'):
                 _logger.debug("fields_view_get 失败: %s", e)
@@ -650,10 +736,14 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         - tree：保留你原有逻辑
         - kanban：提供最小可渲染块，避免误用 form 逻辑
         """
-        import xml.etree.ElementTree as ET
-
         fields_get = (view_data or {}).get('fields') or self.env[model_name].sudo().fields_get()
         arch = (view_data or {}).get('arch', '') or ''
+        arch_root = (view_data or {}).get('_arch_root')
+        if arch_root is None and arch:
+            try:
+                arch_root = etree.fromstring(arch.encode('utf-8'))
+            except Exception as exc:
+                _logger.warning("fallback XML解析失败: %s", exc)
         base = {
             'modifiers': {},
             'toolbar': {'header': [], 'sidebar': [], 'footer': []},
@@ -665,9 +755,9 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             view_fields = []
             columns_schema = []
             order_default = getattr(self.env[model_name], '_order', 'id desc') or 'id desc'
-            if arch:
+            if arch_root is not None:
                 try:
-                    root = ET.fromstring(arch)
+                    root = arch_root
                     if root.get('default_order'):
                         order_default = root.get('default_order')
                     collection_semantics = {
@@ -773,9 +863,9 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     'source': 'native_view_derived',
                 },
             }
-            if arch:
+            if arch_root is not None:
                 try:
-                    root = ET.fromstring(arch)
+                    root = arch_root
                     # 常见分组字段：不同版本/模块写法不一，这里尽量从属性里推断
                     for attr in ('default_group_by', 'group_by', 'stages_field'):
                         val = root.get(attr)
@@ -815,9 +905,9 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
 
         if view_type == 'search':
             search = {'filters': [], 'group_by': [], 'group_by_fields': [], 'search_fields': [], 'facets': {'enabled': True}}
-            if arch:
+            if arch_root is not None:
                 try:
-                    root = ET.fromstring(arch)
+                    root = arch_root
                     search_nodes = [root] if root.tag == 'search' else list(root.findall('.//search'))
                     seen_group_by = set()
                     for search_node in search_nodes:
@@ -867,11 +957,12 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 'fields': [],
                 'native_attrs': {},
             }
-            if arch:
+            if arch_root is not None:
                 try:
-                    root = ET.fromstring(arch)
+                    root = arch_root
                     if root.tag != 'calendar':
-                        root = root.find('.//calendar') or root
+                        nested_root = root.find('.//calendar')
+                        root = nested_root if nested_root is not None else root
                     cal['native_attrs'] = dict(root.attrib or {})
                     for key in ('date_start', 'date_stop', 'color', 'default_scale', 'event_open_popup'):
                         if root.get(key) is not None:
@@ -895,11 +986,12 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 'fields': [],
                 'native_attrs': {},
             }
-            if arch:
+            if arch_root is not None:
                 try:
-                    root = ET.fromstring(arch)
+                    root = arch_root
                     if root.tag != 'gantt':
-                        root = root.find('.//gantt') or root
+                        nested_root = root.find('.//gantt')
+                        root = nested_root if nested_root is not None else root
                     gantt['native_attrs'] = dict(root.attrib or {})
                     for key in ('date_start', 'date_stop', 'progress', 'default_scale'):
                         if root.get(key) is not None:
@@ -924,11 +1016,12 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                 'fields': [],
                 'native_attrs': {},
             }
-            if arch:
+            if arch_root is not None:
                 try:
-                    root = ET.fromstring(arch)
+                    root = arch_root
                     if root.tag != 'activity':
-                        root = root.find('.//activity') or root
+                        nested_root = root.find('.//activity')
+                        root = nested_root if nested_root is not None else root
                     activity['native_attrs'] = dict(root.attrib or {})
                     if root.get('activity_type'):
                         activity['activity_type_slots']['type'] = root.get('activity_type')
@@ -995,7 +1088,14 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             def field_node(f):
                 fname = f.get('name')
                 node = {'type': 'field', 'name': fname}
-                meta = dict((fields_get or {}).get(fname) or {})
+                raw_meta = dict((fields_get or {}).get(fname) or {})
+                from odoo.addons.smart_core.utils.native_field_descriptor import project_native_field_descriptor
+                meta = project_native_field_descriptor(
+                    fname,
+                    raw_meta,
+                    widget=str(raw_meta.get('widget') or ''),
+                    preserve_extra=True,
+                )
                 if f.get('string'):
                     node['string'] = f.get('string')
                     node['label'] = f.get('string')
@@ -1219,14 +1319,7 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
             return sub
 
         # 开始解析 FORM
-        if arch:
-            try:
-                root = ET.fromstring(arch)
-            except Exception as e:
-                _logger.warning("FORM fallback: XML 解析失败，将使用极简布局: %s", e)
-                root = None
-        else:
-            root = None
+        root = arch_root
 
         layout = _extract_layout(root) if root is not None else [{
             'type': 'sheet',

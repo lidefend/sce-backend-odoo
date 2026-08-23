@@ -1,6 +1,17 @@
 import type { FieldDescriptor } from '@sc/schema';
 import type { CanonicalFormField, CanonicalFormNode, CanonicalRelationValue } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldSchema, TemplateSelectOption } from '../../components/template/formSection.types';
+import type { RelationFieldAdapter } from '../../components/template/relationField.types';
+import {
+  normalizeMonetaryDigits,
+  projectMany2oneCapabilities,
+  resolveCurrencyDisplayLabel,
+} from '../../components/template/formSection.mapper';
+import {
+  MANY2ONE_CREATE_OPTION,
+  MANY2ONE_OPEN_RECORD_OPTION,
+  MANY2ONE_SEARCH_MORE_OPTION,
+} from './types';
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -42,8 +53,10 @@ function relationValue(value: unknown): CanonicalRelationValue | null {
 
 function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
   const config = asRecord(field.componentConfig);
+  const canonicalDescriptor = asRecord(field.fieldDescriptor);
   const selection = selectionOptions(config.selection).map((option) => [option.value, option.label] as [string, string]);
   return {
+    ...canonicalDescriptor,
     name: field.fieldCode,
     string: field.label,
     type: field.fieldType,
@@ -53,16 +66,80 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
     ...(selection.length ? { selection } : {}),
     ...(text(config.relation || config.relationModel || config.relation_model)
       ? { relation: text(config.relation || config.relationModel || config.relation_model) }
+      : text(canonicalDescriptor.relation)
+        ? { relation: text(canonicalDescriptor.relation) }
       : {}),
     ...(text(config.filename) ? { filename: text(config.filename) } : {}),
+    ...(normalizeMonetaryDigits(config.digits) ? { digits: normalizeMonetaryDigits(config.digits) } : {}),
+    ...(text(config.currencyField || config.currency_field)
+      ? { currency_field: text(config.currencyField || config.currency_field) }
+      : {}),
+    ...(canonicalDescriptor.subview ? { subview: canonicalDescriptor.subview } : {}),
+    ...(canonicalDescriptor.relation_entry ? { relation_entry: canonicalDescriptor.relation_entry } : {}),
+    ...(canonicalDescriptor.widget_options ? { widget_options: canonicalDescriptor.widget_options } : {}),
   };
 }
 
-export function canonicalFieldToFormSection(field: CanonicalFormField): FormSectionFieldSchema {
+type CanonicalRelationProjection = Pick<
+  RelationFieldAdapter,
+  | 'relationKeyword'
+  | 'filteredRelationOptions'
+  | 'selectedRelationOptions'
+  | 'relationCreateMode'
+  | 'relationInlineCreate'
+  | 'relationCreateLabel'
+  | 'relationInlineCreateLabel'
+  | 'canOpenRelationRecord'
+  | 'relationOpenLabel'
+  | 'relationSearchLabel'
+>;
+
+export function canonicalFieldToFormSection(
+  field: CanonicalFormField,
+  relationProjection?: CanonicalRelationProjection,
+): FormSectionFieldSchema {
   const config = asRecord(field.componentConfig);
   const type = text(field.fieldType || config.fieldType || config.field_type || 'char').toLowerCase() || 'char';
   const descriptor = fieldDescriptor(field);
   const relation = type === 'many2one' ? relationValue(field.value) : null;
+  const runtimeRelationOptions = type === 'many2one' && relationProjection
+    ? relationProjection.filteredRelationOptions(field.fieldCode).map((option) => ({
+      value: option.id,
+      label: option.label,
+    }))
+    : [];
+  const selectedRelation = type === 'many2one' && relationProjection
+    ? relationProjection.selectedRelationOptions(field.fieldCode).find((option) => (
+      !relation || String(option.id) === String(relation.id)
+    ))
+    : undefined;
+  const relationKeyword = type === 'many2one' && relationProjection
+    ? relationProjection.relationKeyword(field.fieldCode)
+    : '';
+  const many2oneCapabilities = type === 'many2one' && relationProjection
+    ? projectMany2oneCapabilities({
+      fieldName: field.fieldCode,
+      descriptor,
+      resolveRelationCreateMode: (name) => relationProjection.relationCreateMode(name),
+      resolveRelationInlineCreate: (name) => relationProjection.relationInlineCreate(name),
+      resolveCanOpenRelationRecord: (name) => relationProjection.canOpenRelationRecord(name),
+      resolveRelationRecordOpenLabel: (name) => relationProjection.relationOpenLabel(name),
+      resolveRelationSearchLabel: (name) => relationProjection.relationSearchLabel(name),
+      resolveRelationCreateLabel: (name) => relationProjection.relationCreateLabel(name),
+      resolveRelationInlineCreateLabel: (name) => relationProjection.relationInlineCreateLabel(name),
+      relationTextValue: relationKeyword || relation?.displayName || selectedRelation?.label || '',
+      many2oneCreateToken: MANY2ONE_CREATE_OPTION,
+      many2oneSearchToken: MANY2ONE_SEARCH_MORE_OPTION,
+      many2oneOpenToken: MANY2ONE_OPEN_RECORD_OPTION,
+    })
+    : { relationCreateMode: 'none' as const };
+  const digits = type === 'monetary' ? normalizeMonetaryDigits(config.digits) : undefined;
+  const currencyField = type === 'monetary'
+    ? text(config.currencyField || config.currency_field || 'currency_id')
+    : '';
+  const currencyLabel = type === 'monetary'
+    ? resolveCurrencyDisplayLabel(config.currencyLabel || config.currency_label || config.currencyValue || config.currency_value)
+    : '';
   return {
     key: field.widgetId,
     name: field.fieldCode,
@@ -71,15 +148,21 @@ export function canonicalFieldToFormSection(field: CanonicalFormField): FormSect
     type,
     widget: text(config.widget),
     widgetSemantics: asRecord(config.widgetSemantics || config.widget_semantics),
+    digits,
+    currencyField: currencyField || undefined,
+    currencyLabel: currencyLabel || undefined,
     required: field.required,
     readonly: field.readonly || field.disabled,
     helpText: field.reasonCode,
     spanClass: field.span >= 24 ? 'field--full' : field.span >= 16 ? 'field--wide' : 'field--normal',
     value: relation ? relation.displayName : field.value,
     inputValue: relation ? relation.id : inputValue(field.value),
-    many2oneTextValue: relation?.displayName || undefined,
+    many2oneTextValue: relationKeyword || relation?.displayName || selectedRelation?.label || undefined,
     selectionOptions: selectionOptions(config.selection),
-    relationOptions: selectionOptions(config.options || config.relationOptions || config.relation_options),
+    relationOptions: runtimeRelationOptions.length
+      ? runtimeRelationOptions
+      : selectionOptions(config.options || config.relationOptions || config.relation_options),
+    ...many2oneCapabilities,
     descriptor,
     fileName: text(config.fileName || config.file_name),
   };

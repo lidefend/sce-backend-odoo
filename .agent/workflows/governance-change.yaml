@@ -1,0 +1,39 @@
+workflow:
+  id: governance-change
+  purpose: governed_repository_work_environment_change
+  capability: governance
+
+  inputs:
+    - selected_goal
+    - baseline_full_sha
+    - current_branch
+    - complete_worktree_status
+
+  steps:
+    - load_authority_chain
+    - inventory_registered_worktree_and_governed_infrastructure
+    - identify_and_exclude_preexisting_changes
+    - load_goal_and_active_decisions
+    - declare_formal_product_layer_and_blast_radius
+    - freeze_single_objective_batch_and_exact_file_scope
+    - create_or_resume_run_record
+    - implement_only_within_frozen_scope
+    - record_commands_and_evidence_truthfully
+    - run_governed_quick_and_targeted_guards
+    - document_risk_rollback_and_next_step
+    - close_run_only_after_required_evidence_passes
+
+  stop_conditions:
+    - authority_conflict
+    - unowned_new_worktree_change
+    - requested_change_outside_frozen_scope
+    - unresolved_runtime_or_database_identity
+    - zero_tests_collected
+    - required_guard_failure
+    - evidence_fingerprint_drift
+
+  outputs:
+    - updated_agent_context
+    - run_record
+    - verification_evidence
+    - rollback_path

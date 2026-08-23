@@ -199,7 +199,7 @@ async function main() {
     with: ["workspace_home"],
     root_xmlid: "smart_construction_core.menu_sc_root",
   });
-  const deliveryNav = init?.delivery_engine_v1?.nav || init?.nav || [];
+  const deliveryNav = init?.delivery_engine?.nav || init?.nav || [];
   const financeNode = findNodeByLabel(deliveryNav, "财务中心");
   const financeChildren = Array.isArray(financeNode?.children) ? financeNode.children : [];
   const financeChildLabels = financeChildren.map((node) => String(node?.label || node?.title || "").trim()).filter(Boolean);

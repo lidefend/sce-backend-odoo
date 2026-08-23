@@ -2,7 +2,7 @@
 # ==================== Frontend ========================
 # ======================================================
 .PHONY: fe.install fe.dev fe.gate verify.frontend.build prod.frontend.build verify.frontend.typecheck.strict verify.frontend.lint.src verify.frontend.page_width_contract.guard verify.frontend.quick.gate verify.frontend.contract_header_action.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.contract.operation_gateway.guard verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.catalog verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.all verify.portal.scene_observability.structure_guard verify.portal.scene_observability.structure_guard.update
-.PHONY: fe.install.cached verify.frontend.release.local verify.frontend.ui5_scene_spike verify.frontend.scene_component_drivers verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser
+.PHONY: fe.install.cached confirm.frontend.release.audit verify.frontend.release.local verify.frontend.ui5_scene_spike verify.frontend.scene_component_drivers verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser
 
 fe.install:
 	@scripts/dev/pnpm_exec.sh -C frontend install
@@ -10,7 +10,14 @@ fe.install:
 fe.install.cached: guard.prod.forbid
 	@bash scripts/dev/frontend_cached_dependencies_restore.sh
 
-verify.frontend.release.local: guard.prod.forbid
+confirm.frontend.release.audit: guard.prod.forbid
+	@test "$(CONFIRM_FRONTEND_RELEASE_AUDIT)" = "RUN_FROZEN_FRONTEND_RELEASE_AUDIT" || { \
+	  echo "[frontend.release.lane] DENY formal release audit is not a daily-development target" >&2; \
+	  echo "[frontend.release.lane] use local.dev.* and targeted verification until final acceptance is explicitly opened" >&2; \
+	  exit 2; \
+	}
+
+verify.frontend.release.local: guard.prod.forbid confirm.frontend.release.audit
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-preflight
 	@$(MAKE) --no-print-directory fe.install.cached
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-audit
@@ -60,6 +67,8 @@ verify.frontend.scene_component_bridge.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_scene_component_driver_feature_flags.py
 
 verify.frontend.scene_component_bridge.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_scene_audit_disclosure_guard
+	@python3 -m unittest scripts.verify.test_contract_form_semantic_identity_guard
 	@python3 scripts/verify/frontend_scene_component_bridge_guard.py
 
 verify.frontend.scene_component_bridge.browser: guard.prod.forbid check-compose-project check-compose-env
@@ -81,7 +90,7 @@ verify.frontend.scene_component_bridge.browser: guard.prod.forbid check-compose-
 	SCENE_COMPONENT_DRIVER_TARGETS_JSON="$$targets_json" DB_NAME=sc_frontend_acceptance FRONTEND_URL=http://127.0.0.1:5175 ODOO_URL=http://127.0.0.1:18082 GIT_SHA="$$(git rev-parse HEAD)" \
 	  node scripts/verify/frontend_scene_component_driver_readonly_browser.mjs
 
-verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard
+verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard
 
 verify.frontend.release.unit: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard
 
@@ -121,6 +130,7 @@ verify.frontend.all_list_visual.audit: guard.prod.forbid
 	@E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" \
 		DB_NAME="$(DB_NAME)" \
 		FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:18081}" \
+		REQUIRE_ACTIVITY_SURFACE="$${REQUIRE_ACTIVITY_SURFACE:-0}" \
 		CONCURRENCY="$${CONCURRENCY:-1}" \
 		ARTIFACT_DIR="$${ARTIFACT_DIR:-/tmp/frontend-all-list-visual-audit}" \
 		node scripts/verify/frontend_all_list_visual_audit.mjs
@@ -268,6 +278,7 @@ verify.contract.subviews.guard: guard.prod.forbid
 	@python3 scripts/verify/subviews_contract_guard.py
 
 verify.frontend.view_type_render_coverage.guard: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_view_type_render_coverage_guard
 	@python3 scripts/verify/view_type_render_coverage_guard.py
 
 verify.frontend.view_type_contract_semantic.guard: guard.prod.forbid
@@ -366,10 +377,14 @@ verify.frontend.contract_header_action.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_header_action_presentation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-header-action-presentation-test.mjs >/dev/null
 	@node /tmp/contract-header-action-presentation-test.mjs
 
-.PHONY: verify.frontend.canonical_form_presenter.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit
+.PHONY: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit
 verify.frontend.canonical_form_presenter.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_form_presenter_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/canonical-form-presenter-test.mjs >/dev/null
 	@node /tmp/canonical-form-presenter-test.mjs
+
+verify.frontend.hierarchy_command_authority.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/hierarchy_command_authority_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/hierarchy-command-authority-test.mjs >/dev/null
+	@node /tmp/hierarchy-command-authority-test.mjs
 
 verify.frontend.readonly_main_data_coverage.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/readonly_main_data_coverage_test.ts --bundle --platform=node --format=esm --outfile=/tmp/readonly-main-data-coverage-test.mjs >/dev/null
@@ -397,7 +412,7 @@ verify.frontend.cross_model_action_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/cross_model_action_navigation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/cross-model-action-navigation-test.mjs >/dev/null
 	@node /tmp/cross-model-action-navigation-test.mjs
 
-verify.frontend.quick.gate: verify.frontend.canonical_form_presenter.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit
+verify.frontend.quick.gate: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit
 verify.frontend.quick.gate: guard.prod.forbid verify.frontend.workspace_content_alignment.guard verify.frontend.page_identity verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.frontend.grouped_contract_consistency.guard verify.frontend.grouped_drift_summary.baseline.guard verify.frontend.typecheck.strict verify.frontend.build
 	@echo "[OK] verify.frontend.quick.gate done"
 

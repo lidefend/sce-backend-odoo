@@ -15,18 +15,53 @@
   "ui_contract_raw": {
     "entries": [
       {
+        "action_id": 519,
+        "action_xmlid": "smart_construction_core.action_sc_project_list",
+        "allowed": true,
+        "deny_reason": [],
+        "desc": "项目台账与项目办理入口",
+        "icon": "P",
+        "key": "project_work",
+        "label": "项目工作",
+        "menu_id": 381,
+        "menu_xmlid": "smart_construction_core.menu_sc_project_project",
+        "target": {
+          "type": "action",
+          "value": "/web#menu_id=381&action=519"
+        }
+      },
+      {
+        "action_id": 608,
+        "action_xmlid": "smart_construction_core.action_construction_contract_my",
+        "allowed": true,
+        "deny_reason": [],
+        "desc": "合同台账与合同清单",
+        "icon": "C",
+        "key": "contract_work",
+        "label": "合同工作",
+        "menu_id": 398,
+        "menu_xmlid": "smart_construction_core.menu_sc_contract_income",
+        "target": {
+          "type": "action",
+          "value": "/web#menu_id=398&action=608"
+        }
+      },
+      {
+        "action_id": null,
+        "action_xmlid": null,
         "allowed": true,
         "deny_reason": [],
         "desc": "查看角色可用能力",
         "icon": "M",
         "key": "capability_matrix",
         "label": "能力矩阵",
-        "route": "/s/portal.capability_matrix",
-        "scene_key": "portal.capability_matrix"
+        "menu_id": null,
+        "menu_xmlid": null,
+        "target": null
       }
     ]
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

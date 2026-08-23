@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import unittest
 from pathlib import Path
@@ -10,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
     def _make_compose_files(self, *assignments: str) -> str:
+        make_env = os.environ.copy()
+        make_env.pop("COMPOSE_FILES", None)
         result = subprocess.run(
             [
                 "make",
@@ -20,6 +23,7 @@ class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
                 "env.print.compose_files",
             ],
             cwd=ROOT,
+            env=make_env,
             text=True,
             capture_output=True,
             check=False,
@@ -80,6 +84,11 @@ class ExternalCustomerAddonsRuntimeBoundaryTests(unittest.TestCase):
                 self.assertIn('if [[ -n "${SC_CUSTOMER_ADDONS_ROOT:-}" ]]; then', text)
                 self.assertIn('ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH},/mnt/customer-addons"', text)
                 self.assertIn('--addons-path="$ODOO_ADDONS_PATH"', text)
+
+    def test_module_upgrade_keeps_ephemeral_odoo_failures_diagnosable(self):
+        text = (ROOT / "scripts/mod/upgrade.sh").read_text(encoding="utf-8")
+        self.assertIn("--logfile=-", text)
+        self.assertNotIn("set -x", text)
 
     def test_customer_rename_confirmation_can_reach_odoo_shell(self):
         text = (ROOT / "scripts/ops/odoo_shell_exec.sh").read_text(encoding="utf-8")

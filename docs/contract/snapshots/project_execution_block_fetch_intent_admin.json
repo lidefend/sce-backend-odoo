@@ -2,7 +2,11 @@
   "action": null,
   "case": "project_execution_block_fetch_intent_admin",
   "contract_version": "v1",
-  "error": null,
+  "error": {
+    "code": "MISSING_PARAMS",
+    "message": "缺少参数：project_id 或 block_key",
+    "suggested_action": "fix_input"
+  },
   "execute_error": null,
   "execute_result": null,
   "fallback": false,
@@ -13,10 +17,12 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "project.execution.block.fetch",
-      "runtime_snapshot": false
+    "lifecycle_hints": {
+      "first_action": "create_project",
+      "primary_action_label": "创建项目",
+      "stage": "no_project_context",
+      "suggested_action_intent": "project.initiation.enter",
+      "suggested_action_title": "创建项目"
     }
   },
   "user": "admin",

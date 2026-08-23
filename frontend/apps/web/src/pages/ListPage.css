@@ -346,6 +346,12 @@
   display: none;
 }
 
+@media (max-width: 760px) {
+  .page[data-list-status='empty'] :deep(.toolbar-actions) {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .mobile-record-list .mobile-record-row {
     position: relative;

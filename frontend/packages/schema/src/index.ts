@@ -197,11 +197,12 @@ export interface AppInitResponse {
       display_name?: string;
     } | null;
   };
-  navigation_v1: {
-    contract_version: 'navigation.v1';
+  navigation: {
+    contract_version: '2.0.0';
+    schema_version: '2.0.0';
     source: string;
     nav: NavNode[];
-    route_authority_v1: Record<string, unknown>;
+    route_authority: Record<string, unknown>;
     contextual_routes?: Array<Record<string, unknown>>;
     integrity: {
       visible_action_count: number;
@@ -226,14 +227,6 @@ export interface AppInitResponse {
     intent?: string;
     loaded?: boolean;
     count?: number;
-  };
-  system_init_sections_v1?: {
-    contract_version?: string;
-    schema_version?: string;
-    session?: Record<string, unknown>;
-    nav?: Record<string, unknown>;
-    surface?: Record<string, unknown>;
-    bootstrap_refs?: Record<string, unknown>;
   };
   intents?: string[];
   intents_meta?: Record<string, {
@@ -477,6 +470,11 @@ export interface ExecuteButtonRequest {
   button: {
     name: string;
     type?: string;
+    action_id?: string;
+    backend_identity?: string;
+    source_widget_id?: string;
+    server_action_id?: number;
+    xml_id?: string;
   };
   context?: Record<string, unknown>;
   meta?: Record<string, unknown>;

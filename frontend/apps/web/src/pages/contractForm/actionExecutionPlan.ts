@@ -5,7 +5,7 @@ export type FormActionExecutionPlan =
   | { kind: 'local_mode'; mode: string; toggle: boolean }
   | { kind: 'save'; refreshPolicy?: ContractAction['refreshPolicy'] }
   | { kind: 'cancel' }
-  | { kind: 'open_action'; actionId: number; target?: string; domainRaw?: string }
+  | { kind: 'open_action'; actionId: number; menuId?: number; target?: string; domainRaw?: string }
   | { kind: 'open_url'; url: string; target?: string }
   | { kind: 'open_missing_target' }
   | {
@@ -23,6 +23,11 @@ export type FormActionExecutionPlan =
     recordId: number;
     methodName: string;
     buttonType: 'object' | 'server';
+    authorityActionId: string;
+    backendIdentity: string;
+    sourceWidgetId: string;
+    serverActionId: number | null;
+    serverActionXmlId: string;
     context?: Record<string, unknown>;
     refreshPolicy?: ContractAction['refreshPolicy'];
   }
@@ -62,6 +67,7 @@ export function buildFormActionExecutionPlan(params: {
       return {
         kind: 'open_action',
         actionId: action.actionId,
+        menuId: action.menuId || undefined,
         target: action.target || undefined,
         domainRaw: action.domainRaw || undefined,
       };
@@ -93,6 +99,11 @@ export function buildFormActionExecutionPlan(params: {
       recordId: params.recordId,
       methodName: action.methodName,
       buttonType: action.kind === 'server' ? 'server' : 'object',
+      authorityActionId: String(action.authorityActionId || '').trim(),
+      backendIdentity: String(action.backendIdentity || '').trim(),
+      sourceWidgetId: String(action.sourceWidgetId || '').trim(),
+      serverActionId: action.serverActionId || null,
+      serverActionXmlId: String(action.serverActionXmlId || '').trim(),
       context: action.context,
       refreshPolicy: action.refreshPolicy,
     };

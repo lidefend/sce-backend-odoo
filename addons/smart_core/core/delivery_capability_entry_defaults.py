@@ -6,7 +6,7 @@ from typing import Any, Dict
 from .source_authority import build_source_authority_contract
 
 SOURCE_KIND = "delivery_capability_entry_default_projection"
-SOURCE_AUTHORITIES = ("delivery_engine_v1", "runtime_capability_payload")
+SOURCE_AUTHORITIES = ("delivery_engine", "runtime_capability_payload")
 NO_BUSINESS_FACT_AUTHORITY = True
 
 
@@ -37,7 +37,7 @@ def build_delivery_capability_entry(row: Dict[str, Any], runtime: Dict[str, Any]
         "runtime_capability_key": to_text(runtime.get("key")),
         "runtime_state": to_text(runtime.get("state")) or "POLICY_READY",
         "runtime_reason_code": to_text(runtime.get("reason_code")),
-        "source": "delivery_engine_v1",
+        "source": "delivery_engine",
         "default_source_authority": source_authority_contract(),
     }
     source_authority = row.get("source_authority")

@@ -2,7 +2,7 @@
   "snapshot_version": "v1",
   "snapshot_date": "2026-03-15",
   "intent": "app.init",
-  "payload_key": "scene_governance_v1",
+  "payload_key": "scene_governance",
   "example": {
     "contract_version": "v1",
     "scene_channel": "stable",

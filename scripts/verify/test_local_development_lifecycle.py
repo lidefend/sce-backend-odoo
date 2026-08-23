@@ -14,6 +14,13 @@ SAMPLE_PREPARE = ROOT / "scripts/dev/local_sample_env_prepare.sh"
 
 
 class LocalDevelopmentLifecycleTest(unittest.TestCase):
+    def test_safe_runner_includes_registered_demo_addons_mount(self):
+        runner = (ROOT / "scripts" / "test" / "test_safe.sh").read_text(encoding="utf-8")
+        self.assertIn(
+            "/mnt/source-addons,/mnt/demo-addons,${ADDONS_EXTERNAL_MOUNT}",
+            runner,
+        )
+
     def test_demo_verifier_uses_registered_company_tax_contract(self):
         verifier = (ROOT / "scripts/verify/demo.sh").read_text(encoding="utf-8")
         self.assertIn("legacy global tax XMLIDs absent", verifier)
@@ -103,14 +110,17 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         )
         for target in (
             "local.dev.up",
+            "local.dev.frontend",
             "local.dev.down",
             "local.dev.logs",
             "local.dev.ps",
             "local.dev.test",
             "local.dev.upgrade",
             "local.dev.sync_demo",
+            "local.dev.contract_snapshot",
             "local.dev.rebuild_demo",
             "local.dev.verify_demo",
+            "verify.local.dev.payment_request.native_parity.readonly",
             "local.sample.prepare",
             "local.sample.up",
             "local.sample.down",
@@ -146,6 +156,14 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("不保证", docs)
         self.assertIn("REBUILD_ISOLATED_REHEARSAL", docs)
         self.assertNotIn("REBUILD_SC_CLEAN", docs)
+
+    def test_payment_submit_reset_keeps_canonical_env_authority(self):
+        submit = (
+            ROOT / "scripts/verify/local_dev_payment_request_floorplan_submit.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', submit)
+        self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', submit)
+        self.assertIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', submit)
 
     def test_sample_prepare_creates_distinct_technical_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -197,9 +215,31 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("local.sample.up: guard.prod.forbid local.sample.ready", make_text)
         self.assertIn("local.dev.up: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.health: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn("local.dev.frontend: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn(
+            "verify.local.dev.payment_request.native_parity.readonly: guard.prod.forbid local.dev.ready",
+            make_text,
+        )
         self.assertIn("local.dev.test: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.upgrade: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn(
+            "local.dev.verify_authority: guard.prod.forbid local.dev.ready",
+            make_text,
+        )
+        upgrade = make_text.split("local.dev.upgrade:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("mod.upgrade", upgrade)
+        self.assertIn("local.dev.verify_authority", upgrade)
+        verify_authority = make_text.split(
+            "local.dev.verify_authority:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("SC_ENVIRONMENT=demo", verify_authority)
+        self.assertIn("SC_ALLOW_DEMO_DATA=1", verify_authority)
         self.assertIn("local.dev.snapshot: guard.prod.forbid local.dev.ready", make_text)
+        self.assertIn("local.dev.contract_snapshot: guard.prod.forbid local.dev.ready", make_text)
+        contract_snapshot = make_text.split("local.dev.contract_snapshot:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn('ENV_FILE="$(LOCAL_DEV_ENV_FILE)"', contract_snapshot)
+        self.assertIn("$(LOCAL_ENV_ISOLATE)", contract_snapshot)
+        self.assertIn("contract.export_all", contract_snapshot)
         self.assertIn(
             "local.dev.rebuild_demo: guard.prod.forbid local.dev.demo_credentials.prepare",
             make_text,
@@ -255,6 +295,69 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("/var/lib/odoo/demo_install.log", reset)
         self.assertLess(reset.index("set +e"), reset.index("odoo --config"))
         self.assertLess(reset.index("rc=${PIPESTATUS[0]}"), reset.index("set -e\nif"))
+        self.assertIn("ensure_local_demo_product_baseline.py", reset)
+        self.assertLess(
+            reset.index("ensure_local_demo_product_baseline.py"),
+            reset.index("-i smart_construction_demo"),
+        )
+        self.assertNotIn(
+            "-i smart_construction_core,smart_construction_seed,smart_construction_demo",
+            reset,
+        )
+        self.assertIn(
+            'ODOO_ADDONS_PATH="/usr/lib/python3/dist-packages/odoo/addons,'
+            '/mnt/source-addons,/mnt/demo-addons,/mnt/extra-addons,'
+            '${ADDONS_EXTERNAL_MOUNT}"',
+            reset,
+        )
+        self.assertNotIn('ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH:-', reset)
+        self.assertIn("local_dev_demo_authority_verify.sh", reset)
+        self.assertLess(
+            reset.rindex("-i smart_construction_demo"),
+            reset.rindex("local_dev_demo_authority_verify.sh"),
+        )
+
+        load_full = (ROOT / "scripts/demo/load_full.sh").read_text(encoding="utf-8")
+        self.assertIn("local_dev_demo_authority_verify.sh", load_full)
+        self.assertLess(
+            load_full.index("local_dev_demo_authority_verify.sh"),
+            load_full.index("scripts/demo/load_all.sh"),
+        )
+        authority_verify = (
+            ROOT / "scripts/dev/local_dev_demo_authority_verify.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn("guard_demo_data_scope", authority_verify)
+        self.assertIn("guard_prod_forbid", authority_verify)
+        self.assertIn("local_dev_demo_authority_preflight.py", authority_verify)
+        self.assertIn("/mnt/source-addons,/mnt/demo-addons", authority_verify)
+        authority = (
+            ROOT / "scripts/dev/local_dev_demo_authority_preflight.py"
+        ).read_text(encoding="utf-8")
+        for required in (
+            "DEMO_AUTHORITY_MODULE_MISSING",
+            "DEMO_AUTHORITY_FINANCE_ROLE_XMLID_MISSING",
+            "DEMO_AUTHORITY_FINANCE_ROLE_IDENTITY_INVALID",
+            "DEMO_AUTHORITY_FINANCE_GROUP_XMLID_MISSING",
+            "DEMO_AUTHORITY_FINANCE_ROLE_MEMBERSHIP_MISSING",
+            "DEMO_AUTHORITY_COMPANY_CNY_MISSING",
+            "DEMO_AUTHORITY_SALE_TAX_9_MISSING",
+            'demo_module.state == "installed"',
+            '"smart_construction_demo.user_demo_role_finance"',
+            '"smart_construction_core.group_sc_role_finance_manager"',
+        ):
+            self.assertIn(required, authority)
+
+        baseline = (
+            ROOT / "scripts/ops/ensure_local_demo_product_baseline.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("ensure_core_taxes(env)", baseline)
+        self.assertIn('env["res.company"]._sc_ensure_cny_currency()', baseline)
+        self.assertIn("LOCAL_DEMO_PRODUCT_BASELINE_CNY_MISSING", baseline)
+        self.assertLess(
+            baseline.index("LOCAL_DEMO_PRODUCT_BASELINE_TAX_MISSING"),
+            baseline.index("env.cr.commit()"),
+        )
+        self.assertNotIn(".create(", baseline)
 
         hook = (ROOT / "demo_addons/smart_construction_demo/hooks.py").read_text(
             encoding="utf-8"

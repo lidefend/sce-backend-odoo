@@ -1,5 +1,5 @@
 # 📁 smart_core/handlers/execute_button.py
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ..core.base_handler import BaseIntentHandler
 try:
@@ -44,7 +44,13 @@ class ExecuteButtonHandler(BaseIntentHandler):
     ACL_MODE = "explicit_check"
     NON_IDEMPOTENT_ALLOWED = "button methods can trigger business side effects beyond replay-safe scope"
     SOURCE_KIND = "odoo_model_button_proxy"
-    SOURCE_AUTHORITIES = ("odoo.model.method", "ir.actions", "ir.model.access", "ir.rule")
+    SOURCE_AUTHORITIES = (
+        "ui.contract.v2.actionContract",
+        "odoo.model.method",
+        "ir.actions",
+        "ir.model.access",
+        "ir.rule",
+    )
 
     def _source_authority_contract(self, model: str, method_name: str, button_type: str):
         return {
@@ -61,6 +67,138 @@ class ExecuteButtonHandler(BaseIntentHandler):
         if method_name in set(readonly_methods or ()):
             return "read"
         return "write"
+
+    def _load_current_action_contract(
+        self,
+        *,
+        model: str,
+        record_id: int,
+        action_id: int,
+        menu_id: int,
+    ) -> Dict[str, Any]:
+        # Import lazily so execute_button remains independent from the read-only
+        # projection module during handler discovery.
+        from .ui_contract_v2 import UiContractV2Handler
+
+        result = UiContractV2Handler(
+            self.env,
+            su_env=self.su_env,
+            request=self.request,
+            context=self.context,
+            payload={
+                "params": {
+                    "op": "model",
+                    "model": model,
+                    "view_type": "form",
+                    "record_id": record_id,
+                    "render_profile": "readonly",
+                    "action_id": action_id,
+                    "menu_id": menu_id,
+                    "delivery_profile": "full",
+                    "client_type": "web_pc",
+                    "accepted_contract_versions": ["2.0.x"],
+                    "client_contract_capabilities": [
+                        "container_tree.v2",
+                        "data_source.v2",
+                        "action_rule.v2",
+                        "relation_entry.v2",
+                        "status_contract.v2",
+                    ],
+                },
+            },
+        ).handle()
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        if not isinstance(envelope, dict) or envelope.get("ok") is not True:
+            raise AccessError("ACTION_CONTRACT_AUTHORITY_UNAVAILABLE")
+        contract = envelope.get("data")
+        if not isinstance(contract, dict):
+            raise AccessError("ACTION_CONTRACT_AUTHORITY_UNAVAILABLE")
+        return contract
+
+    def _authorize_contract_action(
+        self,
+        button: Dict[str, Any],
+        *,
+        model: str,
+        record_id: int,
+        method_name: str,
+        button_type: str,
+    ) -> None:
+        payload_meta = self.payload.get("meta") if isinstance(self.payload, dict) else {}
+        meta = payload_meta if isinstance(payload_meta, dict) else {}
+        action_id = _positive_int(meta.get("action_id") or meta.get("actionId"))
+        menu_id = _positive_int(meta.get("menu_id") or meta.get("menuId"))
+        authority_action_id = str(button.get("action_id") or button.get("actionId") or "").strip()
+        backend_identity = str(button.get("backend_identity") or button.get("backendIdentity") or "").strip()
+        source_widget_id = str(button.get("source_widget_id") or button.get("sourceWidgetId") or "").strip()
+        if not action_id or not menu_id or not authority_action_id or not backend_identity or not source_widget_id:
+            raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
+
+        contract = self._load_current_action_contract(
+            model=model,
+            record_id=record_id,
+            action_id=action_id,
+            menu_id=menu_id,
+        )
+        action_contract = contract.get("actionContract") if isinstance(contract.get("actionContract"), dict) else {}
+        rules = action_contract.get("actionRuleList") if isinstance(action_contract.get("actionRuleList"), list) else []
+        matches = [
+            row for row in rules
+            if isinstance(row, dict)
+            and str(row.get("actionId") or "").strip() == authority_action_id
+            and str(row.get("backendIdentity") or "").strip() == backend_identity
+        ]
+        if len(matches) != 1:
+            raise AccessError("ACTION_CONTRACT_AUTHORITY_AMBIGUOUS")
+        rule = matches[0]
+        if str(rule.get("sourceWidgetId") or "").strip() != source_widget_id:
+            raise AccessError("ACTION_CONTRACT_SOURCE_MISMATCH")
+        rule_button = rule.get("button") if isinstance(rule.get("button"), dict) else {}
+        expected_name = str(rule_button.get("name") or rule_button.get("method") or "").strip()
+        expected_type = _normalized_button_type(rule_button.get("type") or rule_button.get("buttonType"))
+        if expected_name != method_name or expected_type != _normalized_button_type(button_type):
+            raise AccessError("ACTION_CONTRACT_BUTTON_MISMATCH")
+        if not (
+            rule.get("allowed") is True
+            and rule.get("enabled") is True
+            and rule.get("disabled") is False
+            and rule.get("entitlementEvaluated") is True
+        ):
+            raise AccessError(str(rule.get("reasonCode") or "ACTION_CONTRACT_NOT_AUTHORIZED"))
+
+        if expected_type == "server":
+            expected_server_id = _positive_int(
+                rule_button.get("server_action_id") or rule_button.get("serverActionId")
+            )
+            requested_server_id = _positive_int(
+                button.get("server_action_id") or button.get("serverActionId")
+            )
+            expected_xml_id = str(rule_button.get("xml_id") or rule_button.get("xmlId") or "").strip()
+            requested_xml_id = str(button.get("xml_id") or button.get("xmlId") or "").strip()
+            if expected_server_id != requested_server_id or expected_xml_id != requested_xml_id:
+                raise AccessError("ACTION_CONTRACT_SERVER_ACTION_MISMATCH")
+
+        status_contract = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
+        statuses = status_contract.get("buttonStatus") if isinstance(status_contract.get("buttonStatus"), list) else []
+        action_key = str(rule.get("actionKey") or "").strip()
+        status_ids = {
+            authority_action_id,
+            f"btn.{authority_action_id}",
+            action_key,
+            f"btn.{action_key}",
+        }
+        status_matches = [
+            row for row in statuses
+            if isinstance(row, dict) and (
+                str(row.get("backendIdentity") or "").strip() == backend_identity
+                or str(row.get("btnId") or "").strip() in status_ids
+            )
+        ]
+        if len(status_matches) != 1:
+            raise AccessError("ACTION_STATUS_AUTHORITY_AMBIGUOUS")
+        status = status_matches[0]
+        if status.get("visible") is not True or status.get("disabled") is not False:
+            raise AccessError(str(status.get("reasonCode") or "ACTION_STATUS_NOT_AUTHORIZED"))
 
     def handle(self, payload=None, ctx=None):
         params = self.params if isinstance(self.params, dict) else {}
@@ -94,6 +232,11 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     status_code=400,
                 )
 
+            # Contract V2 action availability is record-specific.  Never use
+            # one record's authority to mutate a larger client-supplied set.
+            if len(res_ids) != 1:
+                raise AccessError("ACTION_CONTRACT_SINGLE_RECORD_REQUIRED")
+
             if button_type not in ("object", "action", "server", "server_action"):
                 return _failure_result(
                     model=model,
@@ -114,8 +257,17 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     status_code=404,
                 )
 
+            self._authorize_contract_action(
+                button,
+                model=str(model),
+                record_id=res_ids[0],
+                method_name=str(method_name),
+                button_type=str(button_type),
+            )
+
+            normalized_button_type = _normalized_button_type(button_type)
             env_model = self.env[model]
-            access_mode = self._button_access_mode(env_model, method_name)
+            access_mode = "write" if normalized_button_type == "server" else self._button_access_mode(env_model, method_name)
             env_model.check_access_rights(access_mode)
 
             recordset = env_model.browse(res_ids)
@@ -140,29 +292,18 @@ class ExecuteButtonHandler(BaseIntentHandler):
 
             recordset.check_access_rule(access_mode)
 
-            method = getattr(recordset.with_context(self.context), method_name, None)
-            if not callable(method):
-                server_action_result = self._run_server_action(button, model=model, res_ids=res_ids)
-                if server_action_result is not None:
-                    return server_action_result
-                server_action_id = button.get("server_action_id") or button.get("serverActionId")
-                if server_action_id and not _positive_int(server_action_id):
+            method = None
+            if normalized_button_type != "server":
+                method = getattr(recordset.with_context(self.context), method_name, None)
+                if not callable(method):
                     return _failure_result(
                         model=model,
                         res_id=res_ids[0],
-                        reason_code=REASON_MISSING_PARAMS,
-                        message="server_action_id 无效",
+                        reason_code=REASON_METHOD_NOT_CALLABLE,
+                        message=f"后端不可调用按钮方法: {method_name}",
                         trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
                         status_code=400,
                     )
-                return _failure_result(
-                    model=model,
-                    res_id=res_ids[0],
-                    reason_code=REASON_METHOD_NOT_CALLABLE,
-                    message=f"后端不可调用按钮方法: {method_name}",
-                    trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
-                    status_code=400,
-                )
 
             if dry_run:
                 payload = {
@@ -185,6 +326,29 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     "data": {"result": payload, "effect": effect},
                     "meta": {"trace_id": self.context.get("trace_id") if isinstance(self.context, dict) else "", "source_authority": self._source_authority_contract(model, method_name, button_type)},
                 }
+
+            if normalized_button_type == "server":
+                server_action_result = self._run_server_action(button, model=model, res_ids=res_ids)
+                if server_action_result is not None:
+                    return server_action_result
+                server_action_id = button.get("server_action_id") or button.get("serverActionId")
+                if server_action_id and not _positive_int(server_action_id):
+                    return _failure_result(
+                        model=model,
+                        res_id=res_ids[0],
+                        reason_code=REASON_MISSING_PARAMS,
+                        message="server_action_id 无效",
+                        trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
+                        status_code=400,
+                    )
+                return _failure_result(
+                    model=model,
+                    res_id=res_ids[0],
+                    reason_code=REASON_METHOD_NOT_CALLABLE,
+                    message=f"后端不可调用服务端动作: {method_name}",
+                    trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
+                    status_code=400,
+                )
 
             result = method()
 
@@ -264,18 +428,24 @@ class ExecuteButtonHandler(BaseIntentHandler):
         action = None
         if server_action_id:
             try:
-                action = self.env["ir.actions.server"].sudo().browse(int(server_action_id)).exists()
+                action = self.env["ir.actions.server"].browse(int(server_action_id)).exists()
             except Exception:
                 action = None
         if not action and xml_id:
             try:
                 resolved = self.env.ref(xml_id, raise_if_not_found=False)
                 if resolved and resolved._name == "ir.actions.server":
-                    action = resolved.sudo()
+                    action = resolved
             except Exception:
                 action = None
         if not action or not _server_action_matches_model(action, model):
             return None
+        action.check_access_rights("read")
+        action.check_access_rule("read")
+        action_groups = getattr(action, "groups_id", None)
+        user_groups = getattr(getattr(self.env, "user", None), "groups_id", None)
+        if action_groups and (not user_groups or not (action_groups & user_groups)):
+            raise AccessError("ACTION_SERVER_GROUP_ACCESS_DENIED")
         result = action.with_context(
             dict(
                 self.context if isinstance(self.context, dict) else {},
@@ -425,6 +595,13 @@ def _positive_int(value) -> int:
     except Exception:
         return 0
     return parsed if parsed > 0 else 0
+
+
+def _normalized_button_type(value: Any) -> str:
+    normalized = str(value or "object").strip().lower()
+    if normalized in {"server", "server_action"}:
+        return "server"
+    return normalized
 
 
 def _query_literal(value) -> str:

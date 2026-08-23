@@ -1,18 +1,21 @@
 import { computed, type Ref } from 'vue';
 import { uniqueFields } from '../runtime/actionViewRequestRuntime';
 import {
-  collectUnifiedPageContractV2FieldWidgets,
-  collectUnifiedPageContractV2FieldStatus,
-  resolveUnifiedPageContractV2,
-  resolveUnifiedPageContractV2ListProfile,
-  resolveUnifiedPageContractV2SurfacePolicies,
-} from '../contracts/unifiedPageContractV2';
+  collectContractV2FieldStatusByCode,
+  resolveContractV2FieldDescriptorMap,
+  resolveContractV2FieldWidgets,
+  resolveContractV2ListProfile,
+  resolveContractV2PrimaryDataSource,
+  resolveContractV2SearchContract,
+  resolveContractV2SurfacePolicies,
+} from '../contracts/v2/store';
+import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
 
 type UseActionViewContractShapeRuntimeOptions = {
   pageText: (key: string, fallback: string) => string;
-  actionContract: Ref<Record<string, unknown> | null>;
+  actionContract: Ref<ContractV2NormalizedStore | null>;
   advancedFields: Ref<string[]>;
   activeGroupByField: Ref<string>;
 };
@@ -73,51 +76,10 @@ function normalizeFieldNames(rows: unknown): string[] {
     .filter((name) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name));
 }
 
-function collectSlotFieldNames(value: unknown): string[] {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
-  return Object.values(value as Dict).flatMap((slotValue) => {
-    if (typeof slotValue === 'string' || typeof slotValue === 'number') {
-      return [String(slotValue || '').trim()].filter(Boolean);
-    }
-    if (Array.isArray(slotValue)) {
-      return normalizeFieldNames(slotValue);
-    }
-    if (slotValue && typeof slotValue === 'object') {
-      return normalizeFieldNames([slotValue]);
-    }
-    return [];
-  });
-}
-
-function collectDisplayRowLabels(rows: unknown, labels: Record<string, string>) {
-  if (!Array.isArray(rows)) return;
-  rows.forEach((item) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return;
-    const row = item as Dict;
-    const name = String(row.name || row.field || row.field_name || '').trim();
-    const label = String(row.label || row.string || row.display_label || '').trim();
-    if (name && label) labels[name] = label;
-  });
-}
-
-export function extractKanbanFieldsFromContract(contract: unknown): string[] {
-  const typed = (contract || {}) as Dict;
-  const directViews = typed.views as Dict | undefined;
-  if (directViews) {
-    const kanbanBlock = (directViews.kanban || {}) as Dict;
-    const nestedKanban = (kanbanBlock.kanban || {}) as Dict;
-    const fields = uniqueFields([
-      ...normalizeFieldNames(kanbanBlock.fields),
-      ...normalizeFieldNames(nestedKanban.fields),
-      ...collectSlotFieldNames(kanbanBlock.slots),
-      ...collectSlotFieldNames(nestedKanban.slots),
-    ]);
-    if (fields.length) return fields;
-  }
-  const v2 = resolveUnifiedPageContractV2(typed);
-  if (String(v2?.pageInfo?.viewType || '').trim() === 'kanban') {
+export function extractKanbanFieldsFromContract(store: ContractV2NormalizedStore | null): string[] {
+  if (String(store?.snapshot.pageInfo.viewType || '').trim() === 'kanban') {
     return uniqueFields(
-      collectUnifiedPageContractV2FieldWidgets(typed)
+      resolveContractV2FieldWidgets(store)
         .map((widget) => String(widget.fieldCode || '').trim())
         .filter((name) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)),
     );
@@ -125,94 +87,21 @@ export function extractKanbanFieldsFromContract(contract: unknown): string[] {
   return [];
 }
 
-export function extractAdvancedViewFieldsFromContract(contract: unknown, mode: string): string[] {
-  const typed = (contract || {}) as Dict;
-  const directViews = typed.views as Dict | undefined;
-  const viewBlock = (directViews?.[mode] || {}) as Dict;
-  const nested = (viewBlock[mode] || {}) as Dict;
-  const fallbackNames = ['name', 'display_name', 'id'];
-  const blockValue = (key: string) => viewBlock[key] ?? nested[key];
-  if (mode === 'pivot') {
-    const measures = normalizeFieldNames(blockValue('measures'));
-    const dims = normalizeFieldNames(blockValue('dimensions'));
-    return uniqueFields([...dims, ...measures, ...fallbackNames]);
-  }
-  if (mode === 'graph') {
-    const measure = String(blockValue('measure') || '').trim();
-    const dim = String(blockValue('dimension') || '').trim();
-    const measures = normalizeFieldNames(blockValue('measures'));
-    const dims = normalizeFieldNames(blockValue('dimensions'));
-    return uniqueFields([dim, measure, ...dims, ...measures, ...fallbackNames].filter(Boolean));
-  }
-  if (mode === 'calendar' || mode === 'gantt') {
-    const dateStart = String(blockValue('date_start') || '').trim();
-    const dateStop = String(blockValue('date_stop') || '').trim();
-    const slotFields = [
-      ...collectSlotFieldNames(blockValue('date_slots')),
-      ...collectSlotFieldNames(blockValue('resource_slots')),
-      ...collectSlotFieldNames(blockValue('color_slots')),
-      ...collectSlotFieldNames(blockValue('dependency_slots')),
-      ...normalizeFieldNames(blockValue('fields')),
-    ];
-    return uniqueFields([dateStart, dateStop, ...slotFields, ...fallbackNames].filter(Boolean));
-  }
-  if (mode === 'activity') {
-    const activityField = String(blockValue('field') || '').trim();
-    const slotFields = [
-      ...collectSlotFieldNames(blockValue('activity_type_slots')),
-      ...collectSlotFieldNames(blockValue('deadline_slots')),
-      ...collectSlotFieldNames(blockValue('assignee_slots')),
-      ...normalizeFieldNames(blockValue('fields')),
-    ];
-    return uniqueFields([activityField, ...slotFields, ...fallbackNames].filter(Boolean));
-  }
-  if (mode === 'dashboard') {
-    const kpis = Array.isArray(blockValue('kpis')) ? blockValue('kpis') as unknown[] : [];
-    const cards = Array.isArray(blockValue('cards')) ? blockValue('cards') as unknown[] : [];
-    const guessed = [...kpis, ...cards]
-      .map((item) => String(((item as Dict).field || '')).trim())
-      .filter(Boolean);
-    const slotFields = [
-      ...collectSlotFieldNames(blockValue('metric_slots')),
-      ...collectSlotFieldNames(blockValue('chart_slots')),
-    ];
-    return uniqueFields([...guessed, ...slotFields, ...fallbackNames]);
-  }
-  return fallbackNames;
+export function extractAdvancedViewFieldsFromContract(store: ContractV2NormalizedStore | null): string[] {
+  return uniqueFields(resolveContractV2FieldWidgets(store).map((widget) => widget.fieldCode).filter(Boolean));
 }
 
-export function extractViewFieldLabelsFromContract(contract: unknown, mode: string): Record<string, string> {
-  const typed = (contract || {}) as Dict;
-  const directViews = typed.views as Dict | undefined;
-  const viewBlock = (directViews?.[mode] || {}) as Dict;
-  const nested = (viewBlock[mode] || {}) as Dict;
+export function extractViewFieldLabelsFromContract(store: ContractV2NormalizedStore | null): Record<string, string> {
   const labels: Record<string, string> = {};
-  collectDisplayRowLabels(viewBlock.fields, labels);
-  collectDisplayRowLabels(viewBlock.columns, labels);
-  collectDisplayRowLabels(viewBlock.columns_schema || viewBlock.columnsSchema, labels);
-  collectDisplayRowLabels(viewBlock.measures, labels);
-  collectDisplayRowLabels(viewBlock.dimensions, labels);
-  collectDisplayRowLabels(viewBlock.cards, labels);
-  collectDisplayRowLabels(viewBlock.kpis, labels);
-  collectDisplayRowLabels(nested.fields, labels);
-  collectDisplayRowLabels(nested.columns, labels);
-  collectDisplayRowLabels(nested.columns_schema || nested.columnsSchema, labels);
-  collectDisplayRowLabels(nested.measures, labels);
-  collectDisplayRowLabels(nested.dimensions, labels);
-  collectDisplayRowLabels(nested.cards, labels);
-  collectDisplayRowLabels(nested.kpis, labels);
+  resolveContractV2FieldWidgets(store).forEach((widget) => {
+    if (widget.fieldCode && widget.label) labels[widget.fieldCode] = widget.label;
+  });
   return labels;
 }
 
-export function extractListFieldSemanticsFromContract(contract: unknown): Dict[] {
-  const typed = (contract || {}) as Dict;
-  const views = (typed.views || {}) as Dict;
-  const tree = (views.tree || views.list || {}) as Dict;
+export function extractListFieldSemanticsFromContract(store: ContractV2NormalizedStore | null): Dict[] {
   const schemas: Dict[] = [];
-  const legacySchema = tree.columns_schema || tree.columnsSchema;
-  if (Array.isArray(legacySchema)) schemas.push(...legacySchema as Dict[]);
-
-  collectUnifiedPageContractV2FieldWidgets(typed).forEach((widget) => {
+  resolveContractV2FieldWidgets(store).forEach((widget) => {
     const config = (widget.componentConfig || {}) as Dict;
     const fieldCode = String(
       widget.fieldCode
@@ -258,41 +147,15 @@ export function extractListFieldSemanticsFromContract(contract: unknown): Dict[]
 
 export function useActionViewContractShapeRuntime(options: UseActionViewContractShapeRuntimeOptions) {
   const contractColumnLabels = computed<Record<string, string>>(() => {
-    const contract = options.actionContract.value || {};
-    const rows = contract.fields || {};
-    const labels = Object.entries(rows).reduce<Record<string, string>>((acc, [name, descriptor]) => {
-      const descriptorRow = (descriptor || {}) as Dict;
-      const label = String(descriptorRow.string || '').trim();
-      if (label) acc[name] = label;
+    const store = options.actionContract.value;
+    const labels = Object.values(resolveContractV2FieldDescriptorMap(store)).reduce<Record<string, string>>((acc, row) => {
+      if (row.fieldCode && row.label) acc[row.fieldCode] = row.label;
       return acc;
     }, {});
-    collectUnifiedPageContractV2FieldWidgets(contract).forEach((widget) => {
-      if (widget.fieldCode && widget.label) labels[widget.fieldCode] = widget.label;
-    });
-    const listProfile = resolveUnifiedPageContractV2ListProfile(contract);
-    const semanticPage = (contract.semantic_page || {}) as Dict;
-    const listSemantics = (semanticPage.list_semantics || {}) as Dict;
-    const semanticColumns = Array.isArray(listSemantics.columns) ? (listSemantics.columns as Array<Dict>) : [];
-    const directViews = ((contract as Dict).views || {}) as Dict;
-    Object.values(directViews).forEach((viewBlock) => {
-      if (!viewBlock || typeof viewBlock !== 'object' || Array.isArray(viewBlock)) return;
-      const block = viewBlock as Dict;
-      collectDisplayRowLabels(block.fields, labels);
-      collectDisplayRowLabels(block.columns, labels);
-      collectDisplayRowLabels(block.columns_schema || block.columnsSchema, labels);
-      collectDisplayRowLabels(block.measures, labels);
-      collectDisplayRowLabels(block.dimensions, labels);
-      collectDisplayRowLabels(block.cards, labels);
-      collectDisplayRowLabels(block.kpis, labels);
-    });
+    const listProfile = resolveContractV2ListProfile(store);
     Object.entries((listProfile.column_labels || {}) as Dict).forEach(([name, labelRaw]) => {
       const label = String(labelRaw || '').trim();
       if (label) labels[name] = label;
-    });
-    semanticColumns.forEach((row) => {
-      const name = String(row.name || '').trim();
-      const label = String(row.label || '').trim();
-      if (name && label) labels[name] = label;
     });
     return labels;
   });
@@ -301,51 +164,32 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
     if (Array.isArray(sceneColumns) && sceneColumns.length) {
       return sceneColumns;
     }
-    const typed = (contract || {}) as Dict;
-    const v2Fields = collectUnifiedPageContractV2FieldWidgets(typed).map((widget) => widget.fieldCode).filter(Boolean);
-    if (v2Fields.length) return v2Fields;
-    const directViews = typed.views as Dict | undefined;
-    if (directViews) {
-      const treeBlock = (directViews.tree || directViews.list || {}) as Dict;
-      const treeColumns = treeBlock.columns;
-      if (Array.isArray(treeColumns) && treeColumns.length) {
-        return treeColumns.map((item) => String(item || '')).filter(Boolean);
-      }
-      const treeSchema = (treeBlock.columnsSchema || treeBlock.columns_schema) as unknown;
-      if (Array.isArray(treeSchema) && treeSchema.length) {
-        return treeSchema
-          .map((col) => String(((col as Dict).name || '')).trim())
-          .filter(Boolean);
-      }
-    }
-    return [];
+    const store = contract as ContractV2NormalizedStore | null;
+    const profile = resolveContractV2ListProfile(store);
+    const columns = Array.isArray(profile.columns)
+      ? profile.columns.map((item) => String(item || '').trim()).filter(Boolean)
+      : [];
+    return columns.length ? columns : resolveContractV2FieldWidgets(store).map((widget) => widget.fieldCode).filter(Boolean);
   }
 
   function extractColumnSchemaFromContract(contract: unknown): Dict[] {
-    const typed = (contract || {}) as Dict;
-    const v2 = resolveUnifiedPageContractV2(typed);
-    if (v2) {
-      return collectUnifiedPageContractV2FieldWidgets(typed).map((widget) => ({
-        name: widget.fieldCode,
-        label: widget.label,
-        string: widget.label,
-        widget: widget.widgetType,
-        componentKey: widget.componentKey,
-        ...(widget.componentConfig || {}),
-      }));
-    }
-    const directViews = typed.views as Dict | undefined;
-    const treeBlock = directViews ? (directViews.tree || directViews.list || {}) as Dict : {};
-    const schema = treeBlock.columnsSchema || treeBlock.columns_schema;
-    return Array.isArray(schema) ? (schema as Dict[]) : [];
+    const store = contract as ContractV2NormalizedStore | null;
+    return resolveContractV2FieldWidgets(store).map((widget) => ({
+      name: widget.fieldCode,
+      label: widget.label,
+      string: widget.label,
+      widget: widget.widgetType,
+      componentKey: widget.componentKey,
+      ...(widget.componentConfig || {}),
+    }));
   }
 
   function resolveListColumnOptions(contract: unknown, profile: { columns?: string[]; hidden_columns?: string[]; column_labels?: Record<string, string> } | null): ListColumnOption[] {
-    const typed = (contract || {}) as Dict;
-    const fieldsMap = (typed.fields && typeof typed.fields === 'object') ? typed.fields as Record<string, Dict> : {};
+    const store = contract as ContractV2NormalizedStore | null;
+    const fieldsMap = resolveContractV2FieldDescriptorMap(store);
     const preferred = Array.isArray(profile?.columns) ? profile?.columns || [] : [];
     const hidden = new Set(Array.isArray(profile?.hidden_columns) ? profile?.hidden_columns || [] : []);
-    const v2FieldStatus = collectUnifiedPageContractV2FieldStatus(contract);
+    const v2FieldStatus = collectContractV2FieldStatusByCode(store);
     const schemaRows = extractColumnSchemaFromContract(contract);
     const schemaByName = schemaRows.reduce<Record<string, Dict>>((acc, row) => {
       const name = String(row.name || '').trim();
@@ -360,21 +204,21 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
     return uniqueFields([...baseColumns, ...Array.from(hidden)])
       .map((name) => {
         const schema = schemaByName[name] || {};
-        const field = fieldsMap[name] || {};
+        const field = fieldsMap[name];
         const status = v2FieldStatus[name];
         const optional = String(schema.optional || '').trim();
         const invisible = schema.invisible === true || schema.column_invisible === true || status?.visible === false;
         const sortableRaw = Object.prototype.hasOwnProperty.call(schema, 'sortable')
           ? schema.sortable
-          : field.sortable;
-        const type = String(schema.type || field.type || '').trim();
-        const widget = String(schema.widget || field.widget || field.type || '').trim();
+          : undefined;
+        const type = String(schema.type || field?.fieldType || '').trim();
+        const widget = String(schema.widget || field?.widgetType || field?.fieldType || '').trim();
         const valueField = String(schema.value_field || name).trim() || name;
         const aggregate = String(schema.aggregate || (schema.sum ? 'sum' : '')).trim();
-        const rawSelection = Array.isArray(schema.selection) ? schema.selection : field.selection;
+        const rawSelection = Array.isArray(schema.selection) ? schema.selection : field?.selection;
         return {
           name,
-          label: String(labels[name] || schema.label || schema.string || field.string || name).trim() || name,
+          label: String(labels[name] || schema.label || schema.string || field?.label || name).trim() || name,
           optional,
           defaultVisible: !hidden.has(name) && optional !== 'hide' && !invisible,
           sortable: sortableRaw === false ? false : undefined,
@@ -419,22 +263,18 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       });
   }
 
-  function convergeColumnsForSurface(rawColumns: string[], fields: Record<string, unknown>) {
+  function convergeColumnsForSurface(rawColumns: string[]) {
     const normalized = rawColumns.filter(Boolean);
     if (!normalized.length) return normalized;
-    void fields;
     return normalized;
   }
 
-  function extractKanbanFields(contract: unknown) {
+  function extractKanbanFields(contract: ContractV2NormalizedStore | null) {
     return extractKanbanFieldsFromContract(contract);
   }
 
   function extractKanbanProfile(contract: unknown): KanbanProfile {
-    const typed = (contract || {}) as Dict;
-    const directViews = typed.views as Dict | undefined;
-    const block = (directViews?.kanban || {}) as Dict;
-    const profile = (block.kanban_profile || {}) as Dict;
+    const profile = (resolveContractV2ListProfile(contract as ContractV2NormalizedStore | null).kanban_profile || {}) as Dict;
     const normalize = (rows: unknown) => normalizeFieldNames(rows);
     return {
       titleField: String(profile.title_field || '').trim(),
@@ -447,15 +287,15 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
   }
 
   function extractListOrderFromContract(contract: unknown): string {
-    const typed = (contract || {}) as Dict;
-    const directViews = typed.views as Dict | undefined;
-    const treeBlock = (directViews?.tree || directViews?.list || {}) as Dict;
-    const searchDefaults = ((typed.search || {}) as Dict).defaults as Dict | undefined;
+    const store = contract as ContractV2NormalizedStore | null;
+    const primary = resolveContractV2PrimaryDataSource(store);
+    const params = (primary.params || {}) as Dict;
+    const search = resolveContractV2SearchContract(store);
+    const searchDefaults = (search.defaults || {}) as Dict;
     const candidates = [
-      treeBlock.order,
-      treeBlock.default_order,
+      params.order,
       searchDefaults?.order,
-      typed.order,
+      search.default_order,
     ];
     for (const item of candidates) {
       const value = String(item || '').trim();
@@ -472,8 +312,8 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       const label = String(labelRaw || value || fallbackLabel).trim() || fallbackLabel;
       rows.push({ label, value });
     };
-    const typed = (contract || {}) as Dict;
-    const sortOptions = ((typed.search || {}) as Dict).sort_options;
+    const search = resolveContractV2SearchContract(contract as ContractV2NormalizedStore | null);
+    const sortOptions = search.sort_options;
     if (Array.isArray(sortOptions)) {
       sortOptions.forEach((row) => {
         const raw = row as Dict;
@@ -486,11 +326,13 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
   }
 
   function extractAdvancedViewFields(contract: unknown, mode: string) {
-    return extractAdvancedViewFieldsFromContract(contract, mode);
+    void mode;
+    return extractAdvancedViewFieldsFromContract(contract as ContractV2NormalizedStore | null);
   }
 
   function extractViewFieldLabels(contract: unknown, mode: string) {
-    return extractViewFieldLabelsFromContract(contract, mode);
+    void mode;
+    return extractViewFieldLabelsFromContract(contract as ContractV2NormalizedStore | null);
   }
 
   function advancedRowTitle(row: Record<string, unknown>) {
@@ -522,40 +364,16 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
   }
 
   function resolveModelFromContract(contract: unknown) {
-    const typed = (contract || {}) as Dict;
-    const v2 = resolveUnifiedPageContractV2(typed);
-    const v2Model = String(v2?.pageInfo?.model || '').trim();
-    if (v2Model) {
-      return v2Model;
-    }
-    const direct = typed.model;
-    if (typeof direct === 'string' && direct.trim()) {
-      return direct.trim();
-    }
-    const headModel = ((typed.head || {}) as Dict).model;
-    if (typeof headModel === 'string' && headModel.trim()) {
-      return headModel.trim();
-    }
-    const views = (typed.views || {}) as Dict;
-    const viewModel = ((views.tree as Dict | undefined)?.model
-      || (views.form as Dict | undefined)?.model
-      || (views.kanban as Dict | undefined)?.model);
-    if (typeof viewModel === 'string' && viewModel.trim()) {
-      return viewModel.trim();
-    }
-    return '';
+    return String((contract as ContractV2NormalizedStore | null)?.snapshot.pageInfo.model || '').trim();
   }
 
   function extractListProfile(contract: unknown) {
-    const typed = (contract || {}) as Dict;
-    const rawProfile = resolveUnifiedPageContractV2ListProfile(typed);
-    const surfacePolicies = resolveUnifiedPageContractV2SurfacePolicies(typed);
-    const semanticPage = (typed.semantic_page || {}) as Dict;
-    const listSemantics = (semanticPage.list_semantics || {}) as Dict;
-    const semanticColumns = Array.isArray(listSemantics.columns) ? (listSemantics.columns as Array<Dict>) : [];
-    const columns = Array.isArray(rawProfile.columns) && rawProfile.columns.length
+    const store = contract as ContractV2NormalizedStore | null;
+    const rawProfile = resolveContractV2ListProfile(store);
+    const surfacePolicies = resolveContractV2SurfacePolicies(store);
+    const columns = Array.isArray(rawProfile.columns)
       ? rawProfile.columns.map((item) => String(item || '').trim()).filter(Boolean)
-      : semanticColumns.map((row) => String(row.name || '').trim()).filter(Boolean);
+      : [];
     const hiddenColumns = Array.isArray(rawProfile.hidden_columns)
       ? rawProfile.hidden_columns.map((item) => String(item || '').trim()).filter(Boolean)
       : [];
@@ -572,21 +390,16 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       const label = String(labelRaw || '').trim();
       if (label) columnLabels[name] = label;
     });
-    semanticColumns.forEach((row) => {
-      const name = String(row.name || '').trim();
-      const label = String(row.label || '').trim();
-      if (name && label && !columnLabels[name]) columnLabels[name] = label;
-    });
-    const rowPrimary = String(rawProfile.row_primary || listSemantics.row_primary || '').trim();
-    const rowSecondary = String(rawProfile.row_secondary || listSemantics.row_secondary || '').trim();
+    const rowPrimary = String(rawProfile.row_primary || '').trim();
+    const rowSecondary = String(rawProfile.row_secondary || '').trim();
     const showRowNumber = rawProfile.show_row_number !== false;
-    const statusField = String(rawProfile.status_field || listSemantics.status_field || '').trim();
-    const metricFields = Array.isArray(rawProfile.metric_fields || listSemantics.metric_fields)
-      ? ((rawProfile.metric_fields || listSemantics.metric_fields) as unknown[])
+    const statusField = String(rawProfile.status_field || '').trim();
+    const metricFields = Array.isArray(rawProfile.metric_fields)
+      ? (rawProfile.metric_fields as unknown[])
           .map((item) => String(item || '').trim())
           .filter(Boolean)
       : [];
-    const rawBatchPolicy = (rawProfile.batch_policy || listSemantics.batch_policy || {}) as Dict;
+    const rawBatchPolicy = (rawProfile.batch_policy || {}) as Dict;
     const hasRawBatchPolicy = Object.keys(rawBatchPolicy).length > 0;
     const batchPolicy = {
       enabled: rawBatchPolicy.enabled === true,
@@ -606,7 +419,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       execution_operations: Object.fromEntries(Object.entries((rawBatchPolicy.execution_operations || {}) as Dict)
         .map(([action, operation]) => [action, String(operation || '').trim()]).filter(([, operation]) => Boolean(operation))),
     };
-    const rawSelectionPolicy = (rawProfile.selection_policy || listSemantics.selection_policy || surfacePolicies.selection_policy || {}) as Dict;
+    const rawSelectionPolicy = (rawProfile.selection_policy || surfacePolicies.selection_policy || {}) as Dict;
     const selectionPolicy = {
       enabled: rawSelectionPolicy.enabled !== false,
       mode: String(rawSelectionPolicy.mode || 'multiple').trim(),
@@ -614,7 +427,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       requires_batch_action: rawSelectionPolicy.requires_batch_action === true,
       action_source: String(rawSelectionPolicy.action_source || 'batch_policy.available_actions').trim(),
     };
-    const rawGrouping = (rawProfile.grouping || listSemantics.grouping || {}) as Dict;
+    const rawGrouping = (rawProfile.grouping || {}) as Dict;
     const rawGroupingSort = (rawGrouping.sort || {}) as Dict;
     const grouping = {
       sample_limits: Array.isArray(rawGrouping.sample_limits)

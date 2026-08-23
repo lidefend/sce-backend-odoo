@@ -78,6 +78,18 @@ class TestNavigationEntryTarget(unittest.TestCase):
             },
         )
 
+    def test_plain_business_result_does_not_invent_navigation(self):
+        result = navigation_entry_target.normalize_odoo_action_result(
+            None,
+            {"warnings": {42: [{"reason_code": "ADVISORY"}]}},
+            source_model="payment.request",
+            source_record_id=42,
+        )
+
+        self.assertEqual(result, {"warnings": {42: [{"reason_code": "ADVISORY"}]}})
+        self.assertNotIn("entry_target", result)
+        self.assertNotIn("action_id", result)
+
     def test_client_action_next_is_wrapped_and_promoted_to_entry_target(self):
         action = navigation_entry_target.normalize_odoo_action_result(
             None,

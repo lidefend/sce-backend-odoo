@@ -1,25 +1,16 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.tools.safe_eval import safe_eval
 import json, hashlib, logging
-from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
 
 _logger = logging.getLogger(__name__)
-
-try:
-    # 解析视图按钮用（若环境缺 lxml，可按需降级）
-    from lxml import etree
-except Exception:
-    etree = None
-
 
 class AppActionConfig(models.Model):
     _name = 'app.action.config'
     _description = 'Application Action Configuration'
     _rec_name = 'label'
     _order = 'model'
-    SOURCE_KIND = "odoo_native_action_projection"
-    SOURCE_AUTHORITIES = ("ir.actions.act_window", "ir.actions.server", "ir.actions.act_url", "ir.ui.view")
+    SOURCE_KIND = "odoo_native_bound_action_projection"
+    SOURCE_AUTHORITIES = ("ir.actions.act_window", "ir.actions.server", "ir.actions.act_url")
 
     # ========= 基础信息（按模型聚合一份）=========
     name = fields.Char('Action Name', required=True)      # 记录名（例如 action_<model>）
@@ -93,20 +84,19 @@ class AppActionConfig(models.Model):
     def _generate_from_ir_actions(self, model_name):
         """
         为“某个模型”聚合标准化动作清单，并持久化（不变更不涨版）。
-        覆盖：
-        - ir.actions.act_window（打开窗口）
-        - ir.ui.view 上的按钮（type="object"|"action"，含 smart/stat)
-        - ir.actions.server（服务端动作）
-        - ir.actions.act_url（若存在绑定模型）
+        只投影 Odoo 明确绑定到模型的上下文动作。
+
+        表单/列表视图中的 ``<button>`` 由 ``app.view.config`` 对当前
+        用户的有效视图做唯一解析。本投影不得再扫描原始
+        ``ir.ui.view.arch_db``，否则会越过 action/view/inheritance/group 作用域。
         """
         try:
             if model_name not in self.env:
                 raise ValueError(_("模型不存在：%s") % model_name)
 
-            # 1) 各来源扫描（使用 sudo() 取全量定义）
+            # 1) 只扫描显式 binding 来源（sudo 仅读定义，运行时再与用户 ACL 求交）
             actions = []
             actions += self._scan_window_actions(model_name)
-            actions += self._scan_view_buttons(model_name)     # 包含 object/smart/stat/行内按钮等
             actions += self._scan_server_actions(model_name)
             actions += self._scan_url_actions(model_name)
 
@@ -159,76 +149,40 @@ class AppActionConfig(models.Model):
 
     # ================== 各来源扫描（内部） ==================
 
-    def _native_button_contract_scope(self, btn_node):
-        classes = [c.strip() for c in (btn_node.get('class') or '').split() if c.strip()]
-        if 'oe_stat_button' in classes or 'oe_stat_info' in classes:
-            return {
-                "level": "smart",
-                "selection": "none",
-                "visible_profiles": ["create", "edit", "readonly"],
-            }
+    def _native_bound_action_scope(self, binding_view_types):
+        """Project Odoo contextual actions without inventing create authority.
 
-        in_header = False
-        in_footer = False
-        host = ""
-        p = btn_node.getparent()
-        while p is not None:
-            tag = getattr(p, 'tag', '')
-            if tag == 'header':
-                in_header = True
-            if tag == 'footer':
-                in_footer = True
-            if tag in ('tree', 'list'):
-                host = 'list'
-                break
-            if tag == 'form':
-                host = 'form'
-                break
-            if tag == 'kanban':
-                host = 'kanban'
-                break
-            p = p.getparent()
-
-        if host == 'list':
-            if in_header:
-                return {
-                    "level": "toolbar",
-                    "selection": "multi",
-                    "visible_profiles": ["readonly", "list"],
-                }
-            return {
-                "level": "row",
-                "selection": "none",
-                "visible_profiles": ["readonly", "list"],
-            }
-
+        A binding is a contextual action on an existing record or selection.
+        Odoo's ``binding_view_types`` identifies form/list surfaces, but never
+        authorizes execution against an unsaved form.  Mixed bindings retain
+        both declared surfaces instead of taking the former list-only branch.
+        """
+        raw = str(binding_view_types or "").strip().lower()
+        tokens = [token.strip() for token in raw.replace("tree", "list").split(",") if token.strip()]
+        token_set = set(tokens) or {"list", "form"}
+        profiles = []
+        if "form" in token_set:
+            profiles.extend(["edit", "readonly"])
+        if "list" in token_set:
+            profiles.extend(["readonly", "list"])
         return {
-            "level": "footer" if in_footer else "header",
-            "selection": "none",
-            "visible_profiles": ["create", "edit", "readonly"],
+            "selection": "multi" if "list" in token_set else "none",
+            "visible_profiles": list(dict.fromkeys(profiles)),
         }
 
     def _native_server_action_scope(self, binding_view_types):
-        raw = str(binding_view_types or "").strip().lower()
-        tokens = [token.strip() for token in raw.replace("tree", "list").split(",") if token.strip()]
-        token_set = set(tokens)
-        if "list" in token_set:
-            return {
-                "selection": "multi",
-                "visible_profiles": ["readonly", "list"],
-            }
-        return {
-            "selection": "none",
-            "visible_profiles": ["create", "edit", "readonly"],
-        }
+        return self._native_bound_action_scope(binding_view_types)
 
     def _scan_window_actions(self, model_name):
-        """扫描 ir.actions.act_window（打开窗口类），统一为 kind='open'"""
+        """扫描显式绑定模型的 ir.actions.act_window。"""
         res = []
         Act = self.env['ir.actions.act_window'].sudo()
-        acts = Act.search([('res_model', '=', model_name)])
+        if 'binding_model_id' not in Act._fields:
+            return res
+        acts = Act.search([('binding_model_id.model', '=', model_name)])
         for a in acts:
             key = a.xml_id or f"aw_{a.id}"
+            scope = self._native_bound_action_scope(getattr(a, 'binding_view_types', None))
             entry = {
                 "key": key,
                 "label": a.name or key,
@@ -236,9 +190,10 @@ class AppActionConfig(models.Model):
                 "model": model_name,
                 "target_model": a.res_model,
                 "level": "toolbar",          # 缺省放工具栏；具体布局交给 view.config
-                "selection": "none",
-                "visible_profiles": ["create", "edit", "readonly", "list"],
-                "groups": [], "groups_xmlids": [],
+                "selection": scope["selection"],
+                "visible_profiles": scope["visible_profiles"],
+                "groups": [g.id for g in getattr(a, 'groups_id', self.env['res.groups'])],
+                "groups_xmlids": self._groups_xmlids(getattr(a, 'groups_id', self.env['res.groups'])),
                 "visible": {"domain": [], "states": []},
                 "intent": "open",
                 "params": {"target": getattr(a, 'target', 'current')},
@@ -266,7 +221,7 @@ class AppActionConfig(models.Model):
         for s in srvs:
             key = s.xml_id or f"srv_{s.id}"
             label = s.name or key
-            scope = self._native_server_action_scope(getattr(s, 'binding_view_types', None))
+            scope = self._native_bound_action_scope(getattr(s, 'binding_view_types', None))
             entry = {
                 "key": key,
                 "label": label,
@@ -302,6 +257,7 @@ class AppActionConfig(models.Model):
             urls = Url.browse([])
         for u in urls:
             key = u.xml_id or f"url_{u.id}"
+            scope = self._native_bound_action_scope(getattr(u, 'binding_view_types', None))
             entry = {
                 "key": key,
                 "label": u.name or key,
@@ -309,8 +265,8 @@ class AppActionConfig(models.Model):
                 "model": model_name,
                 "target_model": None,
                 "level": "toolbar",
-                "selection": "none",
-                "visible_profiles": ["create", "edit", "readonly", "list"],
+                "selection": scope["selection"],
+                "visible_profiles": scope["visible_profiles"],
                 "groups": [], "groups_xmlids": [],
                 "visible": {"domain": [], "states": []},
                 "intent": "url",
@@ -322,112 +278,6 @@ class AppActionConfig(models.Model):
                 }
             }
             res.append(entry)
-        return res
-
-    def _scan_view_buttons(self, model_name):
-        """
-        扫描视图上的按钮（form/tree/kanban）：
-        - <button type="object" name="method"> -> kind='object'
-        - <button type="action" name="ir.actions.act_window xmlid or id"> -> kind='open'
-        - class 含 oe_stat_button/oe_stat_info -> level='smart'/'stat'
-        - row-level（tree view 中） -> level='row'
-        说明：
-        - 仅抽“定义层”，不做权限/域求值；groups 用视图按钮的 groups 属性解析为 xmlids→ids
-        """
-        res = []
-        View = self.env['ir.ui.view'].sudo()
-        # 仅扫描当前模型绑定的主视图
-        views = View.search([('model', '=', model_name)])
-        for v in views:
-            try:
-                arch = v.arch_db or ''
-                if not arch:
-                    continue
-                if etree is None:
-                    continue  # 环境缺 lxml 时略过（可改为简单字符串查找）
-                root = etree.fromstring(arch.encode('utf-8'))
-                # 找所有 button
-                for btn in root.xpath('.//button'):
-                    if btn.get('special'):
-                        continue
-                    b_type = btn.get('type') or 'object'
-                    name = btn.get('name') or ''
-                    string = btn.get('string') or btn.get('title') or name
-                    classes = (btn.get('class') or '').split()
-                    groups_attr = btn.get('groups') or ''  # CSV xmlids
-                    states = (btn.get('states') or '').split(',')
-                    context_raw = btn.get('context') or None
-                    invisible = normalize_native_modifier(btn.get('invisible')) if btn.get('invisible') else None
-
-                    scope = self._native_button_contract_scope(btn)
-                    level = scope["level"]
-                    selection = scope["selection"]
-                    visible_profiles = scope["visible_profiles"]
-                    presentation = {
-                        "tier": "primary" if any(value in classes for value in ("btn-primary", "oe_highlight"))
-                        else "secondary" if "btn-secondary" in classes else "overflow",
-                    }
-
-                    # 解析 groups
-                    groups_ids, groups_xmlids = self._parse_groups_attr(groups_attr)
-
-                    if b_type == 'object':
-                        # 调用模型方法
-                        key = f"obj_{name}" if string == name else f"obj_{name}_{string}"
-                        entry = {
-                            "key": key,
-                            "label": string or name,
-                            "kind": "object",
-                            "model": model_name,
-                            "target_model": model_name,
-                            "level": level,
-                            "selection": selection,
-                            "visible_profiles": visible_profiles,
-                            "groups": groups_ids,
-                            "groups_xmlids": groups_xmlids,
-                            "visible": {"domain": [], "states": [s for s in states if s], "attrs": {"invisible": invisible}},
-                            "presentation": presentation,
-                            "intent": "execute",
-                            "params": {"confirm": False},   # 可在 view.config 中细化
-                            "payload": {
-                                "method": name,
-                                "context_raw": context_raw,
-                                "view_id": v.id,
-                                "view_xmlid": v.key or None
-                            }
-                        }
-                        res.append(entry)
-
-                    elif b_type == 'action':
-                        # 跳转/执行动作（act_window/其他）
-                        key = f"act_{name}" if string == name else f"act_{name}_{string}"
-                        entry = {
-                            "key": key,
-                            "label": string or name,
-                            "kind": "open",                 # 先按 open 归类，服务层可二次识别
-                            "model": model_name,
-                            "target_model": None,
-                            "level": level,
-                            "selection": selection,
-                            "visible_profiles": visible_profiles,
-                            "groups": groups_ids,
-                            "groups_xmlids": groups_xmlids,
-                            "visible": {"domain": [], "states": [s for s in states if s], "attrs": {"invisible": invisible}},
-                            "presentation": presentation,
-                            "intent": "open",
-                            "params": {},
-                            "payload": {
-                                # name 可能是 xmlid 或 数字 id；服务层据此解析
-                                "ref": name,
-                                "context_raw": context_raw,
-                                "view_id": v.id,
-                                "view_xmlid": v.key or None
-                            }
-                        }
-                        res.append(entry)
-            except Exception:
-                _logger.exception("Parse view buttons failed for view %s (%s)", v.id, model_name)
-                continue
         return res
 
     # ================== 标准化输出 ==================
@@ -469,38 +319,35 @@ class AppActionConfig(models.Model):
 
         filtered = []
         for a in actions:
-            if allowed_by_groups(a) and allowed_by_acl(a):
-                filtered.append(a)
+            group_allowed = allowed_by_groups(a)
+            acl_allowed = allowed_by_acl(a)
+            if not (group_allowed and acl_allowed):
+                continue
+            row = dict(a)
+            row.update({
+                "allowed": True,
+                "enabled": True,
+                "disabled": False,
+                "authorization_allowed": True,
+                "entitlement_evaluated": True,
+                "reason_code": "OK",
+                "source_authority": self._source_contract(self.model),
+            })
+            filtered.append(row)
         return filtered
 
     # ================== 工具方法 ==================
 
-    def _parse_groups_attr(self, groups_attr):
-        """把视图上的 groups CSV(xmlid,xmlid2) 解析为 (ids, xmlids)"""
-        if not groups_attr:
-            return [], []
-        xids = [g.strip() for g in groups_attr.split(',') if g.strip()]
-        ids = []
-        for xid in xids:
-            try:
-                rec = self.env.ref(xid, raise_if_not_found=False)
-                if rec and rec._name == 'res.groups':
-                    ids.append(rec.id)
-            except Exception:
-                continue
-        return ids, xids
-
     def _groups_xmlids(self, groups):
         """把 groups 记录集转 xmlids 列表"""
-        out = []
-        for g in groups:
+        try:
+            mapping = groups.get_external_id() or {}
+        except Exception:
             try:
-                pair = g.get_xml_id()
-                if isinstance(pair, tuple) and pair[1]:
-                    out.append(pair[1])
+                mapping = groups.get_xml_id() or {}
             except Exception:
-                continue
-        return out
+                mapping = {}
+        return sorted({str(value) for value in mapping.values() if value})
 
     def _model_exists(self, name):
         try:

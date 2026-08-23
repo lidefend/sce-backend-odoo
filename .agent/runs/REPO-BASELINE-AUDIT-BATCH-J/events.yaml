@@ -1,0 +1,11 @@
+events:
+  - type: failure.reproduced
+    result: docker_compose_selector_reached_snapshot_python
+  - type: change.completed
+    result: internal_selector_shifted_before_public_argument_forwarding
+  - type: verification.pending
+    result: nine_targeted_tests_not_run_yet
+
+next_exact_step:
+  command: python3 -m unittest scripts.verify.test_contract_snapshot_export_fail_closed -v
+  requires_explicit_validation_authorization: false

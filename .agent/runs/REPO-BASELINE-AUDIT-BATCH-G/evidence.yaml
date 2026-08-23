@@ -1,0 +1,15 @@
+evidence:
+  change:
+    removed_assertion: field.user_id_source_literal
+    behavioral_assertions_preserved: true
+
+  verification:
+    project_layout_guard:
+      status: passed
+    responsibility_map_guard:
+      status: passed
+    generated_reports_guard:
+      status: passed
+
+  completion:
+    status: completed

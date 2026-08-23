@@ -6,7 +6,7 @@ import zlib
 from .source_authority import build_source_authority_contract
 
 SOURCE_KIND = "release_navigation_projection"
-SOURCE_AUTHORITIES = ("delivery_engine_v1", "legacy_release_navigation_fallback")
+SOURCE_AUTHORITIES = ("delivery_engine", "legacy_release_navigation_fallback")
 NO_BUSINESS_FACT_AUTHORITY = True
 LEGACY_FALLBACK_SOURCE_KIND = "legacy_release_navigation_fallback"
 _LEGACY_RELEASE_NAVIGATION_LEAVES: list[dict] = []
@@ -121,18 +121,18 @@ def _registered_product_children(role_code: str) -> list[dict]:
 
 def build_release_navigation_contract(data: dict) -> dict:
     payload = data if isinstance(data, dict) else {}
-    delivery_payload = payload.get("delivery_engine_v1") if isinstance(payload.get("delivery_engine_v1"), dict) else {}
+    delivery_payload = payload.get("delivery_engine") if isinstance(payload.get("delivery_engine"), dict) else {}
     if isinstance(delivery_payload.get("nav"), list):
         return {
             "contract_version": str(delivery_payload.get("contract_version") or "v1"),
-            "source": "delivery_engine_v1",
+            "source": "delivery_engine",
             "source_authority": source_authority_contract(),
             "role_code": str(delivery_payload.get("role_code") or ""),
             "nav": delivery_payload.get("nav") or [],
             "meta": {
                 "product_key": str(delivery_payload.get("product_key") or ""),
                 "edition_key": str(delivery_payload.get("edition_key") or ""),
-                "source": "delivery_engine_v1",
+                "source": "delivery_engine",
                 "fallback_used": False,
             },
         }

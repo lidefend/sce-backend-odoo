@@ -2,11 +2,14 @@ import { buildOne2ManyInlineCommands } from '../../app/x2manyCommands';
 import { fieldType, fromDatetimeInputValue, normalizeRelationIds, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
+import { evaluateNativeModifierValue } from './nativeLayoutUtils';
 
 export function subviewColumnCount(subview: unknown): number {
   if (!subview || typeof subview !== 'object' || Array.isArray(subview)) return 0;
   const tree = (subview as Record<string, unknown>).tree;
   if (!tree || typeof tree !== 'object' || Array.isArray(tree)) return 0;
+  const occurrences = (tree as Record<string, unknown>).column_occurrences;
+  if (Array.isArray(occurrences) && occurrences.length) return occurrences.length;
   const columns = (tree as Record<string, unknown>).columns;
   if (!Array.isArray(columns)) return 0;
   return columns.length;
@@ -22,9 +25,14 @@ export function one2manySubviewPolicies(subview: unknown) {
 }
 
 export function selectOne2manySubview(legacySubview: unknown, nativeSubview: unknown) {
-  const legacyColumns = subviewColumnCount(legacySubview);
   const nativeColumns = subviewColumnCount(nativeSubview);
-  return nativeColumns > legacyColumns ? nativeSubview : (legacySubview || nativeSubview);
+  return nativeColumns > 0 ? nativeSubview : (legacySubview || nativeSubview);
+}
+
+function staticNativeBoolean(value: unknown): boolean | undefined {
+  if (value === true || value === 1 || value === '1' || value === 'True' || value === 'true') return true;
+  if (value === false || value === 0 || value === '0' || value === 'False' || value === 'false') return false;
+  return undefined;
 }
 
 function one2manyColumnLabel(value: unknown, fallback: string) {
@@ -41,9 +49,25 @@ export function one2manyColumnsFromSubview(
   const tree = subview && typeof subview === 'object' && !Array.isArray(subview)
     ? (subview as Record<string, unknown>).tree
     : undefined;
-  const columnsRaw = tree && typeof tree === 'object' && !Array.isArray(tree)
-    ? (tree as Record<string, unknown>).columns
-    : undefined;
+  const treeRecord = tree && typeof tree === 'object' && !Array.isArray(tree)
+    ? tree as Record<string, unknown>
+    : {};
+  const occurrences = treeRecord.column_occurrences;
+  const businessColumns = Array.isArray(treeRecord.columns) ? treeRecord.columns : [];
+  const businessColumnsByName = new Map(businessColumns.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const row = item as Record<string, unknown>;
+    const name = String(row.name || '').trim();
+    return name ? [[name, row] as const] : [];
+  }));
+  const businessNames = new Set(businessColumns.map((item) => String(
+    item && typeof item === 'object' && !Array.isArray(item)
+      ? (item as Record<string, unknown>).name
+      : item,
+  ).trim()).filter(Boolean));
+  const columnsRaw = Array.isArray(occurrences) && occurrences.length
+    ? occurrences.filter((item) => item && typeof item === 'object' && businessNames.has(String((item as Record<string, unknown>).name || '').trim()))
+    : businessColumns;
   const out: One2ManyColumn[] = [];
   if (Array.isArray(columnsRaw)) {
     columnsRaw.forEach((item) => {
@@ -66,14 +90,37 @@ export function one2manyColumnsFromSubview(
       const row = item as Record<string, unknown>;
       const colName = String(row.name || '').trim();
       if (!colName) return;
+      const businessColumn = businessColumnsByName.get(colName) || {};
       const descriptor = resolveDescriptor(colName);
-      const ttype = String(row.ttype || fieldType(descriptor) || 'char').trim() || 'char';
+      const attributes = row.attributes && typeof row.attributes === 'object' && !Array.isArray(row.attributes)
+        ? row.attributes as Record<string, unknown>
+        : {};
+      const modifiers = row.modifiers && typeof row.modifiers === 'object' && !Array.isArray(row.modifiers)
+        ? row.modifiers as Record<string, unknown>
+        : {};
+      const relationActions = row.relation_active_actions && typeof row.relation_active_actions === 'object' && !Array.isArray(row.relation_active_actions)
+        ? row.relation_active_actions as Record<string, unknown>
+        : {};
+      const locator = String(row.native_locator || '').trim();
+      const occurrenceIndex = Number(row.occurrence_index || 0);
+      const ttype = String(row.ttype || row.field_type || fieldType(descriptor) || 'char').trim() || 'char';
+      const required = staticNativeBoolean(modifiers.required ?? attributes.required ?? row.required);
+      const readonly = staticNativeBoolean(modifiers.readonly ?? attributes.readonly ?? row.readonly);
+      const relationValueRequiresSelector = ['many2one', 'many2many', 'one2many'].includes(ttype);
       out.push({
+        key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
         name: colName,
-        label: one2manyColumnLabel(row.label || row.string || descriptor?.string, colName),
+        label: one2manyColumnLabel(
+          attributes.string || row.label || row.string || businessColumn.label || businessColumn.string || descriptor?.string,
+          colName,
+        ),
         ttype,
-        required: Boolean(row.required || descriptor?.required),
-        readonly: Boolean(row.readonly || descriptor?.readonly),
+        required: required ?? Boolean(descriptor?.required),
+        readonly: relationValueRequiresSelector || (readonly ?? Boolean(descriptor?.readonly)),
+        nativeLocator: locator || undefined,
+        occurrenceIndex: occurrenceIndex > 0 ? occurrenceIndex : undefined,
+        modifiers: Object.keys(modifiers).length ? modifiers : undefined,
+        relationActiveActions: Object.keys(relationActions).length ? relationActions : undefined,
         selection: Array.isArray(row.selection)
           ? row.selection as Array<[string, string]>
           : (Array.isArray(descriptor?.selection) ? descriptor?.selection : undefined),
@@ -81,6 +128,104 @@ export function one2manyColumnsFromSubview(
     });
   }
   return out;
+}
+
+export function resolveOne2manyRowColumnBehavior(
+  column: One2ManyColumn,
+  rowValues: Record<string, unknown>,
+  parentValues: Record<string, unknown> = {},
+  modifierPatches: Record<string, Record<string, unknown>> = {},
+) {
+  const runtimeModifiers = modifierPatches[column.name] && typeof modifierPatches[column.name] === 'object'
+    ? modifierPatches[column.name]
+    : {};
+  const modifiers = { ...(column.modifiers || {}), ...runtimeModifiers };
+  const evaluateModifier = (value: unknown) => evaluateNativeModifierValue(value, (field) => {
+    const fieldName = String(field || '').trim();
+    if (fieldName.startsWith('parent.')) return parentValues[fieldName.slice('parent.'.length)];
+    return rowValues[fieldName];
+  });
+  const isCanonical = (value: unknown): boolean => {
+    if (typeof value === 'boolean' || value === 0 || value === 1) return true;
+    if (typeof value === 'string') return ['0', '1', 'false', 'False', 'true', 'True'].includes(value.trim());
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const row = value as Record<string, unknown>;
+    const kind = String(row.kind || '').trim();
+    if (kind === 'static') return true;
+    if (kind === 'not') return isCanonical(row.expr);
+    if (kind === 'all' || kind === 'any') return Array.isArray(row.exprs) && row.exprs.every(isCanonical);
+    if (kind !== 'field_truthy' && kind !== 'field_compare') return false;
+    const fields = [row.field, row.value_field].filter(Boolean).map((field) => String(field));
+    return fields.every((field) => !field.startsWith('context.'));
+  };
+  const verdict = (key: 'invisible' | 'readonly' | 'required' | 'column_invisible') => {
+    const value = modifiers[key];
+    if (value === undefined) return false;
+    if (!isCanonical(value)) return key !== 'required';
+    return evaluateModifier(value);
+  };
+  return {
+    invisible: verdict('invisible'),
+    columnInvisible: verdict('column_invisible'),
+    readonly: Boolean(column.readonly || verdict('readonly')),
+    required: Boolean(column.required || verdict('required')),
+  };
+}
+
+export function one2manyRowActionsFromSubview(subview: unknown) {
+  const tree = subview && typeof subview === 'object' && !Array.isArray(subview)
+    ? (subview as Record<string, unknown>).tree
+    : undefined;
+  const actions = tree && typeof tree === 'object' && !Array.isArray(tree)
+    ? (tree as Record<string, unknown>).row_actions
+    : undefined;
+  if (!Array.isArray(actions)) return [];
+  return actions.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const row = item as Record<string, unknown>;
+    const identity = row.native_identity && typeof row.native_identity === 'object' && !Array.isArray(row.native_identity)
+      ? row.native_identity as Record<string, unknown>
+      : {};
+    const payload = row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload)
+      ? row.payload as Record<string, unknown>
+      : {};
+    const safety = row.action_safety && typeof row.action_safety === 'object' && !Array.isArray(row.action_safety)
+      ? row.action_safety as Record<string, unknown>
+      : {};
+    const visible = row.visible && typeof row.visible === 'object' && !Array.isArray(row.visible)
+      ? row.visible as Record<string, unknown>
+      : {};
+    const locator = String(identity.native_locator || '').trim();
+    const methodName = String(payload.method || '').trim();
+    const kind = String(row.kind || payload.type || '').trim().toLowerCase();
+    if (identity.authoritative !== true || identity.canonical_region !== 'row_actions' || !locator) return [];
+    const contextRaw = String(payload.context_raw || identity.context_raw || '').trim();
+    const confirm = String(payload.confirm || '').trim();
+    const visibleAttrs = visible.attrs && typeof visible.attrs === 'object' && !Array.isArray(visible.attrs)
+      ? Object.keys(visible.attrs as Record<string, unknown>)
+      : [];
+    const hasConditionalVisibility = visibleAttrs.length > 0
+      || (Array.isArray(visible.domain) && visible.domain.length > 0)
+      || (Array.isArray(visible.states) && visible.states.length > 0);
+    const enabled = kind === 'object'
+      && Boolean(methodName)
+      && !contextRaw
+      && !confirm
+      && safety.classification === 'safe'
+      && safety.requires_confirm !== true
+      && !hasConditionalVisibility
+      && row.allowed !== false
+      && row.enabled !== false
+      && row.disabled !== true;
+    return [{
+      key: locator,
+      label: String(row.label || identity.string || methodName || '操作').trim(),
+      kind,
+      methodName: methodName || undefined,
+      enabled,
+      nativeLocator: locator,
+    }];
+  });
 }
 
 export function one2manyCanCreateFromPolicies(policies: Record<string, unknown>) {
@@ -156,7 +301,7 @@ export function createOne2manyDraftRow(params: {
     isNew: true,
     removed: false,
     dirty: true,
-    dirtyFields: params.columns.map((column) => column.name),
+    dirtyFields: Array.from(new Set(params.columns.map((column) => column.name))),
     values: { ...values, [params.primary]: values[params.primary] ?? '' },
   };
 }
@@ -188,11 +333,15 @@ export function setOne2manyDraftRowField(params: {
   rowKey: string;
   column: One2ManyColumn;
   value: unknown;
+  parentValues?: Record<string, unknown>;
 }) {
-  if (params.column.readonly) return false;
   const rows = ensureOne2manyRows(params.rowsByField, params.fieldName);
   const row = rows.find((item) => item.key === params.rowKey);
   if (!row) return false;
+  const behavior = resolveOne2manyRowColumnBehavior(
+    params.column, row.values || {}, params.parentValues || {}, row.modifierPatches || {},
+  );
+  if (behavior.invisible || behavior.columnInvisible || behavior.readonly) return false;
   const normalized = normalizeOne2manyColumnValue(params.column, params.value);
   row.values = {
     ...(row.values || {}),
@@ -279,6 +428,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
   recordId: number;
   resolvePrimaryColumn: (fieldName: string) => string;
   resolveColumns: (fieldName: string) => One2ManyColumn[];
+  parentValues?: Record<string, unknown>;
 }) {
   const issues: string[] = [];
   const rowErrors: Record<string, string[]> = {};
@@ -288,13 +438,18 @@ export function collectOne2manyDraftValidationFromRows(params: {
     if (params.recordId && !hasTouchedRows) return;
     const primary = params.resolvePrimaryColumn(fieldName);
     const columns = params.resolveColumns(fieldName);
-    const requiredColumns = columns.filter((column) => column.required);
     const labels = new Set<string>();
     rows.forEach((row, index) => {
       if (row.removed) return;
       const rowKey = `${fieldName}:${row.key}`;
       const perRow: string[] = [];
-      requiredColumns.forEach((column) => {
+      const checkedRequiredFields = new Set<string>();
+      columns.forEach((column) => {
+        const behavior = resolveOne2manyRowColumnBehavior(
+          column, row.values || {}, params.parentValues || {}, row.modifierPatches || {},
+        );
+        if (!behavior.required || behavior.invisible || behavior.columnInvisible || checkedRequiredFields.has(column.name)) return;
+        checkedRequiredFields.add(column.name);
         const value = row.values?.[column.name];
         if (isOne2manyEmptyValue(column, value)) {
           perRow.push(`${column.label}不能为空`);

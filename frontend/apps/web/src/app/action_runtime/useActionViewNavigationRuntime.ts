@@ -4,7 +4,10 @@ import { readWorkspaceContext } from '../workspaceContext';
 import { buildEntryTargetRouteTarget } from '../routeQuery';
 import { buildActionViewRowClickTarget, shouldUseCanonicalCollectionDetail } from '../runtime/actionViewInteractionRuntime';
 import { resolveRowClickPushState } from '../runtime/actionViewNavigationApplyRuntime';
-import { resolveUnifiedPageContractV2 } from '../contracts/unifiedPageContractV2';
+import {
+  resolveContractV2ActionRules,
+} from '../contracts/v2/store';
+import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
 
@@ -13,7 +16,7 @@ type UseActionViewNavigationRuntimeOptions = {
   showHud: Ref<boolean>;
   menuId: Ref<number | null>;
   actionId: Ref<number | null>;
-  actionContract: Ref<Record<string, unknown> | null>;
+  actionContract: Ref<ContractV2NormalizedStore | null>;
   canEditRecord: Ref<boolean>;
   collectionSemantic?: Ref<string>;
   resolvedModelRef: Ref<string>;
@@ -127,32 +130,22 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
   }
 
   function resolveRowOpenAction() {
-    const contract = options.actionContract.value || {};
-    const v2 = resolveUnifiedPageContractV2(contract);
-    if (v2) {
-      const v2ViewType = String(v2.pageInfo?.viewType || '').trim().toLowerCase();
+    const store = options.actionContract.value;
+    if (store) {
+      const v2ViewType = String(store.snapshot.pageInfo.viewType || '').trim().toLowerCase();
       if (['list', 'tree', 'kanban'].includes(v2ViewType)) {
-        const rows = Array.isArray(v2.actionContract?.actionRuleList) ? v2.actionContract.actionRuleList : [];
+        const rows = resolveContractV2ActionRules(store);
         const rowAction = rows.find((action) => {
           if (!action || typeof action !== 'object') return false;
-          const typed = action as Dict;
+          const typed = action as unknown as Dict;
           return String(typed.triggerType || '').trim() === 'row_click'
             || String(typed.sourceWidgetId || '').trim() === 'page.row'
-            || String(typed.targetScope || '').trim() === 'row';
+            || String(typed.targetScope || '').trim() === 'page';
         });
-        if (rowAction) return rowAction as Dict;
+        if (rowAction) return rowAction as unknown as Dict;
       }
     }
-    const views = (contract.views || {}) as Dict;
-    const view = ((views.kanban || views.tree || views.list || {}) as Dict);
-    const rows = Array.isArray(view.row_actions) ? view.row_actions : [];
-    return rows.find((row) => {
-      if (!row || typeof row !== 'object') return false;
-      const action = row as Dict;
-      return String(action.level || '').trim() === 'row'
-        && String(action.intent || action.kind || '').trim() === 'open'
-        && String(action.trigger || action.display_mode || '').trim() === 'row_click';
-    }) as Dict | undefined;
+    return undefined;
   }
 
   function handleRowClick(row: Dict) {
@@ -173,11 +166,10 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
       const viewMode = String(payload.view_mode || '').trim();
       if (viewMode && viewMode !== 'form') return;
     }
-    const contract = options.actionContract.value || {};
-    const head = contract.head && typeof contract.head === 'object' ? contract.head as Dict : {};
+    const store = options.actionContract.value;
     const routeTarget = buildActionViewRowClickTarget({
       targetModel: options.resolvedModelRef.value || options.modelRef.value
-        || String(contract.model || contract.res_model || head.model || head.res_model || ''),
+        || String(store?.snapshot.pageInfo.model || ''),
       rawId: row.id,
       menuId: options.menuId.value,
       actionId: options.actionId.value,

@@ -11,7 +11,7 @@ Contract Governance / RuntimeContract Protocol
 
 - `addons/smart_core/core/unified_page_contract_v2_runtime.py`
 - `docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json`
-- `docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v2.json`
 - `scripts/verify/unified_page_contract_v2_runtime_guard.py`
 - `docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json`
 - `Makefile`
@@ -91,7 +91,7 @@ Revert:
 - `addons/smart_core/core/unified_page_contract_v2_runtime.py`
 - `scripts/verify/unified_page_contract_v2_runtime_guard.py`
 - `docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json`
-- `docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v2.json`
 - runtime schema optional field additions
 - `Makefile` runtime target changes
 

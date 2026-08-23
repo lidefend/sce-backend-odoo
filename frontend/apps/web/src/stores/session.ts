@@ -132,33 +132,8 @@ export interface WorkspaceHomeContract {
     actions?: Record<string, unknown>;
   };
   page_orchestration?: {
-    schema_version?: string;
-    page?: {
-      key?: string;
-      intent?: string;
-      role_code?: string;
-      render_mode?: string;
-    };
-    zones?: Array<{ key?: string; label?: string; order?: number }>;
-    blocks?: Array<{
-      key?: string;
-      type?: string;
-      zone?: string;
-      order?: number;
-      source_path?: string;
-      visible?: boolean;
-      tone?: string;
-      progress?: string;
-      focus?: boolean;
-    }>;
-    role_layout?: {
-      mode?: string;
-      variant?: string;
-      focus_blocks?: string[];
-    };
-  };
-  page_orchestration_v1?: {
     contract_version?: string;
+    schema_version?: string;
     scene_key?: string;
     page?: Record<string, unknown>;
     zones?: Array<Record<string, unknown>>;
@@ -167,19 +142,6 @@ export interface WorkspaceHomeContract {
     action_schema?: Record<string, unknown>;
     render_hints?: Record<string, unknown>;
     meta?: Record<string, unknown>;
-  };
-  scene_contract_v1?: {
-    contract_version?: string;
-    scene?: Record<string, unknown>;
-    page?: Record<string, unknown>;
-    nav_ref?: Record<string, unknown>;
-    zones?: Array<Record<string, unknown>>;
-    blocks?: Record<string, Record<string, unknown>>;
-    actions?: Record<string, unknown>;
-    permissions?: Record<string, unknown>;
-    record?: Record<string, unknown>;
-    extensions?: Record<string, unknown>;
-    diagnostics?: Record<string, unknown>;
   };
   role_variant?: {
     role_code?: string;
@@ -221,7 +183,7 @@ export interface PageContract {
   schema_version?: string;
   texts?: Record<string, unknown>;
   sections?: Array<{ key?: string; enabled?: boolean; order?: number; tag?: string; open?: boolean }>;
-  page_orchestration_v1?: {
+  page_orchestration?: {
     contract_version?: string;
     scene_key?: string;
     page?: Record<string, unknown>;
@@ -231,19 +193,6 @@ export interface PageContract {
     action_schema?: Record<string, unknown>;
     render_hints?: Record<string, unknown>;
     meta?: Record<string, unknown>;
-  };
-  scene_contract_v1?: {
-    contract_version?: string;
-    scene?: Record<string, unknown>;
-    page?: Record<string, unknown>;
-    nav_ref?: Record<string, unknown>;
-    zones?: Array<Record<string, unknown>>;
-    blocks?: Record<string, Record<string, unknown>>;
-    actions?: Record<string, unknown>;
-    permissions?: Record<string, unknown>;
-    record?: Record<string, unknown>;
-    extensions?: Record<string, unknown>;
-    diagnostics?: Record<string, unknown>;
   };
   actions?: Record<string, unknown>;
 }
@@ -304,8 +253,8 @@ export interface SessionState {
     loaded?: boolean;
   } | null;
   pageContracts: Record<string, PageContract>;
-  sceneReadyContractV1: SceneReadyContract | null;
-  sceneGovernanceV1: SceneGovernancePayload | null;
+  sceneReadyContract: SceneReadyContract | null;
+  sceneGovernance: SceneGovernancePayload | null;
   lastTraceId: string;
   lastIntent: string;
   lastLatencyMs: number | null;
@@ -594,8 +543,8 @@ export const useSessionStore = defineStore('session', {
     workspaceHome: null,
     workspaceHomeRef: null,
     pageContracts: {},
-    sceneReadyContractV1: null,
-    sceneGovernanceV1: null,
+    sceneReadyContract: null,
+    sceneGovernance: null,
     lastTraceId: '',
     lastIntent: '',
     lastLatencyMs: null,
@@ -863,8 +812,8 @@ export const useSessionStore = defineStore('session', {
           this.workspaceHome = null;
           this.workspaceHomeRef = null;
           this.pageContracts = {};
-          this.sceneReadyContractV1 = null;
-          this.sceneGovernanceV1 = null;
+          this.sceneReadyContract = null;
+          this.sceneGovernance = null;
           setSceneRegistry([]);
           this.lastTraceId = parsed.lastTraceId ?? '';
           this.lastIntent = parsed.lastIntent ?? '';
@@ -912,8 +861,8 @@ export const useSessionStore = defineStore('session', {
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
       this.pageContracts = {};
-      this.sceneReadyContractV1 = null;
-      this.sceneGovernanceV1 = null;
+      this.sceneReadyContract = null;
+      this.sceneGovernance = null;
       setSceneRegistry([]);
       this.lastTraceId = '';
       this.lastIntent = '';
@@ -979,8 +928,6 @@ export const useSessionStore = defineStore('session', {
         productFacts: this.productFacts,
         workspaceHome: this.workspaceHome,
         workspaceHomeRef: this.workspaceHomeRef,
-        sceneReadyContractV1: this.sceneReadyContractV1,
-        sceneGovernanceV1: this.sceneGovernanceV1,
         lastTraceId: this.lastTraceId,
         lastIntent: this.lastIntent,
         lastLatencyMs: this.lastLatencyMs,
@@ -1234,8 +1181,8 @@ export const useSessionStore = defineStore('session', {
       this.workspaceHome = null;
       this.workspaceHomeRef = null;
       this.pageContracts = {};
-      this.sceneReadyContractV1 = null;
-      this.sceneGovernanceV1 = null;
+      this.sceneReadyContract = null;
+      this.sceneGovernance = null;
       this.defaultRoute = null;
       this.activityPages = [];
       this.activeActivityPageKey = '';
@@ -1321,17 +1268,17 @@ export const useSessionStore = defineStore('session', {
         }
 
         // 检查唯一导航契约
-        if (result.navigation_v1?.nav) {
-          console.log('3. navigation_v1.nav 存在，类型:', typeof result.navigation_v1.nav, '是否为数组:', Array.isArray(result.navigation_v1.nav));
-          if (Array.isArray(result.navigation_v1.nav) && result.navigation_v1.nav.length > 0) {
-            console.log('   菜单数量:', result.navigation_v1.nav.length);
+        if (result.navigation?.nav) {
+          console.log('3. navigation.nav 存在，类型:', typeof result.navigation.nav, '是否为数组:', Array.isArray(result.navigation.nav));
+          if (Array.isArray(result.navigation.nav) && result.navigation.nav.length > 0) {
+            console.log('   菜单数量:', result.navigation.nav.length);
             console.log('   前3个菜单:');
-            result.navigation_v1.nav.slice(0, 3).forEach((item, index) => {
+            result.navigation.nav.slice(0, 3).forEach((item, index) => {
               console.log(`     [${index}] name: "${item.name}", xmlid: "${item.xmlid || 'N/A'}", id: ${item.id || 'N/A'}`);
             });
           }
         } else {
-          console.log('3. navigation_v1.nav: 不存在');
+          console.log('3. navigation.nav: 不存在');
         }
         console.groupEnd();
       }
@@ -1520,10 +1467,10 @@ export const useSessionStore = defineStore('session', {
         workspace_home_ref?: { intent?: string; scene_key?: string; loaded?: boolean }
       }).workspace_home_ref ?? null);
       this.pageContracts = ((result as AppInitResponse & { page_contracts?: { pages?: Record<string, PageContract> } }).page_contracts?.pages ?? {});
-      this.sceneReadyContractV1 = ((result as AppInitResponse & { scene_ready_contract_v1?: SceneReadyContract }).scene_ready_contract_v1 ?? null);
-      this.sceneGovernanceV1 = ((result as AppInitResponse & { scene_governance_v1?: SceneGovernancePayload }).scene_governance_v1 ?? null);
-      if (this.sceneReadyContractV1?.scenes?.length) {
-        setSceneRegistryFromSceneReadyContract(this.sceneReadyContractV1);
+      this.sceneReadyContract = ((result as AppInitResponse & { scene_ready_contract?: SceneReadyContract }).scene_ready_contract ?? null);
+      this.sceneGovernance = ((result as AppInitResponse & { scene_governance?: SceneGovernancePayload }).scene_governance ?? null);
+      if (this.sceneReadyContract?.scenes?.length) {
+        setSceneRegistryFromSceneReadyContract(this.sceneReadyContract);
       } else {
         setSceneRegistry(this.scenes);
       }
@@ -1555,16 +1502,16 @@ export const useSessionStore = defineStore('session', {
         };
       }
       const navigation = (result as AppInitResponse & {
-        navigation_v1?: {
+        navigation?: {
           nav?: unknown;
-          route_authority_v1?: unknown;
+          route_authority?: unknown;
           integrity?: {
             visible_action_count?: unknown;
             authorized_action_count?: unknown;
             missing_authority_count?: unknown;
           };
         };
-      }).navigation_v1;
+      }).navigation;
       const navigationIntegrity = navigation?.integrity;
       const visibleActionCount = Number(navigationIntegrity?.visible_action_count);
       const authorizedActionCount = Number(navigationIntegrity?.authorized_action_count);
@@ -1576,12 +1523,12 @@ export const useSessionStore = defineStore('session', {
         || !Number.isInteger(authorizedActionCount)
         || authorizedActionCount < visibleActionCount
       ) {
-        this.initError = 'system.init navigation_v1 integrity check failed';
+        this.initError = 'system.init navigation integrity check failed';
         this.initStatus = 'error';
         throw new Error(this.initError);
       }
       this.routeAuthority = routeAuthorityForPrincipal(
-        navigation?.route_authority_v1,
+        navigation?.route_authority,
         {
           userId: Number(this.user?.id || 0),
           roleCode: String(this.roleSurface?.role_code || '').trim(),
@@ -1589,12 +1536,12 @@ export const useSessionStore = defineStore('session', {
         },
       );
       if (!this.routeAuthority) {
-        this.initError = 'system.init missing required navigation_v1 route authority';
+        this.initError = 'system.init missing required navigation route authority';
         this.initStatus = 'error';
         throw new Error(this.initError);
       }
       if (debugIntent) {
-        console.info('[debug] system.init navigation_v1:', {
+        console.info('[debug] system.init navigation:', {
           type: typeof navigation?.nav,
           isArray: Array.isArray(navigation?.nav),
           length: Array.isArray(navigation?.nav) ? navigation.nav.length : 'N/A',
@@ -1602,7 +1549,7 @@ export const useSessionStore = defineStore('session', {
       }
       const nav = (Array.isArray(navigation?.nav) ? navigation.nav : null) as NavNode[] | null;
       if (!nav) {
-        this.initError = 'system.init missing required navigation_v1 nav';
+        this.initError = 'system.init missing required navigation nav';
         this.initStatus = 'error';
         throw new Error(this.initError);
       }

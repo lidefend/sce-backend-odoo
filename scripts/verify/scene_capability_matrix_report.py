@@ -110,7 +110,7 @@ def _system_init_user(intent_url: str, token: str) -> tuple[list[dict], list[dic
     data = resp.get("data") if isinstance(resp.get("data"), dict) else {}
     if isinstance(data.get("data"), dict):
         data = data.get("data") or data
-    ready_contract = data.get("scene_ready_contract_v1") if isinstance(data.get("scene_ready_contract_v1"), dict) else {}
+    ready_contract = data.get("scene_ready_contract") if isinstance(data.get("scene_ready_contract"), dict) else {}
     scenes = ready_contract.get("scenes") if isinstance(ready_contract.get("scenes"), list) else []
     if not scenes:
         scenes = data.get("scenes") if isinstance(data.get("scenes"), list) else []

@@ -126,6 +126,13 @@ def main() -> int:
             errors.append("construction diary normalizer must record governance patch")
         if not diary_contract.get("layoutContract", {}).get("containerTree"):
             errors.append("construction diary normalizer must write v2 container tree")
+        diary_auth = {
+            row.get("auth")
+            for row in diary_contract.get("statusContract", {}).get("widgetStatus", [])
+            if isinstance(row, dict)
+        }
+        if not diary_auth.issubset({"none", "read", "edit", "admin"}):
+            errors.append(f"construction diary normalizer emitted unsupported widget auth: {sorted(diary_auth)}")
 
         tax_contract = {
             "model": "sc.general.contract",
@@ -160,6 +167,13 @@ def main() -> int:
             errors.append("general contract company normalizer must replace legacy amount label")
         if "合同金额" not in repr(company_contract):
             errors.append("general contract company normalizer must expose company amount label")
+        company_auth = {
+            row.get("auth")
+            for row in company_contract.get("statusContract", {}).get("widgetStatus", [])
+            if isinstance(row, dict)
+        }
+        if not company_auth.issubset({"none", "read", "edit", "admin"}):
+            errors.append(f"general contract company normalizer emitted unsupported widget auth: {sorted(company_auth)}")
         form_policy = normalizers.model_specific_form_contract_policy({
             "model": "sc.general.contract",
             "fields": {"tax_id": {}, "tax_rate": {}},

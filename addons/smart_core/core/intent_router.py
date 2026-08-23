@@ -97,7 +97,7 @@ def _build_envs(params: Dict[str, Any], add_ctx: Dict[str, Any], intent: str = "
     except Exception:
         cr.close()
         raise
-def _dispatch(intent: str, params: dict, context: dict):
+def _dispatch(intent: str, params: dict, context: dict, meta: Optional[Dict[str, Any]] = None):
     """
     统一分发：显式依据 params.db 选择环境，合并 context，实例化 Handler 并调用。
     """
@@ -120,7 +120,12 @@ def _dispatch(intent: str, params: dict, context: dict):
     dispatch_succeeded = False
     dispatch_result = None
     try:
-        payload_envelope = {"intent": intent, "params": params or {}, "context": context or {}}
+        payload_envelope = {
+            "intent": intent,
+            "params": params or {},
+            "context": context or {},
+            "meta": meta or {},
+        }
         # 2) 实例化 handler，注入 env/su_env/context/params
         handler = handler_cls(env=env, su_env=su_env, request=request, context=context or {}, payload=payload_envelope)
         # 兼容旧字段
@@ -173,6 +178,7 @@ def route_intent_payload(payload: dict, ctx) -> dict:
     intent = (payload or {}).get("intent") or ""
     params = (payload or {}).get("params") or {}
     context = (payload or {}).get("context") or {}
+    meta = (payload or {}).get("meta") or {}
     # 小日志帮助定位 DB 实际选择
     try:
         db = params.get("db") or request.env.cr.dbname
@@ -180,4 +186,4 @@ def route_intent_payload(payload: dict, ctx) -> dict:
                       intent, db, ",".join(sorted(params.keys())) if params else "-")
     except Exception:
         pass
-    return _dispatch(intent, params, context)
+    return _dispatch(intent, params, context, meta)

@@ -20,7 +20,7 @@
 import { computed } from 'vue';
 
 const props = withDefaults(defineProps<{
-  name: 'apps' | 'arrow-left' | 'arrow-right' | 'bell' | 'briefcase' | 'building' | 'chevron-down' | 'chevron-right' | 'chevron-up' | 'clipboard' | 'close' | 'columns' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'menu' | 'panel-left' | 'plus' | 'project' | 'search' | 'settings' | 'star' | 'star-outline' | 'sun' | 'user';
+  name: 'apps' | 'arrow-left' | 'arrow-right' | 'bell' | 'briefcase' | 'building' | 'check' | 'chevron-down' | 'chevron-right' | 'chevron-up' | 'clipboard' | 'close' | 'columns' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'menu' | 'panel-left' | 'plus' | 'project' | 'search' | 'settings' | 'star' | 'star-outline' | 'sun' | 'user';
   size?: 14 | 16 | 18 | 20 | 24;
 }>(), { size: 20 });
 
@@ -31,6 +31,7 @@ const paths = {
   bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8 12h4',
   briefcase: 'M9 6V4h6v2m-11 0h16v13H4V6Zm0 5h16M9 11v2h6v-2',
   building: 'M4 21V5l8-3 8 3v16M8 7h1m3 0h1m3 0h1M8 11h1m3 0h1m3 0h1M8 15h1m3 0h1m3 0h1M10 21v-3h4v3',
+  check: 'm5 12 4 4L19 6',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-right': 'm9 18 6-6-6-6',
   'chevron-up': 'm6 15 6-6 6 6',

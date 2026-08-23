@@ -133,6 +133,36 @@ class TestSearchFavoriteHandlerBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["message"], "action_id 无效")
         self.assertEqual(filters.search_domains, [])
 
+    def test_existing_filter_lookup_is_scoped_to_current_action(self):
+        module = _load_handler()
+        filters = _FilterModel()
+        env = _Env({"x.model": _Model(), "ir.filters": filters})
+        handler = module.SearchFavoriteSetHandler(
+            env=env,
+            payload={"model": "x.model", "name": "Mine", "action_id": 31},
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertIn(("action_id", "=", 31), filters.search_domains[0])
+        self.assertEqual(filters.created_vals["action_id"], 31)
+
+    def test_global_filter_lookup_excludes_action_scoped_favorites(self):
+        module = _load_handler()
+        filters = _FilterModel()
+        env = _Env({"x.model": _Model(), "ir.filters": filters})
+        handler = module.SearchFavoriteSetHandler(
+            env=env,
+            payload={"model": "x.model", "name": "Mine"},
+        )
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"])
+        self.assertIn(("action_id", "=", False), filters.search_domains[0])
+        self.assertIs(filters.created_vals["action_id"], False)
+
     def test_serializes_projection_scalars_in_domain_and_context(self):
         module = _load_handler()
         filters = _FilterModel()

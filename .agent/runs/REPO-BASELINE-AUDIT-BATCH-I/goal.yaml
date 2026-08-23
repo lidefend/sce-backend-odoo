@@ -1,0 +1,40 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-I
+  goal: REPO-BASELINE-AUDIT
+  workflow: governance-change
+  capability: governance
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P4
+    layer_target: contract_snapshot_evidence_integrity
+    module: scripts/contract
+    standard_vs_user_specific: repository_evidence_governance
+    why_here: exporter_owns_atomic_publication_and_snapshot_validity
+    why_not_elsewhere: product_permissions_must_not_be_changed_to_hide_exporter_success_semantics
+    blast_radius: contract_snapshot_atomic_write_and_batch_failure_status
+
+  batch:
+    id: Batch-I
+    objective: make_contract_snapshot_export_fail_closed_and_atomic
+    scope:
+      - scripts/contract/snapshot_export.sh
+      - scripts/contract/export_all.sh
+      - docs/contract/cases.yml
+      - scripts/verify/test_contract_snapshot_export_fail_closed.py
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-H/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-H/evidence.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-I/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-I/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-I/evidence.yaml
+    exclusions:
+      - product_permissions
+      - role_assignments
+      - contract_payload_semantics
+      - runtime_profile_identity
+
+  rollback:
+    method: restore_previous_export_scripts_and_case_metadata

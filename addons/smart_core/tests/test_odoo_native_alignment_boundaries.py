@@ -530,7 +530,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
     def test_release_navigation_prefers_delivery_engine_payload(self):
         payload = release_navigation_contract_builder.build_release_navigation_contract(
             {
-                "delivery_engine_v1": {
+                "delivery_engine": {
                     "contract_version": "v1",
                     "role_code": "operator",
                     "product_key": "platform.standard",
@@ -540,7 +540,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             }
         )
 
-        self.assertEqual(payload.get("source"), "delivery_engine_v1")
+        self.assertEqual(payload.get("source"), "delivery_engine")
         self.assertFalse((payload.get("meta") or {}).get("fallback_used"))
         self.assertEqual((payload.get("nav") or [])[0].get("key"), "platform.home")
 
@@ -650,8 +650,9 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
     def test_app_config_models_declare_native_metadata_projection_sources(self):
         self.assertEqual(AppModelConfig.SOURCE_KIND, "odoo_model_fields_projection")
         self.assertIn("ir.model.fields", AppModelConfig.SOURCE_AUTHORITIES)
-        self.assertEqual(AppActionConfig.SOURCE_KIND, "odoo_native_action_projection")
+        self.assertEqual(AppActionConfig.SOURCE_KIND, "odoo_native_bound_action_projection")
         self.assertIn("ir.actions.act_window", AppActionConfig.SOURCE_AUTHORITIES)
+        self.assertNotIn("ir.ui.view", AppActionConfig.SOURCE_AUTHORITIES)
         self.assertEqual(AppMenuConfig.SOURCE_KIND, "odoo_native_menu_projection")
         self.assertIn("ir.ui.menu", AppMenuConfig.SOURCE_AUTHORITIES)
         self.assertEqual(AppPermissionConfig.SOURCE_KIND, "odoo_native_permission_projection")
@@ -661,7 +662,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(AppValidatorConfig.SOURCE_KIND, "odoo_model_constraint_projection")
         self.assertIn("odoo.sql_constraints", AppValidatorConfig.SOURCE_AUTHORITIES)
         self.assertEqual(AppWorkflowConfig.SOURCE_KIND, "odoo_native_workflow_projection")
-        self.assertIn("ir.ui.view:form.buttons", AppWorkflowConfig.SOURCE_AUTHORITIES)
+        self.assertNotIn("ir.ui.view:form.buttons", AppWorkflowConfig.SOURCE_AUTHORITIES)
         model_source = self.env["app.model.config"]._source_contract("project.project")
         action_source = self.env["app.action.config"]._source_contract("project.project")
         menu_source = self.env["app.menu.config"]._source_contract("project.project", "web")
@@ -670,6 +671,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         validator_source = self.env["app.validator.config"]._source_contract("project.project")
         workflow_source = self.env["app.workflow.config"]._source_contract("project.project")
         self.assertEqual(workflow_source.get("runtime_authority"), "odoo_model_methods_and_mail_activity")
+        self.assertIn("ir.ui.view:form.buttons", workflow_source.get("observed_inputs") or [])
         for source in (
             model_source,
             action_source,
@@ -680,6 +682,54 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             workflow_source,
         ):
             self.assertTrue(source.get("no_business_fact_authority"))
+
+    def test_workflow_projection_does_not_infer_target_or_unscoped_availability(self):
+        workflow = self.env["app.workflow.config"]._build_inferred_workflow(
+            "res.partner",
+            fields_get_snapshot={
+                "state": {
+                    "type": "selection",
+                    "selection": [("draft", "Draft"), ("confirmed", "Confirmed")],
+                },
+            },
+            form_view_data={
+                "arch": """
+                    <form><header>
+                      <button name="action_confirm" type="object" string="Confirm"/>
+                      <button name="action_reset_draft" type="object" string="Reset" states="confirmed"/>
+                    </header></form>
+                """,
+            },
+        )
+
+        transitions = {row["trigger"]["name"]: row for row in workflow["transitions"]}
+        self.assertIsNone(transitions["action_confirm"]["to"])
+        self.assertEqual(transitions["action_confirm"]["from"], [])
+        self.assertEqual(transitions["action_confirm"]["authority"]["availability"], "unresolved")
+        self.assertIsNone(transitions["action_reset_draft"]["to"])
+        self.assertEqual(transitions["action_reset_draft"]["from"], ["confirmed"])
+
+    def test_search_saved_filters_are_action_scoped_runtime_facts(self):
+        action_a = self.env["ir.actions.act_window"].sudo().create({
+            "name": "Partner action A", "res_model": "res.partner", "view_mode": "tree,form",
+        })
+        action_b = self.env["ir.actions.act_window"].sudo().create({
+            "name": "Partner action B", "res_model": "res.partner", "view_mode": "tree,form",
+        })
+        Filter = self.env["ir.filters"].sudo()
+        common = {"model_id": "res.partner", "domain": "[]", "context": "{}", "user_id": False}
+        global_filter = Filter.create({**common, "name": "Global partner filter"})
+        filter_a = Filter.create({**common, "name": "Partner filter A", "action_id": action_a.id})
+        filter_b = Filter.create({**common, "name": "Partner filter B", "action_id": action_b.id})
+
+        config = self.env["app.search.config"]
+        ids_a = {row["id"] for row in config._collect_ir_filters("res.partner", action_id=action_a.id)}
+        ids_b = {row["id"] for row in config._collect_ir_filters("res.partner", action_id=action_b.id)}
+        ids_global = {row["id"] for row in config._collect_ir_filters("res.partner")}
+
+        self.assertEqual(ids_a & {global_filter.id, filter_a.id, filter_b.id}, {global_filter.id, filter_a.id})
+        self.assertEqual(ids_b & {global_filter.id, filter_a.id, filter_b.id}, {global_filter.id, filter_b.id})
+        self.assertEqual(ids_global & {global_filter.id, filter_a.id, filter_b.id}, {global_filter.id})
 
     def test_app_menu_config_normalizes_business_scene_keys_to_menu_scene_families(self):
         cfg = self.env["app.menu.config"]
@@ -713,18 +763,66 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             "view_mode": "tree,form",
         })
         ViewConfig = self.env["app.view.config"].sudo()
-        scope = f"action:{action.id}:res.partner:tree:view:0"
-        before_count = ViewConfig.search_count([("projection_scope", "=", scope)])
+        scope_prefix = f"action:{action.id}:res.partner:tree:view:"
+        before_count = ViewConfig.search_count([("projection_scope", "like", scope_prefix + "%")])
 
         transient = self.env["app.view.config"].with_context(
             contract_action_id=action.id,
             contract_projection_readonly=True,
         )._generate_from_fields_view_get("res.partner", "tree")
 
-        after_count = ViewConfig.search_count([("projection_scope", "=", scope)])
+        after_count = ViewConfig.search_count([("projection_scope", "like", scope_prefix + "%")])
         self.assertEqual(before_count, after_count)
-        self.assertEqual(transient.projection_scope, scope)
+        self.assertGreater(transient.source_view_id.id, 0)
+        self.assertEqual(
+            transient.projection_scope,
+            scope_prefix + str(transient.source_view_id.id),
+        )
         self.assertEqual(transient.version, 0)
+
+    def test_resolved_view_identity_rejects_invalid_or_conflicting_authority(self):
+        ViewConfig = self.env["app.view.config"].sudo()
+        partner_tree = self.env["ir.ui.view"].sudo().create({
+            "name": "Resolved partner tree authority",
+            "model": "res.partner",
+            "type": "tree",
+            "arch": '<tree><field name="name"/></tree>',
+        })
+        users_tree = self.env["ir.ui.view"].sudo().create({
+            "name": "Resolved users tree authority",
+            "model": "res.users",
+            "type": "tree",
+            "arch": '<tree><field name="name"/></tree>',
+        })
+        base_identity = {
+            "action_id": 91,
+            "source_view_id": False,
+            "projection_scope": "action:91:res.partner:tree:view:0",
+        }
+        resolved = ViewConfig._refine_projection_identity_from_view_data(
+            base_identity,
+            {"_source_view_id": partner_tree.id},
+            "res.partner",
+            "tree",
+        )
+        self.assertEqual(resolved["source_view_id"], partner_tree.id)
+        self.assertEqual(
+            resolved["projection_scope"],
+            f"action:91:res.partner:tree:view:{partner_tree.id}",
+        )
+        for identity, view_id in (
+            (base_identity, "broken"),
+            (base_identity, users_tree.id),
+            ({**base_identity, "source_view_id": partner_tree.id}, users_tree.id),
+        ):
+            with self.subTest(identity=identity, view_id=view_id):
+                with self.assertRaises(ValueError):
+                    ViewConfig._refine_projection_identity_from_view_data(
+                        identity,
+                        {"_source_view_id": view_id},
+                        "res.partner",
+                        "tree",
+                    )
 
     def test_page_assembler_runtime_projection_does_not_update_workflow_cache(self):
         WorkflowConfig = self.env["app.workflow.config"].sudo()
@@ -788,6 +886,26 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(identity.get("action_id"), False)
         self.assertEqual(identity.get("source_view_id"), view.id)
         self.assertEqual(identity.get("projection_scope"), f"view:{view.id}:res.partner:form")
+
+    def test_view_config_projection_identity_rejects_invalid_explicit_view(self):
+        ViewConfig = self.env["app.view.config"].sudo()
+        wrong_model = self.env["ir.ui.view"].sudo().create({
+            "name": "Wrong model explicit search view",
+            "model": "res.users",
+            "type": "search",
+            "arch": '<search><field name="name"/></search>',
+        })
+        wrong_type = self.env["ir.ui.view"].sudo().create({
+            "name": "Wrong type explicit partner view",
+            "model": "res.partner",
+            "type": "form",
+            "arch": '<form><field name="name"/></form>',
+        })
+
+        for view_id in (999999999, wrong_model.id, wrong_type.id):
+            with self.subTest(view_id=view_id):
+                with self.assertRaises(ValueError):
+                    ViewConfig.with_context(contract_view_id=view_id)._projection_identity("res.partner", "search")
 
     def test_explicit_form_view_uses_lossless_parser_for_div_wrapped_fields(self):
         view = self.env["ir.ui.view"].sudo().create({
@@ -937,8 +1055,8 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             "type": "form",
             "arch": """
                 <form>
-                  <header><button name="action_header" type="object" string="Header"/></header>
-                  <sheet><div><button name="action_body" type="object" string="Body"/></div></sheet>
+                  <header><button name="toggle_active" type="object" string="Header"/></header>
+                  <sheet><div><button name="action_archive" type="object" string="Body"/></div></sheet>
                 </form>
             """,
         })
@@ -1313,6 +1431,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertTrue(any(
             row.get("sourceWidgetId") == "mode.form_field_configuration"
             and row.get("intent") == "ui.form_custom_field.create"
+            and row.get("targetScope") == "runtime"
             for row in action_rows
         ))
         self.assertTrue(any(
@@ -1340,6 +1459,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
                             "name": "action_create_field",
                             "string": "创建字段",
                             "type": "object",
+                            "visible_profiles": ["create"],
                         }
                     ],
                     "button_box": [],
@@ -1365,6 +1485,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
                     "name": "action_create_field",
                     "string": "创建字段",
                     "type": "object",
+                    "visible_profiles": ["create"],
                 }
             ],
         )
@@ -1712,6 +1833,62 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual({source.get("kind") for source in sources}, expected_kinds)
         for source in sources:
             self.assertTrue(source.get("no_business_fact_authority"))
+
+    def test_readonly_native_form_parser_failure_does_not_enter_compatibility_fallback(self):
+        class _Parser:
+            def parse_odoo_view(self, *args, **kwargs):
+                raise RuntimeError("native parser unavailable")
+
+        class _Env:
+            context = {"contract_projection_readonly": True}
+
+            def __getitem__(self, name):
+                self.assert_name = name
+                return _Parser()
+
+        class _Owner:
+            env = _Env()
+
+            @staticmethod
+            def _model_exists(name):
+                return name == "app.view.parser"
+
+            @staticmethod
+            def _looks_like_parser_wrapper(value):
+                return False
+
+        with self.assertRaisesRegex(ValueError, "compatibility fallback cannot satisfy native authority"):
+            NativeParseService(_Owner()).parse_with_primary_parser(
+                "account.account", "form", view_data={"arch": "<form/>"}
+            )
+
+    def test_non_native_readonly_parse_failure_remains_eligible_for_fallback(self):
+        class _Parser:
+            def parse_odoo_view(self, *args, **kwargs):
+                raise RuntimeError("native parser unavailable")
+
+        class _Env:
+            context = {"contract_projection_readonly": True}
+
+            def __getitem__(self, name):
+                return _Parser()
+
+        class _Owner:
+            env = _Env()
+
+            @staticmethod
+            def _model_exists(name):
+                return name == "app.view.parser"
+
+            @staticmethod
+            def _looks_like_parser_wrapper(value):
+                return False
+
+        self.assertIsNone(
+            NativeParseService(_Owner()).parse_with_primary_parser(
+                "account.account", "tree", view_data={"arch": "<tree/>"}
+            )
+        )
 
     def test_semantic_bridge_scene_runtime_and_identity_sources_are_not_business_facts(self):
         sources = (

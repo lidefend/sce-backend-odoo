@@ -1,0 +1,7 @@
+events:
+  - type: batch_started
+    at: "2026-08-20T13:45:00+08:00"
+    detail: Replace the stale snapshot-case action reference without recreating legacy product data.
+  - type: implementation_completed
+    at: "2026-08-20T13:46:00+08:00"
+    detail: project_kanban_lifecycle_pm now consumes smart_construction_core.action_sc_project_list.

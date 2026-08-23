@@ -175,7 +175,7 @@
 - `make verify.scene.delivery.readiness`
   - One-click strict acceptance for product delivery closure: first runs strict live `verify.scene.runtime_boundary.gate`, then executes final readiness threshold guard.
   - Enables strict flags in one command: `SC_SCENE_REGISTRY_ASSET_SNAPSHOT_REQUIRE_LIVE=1`, `SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1`, `SC_SCENE_SAMPLE_REGISTRY_DIFF_REQUIRE_SCENES=1`, `SC_SCENE_ACTION_STRATEGY_LIVE_MATRIX_REQUIRE_LIVE=1`, `SC_SCENE_ACTION_SURFACE_STRATEGY_PAYLOAD_REQUIRE_LIVE=1`, `SC_SCENE_READY_CONSUMPTION_TREND_REQUIRE_LIVE=1`, `SC_SCENE_READY_CONSUMPTION_TREND_REQUIRE_ENABLED=1`.
-  - Also enables `SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1` for explicit degraded fallback in restricted/no-network environments.
+  - Also enables `SC_SCENE_CONTRACT_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1` for explicit degraded fallback in restricted/no-network environments.
   - Also enables `SC_SCENE_READY_STRICT_GAP_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1` so strict-gap full-audit can consume last known state when live fetch is blocked.
   - All strict flags are now defaulted via `:-1` and can be explicitly overridden per run (example: `SC_SCENE_READY_CONSUMPTION_TREND_REQUIRE_LIVE=0 make verify.scene.delivery.readiness`).
 - `make verify.scene.delivery.readiness.role_matrix`
@@ -329,17 +329,17 @@
 - `make verify.scene.product_delivery.readiness.guard`
   - Enforces final product delivery readiness thresholds from `scripts/verify/baselines/scene_product_delivery_readiness_guard.json`.
   - Writes reports: `artifacts/backend/scene_product_delivery_readiness_report.json` and `artifacts/backend/scene_product_delivery_readiness_report.md`.
-- `make verify.scene.contract_v1.field_schema.guard`
-  - Verifies `scene_ready_contract_v1` field-level schema closure (`top-level keys`, `scene row keys`, `meta keys`, `target openness`).
+- `make verify.scene.contract.field_schema.guard`
+  - Verifies `scene_ready_contract` field-level schema closure (`top-level keys`, `scene row keys`, `meta keys`, `target openness`).
   - Live fetch remains default; optional fallback is controlled by:
-    - `SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1`
-    - `SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_STATE_FILE` (default `artifacts/backend/scene_contract_v1_field_schema_state.json`)
-    - `SC_SCENE_CONTRACT_V1_FIELD_SCHEMA_SNAPSHOT_STATE_FILE` (default `artifacts/backend/scene_registry_asset_snapshot_state.json`)
+    - `SC_SCENE_CONTRACT_FIELD_SCHEMA_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1`
+    - `SC_SCENE_CONTRACT_FIELD_SCHEMA_STATE_FILE` (default `artifacts/backend/scene_contract_field_schema_state.json`)
+    - `SC_SCENE_CONTRACT_FIELD_SCHEMA_SNAPSHOT_STATE_FILE` (default `artifacts/backend/scene_registry_asset_snapshot_state.json`)
 - `make verify.scene.ready.strict_gap.full_audit`
-  - Audits strict-gap closure from `scene_ready_contract_v1` (`full/strict unresolved`, `source gaps`, required strict scene keys).
+  - Audits strict-gap closure from `scene_ready_contract` (`full/strict unresolved`, `source gaps`, required strict scene keys).
   - Live fetch remains default; optional state fallback is controlled by:
     - `SC_SCENE_READY_STRICT_GAP_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL=1`
-    - `SC_SCENE_READY_STRICT_GAP_FULL_AUDIT_STATE_FILE` (default `artifacts/backend/scene_contract_v1_field_schema_state.json`)
+    - `SC_SCENE_READY_STRICT_GAP_FULL_AUDIT_STATE_FILE` (default `artifacts/backend/scene_contract_field_schema_state.json`)
 - `make verify.product.delivery.governance_truth`
   - Verifies delivery governance truthfulness closure for seal-mode execution.
   - Checks `docs/product/capability_gap_backlog_v1.md` has actionable rows, mandatory hard-gap keys, and non-empty evidence.
@@ -352,9 +352,9 @@
   - Verifies the governance truth JSON/MD report shape after the guard writes evidence.
   - Enforces summary, snapshot, errors, and warnings fields and required Markdown report sections.
 - `make verify.scene.governance_payload.guard`
-  - Verifies `system.init/app.init` includes `scene_governance_v1` wiring and required payload keys/gates.
+  - Verifies `system.init/app.init` includes `scene_governance` wiring and required payload keys/gates.
   - Includes asset queue observability shape (`asset_queue.queue_size/added_count/popped_count/remaining_count`).
-  - Includes `scene_ready_consumption` summary shape derived from `scene_ready_contract_v1.meta.scene_type_consumption_metrics`.
+  - Includes `scene_ready_consumption` summary shape derived from `scene_ready_contract.meta.scene_type_consumption_metrics`.
 - `make verify.scene.asset_queue_trend.guard`
   - Verifies asset queue trend baseline (`queue_size` upper bound + per-run growth cap) against `scripts/verify/baselines/scene_asset_queue_trend_guard.json`.
 - `make verify.scene.no_action_scene.guard`
@@ -363,9 +363,9 @@
 - `make verify.scene.provider_shape.guard`
   - Runs provider shape guard as standalone blocker (`scene_orchestration_provider_shape_guard`).
   - Also wired into `verify.scene.runtime_boundary.gate` as release-blocking check.
-- `make verify.scene.contract_v1.field_schema.guard`
-  - Enforces live `scene_ready_contract_v1` field-level schema requirements using `system.init` payload.
-  - Baseline: `scripts/verify/baselines/scene_contract_v1_field_schema_guard.json`.
+- `make verify.scene.contract.field_schema.guard`
+  - Enforces live `scene_ready_contract` field-level schema requirements using `system.init` payload.
+  - Baseline: `scripts/verify/baselines/scene_contract_field_schema_guard.json`.
   - Also wired into `verify.scene.runtime_boundary.gate` as release-blocking check.
 - `make verify.scene.engine_migration.matrix.guard`
   - Verifies 9-module entry scenes are on `scene_engine` asset mainline using module map + runtime snapshot state.
@@ -405,7 +405,7 @@
   - Profile-level `login/password` is supported in baseline for deterministic company target sampling (current baseline: `primary=admin`, `secondary=demo_role_pm`).
   - For an isolated acceptance database, set `SC_SCENE_COMPANY_SNAPSHOT_PROFILES_JSON` to a non-empty JSON array of profile objects. This overrides only baseline `profiles`; all other baseline thresholds and report settings remain unchanged. Invalid JSON, non-array JSON, and empty arrays fail closed. Profile objects retain the baseline field requirements (`key` and `state_file` are required). The override variable is removed from each child process environment; every non-empty profile password is redacted from all child guard output, reports, and collector messages.
   - Wired into `verify.scene.delivery.readiness.role_company_matrix` before company matrix guard.
-  - `company_secondary` runtime snapshot target defaults to `E2E_LOGIN=ROLE_PM_LOGIN` and `E2E_COMPANY_ID=2` (override via `COMPANY_SECONDARY_LOGIN/COMPANY_SECONDARY_PASSWORD/COMPANY_SECONDARY_ID`).
+  - `company_secondary` collection resolves credentials from the governed role environment, discovers an allowed non-primary company, and reruns the live snapshot with that effective company ID; no database-local numeric ID or password is frozen in the baseline.
 - `make verify.scene.company_access.preflight.guard`
   - For an isolated acceptance database, set `SC_SCENE_COMPANY_ACCESS_PREFLIGHT_PROFILES_JSON` to a non-empty JSON array to override only the baseline company profiles. Thresholds, strict mode, and report paths remain baseline-owned; invalid JSON, non-array JSON, and empty arrays fail closed without echoing the raw value.
   - Verifies company target reachability using collected snapshot states (`requested/effective/allowed_company_ids`).
@@ -478,7 +478,7 @@
 - `make verify.frontend.no_base_contract_direct_consume.guard`
   - Verifies frontend source does not directly consume `ui_base_contract/base_contract` tokens and keeps scene rendering on `Scene-ready Contract` path.
 - `make verify.frontend.scene_governance_consumption.guard`
-  - Verifies frontend governance surfaces (`AppShell HUD` / `SceneHealth`) render `scene_ready_consumption` summary from `scene_governance_v1`.
+  - Verifies frontend governance surfaces (`AppShell HUD` / `SceneHealth`) render `scene_ready_consumption` summary from `scene_governance`.
 - `make verify.scene.validation_recovery_strategy.guard`
   - Verifies scene validation recovery strategy is externalized and runtime-wired (`strategy module + session init hook + ContractFormPage consumer`).
   - Enforces schema baseline from `scripts/verify/baselines/scene_validation_recovery_strategy_schema_guard.json`.
@@ -509,9 +509,9 @@
   - Baseline file: `scripts/verify/baselines/scene_action_surface_strategy_live_matrix_guard.json`.
   - Includes optional `system.init` output-driven live case; use `SC_SCENE_ACTION_STRATEGY_LIVE_MATRIX_REQUIRE_LIVE=1` to enforce live fetch.
 - `make verify.scene.ready.scene_type_consumption_metrics.guard`
-  - Verifies `scene_ready_contract_v1.meta.scene_type_consumption_metrics` is emitted with per-`scene_type` consumption/nonempty rates.
+  - Verifies `scene_ready_contract.meta.scene_type_consumption_metrics` is emitted with per-`scene_type` consumption/nonempty rates.
 - `make verify.scene.ready.consumption_trend.guard`
-  - Verifies trend baseline for `scene_governance_v1.scene_ready_consumption` aggregate rates and scene count/type floor.
+  - Verifies trend baseline for `scene_governance.scene_ready_consumption` aggregate rates and scene count/type floor.
   - Baseline file: `scripts/verify/baselines/scene_ready_consumption_trend_guard.json`; state file: `artifacts/backend/scene_ready_consumption_trend_state.json`.
 - `make verify.scene.governance_history_report.guard`
   - Aggregates `scene_asset_queue_trend_state` + `scene_ready_consumption_trend_state` into governance history report.
@@ -524,7 +524,7 @@
   - Emits diff summary to `artifacts/backend/scene_governance_history_diff_summary.json` and `.md`.
   - Baseline: `scripts/verify/baselines/scene_governance_history_archive_guard.json`.
 - `make verify.scene.registry_asset_snapshot.guard`
-  - Verifies real runtime scene snapshot (`system.init -> scene_ready_contract_v1`) for key scene coverage and base-contract binding.
+  - Verifies real runtime scene snapshot (`system.init -> scene_ready_contract`) for key scene coverage and base-contract binding.
   - Persists live/fallback snapshot to `artifacts/backend/scene_registry_asset_snapshot_state.json` using baseline `scripts/verify/baselines/scene_registry_asset_snapshot_guard.json`.
   - Use `SC_SCENE_REGISTRY_ASSET_SNAPSHOT_REQUIRE_LIVE=1` to force live fetch mode.
   - Live fetch resilience knobs:

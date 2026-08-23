@@ -9,6 +9,13 @@ export type ColumnSemanticInput = {
   cellRole?: string;
 };
 
+export function resolveListDisplayField(
+  field: string,
+  option?: { displayField?: string } | null,
+): string {
+  return String(option?.displayField || field).trim() || field;
+}
+
 type CellPresentationInput = {
   raw: unknown;
   column: ColumnSemanticInput;

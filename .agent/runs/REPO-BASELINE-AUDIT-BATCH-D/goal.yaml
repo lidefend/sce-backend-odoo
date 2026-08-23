@@ -1,0 +1,56 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-D
+  goal: REPO-BASELINE-AUDIT
+  workflow: backend-feature
+  status: active
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer:
+      - P0
+      - P1
+    layer_target:
+      - smart_core_contract_projection_and_action_view_resolution
+      - smart_construction_core_project_form_standard_layout
+    module:
+      - smart_core
+      - smart_construction_core
+      - smart_construction_seed
+    standard_vs_user_specific: platform_mechanism_and_construction_standard
+    why_here: generic_projection_and_action_resolution_belong_to_p0_while_project_field_placement_belongs_to_p1
+    why_not_elsewhere: frontend_and_runtime_configuration_must_not_infer_or_repair_backend_layout_semantics
+    blast_radius: project_project_form_contract_action_view_resolution_tax_test_fixtures_and_project_snapshot
+
+  batch:
+    id: Batch-D
+    objective: close_project_form_contract_normalization_candidate
+    scope:
+      - addons/smart_core/app_config_engine/models/app_view_config.py
+      - addons/smart_construction_core/core_extension.py
+      - addons/smart_construction_core/core_extension_project_layout.py
+      - addons/smart_construction_core/tests/test_p0_ledger_gate.py
+      - addons/smart_construction_seed/tests/test_seed_tax_defaults.py
+      - docs/contract/snapshots/project_form_pm.json
+      - docs/contract/snapshots/project_action_open_858.json
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/evidence.yaml
+    exclusions:
+      - frontend
+      - public_intent_names
+      - default_route
+      - contract_version
+      - new_runtime_profiles
+      - new_database_or_fixture_identity
+
+  compatibility:
+    public_intent_rename: false
+    default_route_change: false
+    contract_version_change: false
+    schema_field_addition: false
+
+  rollback:
+    method: restore_only_batch_d_product_files_and_last_valid_contract_snapshot
+    database_action: governed_incremental_module_upgrade_to_restored_candidate

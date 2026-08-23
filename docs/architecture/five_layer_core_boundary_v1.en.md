@@ -25,7 +25,7 @@ Freeze the five-layer boundary so future iterations stay on the "backend orchest
    - Must not: parse XML directly or consume parser-private internals.
 
 ## Frontend Consumption Rules
-- Frontend consumes **scene orchestration result contracts** directly (e.g. `page_orchestration_v1` and action/data schema).
+- Frontend consumes **scene orchestration result contracts** directly (e.g. `page_orchestration` and action/data schema).
 - `native_view/semantic_page` are orchestration inputs, not direct frontend decision sources.
 - Frontend must not hardcode page structure by `sceneKey/model`.
 

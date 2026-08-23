@@ -24,6 +24,7 @@ _PROFILES: Dict[str, List[str]] = {
         "demo_20_projects",
         "demo_30_tenders",
         "demo_40_contracts",
+        "payment_request_floorplan_demo",
         "demo_50_boq_wbs",
         "demo_60_attachments",
         "z_demo_full_my_work",

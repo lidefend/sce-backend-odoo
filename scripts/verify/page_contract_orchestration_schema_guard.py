@@ -108,23 +108,25 @@ def _validate_page(page_key: str, page_obj: dict[str, Any], errors: list[str]) -
             return
         errors.append(f"pages.{page_key}.sections must be non-empty list")
 
-    orch = page_obj.get("page_orchestration_v1")
+    orch = page_obj.get("page_orchestration")
     if not isinstance(orch, dict):
-        errors.append(f"pages.{page_key}.page_orchestration_v1 must be object")
+        errors.append(f"pages.{page_key}.page_orchestration must be object")
         return
 
     missing_top = sorted(REQUIRED_TOP_LEVEL - set(orch.keys()))
     if missing_top:
-        errors.append(f"pages.{page_key}.page_orchestration_v1 missing keys: {', '.join(missing_top)}")
+        errors.append(f"pages.{page_key}.page_orchestration missing keys: {', '.join(missing_top)}")
 
-    if str(orch.get("contract_version") or "") != "page_orchestration_v1":
-        errors.append(f"pages.{page_key}.page_orchestration_v1.contract_version must be page_orchestration_v1")
+    if str(orch.get("contract_version") or "") != "2.0.0":
+        errors.append(f"pages.{page_key}.page_orchestration.contract_version must be 2.0.0")
+    if str(orch.get("schema_version") or "") != "2.0.0":
+        errors.append(f"pages.{page_key}.page_orchestration.schema_version must be 2.0.0")
     page = orch.get("page")
     if not isinstance(page, dict):
-        errors.append(f"pages.{page_key}.page_orchestration_v1.page must be object")
+        errors.append(f"pages.{page_key}.page_orchestration.page must be object")
     else:
         if not isinstance(page.get("audience"), list) or not page.get("audience"):
-            errors.append(f"pages.{page_key}.page_orchestration_v1.page.audience must be non-empty list")
+            errors.append(f"pages.{page_key}.page_orchestration.page.audience must be non-empty list")
         page_type = str(page.get("page_type") or "").strip()
         layout_mode = str(page.get("layout_mode") or "").strip()
         priority_model = str(page.get("priority_model") or "").strip()
@@ -153,7 +155,7 @@ def _validate_page(page_key: str, page_obj: dict[str, Any], errors: list[str]) -
 
     state_schema = orch.get("state_schema")
     if not isinstance(state_schema, dict):
-        errors.append(f"pages.{page_key}.page_orchestration_v1.state_schema must be object")
+        errors.append(f"pages.{page_key}.page_orchestration.state_schema must be object")
     else:
         tones = state_schema.get("tones")
         progress = state_schema.get("business_states")
@@ -188,11 +190,11 @@ def _validate_page(page_key: str, page_obj: dict[str, Any], errors: list[str]) -
 
     data_sources = orch.get("data_sources")
     if not isinstance(data_sources, dict) or not data_sources:
-        errors.append(f"pages.{page_key}.page_orchestration_v1.data_sources must be non-empty object")
+        errors.append(f"pages.{page_key}.page_orchestration.data_sources must be non-empty object")
         data_sources = {}
     else:
         for ds_key, ds in data_sources.items():
-            dprefix = f"pages.{page_key}.page_orchestration_v1.data_sources.{ds_key}"
+            dprefix = f"pages.{page_key}.page_orchestration.data_sources.{ds_key}"
             if not isinstance(ds, dict):
                 errors.append(f"{dprefix} must be object")
                 continue
@@ -229,7 +231,7 @@ def _validate_page(page_key: str, page_obj: dict[str, Any], errors: list[str]) -
 
     zones = orch.get("zones")
     if not isinstance(zones, list) or not zones:
-        errors.append(f"pages.{page_key}.page_orchestration_v1.zones must be non-empty list")
+        errors.append(f"pages.{page_key}.page_orchestration.zones must be non-empty list")
         return
 
     section_keys: set[str] = set()
@@ -243,7 +245,7 @@ def _validate_page(page_key: str, page_obj: dict[str, Any], errors: list[str]) -
     block_section_keys: set[str] = set()
     block_data_sources: set[str] = set()
     for zidx, zone in enumerate(zones):
-        prefix = f"pages.{page_key}.page_orchestration_v1.zones[{zidx}]"
+        prefix = f"pages.{page_key}.page_orchestration.zones[{zidx}]"
         if not isinstance(zone, dict):
             errors.append(f"{prefix} must be object")
             continue

@@ -269,9 +269,44 @@ class SceneCompanySnapshotCollectProfilesTest(unittest.TestCase):
         child_env = run.call_args.kwargs["env"]
         self.assertNotIn(collector.PROFILES_JSON_ENV, child_env)
         self.assertEqual(child_env["E2E_PASSWORD"], "profile-secret")
+        self.assertEqual(
+            child_env["SC_SCENE_REGISTRY_ASSET_SNAPSHOT_ALLOW_STATE_FALLBACK_ON_LIVE_FAIL"],
+            "0",
+        )
 
     def test_empty_password_does_not_modify_child_guard_output(self) -> None:
         self.assertEqual(collector._redact_password("guard output", ""), "guard output")
+
+    def test_profile_value_uses_governed_environment_before_default(self) -> None:
+        profile = {
+            "password_envs": ["MISSING_PASSWORD", "SC_TEST_PASSWORD"],
+            "password_default": "demo",
+        }
+        with mock.patch.dict(os.environ, {"SC_TEST_PASSWORD": "governed-secret"}, clear=False):
+            self.assertEqual(collector._profile_value(profile, "password"), "governed-secret")
+
+    def test_selects_allowed_non_primary_company_without_assuming_database_id(self) -> None:
+        profile = {"exclude_company_ids": [1]}
+        state = {"company_id": 1, "allowed_company_ids": [5, 1]}
+        self.assertEqual(collector._select_non_primary_company_id(profile, state), 5)
+
+    def test_discovers_allowed_companies_from_login_contract(self) -> None:
+        response = {
+            "ok": True,
+            "data": {
+                "session": {"token": "token"},
+                "user": {"allowed_company_ids": [5, 1, 5]},
+            },
+        }
+        with mock.patch.object(
+            collector,
+            "http_post_json",
+            return_value=(200, response),
+        ):
+            self.assertEqual(
+                collector._discover_allowed_company_ids("demo_role_pm", "secret"),
+                [1, 5],
+            )
 
 
 if __name__ == "__main__":

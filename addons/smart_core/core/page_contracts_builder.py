@@ -609,7 +609,7 @@ def _default_page_actions(page_key: str, profile_overrides: Dict[str, Any] | Non
     return [{"key": "refresh_page", "label": "刷新", "intent": "api.data"}]
 
 
-def _build_page_orchestration_v1(
+def _build_page_orchestration(
     page_key: str,
     page: Dict[str, Any],
     role_code: str,
@@ -736,7 +736,8 @@ def _build_page_orchestration_v1(
                 }
 
     return {
-        "contract_version": "page_orchestration_v1",
+        "contract_version": "2.0.0",
+        "schema_version": "2.0.0",
         "scene_key": page_key,
         "page": {
             "key": page_key,
@@ -790,7 +791,8 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
     role_source_code = _resolve_role_source_code(safe_data)
     role_code = _normalize_role_code(safe_data)
     payload = {
-        "schema_version": "v1",
+        "contract_version": "2.0.0",
+        "schema_version": "2.0.0",
         "source_authority": source_authority_contract(),
         "diagnostics": {
             "page_text_override_source_authority": page_text_override_source_authority_contract(),
@@ -798,7 +800,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
         },
         "pages": {
             "home": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "texts": {
                     "title": "角色首页",
                     "hero_lead": "围绕关键事项、风险与审批，优先处理今天最重要的工作。",
@@ -922,7 +924,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "login": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "card", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "form", "enabled": True, "order": 2, "tag": "section"},
@@ -955,7 +957,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "menu": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "status_loading", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "status_info", "enabled": True, "order": 2, "tag": "section"},
@@ -970,7 +972,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "placeholder": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "card", "enabled": True, "order": 1, "tag": "section"},
                 ],
@@ -981,7 +983,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "business_config": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "root", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "header", "enabled": True, "order": 2, "tag": "header"},
@@ -994,7 +996,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "menu_config": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "root", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "header", "enabled": True, "order": 2, "tag": "header"},
@@ -1007,7 +1009,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "scene_contract_block_grid": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "root", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "main", "enabled": True, "order": 2, "tag": "section"},
@@ -1018,7 +1020,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "release_operator": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "root", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "hero", "enabled": True, "order": 2, "tag": "header"},
@@ -1044,7 +1046,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "workbench": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "header", "enabled": True, "order": 1, "tag": "header"},
                     {"key": "status_panel", "enabled": True, "order": 2, "tag": "section"},
@@ -1092,7 +1094,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "my_work": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "hero", "enabled": True, "order": 1, "tag": "header"},
                     {"key": "todo_focus", "enabled": True, "order": 2, "tag": "section"},
@@ -1299,7 +1301,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "scene": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "status_loading", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "status_error", "enabled": True, "order": 2, "tag": "section"},
@@ -1339,7 +1341,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "action": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "route_preset", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "focus_strip", "enabled": True, "order": 2, "tag": "section"},
@@ -1525,7 +1527,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "record": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "next_actions", "enabled": True, "order": 1, "tag": "section"},
                     {"key": "stat_buttons", "enabled": True, "order": 2, "tag": "div"},
@@ -1602,7 +1604,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "scene_health": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "header", "enabled": True, "order": 1, "tag": "header"},
                     {"key": "status_loading", "enabled": True, "order": 2, "tag": "section"},
@@ -1625,7 +1627,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "scene_packages": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "header", "enabled": True, "order": 1, "tag": "header"},
                     {"key": "status_loading", "enabled": True, "order": 2, "tag": "section"},
@@ -1648,7 +1650,7 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                 },
             },
             "usage_analytics": {
-                "schema_version": "v1",
+                "schema_version": "2.0.0",
                 "sections": [
                     {"key": "header", "enabled": True, "order": 1, "tag": "header"},
                     {"key": "status_loading", "enabled": True, "order": 2, "tag": "section"},
@@ -1730,9 +1732,9 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
     for key, page in pages.items():
         if not isinstance(page, dict):
             continue
-        if isinstance(page.get("page_orchestration_v1"), dict):
+        if isinstance(page.get("page_orchestration"), dict):
             continue
-        page_orchestration = _build_page_orchestration_v1(
+        page_orchestration = _build_page_orchestration(
             str(key),
             page,
             role_code,
@@ -1740,5 +1742,5 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
             profile_overrides=profile_overrides,
         )
         page_orchestration = apply_page_contract_parser_semantic_bridge(page_orchestration, safe_data)
-        page["page_orchestration_v1"] = apply_page_contract_semantic_orchestration_bridge(page_orchestration)
+        page["page_orchestration"] = apply_page_contract_semantic_orchestration_bridge(page_orchestration)
     return payload

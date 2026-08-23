@@ -20,10 +20,28 @@ class SystemInitIdentityPayload:
         )
 
     @staticmethod
-    def build(user, user_groups_xmlids: list) -> dict:
-        company = user.company_id if user.company_id else None
+    def build(
+        user,
+        user_groups_xmlids: list,
+        *,
+        company=None,
+        allowed_company_ids=None,
+    ) -> dict:
+        company = company or (user.company_id if user.company_id else None)
         company_id = company.id if company else None
         company_name = (company.name or "").strip() if company else ""
+        normalized_allowed = []
+        for value in allowed_company_ids or []:
+            try:
+                candidate = int(value or 0)
+            except (TypeError, ValueError):
+                continue
+            if candidate > 0 and candidate not in normalized_allowed:
+                normalized_allowed.append(candidate)
+        if company_id:
+            normalized_allowed = [company_id] + [
+                candidate for candidate in normalized_allowed if candidate != company_id
+            ]
         return {
             "id": user.id,
             "name": user.name,
@@ -32,6 +50,7 @@ class SystemInitIdentityPayload:
             "lang": user.lang,
             "tz": user.tz,
             "company_id": company_id,
+            "allowed_company_ids": normalized_allowed or ([company_id] if company_id else []),
             "company_name": company_name,
             "company": {
                 "id": company_id,

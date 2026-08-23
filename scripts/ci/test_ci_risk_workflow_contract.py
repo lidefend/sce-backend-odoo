@@ -61,6 +61,11 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
 
+        makefile = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
+        professional_target = makefile.split("ci.professional.backend:", 1)[1].split("\n", 1)[0]
+        self.assertIn("verify.unified_page_contract.v2.professional_backend", professional_target)
+        self.assertNotIn("verify.unified_page_contract.v2.frontend_static", professional_target)
+
     def test_cache_keys_bind_lockfile_and_runtime(self) -> None:
         text = self.text("frontend_release_gate.yml")
         self.assertIn("actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830", text)

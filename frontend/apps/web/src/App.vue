@@ -1,6 +1,6 @@
 <template>
   <RouterView v-slot="{ Component, route }">
-    <AppShell v-if="route.meta?.layout === 'shell'">
+    <AppShell v-if="route.meta?.layout === 'shell' && !isEmbeddedRelationDialog(route)">
       <KeepAlive :max="6">
         <component
           :is="Component"
@@ -52,6 +52,11 @@ watch(
 function routeText(value: unknown): string {
   if (Array.isArray(value)) return String(value[0] || '').trim();
   return String(value || '').trim();
+}
+
+function isEmbeddedRelationDialog(route: RouteLocationNormalizedLoaded): boolean {
+  return routeText(route.query.relation_create_mode) === 'dialog'
+    && Boolean(routeText(route.query.relation_dialog_nonce));
 }
 
 function positiveInteger(value: unknown): number {

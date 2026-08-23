@@ -13,6 +13,29 @@
   "record_error": null,
   "ui_contract": null,
   "ui_contract_raw": {
+    "delete_policy": {
+      "allowed": true,
+      "delete_mode": "unlink",
+      "dry_run_supported": true,
+      "message": "允许删除任务记录；仍受模型 ACL 与记录规则约束。",
+      "model": "project.task",
+      "reason_code": "DELETE_POLICY_ALLOWED",
+      "requires_acl": true,
+      "requires_record_rule": true,
+      "source": "smart_construction_core",
+      "source_authority": {
+        "authorities": [
+          "extension_unlink_policy",
+          "handler_default_allowlist",
+          "odoo_access_control"
+        ],
+        "default_behavior": "deny_unless_extension_or_handler_default_allows",
+        "kind": "unlink_policy_projection",
+        "no_business_fact_authority": true,
+        "projection_only": true
+      }
+    },
+    "deleted_count": 0,
     "dry_run": true,
     "idempotency_deduplicated": false,
     "idempotency_fingerprint": "a9f5baf683eae47561805c56764100a7bac1caea",
@@ -23,10 +46,82 @@
       1
     ],
     "model": "project.task",
+    "project_scope": {
+      "applied": false,
+      "business_scope": true,
+      "company_id": null,
+      "domain": [],
+      "enabled": false,
+      "legacy_project_scope": true,
+      "model": "project.task",
+      "operation_strategy": "",
+      "operation_strategy_values": [
+        "direct",
+        "joint"
+      ],
+      "project_id": null,
+      "project_operation_strategy": "",
+      "project_operation_strategy_mismatch": false,
+      "record_context_id": null,
+      "source_authority": {
+        "authorities": [
+          "record_context_projection",
+          "odoo_field_metadata"
+        ],
+        "kind": "legacy_project_scope_adapter",
+        "legacy_compatibility": true,
+        "legacy_default_model": "project.project",
+        "no_business_fact_authority": true,
+        "projection_only": true,
+        "registered_legacy_scope_models": [
+          "project.project"
+        ],
+        "registered_operation_strategies": [
+          "direct",
+          "joint"
+        ]
+      }
+    },
+    "record_scope": {
+      "applied": false,
+      "business_scope": true,
+      "company_id": null,
+      "domain": [],
+      "enabled": false,
+      "legacy_project_scope": true,
+      "model": "project.task",
+      "operation_strategy": "",
+      "operation_strategy_values": [
+        "direct",
+        "joint"
+      ],
+      "project_id": null,
+      "project_operation_strategy": "",
+      "project_operation_strategy_mismatch": false,
+      "record_context_id": null,
+      "source_authority": {
+        "authorities": [
+          "record_context_projection",
+          "odoo_field_metadata"
+        ],
+        "kind": "legacy_project_scope_adapter",
+        "legacy_compatibility": true,
+        "legacy_default_model": "project.project",
+        "no_business_fact_authority": true,
+        "projection_only": true,
+        "registered_legacy_scope_models": [
+          "project.project"
+        ],
+        "registered_operation_strategies": [
+          "direct",
+          "joint"
+        ]
+      }
+    },
     "replay_supported": false,
     "replay_window_expired": false
   },
-  "user": "pm",
-  "user_fallback": "admin",
+  "user": "demo_role_pm",
+  "user_fallback": null,
   "view_type": null
 }

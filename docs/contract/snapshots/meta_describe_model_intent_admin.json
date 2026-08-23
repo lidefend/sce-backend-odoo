@@ -102,7 +102,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Active",
+        "string": "有效",
         "type": "boolean"
       },
       "activity_date_deadline": {
@@ -395,6 +395,10 @@
           [
             "followers",
             "Followers only"
+          ],
+          [
+            "employees",
+            "Authenticated Employees"
           ]
         ],
         "sortable": true,
@@ -792,8 +796,9 @@
         "currency_field": "company_currency_id",
         "default_export_compatible": false,
         "depends": [
-          "boq_line_ids.amount",
-          "boq_line_ids.section_type"
+          "boq_line_ids.amount_leaf",
+          "boq_line_ids.section_type",
+          "boq_line_ids.version_id.state"
         ],
         "exportable": true,
         "group_operator": "sum",
@@ -813,8 +818,9 @@
         "currency_field": "company_currency_id",
         "default_export_compatible": false,
         "depends": [
-          "boq_line_ids.amount",
-          "boq_line_ids.section_type"
+          "boq_line_ids.amount_leaf",
+          "boq_line_ids.section_type",
+          "boq_line_ids.version_id.state"
         ],
         "exportable": true,
         "group_operator": "sum",
@@ -835,7 +841,8 @@
         "default_export_compatible": false,
         "depends": [
           "boq_line_ids.amount_leaf",
-          "boq_line_ids.version",
+          "boq_line_ids.version_id.state",
+          "boq_line_ids.version_id.code",
           "boq_line_ids.write_date"
         ],
         "exportable": true,
@@ -856,8 +863,9 @@
         "currency_field": "company_currency_id",
         "default_export_compatible": false,
         "depends": [
-          "boq_line_ids.amount",
-          "boq_line_ids.section_type"
+          "boq_line_ids.amount_leaf",
+          "boq_line_ids.section_type",
+          "boq_line_ids.version_id.state"
         ],
         "exportable": true,
         "group_operator": "sum",
@@ -877,7 +885,8 @@
         "default_export_compatible": false,
         "depends": [
           "boq_line_ids.amount_leaf",
-          "boq_line_ids.version",
+          "boq_line_ids.version_id.state",
+          "boq_line_ids.version_id.code",
           "boq_line_ids.write_date"
         ],
         "exportable": true,
@@ -897,7 +906,8 @@
         "default_export_compatible": false,
         "depends": [
           "boq_line_ids.amount_leaf",
-          "boq_line_ids.version",
+          "boq_line_ids.version_id.state",
+          "boq_line_ids.version_id.code",
           "boq_line_ids.write_date"
         ],
         "exportable": true,
@@ -939,7 +949,8 @@
         "default_export_compatible": false,
         "depends": [
           "boq_line_ids.amount_leaf",
-          "boq_line_ids.version",
+          "boq_line_ids.version_id.state",
+          "boq_line_ids.version_id.code",
           "boq_line_ids.write_date"
         ],
         "exportable": true,
@@ -969,7 +980,8 @@
         "default_export_compatible": false,
         "depends": [
           "boq_line_ids.amount_leaf",
-          "boq_line_ids.version",
+          "boq_line_ids.version_id.state",
+          "boq_line_ids.version_id.code",
           "boq_line_ids.write_date"
         ],
         "exportable": true,
@@ -1135,7 +1147,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Business Nature",
+        "string": "经营性质",
         "translate": false,
         "trim": true,
         "type": "char"
@@ -1279,7 +1291,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Company",
+        "string": "公司",
         "type": "many2one"
       },
       "contract_amount": {
@@ -1934,7 +1946,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Expiration Date",
+        "string": "截止日期",
         "type": "date"
       },
       "date_start": {
@@ -1990,7 +2002,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Detail Address",
+        "string": "项目详细地址",
         "translate": false,
         "type": "text"
       },
@@ -2361,6 +2373,22 @@
         "string": "ID",
         "type": "integer"
       },
+      "initiation_date": {
+        "change_default": false,
+        "company_dependent": false,
+        "default_export_compatible": false,
+        "depends": [],
+        "exportable": true,
+        "manual": false,
+        "name": "initiation_date",
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sortable": true,
+        "store": true,
+        "string": "单据日期",
+        "type": "date"
+      },
       "is_favorite": {
         "change_default": false,
         "company_dependent": false,
@@ -2433,7 +2461,7 @@
         "searchable": false,
         "sortable": false,
         "store": false,
-        "string": "Last Update Color",
+        "string": "状态颜色",
         "type": "integer"
       },
       "last_update_id": {
@@ -2497,329 +2525,30 @@
         ],
         "sortable": true,
         "store": true,
-        "string": "Last Update Status",
+        "string": "项目更新状态",
         "type": "selection"
       },
-      "legacy_attachment_ref": {
+      "lifecycle_advisory": {
         "change_default": false,
         "company_dependent": false,
         "default_export_compatible": false,
-        "depends": [],
+        "depends": [
+          "owner_id",
+          "location",
+          "manager_id",
+          "user_id",
+          "boq_line_count"
+        ],
         "exportable": true,
+        "help": "仅提示建议完善的项目资料，不作为生命周期硬阻断条件。",
         "manual": false,
-        "name": "legacy_attachment_ref",
-        "readonly": false,
+        "name": "lifecycle_advisory",
+        "readonly": true,
         "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Attachment Ref",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_company_id": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_company_id",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Company",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_company_name": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_company_name",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Company Name",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_is_material_library": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_is_material_library",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Is Material Library",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_is_shared_base": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_is_shared_base",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Is Shared Base",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_parent_id": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_parent_id",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Parent",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_price_method": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_price_method",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Price Method",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_project_id": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_project_id",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Project",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_project_manager_name": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_project_manager_name",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Project Manager Name",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_project_nature": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_project_nature",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Project Nature",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_region_id": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_region_id",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Region",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_region_name": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_region_name",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Region Name",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_sort": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_sort",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Sort",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_specialty_type_id": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_specialty_type_id",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Specialty Type",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_stage_id": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_stage_id",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Stage",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_stage_name": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_stage_name",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Stage Name",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_state": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_state",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy State",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "legacy_technical_responsibility_name": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "legacy_technical_responsibility_name",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Legacy Technical Responsibility Name",
+        "searchable": false,
+        "sortable": false,
+        "store": false,
+        "string": "完善提示",
         "translate": false,
         "trim": true,
         "type": "char"
@@ -3060,7 +2789,7 @@
         "searchable": true,
         "sortable": false,
         "store": false,
-        "string": "Action Needed",
+        "string": "待处理消息",
         "type": "boolean"
       },
       "message_needaction_counter": {
@@ -3158,7 +2887,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Name",
+        "string": "项目名称",
         "translate": true,
         "trim": true,
         "type": "char"
@@ -3177,44 +2906,35 @@
         "searchable": false,
         "sortable": false,
         "store": false,
-        "string": "Open Task Count",
+        "string": "任务",
         "type": "integer"
       },
-      "other_system_code": {
+      "operation_strategy": {
         "change_default": false,
         "company_dependent": false,
         "default_export_compatible": false,
         "depends": [],
         "exportable": true,
+        "help": "公司隔离之后的项目级全局经营策略维度，用于直营/联营业务事实切换、筛选和统计。",
         "manual": false,
-        "name": "other_system_code",
+        "name": "operation_strategy",
         "readonly": false,
-        "required": false,
+        "required": true,
         "searchable": true,
+        "selection": [
+          [
+            "direct",
+            "公司直营"
+          ],
+          [
+            "joint",
+            "联营项目"
+          ]
+        ],
         "sortable": true,
         "store": true,
-        "string": "Other System Code",
-        "translate": false,
-        "trim": true,
-        "type": "char"
-      },
-      "other_system_id": {
-        "change_default": false,
-        "company_dependent": false,
-        "default_export_compatible": false,
-        "depends": [],
-        "exportable": true,
-        "manual": false,
-        "name": "other_system_id",
-        "readonly": false,
-        "required": false,
-        "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "Other System",
-        "translate": false,
-        "trim": true,
-        "type": "char"
+        "string": "经营方式",
+        "type": "selection"
       },
       "owner_contact": {
         "change_default": false,
@@ -3271,7 +2991,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Customer",
+        "string": "关联单位",
         "type": "many2one"
       },
       "pay_contract_total": {
@@ -3580,7 +3300,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Project Area",
+        "string": "项目面积",
         "translate": false,
         "trim": true,
         "type": "char"
@@ -3642,7 +3362,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Project Environment",
+        "string": "项目环境",
         "translate": false,
         "trim": true,
         "type": "char"
@@ -3660,7 +3380,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Project Overview",
+        "string": "项目概况",
         "translate": false,
         "type": "text"
       },
@@ -3677,7 +3397,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Project Profile",
+        "string": "项目简介",
         "translate": false,
         "type": "text"
       },
@@ -3706,6 +3426,26 @@
         "store": true,
         "string": "项目类型",
         "type": "many2one"
+      },
+      "purchase_orders_count": {
+        "change_default": false,
+        "company_dependent": false,
+        "default_export_compatible": false,
+        "depends": [
+          "analytic_account_id"
+        ],
+        "exportable": true,
+        "group_operator": "sum",
+        "groups": "purchase.group_purchase_user",
+        "manual": false,
+        "name": "purchase_orders_count",
+        "readonly": true,
+        "required": false,
+        "searchable": false,
+        "sortable": false,
+        "store": false,
+        "string": "# Purchase Orders",
+        "type": "integer"
       },
       "rating_active": {
         "change_default": false,
@@ -3970,34 +3710,40 @@
         "change_default": false,
         "company_dependent": false,
         "default_export_compatible": false,
-        "depends": [],
+        "depends": [
+          "sc_project_showcase"
+        ],
         "exportable": true,
-        "help": "用于标记演示项目池的入口筛选项目。",
+        "help": "项目入口优先候选标记。",
         "manual": false,
         "name": "sc_demo_showcase",
         "readonly": false,
+        "related": "sc_project_showcase",
         "required": false,
         "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "演示项目池",
+        "sortable": false,
+        "store": false,
+        "string": "项目样板池",
         "type": "boolean"
       },
       "sc_demo_showcase_ready": {
         "change_default": false,
         "company_dependent": false,
         "default_export_compatible": false,
-        "depends": [],
+        "depends": [
+          "sc_project_showcase_ready"
+        ],
         "exportable": true,
-        "help": "用于演示入口硬筛选，仅展示数据补齐完成的项目。",
+        "help": "项目入口候选展示状态。",
         "manual": false,
         "name": "sc_demo_showcase_ready",
         "readonly": false,
+        "related": "sc_project_showcase_ready",
         "required": false,
         "searchable": true,
-        "sortable": true,
-        "store": true,
-        "string": "演示项目可展示",
+        "sortable": false,
+        "store": false,
+        "string": "项目样板可展示",
         "type": "boolean"
       },
       "sc_draft_autosave_uid": {
@@ -4035,6 +3781,41 @@
         "store": true,
         "string": "草稿自动保存时间",
         "type": "datetime"
+      },
+      "sc_execution_state": {
+        "change_default": false,
+        "company_dependent": false,
+        "default_export_compatible": false,
+        "depends": [],
+        "exportable": true,
+        "help": "项目执行场景的轻量状态机字段，由 project.execution.advance 统一推进。",
+        "manual": false,
+        "name": "sc_execution_state",
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "selection": [
+          [
+            "ready",
+            "执行就绪"
+          ],
+          [
+            "in_progress",
+            "执行中"
+          ],
+          [
+            "blocked",
+            "执行阻塞"
+          ],
+          [
+            "done",
+            "执行完成"
+          ]
+        ],
+        "sortable": true,
+        "store": true,
+        "string": "执行推进状态",
+        "type": "selection"
       },
       "sc_overview_contract_count": {
         "change_default": false,
@@ -4138,6 +3919,61 @@
         "string": "概览进行中任务数",
         "type": "integer"
       },
+      "sc_partner_display_name": {
+        "change_default": false,
+        "company_dependent": false,
+        "default_export_compatible": false,
+        "depends": [
+          "partner_id",
+          "partner_id.display_name"
+        ],
+        "exportable": true,
+        "manual": false,
+        "name": "sc_partner_display_name",
+        "readonly": true,
+        "required": false,
+        "searchable": false,
+        "sortable": false,
+        "store": false,
+        "string": "关联单位显示名称",
+        "translate": false,
+        "trim": true,
+        "type": "char"
+      },
+      "sc_project_showcase": {
+        "change_default": false,
+        "company_dependent": false,
+        "default_export_compatible": false,
+        "depends": [],
+        "exportable": true,
+        "help": "用于标记可作为项目入口优先候选的正式样板项目。",
+        "manual": false,
+        "name": "sc_project_showcase",
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sortable": true,
+        "store": true,
+        "string": "项目样板池",
+        "type": "boolean"
+      },
+      "sc_project_showcase_ready": {
+        "change_default": false,
+        "company_dependent": false,
+        "default_export_compatible": false,
+        "depends": [],
+        "exportable": true,
+        "help": "用于项目入口候选硬筛选，仅展示数据补齐完成的样板项目。",
+        "manual": false,
+        "name": "sc_project_showcase_ready",
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sortable": true,
+        "store": true,
+        "string": "项目样板可展示",
+        "type": "boolean"
+      },
       "sc_stage_required_done": {
         "change_default": false,
         "company_dependent": false,
@@ -4209,7 +4045,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Sequence",
+        "string": "序号",
         "type": "integer"
       },
       "settlement_ids": {
@@ -4246,7 +4082,41 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Short Name",
+        "string": "项目简称",
+        "translate": false,
+        "trim": true,
+        "type": "char"
+      },
+      "source_created_at": {
+        "change_default": false,
+        "company_dependent": false,
+        "default_export_compatible": false,
+        "depends": [],
+        "exportable": true,
+        "manual": false,
+        "name": "source_created_at",
+        "readonly": true,
+        "required": false,
+        "searchable": true,
+        "sortable": true,
+        "store": true,
+        "string": "来源录入时间",
+        "type": "datetime"
+      },
+      "source_created_by": {
+        "change_default": false,
+        "company_dependent": false,
+        "default_export_compatible": false,
+        "depends": [],
+        "exportable": true,
+        "manual": false,
+        "name": "source_created_by",
+        "readonly": true,
+        "required": false,
+        "searchable": true,
+        "sortable": true,
+        "store": true,
+        "string": "来源录入人",
         "translate": false,
         "trim": true,
         "type": "char"
@@ -4264,7 +4134,7 @@
         "searchable": true,
         "sortable": true,
         "store": true,
-        "string": "Specialty Type Name",
+        "string": "专业类型",
         "translate": false,
         "trim": true,
         "type": "char"
@@ -4284,27 +4154,6 @@
         "store": true,
         "string": "计划开工日期",
         "type": "date"
-      },
-      "structure_ids": {
-        "change_default": false,
-        "company_dependent": false,
-        "context": {},
-        "default_export_compatible": false,
-        "depends": [],
-        "domain": [],
-        "exportable": true,
-        "manual": false,
-        "name": "structure_ids",
-        "readonly": false,
-        "relation": "sc.project.structure",
-        "relation_field": "project_id",
-        "relation_model": "sc.project.structure",
-        "required": false,
-        "searchable": true,
-        "sortable": false,
-        "store": true,
-        "string": "工程结构（WBS）",
-        "type": "one2many"
       },
       "subcontract_amount": {
         "change_default": false,
@@ -4345,7 +4194,7 @@
         "searchable": true,
         "sortable": false,
         "store": true,
-        "string": "Tags",
+        "string": "标签",
         "type": "many2many"
       },
       "task_count": {
@@ -4376,9 +4225,9 @@
             "state",
             "in",
             [
-              "03_approved",
               "01_in_progress",
               "04_waiting_normal",
+              "03_approved",
               "02_changes_requested"
             ]
           ]
@@ -4540,7 +4389,7 @@
         "company_dependent": false,
         "default_export_compatible": false,
         "depends": [
-          "structure_ids"
+          "work_ids"
         ],
         "exportable": true,
         "group_operator": "sum",
@@ -4580,7 +4429,7 @@
         "company_dependent": false,
         "default_export_compatible": false,
         "depends": [
-          "structure_ids"
+          "work_ids"
         ],
         "exportable": true,
         "group_operator": "sum",
@@ -4599,7 +4448,7 @@
         "company_dependent": false,
         "default_export_compatible": false,
         "depends": [
-          "structure_ids"
+          "work_ids"
         ],
         "exportable": true,
         "manual": false,

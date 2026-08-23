@@ -1,6 +1,21 @@
 <template>
   <div v-if="field.type === 'many2many'" class="relation-editor">
-    <div v-if="isMany2manyTags(field)" class="relation-tag-picker">
+    <div v-if="field.readonly" class="relation-readonly" data-readonly-relation>
+      <span
+        v-for="option in adapter.selectedRelationOptions(field.name)"
+        :key="`${field.name}-readonly-${option.id}`"
+        class="relation-readonly-item"
+      >{{ option.label }}</span>
+      <span
+        v-if="!adapter.selectedRelationOptions(field.name).length && adapter.relationIds(field.name).length"
+        class="relation-readonly-summary"
+      >已关联 {{ adapter.relationIds(field.name).length }} 条</span>
+      <span
+        v-else-if="!adapter.selectedRelationOptions(field.name).length"
+        class="relation-readonly-empty"
+      >暂无记录</span>
+    </div>
+    <div v-else-if="isMany2manyTags(field)" class="relation-tag-picker">
       <div class="relation-tags-control">
         <div v-if="adapter.selectedRelationOptions(field.name).length" class="relation-tag-list">
           <button
@@ -86,6 +101,33 @@
     </div>
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
+    <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
+      <div v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-readonly-list">
+        <article
+          v-for="row in adapter.visibleOne2manyRows(field.name)"
+          :key="row.key"
+          class="o2m-readonly-row"
+        >
+          <p v-if="adapter.one2manyRowStateLabel(row)" class="o2m-readonly-state">
+            {{ adapter.one2manyRowStateLabel(row) }}
+          </p>
+          <dl class="o2m-readonly-facts">
+            <div
+              v-for="column in adapter.one2manyColumns(field.name)"
+              :key="`${row.key}-readonly-${column.name}`"
+              class="o2m-readonly-fact"
+            >
+              <dt>{{ column.label }}</dt>
+              <dd>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || '—' }}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+      <p v-else class="relation-readonly-empty" data-readonly-relation-empty>
+        暂无记录
+      </p>
+    </div>
+    <template v-else>
     <div class="o2m-toolbar">
       <button
         v-if="adapter.one2manyCanCreate(field.name)"
@@ -180,6 +222,7 @@
         </button>
       </div>
     </div>
+    </template>
   </div>
   <input
   v-else
@@ -261,6 +304,83 @@ function tagColorStyle(color: unknown) {
 .relation-editor {
   display: grid;
   gap: 6px;
+}
+
+.relation-readonly {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+  align-items: center;
+  color: var(--sc-app-text-primary);
+}
+
+.relation-readonly-item {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--sc-app-muted-bg);
+}
+
+.relation-readonly-summary,
+.relation-readonly-empty {
+  color: var(--sc-app-text-secondary);
+}
+
+.relation-readonly-empty {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-muted-bg);
+  font-size: 13px;
+}
+
+.o2m-readonly-list {
+  display: grid;
+  gap: 8px;
+}
+
+.o2m-readonly-row {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-panel);
+}
+
+.o2m-readonly-state {
+  margin: 0;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+
+.o2m-readonly-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.o2m-readonly-fact {
+  min-width: 0;
+}
+
+.o2m-readonly-fact dt,
+.o2m-readonly-fact dd {
+  margin: 0;
+}
+
+.o2m-readonly-fact dt {
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+
+.o2m-readonly-fact dd {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
 }
 
 .chips {

@@ -50,7 +50,7 @@ class AppSearchConfig(models.Model):
     # ======================= 生成（聚合） =======================
 
     @api.model
-    def _generate_from_search(self, model_name):
+    def _generate_from_search(self, model_name, fields_get_snapshot=None, search_view_data=None):
         """
         生成/更新 “搜索契约”：
         1) 解析 search 视图：filters（含 domain/context/groups）、默认 group_by
@@ -63,24 +63,31 @@ class AppSearchConfig(models.Model):
                 raise ValueError(_("模型不存在：%s") % model_name)
 
             # 1) 视图解析
-            view = self._safe_get_search_view(model_name)
+            view = search_view_data if isinstance(search_view_data, dict) else self._safe_get_search_view(model_name)
             arch = (view or {}).get('arch') or ''
-            view_filters, view_groupbys = self._parse_search_view(arch)
+            view_filters, view_groupbys, view_fields = self._parse_search_view(arch)
 
-            # 2) ir.filters（收藏/共享）
-            saved_filters = self._collect_ir_filters(model_name)
+            # 2) ir.filters 是用户/action 作用域运行时事实，不写入
+            # model 级单例缓存。get_search_contract() 按当前请求动态投影。
+            saved_filters = []
 
             # 3) group_by 候选（基于字段元数据）
-            groupby_candidates = self._infer_groupby_candidates(model_name, prefer=view_groupbys)
+            groupby_candidates = self._infer_groupby_candidates(
+                model_name,
+                prefer=view_groupbys,
+                fields_get_snapshot=fields_get_snapshot,
+            )
             custom_search = self._build_custom_search_contract(
                 model_name,
                 prefer_groupbys=view_groupbys,
+                fields_get_snapshot=fields_get_snapshot,
             )
 
             # 4) 统一结构
             search_def = self._build_search_def(
                 model_name=model_name,
                 filters=view_filters,
+                fields=view_fields,
                 saved_filters=saved_filters,
                 group_by=groupby_candidates,
                 facets={"enabled": True},
@@ -127,7 +134,7 @@ class AppSearchConfig(models.Model):
 
     # ======================= 标准化输出 =======================
 
-    def get_search_contract(self, filter_runtime=True, include_user_filters=True):
+    def get_search_contract(self, filter_runtime=True, include_user_filters=True, action_id=None):
         """
         返回标准化搜索契约：
         - filter_runtime=True：按当前用户组过滤“视图内置 filter”（基于 groups_xmlids）
@@ -185,11 +192,12 @@ class AppSearchConfig(models.Model):
                     filtered.append(f)
             data['filters'] = filtered
 
-        # 只保留当前用户可见的 saved_filters（本人 + 共享）
+        # saved filters 不从 model 级缓存读取。每次按当前用户与
+        # action scope 重建，防止同模型多 action 之间串收藏。
         if include_user_filters:
             uid = self.env.uid
             visible_saved = []
-            for sf in data.get('saved_filters', []):
+            for sf in self._collect_ir_filters(self.model, action_id=action_id):
                 owner = sf.get('owner')
                 shared = sf.get('is_shared', False)
                 if shared or (owner and int(owner) == uid):
@@ -206,7 +214,7 @@ class AppSearchConfig(models.Model):
 
     # ======================= 内部：统一结构构建 =======================
 
-    def _build_search_def(self, model_name, filters, saved_filters, group_by, facets, custom, defaults):
+    def _build_search_def(self, model_name, filters, fields, saved_filters, group_by, facets, custom, defaults):
         """
         统一结构（契约 2.0）：
         {
@@ -228,6 +236,7 @@ class AppSearchConfig(models.Model):
             ),
         )
         saved_sorted = sorted(saved_filters or [], key=lambda x: (not x.get('is_shared', False), x.get('name') or ''))
+        fields_sorted = sorted(fields or [], key=lambda x: x.get('source_position', 9999))
         group_sorted = sorted(
             group_by or [],
             key=lambda x: (
@@ -242,6 +251,7 @@ class AppSearchConfig(models.Model):
         return {
             "source": self._source_contract(model_name),
             "filters": filters_sorted,
+            "fields": fields_sorted,
             "saved_filters": saved_sorted,
             "group_by": group_sorted,
             "facets": facets or {"enabled": True},
@@ -271,20 +281,27 @@ class AppSearchConfig(models.Model):
         获取 search 视图（兼容 get_view / fields_view_get）
         返回：{"arch": "...", "fields": {...}, "toolbar": {...}}
         """
-        Model = self.env[model_name].sudo()
+        Model = self.env[model_name]
+        failures = []
         # 新接口
         try:
             data = Model.get_view(view_type='search')
             if isinstance(data, dict) and data.get('arch'):
                 return {"arch": data.get('arch'), "fields": data.get('fields', {}), "toolbar": data.get('toolbar', {})}
-        except Exception:
-            pass
+        except Exception as exc:
+            failures.append(exc)
         # 旧接口
         try:
             fv = Model.fields_view_get(view_type='search', toolbar=False)
-            return {"arch": fv.get('arch'), "fields": fv.get('fields', {}), "toolbar": {}}
-        except Exception:
-            return {"arch": "", "fields": {}, "toolbar": {}}
+            if isinstance(fv, dict) and fv.get('arch'):
+                return {"arch": fv.get('arch'), "fields": fv.get('fields', {}), "toolbar": {}}
+            failures.append(RuntimeError("fields_view_get returned empty arch"))
+        except Exception as exc:
+            failures.append(exc)
+        raise RuntimeError("resolved search view unavailable for %s: %s" % (
+            model_name,
+            "; ".join(str(item) for item in failures if str(item)) or "no arch",
+        ))
 
     def _parse_search_view(self, arch):
         """
@@ -292,22 +309,55 @@ class AppSearchConfig(models.Model):
         - filters: name/string/domain/context/groups -> 统一为标准项
         - groupbys: 从 filter 的 context 中抽取 group_by 值与原生标签
         """
-        filters, groupbys = [], []
-        seen_groupbys = set()
+        filters, groupbys, search_fields = [], [], []
         if not arch or not etree:
-            return filters, []
+            raise ValueError("resolved search arch is required")
+
+        def native_identity(element):
+            tag = str(getattr(element, 'tag', '') or '')
+            name = element.get('name') if hasattr(element, 'get') else None
+            duplicate_ordinal = 1
+            segments = []
+            current = element
+            while current is not None and isinstance(getattr(current, 'tag', None), str):
+                parent = current.getparent() if hasattr(current, 'getparent') else None
+                tag_ordinal = 1
+                if parent is not None:
+                    tag_siblings = [child for child in parent if getattr(child, 'tag', None) == current.tag]
+                    if current in tag_siblings:
+                        tag_ordinal = tag_siblings.index(current) + 1
+                    if current is element:
+                        duplicates = [
+                            child for child in parent
+                            if getattr(child, 'tag', None) == tag and child.get('name') == name
+                        ]
+                        if current in duplicates:
+                            duplicate_ordinal = duplicates.index(current) + 1
+                segments.append('%s[%s]' % (current.tag, tag_ordinal))
+                current = parent
+            return {
+                "native_locator": "/" + "/".join(reversed(segments)),
+                "occurrence_index": duplicate_ordinal,
+            }
 
         try:
             root = etree.fromstring(arch.encode('utf-8'))
             nodes = [root] if root.tag == 'search' else root.xpath('.//search')
             for s in nodes:
-                for f in s.xpath('.//filter'):
+                occurrence_nodes = [node for node in s.iter() if node is not s and node.tag in ('filter', 'field')]
+                source_positions = {id(node): index for index, node in enumerate(occurrence_nodes)}
+                for f in (node for node in occurrence_nodes if node.tag == 'filter'):
                     name = f.get('name') or ''
                     label = f.get('string') or name
                     domain_raw = f.get('domain')
                     context_raw = f.get('context')
                     groups_attr = f.get('groups') or ''
                     help_txt = f.get('help') or ''
+                    occurrence = {
+                        **native_identity(f),
+                        "source_position": source_positions[id(f)],
+                        "attributes": dict(f.attrib or {}),
+                    }
 
                     # 安全求值
                     dom_val = self._safe_eval_expr(domain_raw)
@@ -329,8 +379,6 @@ class AppSearchConfig(models.Model):
                     is_group_filter = bool(group_values) and not domain_raw
                     if is_group_filter:
                         for group_value in group_values:
-                            if group_value in seen_groupbys:
-                                continue
                             groupbys.append({
                                 "field": group_value,
                                 "label": label or group_value,
@@ -338,8 +386,8 @@ class AppSearchConfig(models.Model):
                                 "context_raw": context_raw,
                                 "source": "search_view",
                                 "sequence": len(groupbys),
+                                **occurrence,
                             })
-                            seen_groupbys.add(group_value)
                         continue
 
                     filters.append({
@@ -352,14 +400,51 @@ class AppSearchConfig(models.Model):
                         "groups_xmlids": [x.strip() for x in groups_attr.split(',') if x.strip()],
                         "tags": [],  # 预留：可用于 UI tag
                         "sequence": len(filters),
+                        "date": f.get('date'),
+                        "type": f.get('type'),
+                        **occurrence,
+                    })
+
+                for field_node in (node for node in occurrence_nodes if node.tag == 'field'):
+                    parent = field_node.getparent()
+                    inside_search_panel = False
+                    while parent is not None:
+                        if getattr(parent, 'tag', None) == 'searchpanel':
+                            inside_search_panel = True
+                            break
+                        parent = parent.getparent() if hasattr(parent, 'getparent') else None
+                    if inside_search_panel:
+                        continue
+                    name = str(field_node.get('name') or '').strip()
+                    if not name:
+                        continue
+                    attributes = dict(field_node.attrib or {})
+                    search_fields.append({
+                        "name": name,
+                        "key": name,
+                        "label": field_node.get('string') or name,
+                        "help": field_node.get('help') or '',
+                        "operator": field_node.get('operator'),
+                        "filter_domain": field_node.get('filter_domain'),
+                        "domain_raw": field_node.get('domain'),
+                        "context_raw": field_node.get('context'),
+                        "optional": field_node.get('optional'),
+                        "sum": field_node.get('sum'),
+                        "groups_xmlids": [
+                            item.strip() for item in str(field_node.get('groups') or '').split(',') if item.strip()
+                        ],
+                        "source_position": source_positions[id(field_node)],
+                        "attributes": attributes,
+                        **native_identity(field_node),
                     })
         except Exception:
             _logger.exception("parse search view failed")
-        return filters, groupbys
+            raise
+        return filters, groupbys, search_fields
 
     # ======================= ir.filters 收集 =======================
 
-    def _collect_ir_filters(self, model_name):
+    def _collect_ir_filters(self, model_name, action_id=None):
         """
         收集 ir.filters（收藏筛选器）：
         - user_id = False → 共享
@@ -370,8 +455,17 @@ class AppSearchConfig(models.Model):
         if 'ir.filters' not in self.env:
             return res
         F = self.env['ir.filters'].sudo()
-        # 只按 model_id 匹配；不过期望不同版本字段名相同
-        flt = F.search([('model_id', '=', model_name)])
+        try:
+            scoped_action_id = int(action_id or 0)
+        except (TypeError, ValueError):
+            scoped_action_id = 0
+        domain = [('model_id', '=', model_name)]
+        if 'action_id' in F._fields:
+            if scoped_action_id > 0:
+                domain.append(('action_id', 'in', [False, scoped_action_id]))
+            else:
+                domain.append(('action_id', '=', False))
+        flt = F.search(domain)
         for r in flt:
             # domain/context 在 ir.filters 中通常为字符串；契约层统一补出结构化值，
             # 前端只消费契约，不解析 Odoo domain/context 表达式。
@@ -395,7 +489,7 @@ class AppSearchConfig(models.Model):
 
     # ======================= group_by 候选推断 =======================
 
-    def _infer_groupby_candidates(self, model_name, prefer=None):
+    def _infer_groupby_candidates(self, model_name, prefer=None, fields_get_snapshot=None):
         """
         基于 fields_get 推断可 group_by 字段：
         - 优先：search 内显式提供的 group_by（prefer）
@@ -404,14 +498,13 @@ class AppSearchConfig(models.Model):
         返回：[{field,label,type,default}]
         """
         prefer = prefer or []
-        Model = self.env[model_name].sudo()
-        fget = Model.fields_get()
+        fget = fields_get_snapshot if isinstance(fields_get_snapshot, dict) else self.env[model_name].sudo().fields_get()
         candidates = []
 
-        def add_field(fname, default=False, label=None, key=None, context_raw=None, source=None, sequence=None):
+        def add_field(fname, default=False, label=None, key=None, context_raw=None, source=None, sequence=None, occurrence=None):
             base_fname = str(fname or '').split(':', 1)[0]
             meta = fget.get(base_fname) or fget.get(fname) or {}
-            candidates.append({
+            row = {
                 "field": fname,
                 "label": label or meta.get('string', fname),
                 "type": meta.get('type', 'char'),
@@ -420,7 +513,12 @@ class AppSearchConfig(models.Model):
                 "context_raw": context_raw,
                 "source": source,
                 "sequence": sequence,
-            })
+            }
+            if isinstance(occurrence, dict):
+                for evidence_key in ('native_locator', 'occurrence_index', 'source_position', 'attributes'):
+                    if evidence_key in occurrence:
+                        row[evidence_key] = occurrence[evidence_key]
+            candidates.append(row)
 
         # 1) 先加入显式 prefer 的字段
         seen = set()
@@ -440,7 +538,7 @@ class AppSearchConfig(models.Model):
                 source = None
                 sequence = None
             base_fname = fname.split(':', 1)[0]
-            if fname and base_fname in fget and fname not in seen:
+            if fname and base_fname in fget:
                 add_field(
                     fname,
                     default=False,
@@ -449,6 +547,7 @@ class AppSearchConfig(models.Model):
                     context_raw=context_raw,
                     source=source,
                     sequence=sequence,
+                    occurrence=gb if isinstance(gb, dict) else None,
                 )
                 seen.add(fname)
 
@@ -472,9 +571,12 @@ class AppSearchConfig(models.Model):
 
     # ======================= 工具 =======================
 
-    def _build_custom_search_contract(self, model_name, prefer_groupbys=None):
-        Model = self.env[model_name].sudo()
-        fields_meta = Model.fields_get()
+    def _build_custom_search_contract(self, model_name, prefer_groupbys=None, fields_get_snapshot=None):
+        fields_meta = (
+            fields_get_snapshot
+            if isinstance(fields_get_snapshot, dict)
+            else self.env[model_name].sudo().fields_get()
+        )
         filter_fields = []
         group_fields = []
         seen_filter = set()

@@ -7,6 +7,8 @@
 import json
 import logging
 import re
+import time
+from copy import deepcopy
 from odoo import _
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -25,8 +27,11 @@ from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     FORM_FIELD_CONFIG_INTENTS,
     is_business_config_runtime_model,
 )
+
+_RELATION_SEARCH_DIALOG_HOT_CACHE = {}
+_RELATION_SEARCH_DIALOG_HOT_CACHE_MAX = 256
 from ...utils.misc import safe_eval
-from ...utils.view_utils import extract_tree_columns_strict, normalize_cols_safely
+from ...utils.view_utils import normalize_cols_safely
 
 _logger = logging.getLogger(__name__)
 
@@ -357,11 +362,17 @@ class PageAssembler:
         if requested_render_profile:
             data["render_profile"] = requested_render_profile
         versions = {}
+        model_fields_snapshot = su[model].fields_get()
+        view_projection_sources = {}
+        view_projection_contracts = {}
 
         # 1) 字段：从模型配置生成；再归一化到 {name: {...}} 形式
         #    - 使用 su_env 读模型元数据，避免被权限限制
         try:
-            mcfg = su['app.model.config']._generate_from_ir_model(model)
+            mcfg = su['app.model.config']._generate_from_ir_model(
+                model,
+                fields_get_snapshot=model_fields_snapshot,
+            )
             data["fields"] = self._to_fields_map(mcfg.get_model_contract().get("fields", []), env=env, model=mcfg.model)
             versions["model"] = mcfg.version
         except KeyError:
@@ -370,47 +381,76 @@ class PageAssembler:
             data["fields"] = self._to_fields_map(list(env[model]._fields.keys()), env=env, model=model)
             versions["model"] = 0
 
-        # 2) 从原始 tree 视图 XML 严格提取列（★ P0 修复核心）
-        original_tree_cols = []
-        original_default_order = None
-        try:
-            v_info = su[model].get_view(view_type='tree')
-            original_tree_cols, original_default_order = extract_tree_columns_strict(v_info.get('arch'), v_info.get('fields', {}))
-            if original_tree_cols:
-                _logger.info("直接从源视图提取到可见字段: %s", [c['name'] for c in original_tree_cols])
-        except Exception as e:
-            _logger.warning("从原始视图提取字段失败: %s", e)
-
-        # 3) 视图契约（多视图）——视图元信息用 su_env 获取，运行时修剪在各自组装器里完成
+        # 2) 视图契约（多视图）——单次 get_view/解析后复用统一投影结果
         v_versions = []
         view_context = {}
         if isinstance(action, dict) and action.get("id"):
             view_context["contract_action_id"] = action.get("id")
-        requested_view_id = p.get("view_id") or p.get("viewId")
+        requested_view_raw = (
+            p.get("view_id")
+            or p.get("viewId")
+            or request_context.get("contract_view_id")
+            or request_context.get("requested_view_id")
+            or env_context.get("contract_view_id")
+            or env_context.get("requested_view_id")
+        )
+        requested_view_explicit = requested_view_raw not in (None, False, "")
         try:
-            requested_view_id = int(requested_view_id or 0)
-        except Exception:
-            requested_view_id = 0
+            requested_view_id = int(requested_view_raw or 0)
+        except Exception as exc:
+            raise ValueError("explicit view id is invalid") from exc
+        if requested_view_explicit and requested_view_id <= 0:
+            raise ValueError("explicit view id must be a positive integer")
+        requested_view_type = str(
+            p.get("view_type")
+            or p.get("viewType")
+            or request_context.get("view_type")
+            or request_context.get("viewType")
+            or env_context.get("view_type")
+            or env_context.get("viewType")
+            or ""
+        ).strip().lower()
+        if requested_view_type == "list":
+            requested_view_type = "tree"
+        canonical_view_types = [
+            "tree" if str(value or "").strip().lower() == "list" else str(value or "").strip().lower()
+            for value in view_types
+        ]
+        if requested_view_explicit and canonical_view_types.count(requested_view_type) != 1:
+            raise ValueError("explicit view id requires exactly one matching requested view type")
         view_context["contract_projection_readonly"] = True
         for vt in view_types:
+            canonical_vt = "tree" if str(vt or "").strip().lower() == "list" else str(vt or "").strip().lower()
+            explicit_target_view = requested_view_explicit and canonical_vt == requested_view_type
             try:
                 scoped_view_context = dict(view_context)
-                if requested_view_id and len(view_types) == 1:
+                scoped_view_context["contract_view_id"] = False
+                scoped_view_context["requested_view_id"] = False
+                if explicit_target_view:
                     scoped_view_context["contract_view_id"] = requested_view_id
                 view_config_model = env['app.view.config'].with_context(**scoped_view_context) if scoped_view_context else env['app.view.config']
-                vcfg = view_config_model._generate_from_fields_view_get(model, vt)
+                view_data = view_config_model._safe_get_view_data(model, vt)
+                if isinstance(view_data, dict):
+                    view_data['_fields_snapshot'] = model_fields_snapshot
+                    view_projection_sources[vt] = view_data
+                vcfg = view_config_model._generate_from_fields_view_get(model, vt, view_data=view_data)
                 # app.view.config is platform metadata and ordinary business
                 # users do not read it directly. Keep metadata access elevated,
                 # but bind the environment user to the real requester so
                 # runtime group/ACL filtering still matches native Odoo.
                 vcfg_runtime = vcfg.with_user(env.user).sudo().with_context(**scoped_view_context)
                 v_contract = vcfg_runtime.get_contract_api(filter_runtime=True, check_model_acl=True)
+                view_projection_contracts[vt] = v_contract
                 v_versions.append(str(v_contract.get("effective_version") or vcfg.version))
             except KeyError:
+                if explicit_target_view:
+                    raise
                 mark_missing("app.view.config")
                 _logger.warning("app.view.config missing; fallback view contract for model=%s vt=%s", model, vt)
                 v_contract = {"type": vt}
             except Exception as e:
+                if explicit_target_view:
+                    raise
                 data["degraded"] = True
                 reason = f"view_contract_fallback:{vt}:{type(e).__name__}"
                 if reason not in warnings:
@@ -425,29 +465,35 @@ class PageAssembler:
 
             v_contract = self._coerce_view_contract_semantics(vt, v_contract)
 
-            if vt == 'tree':
-                # 解析器没产出 columns 时，用严格列兜底
-                cols = v_contract.get('columns') or []
-                if not cols and original_tree_cols:
-                    v_contract['columns'] = [c['name'] for c in original_tree_cols]
-                    if original_default_order:
-                        v_contract['default_order'] = original_default_order
-                # 禁用对 columns 的二次“脏覆盖”
-
             data["views"][vt] = v_contract
         versions["view"] = ",".join(v_versions) if v_versions else "1"
 
-        # 4) 搜索条件（运行时需要当前用户上下文，因此用 env）
+        # 3) 搜索条件（运行时需要当前用户上下文，因此用 env）
         try:
-            scfg = env['app.search.config']._generate_from_search(model)
-            data["search"] = scfg.get_search_contract(filter_runtime=True, include_user_filters=True)
+            scfg = env['app.search.config']._generate_from_search(
+                model,
+                fields_get_snapshot=model_fields_snapshot,
+                search_view_data=view_projection_sources.get("search"),
+            )
+            data["search"] = scfg.get_search_contract(
+                filter_runtime=True,
+                include_user_filters=True,
+                action_id=action.get("id") if isinstance(action, dict) else p.get("action_id") or p.get("actionId"),
+            )
             versions["search"] = scfg.version
         except KeyError:
             mark_missing("app.search.config")
             _logger.warning("app.search.config missing; fallback search contract for model=%s", model)
             data["search"] = {}
             versions["search"] = 0
-        self._inject_search_view_orchestration(data, env=env, model=model, view_context=view_context, versions=versions)
+        self._inject_search_view_orchestration(
+            data,
+            env=env,
+            model=model,
+            view_context=view_context,
+            versions=versions,
+            search_contract=view_projection_contracts.get("search"),
+        )
         self._apply_action_search_defaults(data, effective_context)
         self._inject_view_orchestration_summary(data)
         data["context"] = effective_context
@@ -472,14 +518,13 @@ class PageAssembler:
         permissions_root = data["permissions"] if isinstance(data.get("permissions"), dict) else {}
         effective_permissions = permissions_root.get("effective") if isinstance(permissions_root.get("effective"), dict) else {}
         effective_rights = effective_permissions.get("rights") if isinstance(effective_permissions.get("rights"), dict) else {}
-        effective_rights.update(
-            {
-                "read": env[model].check_access_rights("read", raise_exception=False),
-                "write": env[model].check_access_rights("write", raise_exception=False),
-                "create": env[model].check_access_rights("create", raise_exception=False),
-                "unlink": env[model].check_access_rights("unlink", raise_exception=False),
-            }
-        )
+        runtime_rights = {
+            "read": env[model].check_access_rights("read", raise_exception=False),
+            "write": env[model].check_access_rights("write", raise_exception=False),
+            "create": env[model].check_access_rights("create", raise_exception=False),
+            "unlink": env[model].check_access_rights("unlink", raise_exception=False),
+        }
+        effective_rights.update(runtime_rights)
         effective_permissions["rights"] = effective_rights
         permissions_root["effective"] = effective_permissions
         permissions_root["record"] = {
@@ -492,7 +537,10 @@ class PageAssembler:
         # 6) 动作按钮 + 工具栏（元数据可 su_env，最终显隐由前端结合 groups/permissions 再次裁剪）
         try:
             acfg = su['app.action.config']._generate_from_ir_actions(model)
-            buttons_data = acfg.with_env(env).get_action_contract()
+            buttons_data = acfg.with_env(env).get_action_contract(
+                filter_runtime=True,
+                check_model_acl=True,
+            )
             versions["actions"] = acfg.version if getattr(acfg, 'version', None) else 1
         except KeyError:
             mark_missing("app.action.config")
@@ -519,7 +567,11 @@ class PageAssembler:
             versions["reports"] = 0
 
         try:
-            wcfg = su['app.workflow.config']._generate_from_workflow(model)
+            wcfg = su['app.workflow.config']._generate_from_workflow(
+                model,
+                fields_get_snapshot=model_fields_snapshot,
+                form_view_data=view_projection_sources.get('form'),
+            )
             data["workflow"] = wcfg.get_workflow_contract(filter_runtime=True)
             versions["workflow"] = wcfg.version
         except KeyError:
@@ -529,7 +581,10 @@ class PageAssembler:
             versions["workflow"] = 0
 
         try:
-            vcfg2 = su['app.validator.config']._generate_from_validators(model)
+            vcfg2 = su['app.validator.config']._generate_from_validators(
+                model,
+                fields_get_snapshot=model_fields_snapshot,
+            )
             data["validator"] = vcfg2.get_validator_contract()
             versions["validator"] = vcfg2.version
         except KeyError:
@@ -540,7 +595,7 @@ class PageAssembler:
 
         # 8) head（标题/ACL 概览/上下文）
         #    - ACL 概览继续用 check_access_rights（仅四权），与 permissions.effective.rights 一致
-        can_create = env[model].check_access_rights('create', raise_exception=False)
+        can_create = runtime_rights.get('create', False)
         data["head"] = {
             "title": self._resolve_page_title(model, action),
             "model": model,
@@ -559,10 +614,10 @@ class PageAssembler:
             "context": effective_context,
             "context_raw": action_context_raw,
             "permissions": {
-                "read": env[model].check_access_rights('read', raise_exception=False),
-                "write": env[model].check_access_rights('write', raise_exception=False),
+                "read": runtime_rights.get('read', False),
+                "write": runtime_rights.get('write', False),
                 "create": can_create,
-                "unlink": env[model].check_access_rights('unlink', raise_exception=False),
+                "unlink": runtime_rights.get('unlink', False),
             }
         }
         if requested_record_id and requested_record_id > 0:
@@ -1242,53 +1297,41 @@ class PageAssembler:
             },
         }
 
-    def _native_action_needs_existing_record(self, action: dict) -> bool:
+    @staticmethod
+    def _action_visible_in_render_profile(action: dict, profile: str) -> bool:
+        """Consume parser/config scope; never infer scope from action kind or name."""
         if not isinstance(action, dict):
             return False
-        payload = action.get("payload") if isinstance(action.get("payload"), dict) else {}
-        kind = str(action.get("kind") or "").strip().lower()
-        level = str(action.get("level") or "").strip().lower()
-        intent = str(action.get("intent") or "").strip().lower()
-        button_type = str(action.get("buttonType") or action.get("button_type") or payload.get("type") or "").strip().lower()
-        method = str(action.get("method") or action.get("name") or payload.get("method") or "").strip()
-        has_open_target = bool(
-            action.get("action_id")
-            or action.get("actionId")
-            or payload.get("action_id")
-            or payload.get("ref")
-            or payload.get("url")
-            or action.get("url")
-        )
-        if kind in {"open", "url", "client"} or button_type in {"action", "url"} or intent in {"open", "url"}:
-            return False
-        if intent.startswith("ui."):
-            return False
-        if has_open_target and kind not in {"object", "server", "mutation"} and button_type not in {"object"}:
-            return False
-        if kind in {"object", "server", "mutation"} or button_type == "object":
-            return True
-        if level in {"row", "smart"}:
-            return True
-        if method:
-            return True
-        return not kind and not button_type
+        normalized = str(profile or "").strip().lower()
+        if normalized in {"read", "view"}:
+            normalized = "readonly"
+        raw_profiles = action.get("visible_profiles")
+        if not isinstance(raw_profiles, list) or not raw_profiles:
+            # Existing records may carry old projections.  Create is the only
+            # profile where displaying an unscoped record action can execute
+            # against a non-existent record, so it fails closed.
+            return normalized != "create"
+        profiles = {
+            str(value or "").strip().lower()
+            for value in raw_profiles
+            if str(value or "").strip()
+        }
+        return normalized in profiles
 
     def _filter_render_profile_actions(self, rows, *, profile: str, record_id=None):
         if not isinstance(rows, list):
             return []
-        if profile != "create" or record_id:
+        if not profile:
             return rows
-        out = []
-        for row in rows:
-            if isinstance(row, dict) and self._native_action_needs_existing_record(row):
-                continue
-            out.append(row)
-        return out
+        return [
+            row for row in rows
+            if isinstance(row, dict) and self._action_visible_in_render_profile(row, profile)
+        ]
 
     def _filter_render_profile_layout_nodes(self, nodes, *, profile: str, record_id=None):
         if not isinstance(nodes, list):
             return []
-        if profile != "create" or record_id:
+        if not profile:
             return nodes
         child_keys = ("children", "pages", "tabs", "nodes", "items")
         out = []
@@ -1303,7 +1346,7 @@ class PageAssembler:
                 button_payload["buttonType"] = node.get("buttonType")
             if node.get("name") and "name" not in button_payload:
                 button_payload["name"] = node.get("name")
-            if node_type == "button" and self._native_action_needs_existing_record(button_payload):
+            if node_type == "button" and not self._action_visible_in_render_profile(button_payload, profile):
                 continue
             copied = dict(node)
             for key in child_keys:
@@ -1323,32 +1366,18 @@ class PageAssembler:
         profile = str(render_profile or data.get("render_profile") or "").strip().lower()
         if profile in {"read", "view"}:
             profile = "readonly"
-        if profile != "create" or record_id:
+        if profile not in {"create", "edit", "readonly"}:
             return
-        model_name = str(
-            data.get("model")
-            or ((data.get("head") or {}).get("model") if isinstance(data.get("head"), dict) else "")
-            or ""
-        ).strip()
-        try:
-            preserve_transient_actions = bool(model_name and getattr(self.env[model_name], "_transient", False))
-        except Exception:
-            preserve_transient_actions = False
-        if not preserve_transient_actions:
-            data["buttons"] = self._filter_render_profile_actions(data.get("buttons"), profile=profile, record_id=record_id)
+        data["buttons"] = self._filter_render_profile_actions(data.get("buttons"), profile=profile, record_id=record_id)
         toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
         for key in ("header", "sidebar", "footer"):
-            if not preserve_transient_actions:
-                toolbar[key] = self._filter_render_profile_actions(toolbar.get(key), profile=profile, record_id=record_id)
+            toolbar[key] = self._filter_render_profile_actions(toolbar.get(key), profile=profile, record_id=record_id)
         data["toolbar"] = toolbar if isinstance(toolbar, dict) else {"header": [], "sidebar": [], "footer": []}
         views = data.get("views") if isinstance(data.get("views"), dict) else {}
         form = views.get("form") if isinstance(views.get("form"), dict) else {}
         for key in ("header_buttons", "button_box", "stat_buttons", "business_actions"):
-            if key == "header_buttons" and preserve_transient_actions:
-                continue
             form[key] = self._filter_render_profile_actions(form.get(key), profile=profile, record_id=record_id)
-        if not preserve_transient_actions:
-            form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
+        form["layout"] = self._filter_render_profile_layout_nodes(form.get("layout"), profile=profile, record_id=record_id)
         views["form"] = form
         data["views"] = views
 
@@ -1610,14 +1639,17 @@ class PageAssembler:
         labels = field_labels if isinstance(field_labels, dict) else {}
         label = str(labels.get(name) or (descriptor or {}).get("string") or (descriptor or {}).get("label") or name).strip()
         node = {"type": "field", "name": name}
-        field_info = {"name": name}
+        from odoo.addons.smart_core.utils.native_field_descriptor import project_native_field_descriptor
+        field_info = project_native_field_descriptor(
+            name,
+            descriptor,
+            label=label,
+            widget=str(descriptor.get("widget") or ""),
+        )
         if label:
             node["string"] = label
             node["label"] = label
             field_info["label"] = label
-        for key in ("type", "relation", "relation_field", "selection", "required", "readonly"):
-            if key in descriptor:
-                field_info[key] = descriptor[key]
         subview = self._form_policy_one2many_subview(name, descriptor, field_policy)
         if subview:
             field_info["subview"] = subview
@@ -1639,6 +1671,38 @@ class PageAssembler:
             if isinstance(node, dict):
                 if str(node.get("name") or "").strip() in user_layout_names:
                     return True
+                return any(visit(value) for value in node.values())
+            if isinstance(node, list):
+                return any(visit(item) for item in node)
+            return False
+
+        return visit(layout)
+
+    @staticmethod
+    def _has_authoritative_native_form_layout(data: dict) -> bool:
+        """Return whether the form already carries parsed native occurrences.
+
+        Business-category policy is semantic metadata.  It may describe fields
+        and groups, but it must not replace an Odoo-native layout or manufacture
+        field nodes without native occurrence identity.
+        """
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        form = views.get("form") if isinstance(views.get("form"), dict) else {}
+        layout = form.get("layout")
+
+        def visit(node):
+            if isinstance(node, dict):
+                if str(node.get("type") or "").strip().lower() == "field":
+                    locator = str(
+                        node.get("native_locator")
+                        or node.get("nativeLocator")
+                        or ""
+                    ).strip()
+                    occurrence = node.get("occurrence_index")
+                    if occurrence is None:
+                        occurrence = node.get("occurrenceIndex")
+                    if locator and isinstance(occurrence, int) and not isinstance(occurrence, bool) and occurrence > 0:
+                        return True
                 return any(visit(value) for value in node.values())
             if isinstance(node, list):
                 return any(visit(item) for item in node)
@@ -1805,7 +1869,10 @@ class PageAssembler:
         if layout_children:
             views = data.get("views") if isinstance(data.get("views"), dict) else {}
             form = views.get("form") if isinstance(views.get("form"), dict) else {}
-            if not self._has_explicit_user_form_layout(data):
+            if not (
+                self._has_explicit_user_form_layout(data)
+                or self._has_authoritative_native_form_layout(data)
+            ):
                 form["layout"] = [{
                     "type": "sheet",
                     "name": "business_category_form_sheet",
@@ -2905,18 +2972,21 @@ class PageAssembler:
             parts.append(value)
         versions["view"] = ",".join(parts) if parts else value
 
-    def _inject_search_view_orchestration(self, data, *, env, model, view_context, versions=None):
+    def _inject_search_view_orchestration(self, data, *, env, model, view_context, versions=None, search_contract=None):
         if not model or "app.view.config" not in env:
             return
         context = dict(view_context or {})
         context["contract_projection_readonly"] = True
+        context["contract_view_id"] = False
+        context["requested_view_id"] = False
         try:
-            view_config = env["app.view.config"].with_context(**context)._generate_from_fields_view_get(model, "search")
-            runtime_view_config = view_config.with_user(env.user).sudo().with_context(**context)
-            search_contract = runtime_view_config.get_contract_api(filter_runtime=True, check_model_acl=True)
+            if not isinstance(search_contract, dict):
+                view_config = env["app.view.config"].with_context(**context)._generate_from_fields_view_get(model, "search")
+                runtime_view_config = view_config.with_user(env.user).sudo().with_context(**context)
+                search_contract = runtime_view_config.get_contract_api(filter_runtime=True, check_model_acl=True)
         except Exception:
             _logger.exception("Failed to apply search view orchestration for model=%s", model)
-            return
+            raise
         if not isinstance(search_contract, dict):
             return
         self._append_view_version_token(versions, search_contract.get("effective_version"))
@@ -2926,10 +2996,15 @@ class PageAssembler:
             return
         base_search = data.get("search") if isinstance(data.get("search"), dict) else {}
         merged = dict(base_search)
-        for key in ("filters", "group_by", "facets"):
-            value = orchestrated_search.get(key)
-            if value:
-                merged[key] = value
+        native_projection = {
+            "filters": orchestrated_search.get("filters"),
+            "group_by": orchestrated_search.get("group_by_fields") or orchestrated_search.get("group_by"),
+            "fields": orchestrated_search.get("search_fields"),
+            "search_panel": orchestrated_search.get("search_panel"),
+            "facets": orchestrated_search.get("facets"),
+        }
+        for key, value in native_projection.items():
+            merged[key] = value
         data["search"] = merged
 
     def _apply_action_search_defaults(self, data, action_context):
@@ -2978,7 +3053,13 @@ class PageAssembler:
                 continue
             row["default"] = row is matched_row
 
-    def _inject_relation_entry_contract(self, data, model_name=""):
+    def _inject_relation_entry_contract(
+        self,
+        data,
+        model_name="",
+        stage_timings=None,
+        relation_cache_key="",
+    ):
         fields = data.get("fields") if isinstance(data, dict) else None
         if not isinstance(fields, dict) or not fields:
             return
@@ -2987,6 +3068,7 @@ class PageAssembler:
         record_defaults = data.get("record") if isinstance(data.get("record"), dict) else {}
         if record_defaults:
             contract_context = {**record_defaults, **contract_context}
+        started_at = time.monotonic()
         relation_models = set()
         for desc in fields.values():
             if not isinstance(desc, dict):
@@ -2997,19 +3079,155 @@ class PageAssembler:
                 relation_models.add(relation)
         if not relation_models:
             return
+        layout_relation_overrides, layout_relation_override_errors = self._relation_entry_overrides_from_views(
+            data.get("views")
+        )
+        relation_models_ready_at = time.monotonic()
         relation_entry_map = self._build_relation_entry_map(relation_models)
+        relation_map_ready_at = time.monotonic()
+        relation_projection_cache = {}
+        projected_relation_entries = {}
+        relation_cache_key = str(relation_cache_key or "").strip()
+        if relation_cache_key:
+            for relation in relation_models:
+                shared_key = (relation_cache_key, relation, model_name)
+                cached_dialog = _RELATION_SEARCH_DIALOG_HOT_CACHE.get(shared_key)
+                if isinstance(cached_dialog, dict):
+                    relation_projection_cache[("search_dialog", relation, model_name)] = deepcopy(cached_dialog)
         for field_name, desc in fields.items():
             if not isinstance(desc, dict):
                 continue
             relation = str(desc.get("relation") or "").strip()
             if relation and relation in relation_entry_map:
-                desc["relation_entry"] = self._build_relation_entry_for_field(
+                effective_desc = desc
+                layout_override = layout_relation_overrides.get(str(field_name or "").strip())
+                if isinstance(layout_override, dict):
+                    effective_desc = dict(desc)
+                    options = effective_desc.get("widget_options")
+                    options = dict(options) if isinstance(options, dict) else {}
+                    options["relation_entry"] = dict(layout_override)
+                    effective_desc["widget_options"] = options
+                relation_entry = self._build_relation_entry_for_field(
                     field_name,
-                    desc,
+                    effective_desc,
                     relation_entry_map[relation],
                     model_name=model_name,
                     contract_context=contract_context,
+                    relation_projection_cache=relation_projection_cache,
+                    relation_cache_key=relation_cache_key,
                 )
+                override_error = layout_relation_override_errors.get(
+                    str(field_name or "").strip()
+                )
+                if override_error:
+                    relation_entry.update({
+                        "action_id": None,
+                        "menu_id": None,
+                        "create_mode": "disabled",
+                        "can_open": False,
+                        "reason_code": override_error,
+                    })
+                desc["relation_entry"] = relation_entry
+                projected_relation_entries[str(field_name or "").strip()] = deepcopy(relation_entry)
+        self._project_relation_entries_into_views(
+            data.get("views"),
+            projected_relation_entries,
+        )
+        if relation_cache_key:
+            for relation in relation_models:
+                local_key = ("search_dialog", relation, model_name)
+                dialog = relation_projection_cache.get(local_key)
+                if not isinstance(dialog, dict):
+                    continue
+                shared_key = (relation_cache_key, relation, model_name)
+                if len(_RELATION_SEARCH_DIALOG_HOT_CACHE) >= _RELATION_SEARCH_DIALOG_HOT_CACHE_MAX:
+                    _RELATION_SEARCH_DIALOG_HOT_CACHE.pop(next(iter(_RELATION_SEARCH_DIALOG_HOT_CACHE)))
+                _RELATION_SEARCH_DIALOG_HOT_CACHE[shared_key] = deepcopy(dialog)
+        if stage_timings is not None:
+            stage_timings.update({
+                "relation_models_collect": int((relation_models_ready_at - started_at) * 1000),
+                "relation_base_map": int((relation_map_ready_at - relation_models_ready_at) * 1000),
+                "relation_field_projection": int((time.monotonic() - relation_map_ready_at) * 1000),
+            })
+
+    def _project_relation_entries_into_views(self, views, entries):
+        """Keep every native field occurrence aligned with field-level authority."""
+        if not isinstance(entries, dict) or not entries:
+            return
+
+        def visit(value):
+            if isinstance(value, dict):
+                if str(value.get("type") or "").strip().lower() == "field":
+                    field_name = str(value.get("name") or "").strip()
+                    entry = entries.get(field_name)
+                    if isinstance(entry, dict):
+                        value["relation_entry"] = deepcopy(entry)
+                        field_info = value.get("fieldInfo")
+                        if isinstance(field_info, dict):
+                            field_info["relation_entry"] = deepcopy(entry)
+                for nested in value.values():
+                    visit(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    visit(nested)
+
+        visit(views)
+
+    def _relation_entry_overrides_from_views(self, views):
+        """Project consistent native field relation-entry options into fields."""
+        if isinstance(views, dict) and isinstance(views.get("form"), dict):
+            views = views.get("form")
+        candidates = {}
+
+        def visit(value):
+            if isinstance(value, dict):
+                if str(value.get("type") or "").strip().lower() == "field":
+                    field_name = str(value.get("name") or "").strip()
+                    field_info = value.get("fieldInfo")
+                    field_info = field_info if isinstance(field_info, dict) else {}
+                    options = field_info.get("widget_options")
+                    options = options if isinstance(options, dict) else {}
+                    if field_name:
+                        has_override = "relation_entry" in options
+                        override = options.get("relation_entry")
+                        candidates.setdefault(field_name, []).append(
+                            dict(override) if isinstance(override, dict)
+                            else "__invalid__" if has_override
+                            else None
+                        )
+                for nested in value.values():
+                    visit(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    visit(nested)
+
+        visit(views)
+        resolved = {}
+        errors = {}
+        for field_name, rows in candidates.items():
+            if not any(row is not None for row in rows):
+                continue
+            if any(row == "__invalid__" for row in rows):
+                errors[field_name] = "RELATION_ENTRY_OVERRIDE_INVALID"
+                continue
+            if any(row is None for row in rows):
+                errors[field_name] = "RELATION_ENTRY_OVERRIDE_OCCURRENCE_CONFLICT"
+                continue
+            normalized = {
+                json.dumps(row, sort_keys=True, separators=(",", ":"), default=str)
+                for row in rows
+            }
+            if len(normalized) != 1:
+                errors[field_name] = "RELATION_ENTRY_OVERRIDE_OCCURRENCE_CONFLICT"
+                continue
+            override = rows[0]
+            has_action = bool(override.get("action_id") or override.get("action_xmlid"))
+            has_menu = bool(override.get("menu_id") or override.get("menu_xmlid"))
+            if has_action != has_menu:
+                errors[field_name] = "RELATION_ENTRY_OVERRIDE_AUTHORITY_PAIR_INCOMPLETE"
+                continue
+            resolved[field_name] = override
+        return resolved, errors
 
     def _extract_dictionary_type_from_domain(self, domain_raw):
         if not domain_raw:
@@ -3086,7 +3304,16 @@ class PageAssembler:
         except Exception:
             return None
 
-    def _build_relation_entry_for_field(self, field_name, descriptor, base_entry, model_name="", contract_context=None):
+    def _build_relation_entry_for_field(
+        self,
+        field_name,
+        descriptor,
+        base_entry,
+        model_name="",
+        contract_context=None,
+        relation_projection_cache=None,
+        relation_cache_key="",
+    ):
         entry = dict(base_entry or {})
         relation = str(descriptor.get("relation") or "").strip()
         can_read = bool(entry.get("can_read", True))
@@ -3115,6 +3342,8 @@ class PageAssembler:
             can_create = False
             has_page = False
         options_override = self._relation_entry_override_from_options(descriptor)
+        override_authority_error = ""
+        override_create_mode = ""
         if relation == "sc.business.category" and str(field_name or "").strip() == "business_category_id":
             display_field = "name"
             relation_order = "sequence asc, id asc"
@@ -3186,15 +3415,32 @@ class PageAssembler:
             if isinstance(relation_policy.get("ui_labels"), dict):
                 ui_labels_extra.update(relation_policy.get("ui_labels") or {})
         if options_override:
+            override_create_mode = str(options_override.get("create_mode") or "").strip().lower()
+            if override_create_mode and override_create_mode not in ("page", "dialog"):
+                override_authority_error = "RELATION_ENTRY_OVERRIDE_CREATE_MODE_INVALID"
             action_id = options_override.get("action_id") or self._resolve_relation_entry_ref_id(options_override.get("action_xmlid"))
             menu_id = options_override.get("menu_id") or self._resolve_relation_entry_ref_id(options_override.get("menu_xmlid"))
-            if action_id:
+            has_action_authority = bool(options_override.get("action_id") or options_override.get("action_xmlid"))
+            has_menu_authority = bool(options_override.get("menu_id") or options_override.get("menu_xmlid"))
+            if not override_authority_error and override_create_mode in ("page", "dialog") and not (has_action_authority and has_menu_authority):
+                override_authority_error = "RELATION_ENTRY_OVERRIDE_CREATE_MODE_AUTHORITY_REQUIRED"
+            elif not override_authority_error and has_action_authority != has_menu_authority:
+                override_authority_error = "RELATION_ENTRY_OVERRIDE_AUTHORITY_PAIR_INCOMPLETE"
+            elif not override_authority_error and has_action_authority and (not action_id or not menu_id):
+                override_authority_error = "RELATION_ENTRY_OVERRIDE_AUTHORITY_INVALID"
+            elif not override_authority_error and action_id and menu_id:
+                override_authority_error = self._relation_entry_authority_pair_error(
+                    action_id,
+                    menu_id,
+                    relation,
+                )
+            if action_id and not override_authority_error:
                 entry["action_id"] = int(action_id)
                 has_page = True
-            if menu_id:
+            if menu_id and not override_authority_error:
                 entry["menu_id"] = int(menu_id)
             if "can_create" in options_override:
-                can_create = bool(options_override.get("can_create"))
+                can_create = can_create and bool(options_override.get("can_create"))
             if isinstance(options_override.get("default_vals"), dict):
                 default_vals.update(options_override.get("default_vals") or {})
             if isinstance(options_override.get("default_from_fields"), dict):
@@ -3207,22 +3453,59 @@ class PageAssembler:
                 relation_order = str(options_override.get("order") or "").strip()
             if isinstance(options_override.get("ui_labels"), dict):
                 ui_labels_extra.update(options_override.get("ui_labels") or {})
-        inline_create = self._build_relation_inline_create_contract(
+        projection_cache = relation_projection_cache if isinstance(relation_projection_cache, dict) else {}
+        inline_cache_key = (
+            "inline_create",
             relation,
-            can_read=can_read,
-            can_create=can_create,
-            default_vals=default_vals,
+            can_read,
+            can_create,
+            json.dumps(default_vals, sort_keys=True, separators=(",", ":"), default=str),
         )
+        inline_create = projection_cache.get(inline_cache_key)
+        shared_inline_key = ("inline_create", str(relation_cache_key or "").strip(), *inline_cache_key[1:])
+        if not isinstance(inline_create, dict) and relation_cache_key:
+            shared_inline = _RELATION_SEARCH_DIALOG_HOT_CACHE.get(shared_inline_key)
+            if isinstance(shared_inline, dict):
+                inline_create = deepcopy(shared_inline)
+        if not isinstance(inline_create, dict):
+            inline_create = self._build_relation_inline_create_contract(
+                relation,
+                can_read=can_read,
+                can_create=can_create,
+                default_vals=default_vals,
+            )
+            projection_cache[inline_cache_key] = deepcopy(inline_create)
+            if relation_cache_key:
+                if len(_RELATION_SEARCH_DIALOG_HOT_CACHE) >= _RELATION_SEARCH_DIALOG_HOT_CACHE_MAX:
+                    _RELATION_SEARCH_DIALOG_HOT_CACHE.pop(next(iter(_RELATION_SEARCH_DIALOG_HOT_CACHE)))
+                _RELATION_SEARCH_DIALOG_HOT_CACHE[shared_inline_key] = deepcopy(inline_create)
+        else:
+            inline_create = deepcopy(inline_create)
 
-        if not can_read:
+        search_dialog_cache_key = ("search_dialog", relation, model_name)
+        search_dialog = projection_cache.get(search_dialog_cache_key)
+        if not isinstance(search_dialog, dict):
+            search_dialog = self._build_relation_search_dialog_contract(relation, model_name=model_name)
+            projection_cache[search_dialog_cache_key] = deepcopy(search_dialog)
+        else:
+            search_dialog = deepcopy(search_dialog)
+
+        if override_authority_error:
+            entry["action_id"] = None
+            entry["menu_id"] = None
+            has_page = False
+            can_open = False
+            create_mode = "disabled"
+            reason_code = override_authority_error
+        elif not can_read:
             create_mode = "disabled"
             reason_code = "RELATION_READ_FORBIDDEN"
         elif has_page:
-            create_mode = "page"
+            create_mode = "dialog" if override_create_mode == "dialog" else "page"
             if can_create:
-                reason_code = reason_code or "PAGE_ENTRY_READY"
+                reason_code = reason_code or ("DIALOG_ENTRY_READY" if create_mode == "dialog" else "PAGE_ENTRY_READY")
             else:
-                reason_code = reason_code or "PAGE_ENTRY_READONLY"
+                reason_code = reason_code or ("DIALOG_ENTRY_READONLY" if create_mode == "dialog" else "PAGE_ENTRY_READONLY")
         elif can_create and (relation == "sc.dictionary" or is_contract_tax_field):
             if dict_type or is_contract_tax_field:
                 create_mode = "quick"
@@ -3249,7 +3532,7 @@ class PageAssembler:
                 "can_create": can_create,
                 "reason_code": reason_code,
                 "inline_create": inline_create,
-                "search_dialog": self._build_relation_search_dialog_contract(relation, model_name=model_name),
+                "search_dialog": search_dialog,
                 "ui_labels": {
                     "search_more": _("搜索更多..."),
                     "quick_create": _("快速新建..."),
@@ -3279,6 +3562,44 @@ class PageAssembler:
             }
         )
         return entry
+
+    def _relation_entry_authority_pair_error(self, action_id, menu_id, relation):
+        try:
+            action = self.env["ir.actions.act_window"].browse(int(action_id)).exists()
+            menu = self.env["ir.ui.menu"].browse(int(menu_id)).exists()
+        except Exception:
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_INVALID"
+        if not action or not menu:
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_INVALID"
+        if str(action.res_model or "").strip() != str(relation or "").strip():
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_TARGET_MISMATCH"
+        if not menu.action or menu.action.id != action.id:
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_PAIR_MISMATCH"
+        try:
+            visible_menu_ids = set(self.env["ir.ui.menu"]._visible_menu_ids())
+        except Exception:
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
+        if not self._relation_menu_chain_is_visible(menu, visible_menu_ids):
+            return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
+        user = self.env.user
+        if not user._is_admin():
+            if action.groups_id and not (action.groups_id & user.groups_id):
+                return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
+            if menu.groups_id and not (menu.groups_id & user.groups_id):
+                return "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
+        return ""
+
+    @staticmethod
+    def _relation_menu_chain_is_visible(menu, visible_menu_ids):
+        current = menu
+        visited = set()
+        while current:
+            current_id = int(getattr(current, "id", 0) or 0)
+            if not current_id or current_id in visited or current_id not in visible_menu_ids:
+                return False
+            visited.add(current_id)
+            current = getattr(current, "parent_id", None)
+        return True
 
     def _build_relation_search_dialog_contract(self, relation, model_name=""):
         relation = str(relation or "").strip()
@@ -3459,34 +3780,27 @@ class PageAssembler:
                 }
 
         entry_map = {}
-        Act = self.su_env["ir.actions.act_window"]
-        actions = Act.search([("res_model", "in", relation_models)], order="id desc")
+        try:
+            visible_menu_ids = set(self.env["ir.ui.menu"]._visible_menu_ids())
+        except Exception:
+            visible_menu_ids = set()
         action_by_model = {}
-        for act in actions:
-            if not _allowed_by_groups(act):
+        menu_by_action = {}
+        menus = self.env["ir.ui.menu"].browse(sorted(visible_menu_ids)).exists()
+        menus = menus.sorted(key=lambda row: (row.sequence, row.id))
+        for menu in menus:
+            if not self._relation_menu_chain_is_visible(menu, visible_menu_ids):
+                continue
+            act = menu.action
+            if not act or act._name != "ir.actions.act_window":
+                continue
+            if not _allowed_by_groups(menu) or not _allowed_by_groups(act):
                 continue
             model_name = str(act.res_model or "").strip()
-            if not model_name or model_name in action_by_model:
+            if model_name not in relation_models or model_name in action_by_model:
                 continue
             action_by_model[model_name] = act
-
-        action_ids = [act.id for act in action_by_model.values()]
-        menu_by_action = {}
-        if action_ids:
-            action_refs = [f"ir.actions.act_window,{aid}" for aid in action_ids]
-            menus = self.su_env["ir.ui.menu"].search([("action", "in", action_refs)], order="sequence,id")
-            for menu in menus:
-                if not _allowed_by_groups(menu):
-                    continue
-                action_ref = str(menu.action or "").strip()
-                if not action_ref.startswith("ir.actions.act_window,"):
-                    continue
-                try:
-                    aid = int(action_ref.split(",")[1])
-                except Exception:
-                    continue
-                if aid not in menu_by_action:
-                    menu_by_action[aid] = menu.id
+            menu_by_action[act.id] = menu.id
 
         for relation in relation_models:
             act = action_by_model.get(relation)
@@ -3518,6 +3832,76 @@ class PageAssembler:
         return entry_map
 
     # ---------------- 首屏数据 ----------------
+
+    def apply_runtime_record_overlay(
+        self,
+        data,
+        *,
+        model_name,
+        record_id,
+        render_profile="",
+    ):
+        """Apply record-bound facts to a reusable page-contract base.
+
+        The input may originate from a persisted static projection. This method
+        is therefore the only bridge allowed to add record identity, record-rule
+        rights and record-dependent action/access verdicts before terminal V2
+        projection.
+        """
+        if not isinstance(data, dict) or not model_name:
+            return data
+        try:
+            record_id = int(record_id or 0)
+        except Exception:
+            record_id = 0
+        if record_id <= 0:
+            return data
+        profile = str(render_profile or "").strip().lower()
+        if profile in {"read", "view"}:
+            profile = "readonly"
+        if profile not in {"create", "edit", "readonly"}:
+            profile = "edit"
+
+        data["record_id"] = record_id
+        data["res_id"] = record_id
+        data["render_profile"] = profile
+        head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        head = dict(head)
+        head["record_id"] = record_id
+        head["res_id"] = record_id
+        head["render_profile"] = profile
+        data["head"] = head
+
+        permissions = data.get("permissions") if isinstance(data.get("permissions"), dict) else {}
+        permissions = dict(permissions)
+        permissions["record"] = {
+            "rights": self._record_rule_rights(self.env, model_name, record_id),
+            "record_id": record_id,
+        }
+        data["permissions"] = permissions
+
+        self._inject_record_version_contract(
+            data,
+            model_name=model_name,
+            record_id=record_id,
+            render_profile=profile,
+        )
+        self._inject_form_business_actions(
+            data,
+            model_name=model_name,
+            record_id=record_id,
+            render_profile=profile,
+        )
+        self._apply_render_profile_action_visibility(
+            data,
+            render_profile=profile,
+            record_id=record_id,
+        )
+        self._sync_visible_form_required_markers(data)
+        self._apply_access_policy(data, model_name=model_name)
+        if isinstance(data.get("head"), dict) and isinstance(data.get("access_policy"), dict):
+            data["head"]["access_policy"] = dict(data.get("access_policy") or {})
+        return data
 
     def _fetch_initial_data(self, env, model, view_types, p, assembled):
         """

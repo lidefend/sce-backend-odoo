@@ -103,15 +103,17 @@ class ActionDispatcher:
         if atype == 'ir.actions.client':
             return ClientUrlReportAssembler(self.env).assemble_client_contract(p, info)
 
-        # server：先执行物化；若失败 → 诊断契约
+        # server：契约读取绝不执行代码。只有显式、可审查的 window
+        # mapping 可以进入页面装配；其余动作 fail closed。
         if atype == 'ir.actions.server':
             mapped = self.resolver.map_server_to_window(info.get('id'), info.get('xml_id'))
             if mapped:
                 return self._dispatch_resolved(mapped, p)
-            materialized = self.resolver.materialize_server_action(info, p)
-            if not materialized:
-                return ClientUrlReportAssembler(self.env).assemble_diagnostic_contract(p, info, issue="服务端动作执行失败或未返回可显示的结果")
-            return self._dispatch_resolved(materialized, p)
+            return ClientUrlReportAssembler(self.env).assemble_diagnostic_contract(
+                p,
+                info,
+                issue="服务端动作没有受管页面映射，契约读取不会执行该动作",
+            )
 
         # url/report：分别走专用装配
         if atype == 'ir.actions.act_url':

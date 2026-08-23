@@ -106,7 +106,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "supplier_rank": 1,
                 "sc_account_name": "P1 Payment Counterparty",
                 "sc_bank_name": "P1 Construction Bank",
-                "sc_bank_account": "6222000000000001",
+                "sc_bank_account": "P1-SYNTH-ACCOUNT-PRIMARY",
             }
         )
         self.contract = self.env["construction.contract"].create(
@@ -193,6 +193,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(action["presentation"]["tier"], "primary")
         self.assertEqual(action["method"], "action_create_payment_execution")
         self.assertEqual(action["visible_profiles"], ["edit", "readonly"])
+        self.assertTrue(action["visible"])
 
     def test_execution_continuation_requires_exact_manager_capability(self):
         request = self._set_request_state(self._request())
@@ -301,6 +302,55 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(request.legal_next_action_display, "查看付款登记")
         self.assertEqual(request.payment_execution_status_display, "办理中：草稿")
         self.assertEqual(execution.state, "draft")
+
+    def test_payment_execution_readonly_normalized_contract_is_loadable(self):
+        _request, execution = self._approved_execution()
+        self.env.cr.execute(
+            "UPDATE sc_payment_execution SET state = 'paid' WHERE id = %s",
+            (execution.id,),
+        )
+        execution.invalidate_recordset(["state"])
+        action = self.env.ref(
+            "smart_construction_core.action_sc_payment_execution_actual_outflow"
+        )
+        menu = self.env.ref("smart_construction_core.menu_sc_payment_execution")
+        finance = self._internal_user(
+            "p1_execution_contract_finance_manager",
+            "smart_construction_core.group_sc_role_finance_manager",
+        )
+
+        result = UiContractV2Handler(
+            self.env(user=finance),
+            su_env=self.env["ir.model"].sudo().env,
+        ).handle(
+            {
+                "model": "sc.payment.execution",
+                "view_type": "form",
+                "record_id": execution.id,
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "render_profile": "readonly",
+                "contract_surface": "user",
+                "source_mode": "governance_pipeline",
+                "context": {"company_id": self.env.company.id},
+                "delivery_profile": "full",
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.0.x"],
+                "client_contract_capabilities": [
+                    "container_tree.v2",
+                    "data_source.v2",
+                    "action_rule.v2",
+                    "relation_entry.v2",
+                    "status_contract.v2",
+                ],
+            }
+        )
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        self.assertEqual(contract["pageInfo"]["model"], "sc.payment.execution")
+        self.assertEqual(contract["pageInfo"]["viewType"], "form")
 
     def test_finance_manager_can_read_same_company_project_and_contract_anchors(self):
         finance_manager = self._internal_user(
@@ -661,7 +711,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
                     "supplier_rank": 1,
                     "sc_account_name": "P1 concurrent payment partner",
                     "sc_bank_name": "P1 concurrent bank",
-                    "sc_bank_account": "6222000000000099",
+                    "sc_bank_account": "P1-SYNTH-ACCOUNT-CONCURRENT",
                 }
             )
             contract = env["construction.contract"].create(
@@ -776,7 +826,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 "payment_request_id": request.id,
                 "payment_account_name": "P1 Company Operating Account",
                 "payment_bank_name": "P1 Construction Bank",
-                "payment_account_no": "1000000000001",
+                "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
                 "payment_method": "bank_transfer",
             }
         )
@@ -873,7 +923,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "paid_amount": 40,
             "payment_account_name": "P1 Company Operating Account",
             "payment_bank_name": "P1 Construction Bank",
-            "payment_account_no": "1000000000001",
+            "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
             "payment_method": "bank_transfer",
         })
         self.env.cr.execute(
@@ -893,7 +943,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "payment_request_id": request.id,
             "payment_account_name": "P1 Company Operating Account",
             "payment_bank_name": "P1 Construction Bank",
-            "payment_account_no": "1000000000001",
+            "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
             "payment_method": "bank_transfer",
         })
         self.assertEqual(second.paid_amount, 60)
@@ -942,7 +992,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "payment_request_id": request.id,
             "payment_account_name": "P1 Company Operating Account",
             "payment_bank_name": "P1 Construction Bank",
-            "payment_account_no": "1000000000001",
+            "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
             "payment_method": "bank_transfer",
         })
         self.assertEqual(replacement.paid_amount, 40)
@@ -1061,7 +1111,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         base_values = {
             "payment_account_name": "P1 Company Operating Account",
             "payment_bank_name": "P1 Construction Bank",
-            "payment_account_no": "1000000000001",
+            "payment_account_no": "P1-SYNTH-PAYMENT-ACCOUNT",
             "payment_method": "bank_transfer",
         }
         execution.write(base_values)
@@ -1103,6 +1153,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         submit = next(
             row for row in payload["actions"] if row.get("action_key") == "submit"
         )
+        self.assertTrue(submit["visible"])
         self.assertTrue(submit["business_available"])
         self.assertTrue(submit["authorization_allowed"])
         self.assertTrue(submit["enabled"])
@@ -1353,6 +1404,14 @@ class TestP1PaymentRequestCapability(TransactionCase):
         )
 
         form = self.env.ref("smart_construction_core.view_payment_request_form")
+        form_arch = etree.fromstring(form.arch_db.encode("utf-8"))
+        project_nodes = form_arch.xpath(".//field[@name='project_id']")
+        self.assertGreaterEqual(len(project_nodes), 2)
+        for node in project_nodes:
+            options = node.get("options") or ""
+            self.assertNotIn("no_create", options)
+            self.assertIn("smart_construction_core.action_project_initiation", options)
+            self.assertIn("smart_construction_core.menu_sc_project_initiation", options)
         self.assertIn("项目与收款对象", form.arch_db)
         self.assertIn("结算与合同依据", form.arch_db)
         self.assertIn("本次付款事实", form.arch_db)
@@ -1397,6 +1456,11 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(len(audit_sections), 1)
         self.assertEqual(audit_sections[0]["key"], "approval_audit")
         self.assertEqual(audit_sections[0]["title"], "审批与审计")
+        legacy_product_fields = {
+            "legacy_source_model", "legacy_source_table", "legacy_record_id",
+            "legacy_document_no", "legacy_document_state",
+        }
+        self.assertTrue(legacy_product_fields.isdisjoint(str(product_payload)))
         self.assertIn("validation_status", product_payload["sections"][0]["fields"])
         self.assertIn("reject_reason", product_payload["sections"][0]["fields"])
         self.assertEqual(product_payload["actions"][0]["name"], "action_create_payment_execution")
@@ -1410,13 +1474,34 @@ class TestP1PaymentRequestCapability(TransactionCase):
             "smart_construction_core.business_config_contract_payment_execution_from_request_productized_form_v1"
         )
         execution_payload = execution_contract.contract_json["view_orchestration"]["views"]["form"]
+        execution_anchors = {
+            row["role"]: row["fields"]
+            for row in execution_payload["semantic_anchors"]
+        }
+        self.assertEqual(set(execution_anchors), {"summary", "task", "risk", "audit"})
+        self.assertEqual(
+            execution_anchors["summary"],
+            ["payment_request_id", "project_id", "partner_id", "state", "paid_amount", "currency_id"],
+        )
         self.assertEqual(
             [section["title"] for section in execution_payload["sections"]],
-            ["来源申请", "本次实付", "收款账户", "付款账户", "凭证与说明", "责任与追溯"],
+            ["来源申请", "本次实付", "收款账户", "付款账户", "凭证与说明", "责任与状态"],
         )
+        self.assertTrue(legacy_product_fields.isdisjoint(str(execution_payload)))
+        generated_execution_contract = self.env.ref(
+            "smart_construction_core.business_config_contract_sc_payment_execution_form_structure_generated"
+        )
+        self.assertFalse(generated_execution_contract.active)
         fields = {row["name"]: row for row in execution_payload["fields"]}
         for anchor in ("payment_request_id", "project_id", "partner_id", "contract_id"):
             self.assertTrue(fields[anchor]["readonly"])
+
+        receive_contract = self.env.ref(
+            "smart_construction_core.business_config_contract_payment_request_receive_productized_form_v1"
+        )
+        receive_payload = receive_contract.contract_json["view_orchestration"]["views"]["form"]
+        self.assertEqual(receive_payload["sections"][-1]["title"], "创建与审计")
+        self.assertTrue(legacy_product_fields.isdisjoint(str(receive_payload)))
 
         execution_policy = get_business_category_form_policy_templates()[
             "finance.payment.execution.partner"
@@ -1429,6 +1514,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
             for section in execution_policy["sections"]
             for field_name in section["fields"]
         }
+        self.assertTrue(legacy_product_fields.isdisjoint(str(execution_policy)))
         self.assertIn("cancellation_kind", execution_policy_sections)
         self.assertIn("reversal_reason", execution_policy_sections)
         self.assertEqual(
@@ -1548,6 +1634,45 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertTrue(envelope.get("ok", True), envelope)
         contract = envelope["data"]
 
+        project_relation_entries = []
+
+        def collect_project_relation_entries(value):
+            if isinstance(value, dict):
+                field_name = value.get("fieldCode") or value.get("name") or value.get("field")
+                if field_name == "project_id":
+                    for source in (
+                        value,
+                        value.get("fieldDescriptor") or {},
+                        value.get("fieldInfo") or {},
+                        value.get("componentConfig") or {},
+                    ):
+                        entry = source.get("relation_entry") or source.get("relationEntry")
+                        if isinstance(entry, dict):
+                            project_relation_entries.append(entry)
+                for nested in value.values():
+                    collect_project_relation_entries(nested)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_project_relation_entries(nested)
+
+        collect_project_relation_entries(contract)
+        project_action = self.env.ref(
+            "smart_construction_core.action_project_initiation"
+        )
+        project_menu = self.env.ref(
+            "smart_construction_core.menu_sc_project_initiation"
+        )
+        self.assertTrue(project_relation_entries, contract)
+        self.assertTrue(
+            all(
+                entry.get("action_id") == project_action.id
+                and entry.get("menu_id") == project_menu.id
+                and entry.get("create_mode") == "dialog"
+                for entry in project_relation_entries
+            ),
+            project_relation_entries,
+        )
+
         container_tree = contract["layoutContract"]["containerTree"]
 
         def collect_group_titles(value, titles=None):
@@ -1565,45 +1690,48 @@ class TestP1PaymentRequestCapability(TransactionCase):
                     collect_group_titles(nested, titles)
             return titles
 
-        # Contract-spec v0.1 (path B, product decision 2026-08-19): the
-        # backend keeps the native category sheet authoritative and ships the
-        # payment contract sections as sparse semantic annotations. Golden
-        # floorplan task-page composition belongs to the frontend presenter
-        # (ObjectTaskPage + canonical render model); the superseded backend
-        # root-replacement projection stays archived in git (2ec2e2df~1) as
-        # the deferred extension point.
+        def collect_native_locators(value, locators=None):
+            if locators is None:
+                locators = []
+            if isinstance(value, dict):
+                locator = value.get("native_locator")
+                if isinstance(locator, str) and locator:
+                    locators.append(locator)
+                for nested in value.values():
+                    collect_native_locators(nested, locators)
+            elif isinstance(value, list):
+                for nested in value:
+                    collect_native_locators(nested, locators)
+            return locators
+
+        # Contract-spec v0.1 (path B): the current native form remains the
+        # structural authority.  Business-category annotations must not
+        # replace its root with the historical synthetic sheet; product page
+        # composition remains a frontend Floorplan responsibility.
         self.assertEqual(
             [row.get("type") for row in container_tree],
             ["header", "sheet"],
         )
         category_sheet = container_tree[-1]
-        self.assertEqual(
+        self.assertNotEqual(
             category_sheet.get("name") or category_sheet.get("string"),
             "business_category_form_sheet",
         )
+        self.assertTrue(
+            collect_native_locators(category_sheet),
+            "readonly layout must retain native occurrence identity",
+        )
         group_titles = collect_group_titles(container_tree)
         for native_anchor in (
-            "办理类型",
-            "项目与收款单位",
-            "申请依据",
-            "付款申请金额",
-            "申请明细",
+            "申请识别与状态",
+            "项目与收款对象",
+            "结算与合同依据",
+            "本次付款事实",
+            "本次收款账户快照",
+            "付款单位与默认账户",
+            "办理说明与附件",
         ):
             self.assertIn(native_anchor, group_titles)
-        self.assertFalse(
-            {
-                "申请识别与状态",
-                "项目与收款对象",
-                "结算与合同依据",
-                "本次付款事实",
-                "账户与开票信息",
-                "说明与附件",
-                "审批与审计",
-            }
-            & set(group_titles),
-            "contract semantic sections must stay sparse annotations, "
-            "not structural replacement of the native root",
-        )
 
         normalized_fields = set()
         declared_fields = set()
@@ -1830,24 +1958,27 @@ class TestP1PaymentRequestCapability(TransactionCase):
             ["header", "sheet"],
         )
         edit_sheet = edit_container_tree[-1]
-        self.assertEqual(
+        self.assertNotEqual(
             edit_sheet.get("name") or edit_sheet.get("string"),
             "business_category_form_sheet",
         )
+        self.assertTrue(
+            collect_native_locators(edit_sheet),
+            "edit layout must retain native occurrence identity",
+        )
         edit_group_titles = collect_group_titles(edit_container_tree)
-        self.assertFalse(
+        self.assertTrue(
             {
                 "申请识别与状态",
                 "项目与收款对象",
                 "结算与合同依据",
                 "本次付款事实",
-                "账户与开票信息",
-                "说明与附件",
-                "审批与审计",
+                "本次收款账户快照",
+                "付款单位与默认账户",
+                "办理说明与附件",
             }
-            & set(edit_group_titles),
-            "edit contract semantic sections must stay sparse annotations, "
-            "not structural replacement of the native root",
+            <= set(edit_group_titles),
+            "edit contract must preserve current native section anchors",
         )
 
         edit_layout_fields = set()
@@ -1866,8 +1997,11 @@ class TestP1PaymentRequestCapability(TransactionCase):
                     visit_edit_layout(nested)
 
         visit_edit_layout(edit_container_tree)
-        expected_edit_layout_fields = required_fields - {"reject_reason"}
-        self.assertEqual(len(expected_edit_layout_fields), 41)
+        # Native occurrences remain structurally complete; draft visibility
+        # is carried by the normalized modifier/status authority rather than
+        # by deleting the rejected-only field from the layout tree.
+        expected_edit_layout_fields = required_fields
+        self.assertEqual(len(expected_edit_layout_fields), 42)
         self.assertEqual(
             edit_layout_fields & required_fields,
             expected_edit_layout_fields,
@@ -1907,12 +2041,80 @@ class TestP1PaymentRequestCapability(TransactionCase):
             )
             is not True
         ]
-        self.assertEqual(
-            [row.get("backendIdentity") for row in edit_primary_actions],
-            ["button:object:action_submit"],
+        self.assertEqual(len(edit_primary_actions), 1)
+        edit_primary = edit_primary_actions[0]
+        self.assertEqual((edit_primary.get("button") or {}).get("type"), "object")
+        self.assertEqual((edit_primary.get("button") or {}).get("name"), "action_submit")
+        self.assertTrue(
+            str(edit_primary.get("backendIdentity") or "").startswith(
+                "native_button:object:action_submit:"
+            ),
+            edit_primary,
         )
         self.assertTrue(edit_primary_actions[0].get("allowed"))
         self.assertTrue(edit_primary_actions[0].get("enabled"))
+
+    def test_payment_draft_readonly_contract_keeps_submit_as_single_primary_action(self):
+        request = self._request()
+        action = self.env.ref(
+            "smart_construction_core.action_payment_request_user_payment_apply"
+        )
+        menu = self.env.ref("smart_construction_core.menu_sc_user_payment_apply")
+        result = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        ).handle(
+            {
+                "model": "payment.request",
+                "view_type": "form",
+                "record_id": request.id,
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "render_profile": "readonly",
+                "client_type": "web_pc",
+            }
+        )
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        main_data = (contract.get("dataContract") or {}).get("mainData") or {}
+        status_by_identity = {
+            row.get("backendIdentity"): row
+            for row in contract["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity")
+        }
+        effective_primary = []
+        for row in contract["actionContract"]["actionRuleList"]:
+            if (row.get("presentation") or {}).get("tier") != "primary":
+                continue
+            status = status_by_identity.get(row.get("backendIdentity")) or {}
+            if status.get("visible") is not True or status.get("disabled") is True:
+                continue
+            invisible = contract_assembler._action_invisible_constraint(row)
+            if invisible is not None and contract_assembler._evaluate_action_modifier(
+                invisible, main_data
+            ) is True:
+                continue
+            effective_primary.append(row)
+        self.assertEqual(len(effective_primary), 1)
+        self.assertEqual(
+            (effective_primary[0].get("button") or {}).get("name"),
+            "action_submit",
+        )
+        self.assertTrue(effective_primary[0].get("backendIdentity"))
+
+        execution_action = next(
+            row
+            for row in contract["actionContract"]["actionRuleList"]
+            if (row.get("button") or {}).get("name")
+            == "action_create_payment_execution"
+        )
+        self.assertTrue(
+            contract_assembler._evaluate_action_modifier(
+                contract_assembler._action_invisible_constraint(execution_action),
+                main_data,
+            )
+        )
 
 
 @tagged("post_install", "-at_install", "sc_gate", "p1_payment_request_concurrency")

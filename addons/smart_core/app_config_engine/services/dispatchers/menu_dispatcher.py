@@ -43,8 +43,8 @@ class MenuDispatcher:
         if not menu.exists():
             raise ValueError(f"menu {menu_id} 不存在")
 
-        # 2) 解析当前菜单的动作（含 server 下钻）
-        act = self.resolver.resolve_action_from_menu(menu, safe_server_run=True)
+        # 2) 解析当前菜单动作；读取链禁止执行 server action。
+        act = self.resolver.resolve_action_from_menu(menu, safe_server_run=False)
         resolved_menu = menu
 
         # 3) 若无动作，BFS 向下搜索第一个可点击叶子
@@ -90,7 +90,7 @@ class MenuDispatcher:
             if m.id in seen: continue
             seen.add(m.id)
 
-            act = self.resolver.resolve_action_from_menu(m, safe_server_run=True)
+            act = self.resolver.resolve_action_from_menu(m, safe_server_run=False)
             if act:
                 try:
                     if not user_env['ir.ui.menu'].browse(m.id).exists():

@@ -1,63 +1,50 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
+import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
+import { routeAuthorityEntries } from '../../app/routeAuthority';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
+import { resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
 
 type PresentationDependencies = Record<string, any>;
 
 /** Owns authoritative action presentation and field interaction adapters. */
 export function useRecordActionPresentation(dependencies: PresentationDependencies) {
-  const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, applyWorkflowAvailability, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, collectUnifiedPageContractV2ButtonStatus, commitMany2oneInline, confirmActionSafety, contract, detectObjectMethodFromActionKey, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, isTierValidationActionHidden, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeActionKind, normalizeActionSafety, normalizeRequiredParams, normalizeWorkflowActionRows, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, parseMaybeJsonRecord, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, resolveContractFormFieldLabels, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveUnifiedPageContractV2, resolveWorkflowContractFromSources, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, shouldShowWorkflowAction, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, toPositiveInt, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
+  const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline, confirmActionSafety, contract, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, resolveContractFormFieldLabels, resolveContractV2ActionRules, resolveContractV2RuntimeContract, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveWorkflowContractFromStore, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
   const chatterTimelineHasMore = dependencies.chatterTimelineHasMore;
   const chatterTimelineLoading = dependencies.chatterTimelineLoading;
   const loadMoreNativeChatterTimeline = dependencies.loadMoreNativeChatterTimeline;
+  const formFields = computed(() => resolveContractV2FormFieldMap(v2ContractStore.value));
 
-  function currentWorkflowContract(): Record<string, unknown> {
-    return resolveWorkflowContractFromSources(contract.value, v2ContractStore.value?.snapshot);
-  }
-
-  function workflowContractActionRows(): Array<Record<string, unknown>> {
-    if (!recordId.value) return [];
-    return normalizeWorkflowActionRows(currentWorkflowContract(), model.value);
-  }
-
-  function blockingWorkflowEvidenceMessage() {
-    const row = workflowEvidenceGateRows.value.find((item) => item.blocking);
-    return row?.message || '';
-  }
-
-  function applyWorkflowContractToAction(action: ContractAction): ContractAction {
-    return applyWorkflowAvailability({ action, workflow: currentWorkflowContract(), recordId: recordId.value, blockingMessage: blockingWorkflowEvidenceMessage() });
-  }
-
-  function shouldShowWorkflowNativeAction(methodName: string) {
-    return shouldShowWorkflowAction(currentWorkflowContract(), recordId.value, methodName);
-  }
-
-  const workflowEvidenceGateRows = computed(() => normalizeWorkflowEvidenceGateRows(currentWorkflowContract()));
+  // Workflow evidence is display-only. Executable availability is already
+  // joined into Contract V2 action authority and must not be recomputed here.
+  const workflowEvidenceGateRows = computed(() => normalizeWorkflowEvidenceGateRows(
+    resolveWorkflowContractFromStore(v2ContractStore.value),
+  ));
 
   const contractActions = computed<ContractAction[]>(() => {
     const sceneReadyActions = useSceneFormAugmentations.value && Array.isArray(sceneReadyFormSurface.value.actions)
       ? sceneReadyFormSurface.value.actions as Array<Record<string, unknown>>
       : [];
-    const storeButtonStatus = collectContractV2ButtonStatusById(v2ContractStore.value);
-    const v2ButtonStatus = Object.keys(storeButtonStatus).length
-      ? storeButtonStatus
-      : collectUnifiedPageContractV2ButtonStatus(contract.value);
+    const v2ButtonStatus = collectContractV2ButtonStatusById(v2ContractStore.value);
     return buildContractFormActions({
-      contract: contract.value,
       model: model.value,
       recordId: recordId.value,
       renderProfile: renderProfile.value,
       sceneReadyActions,
       v2ButtonStatus,
-      workflowActionRows: workflowContractActionRows(),
-      v2ActionRuleList: v2ContractStore.value?.snapshot.actionContract.actionRuleList as Array<Record<string, unknown>> | undefined,
-      policyContext: policyContext.value,
-      evaluateNativeActionVisibility,
-      isTierValidationActionHidden,
+      v2ActionRuleList: resolveContractV2ActionRules(v2ContractStore.value) as Array<Record<string, unknown>>,
+      resolveActionReference: (requested) => resolveAuthorizedWindowActionTarget(
+        routeAuthorityEntries(session.routeAuthority),
+        requested,
+        {
+          query: route.query as Record<string, unknown>,
+          companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+          selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
+        },
+      ),
     });
   });
 
@@ -78,7 +65,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     nativeCollaborationPanelListeners,
     resolveNativeAttachmentLabel,
   } = useRecordCollaborationPresentation({
-    contract, v2ContractStore, recordId, model, renderProfile, busy,
+    v2ContractStore, recordId, model, renderProfile, busy,
     activeChatterMode, activeChatterLabel, chatterDraft, activitySummary, activityDeadline, activityNote,
     collaborationUserQuery, collaborationUserOptions, collaborationUserChoices, collaborationUsersLoading,
     selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline,
@@ -96,49 +83,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   }
 
   function contractActionFromNativeRow(row: Record<string, unknown>): ContractAction | null {
-    const nativeAction = row.action && typeof row.action === 'object' && !Array.isArray(row.action)
-      ? row.action as Record<string, unknown>
-      : {};
-    const payload = parseMaybeJsonRecord(nativeAction.payload || row.payload);
-    const rowName = String(nativeAction.name || row.name || payload.method || payload.ref || '').trim();
-    const rowLabel = String(nativeAction.label || row.label || '').trim();
-    const key = String(nativeAction.key || row.key || rowName || rowLabel || '').trim();
-    if (!key) return null;
-    const kind = normalizeActionKind(
-      nativeAction.kind || row.kind || row.buttonType || payload.type || row.type || (rowName ? 'object' : ''),
-    );
-    const level = String(nativeAction.level || row.level || 'body').trim().toLowerCase();
-    const actionId = toPositiveInt(payload.action_id) ?? toPositiveInt(payload.ref) ?? toPositiveInt(row.action_id) ?? toPositiveInt(row.ref);
-    const methodName = detectObjectMethodFromActionKey(
-      key,
-      String(payload.method || row.method || (kind === 'object' || kind === 'server' ? rowName : '') || '').trim(),
-    );
-    if (!shouldShowWorkflowNativeAction(methodName)) return null;
-    const needRecord = kind === 'object' || kind === 'server' || level === 'row' || level === 'smart';
-    return applyWorkflowContractToAction({
-      key,
-      label: rowLabel || key,
-      kind,
-      level,
-      selection: 'none',
-      actionId,
-      methodName,
-      targetModel: String(row.target_model || row.model || payload.model || model.value || '').trim(),
-      context: parseMaybeJsonRecord(payload.context_raw || row.context),
-      domainRaw: String(payload.domain_raw || row.domain_raw || '').trim(),
-      target: String(payload.target || row.target || '').trim(),
-      url: String(payload.url || row.url || '').trim(),
-      enabled: !needRecord || Boolean(recordId.value),
-      hint: needRecord && !recordId.value ? 'requires record id' : '',
-      intent: String(nativeAction.intent || row.intent || '').trim(),
-      semantic: '',
-      sourceWidgetId: String(row.sourceWidgetId || row.source_widget_id || '').trim(),
-      clientMode: '',
-      visibleProfiles: ['create', 'edit', 'readonly'],
-      requiredParams: normalizeRequiredParams(nativeAction.required_params || row.required_params),
-      requiresReason: nativeAction.requires_reason === true || row.requires_reason === true,
-      actionSafety: normalizeActionSafety(nativeAction.action_safety || row.action_safety),
-    });
+    return resolveContractActionForNativeOccurrence(contractActions.value, row);
   }
 
   function resolveNativeActionState(row: Record<string, unknown>) {
@@ -166,10 +111,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     if (isIntakeCreateMode.value) return null;
     if (!model.value) return null;
     if (!recordId.value) return null;
-    const runtime = parseMaybeJsonRecord(
-      v2ContractStore.value?.snapshot.runtimeContract
-      || resolveUnifiedPageContractV2(contract.value)?.runtimeContract,
-    );
+    const runtime = resolveContractV2RuntimeContract(v2ContractStore.value);
     if (String(runtime.interactionMode || '').trim() === 'wizard') {
       const wizardAction = contractActions.value.find((action) => (
         action.level === 'footer'
@@ -202,7 +144,15 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
         const response = await executeButton({
           model: action.targetModel || model.value,
           res_id: recordId.value,
-          button: { name: action.methodName, type: action.kind === 'server' ? 'server' : 'object' },
+          button: {
+            name: action.methodName,
+            type: action.kind === 'server' ? 'server' : 'object',
+            action_id: String(action.authorityActionId || '').trim(),
+            backend_identity: String(action.backendIdentity || '').trim(),
+            source_widget_id: String(action.sourceWidgetId || '').trim(),
+            server_action_id: action.serverActionId || undefined,
+            xml_id: action.serverActionXmlId || undefined,
+          },
           context: action.context,
           meta: {
             menu_id: Number(route.query.menu_id || 0) || undefined,
@@ -244,9 +194,9 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     isNativeFavoriteField, isNativeFieldVisible, isNativeLayoutNodeVisible, isWritableFieldVisible,
     nativeFormLayoutNodes, nativeFormRootColumns, nativeGroupCount, nativeNotebookPageCount, nativeStatusbar,
     nativeVisibleFieldNames, nativeVisibleSectionTitles, rawNativeFormLayoutNodes, resolveNativeButtonLabel,
-    runtimeFieldStates, runtimeNativeFormLayoutNodes, runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree,
+    runtimeFieldStates, runtimeNativeFormLayoutNodes, runtimeOccurrenceState, runtimeState, setStatusbarValue, showNativeDefaultSectionTitle, useNativeFormTree,
   } = useRecordFormLayout({
-    contract, v2ContractStore, contractVisibleFields, onchangeModifiersPatch, formData,
+    v2ContractStore, contractVisibleFields, onchangeModifiersPatch, formData,
     isQuickIntakeMode, contractFieldLabel, fieldSemanticMeta, showHud, advancedExpanded,
     coreFieldNames, advancedFieldNames, renderProfile, recordId, isContractFieldOrderEditable,
     fieldOrderDraft, fieldOrderPreviewActive, changedFieldGroupDraft, fieldMoveTargetDraft,
@@ -264,7 +214,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     runtimeFieldStates, validationErrors,
     relationOptionsForField, relationCreateMode, relationInlineCreate, relationKeyword,
     canOpenRelationRecordForm, relationUiLabel, inputFieldValue, many2oneValue,
-    toDateInputValue, toDatetimeInputValue,
+    toDateInputValue, toDatetimeInputValue, evaluateNativeModifierValue, runtimeOccurrenceState,
   });
 
   function collectSceneValidationPrecheckErrors(fieldLabels: Record<string, string>): string[] {
@@ -309,29 +259,33 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     filteredRelationOptions,
     setRelationMultiField,
     setRelationIds,
-    relationCreateMode: (fieldName: string) => relationCreateMode(contract.value?.fields?.[fieldName]),
+    relationCreateMode: (fieldName: string) => relationCreateMode(formFields.value[fieldName]),
+    relationInlineCreate: (fieldName: string) => relationInlineCreate(formFields.value[fieldName]),
     relationCreateLabel: (fieldName: string) => {
-      const descriptor = contract.value?.fields?.[fieldName];
+      const descriptor = formFields.value[fieldName];
       const mode = relationCreateMode(descriptor);
-      if (mode === 'page') return relationUiLabel(descriptor, 'create_and_edit');
+      if (mode === 'page' || mode === 'dialog') return relationUiLabel(descriptor, 'create_and_edit');
       if (mode === 'quick') return relationUiLabel(descriptor, 'quick_create');
       return '';
     },
     relationInlineCreateLabel: (fieldName: string) => {
-      const descriptor = contract.value?.fields?.[fieldName];
+      const descriptor = formFields.value[fieldName];
       const template = relationUiLabel(descriptor, 'inline_create');
       const label = relationKeyword(fieldName).trim();
       return template.includes('%s') ? template.replace('%s', label) : template || label;
     },
+    canOpenRelationRecord: (fieldName: string) => canOpenRelationRecordForm(fieldName, formFields.value[fieldName]),
+    relationOpenLabel: (fieldName: string) => relationUiLabel(formFields.value[fieldName], 'open_existing', '维护当前项'),
+    relationSearchLabel: (fieldName: string) => relationUiLabel(formFields.value[fieldName], 'search_more'),
     canInlineCreateRelation: (fieldName: string) => {
-      const descriptor = contract.value?.fields?.[fieldName];
+      const descriptor = formFields.value[fieldName];
       const inline = relationInlineCreate(descriptor);
       const keyword = relationKeyword(fieldName).trim();
       if (!keyword || !inline.enabled || !inline.createOnNoMatch) return false;
       return !relationOptionsForField(fieldName).some((option) => option.label.trim().toLowerCase() === keyword.toLowerCase());
     },
     openRelationCreate: (fieldName: string) => {
-      const descriptor = contract.value?.fields?.[fieldName];
+      const descriptor = formFields.value[fieldName];
       if (!descriptor) return;
       void openRelationCreateForm(fieldName, descriptor);
     },
@@ -360,11 +314,6 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
 
 
   return {
-    currentWorkflowContract,
-    workflowContractActionRows,
-    blockingWorkflowEvidenceMessage,
-    applyWorkflowContractToAction,
-    shouldShowWorkflowNativeAction,
     workflowEvidenceGateRows,
     contractActions,
     headerActions,

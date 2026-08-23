@@ -145,7 +145,7 @@ class ScWorkflowContractService(models.AbstractModel):
     _name = "sc.workflow.contract.service"
     _description = "施工业务表单状态与审批流统一投影服务"
 
-    SOURCE_KIND = "sc_backend_workflow_contract_v1"
+    SOURCE_KIND = "sc_backend_workflow_contract"
     SOURCE_AUTHORITIES = (
         "odoo_model_state",
         "base_tier_validation",

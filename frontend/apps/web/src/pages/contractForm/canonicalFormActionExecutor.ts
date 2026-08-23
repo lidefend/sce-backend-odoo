@@ -1,4 +1,9 @@
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
+import type {
+  CanonicalFormAction,
+  CanonicalFormNode,
+  CanonicalFormRenderModel,
+} from '../../app/presentation/canonicalFormRenderModel';
 import type { ContractAction } from './types';
 
 export type CanonicalFormActionExecution =
@@ -44,4 +49,31 @@ export function validateCanonicalFormActionExecutors(
     }
   }
   return null;
+}
+
+function collectNodeActions(nodes: CanonicalFormNode[], out: CanonicalFormAction[]): void {
+  for (const node of nodes) {
+    if (node.action) out.push(node.action);
+    collectNodeActions(node.children, out);
+  }
+}
+
+/**
+ * Returns every action reference reachable from the canonical form renderer.
+ * Presentation placement is irrelevant here: header, footer, smart-button and
+ * body-node actions all require the same exact backend-identity adapter.
+ */
+export function collectCanonicalFormActions(
+  model: CanonicalFormRenderModel,
+): CanonicalFormAction[] {
+  const actions = [...model.actionBar];
+  collectNodeActions([...model.zones.primary, ...model.zones.subordinate], actions);
+  const seen = new Set<string>();
+  return actions.filter((action) => {
+    const ref = action.actionRef;
+    const identity = `${String(ref.actionId || '').trim()}\u0000${String(ref.backendIdentity || '').trim()}`;
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
 }

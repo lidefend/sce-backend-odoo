@@ -23,6 +23,8 @@ TEST_DIRS = [
     Path("addons/smart_construction_core/tests"),
 ]
 
+MAX_EXPLICIT_MAPPING_KEYS = 32
+
 
 @dataclass
 class IntentRow:
@@ -123,6 +125,12 @@ def count_test_refs(repo_root: Path, rows: list[IntentRow]) -> None:
 def dotted_paths(value: object, prefix: str = "") -> set[str]:
     paths: set[str] = set()
     if isinstance(value, dict):
+        if prefix and len(value) > MAX_EXPLICIT_MAPPING_KEYS:
+            marker = f"{prefix}.*"
+            paths.add(marker)
+            for item in value.values():
+                paths.update(dotted_paths(item, marker))
+            return paths
         for k, v in value.items():
             key = str(k)
             current = f"{prefix}.{key}" if prefix else key

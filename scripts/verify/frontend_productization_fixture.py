@@ -17,6 +17,7 @@ LOGINS = (
     "fixture_role_contract_operator",
     "fixture_role_config_admin",
     "fixture_role_config_admin_peer",
+    "fixture_role_activity_accounting",
     "fixture_role_owner",
 )
 MODELS = (
@@ -268,6 +269,7 @@ counts = {
     "settlements": env["sc.settlement.order"].sudo().search_count([("name", "like", "FE-%-SET-001")]),
     "payment_requests": env["payment.request"].sudo().search_count([("name", "like", "FE-%-PR-%")]),
     "payment_executions": env["sc.payment.execution"].sudo().search_count([("name", "like", "FE-%-PE-001")]),
+    "activity_moves": env["account.move"].sudo().search_count([("ref", "=", "FE-ACTIVITY-JOURNAL-001")]),
 }
 expected_counts = {
     "companies": 2,
@@ -276,9 +278,45 @@ expected_counts = {
     "settlements": 4,
     "payment_requests": 6,
     "payment_executions": 2,
+    "activity_moves": 1,
 }
 if counts != expected_counts:
     fail("fixed object counts mismatch: %s" % counts)
+
+activity_move = env.ref(
+    "smart_construction_acceptance_fixture.fe_activity_journal_entry",
+    raise_if_not_found=False,
+)
+if not activity_move or not activity_move.exists():
+    fail("Activity journal fixture is missing")
+if not (
+    activity_move.ref == "FE-ACTIVITY-JOURNAL-001"
+    and activity_move.state == "draft"
+    and activity_move.partner_id
+    and activity_move.commercial_partner_id == activity_move.partner_id.commercial_partner_id
+    and activity_move.currency_id == activity_move.company_id.currency_id
+    and activity_move.journal_id.type == "general"
+    and not activity_move.line_ids
+):
+    fail("Activity journal fixture is not deterministic")
+activity_accounting = by_login["fixture_role_activity_accounting"]
+if not activity_accounting.has_group(
+    "smart_construction_core.group_sc_cap_accounting_read"
+):
+    fail("Activity fixture user is missing accounting-read capability")
+activity_env = env(
+    user=activity_accounting,
+    context={
+        **env.context,
+        "allowed_company_ids": [activity_move.company_id.id],
+    },
+)
+try:
+    activity_env["account.move"].browse(activity_move.id).read(
+        ["name", "amount_total", "commercial_partner_id", "state", "currency_id"]
+    )
+except AccessError:
+    fail("Activity fixture user cannot read the Activity move")
 
 journey_settlement = env.ref("smart_construction_acceptance_fixture.fe_journey_settlement_a", raise_if_not_found=False)
 journey_request = env.ref("smart_construction_acceptance_fixture.fe_journey_payment_request_a", raise_if_not_found=False)

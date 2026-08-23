@@ -31,10 +31,10 @@ curl -sS -X POST "$BASE_URL/api/v1/intent" \
 
 ## 断言清单（后端输出）
 
-### A. `scene_ready_contract_v1` 存在
+### A. `scene_ready_contract` 存在
 
-- `data.scene_ready_contract_v1` 非空
-- `data.scene_ready_contract_v1.scenes` 包含 `projects.intake`
+- `data.scene_ready_contract` 非空
+- `data.scene_ready_contract.scenes` 包含 `projects.intake`
 
 ### B. `UI Base -> Orchestrator` 输入存在
 
@@ -77,13 +77,13 @@ curl -sS -X POST "$BASE_URL/api/v1/intent" \
 
 ```bash
 jq -e '
-  .data.scene_ready_contract_v1.scenes
+  .data.scene_ready_contract.scenes
   | map(select(((.scene.key // .page.scene_key // "") == "projects.intake")))
   | length > 0
 ' /tmp/projects_intake_system_init.json
 
 jq -e '
-  .data.scene_ready_contract_v1.scenes
+  .data.scene_ready_contract.scenes
   | map(select(((.scene.key // .page.scene_key // "") == "projects.intake")))[0]
   | (.meta.ui_base_orchestrator_input.view_fact != null)
     and (.meta.ui_base_orchestrator_input.field_fact != null)
@@ -95,7 +95,7 @@ jq -e '
 ' /tmp/projects_intake_system_init.json
 
 jq -e '
-  .data.scene_ready_contract_v1.scenes
+  .data.scene_ready_contract.scenes
   | map(select(((.scene.key // .page.scene_key // "") == "projects.intake")))[0]
   | (.validation_surface.required_fields | type == "array")
     and (.permission_surface | type == "object")

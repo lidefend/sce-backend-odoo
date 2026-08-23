@@ -6,7 +6,6 @@ type ContinueResult = {
   kind: 'continue';
   contract: unknown;
   meta: Dict | null;
-  typedContract: Dict;
   contractViewType: string;
   preferredViewMode: string;
   activeContractFilterKey: string;
@@ -31,7 +30,6 @@ type UseActionViewLoadPreflightApplyBoundRuntimeOptions = {
   applyLoadPreflightContinueState: (input: Dict) => {
     contract: unknown;
     meta: Dict | null;
-    typedContract: Dict;
     resolvedModel: string;
   };
   applyLoadPreflightBlockedState: (input: Dict) => void;

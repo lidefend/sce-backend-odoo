@@ -13,11 +13,13 @@ FRONTEND_PATHS = [
     ROOT / "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/createDefaults.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/valueUtils.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+    ROOT / "frontend/apps/web/src/pages/contractForm/RelationCreateDialog.vue",
 ]
 
 
@@ -63,8 +65,10 @@ def main() -> int:
         "if (!key.startsWith('default_')) return;",
         "resolveCreateRouteRelationLabels(",
         "export function relationUiLabel(descriptor: FieldDescriptor | undefined, key: string, fallback = '')",
-        "mode==='page'?context.relationUiLabel(descriptor,'create_and_edit')",
+        "mode==='page'||mode==='dialog'?context.relationUiLabel(descriptor,'create_and_edit')",
         "mode==='quick'?context.relationUiLabel(descriptor,'quick_create')",
+        "resolveRelationCreateDialogMessage",
+        "sc.relation_record_created.v1",
         "{{ dialog.labels.create || '新建' }}",
         "acc[`default_${key}`] = value;",
     ]

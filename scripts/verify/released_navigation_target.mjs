@@ -2,7 +2,7 @@ const SYSTEM_INIT_INTENT = 'system.init';
 
 function navigationFromPayload(payload) {
   const data = payload?.result || payload?.data || payload || {};
-  return Array.isArray(data?.navigation_v1?.nav) ? data.navigation_v1.nav : [];
+  return Array.isArray(data?.navigation?.nav) ? data.navigation.nav : [];
 }
 
 export function findReleasedNavigationTarget(nav, actionXmlid) {

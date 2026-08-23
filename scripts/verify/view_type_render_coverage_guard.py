@@ -1,119 +1,288 @@
 #!/usr/bin/env python3
-"""Guard ActionView has explicit render coverage for major contract view types."""
+"""Validate executable view-type renderer coverage without source-text markers."""
 
 from __future__ import annotations
 
-import os
+from html.parser import HTMLParser
+import json
 from pathlib import Path
+import re
+import subprocess
+import tempfile
+from typing import Any
+
+from jsonschema import Draft202012Validator
+
 
 ROOT = Path(__file__).resolve().parents[2]
-ACTION_VIEW = ROOT / 'frontend/apps/web/src/views/ActionView.vue'
-PAGE_MODEL = ROOT / 'frontend/apps/web/src/app/assemblers/action/useActionPageModel.ts'
-ADVANCED_DISPLAY_RUNTIME = ROOT / 'frontend/apps/web/src/app/action_runtime/useActionViewAdvancedDisplayRuntime.ts'
-CONTRACT_SHAPE_RUNTIME = ROOT / 'frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts'
-LOAD_REQUEST_RUNTIME = ROOT / 'frontend/apps/web/src/app/action_runtime/useActionViewLoadRequestRuntime.ts'
-VIEW_FIELD_STATE_RUNTIME = ROOT / 'frontend/apps/web/src/app/runtime/actionViewLoadViewFieldStateRuntime.ts'
+PROBE = ROOT / "frontend/apps/web/scripts/view_type_render_coverage_probe.ts"
+ESBUILD = ROOT / "frontend/apps/web/node_modules/.bin/esbuild"
+ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
+ACTIVITY_PAGE = ROOT / "frontend/apps/web/src/pages/ActivityPage.vue"
+SCHEMA = ROOT / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+FALLBACK_MODES = ("pivot", "graph", "calendar", "gantt", "dashboard")
+ACTIVITY_CARRIER = "ui.contract.v2.layoutContract.activityProfile"
 
 
-def _read(path: Path) -> str:
-    if not path.exists():
-        raise FileNotFoundError(str(path))
-    return path.read_text(encoding='utf-8')
+def _dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def run_runtime_probe(root: Path = ROOT) -> dict[str, Any]:
+    probe = root / PROBE.relative_to(ROOT)
+    esbuild = root / ESBUILD.relative_to(ROOT)
+    with tempfile.TemporaryDirectory(prefix="sc-view-type-coverage-") as directory:
+        bundle = Path(directory) / "probe.mjs"
+        subprocess.run(
+            [str(esbuild), str(probe), "--bundle", "--platform=node", "--format=esm", f"--outfile={bundle}"],
+            cwd=root, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        completed = subprocess.run(
+            ["node", str(bundle)], cwd=root, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+    payload = json.loads(completed.stdout)
+    if not isinstance(payload, dict):
+        raise ValueError("runtime probe must return an object")
+    return payload
+
+
+def validate_runtime_evidence(evidence: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if evidence.get("scope") != "view_type_render_coverage":
+        errors.append("runtime evidence scope mismatch")
+    claims = _dict(evidence.get("deliveryClaims"))
+    if claims != {"actionRouteProven": False, "browserDeliveryProven": False}:
+        errors.append("coverage evidence must not claim action routes or browser delivery")
+
+    registrations = _dict(evidence.get("registrations"))
+    fallback = _dict(evidence.get("fallback"))
+    for mode in FALLBACK_MODES:
+        registration = _dict(registrations.get(mode))
+        expected_registration = {
+            "semantic": mode,
+            "requestedRendererKey": f"core.{mode}",
+            "activeRendererKey": "core.readable_records",
+            "status": "fallback",
+            "outlet": "standard",
+        }
+        for key, expected in expected_registration.items():
+            if registration.get(key) != expected:
+                errors.append(f"{mode} registration {key} must be {expected!r}")
+        if not str(registration.get("reasonCode") or "").strip():
+            errors.append(f"{mode} fallback requires a reasonCode")
+
+        mode_evidence = _dict(fallback.get(mode))
+        presentation = _dict(mode_evidence.get("presentation"))
+        descriptor = _dict(mode_evidence.get("descriptor"))
+        page = _dict(mode_evidence.get("page"))
+        if presentation.get("semantic") != mode:
+            errors.append(f"{mode} projection semantic is not preserved")
+        if descriptor.get("semantic") != mode or descriptor.get("viewMode") != mode:
+            errors.append(f"{mode} executable resolver identity mismatch")
+        if descriptor.get("activeRendererKey") != "core.readable_records" or descriptor.get("status") != "fallback":
+            errors.append(f"{mode} executable resolver does not select readable fallback")
+        if page.get("kind") != "advanced" or not _list(page.get("rows")):
+            errors.append(f"{mode} readable record projection is not executable")
+
+    activity_registration = _dict(registrations.get("activity"))
+    expected_activity = {
+        "semantic": "activity",
+        "requestedRendererKey": "core.activity",
+        "activeRendererKey": "core.activity",
+        "status": "ready",
+        "outlet": "standard",
+        "reasonCode": "",
+    }
+    for key, expected in expected_activity.items():
+        if activity_registration.get(key) != expected:
+            errors.append(f"activity registration {key} must be {expected!r}")
+
+    activity = _dict(evidence.get("activity"))
+    if activity.get("decodedCarrier") != ACTIVITY_CARRIER:
+        errors.append("activity decoder carrier is missing")
+    if activity.get("storeCarrier") != ACTIVITY_CARRIER:
+        errors.append("activity normalized store carrier is missing")
+    model = _dict(activity.get("model"))
+    if model.get("ok") is not True or model.get("reasonCode") != "":
+        errors.append("activity dedicated resolver did not accept the governed carrier")
+    if not _list(model.get("requestedFields")) or int(model.get("recordCount") or 0) < 1:
+        errors.append("activity dedicated resolver did not consume fields and records")
+    if activity.get("missingReasonCode") != "ACTIVITY_SOURCE_AUTHORITY_MISSING":
+        errors.append("activity missing profile must fail closed")
+    return errors
+
+
+def validate_activity_schema(schema: dict[str, Any], evidence: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    validator = Draft202012Validator(schema)
+    payload = _dict(_dict(evidence.get("activity")).get("payload"))
+    schema_errors = sorted(validator.iter_errors(payload), key=lambda item: list(item.path))
+    errors.extend(f"activity payload schema: {error.message}" for error in schema_errors)
+    layout_schema = _dict(_dict(schema.get("$defs")).get("layoutContract"))
+    activity_property = _dict(_dict(layout_schema.get("properties")).get("activityProfile"))
+    if activity_property.get("$ref") != "#/$defs/activityProfile":
+        errors.append("layoutContract.activityProfile schema carrier is not explicit")
+    return errors
+
+
+def _strip_js_comments_and_strings(source: str) -> str:
+    output: list[str] = []
+    index = 0
+    state = "code"
+    quote = ""
+    while index < len(source):
+        char = source[index]
+        next_char = source[index + 1] if index + 1 < len(source) else ""
+        if state == "code":
+            if char == "/" and next_char == "/":
+                output.extend("  ")
+                index += 2
+                state = "line_comment"
+                continue
+            if char == "/" and next_char == "*":
+                output.extend("  ")
+                index += 2
+                state = "block_comment"
+                continue
+            if char in {"'", '"', "`"}:
+                quote = char
+                output.append("__STRING__")
+                index += 1
+                state = "string"
+                continue
+            output.append(char)
+            index += 1
+            continue
+        if state == "line_comment":
+            output.append("\n" if char == "\n" else " ")
+            index += 1
+            if char == "\n":
+                state = "code"
+            continue
+        if state == "block_comment":
+            output.append("\n" if char == "\n" else " ")
+            if char == "*" and next_char == "/":
+                output.append(" ")
+                index += 2
+                state = "code"
+            else:
+                index += 1
+            continue
+        output.append("\n" if char == "\n" else " ")
+        if char == "\\" and next_char:
+            output.append("\n" if next_char == "\n" else " ")
+            index += 2
+        elif char == quote:
+            index += 1
+            state = "code"
+        else:
+            index += 1
+    return "".join(output)
+
+
+class _ActionViewTemplateParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.template_depth = 0
+        self.seen_root_template = False
+        self.stack: list[dict[str, bool]] = []
+        self.activity_surface = False
+        self.advanced_surface = False
+        self.advanced_rows = False
+
+    @staticmethod
+    def _attrs(attrs: list[tuple[str, str | None]]) -> dict[str, str]:
+        return {str(key or "").lower(): str(value or "") for key, value in attrs}
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        attributes = self._attrs(attrs)
+        if tag == "template":
+            if not self.seen_root_template:
+                self.seen_root_template = True
+                self.template_depth = 1
+                self.stack.append({"advanced": False, "unreachable": False})
+                return
+            if self.template_depth:
+                self.template_depth += 1
+        if not self.template_depth:
+            return
+        ancestor_advanced = any(row["advanced"] for row in self.stack)
+        ancestor_unreachable = any(row["unreachable"] for row in self.stack)
+        condition = attributes.get("v-if", attributes.get("v-else-if", "")).strip().lower()
+        unreachable = ancestor_unreachable or condition in {"false", "0", "null", "undefined"}
+        classes = set(attributes.get("class", "").split())
+        advanced = ancestor_advanced or (tag == "section" and "advanced-view" in classes and bool(attributes.get("v-else-if")))
+        if tag == "activitypage" and not unreachable:
+            expression = re.sub(r"\s+", "", attributes.get("v-else-if", ""))
+            self.activity_surface = expression == "viewMode==='activity'" and attributes.get(":model") == "activitySurfaceModel"
+        if advanced and not ancestor_advanced and not unreachable:
+            self.advanced_surface = True
+        if tag == "article" and ancestor_advanced and not unreachable:
+            loop = re.sub(r"\s+", "", attributes.get("v-for", ""))
+            if "vm.content.advanced?.rows" in loop:
+                self.advanced_rows = True
+        self.stack.append({"advanced": advanced, "unreachable": unreachable})
+
+    def handle_endtag(self, tag: str) -> None:
+        if not self.template_depth:
+            return
+        if self.stack:
+            self.stack.pop()
+        if tag.lower() == "template":
+            self.template_depth -= 1
+
+
+def validate_action_view_structure(source: str, *, activity_page_exists: bool) -> list[str]:
+    errors: list[str] = []
+    parser = _ActionViewTemplateParser()
+    parser.feed(source)
+    if not parser.activity_surface:
+        errors.append("ActionView has no reachable ActivityPage bound to activitySurfaceModel")
+    if not parser.advanced_surface or not parser.advanced_rows:
+        errors.append("ActionView has no reachable readable advanced-record fallback surface")
+    script_match = re.search(r"<script\b[^>]*>(.*?)</script>", source, flags=re.DOTALL | re.IGNORECASE)
+    script = _strip_js_comments_and_strings(script_match.group(1) if script_match else "")
+    if not re.search(r"^\s*import\s+ActivityPage\s+from\s+__STRING__\s*;?\s*$", script, flags=re.MULTILINE):
+        errors.append("ActionView does not statically import ActivityPage")
+    if not activity_page_exists:
+        errors.append("ActivityPage renderer file is missing")
+    return errors
+
+
+def validate_current_architecture(root: Path = ROOT) -> list[str]:
+    evidence = run_runtime_probe(root)
+    schema = json.loads((root / SCHEMA.relative_to(ROOT)).read_text(encoding="utf-8"))
+    action_view = (root / ACTION_VIEW.relative_to(ROOT)).read_text(encoding="utf-8")
+    errors = validate_runtime_evidence(evidence)
+    errors.extend(validate_activity_schema(schema, evidence))
+    errors.extend(validate_action_view_structure(
+        action_view,
+        activity_page_exists=(root / ACTIVITY_PAGE.relative_to(ROOT)).is_file(),
+    ))
+    return errors
 
 
 def main() -> int:
-    errors: list[str] = []
     try:
-        action_view = _read(ACTION_VIEW)
-        page_model = _read(PAGE_MODEL)
-        advanced_display_runtime = _read(ADVANCED_DISPLAY_RUNTIME)
-        contract_shape_runtime = _read(CONTRACT_SHAPE_RUNTIME)
-        load_request_runtime = _read(LOAD_REQUEST_RUNTIME)
-        view_field_state_runtime = _read(VIEW_FIELD_STATE_RUNTIME)
-    except FileNotFoundError as exc:
-        print('[FAIL] view_type_render_coverage_guard')
-        print(f'- {exc}')
-        return 1
-
-    action_view_markers = [
-        "v-if=\"vm.content.kind === 'kanban'\"",
-        "v-else-if=\"vm.content.kind === 'list'\"",
-        'class="advanced-view"',
-        "vm.content.advanced?.title",
-        "vm.content.advanced?.hint",
-    ]
-    for marker in action_view_markers:
-        if marker not in action_view:
-            errors.append(f'action_view missing marker: {marker}')
-
-    page_model_markers = [
-        "function resolveContentKind(viewMode: string): 'list' | 'kanban' | 'advanced'",
-        "if (viewMode === 'tree') return 'list';",
-        "if (viewMode === 'kanban') return 'kanban';",
-    ]
-    for marker in page_model_markers:
-        if marker not in page_model:
-            errors.append(f'page_model missing marker: {marker}')
-
-    advanced_markers = [
-        'const advancedViewTitle = computed(() => {',
-        'const advancedViewHint = computed(() => {',
-    ]
-    for marker in advanced_markers:
-        if marker not in advanced_display_runtime:
-            errors.append(f'advanced_display_runtime missing marker: {marker}')
-
-    contract_shape_markers = [
-        'function extractAdvancedViewFields(contract: unknown, mode: string)',
-    ]
-    for marker in contract_shape_markers:
-        if marker not in contract_shape_runtime:
-            errors.append(f'contract_shape_runtime missing marker: {marker}')
-
-    load_request_marker = "const advancedContractFields = options.extractAdvancedViewFields(options.contract, options.viewMode);"
-    if load_request_marker not in load_request_runtime:
-        errors.append(f'load_request_runtime missing marker: {load_request_marker}')
-
-    advanced_mode_markers = [
-        "if (mode === 'pivot')",
-        "if (mode === 'graph')",
-        "if (mode === 'calendar' || mode === 'gantt')",
-        "if (mode === 'activity')",
-        "if (mode === 'dashboard')",
-    ]
-    for marker in advanced_mode_markers:
-        if marker not in contract_shape_runtime:
-            errors.append(f'contract_shape_runtime missing advanced view marker: {marker}')
-
-    field_state_markers = [
-        "if (options.viewMode === 'kanban') {",
-        "if (options.viewMode === 'tree') {",
-    ]
-    for marker in field_state_markers:
-        if marker not in view_field_state_runtime:
-            errors.append(f'view_field_state_runtime missing marker: {marker}')
-
+        errors = validate_current_architecture()
+    except (FileNotFoundError, subprocess.CalledProcessError, json.JSONDecodeError, ValueError) as exc:
+        errors = [f"coverage evidence unavailable: {exc}"]
     if errors:
-        env_name = str(os.getenv("ENV") or "").strip().lower()
-        if env_name in {"dev", "test", "local"}:
-            print('[WARN] view_type_render_coverage_guard (dev/test/local relaxed mode)')
-            for line in errors:
-                print(f'- {line}')
-            return 0
-        print('[FAIL] view_type_render_coverage_guard')
-        for line in errors:
-            print(f'- {line}')
+        print("[FAIL] view_type_render_coverage_guard")
+        for error in errors:
+            print(f"- {error}")
         return 1
-
-    print('[OK] view_type_render_coverage_guard')
-    print(f'- action_view: {ACTION_VIEW}')
-    print(f'- page_model: {PAGE_MODEL}')
-    print(f'- advanced_display_runtime: {ADVANCED_DISPLAY_RUNTIME}')
-    print(f'- contract_shape_runtime: {CONTRACT_SHAPE_RUNTIME}')
-    print(f'- load_request_runtime: {LOAD_REQUEST_RUNTIME}')
-    print(f'- view_field_state_runtime: {VIEW_FIELD_STATE_RUNTIME}')
+    print("[OK] view_type_render_coverage_guard")
+    print("- fallback: pivot, graph, calendar, gantt, dashboard -> core.readable_records")
+    print("- activity: decoder -> normalized store -> core.activity resolver -> ActivityPage")
+    print("- delivery_claims: action_route=false browser_delivery=false")
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     raise SystemExit(main())

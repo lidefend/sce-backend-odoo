@@ -1,0 +1,164 @@
+import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
+import type {
+  CanonicalFormAction,
+  CanonicalFormField,
+  CanonicalFormNode,
+  CanonicalFormRenderModel,
+} from '../../app/presentation/canonicalFormRenderModel';
+import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
+import { canonicalFieldToFormSection } from './canonicalFormRenderer';
+
+export type CanonicalNativeLayoutNode = {
+  type: string;
+  containerType: string;
+  name: string;
+  string?: string;
+  text?: string;
+  cols?: number;
+  columns?: number;
+  widget?: string;
+  visible?: boolean;
+  attributes?: Record<string, unknown>;
+  action?: Record<string, unknown> | null;
+  buttonType?: string;
+  children?: CanonicalNativeLayoutNode[];
+};
+
+export type CanonicalNativeFormBridge = {
+  primaryNodes: CanonicalNativeLayoutNode[];
+  subordinateNodes: CanonicalNativeLayoutNode[];
+  fieldSchemasForNodes: (nodes: CanonicalNativeLayoutNode[]) => FormSectionFieldSchema[];
+  actionForPayload: (payload: Record<string, unknown>) => ContractV2ActionRule | null;
+  actionStateForNode: (payload: Record<string, unknown>) => { disabled: boolean; title: string };
+  nodeVisible: (node: CanonicalNativeLayoutNode) => boolean;
+};
+
+const NATIVE_CONTAINER_KINDS = new Set([
+  'header', 'footer', 'sheet', 'group', 'notebook', 'page', 'container', 'div', 'span', 'h1', 'h2', 'h3',
+]);
+
+function text(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function isCollaborationNode(node: CanonicalFormNode): boolean {
+  return ['chatter', 'activity'].includes(text(node.kind).toLowerCase());
+}
+
+function canonicalActionRecord(action: CanonicalFormAction): Record<string, unknown> {
+  return {
+    backendIdentity: action.actionRef.backendIdentity,
+    actionId: action.actionRef.actionId,
+    actionKey: action.actionRef.actionKey,
+    displayLabel: action.label,
+    label: action.label,
+    icon: action.icon,
+    level: 'body',
+    payload: { backendIdentity: action.actionRef.backendIdentity },
+  };
+}
+
+function fieldNode(
+  field: CanonicalFormField,
+  fieldSchemas: WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>,
+): CanonicalNativeLayoutNode {
+  const node: CanonicalNativeLayoutNode = {
+    type: 'field',
+    containerType: 'field',
+    name: field.widgetId,
+    visible: field.visible,
+    attributes: {
+      name: field.fieldCode,
+      canonicalWidgetId: field.widgetId,
+    },
+    children: [],
+  };
+  fieldSchemas.set(node, canonicalFieldToFormSection(field));
+  return node;
+}
+
+export function buildCanonicalNativeFormBridge(
+  renderModel: CanonicalFormRenderModel,
+): CanonicalNativeFormBridge {
+  const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
+  const actionsByIdentity = new Map<string, CanonicalFormAction>();
+
+  function mapNode(node: CanonicalFormNode): CanonicalNativeLayoutNode {
+    if (text(node.kind).toLowerCase() === 'field' && node.fields.length === 1) {
+      return fieldNode(node.fields[0], fieldSchemas);
+    }
+    const rawKind = text(node.kind).toLowerCase() || 'container';
+    const action = node.action;
+    const kind = rawKind === 'button'
+      ? 'button'
+      : rawKind === 'widget'
+        ? 'widget'
+        : NATIVE_CONTAINER_KINDS.has(rawKind) ? rawKind : 'container';
+    if (action?.actionRef.backendIdentity) actionsByIdentity.set(action.actionRef.backendIdentity, action);
+    const mappedChildren = [
+      ...node.fields.map((field) => fieldNode(field, fieldSchemas)),
+      ...node.children.filter((child) => !isCollaborationNode(child)).map(mapNode),
+    ];
+    const children = kind === 'notebook' && !mappedChildren.some((child) => child.type === 'page')
+      ? [{
+        type: 'page', containerType: 'page', name: `${node.nodeId}.page.default`,
+        string: node.title, visible: node.visible, attributes: {}, children: mappedChildren,
+      } satisfies CanonicalNativeLayoutNode]
+      : mappedChildren;
+    return {
+      type: kind,
+      containerType: kind,
+      name: node.nodeId,
+      string: node.title,
+      text: node.text,
+      cols: node.columns,
+      columns: node.columns,
+      widget: node.nativeWidget,
+      visible: node.visible && (kind !== 'button' || Boolean(action)),
+      attributes: {
+        ...node.attributes,
+        class: text(node.attributes.class),
+        canonicalNodeId: node.nodeId,
+        canonicalNodeKind: rawKind,
+        sectionNavigationRole: node.zoneRole,
+      },
+      action: action ? canonicalActionRecord(action) : null,
+      buttonType: text(action?.actionRef.button?.type) || 'object',
+      children,
+    };
+  }
+
+  function actionIdentity(payload: Record<string, unknown>): string {
+    const nested = payload.payload && typeof payload.payload === 'object' && !Array.isArray(payload.payload)
+      ? payload.payload as Record<string, unknown>
+      : {};
+    const action = payload.action && typeof payload.action === 'object' && !Array.isArray(payload.action)
+      ? payload.action as Record<string, unknown>
+      : {};
+    return text(payload.backendIdentity || nested.backendIdentity || action.backendIdentity);
+  }
+
+  return {
+    primaryNodes: renderModel.zones.primary.map(mapNode),
+    subordinateNodes: renderModel.zones.subordinate.filter((node) => !isCollaborationNode(node)).map(mapNode),
+    fieldSchemasForNodes(nodes) {
+      return nodes.flatMap((node) => {
+        const field = fieldSchemas.get(node);
+        return field ? [field] : [];
+      });
+    },
+    actionForPayload(payload) {
+      return actionsByIdentity.get(actionIdentity(payload))?.actionRef || null;
+    },
+    actionStateForNode(payload) {
+      const action = actionsByIdentity.get(actionIdentity(payload));
+      return {
+        disabled: !action?.enabled,
+        title: action?.reasonCode || '',
+      };
+    },
+    nodeVisible(node) {
+      return node.visible !== false;
+    },
+  };
+}

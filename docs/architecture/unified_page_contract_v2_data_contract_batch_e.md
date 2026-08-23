@@ -11,7 +11,7 @@ Contract Governance / DataContract Consolidation
 
 - `addons/smart_core/core/unified_page_contract_v2_data.py`
 - `docs/architecture/unified_page_contract_v2/fixtures/data_contract_source.json`
-- `docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v2.json`
 - `scripts/verify/unified_page_contract_v2_data_guard.py`
 - `docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json`
 - `Makefile`
@@ -86,7 +86,7 @@ Revert:
 - `addons/smart_core/core/unified_page_contract_v2_data.py`
 - `scripts/verify/unified_page_contract_v2_data_guard.py`
 - `docs/architecture/unified_page_contract_v2/fixtures/data_contract_source.json`
-- `docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v1.json`
+- `docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v2.json`
 - schema optional `treeData/ganttData` extension
 - `Makefile` data target changes
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 
 const require = createRequire(path.join(process.cwd(), 'frontend/apps/web/package.json'));
@@ -13,8 +14,22 @@ const password = process.env.E2E_PASSWORD || '';
 const artifactDir = process.env.ARTIFACT_DIR || '/tmp/frontend-all-list-visual-audit';
 const concurrency = Math.max(1, Math.min(8, Number(process.env.CONCURRENCY || 5)));
 const targetActionId = Math.max(0, Number(process.env.TARGET_ACTION_ID || 0));
+const targetMenuId = Math.max(0, Number(process.env.TARGET_MENU_ID || 0));
+const targetRecordId = Math.max(0, Number(process.env.TARGET_RECORD_ID || 0));
+const targetCompanyId = Math.max(0, Number(process.env.TARGET_COMPANY_ID || 0));
+const candidateFingerprint = String(process.env.CANDIDATE_FINGERPRINT || '').trim();
+const candidateGitHead = String(process.env.CANDIDATE_GIT_HEAD || '').trim();
+const candidateScopeManifest = String(process.env.CANDIDATE_SCOPE_MANIFEST || '').trim();
+const candidatePathCount = Math.max(0, Number(process.env.CANDIDATE_PATH_COUNT || 0));
+const runtimeProfile = String(process.env.RUNTIME_PROFILE || '').trim();
+const composeProject = String(process.env.COMPOSE_PROJECT_NAME || '').trim();
+const requireActivitySurface = String(process.env.REQUIRE_ACTIVITY_SURFACE || '').trim() === '1';
+let activeBrowser = null;
 
 if (!password) throw new Error('E2E_PASSWORD is required');
+if (requireActivitySurface && (!targetActionId || !targetMenuId || !targetRecordId || !targetCompanyId || !candidateFingerprint || !candidateGitHead || !candidateScopeManifest || !candidatePathCount || !runtimeProfile || !composeProject)) {
+  throw new Error('governed Activity evidence authority is incomplete');
+}
 fs.mkdirSync(artifactDir, { recursive: true });
 fs.mkdirSync(path.join(artifactDir, 'screenshots'), { recursive: true });
 
@@ -53,6 +68,19 @@ function uniqueEntries(rows) {
   });
 }
 
+function flattenRouteAuthority(contract) {
+  const buckets = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions'];
+  return buckets.flatMap((key) => Array.isArray(contract?.[key]) ? contract[key] : []).map((row) => ({
+    label: String(row?.name || '').trim(),
+    menuPath: String(row?.name || '').trim(),
+    actionId: Number(row?.action_id || 0),
+    menuId: Number(row?.menu_id || 0),
+    sceneKey: String(row?.scene_key || '').trim(),
+    entryTarget: row?.entry_target && typeof row.entry_target === 'object' ? row.entry_target : {},
+    authoritativeRoute: String(row?.route || '').trim(),
+  })).filter((row) => row.actionId > 0 || row.sceneKey);
+}
+
 function safeName(value) {
   return String(value || '').replace(/[^a-zA-Z0-9\u4e00-\u9fff_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'page';
 }
@@ -66,19 +94,24 @@ async function loginAndDiscover(page) {
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   const sessionEntries = await page.evaluate(() => Object.fromEntries(Object.entries(sessionStorage)));
-  const init = await page.evaluate(async ({ dbName }) => {
+  const init = await page.evaluate(async ({ dbName, rootXmlid }) => {
     const tokenKey = Object.keys(sessionStorage).find((key) => key.startsWith('sc_auth_token')) || '';
     const token = tokenKey ? sessionStorage.getItem(tokenKey) : '';
     const response = await fetch(`/api/v1/intent?db=${encodeURIComponent(dbName)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Odoo-DB': dbName, Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ intent: 'system.init', params: { with_preload: false, with: ['workspace_home'], root_xmlid: 'smart_construction_core.menu_sc_root' }, meta: { startup_chain_bypass: true } }),
+      body: JSON.stringify({ intent: 'system.init', params: { with_preload: false, with: ['workspace_home'], root_xmlid: rootXmlid }, meta: { startup_chain_bypass: true } }),
     });
     const body = await response.json();
     if (!response.ok || body.ok === false) throw new Error(JSON.stringify(body.error || body));
     return body.data || body;
-  }, { dbName });
-  return { entries: uniqueEntries(flattenNav(init.nav || [])), sessionEntries };
+  }, { dbName, rootXmlid: 'smart_construction_core.menu_sc_root' });
+  const navigation = init.navigation && typeof init.navigation === 'object' ? init.navigation : {};
+  return {
+    entries: uniqueEntries(flattenNav(navigation.nav || init.nav || [])),
+    authorityEntries: flattenRouteAuthority(navigation.route_authority || {}),
+    sessionEntries,
+  };
 }
 
 async function collectVisualFacts(page) {
@@ -180,15 +213,97 @@ async function collectVisualFacts(page) {
   });
 }
 
+async function probeActivitySurface(page) {
+  const renderer = page.locator('[data-active-renderer="core.activity"]');
+  if (!await renderer.count()) {
+    const activitySwitch = page.locator('.view-switch button').filter({ hasText: /活动|Activity/i }).first();
+    if (!await activitySwitch.isVisible().catch(() => false)) return null;
+    await activitySwitch.click();
+    await renderer.waitFor({ state: 'attached', timeout: 15000 });
+  }
+  const surface = page.locator('[data-activity-surface="native-readonly"]');
+  await surface.waitFor({ state: 'visible', timeout: 15000 });
+  await page.waitForFunction(() => {
+    const root = document.querySelector('[data-activity-surface="native-readonly"]');
+    if (!root) return false;
+    if (root.querySelector('.activity-card')) return true;
+    const state = String(root.querySelector('.activity-page__state')?.textContent || '').trim();
+    return Boolean(state) && !/加载|loading/i.test(state);
+  }, null, { timeout: 15000 });
+  const cards = surface.locator('.activity-card');
+  const cardCount = await cards.count();
+  const targetCard = targetRecordId > 0
+    ? surface.locator(`.activity-card[data-record-id="${targetRecordId}"]`)
+    : cards.first();
+  if (targetRecordId > 0 && await targetCard.count() !== 1) {
+    throw new Error(`expected Activity fixture record ${targetRecordId} exactly once`);
+  }
+  const stateText = String(await surface.locator('.activity-page__state').allInnerTexts().catch(() => [])).trim();
+  const writeLabels = await page.locator('.action-surface-toolbar button:visible, .page-actions button:visible').allInnerTexts();
+  const exposedWriteLabels = writeLabels.filter((label) => /新建|创建|保存收藏|Save Favorite|Create|New/i.test(label));
+  const globalActionCount = await page.locator('.page-actions button:visible').count();
+  const activeRenderer = await renderer.first().getAttribute('data-active-renderer');
+  const rendererStatus = await renderer.first().getAttribute('data-renderer-status');
+  let openRecordReachable = false;
+  let canonicalRecordIdentity = false;
+  const writeRequests = [];
+  if (cardCount > 0) {
+    const recordId = Number(await targetCard.getAttribute('data-record-id') || 0);
+    const before = page.url();
+    const onRequest = (request) => {
+      if (request.method() === 'GET') return;
+      try {
+        const payload = JSON.parse(request.postData() || '{}');
+        const intent = String(payload.intent || '').toLowerCase();
+        const op = String(payload.params?.op || '').toLowerCase();
+        if (/execute|write|create|unlink|delete|save/.test(intent) || /execute_button|write|create|unlink|delete/.test(op)) {
+          writeRequests.push({ intent, op, url: request.url() });
+        }
+      } catch {
+        // Non-JSON requests are not contract write intents.
+      }
+    };
+    page.on('request', onRequest);
+    await targetCard.click();
+    await page.waitForURL((url) => url.href !== before, { timeout: 15000 });
+    page.off('request', onRequest);
+    openRecordReachable = page.url() !== before;
+    const destination = new URL(page.url());
+    const destinationId = Number(destination.searchParams.get('id') || destination.searchParams.get('res_id') || destination.pathname.split('/').filter(Boolean).at(-1) || 0);
+    canonicalRecordIdentity = /\/(?:f|r)\//.test(destination.pathname) && recordId > 0 && destinationId === recordId;
+  }
+  return {
+    activeRenderer,
+    rendererStatus,
+    cardCount,
+    governedEmpty: cardCount === 0 && /暂无|empty|no activity/i.test(stateText),
+    exposedWriteLabels,
+    globalActionCount,
+    openRecordReachable,
+    canonicalRecordIdentity,
+    writeRequests,
+    targetRecordId,
+  };
+}
+
 async function main() {
   const browser = await chromium.launch({ headless: true });
+  activeBrowser = browser;
   const discoveryContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
   const loginPage = await discoveryContext.newPage();
   const discovered = await loginAndDiscover(loginPage);
   const discoveredCount = discovered.entries.length;
-  const entries = targetActionId ? discovered.entries.filter((entry) => entry.actionId === targetActionId) : discovered.entries;
+  const governedTarget = targetActionId
+    ? discovered.authorityEntries.find((entry) => entry.actionId === targetActionId && (!targetMenuId || entry.menuId === targetMenuId))
+      || discovered.authorityEntries.find((entry) => entry.actionId === targetActionId)
+    : null;
+  if (targetActionId && !governedTarget) {
+    throw new Error(`target action ${targetActionId} is absent from canonical navigation route authority`);
+  }
+  const entries = targetActionId
+    ? [{ ...governedTarget, label: 'Governed Activity surface', menuPath: 'Governed Activity surface' }]
+    : discovered.entries;
   const { sessionEntries } = discovered;
-  if (targetActionId && !entries.length) throw new Error(`target action not found: ${targetActionId}`);
   await discoveryContext.close();
 
   const results = new Array(entries.length);
@@ -237,12 +352,13 @@ async function main() {
           }, null, { timeout: 15000 });
         }
         const facts = await collectVisualFacts(page);
+        const activity = await probeActivitySurface(page);
         let screenshot = '';
         if (facts.listLike || targetActionId) {
           screenshot = path.join(artifactDir, 'screenshots', `${String(index + 1).padStart(3, '0')}-${safeName(entry.label)}.png`);
           await page.screenshot({ path: screenshot, fullPage: false });
         }
-        results[index] = { index, ...entry, route, url: page.url(), elapsedMs: Date.now() - started, screenshot, runtimeErrors: [...runtimeErrors], ...facts };
+        results[index] = { index, ...entry, route, url: page.url(), elapsedMs: Date.now() - started, screenshot, runtimeErrors: [...runtimeErrors], activity, ...facts };
       } catch (error) {
         results[index] = {
           index,
@@ -263,8 +379,18 @@ async function main() {
   }
   await Promise.all(Array.from({ length: concurrency }, () => worker()));
   await browser.close();
+  activeBrowser = null;
 
   const lists = results.filter((row) => row?.listLike);
+  const activitySurfaces = results.filter((row) => row?.activity);
+  const activityViolations = activitySurfaces.filter((row) => row.activity.activeRenderer !== 'core.activity'
+    || row.activity.rendererStatus !== 'ready'
+    || (!row.activity.cardCount && !row.activity.governedEmpty)
+    || row.activity.exposedWriteLabels.length
+    || row.activity.globalActionCount > 0
+    || !row.activity.openRecordReachable
+    || !row.activity.canonicalRecordIdentity
+    || row.activity.writeRequests.length);
   const signatures = {};
   for (const row of lists) {
     const signature = JSON.stringify({
@@ -279,8 +405,25 @@ async function main() {
     if (!signatures[signature]) signatures[signature] = [];
     signatures[signature].push(row.index);
   }
+  const authority = {
+    gitHead: candidateGitHead,
+    completeFingerprint: candidateFingerprint,
+    scopeManifestSha256: candidateScopeManifest,
+    pathCount: candidatePathCount,
+    database: dbName,
+    runtimeProfile,
+    composeProject,
+    login,
+    companyId: targetCompanyId,
+    targetActionId,
+    targetMenuId,
+    targetRecordId,
+  };
+  const evidenceSha256 = createHash('sha256').update(JSON.stringify({ authority, results })).digest('hex');
   const report = {
     schemaVersion: 'frontend_all_list_visual_audit.v1',
+    authority,
+    evidenceSha256,
     baseUrl,
     dbName,
     discoveredCount,
@@ -298,14 +441,22 @@ async function main() {
         + Number(row?.nativeFileEnglish ? 1 : 0)
         + Number(row?.excessiveFormCommandBar ? 1 : 0), 0),
     signatureCount: Object.keys(signatures).length,
+    activitySurfaceCount: activitySurfaces.length,
+    activityViolationCount: activityViolations.length,
     signatures,
     results,
   };
-  fs.writeFileSync(path.join(artifactDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  process.stdout.write(`${JSON.stringify({ artifactDir, discoveredCount: report.discoveredCount, listCount: report.listCount, errorCount: report.errorCount, signatureCount: report.signatureCount, toolbarViolationCount: report.toolbarViolationCount, coordinationViolationCount: report.coordinationViolationCount })}\n`);
+  const reportText = `${JSON.stringify(report, null, 2)}\n`;
+  fs.writeFileSync(path.join(artifactDir, 'report.json'), reportText);
+  fs.writeFileSync(path.join(artifactDir, 'report.sha256'), `${createHash('sha256').update(reportText).digest('hex')}\n`);
+  if (requireActivitySurface && activitySurfaces.length !== 1) throw new Error(`expected exactly one activity surface, got ${activitySurfaces.length}`);
+  if (activityViolations.length) throw new Error(`activity surface violations: ${activityViolations.length}`);
+  process.stdout.write(`${JSON.stringify({ artifactDir, discoveredCount: report.discoveredCount, listCount: report.listCount, errorCount: report.errorCount, signatureCount: report.signatureCount, toolbarViolationCount: report.toolbarViolationCount, coordinationViolationCount: report.coordinationViolationCount, activitySurfaceCount: report.activitySurfaceCount, activityViolationCount: report.activityViolationCount })}\n`);
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
+  await activeBrowser?.close().catch(() => {});
+  activeBrowser = null;
   console.error(`[frontend-all-list-visual-audit] ${error.stack || error.message}`);
   process.exitCode = 1;
 });

@@ -1,108 +1,86 @@
-import type { ActionContract } from '@sc/schema';
 import type { ContractV2ButtonStatus } from '../../app/contracts/v2/types';
+import { routeAuthorityContextAllowed, type RouteAuthorityEntry } from '../../app/routeAuthority';
 import { detectObjectMethodFromActionKey, normalizeActionKind, parseMaybeJsonRecord, toPositiveInt } from '../../app/contractRuntime';
-import { resolveUnifiedPageContractV2 } from '../../app/contracts/unifiedPageContractV2';
 import { normalizeSceneActionProtocol } from '../../app/sceneActionProtocol';
-import { evaluateActionPolicy } from '../../app/contractPolicies';
 import {
   normalizeActionLabel,
   normalizeActionSafety,
   normalizeRequiredParams,
   resolveV2ButtonStatus,
 } from './actionContract';
-import { selectAuthoritativeBusinessActionRows } from './authoritativeBusinessActionRows';
-import { workflowActionMethodAliases } from './workflowContract';
 import type { ContractAction } from './types';
 
-type ActionPolicy = { visible: boolean; enabled: boolean; reason: string; semantic: string };
+export type AuthorizedWindowActionTarget = { actionId: number; menuId: number };
+
+function nativeOccurrenceKey(value: unknown): string {
+  const identity = parseMaybeJsonRecord(value);
+  const type = String(identity.type || '').trim().toLowerCase();
+  const name = String(identity.name || '').trim();
+  const locator = String(identity.native_locator || identity.nativeLocator || '').trim();
+  const occurrence = toPositiveInt(identity.occurrence_index || identity.occurrenceIndex) || 0;
+  return type && name && locator && occurrence > 0 ? `${type}|${name}|${locator}|${occurrence}` : '';
+}
+
+export function resolveContractActionForNativeOccurrence(
+  actions: ContractAction[],
+  row: Record<string, unknown>,
+): ContractAction | null {
+  const nativeAction = parseMaybeJsonRecord(row.action);
+  const backendIdentity = String(
+    nativeAction.backendIdentity || nativeAction.backend_identity
+    || row.backendIdentity || row.backend_identity || '',
+  ).trim();
+  const authorityActionId = String(
+    nativeAction.actionId || nativeAction.action_id || row.actionId || row.action_id || '',
+  ).trim();
+  const occurrenceKey = nativeOccurrenceKey(
+    nativeAction.nativeIdentity || nativeAction.native_identity
+    || row.nativeIdentity || row.native_identity,
+  );
+  if (!backendIdentity && !authorityActionId && !occurrenceKey) return null;
+  const candidates = actions.filter((candidate) => {
+    if (backendIdentity) return candidate.backendIdentity === backendIdentity;
+    if (authorityActionId) return candidate.authorityActionId === authorityActionId;
+    return nativeOccurrenceKey(candidate.nativeIdentity) === occurrenceKey;
+  });
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
+export function resolveAuthorizedWindowActionTarget(
+  entries: RouteAuthorityEntry[],
+  requested: { actionId: number | null; actionReference: string; menuId: number | null },
+  context: { query: Record<string, unknown>; companyId?: number | null; selectedRecordId?: number | null },
+): AuthorizedWindowActionTarget | null {
+  const referenceIsNumeric = Boolean(toPositiveInt(requested.actionReference));
+  const candidates = entries.filter((entry) => {
+    const actionId = toPositiveInt(entry.action_id);
+    const menuId = toPositiveInt(entry.menu_id) || 0;
+    if (!actionId) return false;
+    if (requested.actionId && actionId !== requested.actionId) return false;
+    if (!referenceIsNumeric && requested.actionReference
+      && String(entry.action_xmlid || '').trim() !== requested.actionReference) return false;
+    if (requested.menuId && menuId !== requested.menuId) return false;
+    return routeAuthorityContextAllowed(entry, context.query, context);
+  });
+  const pairs = new Map<string, AuthorizedWindowActionTarget>();
+  candidates.forEach((entry) => {
+    const pair = { actionId: toPositiveInt(entry.action_id) as number, menuId: toPositiveInt(entry.menu_id) || 0 };
+    pairs.set(`${pair.menuId}:${pair.actionId}`, pair);
+  });
+  return pairs.size === 1 ? [...pairs.values()][0] : null;
+}
 
 export function buildContractFormActions(params: {
-  contract: ActionContract | null;
   model: string;
   recordId: number;
   renderProfile: 'create' | 'edit' | 'readonly';
   sceneReadyActions: Array<Record<string, unknown>>;
   v2ButtonStatus: Record<string, ContractV2ButtonStatus>;
-  workflowActionRows: Array<Record<string, unknown>>;
-  v2ActionRuleList?: Array<Record<string, unknown>>;
-  policyContext: Parameters<typeof evaluateActionPolicy>[2];
-  evaluateNativeActionVisibility: (row: Record<string, unknown>) => boolean;
-  isTierValidationActionHidden: (methodName: string) => boolean;
+  v2ActionRuleList: Array<Record<string, unknown>>;
+  resolveActionReference?: (requested: { actionId: number | null; actionReference: string; menuId: number | null }) => AuthorizedWindowActionTarget | null;
 }): ContractAction[] {
-  const mapSceneReadyAction = (row: Record<string, unknown>): ContractAction | null => {
-    const protocol = normalizeSceneActionProtocol(row);
-    const key = String(row.key || '').trim();
-    if (!key) return null;
-    const target = parseMaybeJsonRecord(row.target);
-    const intent = String(row.intent || '').trim().toLowerCase();
-    const presentation = parseMaybeJsonRecord(row.presentation);
-    const presentationTier = String(presentation.tier || row.tier || '').trim().toLowerCase();
-    const placement = String(row.placement || 'header').trim().toLowerCase();
-    const actionId = toPositiveInt(target.action_id) ?? toPositiveInt(target.ref);
-    const hasOpenTarget = Boolean(actionId || String(target.url || '').trim() || String(target.route || '').trim());
-    const kind = hasOpenTarget || intent === 'ui.contract' ? 'open' : 'object';
-    const requiresSavedRecord = ['object', 'server', 'mutation'].includes(kind) && !params.recordId;
-    return {
-      key,
-      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
-      label: String(row.label || key),
-      kind,
-      level: placement,
-      selection: 'none',
-      actionId,
-      methodName: detectObjectMethodFromActionKey(key, String(target.method || '').trim()),
-      targetModel: String(target.model || params.model || '').trim(),
-      context: parseMaybeJsonRecord(target.context_raw),
-      domainRaw: String(target.domain_raw || '').trim(),
-      target: String(target.target || '').trim(),
-      url: String(target.url || target.route || '').trim(),
-      enabled: !requiresSavedRecord,
-      authorizationAllowed: true,
-      requiresSavedRecord,
-      hint: requiresSavedRecord ? 'requires record id' : '',
-      intent,
-      semantic: presentationTier === 'primary' ? 'primary_action' : presentationTier === 'secondary' ? 'secondary_action' : '',
-      sourceWidgetId: String(row.sourceWidgetId || row.source_widget_id || '').trim(),
-      clientMode: String(target.mode || target.client_mode || row.clientMode || row.client_mode || '').trim(),
-      visibleProfiles: ['create', 'edit', 'readonly'],
-      requiredParams: normalizeRequiredParams(row.required_params),
-      requiresReason: row.requires_reason === true,
-      presentationTier,
-      destructive: presentation.semantic === 'destructive',
-      requiresConfirmation: presentation.requires_confirmation === true,
-      actionSafety: normalizeActionSafety(row.action_safety),
-      mutation: protocol?.mutation,
-      refreshPolicy: protocol?.refresh_policy,
-    };
-  };
-
-  const resolvedV2ActionContract = parseMaybeJsonRecord(resolveUnifiedPageContractV2(params.contract)?.actionContract);
-  const embeddedV2ActionRuleList = resolvedV2ActionContract.actionRuleList;
-  const hasV2ActionAuthority = Array.isArray(params.v2ActionRuleList) || Array.isArray(embeddedV2ActionRuleList);
-  const v2ActionRuleList = Array.isArray(params.v2ActionRuleList)
-    ? params.v2ActionRuleList
-    : Array.isArray(embeddedV2ActionRuleList)
-      ? embeddedV2ActionRuleList
-      : [];
-  const nativeFormContract = params.contract?.views?.form as Record<string, unknown> | undefined;
-  const { workflowRows, nativeRows } = hasV2ActionAuthority
-    ? { workflowRows: [], nativeRows: [] }
-    : selectAuthoritativeBusinessActionRows(nativeFormContract, params.workflowActionRows);
-  const workflowMethods = new Set<string>();
-  workflowRows.forEach((row) => {
-    const method = String(parseMaybeJsonRecord(row.payload).method || '').trim();
-    if (method) workflowMethods.add(method);
-    workflowActionMethodAliases(String(row.key || '').trim()).forEach((alias) => workflowMethods.add(alias));
-  });
-  const merged: Array<Record<string, unknown>> = [...workflowRows, ...nativeRows];
-  if (!hasV2ActionAuthority) {
-    if (Array.isArray(params.contract?.buttons)) merged.push(...params.contract.buttons as Array<Record<string, unknown>>);
-    if (Array.isArray(params.contract?.toolbar?.header)) merged.push(...params.contract.toolbar.header as Array<Record<string, unknown>>);
-    if (Array.isArray(params.contract?.toolbar?.sidebar)) merged.push(...params.contract.toolbar.sidebar as Array<Record<string, unknown>>);
-    if (Array.isArray(params.contract?.toolbar?.footer)) merged.push(...params.contract.toolbar.footer as Array<Record<string, unknown>>);
-  }
-  if (hasV2ActionAuthority) {
-    v2ActionRuleList.forEach((raw) => {
+  const merged: Array<Record<string, unknown>> = [];
+  (params.v2ActionRuleList || []).forEach((raw) => {
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
       const row = raw as Record<string, unknown>;
       const sourceWidgetId = String(row.sourceWidgetId || row.source_widget_id || '').trim();
@@ -121,15 +99,25 @@ export function buildContractFormActions(params: {
       const isHeaderAction = sourceWidgetId === 'page.header'
         || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope));
       const isFooterAction = targetScope === 'footer';
-      if (!isHeaderAction && !isFooterAction) return;
+      const nativeIdentity = parseMaybeJsonRecord(row.nativeIdentity || row.native_identity);
+      const canonicalRegion = String(nativeIdentity.canonical_region || nativeIdentity.canonicalRegion || '').trim().toLowerCase();
+      const level = isFooterAction
+        ? 'footer'
+        : isHeaderAction
+          ? 'header'
+          : canonicalRegion === 'stat_buttons'
+            ? 'smart'
+            : 'body';
       const buttonType = String(button.type || button.buttonType || '').trim();
       merged.push({
         key,
+        authorityActionId: String(row.actionId || row.action_id || '').trim(),
         backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
+        nativeIdentity,
         label: String(row.label || key).trim() || key,
         kind: buttonType === 'server' || buttonType === 'server_action' ? 'server' : buttonName ? 'object' : clientMode ? 'client' : 'open',
         intent: String(row.intent || '').trim(),
-        level: isFooterAction ? 'footer' : 'header',
+        level,
         selection: 'none',
         sourceWidgetId,
         target,
@@ -137,8 +125,10 @@ export function buildContractFormActions(params: {
         payload: {
           method: buttonName,
           type: buttonType,
+          server_action_id: button.server_action_id ?? button.serverActionId,
+          xml_id: button.xml_id ?? button.xmlId,
           action_id: target.action_id,
-          ref: target.ref,
+          ref: target.ref || target.action_ref || target.xml_id || target.xmlid,
           url: target.url || target.route,
           target: target.target,
           mode: clientMode,
@@ -159,28 +149,36 @@ export function buildContractFormActions(params: {
           : ['create', 'edit', 'readonly'],
         presentation: row.presentation,
         action_safety: row.actionSafety ?? row.action_safety,
+        refresh_policy: row.refreshPolicy ?? row.refresh_policy,
+        entitlementEvaluated: row.entitlementEvaluated ?? row.entitlement_evaluated,
       });
-    });
-  }
-  if (!hasV2ActionAuthority) merged.push(...params.sceneReadyActions);
+  });
+
+  // Scene rows are presentation hints, never executable authority.  A V2 row
+  // is the only source allowed to enter the form action bar.
+  const identityCounts = new Map<string, number>();
+  const actionIdCounts = new Map<string, number>();
+  merged.forEach((row) => {
+    const identity = String(row.backendIdentity || row.backend_identity || '').trim();
+    const actionId = String(row.authorityActionId || row.actionId || row.action_id || '').trim();
+    if (identity) identityCounts.set(identity, (identityCounts.get(identity) || 0) + 1);
+    if (actionId) actionIdCounts.set(actionId, (actionIdCounts.get(actionId) || 0) + 1);
+  });
 
   const dedup = new Set<string>();
   const out: ContractAction[] = [];
   for (const row of merged) {
-    if (params.sceneReadyActions.includes(row) || (params.sceneReadyActions.length && !String(row.key || '').trim())) {
-      const mapped = mapSceneReadyAction(row);
-      if (!mapped || dedup.has(mapped.key)) continue;
-      const status = resolveV2ButtonStatus(mapped.key, params.v2ButtonStatus);
-      if (status?.visible === false) continue;
-      if (status?.disabled === true) {
-        mapped.enabled = false;
-        mapped.authorizationAllowed = false;
-        mapped.hint = status.reasonCode || mapped.hint || 'disabled_by_status_contract';
-      }
-      dedup.add(mapped.key);
-      out.push(mapped);
-      continue;
-    }
+    const authorityActionId = String(row.authorityActionId || row.actionId || row.action_id || '').trim();
+    const backendIdentity = String(row.backendIdentity || row.backend_identity || '').trim();
+    const sourceWidgetId = String(row.sourceWidgetId || row.source_widget_id || '').trim();
+    if (!authorityActionId || !backendIdentity || !sourceWidgetId) continue;
+    if (identityCounts.get(backendIdentity) !== 1 || actionIdCounts.get(authorityActionId) !== 1) continue;
+    if (
+      typeof row.allowed !== 'boolean'
+      || typeof row.enabled !== 'boolean'
+      || typeof row.disabled !== 'boolean'
+      || row.entitlementEvaluated !== true
+    ) continue;
     const rowLabel = normalizeActionLabel(row.label);
     const keyBase = String(row.key || row.name || rowLabel || '').trim();
     const key = dedup.has(keyBase) && rowLabel ? `${keyBase}:${rowLabel}` : keyBase;
@@ -191,10 +189,22 @@ export function buildContractFormActions(params: {
     const targetRaw = parseMaybeJsonRecord(row.target);
     const effectiveKind = protocol?.mutation ? 'mutation' : normalizeActionKind(row.kind);
     const level = String(row.level || 'body').trim().toLowerCase();
-    const actionId = toPositiveInt(payload.action_id) ?? toPositiveInt(payload.ref) ?? toPositiveInt(row.actionId) ?? toPositiveInt(row.action_id);
+    const actionReference = String(payload.ref || '').trim();
+    const requestedActionId = toPositiveInt(payload.action_id)
+      ?? toPositiveInt(actionReference)
+      ?? toPositiveInt(row.actionId)
+      ?? toPositiveInt(row.action_id);
+    const requestedMenuId = toPositiveInt(targetRaw.menu_id || targetRaw.menuId);
+    const hasWindowActionSelector = Boolean(requestedActionId || actionReference || requestedMenuId);
+    const authorizedWindowTarget = effectiveKind === 'open' && hasWindowActionSelector && params.resolveActionReference
+      ? params.resolveActionReference({ actionId: requestedActionId, actionReference, menuId: requestedMenuId })
+      : null;
+    const requiresAuthorizedResolution = Boolean(params.resolveActionReference && hasWindowActionSelector);
+    const actionId = authorizedWindowTarget?.actionId ?? (requiresAuthorizedResolution ? null : requestedActionId);
+    const menuId = authorizedWindowTarget?.menuId ?? (requiresAuthorizedResolution ? null : requestedMenuId);
+    const openUrl = String(payload.url || row.url || '').trim();
+    if (effectiveKind === 'open' && !actionId && !openUrl) continue;
     const methodName = detectObjectMethodFromActionKey(key, String(payload.method || row.method || '').trim());
-    if (row.workflow_contract_action !== true && methodName && workflowMethods.has(methodName)) continue;
-    if (params.isTierValidationActionHidden(methodName)) continue;
     const selectionRaw = String(row.selection || 'none').trim().toLowerCase();
     const selection = selectionRaw === 'single' || selectionRaw === 'multi' ? selectionRaw : 'none';
     const visibleProfiles = (Array.isArray(row.visible_profiles) ? row.visible_profiles : ['create', 'edit'])
@@ -203,45 +213,59 @@ export function buildContractFormActions(params: {
     const requiredParams = normalizeRequiredParams(row.required_params);
     const presentation = parseMaybeJsonRecord(row.presentation);
     const presentationTier = String(presentation.tier || '').trim().toLowerCase();
-    const policy = evaluateActionPolicy(params.contract, key, params.policyContext) as ActionPolicy;
-    if (!policy.visible || !params.evaluateNativeActionVisibility(row)) continue;
-    const status = resolveV2ButtonStatus(key, params.v2ButtonStatus);
-    if (status?.visible === false) continue;
-    const contractAllowed = typeof row.allowed === 'boolean' ? row.allowed : true;
-    const contractEnabled = typeof row.enabled === 'boolean' ? row.enabled : true;
+    const presentationSemantic = String(presentation.semantic || '').trim();
+    if (row.visible === false || row.invisible === true) continue;
+    const statuses = [...new Set(Object.values(params.v2ButtonStatus))];
+    const identityStatuses = statuses.filter((candidate) => (
+      String(candidate?.backendIdentity || '').trim() === backendIdentity
+    ));
+    const status = identityStatuses.length === 1
+      ? identityStatuses[0]
+      : identityStatuses.length > 1
+        ? undefined
+        : resolveV2ButtonStatus(key, params.v2ButtonStatus);
+    if (!status || typeof status.visible !== 'boolean' || typeof status.disabled !== 'boolean') continue;
+    if (status?.backendIdentity && status.backendIdentity !== backendIdentity) continue;
+    if (status.visible === false) continue;
+    const contractAllowed = row.allowed === true;
+    const contractEnabled = row.enabled === true;
     const contractDisabled = row.disabled === true;
     const needRecord = ['object', 'server', 'mutation'].includes(effectiveKind) || ['row', 'smart'].includes(level);
     const authorizationAllowed = contractAllowed && contractEnabled && !contractDisabled
-      && policy.enabled && status?.disabled !== true;
+      && status.disabled !== true;
     const requiresSavedRecord = needRecord && !params.recordId;
     const enabled = authorizationAllowed && !requiresSavedRecord;
     out.push({
       key,
-      backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
+      authorityActionId,
+      backendIdentity,
       label: normalizeActionLabel(row.label, key),
       kind: effectiveKind,
       level,
       selection,
       actionId,
+      menuId,
       methodName,
+      serverActionId: toPositiveInt(payload.server_action_id || payload.serverActionId),
+      serverActionXmlId: String(payload.xml_id || payload.xmlId || '').trim(),
       targetModel: String(row.target_model || row.model || params.model || '').trim(),
       context: parseMaybeJsonRecord(payload.context_raw),
       domainRaw: String(payload.domain_raw || '').trim(),
-      target: String(payload.target || row.target || '').trim(),
-      url: String(payload.url || row.url || '').trim(),
+      target: String(payload.target || targetRaw.target || '').trim(),
+      url: openUrl,
       enabled,
       authorizationAllowed,
       requiresSavedRecord,
-      hint: status?.disabled === true
+      hint: status.disabled === true
         ? status.reasonCode || 'disabled_by_status_contract'
         : needRecord && !params.recordId
           ? 'requires record id'
           : contractAllowed
-            ? String(row.warning_message || policy.reason || '').trim()
+            ? String(row.warning_message || '').trim()
             : String(row.blocked_message || row.reason || row.reason_code || '').trim(),
       intent: String(row.intent || '').trim(),
-      semantic: policy.semantic,
-      sourceWidgetId: String(row.sourceWidgetId || row.source_widget_id || '').trim(),
+      semantic: presentationSemantic,
+      sourceWidgetId,
       clientMode: String(targetRaw.mode || targetRaw.client_mode || row.clientMode || row.client_mode || '').trim(),
       visibleProfiles,
       requiredParams,

@@ -5,7 +5,6 @@ type PreflightResult = {
   stopped: boolean;
   contract?: unknown;
   meta?: Dict | null;
-  typedContract?: Dict;
   resolvedModel?: string;
 };
 
@@ -95,7 +94,6 @@ export function useActionViewLoadMainPhaseRuntime() {
         input: options.buildLoadRequestInput({
           ...options.buildLoadRequestDynamicInput({
             contract: preflightPhaseResult.contract,
-            typedContract: preflightPhaseResult.typedContract,
             viewMode: requestViewMode,
             resolvedModel: preflightPhaseResult.resolvedModel,
             searchTerm: requestSearchTerm,

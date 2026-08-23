@@ -1,0 +1,17 @@
+events:
+  - type: boundary.frozen
+    result: integrated_p0_p1_project_form_product_result
+  - type: environment.inventoried
+    result: local_dev_profile_resolved_without_new_identity
+  - type: snapshot.invalid
+    result: project_form_snapshot_is_permission_failure_and_action_snapshot_is_empty
+  - type: verification.interrupted
+    result: upstream_frontend_v2_policy_projection_guard_failed_outside_batch_d_scope
+  - type: verification.interrupted
+    result: project_layout_guard_encoded_obsolete_user_id_removal_semantics
+  - type: environment.entry_missing
+    result: contract_snapshot_had_no_local_dev_identity_wrapper
+
+next_exact_step:
+  command: resume_after_batch_e_restores_upstream_guard
+  requires_explicit_validation_authorization: false

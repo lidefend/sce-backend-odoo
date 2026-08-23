@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, type ComputedRef, type Ref } from 'vue';
-import type { ActionContract } from '@sc/schema';
-import type { ContractV2NormalizedStore } from '../../app/contracts/v2';
+import { resolveContractV2Collaboration, type ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeChatterAction } from './types';
 import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
 import type { PendingNativeAttachment } from './useNativeAttachmentRuntime';
@@ -19,13 +18,11 @@ import {
   nativeCollaborationUnavailableMessage as nativeCollaborationUnavailableMessageFromState,
   resolveNativeAttachmentContract,
   resolveNativeChatterContract,
-  resolveRuntimeCollaborationContract,
 } from './collaborationContract';
 
 type MutableRef<T = unknown> = Ref<T>;
 
 export function useRecordCollaborationPresentation(context: {
-  contract: Ref<ActionContract | null>;
   v2ContractStore: Ref<ContractV2NormalizedStore | null>;
   recordId: ComputedRef<number | null>;
   model: ComputedRef<string>;
@@ -64,16 +61,13 @@ export function useRecordCollaborationPresentation(context: {
   updateNativeActivity: (...args: any[]) => unknown;
   loadMoreNativeChatterTimeline: (...args: any[]) => unknown;
 }) {
-  const runtimeCollaborationContract = computed(() => resolveRuntimeCollaborationContract(
-    context.v2ContractStore.value?.snapshot?.runtimeContract,
-    (context.contract.value as Record<string, unknown> | null | undefined)?.runtimeContract,
-  ));
+  const runtimeCollaborationContract = computed(() => resolveContractV2Collaboration(context.v2ContractStore.value));
   const nativeChatterContract = computed(() => resolveNativeChatterContract(
-    context.contract.value?.views?.form,
+    undefined,
     runtimeCollaborationContract.value,
   ));
   const nativeAttachmentContract = computed(() => resolveNativeAttachmentContract(
-    context.contract.value?.views?.form,
+    undefined,
     runtimeCollaborationContract.value,
   ));
   const nativeChatterActions = computed<NativeChatterAction[]>(() => nativeChatterActionsFromContract(nativeChatterContract.value, {
@@ -131,7 +125,8 @@ export function useRecordCollaborationPresentation(context: {
     collaborationUserQuery: context.collaborationUserQuery.value, hasAttachments: Boolean(nativeAttachments.value),
     pendingAttachments: context.pendingNativeAttachments.value, posting: context.chatterPosting.value,
     selectedMentionUsers: context.selectedMentionUsers.value, submitDisabled: isNativeChatterSubmitDisabled.value,
-    timeline: context.chatterTimeline.value, timelineHasMore: context.chatterTimelineHasMore.value,
+    timeline: context.chatterTimeline.value,
+    timelineHasMore: context.chatterTimelineHasMore.value,
     timelineLoading: context.chatterTimelineLoading.value, title: nativeCollaborationTitle.value,
     unavailableMessage: nativeCollaborationUnavailableMessage.value, usersLoading: context.collaborationUsersLoading.value,
   }));

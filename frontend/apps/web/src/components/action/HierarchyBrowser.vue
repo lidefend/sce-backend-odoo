@@ -111,6 +111,8 @@ import {
   loadHierarchyRows,
   loadHierarchyTree,
   executeHierarchyCommand,
+  hierarchyCommandHasExecutableAuthority,
+  normalizeHierarchyCommand,
   type HierarchyCommand,
   type HierarchyLevelConfig,
   type HierarchyTreeNode as HierarchyNode,
@@ -165,10 +167,9 @@ const actions = computed<SurfaceAction[]>(() => (Array.isArray(props.config.acti
   const row = value as Dict;
   return { key: String(row.key || row.action_id || ''), label: String(row.label || ''), action_id: Number(row.action_id || 0), menu_id: Number(row.menu_id || 0), variant: String(row.variant || ''), route: String(row.route || '') };
 }).filter((row) => row.key && row.label && row.action_id > 0));
-const commands = computed<HierarchyCommand[]>(() => (Array.isArray(props.config.commands) ? props.config.commands : []).map((value) => {
-  const row = value as Dict;
-  return { key: String(row.key || ''), label: String(row.label || ''), method: String(row.method || '') };
-}).filter((row) => row.key && row.label && row.method));
+const commands = computed<HierarchyCommand[]>(() => (Array.isArray(props.config.commands) ? props.config.commands : [])
+  .map(normalizeHierarchyCommand)
+  .filter(hierarchyCommandHasExecutableAuthority));
 const columnGridStyle = computed(() => ({ gridTemplateColumns: `${leftWidth.value}px calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) minmax(360px, 1fr) calc(var(--sc-component-hierarchy-browser-resizer-width) * 1px) ${rightWidth.value}px` }));
 const layoutGridStyle = computed(() => ({ ...columnGridStyle.value, height: `${workspaceHeight.value}px` }));
 const pageSize = computed(() => listConfig.value.pageSize);

@@ -52,7 +52,7 @@ class TenantProductPayloadBoundaryGuardTests(unittest.TestCase):
             "modules": ["external_extension_alpha"],
             "minimum_product_version": "1.0.0-rc.0",
             "maximum_product_version_exclusive": "2.0.0",
-            "required_contracts": ["tenant_payload_v1", "route_authority.v1"],
+            "required_contracts": ["tenant_payload_v1", "2.0.0"],
             "archive_sha256": "0" * 64,
             "signature": {"algorithm": "ed25519", "key_id": "external-key", "value": "external-signature"},
         }

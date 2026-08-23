@@ -618,7 +618,11 @@ def run(env):
         _apply_lifecycle(project, state)
 
     showroom_projects = _get_showroom_projects(env)
+    Boq = env["project.boq.line"].sudo()
     for project in showroom_projects:
+        if Boq.search_count([("project_id", "=", project.id)]) == 0:
+            code_prefix = str(project.project_code or f"DEMO-{project.id}").strip()
+            _ensure_boq(env, project, code_prefix, uom_unit)
         vals = {}
         if not project.partner_id and owner:
             vals["partner_id"] = owner.id

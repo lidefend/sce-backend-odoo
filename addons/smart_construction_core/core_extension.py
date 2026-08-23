@@ -64,6 +64,9 @@ from odoo.addons.smart_construction_core import core_extension_contract_normaliz
 from odoo.addons.smart_construction_core import core_extension_intent_handlers as _intent_handlers
 from odoo.addons.smart_construction_core import core_extension_service_builders as _service_builders
 from odoo.addons.smart_construction_core import core_extension_actor_roles as _actor_roles
+from odoo.addons.smart_core.handlers.ui_contract_v2_projection import (
+    normalize_post_projected_container_tree,
+)
 from odoo.addons.smart_construction_core.services.financial_workspace_contract import (
     build_financial_form_business_actions,
     inject_financial_workspace_runtime,
@@ -548,16 +551,22 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     # but must not remove or inject fields outside an explicitly selected
     # native view.
     if _sc_explicit_source_view_id(source, head, context):
+        layout = out.get("layoutContract") if isinstance(out.get("layoutContract"), dict) else {}
+        tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
+        tree = normalize_post_projected_container_tree(out, tree)
+        layout["containerTree"] = tree
+        out["layoutContract"] = layout
         return out if out != contract else None
     layout = out.get("layoutContract") if isinstance(out.get("layoutContract"), dict) else {}
     tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
-    layout["containerTree"] = _sc_prune_and_label_project_nodes(tree)
+    tree = _sc_prune_and_label_project_nodes(tree)
+    layout["containerTree"] = normalize_post_projected_container_tree(out, tree)
     out["layoutContract"] = layout
     status = out.get("statusContract") if isinstance(out.get("statusContract"), dict) else {}
     if isinstance(status.get("widgetStatus"), list):
         status["widgetStatus"] = [
             row for row in status["widgetStatus"]
-            if not (isinstance(row, dict) and _sc_text(row.get("widgetId")) == "field.user_id")
+            if isinstance(row, dict)
         ]
         out["statusContract"] = status
     _sc_append_project_responsibility_group(out, include_collaborators=render_profile != "create")
@@ -574,15 +583,11 @@ def smart_core_normalize_projected_contract_data(env, data, context):
 
 
 def smart_core_normalize_unified_page_contract_v2(env, contract, context):
-    del env
-    if not isinstance(contract, dict):
-        return None
-    source = (context or {}).get("source_contract") if isinstance(context, dict) else {}
-    source = source if isinstance(source, dict) else {}
-    out = deepcopy(contract)
-    _sc_general_contract_tax_contract(out, source_contract=source)
-    _sc_normalize_general_contract_company_form(out, source_contract=source)
-    return out if out != contract else None
+    del env, contract, context
+    # Native Unified Page Contract V2 is already canonical.  Industry
+    # projected-data compatibility normalizers must not rebuild its layout or
+    # synthesize name-level widget status rows.
+    return None
 
 
 def _sc_field_name(node: Any) -> str:
@@ -629,10 +634,6 @@ def _sc_apply_form_layout_governance_to_group(node: dict[str, Any], title: str =
     _contract_helpers.sc_apply_form_layout_governance_to_group(node, title, source_contract=source_contract)
 
 
-def _sc_normalize_general_contract_company_form(contract: dict[str, Any], source_contract: dict[str, Any] | None = None) -> None:
-    _contract_normalizers.normalize_general_contract_company_form(contract, source_contract=source_contract)
-
-
 def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
     if view_type != "form" or not model:
         return
@@ -662,9 +663,6 @@ def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
     if not isinstance(workflow_contract, dict) or not workflow_contract:
         return
     contract["workflowContract"] = workflow_contract
-    runtime = contract.get("runtimeContract") if isinstance(contract.get("runtimeContract"), dict) else {}
-    runtime["workflowContract"] = workflow_contract
-    contract["runtimeContract"] = runtime
     status = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
     global_status = status.get("globalStatus") if isinstance(status.get("globalStatus"), dict) else {}
     editability = _sc_text(workflow_contract.get("editability"))

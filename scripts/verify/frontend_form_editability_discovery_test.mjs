@@ -13,13 +13,11 @@ function actionContract(model = 'demo.dynamic.model') {
   return {
     ok: true,
     data: {
-      __unified_page_contract_v2: {
-        pageInfo: { model },
-        dataContract: {
-          dataSource: {
-            primary: {
-              params: { domain: [['company_id', '=', 7]], context: { allowed_company_ids: [7] }, order: 'business_date desc' },
-            },
+      pageInfo: { model },
+      dataContract: {
+        dataSource: {
+          primary: {
+            params: { domain: [['company_id', '=', 7]], context: { allowed_company_ids: [7] }, order: 'business_date desc' },
           },
         },
       },
@@ -31,9 +29,7 @@ function formContract(pageAuth) {
   return {
     ok: true,
     data: {
-      __unified_page_contract_v2: {
-        statusContract: { globalStatus: { pageAuth } },
-      },
+      statusContract: { globalStatus: { pageAuth } },
     },
   };
 }

@@ -109,6 +109,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
   executeHierarchyCommand,
+  hierarchyCommandHasExecutableAuthority,
+  normalizeHierarchyCommand,
   loadHierarchyRows,
   loadHierarchyTree,
   type HierarchyCommand,
@@ -143,7 +145,9 @@ const createConfig = computed(() => {
   return { enabled: raw.enabled === true && Boolean(String(raw.label || '').trim()), label: String(raw.label || '') };
 });
 const actions = computed<SurfaceAction[]>(() => (Array.isArray(props.config.actions) ? props.config.actions : []).map((row) => row as SurfaceAction));
-const commands = computed<HierarchyCommand[]>(() => (Array.isArray(props.config.commands) ? props.config.commands : []).map((row) => row as HierarchyCommand));
+const commands = computed<HierarchyCommand[]>(() => (Array.isArray(props.config.commands) ? props.config.commands : [])
+  .map(normalizeHierarchyCommand)
+  .filter(hierarchyCommandHasExecutableAuthority));
 const toolbarCommands = computed(() => commands.value.filter((command) => command.placement !== 'overflow'));
 const overflowCommands = computed(() => commands.value.filter((command) => command.placement === 'overflow'));
 const detailSections = computed<DetailSection[]>(() => {

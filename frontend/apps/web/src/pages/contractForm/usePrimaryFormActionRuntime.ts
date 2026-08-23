@@ -35,7 +35,15 @@ export function usePrimaryFormActionRuntime(params: {
       const response = await (params.executeButtonRequest || executeButton)({
         model: action.targetModel || params.modelName(),
         res_id: resId,
-        button: { name: action.methodName, type: action.kind === 'server' ? 'server' : 'object' },
+        button: {
+          name: action.methodName,
+          type: action.kind === 'server' ? 'server' : 'object',
+          action_id: String(action.authorityActionId || '').trim(),
+          backend_identity: String(action.backendIdentity || '').trim(),
+          source_widget_id: String(action.sourceWidgetId || '').trim(),
+          server_action_id: action.serverActionId || undefined,
+          xml_id: action.serverActionXmlId || undefined,
+        },
         context: action.context,
         meta: {
           menu_id: Number(params.routeMenuId() || 0) || undefined,
@@ -44,6 +52,7 @@ export function usePrimaryFormActionRuntime(params: {
       });
       const result = response?.result;
       if (await params.navigateActionResponseResult(result)) {
+        await params.applyProjectionRefreshPolicy(action.refreshPolicy || { on_success: ['scene_projection'] });
         return;
       }
       params.submissionFeedback.value = { kind: 'success', message: '提交成功' };

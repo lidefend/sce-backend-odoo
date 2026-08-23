@@ -21,6 +21,20 @@ export function normalizeActionSafety(value: unknown): ContractAction['actionSaf
   };
 }
 
+export function contractActionConfirmationPrompt(action: ContractAction): {
+  actionLabel: string;
+  message: string;
+} | null {
+  const safety = action.actionSafety;
+  if (!safety || safety.classification !== 'danger' || !safety.requiresConfirm) return null;
+  return {
+    actionLabel: String(action.label || '操作'),
+    message: String(
+      safety.confirmMessage || action.hint || '该操作执行后将立即生效，请确认是否继续。',
+    ),
+  };
+}
+
 export function normalizeRequiredParams(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -35,20 +49,6 @@ export function normalizeActionLabel(raw: unknown, fallback = ''): string {
   const match = text.match(/['"]label['"]\s*:\s*['"]([^'"]+)['"]/);
   if (match?.[1]) return String(match[1]).trim();
   return text;
-}
-
-export function isTierValidationActionHidden(params: {
-  methodName: string;
-  validationStatus: unknown;
-  canReview: unknown;
-}) {
-  const method = String(params.methodName || '').trim();
-  const validationStatus = String(params.validationStatus || '').trim();
-  if ((method === 'validate_tier' || method === 'reject_tier') && !params.canReview) return true;
-  return (
-    (method === 'action_confirm' || method === 'action_submit' || method === 'button_confirm')
-    && ['waiting', 'pending', 'validated'].includes(validationStatus)
-  );
 }
 
 export function contractActionRuleClientMode(rule: Record<string, unknown>) {

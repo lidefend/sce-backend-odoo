@@ -1,0 +1,26 @@
+decision:
+  id: OPS-DECISION-001
+  topic: agent_workspace_governance
+  status: active
+
+  decision:
+    agent_context_is_execution_metadata_not_product_authority: true
+    repository_policies_override_agent_records: true
+    one_run_has_one_goal_and_one_active_batch: true
+    preexisting_dirty_changes_are_excluded_by_default: true
+    completion_requires_truthful_verification_evidence: true
+
+  rules:
+    - select_a_goal_before_mutation
+    - declare_formal_product_layer_before_mutation
+    - freeze_exact_file_scope_and_exclusions
+    - preserve_changes_owned_by_parallel_work
+    - use_only_registered_runtime_and_verification_entries
+    - record_not_run_failed_and_passed_as_distinct_states
+    - keep_the_run_resumable_with_a_next_exact_step
+
+  related:
+    - AGENTS.md
+    - docs/ops/codex_workspace_execution_rules.md
+    - .agent/context.yaml
+    - .agent/workflows/governance-change.yaml

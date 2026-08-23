@@ -24,6 +24,7 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
     def test_local_release_entry_orders_cache_preflight_and_real_audit(self) -> None:
         source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
         block = source.split("verify.frontend.release.local:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("confirm.frontend.release.audit", block.splitlines()[0])
         self.assertIn("fe.install.cached", block)
         self.assertLess(block.index("release-preflight"), block.index("fe.install.cached"))
         self.assertIn("frontend_acceptance_operation_entry.sh release-audit", block)
@@ -37,6 +38,15 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         release_preflight = runtime.split("release-preflight)", 1)[1].split(";;", 1)[0]
         self.assertIn("frontend lifecycle is active owner=", release_preflight)
         self.assertIn("untracked frontend listener", release_preflight)
+
+    def test_local_release_entry_requires_explicit_frozen_lane_confirmation(self) -> None:
+        source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        confirmation = source.split("confirm.frontend.release.audit:", 1)[1].split(
+            "verify.frontend.release.local:", 1
+        )[0]
+        self.assertIn("CONFIRM_FRONTEND_RELEASE_AUDIT", confirmation)
+        self.assertIn("RUN_FROZEN_FRONTEND_RELEASE_AUDIT", confirmation)
+        self.assertIn("not a daily-development target", confirmation)
 
     def test_direct_runtime_is_denied_before_any_mutator(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -106,6 +116,21 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         self.assertIn("frontend_acceptance_make_identity.sh", source)
         self.assertIn("frontend_acceptance_make db.create", source)
         self.assertIn("frontend_acceptance_make mod.install", source)
+        smart_core_upgrade = source.index(
+            "frontend_acceptance_make mod.upgrade \\\n  MODULE=smart_core"
+        )
+        construction_upgrade = source.index(
+            "frontend_acceptance_make mod.upgrade \\\n  MODULE=smart_construction_core"
+        )
+        fixture_probe = source.index(
+            'ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh'
+        )
+        self.assertLess(smart_core_upgrade, construction_upgrade)
+        self.assertLess(construction_upgrade, fixture_probe)
+        self.assertIn("CODEX_MODULES=smart_core,smart_construction_core", source)
+        self.assertNotIn(
+            '\nDB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh', source
+        )
         adapter = (ROOT / "scripts/common/frontend_acceptance_make_identity.sh").read_text(
             encoding="utf-8"
         )
@@ -140,6 +165,20 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         self.assertNotIn("postData()", login.split("login intent rejected", 1)[1])
         self.assertNotIn("PASSWORD", login.split("login intent rejected", 1)[1])
 
+    def test_delivery_hardening_payment_create_uses_product_list_path(self) -> None:
+        source = (
+            ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs"
+        ).read_text(encoding="utf-8")
+        helper = source.split(
+            "async function openPaymentCreateFromList(", 1
+        )[1].split("\n}\n", 1)[0]
+        self.assertIn('[data-product-page-mode="list"][data-list-status]:visible', helper)
+        self.assertIn("name: '新建', exact: true", helper)
+        self.assertIn('data-form-model="payment.request"', helper)
+        self.assertIn('data-form-action-id="${target.action_id}"', helper)
+        self.assertIn('data-form-menu-id="${target.menu_id}"', helper)
+        self.assertNotIn("新建付款申请", source)
+
     def test_release_probes_fixture_and_http_credentials_before_frontend(self) -> None:
         fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(
             encoding="utf-8"
@@ -162,27 +201,58 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             self.assertLess(backend, login_probe, target)
             self.assertLess(login_probe, frontend, target)
 
-    def test_ci_reloads_registry_after_install_and_release_stops_after_first_browser_failure(self) -> None:
+    def test_release_performance_probe_uses_governed_acceptance_identity_only(self) -> None:
+        runtime_make = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        target = runtime_make.split(
+            "verify.frontend.delivery_hardening.release.performance_probe:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn(
+            "frontend_acceptance_operation_entry.sh delivery-hardening-runtime-ids",
+            target,
+        )
+        self.assertIn("DELIVERY_HARDENING_PERF_ONLY=1", target)
+        self.assertNotIn("DELIVERY_HARDENING_SKIP_PERF=1", target)
+        runtime_id_line = next(
+            line for line in target.splitlines() if "target_output=" in line
+        )
+        self.assertNotIn("$(RUN_ENV)", runtime_id_line)
+
+        for relative_path in (
+            "scripts/dev/frontend_acceptance_runtime.sh",
+            "scripts/dev/frontend_acceptance_operation_entry.sh",
+        ):
+            source = (ROOT / relative_path).read_text(encoding="utf-8")
+            operation = source.split("delivery-hardening-runtime-ids)", 1)[1].split(
+                ";;", 1
+            )[0]
+            self.assertIn("frontend_delivery_hardening_runtime_ids.py", operation)
+            self.assertIn("ODOO_SHELL_RUN_ISOLATED=1", operation)
+
+    def test_ci_starts_http_carrier_after_install_and_stops_after_first_browser_failure(self) -> None:
         operation = (
             ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh"
         ).read_text(encoding="utf-8")
         db_ensure = operation.split("  db-ensure)", 1)[1].split("    ;;", 1)[0]
+        infrastructure = db_ensure.index("compose_dev up -d --wait db redis")
+        carrier = db_ensure.index("compose_dev create odoo", infrastructure)
+        config = db_ensure.index("render_odoo_conf.py", carrier)
         install = db_ensure.index("frontend_acceptance_db_ensure.sh")
         pre_restart_identity = db_ensure.index(
             'validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required',
             install,
         )
-        restart = db_ensure.index("compose_dev restart odoo")
-        healthy = db_ensure.index("compose_dev up -d --wait odoo", restart)
+        healthy = db_ensure.index("compose_dev up -d --wait odoo", install)
         final_identity = db_ensure.index(
             'validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required',
             healthy,
         )
-        self.assertLess(install, restart)
+        self.assertLess(infrastructure, carrier)
+        self.assertLess(carrier, config)
+        self.assertLess(config, install)
         self.assertLess(install, pre_restart_identity)
-        self.assertLess(pre_restart_identity, restart)
-        self.assertLess(restart, healthy)
+        self.assertLess(pre_restart_identity, healthy)
         self.assertLess(healthy, final_identity)
+        self.assertNotIn("compose_dev restart odoo", db_ensure)
 
         runtime = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
         audit = runtime.split("verify.frontend.release.audit:", 1)[1].split("\n\n", 1)[0]

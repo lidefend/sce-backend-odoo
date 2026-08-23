@@ -19,6 +19,9 @@ guard_demo_data_scope
 
 printf '[demo.load.full] db=%s\n' "$DB_NAME"
 
+printf '[demo.load.full] verify semantic demo authority\n'
+bash "$ROOT_DIR/scripts/dev/local_dev_demo_authority_verify.sh"
+
 DEMO_RESTART_AFTER_LOAD=0 bash "$ROOT_DIR/scripts/demo/load_all.sh"
 
 printf '[demo.load.full] seed demo_full\n'

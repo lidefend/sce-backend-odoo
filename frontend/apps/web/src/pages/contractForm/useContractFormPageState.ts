@@ -1,5 +1,5 @@
 import { reactive, ref } from 'vue';
-import type { ActionContract } from '@sc/schema';
+import type { ContractV2Snapshot } from '../../app/contracts/v2';
 import type { BusyKind, SubmissionFeedback, UiStatus } from './types';
 
 export function useContractFormPageState() {
@@ -20,7 +20,7 @@ export function useContractFormPageState() {
     activeContractMode: ref(''),
     formSettingsActiveTab: ref<'structure' | 'fields' | 'details' | 'actions'>('fields'),
     contractModeFeedback: ref(''),
-    contract: ref<ActionContract | null>(null),
+    contract: ref<ContractV2Snapshot | null>(null),
     contractMeta: ref<Record<string, unknown> | null>(null),
   };
 }

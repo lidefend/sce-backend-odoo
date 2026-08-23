@@ -83,7 +83,7 @@ export function useActionViewSceneComponentDriverRuntime(
         contract: currentBridge.contract,
         activeKit: currentDecision.resolution.kit,
         allowedKits: currentDecision.policy.allowedKits,
-        allowUserOverride: currentDecision.allowUserOverride,
+        allowUserOverride: false,
         resolutionSource: currentDecision.resolution.source,
       } : {},
     });
@@ -92,7 +92,7 @@ export function useActionViewSceneComponentDriverRuntime(
   async function loadPreference(): Promise<void> {
     const seq = ++preferenceLoadSeq;
     const scope = preferenceScope.value;
-    if (!scope.action_id && !scope.model) {
+    if (!decision.value.allowUserOverride || (!scope.action_id && !scope.model)) {
       userKit.value = '';
       return;
     }

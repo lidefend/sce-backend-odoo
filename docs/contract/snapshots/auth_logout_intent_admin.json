@@ -17,7 +17,22 @@
       {
         "message": "logged out"
       },
-      {}
+      {
+        "source_authorities": [
+          "res.users"
+        ],
+        "source_authority": {
+          "authorities": [
+            "res.users"
+          ],
+          "kind": "odoo_auth_session_proxy",
+          "no_business_fact_authority": true,
+          "projection_only": true,
+          "runtime_carrier": "auth.logout",
+          "write_proxy": true
+        },
+        "source_kind": "odoo_auth_session_proxy"
+      }
     ]
   },
   "user": "admin",

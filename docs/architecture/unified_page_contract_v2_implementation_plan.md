@@ -1,11 +1,44 @@
 # Unified Page Contract v2+ Implementation Plan
 
-Date: 2026-05-01
-Status: Direction pivoted to Unified Semantic Page Contract Lite
+Date: 2026-08-21
+Status: Canonical runtime active; legacy Web projection removed
 Layer Target: Contract Governance Layer
 Module: `docs/architecture`, future `addons/smart_core`, `addons/smart_scene`, `frontend/apps/web`
 
-## Direction Correction
+## Current Authority
+
+The earlier Lite-only direction below is superseded for the Web product runtime.
+`ui.contract.v2` now returns the strict Unified Page Contract V2 snapshot directly,
+and the Web client decodes it into `ContractV2NormalizedStore` without rebuilding
+an `ActionContract` compatibility payload.
+
+Completed runtime cutover evidence:
+
+- Action and Form load through the strict `app/contracts/v2/client.ts` transport.
+- Action access, view modes, list/kanban shape, filters, ordering, toolbar actions,
+  and row navigation consume `ContractV2NormalizedStore`; the former
+  `head/views/fields/buttons/toolbar/action_groups` fallback branches are removed.
+- Form fields, layout, status, actions, defaults, relationships, workflow, rights,
+  search, and source context consume normalized-store selectors.
+- `unifiedPageContractV2CompatProjection.ts`, projected raw loaders, and the
+  embedded V2 envelope have been removed from active code.
+- `verify.contract.page_v1_zero_residue.guard`,
+  `verify.unified_page_contract.v2`, and `verify.frontend.quick.gate` are the
+  required static/consumer completion gates.
+- The six active architecture baselines use `_snapshot_v2.json` and
+  `snapshotVersion: v2`; the zero-residue guard rejects reintroduction of a V1
+  architecture snapshot filename or metadata version.
+
+Lite remains an independently governed preview/terminal protocol. It is not the
+authority for the Web Action/Form runtime and must not be used to reintroduce a
+fallback into the strict V2 path.
+
+The immutable product image has not yet been rebuilt for this cutover. The local
+formal image remains at the product version recorded by the repository-root
+`VERSION` authority and is stale; a new candidate requires a clean, merged,
+versioned `main` candidate and the governed release workflow.
+
+## Superseded Direction Record
 
 The previous v2+ batches A-G are retained as exploratory governance assets, but the active implementation path is now `Unified Semantic Page Contract Lite`.
 
@@ -77,8 +110,8 @@ This checklist is the execution index for later batches. A task can be checked o
 ### Batch B: Backend Assembler
 
 - [x] Add v2+ assembler module.
-- [x] Map `scene_contract_v1` to v2+.
-- [x] Map `page_orchestration_v1` to v2+.
+- [x] Map `scene_contract` to v2+.
+- [x] Map `page_orchestration` to v2+.
 - [x] Map selected `ui.contract` output to v2+.
 - [x] Add v2+ shape guard.
 - [x] Add representative v2+ snapshots.
@@ -258,8 +291,8 @@ Build a backend assembler that maps existing contract sources into `UnifiedPageC
 ### Tasks
 
 1. Add `UnifiedPageContractAssembler`.
-2. Map `scene_contract_v1` to v2+.
-3. Map `page_orchestration_v1` to v2+.
+2. Map `scene_contract` to v2+.
+3. Map `page_orchestration` to v2+.
 4. Map selected `ui.contract` model/action output to v2+.
 5. Map `api.onchange` compatibility output to `UnifiedPagePatch v2+`.
 6. Add `runtimeContract` assembly with empty safe defaults.
@@ -631,7 +664,9 @@ Make frontend default path consume `UnifiedPageContract v2+`.
 - Frontend consumption must follow schema -> store -> page.
 - No batch may change public intent names.
 - No batch may branch business semantics by client type.
-- Every batch must leave legacy compatibility intact until explicit removal is approved.
+- Compatibility is retained only until its explicit removal batch; the Web
+  Action/Form compatibility projection has completed that removal and must not
+  be reintroduced.
 
 ## Final Target
 

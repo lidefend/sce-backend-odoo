@@ -1,0 +1,25 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-S
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Refresh the governed complexity report after baseline repairs
+status: completed
+formal_product_layer: P4
+layer_target: deterministic generated repository evidence
+reason: Quick requires the complexity report to match the exact current source inventory.
+
+scope:
+  include:
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/ops/iterations/delivery_context_switch_log_v1.md
+    - .agent/goals/REPO-BASELINE-AUDIT.yaml
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-R
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-S
+  exclude:
+    - scripts/ci/generate_complexity_budget_report.py
+    - complexity_thresholds
+    - application_source
+    - contract_or_schema
+    - database_or_runtime
+    - remote_state
+
+rollback:
+  method: regenerate the report from the reverted exact source fingerprint

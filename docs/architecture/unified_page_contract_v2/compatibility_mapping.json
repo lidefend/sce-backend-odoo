@@ -4,12 +4,12 @@
   "frontendLegacyHandling": "forbidden",
   "legacySources": [
     {
-      "source": "scene_contract_v1",
+      "source": "scene_contract",
       "canonicalOutput": "UnifiedPageContract.v2",
       "notes": "Legacy scene contract is normalized before frontend delivery."
     },
     {
-      "source": "page_orchestration_v1",
+      "source": "page_orchestration",
       "canonicalOutput": "UnifiedPageContract.v2",
       "notes": "Legacy orchestration facts are governance inputs only."
     },

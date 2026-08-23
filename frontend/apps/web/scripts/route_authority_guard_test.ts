@@ -7,7 +7,8 @@ import {
 } from '../src/app/routeAuthority';
 
 const raw = {
-  contract_version: 'route_authority.v1',
+  contract_version: '2.0.0',
+  schema_version: '2.0.0',
   source: 'test',
   principal_scope: { user_id: 7, company_id: 3, role_code: 'pm' },
   primary_actions: [],
@@ -43,6 +44,8 @@ const raw = {
 
 const contract = normalizeRouteAuthorityContract(raw);
 assert.ok(contract);
+assert.equal(normalizeRouteAuthorityContract({ ...raw, contract_version: 'route_authority.v1' }), null);
+assert.equal(normalizeRouteAuthorityContract({ ...raw, schema_version: '1.0.0' }), null);
 const contextual = contract.contextual_actions[0];
 assert.equal(routeAuthorityContextAllowed(contextual, {}, { companyId: 3, projectId: 9 }), false);
 assert.equal(routeAuthorityContextAllowed(

@@ -56,7 +56,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         source = self.runtime_audit.read_text(encoding="utf-8")
         self.assertIn("FORMAL_ACTION_ONLY_MENU_TARGETS", source)
         self.assertIn("FinalMenuNavigationService", source)
-        self.assertIn('convergence.get("source") != "delivery_engine_v1"', source)
+        self.assertIn('convergence.get("source") != "delivery_engine"', source)
         self.assertIn('"menu_id": int(menu.id) if menu else 0', source)
 
     def test_contract_runtime_audit_consumes_locked_product_contract(self):

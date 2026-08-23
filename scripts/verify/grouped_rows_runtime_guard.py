@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 API_DATA = ROOT / "addons/smart_core/handlers/api_data.py"
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
+LIST_GROUP_PAGINATION = ROOT / "frontend/apps/web/src/pages/listPage/listGroupPagination.ts"
 SCHEMA = ROOT / "frontend/packages/schema/src/index.ts"
 
 
@@ -24,6 +25,9 @@ def main() -> int:
         api_data = _read(API_DATA)
         action_view = _read(ACTION_VIEW)
         list_page = _read(LIST_PAGE)
+        list_group_pagination = (
+            _read(LIST_GROUP_PAGINATION) if LIST_GROUP_PAGINATION.exists() else ""
+        )
         schema = _read(SCHEMA)
     except FileNotFoundError as exc:
         print("[FAIL] grouped_rows_runtime_guard")
@@ -105,9 +109,6 @@ def main() -> int:
         "pageWindow?: { start?: number; end?: number };",
         "pageHasPrev?: boolean;",
         "pageHasNext?: boolean;",
-        "const backendWindow = (group as { pageWindow?: { start?: unknown; end?: unknown } }).pageWindow;",
-        "typeof (group as { pageHasPrev?: unknown }).pageHasPrev === 'boolean'",
-        "typeof (group as { pageHasNext?: unknown }).pageHasNext === 'boolean'",
         "group-page-btn",
         "group-page-input",
         "onGroupJumpInputChange(",
@@ -124,6 +125,37 @@ def main() -> int:
     for marker in list_markers:
         if marker not in list_page:
             errors.append(f"list_page missing marker: {marker}")
+
+    if list_group_pagination:
+        extracted_list_markers = [
+            "} from './listPage/listGroupPagination';",
+            "return resolveListGroupPageMeta(group, effectiveGroupSampleLimit.value);",
+            "return canListGroupPagePrev(group, effectiveGroupSampleLimit.value);",
+            "return canListGroupPageNext(group, effectiveGroupSampleLimit.value);",
+        ]
+        for marker in extracted_list_markers:
+            if marker not in list_page:
+                errors.append(f"list_page missing extracted pagination marker: {marker}")
+
+        pagination_markers = [
+            "pageWindow?: { start?: unknown; end?: unknown };",
+            "if (typeof group.pageHasPrev === 'boolean') return group.pageHasPrev;",
+            "if (typeof group.pageHasNext === 'boolean') return group.pageHasNext;",
+            "const backendWindowStart = Math.trunc(Number(group.pageWindow?.start || 0));",
+            "const backendWindowEnd = Math.trunc(Number(group.pageWindow?.end || 0));",
+        ]
+        for marker in pagination_markers:
+            if marker not in list_group_pagination:
+                errors.append(f"list_group_pagination missing marker: {marker}")
+    else:
+        inline_pagination_markers = [
+            "const backendWindow = (group as { pageWindow?: { start?: unknown; end?: unknown } }).pageWindow;",
+            "typeof (group as { pageHasPrev?: unknown }).pageHasPrev === 'boolean'",
+            "typeof (group as { pageHasNext?: unknown }).pageHasNext === 'boolean'",
+        ]
+        for marker in inline_pagination_markers:
+            if marker not in list_page:
+                errors.append(f"list_page missing inline pagination marker: {marker}")
 
     schema_markers = [
         "export interface ApiDataListResult {",
@@ -171,6 +203,8 @@ def main() -> int:
     print(f"- api_data: {API_DATA}")
     print(f"- action_view: {ACTION_VIEW}")
     print(f"- list_page: {LIST_PAGE}")
+    if list_group_pagination:
+        print(f"- list_group_pagination: {LIST_GROUP_PAGINATION}")
     print(f"- schema: {SCHEMA}")
     return 0
 

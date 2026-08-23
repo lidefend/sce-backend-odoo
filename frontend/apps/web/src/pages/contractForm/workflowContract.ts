@@ -1,6 +1,7 @@
 import { parseMaybeJsonRecord } from '../../app/contractRuntime';
 import { dictOrEmpty } from './recordUtils';
 import type { FieldDescriptor } from '@sc/schema';
+import { resolveContractV2WorkflowContract, type ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { ContractAction, NativeStatusbarVm, StatusbarState } from './types';
 
 export type NativeFormStatusbarInput = {
@@ -195,21 +196,10 @@ export function resolveStatusbarSelectionValue(descriptor: FieldDescriptor | und
   return matched ? String((matched as unknown[])[0] ?? raw) || false : raw || false;
 }
 
-export function resolveWorkflowContractFromSources(
-  contractSource: unknown,
-  storeSnapshotSource: unknown,
+export function resolveWorkflowContractFromStore(
+  store: ContractV2NormalizedStore | null,
 ): Record<string, unknown> {
-  const root = dictOrEmpty(contractSource);
-  const snapshot = dictOrEmpty(storeSnapshotSource);
-  const candidates = [
-    dictOrEmpty(snapshot.workflowContract),
-    dictOrEmpty(dictOrEmpty(snapshot.runtimeContract).workflowContract),
-    dictOrEmpty(root.workflowContract),
-    dictOrEmpty(dictOrEmpty(root.runtimeContract).workflowContract),
-    dictOrEmpty(dictOrEmpty(root.__unified_page_contract_v2).workflowContract),
-    dictOrEmpty(dictOrEmpty(dictOrEmpty(root.__unified_page_contract_v2).runtimeContract).workflowContract),
-  ];
-  return candidates.find((candidate) => Object.keys(candidate).length) || {};
+  return resolveContractV2WorkflowContract(store);
 }
 
 export function applyWorkflowAvailability(params: {

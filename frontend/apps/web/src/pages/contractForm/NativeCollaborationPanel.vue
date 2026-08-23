@@ -2,7 +2,7 @@
   <section class="block native-chatter-block">
     <h3>{{ title }}</h3>
     <p v-if="unavailableMessage" class="native-chatter-empty">{{ unavailableMessage }}</p>
-    <div v-else class="chips">
+    <div v-else-if="!readonly" class="chips">
       <button
         v-for="action in actions"
         :key="`chatter-${action.key}`"
@@ -15,7 +15,7 @@
         {{ action.label }}
       </button>
     </div>
-    <section v-if="!unavailableMessage && activeMode" class="native-chatter-compose">
+    <section v-if="!readonly && !unavailableMessage && activeMode" class="native-chatter-compose">
       <template v-if="activeIsActivity">
         <label class="native-chatter-field">
           <span>{{ activityAssigneeLabel }}</span>
@@ -116,7 +116,7 @@
     </section>
     <p v-if="chatterError" class="validation-error native-chatter-message">{{ chatterError }}</p>
     <section
-      v-if="hasAttachments"
+      v-if="!readonly && hasAttachments"
       class="native-attachment-tools"
       data-collaboration-capability="attachments"
     >
@@ -139,11 +139,11 @@
         </button>
       </li>
     </ul>
-    <ul v-if="!unavailableMessage && timeline.length" class="native-chatter-timeline">
-      <li v-for="entry in timeline" :key="entry.key" class="native-chatter-entry">
+    <ul v-if="!unavailableMessage && visibleTimeline.length" class="native-chatter-timeline">
+      <li v-for="entry in visibleTimeline" :key="entry.key" class="native-chatter-entry">
         <span class="native-chatter-type">{{ entry.typeLabel }}</span>
         <span class="native-chatter-body">{{ entry.type === 'activity' ? entry.title : (entry.body || entry.title) }}</span>
-        <span class="native-chatter-meta">{{ entry.meta }}</span>
+        <span class="native-chatter-meta">{{ displayTimelineMeta(entry.meta) }}</span>
         <div v-if="entry.type === 'activity'" class="native-chatter-entry-actions">
           <button
             v-if="entry.activity?.can_complete"
@@ -187,6 +187,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
 import type { NativeChatterAction } from './types';
 
@@ -198,6 +199,7 @@ type PendingNativeAttachment = {
 };
 
 export type NativeCollaborationPanelProps = {
+  readonly?: boolean;
   title: string;
   unavailableMessage: string;
   actions: NativeChatterAction[];
@@ -260,6 +262,21 @@ export type NativeCollaborationPanelListeners = {
 };
 
 const props = defineProps<NativeCollaborationPanelProps>();
+const visibleTimeline = computed(() => props.timeline.filter((entry) => entry.type !== 'audit'));
+
+function displayTimelineMeta(value: string) {
+  return String(value || '').replace(
+    /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?/g,
+    (raw) => {
+      const parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) return raw;
+      return new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).format(parsed);
+    },
+  );
+}
 
 const emit = defineEmits<{
   'open-action': [action: NativeChatterAction];

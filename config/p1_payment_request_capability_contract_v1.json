@@ -39,7 +39,7 @@
       "addons/smart_construction_core/views/menu_business_taxonomy.xml",
       "addons/smart_construction_core/views/menu_product_finance_wave1.xml",
       "addons/smart_construction_core/views/support/user_confirmed_formal_list_views.xml",
-      "config/frontend/authoritative_navigation_v1.json"
+      "config/frontend/authoritative_navigation.json"
     ],
     "migration": [
       "addons/smart_construction_core/migrations/17.0.0.131/post-migration.py"

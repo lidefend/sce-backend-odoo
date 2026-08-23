@@ -1,0 +1,23 @@
+goal_id: PAYMENT-REQUEST-GOLDEN-FLOORPLAN-BATCH-A
+parent_goal_id: PAYMENT-REQUEST-GOLDEN-FLOORPLAN
+title: Activate readonly product Floorplan
+status: complete
+formal_product_layer: P0
+layer_target: frontend renderer and presentation
+scope:
+  include:
+    - canonical_floorplan_production_host
+    - semantic_readonly_fact_projection
+    - canonical_action_bar
+    - tdesign_product_default
+    - native_compatibility_fallback
+    - governed_local_dev_browser_evidence
+  exclude:
+    - contract_expansion
+    - backend_business_semantics
+    - customer_business_data_mutation
+    - lite_contract
+    - native_capability_ledger
+    - ui5_product_expansion
+rollback:
+  method: remove_the_semantic_readonly_branch_and_keep_the_existing_native_compatibility_path

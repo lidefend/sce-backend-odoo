@@ -35,9 +35,12 @@ else
 fi
 
 DEMO_LOGFILE="${DEMO_LOGFILE:-/var/lib/odoo/demo_install.log}"
-ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH:-/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons,/mnt/demo-addons,/mnt/addons_external/oca_server_ux}"
+# Demo installation is a governed lifecycle and must not inherit the ordinary
+# runtime's narrower addons path.  The compose model already registers these
+# mounts; keep discovery authority identical to demo loaders and verification.
+ODOO_ADDONS_PATH="/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/demo-addons,/mnt/extra-addons,${ADDONS_EXTERNAL_MOUNT}"
 
-log "install seed/demo modules on ${DB_NAME}"
+log "install product baseline modules on ${DB_NAME}"
 
 compose_dev run --rm -T \
   -e SC_SEED_ENABLED=1 \
@@ -60,7 +63,7 @@ odoo --config="$ODOO_CONF" \
   --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" \
   --addons-path="$ODOO_ADDONS_PATH" \
   -d "$DB_NAME" \
-  -i smart_construction_core,smart_construction_seed,smart_construction_demo,smart_construction_portal \
+  -i smart_construction_core,smart_construction_seed,smart_construction_portal \
   $WITHOUT_DEMO_FLAG \
   --no-http --workers=0 --max-cron-threads=0 --stop-after-init \
   2>&1 | tee "$DEMO_LOGFILE"
@@ -72,5 +75,59 @@ if [ "$rc" -ne 0 ]; then
 fi
 exit "$rc"
 BASH_IN_CONTAINER
+
+# Odoo's fresh-company accounting initialization runs after module hooks and may
+# replace taxes created by the construction seed hook.  Reconcile the P1 tax
+# authority only after that initialization has settled, before any demo XML
+# creates contracts that consume it.
+log "reconcile post-accounting tax authority on ${DB_NAME}"
+compose_dev run --rm -T \
+  -e DB_NAME="${DB_NAME}" \
+  -e DB_USER="${DB_USER}" \
+  -e DB_PASSWORD="${DB_PASSWORD}" \
+  -e ODOO_CONF="${ODOO_CONF}" \
+  --entrypoint /bin/bash odoo -lc \
+  'odoo shell --config="$ODOO_CONF" -d "$DB_NAME" --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" --no-http --workers=0 --max-cron-threads=0 < /mnt/scripts/ops/ensure_local_demo_product_baseline.py'
+
+# Install the demo carrier only after its P1 prerequisites are authoritative.
+# Keeping this as a separate transaction also makes a missing demo module or
+# failed role XMLID load visible instead of leaving a half-ready database.
+log "install demo authority module on ${DB_NAME}"
+compose_dev run --rm -T \
+  -e SC_ENVIRONMENT \
+  -e SC_ALLOW_DEMO_DATA \
+  -e SC_DEMO_USER_PASSWORD \
+  -e DB_NAME="${DB_NAME}" \
+  -e DB_USER="${DB_USER}" \
+  -e DB_PASSWORD="${DB_PASSWORD}" \
+  -e ODOO_CONF="${ODOO_CONF}" \
+  -e ODOO_ADDONS_PATH="${ODOO_ADDONS_PATH}" \
+  -e WITHOUT_DEMO_FLAG="${WITHOUT_DEMO_FLAG}" \
+  -e DEMO_LOGFILE="${DEMO_LOGFILE}" \
+  --entrypoint /bin/bash odoo -lc 'bash -s' <<'BASH_IN_CONTAINER'
+set -euo pipefail
+
+set +e
+odoo --config="$ODOO_CONF" \
+  --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" \
+  --addons-path="$ODOO_ADDONS_PATH" \
+  -d "$DB_NAME" \
+  -i smart_construction_demo \
+  $WITHOUT_DEMO_FLAG \
+  --no-http --workers=0 --max-cron-threads=0 --stop-after-init \
+  2>&1 | tee -a "$DEMO_LOGFILE"
+
+rc=${PIPESTATUS[0]}
+set -e
+if [ "$rc" -ne 0 ]; then
+  tail -n 200 "$DEMO_LOGFILE" || true
+fi
+exit "$rc"
+BASH_IN_CONTAINER
+
+# A successful Odoo process is not sufficient: an undiscoverable demo addon can
+# be skipped without producing the semantic XMLIDs required by local.dev.  Bind
+# reset completion to the installed carrier and its authoritative role facts.
+bash "$ROOT_DIR/scripts/dev/local_dev_demo_authority_verify.sh"
 
 log "demo rebuild done: ${DB_NAME}"

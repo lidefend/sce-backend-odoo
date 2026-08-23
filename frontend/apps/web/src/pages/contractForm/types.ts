@@ -17,13 +17,18 @@ export const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 
 export type ContractAction = {
   key: string;
+  authorityActionId?: string;
   backendIdentity?: string;
+  nativeIdentity?: Record<string, unknown>;
   label: string;
   kind: string;
   level: string;
   selection: 'none' | 'single' | 'multi';
   actionId: number | null;
+  menuId?: number | null;
   methodName: string;
+  serverActionId?: number | null;
+  serverActionXmlId?: string;
   targetModel: string;
   context: Record<string, unknown>;
   domainRaw: string;
@@ -135,15 +140,28 @@ export type One2ManyInlineRow = {
   dirty: boolean;
   dirtyFields: string[];
   values: Record<string, unknown>;
+  modifierPatches?: Record<string, Record<string, unknown>>;
 };
 
 export type One2ManyColumn = {
+  key?: string;
   name: string;
   label: string;
   ttype: string;
   required: boolean;
   readonly?: boolean;
+  nativeLocator?: string;
+  occurrenceIndex?: number;
+  modifiers?: Record<string, unknown>;
+  relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
+};
+
+export type One2ManyRowColumnBehavior = {
+  invisible: boolean;
+  columnInvisible: boolean;
+  readonly: boolean;
+  required: boolean;
 };
 
 export type ContractAccessPolicy = {

@@ -4,12 +4,92 @@ from unittest.mock import patch
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_core.app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
+from odoo.addons.smart_core.app_config_engine.services.assemblers.client_url_report import ClientUrlReportAssembler
 from odoo.addons.smart_core.app_config_engine.services.dispatchers.nav_dispatcher import NavDispatcher
 from odoo.addons.smart_core.handlers.ui_contract import UiContractHandler
 
 
 @tagged("post_install", "-at_install", "smart_core", "action_dispatcher")
 class TestActionDispatcherServerMapping(TransactionCase):
+    @staticmethod
+    def _bound_action_identity(row):
+        payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+        action_id = payload.get("action_id") or row.get("action_id")
+        server_action_id = payload.get("server_action_id") or row.get("server_action_id")
+        xml_id = payload.get("xml_id") or row.get("xml_id")
+        if action_id:
+            return "window:%s" % int(action_id)
+        if server_action_id:
+            return "server:%s" % int(server_action_id)
+        if xml_id:
+            return "xmlid:%s" % str(xml_id)
+        return "key:%s" % str(row.get("key") or "")
+
+    def _assert_multi_actions_are_explicitly_bound(self, data, model_name):
+        buttons = data.get("buttons") if isinstance(data.get("buttons"), list) else []
+        toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
+        header_rows = toolbar.get("header") if isinstance(toolbar.get("header"), list) else []
+        button_by_identity = {
+            self._bound_action_identity(row): row
+            for row in buttons
+            if isinstance(row, dict)
+        }
+        self.assertEqual(len(button_by_identity), len(buttons), "buttons carrier has duplicate action identity")
+        header_by_identity = {
+            self._bound_action_identity(row): row
+            for row in header_rows
+            if isinstance(row, dict)
+        }
+        self.assertEqual(len(header_by_identity), len(header_rows), "toolbar carrier has duplicate action identity")
+        self.assertTrue(set(header_by_identity).issubset(set(button_by_identity)))
+        for identity, row in header_by_identity.items():
+            source = row.get("source_authority") if isinstance(row.get("source_authority"), dict) else {}
+            self.assertEqual(source.get("kind"), "odoo_native_bound_action_projection")
+            self.assertEqual(
+                self._bound_action_identity(button_by_identity[identity]),
+                identity,
+            )
+            if row.get("selection") != "multi":
+                continue
+            payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+            action_id = int(payload.get("action_id") or 0)
+            self.assertGreater(action_id, 0, row)
+            action = self.env["ir.actions.act_window"].sudo().browse(action_id).exists()
+            self.assertTrue(action, row)
+            self.assertEqual(action.binding_model_id.model, model_name)
+            binding_types = {
+                value.strip().replace("tree", "list")
+                for value in str(action.binding_view_types or "").split(",")
+                if value.strip()
+            }
+            self.assertIn("list", binding_types, row)
+
+    def _assert_list_profile_matches_effective_tree(self, data):
+        views = data.get("views") if isinstance(data.get("views"), dict) else {}
+        tree = views.get("tree") if isinstance(views.get("tree"), dict) else {}
+        meta = tree.get("meta") if isinstance(tree.get("meta"), dict) else {}
+        projection = (
+            meta.get("projection_identity")
+            if isinstance(meta.get("projection_identity"), dict)
+            else {}
+        )
+        self.assertGreater(int(projection.get("source_view_id") or 0), 0)
+        tree_columns = [str(name) for name in tree.get("columns") or []]
+        self.assertTrue(tree_columns)
+        profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
+        self.assertEqual(profile.get("source"), "contract_governance.curated_list_facts")
+        self.assertEqual(profile.get("columns") or [], tree_columns)
+        schema_labels = {
+            str(row.get("name")): str(row.get("label") or row.get("string") or "")
+            for row in tree.get("columns_schema") or []
+            if isinstance(row, dict) and row.get("name")
+        }
+        profile_labels = profile.get("column_labels") if isinstance(profile.get("column_labels"), dict) else {}
+        self.assertEqual(
+            {name: profile_labels.get(name) for name in tree_columns},
+            {name: schema_labels.get(name) for name in tree_columns},
+        )
+
     def test_server_action_prefers_mapping_before_materialize(self):
         dispatcher = ActionDispatcher(self.env, self.env)
         payload = {"subject": "action", "action_id": 462}
@@ -34,11 +114,6 @@ class TestActionDispatcherServerMapping(TransactionCase):
             patch.object(dispatcher.resolver, "resolve_action", return_value=object()),
             patch.object(dispatcher.resolver, "as_action_info", return_value=server_info),
             patch.object(dispatcher.resolver, "map_server_to_window", return_value=mapped) as mocked_map,
-            patch.object(
-                dispatcher.resolver,
-                "materialize_server_action",
-                side_effect=AssertionError("materialize_server_action should not be called when mapping exists"),
-            ),
             patch.object(dispatcher, "_dispatch_resolved", return_value=expected) as mocked_dispatch,
         ):
             result = dispatcher.dispatch(payload)
@@ -47,7 +122,7 @@ class TestActionDispatcherServerMapping(TransactionCase):
         mocked_map.assert_called_once_with(462, "smart_construction_core.action_exec_structure_entry")
         mocked_dispatch.assert_called_once_with(mapped, payload)
 
-    def test_server_action_falls_back_to_materialize_when_mapping_missing(self):
+    def test_unmapped_server_action_fails_closed_without_execution(self):
         dispatcher = ActionDispatcher(self.env, self.env)
         payload = {"subject": "action", "action_id": 777}
         server_info = {
@@ -57,27 +132,23 @@ class TestActionDispatcherServerMapping(TransactionCase):
             "xml_id": "x.y.z",
             "exists": True,
         }
-        materialized = {
-            "type": "ir.actions.client",
-            "_name": "ir.actions.client",
-            "tag": "display_notification",
-            "exists": True,
-        }
-        expected = ({"subject": "materialized"}, {"v": 1})
-
         with (
             patch.object(dispatcher.resolver, "resolve_action", return_value=object()),
             patch.object(dispatcher.resolver, "as_action_info", return_value=server_info),
             patch.object(dispatcher.resolver, "map_server_to_window", return_value=None) as mocked_map,
-            patch.object(dispatcher.resolver, "materialize_server_action", return_value=materialized) as mocked_materialize,
-            patch.object(dispatcher, "_dispatch_resolved", return_value=expected) as mocked_dispatch,
+            patch.object(
+                ClientUrlReportAssembler,
+                "assemble_diagnostic_contract",
+                return_value=({"subject": "diagnostic"}, {"v": 1}),
+            ) as mocked_diagnostic,
         ):
             result = dispatcher.dispatch(payload)
 
-        self.assertEqual(result, expected)
+        self.assertEqual(result, ({"subject": "diagnostic"}, {"v": 1}))
         mocked_map.assert_called_once_with(777, "x.y.z")
-        mocked_materialize.assert_called_once_with(server_info, payload)
-        mocked_dispatch.assert_called_once_with(materialized, payload)
+        mocked_diagnostic.assert_called_once()
+        self.assertFalse(hasattr(dispatcher.resolver, "materialize_server_action"))
+        self.assertFalse(hasattr(dispatcher.resolver, "safe_probe_server_action"))
 
     def test_ui_contract_action_open_exec_structure_returns_page_contract(self):
         action = self.env.ref("smart_construction_core.action_exec_structure_entry", raise_if_not_found=False)
@@ -119,34 +190,8 @@ class TestActionDispatcherServerMapping(TransactionCase):
         head = data.get("head") if isinstance(data.get("head"), dict) else {}
         self.assertEqual(str(head.get("view_type") or data.get("view_type") or "").strip().lower(), "tree")
 
-        buttons = data.get("buttons") if isinstance(data.get("buttons"), list) else []
-        toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
-        header_rows = toolbar.get("header") if isinstance(toolbar.get("header"), list) else []
-        multi_rows = [
-            row
-            for row in buttons + header_rows
-            if isinstance(row, dict) and row.get("selection") == "multi"
-        ]
-        self.assertFalse(multi_rows, f"list contract fabricated an unbound multi action: {result}")
-        list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
-        self.assertEqual(
-            list_profile.get("columns") or [],
-            [
-                "name",
-                "project_code",
-                "owner_id",
-                "sc_partner_display_name",
-                "operation_strategy",
-                "lifecycle_state",
-                "user_id",
-                "contract_amount",
-                "dashboard_progress_rate",
-                "write_date",
-            ],
-        )
-        self.assertEqual((list_profile.get("column_labels") or {}).get("name"), "名称")
-        self.assertEqual((list_profile.get("column_labels") or {}).get("user_id"), "项目负责人")
-        self.assertEqual((list_profile.get("column_labels") or {}).get("write_date"), "更新时间")
+        self._assert_multi_actions_are_explicitly_bound(data, "project.project")
+        self._assert_list_profile_matches_effective_tree(data)
 
     def test_ui_contract_action_open_payment_list_matches_current_product_contract(self):
         action = self.env.ref("smart_construction_core.action_sc_finance_dashboard", raise_if_not_found=False)
@@ -166,30 +211,8 @@ class TestActionDispatcherServerMapping(TransactionCase):
         head = data.get("head") if isinstance(data.get("head"), dict) else {}
         self.assertEqual(str(head.get("view_type") or data.get("view_type") or "").strip().lower(), "tree")
 
-        buttons = data.get("buttons") if isinstance(data.get("buttons"), list) else []
-        toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
-        header_rows = toolbar.get("header") if isinstance(toolbar.get("header"), list) else []
-        multi_rows = [
-            row
-            for row in buttons + header_rows
-            if isinstance(row, dict) and row.get("selection") == "multi"
-        ]
-        self.assertFalse(multi_rows, f"list contract fabricated an unbound multi action: {result}")
-        list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
-        expected_product_columns = [
-            "document_status_display", "name", "project_id", "date_request",
-            "partner_id", "amount", "actual_paid_amount_display",
-            "settlement_amount_payable", "cost_category_name", "note",
-            "settlement_id", "payment_account_no_display", "amount_uppercase",
-            "payee_account_name_display", "payee_bank_name_display",
-            "payee_account_no_display", "source_created_by", "source_created_at",
-        ]
-        actual_columns = list_profile.get("columns") or []
-        self.assertEqual(actual_columns[: len(expected_product_columns)], expected_product_columns)
-        self.assertIn("name", actual_columns)
-        self.assertIn("document_status_display", actual_columns)
-        self.assertEqual((list_profile.get("column_labels") or {}).get("name"), "单据编号")
-        self.assertEqual((list_profile.get("column_labels") or {}).get("date_request"), "申请日期")
+        self._assert_multi_actions_are_explicitly_bound(data, "payment.request")
+        self._assert_list_profile_matches_effective_tree(data)
 
     def test_ui_contract_action_open_material_plan_list_matches_current_product_contract(self):
         action = self.env.ref("smart_construction_core.action_project_material_plan", raise_if_not_found=False)
@@ -209,38 +232,8 @@ class TestActionDispatcherServerMapping(TransactionCase):
         head = data.get("head") if isinstance(data.get("head"), dict) else {}
         self.assertEqual(str(head.get("view_type") or data.get("view_type") or "").strip().lower(), "tree")
 
-        buttons = data.get("buttons") if isinstance(data.get("buttons"), list) else []
-        toolbar = data.get("toolbar") if isinstance(data.get("toolbar"), dict) else {}
-        header_rows = toolbar.get("header") if isinstance(toolbar.get("header"), list) else []
-        multi_rows = [
-            row
-            for row in buttons + header_rows
-            if isinstance(row, dict) and row.get("selection") == "multi"
-        ]
-        self.assertFalse(multi_rows, f"list contract fabricated an unbound multi action: {result}")
-        list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
-        self.assertEqual(
-            list_profile.get("columns") or [],
-            [
-                "name",
-                "project_id",
-                "date_plan",
-                "state",
-                "business_category_id",
-                "material_name_summary",
-                "material_spec_summary",
-                "material_uom_summary",
-                "total_plan_qty",
-                "total_bill_qty",
-                "total_unplanned_qty",
-                "line_note_summary",
-                "line_attachment_count",
-                "create_uid",
-                "create_date",
-            ],
-        )
-        self.assertEqual((list_profile.get("column_labels") or {}).get("name"), "单号")
-        self.assertEqual((list_profile.get("column_labels") or {}).get("date_plan"), "需用日期")
+        self._assert_multi_actions_are_explicitly_bound(data, "project.material.plan")
+        self._assert_list_profile_matches_effective_tree(data)
 
     def test_ui_contract_action_open_payment_form_excludes_list_toolbar_actions(self):
         action = self.env.ref("smart_construction_core.action_sc_finance_dashboard", raise_if_not_found=False)

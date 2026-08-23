@@ -1,0 +1,29 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-R
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Restore product-version single source with one exact derived observation
+status: completed
+formal_product_layer: P4
+layer_target: product release version governance
+reason: VERSION must remain authoritative while the system-init snapshot preserves one validated derived runtime fact.
+
+scope:
+  include:
+    - scripts/verify/product_release_version_guard.py
+    - scripts/release/test_product_release.py
+    - docs/architecture/unified_page_contract_v2_implementation_plan.md
+    - docs/ops/iterations/delivery_context_switch_log_v1.md
+    - .agent/goals/REPO-BASELINE-AUDIT.yaml
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-Q
+    - .agent/runs/REPO-BASELINE-AUDIT-BATCH-R
+  exclude:
+    - VERSION
+    - docs/contract/snapshots/system_init_intent_admin.json
+    - contract_schema
+    - startup_chain
+    - frontend
+    - addons
+    - database_or_runtime
+    - remote_state
+
+rollback:
+  method: revert only the Batch-R guard, tests, architecture wording and governance records

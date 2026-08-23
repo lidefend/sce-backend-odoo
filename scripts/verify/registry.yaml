@@ -1,17 +1,5 @@
 version: 1
 entries:
-- script: agent_context_lint.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-18'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: agent_context_verify.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-18'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: auth_xpath_guard.sh
   status: retired
   owner: platform-team
@@ -222,6 +210,12 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: native_view_capability_taxonomy_guard.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-20'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: navigation_contract_boundary_guard.py
   status: orphan
   owner: platform-team
@@ -306,10 +300,52 @@ entries:
   date: '2026-08-06'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_codex_preflight.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_export_resume.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_form_semantic_identity_guard.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-23'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_contract_probe_routing.py
   status: orphan
   owner: platform-team
   date: '2026-08-11'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_snapshot_case_actors.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_snapshot_export_fail_closed.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_snapshot_field_selection.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_snapshot_user_resolution.py
+  status: orphan
+  owner: platform-team
+  date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_daily_dev_customer_addons_runtime_guard.py
@@ -354,6 +390,12 @@ entries:
   date: '2026-07-30'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_local_dev_frontend_quick.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-23'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_local_development_lifecycle.py
   status: orphan
   owner: platform-team
@@ -366,10 +408,52 @@ entries:
   date: '2026-08-07'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_native_view_capability_taxonomy.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-20'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_native_view_frontend_capability_map.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-20'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_native_view_normalized_capability_map.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-21'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_p1_payment_request_field_completeness_guard.py
   status: orphan
   owner: platform-team
   date: '2026-08-16'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_product_view_capability_ledger.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-21'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_product_view_capability_ledger_schema.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-20'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_product_view_contract_carriers.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-21'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_product_view_structure_contract.py
+  status: orphan
+  owner: platform-team
+  date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_retired_p1_alias_view_cleanup_migration.py
@@ -382,6 +466,12 @@ entries:
   status: orphan
   owner: platform-team
   date: '2026-08-12'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_scene_audit_disclosure_guard.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-23'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_scene_company_access_preflight_guard.py
@@ -424,6 +514,12 @@ entries:
   status: orphan
   owner: platform-team
   date: '2026-08-04'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_view_type_render_coverage_guard.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-23'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: um_p2_interfund_relation_aggregation_guard.py

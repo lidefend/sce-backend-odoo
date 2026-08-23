@@ -10,7 +10,7 @@ export function relationEntry(descriptor?: FieldDescriptor) {
   const actionId = toPositiveInt(row.action_id);
   const menuId = toPositiveInt(row.menu_id);
   const createModeRaw = String(row.create_mode || '').trim().toLowerCase();
-  const createMode = createModeRaw === 'page' || createModeRaw === 'quick' ? createModeRaw : 'disabled';
+  const createMode = ['page', 'dialog', 'quick'].includes(createModeRaw) ? createModeRaw : 'disabled';
   const defaultVals = row.default_vals && typeof row.default_vals === 'object' && !Array.isArray(row.default_vals)
     ? (row.default_vals as Record<string, unknown>)
     : {};
@@ -224,10 +224,11 @@ export function relationUiLabel(descriptor: FieldDescriptor | undefined, key: st
   return relationUiLabels(descriptor)[key] || fallback || key;
 }
 
-export function relationCreateMode(descriptor?: FieldDescriptor): 'page' | 'quick' | 'none' {
+export function relationCreateMode(descriptor?: FieldDescriptor): 'page' | 'dialog' | 'quick' | 'none' {
   const entry = relationEntry(descriptor);
   if (!entry) return 'none';
-  if (entry.createMode === 'page' && entry.actionId) return 'page';
+  if (entry.createMode === 'page' && entry.canCreate && entry.actionId) return 'page';
+  if (entry.createMode === 'dialog' && entry.canCreate && entry.actionId && entry.menuId) return 'dialog';
   if (entry.createMode === 'quick' && entry.canCreate) return 'quick';
   if (entry.model === 'sc.dictionary' && entry.canCreate && Object.keys(entry.defaultVals || {}).length) {
     return 'quick';
@@ -508,7 +509,7 @@ export function openRelationSearchDialogState(params: {
   labels: RelationUiLabels;
   keyword: string;
   columns: RelationSearchColumn[];
-  createMode: 'none' | 'quick' | 'page';
+  createMode: 'none' | 'quick' | 'page' | 'dialog';
 }) {
   const descriptorRecord = params.descriptor && typeof params.descriptor === 'object'
     ? params.descriptor as Record<string, unknown>

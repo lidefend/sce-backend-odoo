@@ -46,7 +46,7 @@ def _handoff_consume_mode(family: str) -> str:
 
 
 def _build_runtime_handoff_surface(payload: Dict[str, Any]) -> Dict[str, Any]:
-    handoff = _as_dict(payload.get("delivery_handoff_v1"))
+    handoff = _as_dict(payload.get("delivery_handoff"))
     if not handoff:
         return {}
 

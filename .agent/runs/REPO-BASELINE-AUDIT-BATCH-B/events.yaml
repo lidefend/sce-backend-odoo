@@ -1,0 +1,11 @@
+events:
+  - type: boundary.frozen
+    result: p4_preflight_only_scope
+  - type: change.completed
+    result: iteration_and_stage_preflight_modes_separated
+  - type: verification.completed
+    result: six_targeted_tests_and_registered_make_preflight_passed
+
+next_exact_step:
+  command: execute_batch_c_ci_static_failure_targeted_tests
+  requires_explicit_validation_authorization: false

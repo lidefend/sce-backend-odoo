@@ -1,0 +1,13 @@
+events:
+  - type: failure.classified
+    result: exporter_evidence_integrity_not_product_permission
+  - type: change.completed
+    result: atomic_nonempty_json_and_declared_error_validation_added
+  - type: verification.pending
+    result: eight_targeted_tests_not_run_yet
+  - type: integration.failed
+    result: internal_compose_selector_forwarded_to_snapshot_python
+
+next_exact_step:
+  command: python3 -m unittest scripts.verify.test_contract_snapshot_export_fail_closed -v
+  requires_explicit_validation_authorization: false

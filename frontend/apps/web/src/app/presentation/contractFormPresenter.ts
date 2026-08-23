@@ -37,15 +37,28 @@ const FORM_SEMANTIC_ROLES = new Set<CanonicalFormSemanticRole>([
 
 function semanticRole(value: unknown): CanonicalFormSemanticRole | '' {
   const structure = asDict(value);
-  const role = text(structure.role).toLowerCase() as CanonicalFormSemanticRole;
+  const rawRole = text(structure.role).toLowerCase();
+  const role = (rawRole === 'business_fact' ? 'context' : rawRole) as CanonicalFormSemanticRole;
   return FORM_SEMANTIC_ROLES.has(role) ? role : '';
 }
 
-function fieldSemanticRole(
-  widget: ContractV2Widget,
-  container: ContractV2Container,
-): CanonicalFormSemanticRole | '' {
-  return semanticRole(widget.formStructureRole) || semanticRole(container.formStructureRole);
+function semanticIdentity(value: unknown): { role: CanonicalFormSemanticRole | ''; slot: string; group: string } {
+  const structure = asDict(value);
+  return {
+    role: semanticRole(structure),
+    slot: text(structure.slot),
+    group: text(structure.group),
+  };
+}
+
+function fieldSemanticIdentity(widget: ContractV2Widget, container: ContractV2Container) {
+  const widgetIdentity = semanticIdentity(widget.formStructureRole);
+  const containerIdentity = semanticIdentity(container.formStructureRole);
+  return {
+    role: widgetIdentity.role || containerIdentity.role,
+    slot: widgetIdentity.slot || containerIdentity.slot,
+    group: widgetIdentity.group || containerIdentity.group,
+  };
 }
 
 function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
@@ -116,6 +129,7 @@ function fieldFromWidget(
   const statusResolved = Boolean(status);
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
+  const fieldSemantics = fieldSemanticIdentity(widget, container);
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
@@ -135,8 +149,11 @@ function fieldFromWidget(
     required: bool(status?.required, false),
     disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
-    semanticRole: fieldSemanticRole(widget, container),
+    semanticRole: fieldSemantics.role,
+    semanticSlot: fieldSemantics.slot,
+    semanticGroup: fieldSemantics.group,
     componentConfig: Object.freeze({ ...widget.componentConfig }),
+    fieldDescriptor: Object.freeze({ ...(widget.fieldDescriptor || {}) }),
   };
 }
 
@@ -156,10 +173,14 @@ function descendantWidgetIds(container: ContractV2Container, store: ContractV2No
     child.widgetList.forEach((widget) => ids.add(widget.widgetId));
     const kind = text(child.type || child.containerType).toLowerCase();
     if (kind === 'field') {
-      const fieldInfo = asDict(child.fieldInfo || child.field_info);
+      const fieldInfo = asDict(child.fieldInfo);
       const fieldCode = text(child.name || fieldInfo.name || child.attributes?.name);
-      const synthesized = store.widgetsByFieldCode.get(fieldCode);
-      if (synthesized) ids.add(synthesized.widgetId);
+      const explicit = child.widgetId ? store.widgetsById.get(child.widgetId) : undefined;
+      if (explicit) ids.add(explicit.widgetId);
+      else {
+        const candidates = store.widgetsByFieldCodeAll.get(fieldCode) || [];
+        if (candidates.length === 1) ids.add(candidates[0].widgetId);
+      }
     }
     descendantWidgetIds(child, store).forEach((widgetId) => ids.add(widgetId));
   });
@@ -175,9 +196,12 @@ function widgetsOwnedByContainer(
   if (direct.length) return direct;
   const kind = text(container.type || container.containerType).toLowerCase();
   if (kind !== 'field') return [];
-  const fieldInfo = asDict(container.fieldInfo || container.field_info);
+  const fieldInfo = asDict(container.fieldInfo);
   const fieldCode = text(container.name || fieldInfo.name || container.attributes?.name);
-  const widget = store.widgetsByFieldCode.get(fieldCode);
+  const widget = (container.widgetId ? store.widgetsById.get(container.widgetId) : undefined)
+    || ((store.widgetsByFieldCodeAll.get(fieldCode) || []).length === 1
+      ? (store.widgetsByFieldCodeAll.get(fieldCode) || [])[0]
+      : undefined);
   return widget ? [widget] : [];
 }
 
@@ -194,6 +218,7 @@ function presentNode(
   ancestorDisabled: boolean,
   claimedWidgetIds: Set<string>,
   actionsByIdentity: ReadonlyMap<string, CanonicalFormAction>,
+  actionsByNativeOccurrence: ReadonlyMap<string, CanonicalFormAction>,
   ancestorTitle = '',
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
@@ -225,6 +250,12 @@ function presentNode(
   const title = rawTitle && rawTitle === ancestorTitle ? '' : rawTitle;
   const nodeAction = asDict(container.action);
   const actionIdentity = text(nodeAction.backendIdentity);
+  const nativeIdentity = asDict(nodeAction.native_identity || nodeAction.nativeIdentity);
+  const nativeActionKey = [
+    text(nativeIdentity.type), text(nativeIdentity.name), text(nativeIdentity.native_locator || nativeIdentity.nativeLocator),
+    String(Number(nativeIdentity.occurrence_index || nativeIdentity.occurrenceIndex || 0)),
+  ].join('|');
+  const nodeSemantics = semanticIdentity(container.formStructureRole);
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
     kind: nodeKind,
@@ -236,14 +267,19 @@ function presentNode(
     visible,
     disabled,
     reasonCode: text(status?.reasonCode),
-    semanticRole: semanticRole(container.formStructureRole),
-    action: actionIdentity ? actionsByIdentity.get(actionIdentity) || null : null,
+    semanticRole: nodeSemantics.role,
+    semanticSlot: nodeSemantics.slot,
+    semanticGroup: nodeSemantics.group,
+    action: (actionIdentity ? actionsByIdentity.get(actionIdentity) : undefined)
+      || actionsByNativeOccurrence.get(nativeActionKey)
+      || null,
     nativeWidget: nodeKind === 'widget' ? text(container.widget || container.name) : '',
     fields: widgets,
     children: childCollections(container).map((child, childIndex) => (
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
-        mode, pageCanEdit, visible, disabled, claimedWidgetIds, actionsByIdentity, rawTitle || ancestorTitle,
+        mode, pageCanEdit, visible, disabled, claimedWidgetIds, actionsByIdentity, actionsByNativeOccurrence,
+        rawTitle || ancestorTitle,
       )
     )),
   };
@@ -263,10 +299,49 @@ function isFormActionBarAction(action: ContractV2ActionRule): boolean {
     || targetScope === 'footer';
 }
 
+function actionOperationIdentity(action: CanonicalFormAction): string {
+  const button = asDict(action.actionRef.button);
+  const buttonType = text(button.type).toLowerCase();
+  const buttonName = text(button.name);
+  if (buttonType && buttonName) return `button:${buttonType}:${buttonName}`;
+  return `backend:${text(action.actionRef.backendIdentity)}`;
+}
+
+function retainAuthoritativeActionOccurrences(
+  actions: CanonicalFormAction[],
+  primaryWinnerIdentity: string,
+): CanonicalFormAction[] {
+  const operations = new Map<string, CanonicalFormAction[]>();
+  actions.forEach((action) => {
+    const identity = actionOperationIdentity(action);
+    operations.set(identity, [...(operations.get(identity) || []), action]);
+  });
+  const retained = new Set<CanonicalFormAction>();
+  operations.forEach((occurrences) => {
+    const resolvedWinner = occurrences.find((action) => primaryWinnerIdentity && [
+      action.actionRef.actionId, action.actionRef.backendIdentity,
+    ].includes(primaryWinnerIdentity));
+    const winner = resolvedWinner || occurrences.reduce((current, action) => (
+      Number(action.actionRef.presentationPriority || 0)
+        > Number(current.actionRef.presentationPriority || 0) ? action : current
+    ));
+    retained.add(winner);
+  });
+  return actions.filter((action) => retained.has(action));
+}
+
 function actionStatus(
   store: ContractV2NormalizedStore,
   action: ContractV2ActionRule,
 ): ContractV2ButtonStatus | undefined {
+  const backendIdentity = text(action.backendIdentity);
+  if (backendIdentity) {
+    const identityMatches = store.snapshot.statusContract.buttonStatus.filter((status) => (
+      text(status.backendIdentity) === backendIdentity
+    ));
+    if (identityMatches.length === 1) return identityMatches[0];
+    if (identityMatches.length > 1) return undefined;
+  }
   const actionKey = text(action.actionKey);
   const statusKey = actionKey.startsWith('btn.') ? actionKey : `btn.${actionKey}`;
   return store.buttonStatusById.get(action.actionId)
@@ -278,10 +353,20 @@ function presentAction(
   action: ContractV2ActionRule,
   status: ContractV2ButtonStatus | undefined,
   mode: CanonicalFormRenderMode,
+  identityUnique: boolean,
 ): CanonicalFormAction {
   const profiles = (action.visibleProfiles || ['create', 'edit', 'readonly'])
     .filter((profile): profile is CanonicalFormRenderMode => ['create', 'edit', 'readonly'].includes(profile));
-  const allowed = action.allowed === true;
+  const explicitAuthority = identityUnique
+    && Boolean(status)
+    && typeof status?.visible === 'boolean'
+    && typeof status?.disabled === 'boolean'
+    && action.entitlementEvaluated === true
+    && typeof action.allowed === 'boolean'
+    && typeof action.enabled === 'boolean'
+    && typeof action.disabled === 'boolean'
+    && (!status?.backendIdentity || status.backendIdentity === text(action.backendIdentity));
+  const allowed = explicitAuthority && action.allowed === true;
   const enabled = action.enabled === true && action.disabled !== true && status?.disabled !== true;
   if (!text(action.actionId) || !text(action.backendIdentity)) {
     throw new Error('CANONICAL_FORM_ACTION_REFERENCE_MISSING');
@@ -289,8 +374,10 @@ function presentAction(
   return {
     key: action.actionKey || action.actionId,
     label: text(action.label || action.actionKey || action.actionId),
+    icon: text(action.presentation?.icon),
     tier: actionTier(action),
-    visible: profiles.includes(mode)
+    visible: explicitAuthority
+      && profiles.includes(mode)
       && status?.visible !== false
       && !(mode === 'readonly' && action.actionId === 'form.save'),
     enabled: allowed && enabled,
@@ -315,17 +402,56 @@ export function presentContractV2Form(
   const pageAuth = text(globalStatus.pageAuth);
   const pageCanEdit = mode !== 'readonly' && ['edit', 'admin'].includes(pageAuth);
   const claimedWidgetIds = new Set<string>();
+  const actionIdentityCounts = new Map<string, number>();
+  const actionIdCounts = new Map<string, number>();
+  snapshot.actionContract.actionRuleList.forEach((action) => {
+    const identity = text(action.backendIdentity);
+    const actionId = text(action.actionId);
+    if (identity) actionIdentityCounts.set(identity, (actionIdentityCounts.get(identity) || 0) + 1);
+    if (actionId) actionIdCounts.set(actionId, (actionIdCounts.get(actionId) || 0) + 1);
+  });
   const allActions = snapshot.actionContract.actionRuleList.map((action) => (
-    presentAction(action, actionStatus(store, action), mode)
+    presentAction(
+      action,
+      actionStatus(store, action),
+      mode,
+      actionIdentityCounts.get(text(action.backendIdentity)) === 1
+        && actionIdCounts.get(text(action.actionId)) === 1,
+    )
   ));
-  const actionsByIdentity = new Map(allActions.map((action) => [text(action.actionRef.backendIdentity), action]));
+  const visibleActions = allActions.filter((action) => action.visible);
+  const actionsByIdentity = new Map(visibleActions.map((action) => [text(action.actionRef.backendIdentity), action]));
+  const actionsByNativeOccurrence = new Map(visibleActions.flatMap((action) => {
+    const nativeIdentity = asDict(action.actionRef.nativeIdentity);
+    const key = [
+      text(nativeIdentity.type), text(nativeIdentity.name),
+      text(nativeIdentity.nativeLocator || nativeIdentity.native_locator),
+      String(Number(nativeIdentity.occurrenceIndex || nativeIdentity.occurrence_index || 0)),
+    ].join('|');
+    return key !== '|||0' ? [[key, action] as const] : [];
+  }));
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, zoneRole(container), index, store, contractValues, runtimeValues, mode, pageCanEdit,
-      pageVisible, pageAuth === 'none', claimedWidgetIds, actionsByIdentity,
+      pageVisible, pageAuth === 'none', claimedWidgetIds, actionsByIdentity, actionsByNativeOccurrence,
     )
   ));
-  const actions = allActions.filter((action) => isFormActionBarAction(action.actionRef));
+  const demotedActionIds = new Set(
+    (Array.isArray(snapshot.actionContract.primaryResolution?.demoted)
+      ? snapshot.actionContract.primaryResolution.demoted
+      : [])
+      .filter((row): row is ContractV2Dictionary => Boolean(row) && typeof row === 'object' && !Array.isArray(row))
+      .map((row) => text(row.actionId))
+      .filter(Boolean),
+  );
+  const actionCandidates = allActions.filter((action) => (
+    action.visible
+    &&
+    isFormActionBarAction(action.actionRef)
+    && !demotedActionIds.has(action.actionRef.actionId)
+  ));
+  const primaryWinnerIdentity = text(asDict(snapshot.actionContract.primaryResolution).winner);
+  const actions = retainAuthoritativeActionOccurrences(actionCandidates, primaryWinnerIdentity);
   const primaryCount = actions.filter((action) => action.visible && action.enabled && action.tier === 'primary').length;
   if (primaryCount > 1) throw new Error('CANONICAL_FORM_MULTIPLE_PRIMARY_ACTIONS');
   return {

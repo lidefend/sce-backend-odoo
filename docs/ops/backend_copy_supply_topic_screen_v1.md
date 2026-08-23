@@ -99,7 +99,7 @@ Not in scope:
 
 Entry condition:
 
-- the wording is attached to `scene_contract_v1.diagnostics` or scene runtime
+- the wording is attached to `scene_contract.diagnostics` or scene runtime
   diagnostic state
 
 Stop condition:

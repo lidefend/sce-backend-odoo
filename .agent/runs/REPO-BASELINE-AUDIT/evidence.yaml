@@ -1,0 +1,44 @@
+evidence:
+  baseline:
+    branch: codex/fix-project-layout-container-normalize
+    full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+    registered_worktrees: 1
+
+  preexisting_changes:
+    ownership: excluded_parallel_or_prior_work
+    paths:
+      - addons/smart_construction_core/core_extension.py
+      - addons/smart_construction_core/core_extension_project_layout.py
+      - addons/smart_construction_core/tests/test_p0_ledger_gate.py
+      - addons/smart_construction_seed/tests/test_seed_tax_defaults.py
+      - addons/smart_core/app_config_engine/models/app_view_config.py
+      - docs/contract/snapshots/project_form_pm.json
+      - docs/contract/snapshots/project_action_open_858.json
+      - scripts/ci/personal_data_false_positives.json
+
+  commands:
+    preflight:
+      status: passed
+      result: repository_root_and_allowed_branch_confirmed
+    agent_context_lint:
+      status: passed
+      command: python3 scripts/verify/agent_context_lint.py
+      result: AGENT_CONTEXT_PASS
+    agent_context_verify:
+      status: passed
+      command: python3 scripts/verify/agent_context_verify.py
+      result: ENGINEERING_CONTEXT_READY
+
+  artifacts:
+    agent_context: .agent/context.yaml
+    workflow: .agent/workflows/governance-change.yaml
+    decision: .agent/decisions/agent-workspace-governance.yaml
+
+  risks:
+    - existing_agent_guards_only_check_presence_and_yaml_parseability
+    - codex_preflight_behavior_is_not_yet_aligned_with_the_full_current_policy
+    - legacy_readme_runtime_commands_are_not_yet_reconciled
+
+  completion:
+    status: completed
+    reason: required_agent_context_guards_passed

@@ -1,0 +1,7 @@
+goal_id: REPO-BASELINE-AUDIT-BATCH-M
+parent_goal_id: REPO-BASELINE-AUDIT
+title: Make snapshot actor and expected permission denial explicit
+status: completed
+formal_product_layer: P4
+layer_target: docs/contract/cases.yml
+reason: Platform admin is intentionally not a construction finance principal, and missing fixture identities must fail closed.

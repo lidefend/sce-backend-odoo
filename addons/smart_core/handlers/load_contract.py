@@ -10,12 +10,25 @@ from ..core.base_handler import BaseIntentHandler
 from ..core.request_params import parse_positive_int
 from ..core.unified_page_contract_lite_preview import with_lite_preview_if_requested
 from ..utils.extension_hooks import call_extension_hook_first
+from ..core.ui_base_contract_asset_repository import (
+    get_runtime_source_asset,
+    upsert_runtime_source_asset,
+)
+from ..utils.load_contract_response_cache import (
+    CONTRACT_PROJECTION_HOT_CACHE,
+    build_projection_cache_key,
+    build_projection_source_token,
+    projection_role_code,
+    static_projection_request,
+)
 from ..utils.reason_codes import REASON_OK, REASON_PERMISSION_DENIED
 
 VALID_VIEWS   = {'form','tree','kanban','search','pivot','graph','calendar','gantt','activity','dashboard'}
 VALID_INCLUDE = {'model','view','action','permission'}
 REASON_DISABLED = "DISABLED"
 REASON_STATE_BLOCKED = "STATE_BLOCKED"
+
+_RESPONSE_CACHE = CONTRACT_PROJECTION_HOT_CACHE
 
 def _json(obj):
     return json.dumps(obj, ensure_ascii=False, default=str, separators=(",",":"))
@@ -86,6 +99,34 @@ class LoadContractHandler(BaseIntentHandler):
         if isinstance(raw, bool) or not isinstance(raw, (str, int, float)):
             return "", self._err(400, f"{key} 无效")
         return str(raw).strip(), None
+
+    def _cache_identity(self, *, params, model_name, view_types, include_parts, ctx_user):
+        """Return an exact user/request cache key, or ``None`` for dynamic pages."""
+        if not static_projection_request(params):
+            return None
+        cache_params = {
+            key: value
+            for key, value in params.items()
+            if key not in {"force_refresh", "if_none_match"}
+        }
+        cache_params["_normalized_include_parts"] = sorted(include_parts)
+        return build_projection_cache_key(
+            self.env,
+            namespace="load_contract.response",
+            params=cache_params,
+            model_name=model_name,
+            view_types=view_types,
+            context=ctx_user,
+        ) or None
+
+    def _cache_source_token(self, *, model_name, menu_id, action_id):
+        """Fingerprint cheap authority versions; fail closed when unavailable."""
+        return build_projection_source_token(
+            self.env,
+            model_name=model_name,
+            menu_id=menu_id,
+            action_id=action_id,
+        ) or None
 
     # ✅ 与框架对齐：覆写 handle，而不是 run
     def handle(self, payload=None, ctx=None):
@@ -223,6 +264,52 @@ class LoadContractHandler(BaseIntentHandler):
         if operation_strategy:
             ctx_user["operation_strategy"] = operation_strategy
 
+        cache_key = None
+        source_token = None
+        if not force_refresh:
+            try:
+                cache_key = self._cache_identity(
+                    params=p,
+                    model_name=model_name,
+                    view_types=view_type_final,
+                    include_parts=include_parts,
+                    ctx_user=ctx_user,
+                )
+            except Exception:
+                cache_key = None
+            if cache_key:
+                source_token = self._cache_source_token(
+                    model_name=model_name,
+                    menu_id=menu_id,
+                    action_id=action_id,
+                )
+                cached_response = _RESPONSE_CACHE.get(cache_key, source_token)
+                if cached_response is None:
+                    cached_response = get_runtime_source_asset(
+                        self.env,
+                        cache_key=f"load_contract:{cache_key}",
+                        source_token=source_token,
+                        role_code=projection_role_code(self.env),
+                        company_id=self.env.company.id,
+                    ) or None
+                    if cached_response is not None:
+                        _RESPONSE_CACHE.put(cache_key, source_token, cached_response)
+                if cached_response is not None:
+                    cached_etag = str((cached_response.get("meta") or {}).get("etag") or "")
+                    if if_none_match and if_none_match == cached_etag:
+                        return {
+                            "status": "not_modified",
+                            "code": 304,
+                            "data": None,
+                            "meta": {
+                                "etag": cached_etag,
+                                "source_authority": self._source_authority_contract(
+                                    model_name, view_type_final
+                                ),
+                            },
+                        }
+                    return cached_response
+
         # ---------- 6) 生成契约（按当前用户权限，不 sudo） ----------
         if "app.contract.service" in self.env:
             svc = self.env["app.contract.service"].with_context(ctx_user)
@@ -290,7 +377,24 @@ class LoadContractHandler(BaseIntentHandler):
         meta_out["etag"] = etag
         meta_out["source_authority"] = source_authority
         response = {"status": status, "code": 200, "data": data, "meta": meta_out}
-        return with_lite_preview_if_requested(response, p, "load_contract", payload_type="lite_contract")
+        response = with_lite_preview_if_requested(
+            response,
+            p,
+            "load_contract",
+            payload_type="lite_contract",
+        )
+        if cache_key and source_token and status == "success":
+            _RESPONSE_CACHE.put(cache_key, source_token, response)
+            upsert_runtime_source_asset(
+                self.env,
+                cache_key=f"load_contract:{cache_key}",
+                source_token=source_token,
+                payload=response,
+                role_code=projection_role_code(self.env),
+                company_id=self.env.company.id,
+                source_ref=f"load_contract:{model_name}",
+            )
+        return response
 
     def _generate_with_ui_contract(self, *, model_name, view_type, menu_id, action_id, ctx_user):
         """Compatibility bridge for legacy load_contract/load_view callers."""

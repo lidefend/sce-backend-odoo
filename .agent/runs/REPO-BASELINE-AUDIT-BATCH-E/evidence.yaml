@@ -1,0 +1,21 @@
+evidence:
+  failure:
+    command: make verify.unified_page_contract.v2.stable_projection
+    classification: GUARD_FAIL
+    owner: strict_v2_projection_guard
+
+  change:
+    schema_external_sets_remain_exact: true
+    wildcard_allowance_added: false
+    runtime_behavior_changed: false
+
+  verification:
+    stable_projection:
+      status: passed
+      command: make verify.unified_page_contract.v2.stable_projection
+    generated_reports_guard:
+      status: passed
+      command: make refresh.generated_reports_and_make_ci.generated_reports.guard
+
+  completion:
+    status: completed

@@ -241,9 +241,9 @@ class FinalMenuNavigationService:
             "meta": {
                 "source_authority": source_authority_contract(),
                 "menu_fact_source_authority": {},
-                "delivery_convergence": {"source": "delivery_engine_v1"},
+                "delivery_convergence": {"source": "delivery_engine"},
                 "delivery_engine": {
-                    "source": "delivery_engine_v1",
+                    "source": "delivery_engine",
                     "nav_versions": nav_versions if isinstance(nav_versions, dict) else {},
                 },
                 "user_menu_config": delivery_payload.get("meta", {}).get("user_menu_config", {}) if isinstance(delivery_payload.get("meta"), dict) else {},

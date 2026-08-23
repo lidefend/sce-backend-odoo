@@ -1,0 +1,24 @@
+:deep(.relation-create-dialog) {
+  width: min(1180px, calc(100vw - 2 * var(--sc-product-page-gutter)));
+  height: min(880px, calc(100dvh - 2 * var(--sc-product-page-gutter)));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--sc-color-surface);
+}
+
+.relation-create-dialog__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--sc-color-surface);
+}
+
+@media (max-width: 640px) {
+  :deep(.relation-create-dialog) {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+}

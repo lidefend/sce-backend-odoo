@@ -1,0 +1,33 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-J
+  goal: REPO-BASELINE-AUDIT
+  workflow: governance-change
+  capability: governance
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P4
+    layer_target: contract_snapshot_export_argument_boundary
+    module: scripts/contract
+    standard_vs_user_specific: repository_evidence_governance
+    why_here: shell_wrapper_owns_internal_compose_selector_consumption
+    why_not_elsewhere: snapshot_python_must_receive_only_its_public_cli_arguments
+    blast_radius: one_internal_argument_and_one_regression_test
+
+  batch:
+    id: Batch-J
+    objective: fix_snapshot_export_internal_argument_forwarding
+    scope:
+      - scripts/contract/snapshot_export.sh
+      - scripts/verify/test_contract_snapshot_export_fail_closed.py
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-I/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-I/evidence.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-J/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-J/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-J/evidence.yaml
+
+  rollback:
+    method: restore_pre_batch_j_shell_wrapper_and_test

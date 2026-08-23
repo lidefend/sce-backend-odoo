@@ -35,6 +35,12 @@
     "formStructureContract": {
       "$ref": "#/$defs/formStructureContract"
     },
+    "searchContract": {
+      "$ref": "#/$defs/searchContract"
+    },
+    "workflowContract": {
+      "type": "object"
+    },
     "meta": {
       "$ref": "#/$defs/meta"
     }
@@ -44,6 +50,37 @@
       "type": "string",
       "minLength": 1,
       "pattern": "^[a-zA-Z][a-zA-Z0-9_.:-]*$"
+    },
+    "sourceContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "context": { "type": "object" },
+        "domain": { "type": "array" },
+        "contextRaw": { "type": "string" },
+        "domainRaw": { "type": "string" },
+        "renderProfile": { "enum": ["create", "edit", "readonly"] },
+        "order": { "type": "string" },
+        "limit": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "searchContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_sort": { "type": "string" },
+        "default_order": { "type": "string" },
+        "mode": { "type": "string" },
+        "filters": { "type": "array", "items": { "type": "object" } },
+        "saved_filters": { "type": "array", "items": { "type": "object" } },
+        "group_by": { "type": "array", "items": { "type": "object" } },
+        "fields": { "type": "array", "items": { "type": "object" } },
+        "search_panel": { "type": "object" },
+        "favorites": { "type": "object" },
+        "custom": { "type": "object" },
+        "ui_labels": { "type": "object" },
+        "defaults": { "type": "object" }
+      }
     },
     "pageInfo": {
       "type": "object",
@@ -160,7 +197,7 @@
         "containerTree": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/container"
+            "$ref": "#/$defs/layoutNode"
           }
         },
         "layoutHints": {
@@ -174,7 +211,165 @@
         },
         "listProfile": {
           "type": "object"
+        },
+        "activityProfile": {
+          "$ref": "#/$defs/activityProfile"
         }
+      }
+    },
+    "activityProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "activityTypeSlots",
+        "deadlineSlots",
+        "assigneeSlots",
+        "fieldOccurrences",
+        "nativeAttrs",
+        "nodeOccurrences",
+        "template",
+        "templateQwebPresent",
+        "actions",
+        "actionCount",
+        "sourceAuthority"
+      ],
+      "properties": {
+        "activityTypeSlots": { "type": "object" },
+        "deadlineSlots": { "type": "object" },
+        "assigneeSlots": { "type": "object" },
+        "fieldOccurrences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/activityFieldOccurrence" }
+        },
+        "nativeAttrs": { "type": "object" },
+        "nodeOccurrences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/activityNodeOccurrence" }
+        },
+        "template": { "$ref": "#/$defs/activityTemplate" },
+        "templateQwebPresent": { "type": "boolean" },
+        "actions": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "actionCount": { "type": "integer", "minimum": 0 },
+        "sourceAuthority": { "$ref": "#/$defs/activitySourceAuthority" }
+      }
+    },
+    "activitySourceAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "authorities", "projection_only", "no_business_fact_authority", "runtime_carrier"],
+      "properties": {
+        "kind": { "const": "native_activity_view_projection" },
+        "authorities": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "ir.ui.view" },
+            { "const": "ir.model.fields" },
+            { "const": "ir.actions.act_window" }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "projection_only": { "const": true },
+        "no_business_fact_authority": { "const": true },
+        "runtime_carrier": { "const": "ui.contract.v2.layoutContract.activityProfile" }
+      }
+    },
+    "activityFieldOccurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "label",
+        "widget",
+        "native_locator",
+        "occurrence_index",
+        "source_position",
+        "attributes",
+        "text",
+        "tail",
+        "modifiers",
+        "decorations",
+        "field_type",
+        "currency_field",
+        "digits"
+      ],
+      "properties": {
+        "name": { "type": "string", "pattern": "\\S" },
+        "label": { "type": "string", "pattern": "\\S" },
+        "widget": { "type": "string" },
+        "native_locator": { "type": "string", "pattern": "\\S" },
+        "occurrence_index": { "type": "integer", "minimum": 1 },
+        "source_position": { "type": "integer", "minimum": 0 },
+        "attributes": { "type": "object" },
+        "text": { "type": "string" },
+        "tail": { "type": "string" },
+        "modifiers": { "type": "string" },
+        "decorations": { "type": "array", "items": { "type": "object" } },
+        "field_type": { "type": "string" },
+        "currency_field": { "type": "string" },
+        "digits": {
+          "oneOf": [
+            { "type": "array", "maxItems": 0 },
+            {
+              "type": "array",
+              "prefixItems": [
+                { "type": "integer", "minimum": 0 },
+                { "type": "integer", "minimum": 0 }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        }
+      }
+    },
+    "activityNodeOccurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "native_locator", "occurrence_index", "source_position", "attributes", "text", "tail"],
+      "properties": {
+        "tag": { "type": "string", "pattern": "\\S" },
+        "native_locator": { "type": "string", "pattern": "\\S" },
+        "occurrence_index": { "type": "integer", "minimum": 1 },
+        "source_position": { "type": "integer", "minimum": 0 },
+        "attributes": { "type": "object" },
+        "text": { "type": "string" },
+        "tail": { "type": "string" }
+      }
+    },
+    "activityNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "native_locator", "occurrence_index", "source_position", "attributes", "text", "tail", "children"],
+      "properties": {
+        "tag": { "type": "string", "pattern": "\\S" },
+        "native_locator": { "type": "string", "pattern": "\\S" },
+        "occurrence_index": { "type": "integer", "minimum": 1 },
+        "source_position": { "type": "integer", "minimum": 0 },
+        "attributes": { "type": "object" },
+        "text": { "type": "string" },
+        "tail": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/activityNode" }
+        }
+      }
+    },
+    "activityTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native_locator", "occurrence_index", "names", "nodes"],
+      "properties": {
+        "native_locator": { "type": "string", "pattern": "\\S" },
+        "occurrence_index": { "type": "integer", "minimum": 1 },
+        "names": { "type": "array", "items": { "type": "string", "pattern": "\\S" } },
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/activityNode" } }
       }
     },
     "container": {
@@ -184,7 +379,6 @@
         "containerId",
         "containerType",
         "title",
-        "span",
         "children",
         "widgetList"
       ],
@@ -216,10 +410,22 @@
         "styleToken": {
           "type": "string"
         },
+        "type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "string": {
+          "type": "string"
+        },
         "children": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/container"
+            "$ref": "#/$defs/layoutNode"
           }
         },
         "widgetList": {
@@ -227,6 +433,96 @@
           "items": {
             "$ref": "#/$defs/widget"
           }
+        }
+      }
+    },
+    "layoutNode": {
+      "anyOf": [
+        {"$ref": "#/$defs/container"},
+        {"$ref": "#/$defs/nativeLayoutNode"}
+      ]
+    },
+    "nativeLayoutNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {"type": "string", "minLength": 1},
+        "name": {"type": "string"},
+        "string": {"type": "string"},
+        "label": {"type": "string"},
+        "title": {"type": "string"},
+        "text": {"type": "string"},
+        "displayLabel": {"type": "string"},
+        "semanticTitle": {"type": "string"},
+        "semanticAnchor": {"type": "string"},
+        "containerId": {"$ref": "#/$defs/id"},
+        "containerType": {"type": "string"},
+        "span": {"type": "integer", "minimum": 1, "maximum": 24},
+        "styleToken": {"type": "string"},
+        "widgetId": {"type": "string"},
+        "fieldCode": {"type": "string"},
+        "nativeLocator": {"type": "string", "minLength": 1},
+        "occurrenceIndex": {"type": "integer", "minimum": 1},
+        "sourcePosition": {"type": "integer", "minimum": 0},
+        "widget": {"type": "string"},
+        "componentKey": {"type": "string"},
+        "componentConfig": {"type": "object"},
+        "fieldInfo": {"type": "object"},
+        "filename": {"type": "string"},
+        "nolabel": {"type": "boolean"},
+        "attributes": {"type": "object"},
+        "modifiers": {"type": "object"},
+        "action": {"type": ["object", "null"]},
+        "badge": {"type": "object"},
+        "buttonType": {"type": "string"},
+        "readonly": {},
+        "required": {},
+        "invisible": {},
+        "column_invisible": {},
+        "domain": {},
+        "context": {},
+        "options": {},
+        "visible": {"type": "boolean"},
+        "cols": {"type": "integer", "minimum": 1},
+        "columns": {"type": "integer", "minimum": 1},
+        "col": {"type": ["integer", "string"]},
+        "class": {"type": "string"},
+        "className": {"type": "string"},
+        "fieldSize": {"type": "string"},
+        "size": {"type": "string"},
+        "formStructure": {"type": "object"},
+        "formStructureRole": {"$ref": "#/$defs/formStructureRole"},
+        "sourceAuthority": {"type": "object"},
+        "children": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "pages": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "tabs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "nodes": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "items": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/layoutNode"}
+        },
+        "widgetList": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/widget"}
+        },
+        "fields": {
+          "type": "array",
+          "items": {"type": "string"}
         }
       }
     },
@@ -288,6 +584,9 @@
           "uniqueItems": true
         },
         "componentConfig": {
+          "type": "object"
+        },
+        "fieldDescriptor": {
           "type": "object"
         },
         "formStructureRole": {
@@ -577,6 +876,9 @@
         },
         "reasonCode": {
           "type": "string"
+        },
+        "backendIdentity": {
+          "type": "string"
         }
       }
     },
@@ -634,6 +936,12 @@
           "type": "object"
         },
         "surfacePolicies": {
+          "type": "object"
+        },
+        "identityPolicy": {
+          "type": "object"
+        },
+        "primaryResolution": {
           "type": "object"
         }
       }
@@ -700,6 +1008,9 @@
             "full"
           ]
         },
+        "refreshPolicy": {
+          "type": "object"
+        },
         "actionKey": {
           "type": "string"
         },
@@ -740,6 +1051,46 @@
         },
         "tracePolicy": {
           "type": "object"
+        },
+        "backendIdentity": {
+          "type": "string"
+        },
+        "nativeIdentity": {
+          "type": "object"
+        },
+        "sourceTrace": {
+          "type": "array",
+          "items": {"type": "object"}
+        },
+        "presentationAuthority": {
+          "type": "string"
+        },
+        "presentationPriority": {
+          "type": "integer"
+        },
+        "sourceActionKey": {
+          "type": "string"
+        },
+        "sourceChannel": {
+          "type": "string"
+        },
+        "permissionConstraints": {
+          "type": "object"
+        },
+        "entitlementEvaluated": {
+          "type": "boolean"
+        },
+        "allowed": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "reasonCode": {
+          "type": "string"
         }
       }
     },
@@ -808,6 +1159,9 @@
         },
         "fieldGroups": {
           "$ref": "#/$defs/fieldGroups"
+        },
+        "sourceContext": {
+          "$ref": "#/$defs/sourceContext"
         }
       }
     },
@@ -1094,6 +1448,18 @@
         },
         "actionTarget": {
           "type": "string"
+        },
+        "collaboration": {
+          "type": "object"
+        },
+        "businessWorkspace": {
+          "type": "object"
+        },
+        "businessActions": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
         }
       }
     },

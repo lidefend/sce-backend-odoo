@@ -56,6 +56,6 @@
   - `smart_scene.core.__init__` 不再导出 path-resolver API，仅导出 registry 能力。
 
 ## 8. 后续演进
-- P1：provider 诊断字段进入 `scene_contract_v1.diagnostics.provider_trace`
+- P1：provider 诊断字段进入 `scene_contract.diagnostics.provider_trace`
 - P1：扩展 scene provider 覆盖矩阵与重复注册冲突报告
 - P2：已完成 `provider_locator` 清理，registry 成为唯一解析入口

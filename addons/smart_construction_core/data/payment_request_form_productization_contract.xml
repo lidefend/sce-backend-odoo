@@ -10,7 +10,7 @@
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
-            <field name="version_no">8</field>
+            <field name="version_no">10</field>
             <field name="contract_json" eval="{
                 'view_orchestration': {
                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
@@ -32,7 +32,7 @@
                                 {'title': '本次付款事实', 'sequence': 40, 'columns': 2, 'fields': ['amount_uppercase', 'accepted_amount_uppercase', 'request_amount_display', 'settlement_amount_total', 'settlement_paid_amount', 'settlement_remaining_amount', 'settlement_amount_payable', 'paid_amount_total', 'currency_id']},
                                 {'title': '账户与开票信息', 'sequence': 50, 'columns': 2, 'fields': ['payer_unit', 'actual_payee_unit', 'payment_account_name', 'payment_bank_name', 'payment_account_no', 'partner_account_name', 'partner_bank_name', 'partner_bank_account']},
                                 {'title': '说明与附件', 'sequence': 60, 'columns': 2, 'fields': ['note', 'attachment_ids', 'payment_request_attachment_text_display']},
-                                {'key': 'approval_audit', 'title': '审批与审计', 'sequence': 70, 'columns': 2, 'semantic_role': 'audit', 'fields': ['legacy_source_table', 'legacy_record_id', 'legacy_document_state', 'creator_name', 'created_time', 'source_created_by', 'source_created_at', 'active']}
+                                {'key': 'approval_audit', 'title': '审批与审计', 'sequence': 70, 'columns': 2, 'semantic_role': 'audit', 'fields': ['creator_name', 'created_time', 'source_created_by', 'source_created_at', 'active']}
                             ],
                             'fields': [
                                 {'name': 'state', 'sequence': 10, 'readonly': True},
@@ -96,9 +96,6 @@
                                 {'name': 'note', 'sequence': 350},
                                 {'name': 'attachment_ids', 'sequence': 360},
                                 {'name': 'payment_request_attachment_text_display', 'sequence': 370, 'readonly': True},
-                                {'name': 'legacy_source_table', 'sequence': 380, 'readonly': True},
-                                {'name': 'legacy_record_id', 'sequence': 390, 'readonly': True},
-                                {'name': 'legacy_document_state', 'sequence': 400, 'readonly': True},
                                 {'name': 'creator_name', 'sequence': 410, 'readonly': True},
                                 {'name': 'created_time', 'sequence': 420, 'readonly': True},
                                 {'name': 'source_created_by', 'sequence': 430, 'readonly': True},
@@ -106,7 +103,21 @@
                                 {'name': 'active', 'sequence': 450}
                             ],
                             'actions': [
-                                {'name': 'action_create_payment_execution', 'label': '生成付款登记', 'type': 'object', 'style': 'primary', 'visible_profiles': ['edit', 'readonly']}
+                                {
+                                    'name': 'action_create_payment_execution',
+                                    'label': '生成付款登记',
+                                    'type': 'object',
+                                    'style': 'primary',
+                                    'visible_profiles': ['edit', 'readonly'],
+                                    'visible': {'attrs': {'invisible': {
+                                        'kind': 'any',
+                                        'exprs': [
+                                            {'kind': 'field_compare', 'field': 'type', 'operator': '!=', 'value': 'pay'},
+                                            {'kind': 'field_compare', 'field': 'state', 'operator': '!=', 'value': 'approved'},
+                                            {'kind': 'field_truthy', 'field': 'has_active_payment_execution'}
+                                        ]
+                                    }}}
+                                }
                             ]
                         }
                     }
@@ -115,15 +126,15 @@
         </record>
 
         <record id="business_config_contract_payment_execution_from_request_productized_form_v1" model="ui.business.config.contract">
-            <field name="name">payment_execution_from_request_productized_form_v1</field>
+            <field name="name">payment_execution_productized_form_v2</field>
             <field name="model">sc.payment.execution</field>
             <field name="view_type">form</field>
-            <field name="action_id" ref="smart_construction_core.action_sc_payment_execution"/>
+            <field name="action_id" eval="False"/>
             <field name="priority">850</field>
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
-            <field name="version_no">1</field>
+            <field name="version_no">3</field>
             <field name="contract_json" eval="{
                 'view_orchestration': {
                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
@@ -132,13 +143,19 @@
                             'title': '付款登记',
                             'composition_mode': 'entry_semantic_surface',
                             'columns': 2,
+                            'semantic_anchors': [
+                                {'role': 'summary', 'fields': ['payment_request_id', 'project_id', 'partner_id', 'state', 'paid_amount', 'currency_id']},
+                                {'role': 'task', 'fields': ['date_payment', 'handler_name']},
+                                {'role': 'risk', 'fields': ['company_contractor_responsibility_state', 'company_contractor_responsibility_notice', 'reversal_reason']},
+                                {'role': 'audit', 'fields': ['document_no', 'kingdee_document_no', 'push_result']}
+                            ],
                             'sections': [
                                 {'title': '来源申请', 'sequence': 10, 'columns': 2, 'fields': ['payment_request_id', 'project_id', 'partner_id', 'contract_id', 'payment_request_partner_relation', 'business_category_id', 'state']},
                                 {'title': '本次实付', 'sequence': 20, 'columns': 2, 'fields': ['date_payment', 'planned_amount', 'paid_amount', 'currency_id', 'invoice_amount', 'payment_method']},
                                 {'title': '收款账户', 'sequence': 30, 'columns': 2, 'fields': ['receipt_account_name', 'receipt_bank_name', 'receipt_account_no']},
                                 {'title': '付款账户', 'sequence': 40, 'columns': 2, 'fields': ['payment_account_name', 'payment_bank_name', 'payment_account_no', 'bank_account']},
                                 {'title': '凭证与说明', 'sequence': 50, 'columns': 2, 'fields': ['document_no', 'kingdee_document_no', 'note', 'attachment_ids']},
-                                {'title': '责任与追溯', 'sequence': 60, 'columns': 2, 'fields': ['handler_name', 'company_contractor_responsibility_state', 'company_contractor_responsibility_notice', 'cancellation_kind', 'reversal_reason', 'source_kind', 'payment_family', 'push_result', 'legacy_source_model', 'legacy_source_table', 'legacy_record_id', 'legacy_document_state']}
+                                {'title': '责任与状态', 'sequence': 60, 'columns': 2, 'fields': ['handler_name', 'company_contractor_responsibility_state', 'company_contractor_responsibility_notice', 'cancellation_kind', 'reversal_reason', 'source_kind', 'payment_family', 'push_result']}
                             ],
                             'fields': [
                                 {'name': 'payment_request_id', 'sequence': 10, 'readonly': True},
@@ -172,11 +189,7 @@
                                 {'name': 'reversal_reason', 'sequence': 290},
                                 {'name': 'source_kind', 'sequence': 300, 'readonly': True},
                                 {'name': 'payment_family', 'sequence': 310, 'readonly': True},
-                                {'name': 'push_result', 'sequence': 320, 'readonly': True},
-                                {'name': 'legacy_source_model', 'sequence': 330, 'readonly': True},
-                                {'name': 'legacy_source_table', 'sequence': 340, 'readonly': True},
-                                {'name': 'legacy_record_id', 'sequence': 350, 'readonly': True},
-                                {'name': 'legacy_document_state', 'sequence': 360, 'readonly': True}
+                                {'name': 'push_result', 'sequence': 320, 'readonly': True}
                             ]
                         }
                     }
@@ -193,7 +206,7 @@
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
-            <field name="version_no">1</field>
+            <field name="version_no">2</field>
             <field name="contract_json" eval="{
                 'view_orchestration': {
                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
@@ -209,7 +222,7 @@
                                 {'title': '收付款账户', 'sequence': 40, 'columns': 2, 'fields': ['payer_unit', 'actual_payee_unit', 'payment_account_name', 'payment_bank_name', 'payment_account_no', 'partner_account_name', 'partner_bank_name', 'partner_bank_account']},
                                 {'title': '结算匹配', 'sequence': 50, 'columns': 2, 'fields': ['settlement_compliance_state', 'settlement_compliance_message', 'settlement_amount_total', 'settlement_paid_amount', 'settlement_remaining_amount', 'settlement_amount_payable', 'related_document_text']},
                                 {'title': '说明与附件', 'sequence': 60, 'columns': 2, 'fields': ['note', 'attachment_ids', 'payment_request_attachment_text_display']},
-                                {'title': '来源追溯', 'sequence': 70, 'columns': 2, 'fields': ['legacy_source_table', 'legacy_record_id', 'legacy_document_state', 'creator_name', 'created_time', 'source_created_by', 'source_created_at', 'active']}
+                                {'title': '创建与审计', 'sequence': 70, 'columns': 2, 'fields': ['creator_name', 'created_time', 'source_created_by', 'source_created_at', 'active']}
                             ],
                             'fields': [
                                 {'name': 'state', 'sequence': 10, 'readonly': True},
@@ -249,9 +262,6 @@
                                 {'name': 'note', 'sequence': 350},
                                 {'name': 'attachment_ids', 'sequence': 360},
                                 {'name': 'payment_request_attachment_text_display', 'sequence': 370, 'readonly': True},
-                                {'name': 'legacy_source_table', 'sequence': 380, 'readonly': True},
-                                {'name': 'legacy_record_id', 'sequence': 390, 'readonly': True},
-                                {'name': 'legacy_document_state', 'sequence': 400, 'readonly': True},
                                 {'name': 'creator_name', 'sequence': 410, 'readonly': True},
                                 {'name': 'created_time', 'sequence': 420, 'readonly': True},
                                 {'name': 'source_created_by', 'sequence': 430, 'readonly': True},

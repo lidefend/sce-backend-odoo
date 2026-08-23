@@ -18,7 +18,7 @@ class CapabilityService:
             kind=cls.SOURCE_KIND,
             authorities=cls.SOURCE_AUTHORITIES,
             no_business_fact_authority=cls.NO_BUSINESS_FACT_AUTHORITY,
-            runtime_carrier="delivery_engine_v1.capabilities",
+            runtime_carrier="delivery_engine.capabilities",
         )
 
     def build_entries(self, *, policy: dict, capabilities: list[dict]) -> list[dict]:

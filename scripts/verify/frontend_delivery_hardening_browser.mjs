@@ -152,8 +152,16 @@ async function normalizedSubmitEvidence(response, evidenceLabel) {
   const data = envelope?.data || envelope?.result?.data || envelope?.result || {};
   const rules = Array.isArray(data?.actionContract?.actionRuleList) ? data.actionContract.actionRuleList : [];
   const statuses = Array.isArray(data?.statusContract?.buttonStatus) ? data.statusContract.buttonStatus : [];
-  const submitRules = rules.filter((row) => row?.backendIdentity === 'button:object:action_submit');
-  const submitStatuses = statuses.filter((row) => row?.backendIdentity === 'button:object:action_submit');
+  const resolution = data?.actionContract?.primaryResolution || {};
+  const winnerIdentity = String(resolution?.winner || '');
+  const submitCandidates = rules.filter((row) => row?.button?.name === 'action_submit');
+  const submitRules = submitCandidates.filter((row) => (
+    winnerIdentity
+      ? row?.backendIdentity === winnerIdentity
+      : row?.presentation?.tier === 'primary'
+  ));
+  const submitIdentities = new Set(submitRules.map((row) => String(row?.backendIdentity || '')).filter(Boolean));
+  const submitStatuses = statuses.filter((row) => submitIdentities.has(String(row?.backendIdentity || '')));
   const evidence = {
     rules: submitRules.map((row) => ({
       actionKey: row.actionKey || '', backendIdentity: row.backendIdentity || '', label: row.label || '',
@@ -206,8 +214,8 @@ async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = n
   // product header slot still carries them under the field-config designer
   // scope, so both containers are accepted here.
   const selector = [
-    '.template-page-header-actions button[data-backend-identity="button:object:action_submit"]',
-    'nav.canonical-form-action-bar button[data-backend-identity="button:object:action_submit"]',
+    '.template-page-header-actions button[data-action-method="action_submit"]',
+    '[data-canonical-action-bar] button[data-action-method="action_submit"]',
   ].join(', ');
   let submit = page.locator(selector);
   if (!(await submit.count()) || !(await submit.first().isVisible())) {
@@ -218,7 +226,7 @@ async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = n
     }
     submit = page.locator(selector);
   }
-  const actions = await page.locator('.template-page-header-actions button, nav.canonical-form-action-bar button').evaluateAll((buttons) => buttons.map((button) => ({
+  const actions = await page.locator('.template-page-header-actions button, [data-canonical-action-bar] button').evaluateAll((buttons) => buttons.map((button) => ({
     text: String(button.textContent || '').replace(/\s+/g, ' ').trim(),
     actionKey: button.getAttribute('data-action-key') || '',
     backendIdentity: button.getAttribute('data-backend-identity') || '',
@@ -617,9 +625,8 @@ async function main() {
     );
 
     if (process.env.DELIVERY_HARDENING_A11Y_PROBE === '1') {
-      await open(page, recordRoute(TARGETS.work_settlement));
-      await page.getByRole('button', { name: '新建付款申请' }).click();
-      await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+      await open(page, listRoute(TARGETS.payment_request));
+      await openPaymentCreateFromList(page, TARGETS.payment_request, 'a11y_payment_create');
       accessibility.scans.push(await axe(page, 'payment-form'));
       const removeProbe = await interceptNextBusiness(page, (route) => route.abort('failed'), TARGETS.payment_request);
       await page.goto(`${BASE_URL}${recordRoute(TARGETS.payment_request)}`, { waitUntil: 'domcontentloaded' });
@@ -757,7 +764,7 @@ async function main() {
       { name: 'contract-list', route: listRoute(TARGETS.contract), role: CONTRACT_OPERATOR_LOGIN }, { name: 'contract-detail', route: recordRoute(TARGETS.contract), role: CONTRACT_OPERATOR_LOGIN },
       { name: 'settlement-list', route: listRoute(TARGETS.settlement), role: FINANCE_LOGIN }, { name: 'settlement-detail', route: recordRoute(TARGETS.settlement), role: FINANCE_LOGIN },
       { name: 'payment-list', route: listRoute(TARGETS.payment_request), role: FINANCE_LOGIN }, { name: 'payment-detail', route: recordRoute(TARGETS.payment_request), role: FINANCE_LOGIN },
-      { name: 'payment-form', route: recordRoute(TARGETS.work_settlement), role: FINANCE_LOGIN, mode: 'form' },
+      { name: 'payment-form', route: listRoute(TARGETS.payment_request), role: FINANCE_LOGIN, mode: 'form' },
       { name: 'execution-detail', route: recordRoute(TARGETS.payment_execution), role: FINANCE_LOGIN },
       { name: 'approval-dialog', route: recordRoute(TARGETS.journey_request), role: FINANCE_LOGIN, mode: 'dialog' },
       { name: 'denied', route: recordRoute(TARGETS.payment_request), role: PROJECT_MEMBER_LOGIN },
@@ -798,9 +805,7 @@ async function main() {
           }
           await page.goto(`${BASE_URL}${surface.route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
           if (surface.mode === 'form') {
-            await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
-            await page.getByRole('button', { name: '新建付款申请' }).click();
-            await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+            await openPaymentCreateFromList(page, TARGETS.payment_request, `responsive_payment_create_${viewport.width}`);
           } else if (surface.mode === 'dialog') {
             await page.locator(FORM_SURFACE_SELECTOR).waitFor({ timeout: 45000 });
             const submitAction = await canonicalSubmitAction(page, `${surface.name}-${viewport.width}`);
@@ -942,16 +947,12 @@ async function main() {
         performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
       }
       const formSamples = [];
-      await navigateSpa(page, recordRoute(TARGETS.work_settlement), FORM_SURFACE_SELECTOR);
-      await page.locator('#main-content').getByRole('button', { name: '新建付款申请', exact: true }).click();
-      await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
-      await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+      await navigateSpa(page, listRoute(TARGETS.payment_request), '[data-product-page-mode="list"][data-list-status]:visible');
+      await openPaymentCreateFromList(page, TARGETS.payment_request, 'form_open_warmup');
       for (let i = 0; i < PERF_RUNS; i += 1) {
-        await navigateSpa(page, recordRoute(TARGETS.work_settlement), FORM_SURFACE_SELECTOR);
+        await navigateSpa(page, listRoute(TARGETS.payment_request), '[data-product-page-mode="list"][data-list-status]:visible');
         formSamples.push(await time(async () => {
-          await page.locator('#main-content').getByRole('button', { name: '新建付款申请', exact: true }).click();
-          await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
-          await page.locator('[data-field-name="amount"] input').first().waitFor({ timeout: 45000 });
+          await openPaymentCreateFromList(page, TARGETS.payment_request, `form_open_${i + 1}`);
         }));
       }
       performanceReport.scenarios.form_open = stats(formSamples);
@@ -1068,6 +1069,49 @@ async function main() {
   } finally {
     await context?.close(); await browser.close();
     await acceptanceLease.release();
+  }
+}
+
+async function openPaymentCreateFromList(page, target, label) {
+  const listSurface = page.locator('[data-product-page-mode="list"][data-list-status]:visible');
+  await listSurface.waitFor({ state: 'visible', timeout: 45000 });
+  check(await listSurface.count() === 1, `${label}: active payment list identity is not unique`);
+  const create = listSurface.getByRole('button', { name: '新建', exact: true });
+  await create.waitFor({ state: 'visible', timeout: 45000 });
+  check(await create.count() === 1, `${label}: create payment action identity is not unique`);
+  check(await create.isEnabled(), `${label}: create payment action is disabled`);
+  await create.click();
+  await page.waitForURL((url) => /\/payment\.request\/new$/.test(url.pathname), { timeout: 45000 });
+  const paymentCreateSurface = page.locator(
+    '[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="new"]'
+    + `[data-form-action-id="${target.action_id}"][data-form-menu-id="${target.menu_id}"]:visible`,
+  );
+  await paymentCreateSurface.waitFor({ state: 'visible', timeout: 45000 });
+  check(await paymentCreateSurface.count() === 1, `${label}: payment create form identity is not unique`);
+  try {
+    await paymentCreateSurface.locator('[data-field-name="amount"] input').waitFor({ state: 'visible', timeout: 45000 });
+  } catch (error) {
+    const diagnostic = await paymentCreateSurface.evaluate((surface) => ({
+      shadowError: surface.getAttribute('data-v2-shadow-error') || '',
+      shadowActions: surface.getAttribute('data-v2-shadow-actions') || '',
+      shadowButtonStatuses: surface.getAttribute('data-v2-shadow-button-statuses') || '',
+      driverErrors: [...surface.querySelectorAll('[data-contract-form-driver-error]')]
+        .map((node) => String(node.textContent || '').trim()).filter(Boolean),
+      statusPanels: [...surface.querySelectorAll('.sc-state-panel[role="alert"]')]
+        .map((node) => String(node.textContent || '').trim()).filter(Boolean),
+      fieldNames: [...new Set([...surface.querySelectorAll('[data-field-name]')]
+        .map((node) => String(node.getAttribute('data-field-name') || '').trim()).filter(Boolean))],
+      canonicalActions: [...surface.querySelectorAll('[data-canonical-action-id]')]
+        .map((node) => ({
+          actionId: String(node.getAttribute('data-canonical-action-id') || '').trim(),
+          backendIdentity: String(node.getAttribute('data-canonical-backend-identity') || '').trim(),
+          disabled: node.hasAttribute('disabled'),
+        })),
+    }));
+    throw new Error(
+      `${label}: payment create amount field unavailable diagnostic=${JSON.stringify(diagnostic)}`
+      + ` cause=${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 

@@ -187,7 +187,15 @@ class TestPaymentRequestWorkItemService(TransactionCase):
         self.assertEqual(workspace["presentation"]["default_sort"], "updated_desc")
         self.assertEqual(workspace["presentation"]["quick_links"][0]["label"], "付款申请")
         self.assertEqual(workspace["presentation"]["quick_links"][0]["route"], "/s/finance.payment_requests")
-        self.assertEqual(draft["target"]["route"], "/r/payment.request/%s" % self.draft.id)
+        action = self.env.ref("smart_construction_core.action_payment_request_user_payment_apply")
+        menu = self.env.ref("smart_construction_core.menu_sc_user_payment_apply")
+        self.assertEqual(draft["target"]["action_ref"], action.get_external_id()[action.id])
+        self.assertEqual(draft["target"]["action_id"], action.id)
+        self.assertEqual(draft["target"]["menu_id"], menu.id)
+        self.assertEqual(
+            draft["target"]["route"],
+            "/r/payment.request/%s?action_id=%s&menu_id=%s" % (self.draft.id, action.id, menu.id),
+        )
         self.assertNotIn("model", draft["record"])
 
     def test_executive_only_gets_submitted_approval_item(self):

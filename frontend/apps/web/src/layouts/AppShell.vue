@@ -1068,7 +1068,7 @@ const extractionStats = computed(() => {
 });
 
 const sceneGovernanceSnapshot = computed(() => {
-  const value = session.sceneGovernanceV1;
+  const value = session.sceneGovernance;
   if (!value || typeof value !== 'object') {
     return null;
   }

@@ -1,0 +1,40 @@
+run:
+  id: REPO-BASELINE-AUDIT-BATCH-H
+  goal: REPO-BASELINE-AUDIT
+  workflow: governance-change
+  capability: governance
+  status: completed
+  branch: codex/fix-project-layout-container-normalize
+  baseline_full_sha: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+
+  boundary:
+    formal_product_layer: P4
+    layer_target: local_development_contract_snapshot_lifecycle
+    module: make/dev.mk
+    standard_vs_user_specific: repository_execution_governance
+    why_here: local_dev_wrapper_owns_fixed_runtime_identity_loading
+    why_not_elsewhere: contract_exporter_and_product_modules_must_not_derive_environment_identity
+    blast_radius: one_new_local_dev_make_target_and_its_documented_tested_contract
+
+  batch:
+    id: Batch-H
+    objective: add_governed_local_dev_contract_snapshot_entry
+    scope:
+      - make/dev.mk
+      - scripts/verify/test_local_development_lifecycle.py
+      - docs/ops/local_development_environment_v1.md
+      - .agent/goals/REPO-BASELINE-AUDIT.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-D/evidence.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-H/goal.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-H/events.yaml
+      - .agent/runs/REPO-BASELINE-AUDIT-BATCH-H/evidence.yaml
+    exclusions:
+      - new_runtime_profile
+      - new_database
+      - new_contract_case
+      - contract_exporter_behavior
+      - product_code
+
+  rollback:
+    method: remove_local_dev_contract_snapshot_target_test_and_documentation

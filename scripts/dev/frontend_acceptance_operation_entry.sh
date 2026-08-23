@@ -117,14 +117,17 @@ case "$operation" in
   db-ensure)
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" optional
     source "$ROOT_DIR/scripts/common/compose.sh"
-    compose_dev up -d --wait db redis odoo
+    # Keep the HTTP carrier stopped while disposable Odoo processes install
+    # and upgrade modules. Otherwise its cron runner can lock ir.cron while
+    # XML data is being refreshed in the same database.
+    compose_dev up -d --wait db redis
+    compose_dev create odoo
+    compose_dev run --rm -T --no-deps --entrypoint /bin/sh odoo -eu -c \
+      'python3 /usr/local/bin/render_odoo_conf.py /etc/odoo/odoo.conf.template "${ODOO_CONF_OUT:-/var/lib/odoo/odoo.conf}"'
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     bash "$ROOT_DIR/scripts/test/frontend_acceptance_db_ensure.sh"
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
-    # Module installation runs in a disposable Odoo process. Recycle the
-    # already-running HTTP carrier so its registry reflects the installed
-    # modules before any fixture or login request can reach it.
-    compose_dev restart odoo
+    # Start the HTTP carrier only after the refreshed registry is durable.
     compose_dev up -d --wait odoo
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     echo "[frontend.acceptance.registry] RELOADED isolated_ci project=$COMPOSE_PROJECT_NAME sha=$SC_SOURCE_REVISION"
@@ -138,6 +141,23 @@ case "$operation" in
   release-snapshot)
     bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
       < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
+    ;;
+  delivery-hardening-runtime-ids)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
+      < "$ROOT_DIR/scripts/verify/frontend_delivery_hardening_runtime_ids.py"
+    ;;
+  core-record-form-journeys)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    # shellcheck source=../common/frontend_acceptance_make_identity.sh
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make "FE_PRO_03_JOURNEY=${FE_PRO_03_JOURNEY:-ALL}" verify.frontend.core_record_form.journeys
+    ;;
+  activity-surface-browser)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    # shellcheck source=../common/frontend_acceptance_make_identity.sh
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make verify.frontend.activity_surface.browser.internal
     ;;
   backend-up)
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required

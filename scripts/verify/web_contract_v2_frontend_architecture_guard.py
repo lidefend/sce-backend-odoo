@@ -280,9 +280,7 @@ REQUIRED_FORM_SHADOW_TOKENS: tuple[str, ...] = (
     "data-v2-shadow-store",
 )
 
-REQUIRED_FORM_SHADOW_RUNTIME_TOKENS: tuple[tuple[str, str], ...] = (
-    ("pages/contractForm/useRecordPageLifecycle.ts", "syncContractV2ShadowStore(response.data)"),
-)
+REQUIRED_FORM_SHADOW_RUNTIME_TOKENS: tuple[tuple[str, str], ...] = ()
 
 REQUIRED_FORM_STORE_SELECTOR_TOKENS: tuple[str, ...] = (
     "collectContractV2ButtonStatusById",
@@ -304,15 +302,15 @@ FORBIDDEN_FORM_LOCAL_SELECTOR_TOKENS: tuple[str, ...] = (
 )
 
 REQUIRED_WORKFLOW_CONTRACT_PROJECTION_TOKENS: tuple[tuple[str, str], ...] = (
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "v2Contract.workflowContract"),
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "asDict(v2Contract.runtimeContract).workflowContract"),
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "workflowContract,"),
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "runtimeContract: { workflowContract }"),
-    ("app/runtime/unifiedPageContractV2CompatProjection.ts", "__unified_page_contract_v2: v2Contract"),
-    ("pages/ContractFormPage.vue", "currentWorkflowContract"),
-    ("pages/ContractFormPage.vue", "workflowContractActionRows"),
+    ("app/contracts/v2/store.ts", "resolveContractV2WorkflowContract"),
+    ("pages/contractForm/useRecordActionPresentation.ts", "resolveWorkflowContractFromStore(v2ContractStore.value)"),
+    ("pages/contractForm/useRecordActionPresentation.ts", "normalizeWorkflowEvidenceGateRows"),
     ("pages/ContractFormPage.vue", "workflowEvidenceGateRows"),
-    ("pages/ContractFormPage.vue", "resolveNativeActionState"),
+    ("app/presentation/contractFormPresenter.ts", "const explicitAuthority = identityUnique"),
+    ("pages/contractForm/contractActionPresentation.ts", "row.entitlementEvaluated !== true"),
+    ("pages/contractForm/contractActionPresentation.ts", "resolveContractActionForNativeOccurrence"),
+    ("pages/contractForm/useRecordActionPresentation.ts", "resolveNativeActionState"),
+    ("pages/ContractFormPage.vue", "useRecordActionPresentation"),
 )
 
 REQUIRED_WORKFLOW_STATUSBAR_CONTRACT_TOKENS: tuple[tuple[Path, str], ...] = (

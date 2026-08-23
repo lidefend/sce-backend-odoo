@@ -21,7 +21,18 @@ frontend_acceptance_make db.create
 frontend_acceptance_make mod.install \
   MODULE=smart_construction_bootstrap,smart_construction_bundle,smart_construction_seed,smart_construction_acceptance_fixture \
   DB_NAME="$DB_NAME"
-DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'
+# The acceptance database is persistent.  Installing the bundle is a no-op for
+# modules that are already installed, so always refresh the two governed
+# product baselines before fixture reset and browser acceptance.
+frontend_acceptance_make mod.upgrade \
+  MODULE=smart_core \
+  CODEX_NEED_UPGRADE=1 \
+  CODEX_MODULES=smart_core,smart_construction_core
+frontend_acceptance_make mod.upgrade \
+  MODULE=smart_construction_core \
+  CODEX_NEED_UPGRADE=1 \
+  CODEX_MODULES=smart_core,smart_construction_core
+ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="$DB_NAME" bash scripts/ops/odoo_shell_exec.sh <<'PY'
 param = env['ir.config_parameter'].sudo().get_param('smart_core.release_operator.product_base_keys', '')
 states = {
     row.name: row.state

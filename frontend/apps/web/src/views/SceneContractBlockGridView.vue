@@ -20,7 +20,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import PageRenderer from '../components/page/PageRenderer.vue';
 import { useSessionStore } from '../stores/session';
 import { getSceneByKey } from '../app/resolvers/sceneRegistry';
-import type { PageBlockActionEvent, PageOrchestrationBlock, PageOrchestrationContract } from '../app/pageOrchestration';
+import type { PageBlockActionEvent, PageOrchestrationContract } from '../app/pageOrchestration';
 import { usePageContract } from '../app/pageContract';
 
 type SceneBlock = Record<string, unknown> & {
@@ -44,6 +44,8 @@ type SceneContract = {
     layout?: string;
     blocks?: SceneBlock[];
   };
+  page_orchestration?: PageOrchestrationContract;
+  datasets?: Record<string, unknown>;
 };
 
 const props = defineProps<{
@@ -54,7 +56,7 @@ const props = defineProps<{
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
-const runtimePageContract = usePageContract('scene_contract_block_grid', { allowSceneContractFallback: true });
+const runtimePageContract = usePageContract('scene_contract_block_grid');
 const pageSectionEnabled = runtimePageContract.sectionEnabled;
 const pageSectionStyle = runtimePageContract.sectionStyle;
 const pageSectionTagIs = runtimePageContract.sectionTagIs;
@@ -97,100 +99,8 @@ function positiveRouteInt(...keys: string[]) {
   return 0;
 }
 
-function normalizeBlockType(type: unknown) {
-  const raw = asText(type).toLowerCase();
-  if (raw === 'metric_card') return 'metric';
-  if (raw === 'shortcut_grid') return 'entry_grid';
-  if (raw === 'warning_list') return 'alert_panel';
-  if (raw === 'native_view_ref') return 'record_summary';
-  return raw || 'record_summary';
-}
-
-function normalizeTone(value: unknown) {
-  const raw = asText(value).toLowerCase();
-  if (['success', 'warning', 'danger', 'info', 'neutral'].includes(raw)) return raw;
-  return 'neutral';
-}
-
 function targetActionKey(blockKey: string) {
   return `open_${blockKey}`;
-}
-
-function normalizeDataset(block: SceneBlock) {
-  const target = block.target && typeof block.target === 'object' ? block.target : {};
-  const actionKey = targetActionKey(asText(block.key));
-  if (block.type === 'metric_card') {
-    return [{
-      key: asText(block.key),
-      label: asText(block.title),
-      value: block.value ?? '--',
-      hint: asText(block.subtitle),
-      tone: normalizeTone(block.tone),
-      action_key: actionKey,
-      target,
-    }];
-  }
-  if (block.type === 'shortcut_grid') {
-    return (Array.isArray(block.items) ? block.items : []).map((item, index) => ({
-      id: asText(item.key) || `entry-${index + 1}`,
-      title: asText(item.label || item.title) || `入口 ${index + 1}`,
-      hint: asText(item.subtitle || item.hint),
-      action_key: targetActionKey(`${asText(block.key)}_${asText(item.key) || index + 1}`),
-      target: item.target && typeof item.target === 'object' ? item.target : {},
-    }));
-  }
-  if (block.type === 'todo_list' || block.type === 'warning_list') {
-    return (Array.isArray(block.items) ? block.items : []).map((item, index) => ({
-      id: asText(item.key) || `${block.type}-${index + 1}`,
-      title: asText(item.title) || asText(item.label) || `事项 ${index + 1}`,
-      description: asText(item.description || item.subtitle) || (
-        Number(item.count || 0) > 0 ? `待处理 ${Number(item.count || 0)} 条` : ''
-      ),
-      count: Number(item.count || 0),
-      source: asText(item.source || item.model || block.model || 'business'),
-      source_label: asText(item.source_label || item.sourceLabel),
-      tone: block.type === 'warning_list' ? 'warning' : 'info',
-      action_label: '打开',
-      action_key: targetActionKey(`${asText(block.key)}_${asText(item.key) || index + 1}`),
-      target: item.target && typeof item.target === 'object' ? item.target : {},
-    }));
-  }
-  if (block.type === 'native_view_ref') {
-    return [
-      {
-        key: 'summary',
-        label: '说明',
-        value: asText(block.summary) || '可继续打开原生明细。',
-      },
-      {
-        key: 'model',
-        label: '业务对象',
-        value: asText(block.model) || '--',
-      },
-      {
-        key: 'count',
-        label: '记录数',
-        value: Number(block.count || 0),
-      },
-    ];
-  }
-  return block;
-}
-
-function normalizeBlock(block: SceneBlock, index: number): PageOrchestrationBlock {
-  const key = asText(block.key) || `block_${index + 1}`;
-  return {
-    key,
-    block_type: normalizeBlockType(block.type),
-    title: block.type === 'metric_card' ? '' : asText(block.title),
-    subtitle: asText(block.subtitle),
-    priority: 100 - index,
-    tone: normalizeTone(block.tone),
-    data_source: `ds_${key}`,
-    actions: block.target && typeof block.target === 'object'
-      ? [{ key: targetActionKey(key), label: block.type === 'native_view_ref' ? '打开明细' : '打开' }]
-      : [],
-  };
 }
 
 const blocks = computed(() => {
@@ -209,35 +119,13 @@ const blocks = computed(() => {
   return [...summaryBlocks, ...(pageBlocks.length ? pageBlocks : rootBlocks)];
 });
 
-const pageContract = computed<PageOrchestrationContract>(() => ({
-  schema_version: 'v1',
-  contract_version: 'page_orchestration_v1',
-  scene_key: props.sceneKey,
-  page: {
-    key: props.sceneKey,
-    title: asText(rawContract.value?.title || rawContract.value?.scene?.title) || props.sceneKey,
-    subtitle: asText(rawContract.value?.scene?.subtitle),
-    page_type: 'dashboard',
-    layout_mode: 'block_grid',
-  },
-  zones: [{
-    key: 'main',
-    title: '',
-    display_mode: 'grid',
-    zone_type: 'primary',
-    priority: 100,
-    blocks: blocks.value.map(normalizeBlock),
-  }],
-}));
-
-const datasets = computed<Record<string, unknown>>(() => {
-  const out: Record<string, unknown> = {};
-  blocks.value.forEach((block, index) => {
-    const key = asText(block.key) || `block_${index + 1}`;
-    out[`ds_${key}`] = normalizeDataset(block);
-  });
-  return out;
+const pageContract = computed<PageOrchestrationContract>(() => {
+  const contract = rawContract.value?.page_orchestration;
+  if (!contract || contract.contract_version !== '2.0.0' || contract.schema_version !== '2.0.0') return {};
+  return contract;
 });
+
+const datasets = computed<Record<string, unknown>>(() => rawContract.value?.datasets || {});
 
 function findActionNodeByXmlid(nodes: NavNode[], xmlid: string): NavNode | null {
   const wanted = asText(xmlid);

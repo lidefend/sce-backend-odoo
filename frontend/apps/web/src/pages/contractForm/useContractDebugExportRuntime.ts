@@ -1,9 +1,9 @@
 import type { Ref } from 'vue';
-import type { ActionContract } from '@sc/schema';
+import type { ContractV2Snapshot } from '../../app/contracts/v2/types';
 
 export function useContractDebugExportRuntime(params: {
   actionId: () => number;
-  contract: Ref<ActionContract | null>;
+  contract: Ref<ContractV2Snapshot | null>;
   contractMeta: Ref<Record<string, unknown> | null>;
   modelName: () => string;
 }) {

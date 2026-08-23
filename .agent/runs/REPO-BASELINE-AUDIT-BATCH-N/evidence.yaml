@@ -1,0 +1,10 @@
+evidence:
+  baseline_commit: 3a3b20e337e1e61e657516cc723298f0be7c3ac3
+  branch: codex/fix-project-layout-container-normalize
+  formal_product_layer: P4
+  layer_target: governed contract snapshot actor registry
+  standard_vs_user_specific: registered demo-backed project-manager fixture
+  why_here: Snapshot cases own their execution actor identity.
+  why_not_elsewhere: No database user, ACL, or product role needs to be created or widened.
+  blast_radius: All cases previously labeled with the unregistered pm login.
+  validation_status: passed

@@ -1,7 +1,6 @@
 {
   "action": null,
   "case": "project_dashboard_open_intent_admin",
-  "contract_version": "v1",
   "error": null,
   "execute_error": null,
   "execute_result": null,
@@ -11,13 +10,467 @@
   "op": "intent.invoke",
   "record": null,
   "record_error": null,
+  "snapshot_schema_version": "1.0.0",
   "ui_contract": null,
   "ui_contract_raw": {
-    "catalog_case": {
-      "coverage": "explicit_catalog_case",
-      "intent": "project.dashboard.open",
-      "runtime_snapshot": false
-    }
+    "alias_intent": "project.dashboard.open",
+    "entry": {
+      "blocks": [
+        {
+          "key": "progress",
+          "state": "deferred",
+          "title": "项目进度"
+        },
+        {
+          "key": "risks",
+          "state": "deferred",
+          "title": "风险提醒"
+        },
+        {
+          "key": "next_actions",
+          "state": "deferred",
+          "title": "下一步动作"
+        }
+      ],
+      "completion": {
+        "next_target": "进入执行",
+        "percent": 20
+      },
+      "evidence_refs": [],
+      "fact_metrics": [
+        {
+          "key": "payment_total",
+          "label": "已付款",
+          "trace_action": {
+            "intent": "business.evidence.trace",
+            "payload": {
+              "business_id": 1,
+              "business_model": "project.project",
+              "evidence_type": "payment"
+            }
+          },
+          "unit": "元",
+          "value": 0.0
+        },
+        {
+          "key": "cost_total",
+          "label": "已发生成本",
+          "trace_action": {
+            "intent": "business.evidence.trace",
+            "payload": {
+              "business_id": 1,
+              "business_model": "project.project",
+              "evidence_type": "cost"
+            }
+          },
+          "unit": "元",
+          "value": 0.0
+        },
+        {
+          "key": "settlement_total",
+          "label": "已结算",
+          "trace_action": {
+            "intent": "business.evidence.trace",
+            "payload": {
+              "business_id": 1,
+              "business_model": "project.project",
+              "evidence_type": "settlement"
+            }
+          },
+          "unit": "元",
+          "value": 0.0
+        },
+        {
+          "key": "risk_count",
+          "label": "风险事项",
+          "trace_action": {
+            "intent": "business.evidence.trace",
+            "payload": {
+              "business_id": 1,
+              "business_model": "project.project",
+              "evidence_type": "risk"
+            }
+          },
+          "unit": "项",
+          "value": 0
+        }
+      ],
+      "facts": {
+        "cost_evidence_count": 0,
+        "cost_total": "0.0",
+        "evidence_count": 0,
+        "exception_open_count": 0,
+        "exception_resolved_count": 0,
+        "payment_evidence_count": 0,
+        "payment_executed_total": "0.0",
+        "payment_total": "0.0",
+        "risk_count": 0,
+        "settlement_evidence_count": 0
+      },
+      "flow_map": {
+        "current_stage": "execution",
+        "items": [
+          {
+            "key": "initiation",
+            "label": "立项",
+            "status": "done"
+          },
+          {
+            "key": "execution",
+            "label": "执行",
+            "status": "current"
+          },
+          {
+            "key": "cost",
+            "label": "成本",
+            "status": "todo"
+          },
+          {
+            "key": "payment",
+            "label": "付款",
+            "status": "todo"
+          },
+          {
+            "key": "settlement",
+            "label": "结算",
+            "status": "todo"
+          }
+        ]
+      },
+      "legacy_scene_copy_source_authority": {
+        "authorities": [
+          "scene_label",
+          "state_fallback_text",
+          "title_empty",
+          "entry_blocks",
+          "resolve_title"
+        ],
+        "kind": "legacy_scene_entry_copy_projection",
+        "legacy_compatibility": true,
+        "no_business_fact_authority": true,
+        "projection_only": true
+      },
+      "lifecycle_hints": {
+        "next_step_label": "load dashboard progress",
+        "primary_action_label": "项目驾驶舱",
+        "project_id": 1,
+        "reason_code": "PROJECT_DASHBOARD_READY",
+        "scene_key": "project.management",
+        "stage": "entry_ready",
+        "suggested_action_intent": "project.dashboard.block.fetch"
+      },
+      "metrics_explain": [
+        {
+          "explain": "尚未形成可识别的执行进度。",
+          "key": "progress",
+          "status": "warning"
+        },
+        {
+          "explain": "尚未录入成本，经营基线仍不完整。",
+          "key": "cost",
+          "status": "warning"
+        },
+        {
+          "explain": "付款与成本关系正常。",
+          "key": "payment",
+          "status": "normal"
+        }
+      ],
+      "project_context": {
+        "company_id": 1,
+        "company_name": "My Company",
+        "execution_stage": "in_progress",
+        "execution_stage_label": "在建",
+        "milestone": "done",
+        "milestone_label": "done",
+        "operation_strategy": "direct",
+        "operation_strategy_label": "公司直营",
+        "project_condition": "warn",
+        "project_id": 1,
+        "project_name": "演示项目 · 城市快速路提升工程",
+        "stage": "in_progress",
+        "stage_label": "在建",
+        "status": "warn"
+      },
+      "project_id": 1,
+      "runtime_fetch_hints": {
+        "blocks": {
+          "next_actions": {
+            "intent": "project.dashboard.block.fetch",
+            "params": {
+              "block_key": "next_actions",
+              "project_context": {
+                "company_id": 1,
+                "company_name": "My Company",
+                "execution_stage": "in_progress",
+                "execution_stage_label": "在建",
+                "milestone": "done",
+                "milestone_label": "done",
+                "operation_strategy": "direct",
+                "operation_strategy_label": "公司直营",
+                "project_condition": "warn",
+                "project_id": 1,
+                "project_name": "演示项目 · 城市快速路提升工程",
+                "stage": "in_progress",
+                "stage_label": "在建",
+                "status": "warn"
+              },
+              "project_id": 1
+            }
+          },
+          "progress": {
+            "intent": "project.dashboard.block.fetch",
+            "params": {
+              "block_key": "progress",
+              "project_context": {
+                "company_id": 1,
+                "company_name": "My Company",
+                "execution_stage": "in_progress",
+                "execution_stage_label": "在建",
+                "milestone": "done",
+                "milestone_label": "done",
+                "operation_strategy": "direct",
+                "operation_strategy_label": "公司直营",
+                "project_condition": "warn",
+                "project_id": 1,
+                "project_name": "演示项目 · 城市快速路提升工程",
+                "stage": "in_progress",
+                "stage_label": "在建",
+                "status": "warn"
+              },
+              "project_id": 1
+            }
+          },
+          "risks": {
+            "intent": "project.dashboard.block.fetch",
+            "params": {
+              "block_key": "risks",
+              "project_context": {
+                "company_id": 1,
+                "company_name": "My Company",
+                "execution_stage": "in_progress",
+                "execution_stage_label": "在建",
+                "milestone": "done",
+                "milestone_label": "done",
+                "operation_strategy": "direct",
+                "operation_strategy_label": "公司直营",
+                "project_condition": "warn",
+                "project_id": 1,
+                "project_name": "演示项目 · 城市快速路提升工程",
+                "stage": "in_progress",
+                "stage_label": "在建",
+                "status": "warn"
+              },
+              "project_id": 1
+            }
+          }
+        }
+      },
+      "scene_contract_standard_v1": {
+        "actions": {
+          "next_action": {
+            "intent": "project.dashboard.block.fetch",
+            "key": "load_dashboard_progress",
+            "label": "project.dashboard.block.fetch",
+            "params": {
+              "block_key": "progress",
+              "project_id": 1
+            },
+            "reason_code": "PROJECT_DASHBOARD_READY",
+            "target": {
+              "route": "",
+              "scene_key": "",
+              "type": "intent"
+            }
+          },
+          "primary_actions": [],
+          "secondary_actions": []
+        },
+        "contract_version": "scene_contract_standard_v1",
+        "governance": {
+          "contract_version": "scene_contract_standard_v1",
+          "diagnostics_ref": "project.dashboard.enter",
+          "no_business_fact_authority": true,
+          "policy_match": true,
+          "released": true,
+          "source_authority": {
+            "authorities": [
+              "delivery_engine.scenes",
+              "scene_ready_contract",
+              "page_orchestration"
+            ],
+            "kind": "release_surface_scene_contract_projection",
+            "no_business_fact_authority": true,
+            "projection_only": true,
+            "rebuildable": true
+          }
+        },
+        "identity": {
+          "capability": "delivery.fr2.project_flow",
+          "product_key": "fr2",
+          "scene_key": "project.management",
+          "title": "项目驾驶舱：演示项目 · 城市快速路提升工程",
+          "version": "v1"
+        },
+        "page": {
+          "blocks": [
+            {
+              "block_type": "runtime_block",
+              "key": "progress",
+              "source": "runtime_entry",
+              "state": "deferred",
+              "title": "项目进度"
+            },
+            {
+              "block_type": "runtime_block",
+              "key": "risks",
+              "source": "runtime_entry",
+              "state": "deferred",
+              "title": "风险提醒"
+            },
+            {
+              "block_type": "runtime_block",
+              "key": "next_actions",
+              "source": "runtime_entry",
+              "state": "deferred",
+              "title": "下一步动作"
+            }
+          ],
+          "layout": "workspace_stack",
+          "zones": [
+            {
+              "block_keys": [
+                "progress",
+                "risks",
+                "next_actions"
+              ],
+              "key": "primary",
+              "layout": "workspace_stack",
+              "title": "Primary"
+            }
+          ]
+        },
+        "state": {
+          "message": "后端未提供项目驾驶舱状态摘要",
+          "reason_code": "PROJECT_DASHBOARD_READY",
+          "state_tone": "stable",
+          "status": "ready"
+        },
+        "target": {
+          "openable": true,
+          "route": "/s/project.management",
+          "target": "same_tab"
+        }
+      },
+      "scene_key": "project.management",
+      "scene_label": "项目驾驶舱",
+      "source_authority": {
+        "adapter_layer": "industry_orchestration_adapter",
+        "authorities": [
+          "scene_runtime_service",
+          "odoo.orm"
+        ],
+        "delegated_source_authority": {
+          "authorities": [
+            "project.project",
+            "project.task",
+            "payment.request",
+            "payment.ledger",
+            "project.cost.ledger",
+            "sc.evidence.summary.service",
+            "business_projection_models",
+            "odoo.orm",
+            "odoo.read_group"
+          ],
+          "kind": "project_dashboard_business_fact_projection",
+          "no_frontend_synthetic_metrics": true,
+          "projection_only": true,
+          "scene_provider_registry": {
+            "provider_path": "/mnt/source-addons/smart_construction_scene/profiles/project_dashboard_scene_content.py",
+            "resolved": true,
+            "scene_key": "project.management"
+          }
+        },
+        "kind": "scene_entry_runtime_projection_adapter",
+        "legacy_scene_copy_source": "legacy_scene_entry_copy_projection",
+        "no_business_fact_authority": true,
+        "projection_only": true,
+        "runtime_carrier": "scene_entry_and_block_contract"
+      },
+      "state_explain": {
+        "execution_stage_explain": "项目已进入施工执行阶段，需要持续推进任务、成本与付款事实。",
+        "execution_stage_label": "在建",
+        "milestone_explain": "当前执行动作已完成，可继续检查成本、付款与结算结果。",
+        "project_condition_explain": "warn",
+        "stage_explain": "项目已进入施工执行阶段，需要持续推进任务、成本与付款事实。",
+        "stage_label": "在建",
+        "status_explain": "warn"
+      },
+      "state_fallback_text": "后端未提供项目驾驶舱状态摘要",
+      "suggested_action": {
+        "intent": "project.dashboard.block.fetch",
+        "key": "load_dashboard_progress",
+        "params": {
+          "block_key": "progress",
+          "project_id": 1
+        },
+        "reason_code": "PROJECT_DASHBOARD_READY"
+      },
+      "summary": {
+        "cost_total": "0.0",
+        "health_state": "warn",
+        "lifecycle_state": "in_progress",
+        "manager_name": "OdooBot",
+        "milestone": "done",
+        "partner_name": "城市建设投资集团",
+        "payment_total": "0.0",
+        "progress_percent": "0.0",
+        "project_code": "DEMO-PJ-EXEC",
+        "stage_name": "在建",
+        "status": "warn"
+      },
+      "summary_rows": [
+        {
+          "copy": "主流程位置",
+          "key": "stage_label",
+          "label": "项目执行阶段",
+          "value": "在建"
+        },
+        {
+          "copy": "执行推进节点",
+          "key": "milestone_label",
+          "label": "当前里程碑",
+          "value": "done"
+        },
+        {
+          "copy": "尚未形成可识别的执行进度。",
+          "key": "progress_percent",
+          "label": "执行进度",
+          "value": "0.0%"
+        },
+        {
+          "copy": "尚未录入成本，经营基线仍不完整。",
+          "key": "cost_total",
+          "label": "成本合计",
+          "value": "0.0"
+        },
+        {
+          "copy": "付款与成本关系正常。",
+          "key": "payment_total",
+          "label": "付款合计",
+          "value": "0.0"
+        },
+        {
+          "copy": "0 条 payment.ledger 台账",
+          "key": "payment_executed_total",
+          "label": "已支付证据",
+          "value": "0.0"
+        }
+      ],
+      "title": "项目驾驶舱：演示项目 · 城市快速路提升工程"
+    },
+    "project_id": 1,
+    "target_intent": "project.dashboard.enter"
   },
   "user": "admin",
   "user_fallback": null,
