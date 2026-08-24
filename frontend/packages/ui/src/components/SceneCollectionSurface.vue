@@ -49,7 +49,7 @@ function activateRow(row: SceneTableRow): void {
         <header class="scene-collection-title">
           <div>
             <span class="scene-collection-eyebrow">{{ contract.eyebrow }}</span>
-            <h1>{{ contract.title }}</h1>
+            <h2>{{ contract.title }}</h2>
             <p>{{ contract.description }}</p>
           </div>
           <div class="scene-collection-actions">
@@ -163,8 +163,8 @@ function activateRow(row: SceneTableRow): void {
 
 .scene-collection-title,
 .scene-hierarchy-title { display: flex; align-items: flex-start; gap: 24px; padding: 20px 22px 17px; border-bottom: 1px solid var(--sc-scene-border); }
-.scene-collection-title h1,
-.scene-hierarchy-title h1 { margin: 3px 0 0; font-size: 24px; }
+.scene-collection-title h2,
+.scene-hierarchy-title h2 { margin: 3px 0 0; font-size: 24px; }
 .scene-collection-title p,
 .scene-hierarchy-title p { margin: 5px 0 0; color: var(--sc-scene-muted); font-size: 13px; }
 .scene-collection-eyebrow,
@@ -197,8 +197,8 @@ function activateRow(row: SceneTableRow): void {
   .scene-hierarchy-main { padding: 0 10px 18px; }
   .scene-collection-title,
   .scene-hierarchy-title { display: grid; padding: 15px 14px 13px; }
-  .scene-collection-title h1,
-  .scene-hierarchy-title h1 { font-size: 20px; }
+  .scene-collection-title h2,
+  .scene-hierarchy-title h2 { font-size: 20px; }
   .scene-collection-actions,
   .scene-hierarchy-actions { width: 100%; margin-left: 0; overflow-x: auto; }
   .scene-collection-summaries,

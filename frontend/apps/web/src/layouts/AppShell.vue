@@ -606,12 +606,8 @@ const useMinimalTopbar = computed(() =>
   || businessRouteUsesCompactTopbar.value,
 );
 const compactRouteKeepsHeadline = computed(() => [
-  'action',
   'menu',
-  'record',
-  'model-form',
   'access-denied',
-  'not-found',
 ].includes(String(route.name || '')));
 const formDesignerKeepsHeadline = computed(() => (
   String(route.name || '') === 'model-form'

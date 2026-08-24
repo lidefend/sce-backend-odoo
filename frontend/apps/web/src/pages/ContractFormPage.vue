@@ -19,13 +19,14 @@
     :data-v2-shadow-value-source="v2ShadowValueSourceKind"
     :data-v2-shadow-error="v2ContractDecodeError || '-'"
   >
-    <h1 class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
+    <h1 v-if="initialFormLoading" class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
     <ContractFormProductHeader
       v-if="!initialFormLoading"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :status-interactive="!canonicalProductRendererActive"
+      :presentation-mode="canonicalProductFloorplan?.decisionMode ? 'task' : 'workspace'"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
       :continue-processing-label="continueProcessingLabel"
@@ -34,10 +35,10 @@
       :back-semantic-identity="formExitPresentation.semanticIdentity"
       :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
-      :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible"
+      :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible" :canonical-direct-actions="canonicalProductRendererActive ? canonicalHeaderActions.direct : []" :canonical-overflow-actions="canonicalProductRendererActive ? canonicalHeaderActions.overflow : []" :canonical-local-save-primary="canonicalHeaderActions.localSavePrimary"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
-      @run-primary="runPrimaryFormAction" @run-action="runAction" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
+      @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     />
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
@@ -143,7 +144,7 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
+        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
           :busy="busy"
           :dirty="hasChanges"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
@@ -264,7 +265,6 @@
     <AttachmentViewer ref="attachmentViewerRef" />
   </LayoutShell>
 </template>
-
 <script setup lang="ts">
 import { computed, nextTick, onErrorCaptured, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
@@ -305,6 +305,7 @@ import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vu
 import CurrentFormFieldSettingsPanel from './contractForm/CurrentFormFieldSettingsPanel.vue';
 import ContractFormActionBlocks from './contractForm/ContractFormActionBlocks.vue';
 import ContractFormProductHeader from './contractForm/ContractFormProductHeader.vue';
+import { resolveCanonicalHeaderActionPresentation } from './contractForm/contractFormHeaderCanonicalActions';
 import type {
   FormSectionFieldActionPayload,
   FormSectionFieldSchema,
@@ -1189,6 +1190,7 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
   primaryCreateAction: primaryCreateFooterAction.value, primarySubmitAction: primarySubmitAction.value,
   quickSubmitDisabled: isQuickSubmitDisabled.value,
 }));
+const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value }));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
 const blockedCanonicalPrimary = computed(() => Boolean(
   canonicalProductFloorplan.value?.decisionMode

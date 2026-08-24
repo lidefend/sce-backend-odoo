@@ -37,7 +37,7 @@ const visibleNodes = computed<VisibleNode[]>(() => {
         <header class="scene-hierarchy-title">
           <div>
             <span class="scene-hierarchy-eyebrow">{{ contract.eyebrow }}</span>
-            <h1>{{ contract.title }}</h1>
+            <h2>{{ contract.title }}</h2>
             <p>{{ contract.description }}</p>
           </div>
           <div class="scene-hierarchy-actions">

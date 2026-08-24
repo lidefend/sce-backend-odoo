@@ -77,7 +77,7 @@ function fieldValue(field: SceneField): string {
             <div class="scene-title-heading__copy">
               <span class="scene-eyebrow">{{ contract.object.eyebrow }}</span>
               <div class="scene-title-line">
-                <h1>{{ contract.object.title }}</h1>
+                <h2>{{ contract.object.title }}</h2>
                 <span class="scene-status" :data-tone="contract.object.statusTone">{{ contract.object.status }}</span>
               </div>
               <p>{{ contract.object.subtitle }}</p>
@@ -415,7 +415,7 @@ function fieldValue(field: SceneField): string {
   min-width: 0;
 }
 
-.scene-title-line h1 {
+.scene-title-line h2 {
   overflow: hidden;
   margin: 2px 0 0;
   font-size: 25px;
@@ -871,7 +871,7 @@ function fieldValue(field: SceneField): string {
     gap: 5px;
   }
 
-  .scene-title-line h1 {
+  .scene-title-line h2 {
     max-width: 100%;
     font-size: 20px;
   }

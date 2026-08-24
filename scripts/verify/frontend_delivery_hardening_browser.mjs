@@ -209,12 +209,10 @@ async function continueDeferredRecordForm(page) {
 async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = null) {
   if (normalizedEvidence) await normalizedEvidence;
   await continueDeferredRecordForm(page);
-  // ba5d2fca made the canonical form model authoritative: business actions
-  // render in nav.canonical-form-action-bar (ContractFormDriverHost). The
-  // product header slot still carries them under the field-config designer
-  // scope, so both containers are accepted here.
+  // Product Page Header v1 owns canonical actions. Keep the legacy body action
+  // bar selector only for surfaces that have not opted into header ownership.
   const selector = [
-    '.template-page-header-actions button[data-action-method="action_submit"]',
+    '[data-product-page-header] button[data-action-method="action_submit"]',
     '[data-canonical-action-bar] button[data-action-method="action_submit"]',
   ].join(', ');
   let submit = page.locator(selector);
@@ -226,7 +224,7 @@ async function canonicalSubmitAction(page, evidenceLabel, normalizedEvidence = n
     }
     submit = page.locator(selector);
   }
-  const actions = await page.locator('.template-page-header-actions button, [data-canonical-action-bar] button').evaluateAll((buttons) => buttons.map((button) => ({
+  const actions = await page.locator('[data-product-page-header] button, [data-canonical-action-bar] button').evaluateAll((buttons) => buttons.map((button) => ({
     text: String(button.textContent || '').replace(/\s+/g, ' ').trim(),
     actionKey: button.getAttribute('data-action-key') || '',
     backendIdentity: button.getAttribute('data-backend-identity') || '',

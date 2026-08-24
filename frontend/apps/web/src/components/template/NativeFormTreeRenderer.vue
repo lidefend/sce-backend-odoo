@@ -117,7 +117,7 @@
               :aria-label="titleFieldForNode(node)?.label"
               @input="emitTitleFieldChange(titleFieldForNode(node), ($event.target as HTMLInputElement).value)"
             />
-            <h1 v-else class="native-title-text">{{ titleFieldValue(titleFieldForNode(node)) || titleFieldForNode(node)?.label }}</h1>
+            <h2 v-else class="native-title-text">{{ titleFieldValue(titleFieldForNode(node)) || titleFieldForNode(node)?.label }}</h2>
           </div>
           <NativeFormTreeRenderer
             v-if="containerChildren(node).length"
