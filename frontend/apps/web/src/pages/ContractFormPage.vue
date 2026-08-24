@@ -35,8 +35,7 @@
       :back-semantic-identity="formExitPresentation.semanticIdentity"
       :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
-      :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible"
-      :canonical-direct-actions="canonicalProductRendererActive ? canonicalHeaderDirectActions : []" :canonical-overflow-actions="canonicalProductRendererActive ? canonicalHeaderOverflowActions : []" :canonical-local-save-primary="canonicalProductRendererActive && canonicalHeaderLocalSavePrimary"
+      :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible" :canonical-direct-actions="canonicalProductRendererActive ? canonicalHeaderActions.direct : []" :canonical-overflow-actions="canonicalProductRendererActive ? canonicalHeaderActions.overflow : []" :canonical-local-save-primary="canonicalHeaderActions.localSavePrimary"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
@@ -145,8 +144,7 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
-          actions-in-header
+        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
           :busy="busy"
           :dirty="hasChanges"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
@@ -267,7 +265,6 @@
     <AttachmentViewer ref="attachmentViewerRef" />
   </LayoutShell>
 </template>
-
 <script setup lang="ts">
 import { computed, nextTick, onErrorCaptured, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
@@ -308,6 +305,7 @@ import ContractModeSupportPanel from './contractForm/ContractModeSupportPanel.vu
 import CurrentFormFieldSettingsPanel from './contractForm/CurrentFormFieldSettingsPanel.vue';
 import ContractFormActionBlocks from './contractForm/ContractFormActionBlocks.vue';
 import ContractFormProductHeader from './contractForm/ContractFormProductHeader.vue';
+import { resolveCanonicalHeaderActionPresentation } from './contractForm/contractFormHeaderCanonicalActions';
 import type {
   FormSectionFieldActionPayload,
   FormSectionFieldSchema,
@@ -1192,17 +1190,7 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
   primaryCreateAction: primaryCreateFooterAction.value, primarySubmitAction: primarySubmitAction.value,
   quickSubmitDisabled: isQuickSubmitDisabled.value,
 }));
-const canonicalHeaderVisibleActions = computed(() => canonicalFormRenderState.value.model?.actionBar.filter((action) => action.visible) || []);
-const canonicalHeaderDirectActions = computed(() => canonicalProductFloorplan.value?.decisionMode
-  ? canonicalProductFloorplan.value.directActions
-  : canonicalHeaderVisibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
-const canonicalHeaderOverflowActions = computed(() => canonicalProductFloorplan.value?.decisionMode
-  ? canonicalProductFloorplan.value.overflowActions
-  : canonicalHeaderVisibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
-const canonicalHeaderLocalSavePrimary = computed(() => Boolean(
-  canonicalProductRendererActive.value
-  && ['create', 'edit'].includes(renderProfile.value),
-));
+const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value }));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
 const blockedCanonicalPrimary = computed(() => Boolean(
   canonicalProductFloorplan.value?.decisionMode

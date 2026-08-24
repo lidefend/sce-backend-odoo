@@ -47,9 +47,12 @@ def validate() -> list[str]:
     contract_page = source("frontend/apps/web/src/pages/ContractFormPage.vue")
     if '<h1 v-if="initialFormLoading"' not in contract_page:
         failures.append("ContractForm loading identity may duplicate the stable page header h1")
-    for marker in ('actions-in-header', "['create', 'edit'].includes(renderProfile.value)", '@canonical-save="saveRecord()"'):
+    for marker in ('actions-in-header', '@canonical-save="saveRecord()"'):
         if marker not in contract_page:
             failures.append(f"ContractForm does not project direct edit actions into header: {marker}")
+    canonical_actions = source("frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts")
+    if "['create', 'edit'].includes(input.renderProfile)" not in canonical_actions:
+        failures.append("canonical edit/create save authority is not centralized")
     driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     for marker in ('showProductActions && !actionsInHeader', 'visibleActions.length && !actionsInHeader'):
         if marker not in driver:

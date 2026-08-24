@@ -1,16 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 <template>
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :content-layout="actionContentLayoutMode">
-    <ProductPageHeader
-      :title="vm.page.title || '业务列表'"
-      :subtitle="vm.page.subtitle"
-      :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'"
-      render-profile="readonly"
-    >
+    <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
       <template v-if="vm.header.actions.length" #actions>
-        <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">
-          {{ action.label || action.key }}
-        </button>
+        <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</button>
       </template>
     </ProductPageHeader>
     <!-- Page intent: 在列表场景中先判断状态，再给出下一步可执行动作。 -->
