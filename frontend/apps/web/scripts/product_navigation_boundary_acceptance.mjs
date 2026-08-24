@@ -42,7 +42,7 @@ async function login(page) {
   await page.locator('button[type="submit"]').click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('[data-navigation-state="ready"] [data-semantic-component="ProductSideNavigation"]')
-    .waitFor({ state: 'visible', timeout: 45000 });
+    .waitFor({ state: 'attached', timeout: 45000 });
 }
 
 function canonicalNode(page, menuId, actionId) {
