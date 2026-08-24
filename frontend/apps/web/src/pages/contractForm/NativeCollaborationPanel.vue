@@ -140,7 +140,7 @@
       </li>
     </ul>
     <ProfessionalAuditTimeline
-      v-if="auditEvents.length"
+      v-if="showAuditTimeline !== false && auditEvents.length"
       :events="auditEvents"
       declared
       summary="历史审计"
@@ -208,6 +208,7 @@ type PendingNativeAttachment = {
 
 export type NativeCollaborationPanelProps = {
   readonly?: boolean;
+  showAuditTimeline?: boolean;
   title: string;
   unavailableMessage: string;
   actions: NativeChatterAction[];

@@ -58,6 +58,7 @@
             v-if="showCollaborationPanel"
             v-bind="collaborationPanelProps"
             readonly
+            :show-audit-timeline="false"
             v-on="collaborationPanelListeners"
           />
           <p v-else class="canonical-form-activity-empty">暂无活动记录</p>
@@ -112,6 +113,7 @@
         <section v-if="showCollaborationPanel && hasCollaborationNode" class="sc-native-contract-collaboration">
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
+            :show-audit-timeline="true"
             v-on="collaborationPanelListeners"
           />
         </section>

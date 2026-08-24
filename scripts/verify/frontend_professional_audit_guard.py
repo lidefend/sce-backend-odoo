@@ -19,6 +19,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("task audit surface bypasses professional audit authority")
     if "ProfessionalAuditTimeline" not in collaboration or "resolveProfessionalAuditEvents" not in collaboration:
         failures.append("workspace collaboration hides or bypasses professional audit events")
+    if ':show-audit-timeline="false"' not in driver or ':show-audit-timeline="true"' not in driver:
+        failures.append("task and workspace do not prevent duplicate audit timelines")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in model or forbidden in event or forbidden in timeline:
             failures.append(f"audit components contain forbidden product special case {forbidden}")
