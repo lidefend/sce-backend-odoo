@@ -135,9 +135,17 @@ verify.frontend.professional_base_field.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_professional_base_field_guard.py
 	@python3 scripts/verify/frontend_professional_base_field_guard.py
 
-verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit
+.PHONY: verify.frontend.professional_business_value.unit
+verify.frontend.professional_business_value.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_business_value_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-business-value-model-test.mjs >/dev/null
+	@node /tmp/professional-business-value-model-test.mjs
+	@python3 addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py
+	@python3 -m unittest scripts/verify/test_frontend_professional_business_value_guard.py
+	@python3 scripts/verify/frontend_professional_business_value_guard.py
 
-verify.frontend.release.unit: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit
+verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit
+
+verify.frontend.release.unit: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit
 
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src

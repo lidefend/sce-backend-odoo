@@ -95,6 +95,31 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(actions[0]["sourceWidgetId"], "page.row")
         self.assertEqual(actions[0]["triggerType"], "click")
 
+    def test_business_value_component_keys_follow_field_metadata(self):
+        cases = (
+            ({"type": "monetary"}, "number", "sc.value.money"),
+            ({"type": "many2one", "relation": "res.currency"}, "select", "sc.value.currency"),
+            ({"type": "float"}, "percentage", "sc.value.percentage"),
+            ({"type": "selection"}, "statusbar", "sc.display.status"),
+            ({"type": "float"}, "float_time", "sc.value.duration"),
+            ({"type": "many2one", "relation": "res.users"}, "select", "sc.value.user"),
+            ({"type": "many2one", "relation": "res.company"}, "select", "sc.value.company"),
+        )
+        for descriptor, widget_type, expected in cases:
+            with self.subTest(expected=expected):
+                self.assertEqual(self.assembler._component_key(widget_type, descriptor), expected)
+                widget = self.assembler._field_widget(
+                    {"name": "value", "string": "Value", **descriptor, "widget": widget_type},
+                    layout_type="form",
+                )
+                self.assertEqual(widget["componentKey"], expected)
+
+    def test_business_value_component_keys_do_not_guess_from_field_names(self):
+        self.assertEqual(
+            self.assembler._component_key("number", {"name": "payment_percentage", "type": "float"}),
+            "sc.input.number",
+        )
+
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(
             {
