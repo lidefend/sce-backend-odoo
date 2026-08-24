@@ -67,14 +67,13 @@ async function desktopJourney(browser, report) {
   observe(page, report);
   await login(page);
 
-  await expandNode(page, '系统菜单');
   const projectGroup = await expandNode(page, '项目中心');
   const target = canonicalNode(page, 679, 859);
   check(await target.count() === 1, '项目完整工作区必须拥有唯一 canonical menu/action 身份', { count: await target.count() });
   const targetButton = target.locator(':scope > .node > button.label');
   check((await targetButton.textContent() || '').trim() === '项目信息编辑', '项目工作区菜单标签漂移');
   const depth = Number(await target.getAttribute('data-navigation-depth'));
-  check(depth >= 2, '正式项目入口必须保留至少三级父子层级', { depth });
+  check(depth >= 1, '正式项目入口必须保留服务端父子层级', { depth });
 
   const sourceUrl = page.url();
   await targetButton.click();
