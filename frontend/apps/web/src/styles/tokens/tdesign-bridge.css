@@ -1,0 +1,9 @@
+/* Project-owned values consumed only by the TDesign public-variable bridge. */
+:root {
+  --sc-bridge-tdesign-brand-hover: #0052a9;
+  --sc-bridge-tdesign-brand-active: #003f88;
+  --sc-bridge-tdesign-brand-focus: rgba(10, 110, 209, 0.24);
+  --sc-bridge-tdesign-component-stroke: #9cadbe;
+  --sc-bridge-tdesign-radius-default: 6px;
+  --sc-bridge-tdesign-radius-medium: 9px;
+}

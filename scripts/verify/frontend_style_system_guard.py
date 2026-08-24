@@ -11,6 +11,8 @@ MAIN_TS = WEB_SRC / "main.ts"
 DESIGN_SYSTEM = WEB_SRC / "styles/design-system.css"
 PRODUCT_PATTERNS = WEB_SRC / "styles/product-patterns.css"
 THEME_RUNTIME = WEB_SRC / "styles/theme.ts"
+TOKEN_ENTRY = WEB_SRC / "styles/tokens/index.css"
+TOKEN_AUTHORITY = ROOT / "frontend/packages/design-tokens/token-authority.json"
 DESIGN_COMPONENTS = WEB_SRC / "components/design-system"
 FORM_SECTION = WEB_SRC / "components/template/FormSection.vue"
 
@@ -126,22 +128,17 @@ def _check_style_bootstrap(errors: list[str]) -> None:
 
     design_text = _check_required_file(DESIGN_SYSTEM, errors)
     for token in [
-        "@import '../../../../packages/design-tokens/dist/web/tokens.light.css';",
-        "@import '../../../../packages/design-tokens/dist/web/tokens.dark.css';",
-        "--sc-app-bg: var(--sc-semantic-surface-page);",
-        "--sc-app-panel: var(--sc-semantic-surface-panel);",
-        "--sc-app-text-primary: var(--sc-semantic-text-primary);",
-        "--sc-app-text-secondary: var(--sc-semantic-text-secondary);",
-        "--sc-app-border: var(--sc-semantic-border-default);",
-        "--sc-app-border-strong: var(--sc-semantic-border-strong);",
-        "--sc-app-muted-bg: var(--sc-semantic-surface-panel-muted);",
-        "--sc-app-shadow: var(--sc-semantic-shadow-panel);",
-        "--sc-app-focus-ring: var(--sc-semantic-focus-ring);",
-        "--sc-app-danger-bg: var(--sc-semantic-state-danger-bg);",
-        ':root[data-sc-theme="dark"]',
+        "@import './tokens/index.css';",
     ]:
         if token not in design_text:
             errors.append(f"{_rel(DESIGN_SYSTEM)} missing design-system token: {token}")
+
+    token_entry = _check_required_file(TOKEN_ENTRY, errors)
+    for token in ["@import './primitive.css';", "@import './semantic.css';", "@import './component.css';", "@import './pattern.css';", "@import './tdesign-bridge.css';"]:
+        if token not in token_entry:
+            errors.append(f"{_rel(TOKEN_ENTRY)} missing Token v1 layer import: {token}")
+    if not TOKEN_AUTHORITY.is_file():
+        errors.append(f"missing Token v1 authority: {_rel(TOKEN_AUTHORITY)}")
 
     product_text = _check_required_file(PRODUCT_PATTERNS, errors)
     for token in [
@@ -179,6 +176,8 @@ def _check_hardcoded_color_baseline(errors: list[str]) -> None:
     by_file: list[tuple[int, Path]] = []
     for path in sorted(WEB_SRC.rglob("*")):
         if path.suffix not in {".vue", ".css"}:
+            continue
+        if TOKEN_ENTRY.parent in path.parents:
             continue
         count = len(HARDCODE_COLOR_RE.findall(_read(path)))
         if count:
@@ -266,6 +265,10 @@ def main() -> int:
     _check_hardcoded_color_baseline(errors)
     _check_product_component_boundary(errors)
     _check_complexity_and_accessibility(errors)
+
+    from design_token_system import main as token_system_main
+    if token_system_main() != 0:
+        errors.append("Token v1 authority guard failed")
 
     if errors:
         return _fail(errors)

@@ -5,9 +5,9 @@
  */
 .scene-ui-provider[data-scene-ui-kit='tdesign-modern'] {
   --td-brand-color: var(--sc-scene-brand);
-  --td-brand-color-hover: #0052a9;
-  --td-brand-color-active: #003f88;
-  --td-brand-color-focus: rgba(10, 110, 209, 0.24);
+  --td-brand-color-hover: var(--sc-scene-brand-hover, var(--sc-bridge-tdesign-brand-hover));
+  --td-brand-color-active: var(--sc-scene-brand-active, var(--sc-bridge-tdesign-brand-active));
+  --td-brand-color-focus: var(--sc-scene-brand-focus, var(--sc-bridge-tdesign-brand-focus));
   --td-brand-color-light: var(--sc-scene-accent-soft);
   --td-success-color: var(--sc-scene-success);
   --td-warning-color: var(--sc-scene-warning);
@@ -16,9 +16,9 @@
   --td-text-color-primary: var(--sc-scene-text);
   --td-text-color-secondary: var(--sc-scene-muted);
   --td-border-level-1-color: var(--sc-scene-border);
-  --td-component-stroke: #9cadbe;
-  --td-radius-default: 6px;
-  --td-radius-medium: 9px;
+  --td-component-stroke: var(--sc-scene-component-stroke, var(--sc-bridge-tdesign-component-stroke));
+  --td-radius-default: var(--sc-scene-control-radius, var(--sc-bridge-tdesign-radius-default));
+  --td-radius-medium: var(--sc-scene-surface-radius, var(--sc-bridge-tdesign-radius-medium));
   --td-font-family: inherit;
   --td-font-family-medium: inherit;
 }

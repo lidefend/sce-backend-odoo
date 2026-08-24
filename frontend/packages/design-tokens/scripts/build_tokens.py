@@ -121,7 +121,13 @@ def build_variant(*, semantic_file: str, platform: str | None, strict: bool) -> 
     base = load_json(TOKENS / "base.json")
     semantic = load_json(TOKENS / semantic_file)
     component = load_json(TOKENS / "component.json")
-    merged: dict[str, Any] = {"base": base, "semantic": semantic, "component": component}
+    pattern = load_json(TOKENS / "pattern.json")
+    merged: dict[str, Any] = {
+        "base": base,
+        "semantic": semantic,
+        "component": component,
+        "pattern": pattern,
+    }
     if platform:
         merged["platform"] = load_json(PLATFORMS / f"{platform}.json")
 
