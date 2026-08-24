@@ -22,7 +22,7 @@ def validate() -> list[str]:
             if marker not in body:
                 failures.append(f"{filename} missing {marker}")
     driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
-    for marker in ('<TaskFormPattern v-if="floorplan.decisionMode"', '<WorkspaceFormPattern v-else', ':render-profile="renderModel.identity.mode"'):
+    for marker in ('<TaskFormPattern v-if="renderModel.identity.presentationMode === \'task\'"', '<WorkspaceFormPattern v-else', ':render-profile="renderModel.identity.mode"'):
         if marker not in driver:
             failures.append(f"form driver bypasses formal pattern: {marker}")
     action_view = source("frontend/apps/web/src/views/ActionView.vue")

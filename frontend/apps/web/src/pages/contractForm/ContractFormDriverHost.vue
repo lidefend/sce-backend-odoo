@@ -25,7 +25,7 @@
       </select>
     </div>
     <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" density="compact">
-      <TaskFormPattern v-if="floorplan.decisionMode" :render-profile="renderModel.identity.mode">
+      <TaskFormPattern v-if="renderModel.identity.presentationMode === 'task'" :render-profile="renderModel.identity.mode">
       <ObjectTaskPage
         :summary-nodes="floorplan.summaryNodes"
         :task-nodes="floorplan.taskNodes"

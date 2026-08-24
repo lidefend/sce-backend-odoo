@@ -82,7 +82,7 @@ require(
 )
 require(
     "composeCanonicalFormFloorplan" in form_host
-    and '<TaskFormPattern v-if="floorplan.decisionMode"' in form_host
+    and '<TaskFormPattern v-if="renderModel.identity.presentationMode === \'task\'"' in form_host
     and '<WorkspaceFormPattern v-else' in form_host
     and '<article class="sc-native-contract-page"' in form_host
     and "nativeBridge.primaryNodes" in form_host
