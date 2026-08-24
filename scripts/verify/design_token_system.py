@@ -9,6 +9,7 @@ consumer edges fail immediately.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -27,6 +28,7 @@ TDESIGN_RE = re.compile(r"--td-[\w-]+")
 PRIMITIVE_RE = re.compile(r"var\(\s*--sc-base-[\w-]+")
 BRAND_LITERAL_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 Z_INDEX_RE = re.compile(r"z-index\s*:\s*(?!var\(--sc-base-z-index-)([1-9]\d*)")
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
 def read(path: Path) -> str:
@@ -109,9 +111,37 @@ def reference_graph_errors(declarations: dict[str, str]) -> list[str]:
     return errors
 
 
+def resolve_diff_base() -> str:
+    explicit = os.environ.get("BASE_SHA", "")
+    if explicit:
+        if not SHA_RE.fullmatch(explicit):
+            raise RuntimeError("BASE_SHA must be a full lowercase commit SHA")
+        verify = subprocess.run(
+            ["git", "cat-file", "-e", f"{explicit}^{{commit}}"], cwd=ROOT, check=False
+        )
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", explicit, "HEAD"], cwd=ROOT, check=False
+        )
+        if verify.returncode or ancestor.returncode:
+            raise RuntimeError("BASE_SHA must resolve to an ancestor of HEAD")
+        return explicit
+    for ref in ("origin/main", "main"):
+        result = subprocess.run(
+            ["git", "merge-base", "HEAD", ref], cwd=ROOT, check=False,
+            text=True, capture_output=True,
+        )
+        candidate = result.stdout.strip()
+        if result.returncode == 0 and SHA_RE.fullmatch(candidate):
+            return candidate
+    raise RuntimeError("unable to resolve design-token guard baseline")
+
+
 def changed_style_lines() -> dict[Path, str]:
     """Return only added style lines, preserving the baseline as an allowlist."""
-    command = ["git", "diff", "--unified=0", "HEAD", "--", "frontend/apps/web/src", "frontend/packages/ui/src/kits/tdesign"]
+    command = [
+        "git", "diff", "--unified=0", resolve_diff_base(), "--",
+        "frontend/apps/web/src", "frontend/packages/ui/src/kits/tdesign",
+    ]
     result = subprocess.run(command, cwd=ROOT, check=True, text=True, capture_output=True)
     current: Path | None = None
     changed: dict[Path, list[str]] = {}

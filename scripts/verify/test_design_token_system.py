@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -62,6 +64,45 @@ class DesignTokenSystemTests(unittest.TestCase):
 
     def test_incremental_boundary_guard_accepts_the_registered_token_sources(self):
         self.assertEqual(system.incremental_boundary_errors(), [])
+
+    def test_explicit_exact_base_is_used_for_clean_candidate_diff(self):
+        base = "a" * 40
+        completed = [
+            mock.Mock(returncode=0),
+            mock.Mock(returncode=0),
+        ]
+        with mock.patch.dict(os.environ, {"BASE_SHA": base}, clear=False), mock.patch.object(
+            system.subprocess, "run", side_effect=completed
+        ) as run:
+            self.assertEqual(system.resolve_diff_base(), base)
+        self.assertEqual(run.call_args_list[0].args[0], ["git", "cat-file", "-e", f"{base}^{{commit}}"])
+        self.assertEqual(run.call_args_list[1].args[0], ["git", "merge-base", "--is-ancestor", base, "HEAD"])
+
+    def test_invalid_or_non_ancestor_explicit_base_fails_closed(self):
+        with mock.patch.dict(os.environ, {"BASE_SHA": "main"}, clear=False):
+            with self.assertRaisesRegex(RuntimeError, "full lowercase"):
+                system.resolve_diff_base()
+        with mock.patch.dict(os.environ, {"BASE_SHA": "b" * 40}, clear=False), mock.patch.object(
+            system.subprocess, "run", side_effect=[mock.Mock(returncode=0), mock.Mock(returncode=1)]
+        ):
+            with self.assertRaisesRegex(RuntimeError, "ancestor"):
+                system.resolve_diff_base()
+
+    def test_clean_candidate_diff_scans_committed_lines_from_base(self):
+        base = "c" * 40
+        diff = "\n".join([
+            "+++ b/frontend/apps/web/src/pages/example.css",
+            "+.example { color: #0052a9; }",
+        ])
+        with mock.patch.dict(os.environ, {"BASE_SHA": base}, clear=False), mock.patch.object(
+            system.subprocess,
+            "run",
+            side_effect=[mock.Mock(returncode=0), mock.Mock(returncode=0), mock.Mock(returncode=0, stdout=diff)],
+        ) as run:
+            changed = system.changed_style_lines()
+        self.assertIn(system.WEB / "pages/example.css", changed)
+        self.assertIn("#0052a9", changed[system.WEB / "pages/example.css"])
+        self.assertEqual(run.call_args_list[2].args[0][3], base)
 
 
 if __name__ == "__main__":
