@@ -104,5 +104,18 @@
     "fast": "120ms",
     "normal": "180ms",
     "slow": "240ms"
+  },
+  "z_index": {
+    "base": 0,
+    "sticky": 100,
+    "dropdown": 1000,
+    "modal": 1100,
+    "toast": 1200
+  },
+  "breakpoint": {
+    "compact": "640px",
+    "tablet": "768px",
+    "desktop": "1024px",
+    "wide": "1280px"
   }
 }

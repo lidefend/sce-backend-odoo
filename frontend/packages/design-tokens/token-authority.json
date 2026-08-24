@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "1.0",
+  "owner": "frontend.design_token_authority",
+  "recordFields": [
+    "token",
+    "layer",
+    "valueOrReference",
+    "status",
+    "replacement",
+    "owner",
+    "allowedConsumerScope"
+  ],
+  "layers": {
+    "primitive": {
+      "prefix": "--sc-base-",
+      "allowedConsumerScope": ["semantic", "component", "pattern", "bridge"]
+    },
+    "semantic": {
+      "prefix": "--sc-semantic-",
+      "allowedConsumerScope": ["component", "pattern", "bridge", "application"]
+    },
+    "component": {
+      "prefix": "--sc-component-",
+      "allowedConsumerScope": ["component", "pattern"]
+    },
+    "pattern": {
+      "prefix": "--sc-pattern-",
+      "allowedConsumerScope": ["pattern", "application"]
+    }
+  },
+  "canonicalSources": [
+    {
+      "token": "tokens/base.json",
+      "layer": "primitive",
+      "valueOrReference": "JSON primitive values",
+      "status": "canonical",
+      "replacement": null,
+      "owner": "frontend.design_token_authority",
+      "allowedConsumerScope": ["semantic", "component", "pattern", "bridge"]
+    },
+    {
+      "token": "tokens/semantic.{light,dark}.json",
+      "layer": "semantic",
+      "valueOrReference": "JSON semantic references to primitive tokens",
+      "status": "canonical",
+      "replacement": null,
+      "owner": "frontend.design_token_authority",
+      "allowedConsumerScope": ["component", "pattern", "bridge", "application"]
+    },
+    {
+      "token": "tokens/component.json",
+      "layer": "component",
+      "valueOrReference": "JSON component references",
+      "status": "canonical",
+      "replacement": null,
+      "owner": "frontend.design_token_authority",
+      "allowedConsumerScope": ["component", "pattern"]
+    },
+    {
+      "token": "tokens/pattern.json",
+      "layer": "pattern",
+      "valueOrReference": "JSON page-pattern references",
+      "status": "canonical",
+      "replacement": null,
+      "owner": "frontend.design_token_authority",
+      "allowedConsumerScope": ["pattern", "application"]
+    }
+  ],
+  "legacyClassificationRules": [
+    {
+      "match": "--sc-(app|color|space|product|page|content|workspace|navigation|table|text|toolbar|card|field|label|dialog|nav|surface|touch)-.*",
+      "status": "alias",
+      "replacement": "Token v1 canonical layer selected by the alias value",
+      "owner": "frontend.design_token_authority",
+      "allowedConsumerScope": ["application"]
+    },
+    {
+      "match": "--sc-shell-.*",
+      "status": "alias",
+      "replacement": "--sc-pattern-app-shell-*",
+      "owner": "frontend.design_token_authority",
+      "allowedConsumerScope": ["application"]
+    },
+    {
+      "match": "--sc-(form|lowcode)-.*",
+      "status": "component_local",
+      "replacement": "Keep local until the Phase 2 primitive adapter declares a canonical component token",
+      "owner": "frontend.contract_form",
+      "allowedConsumerScope": ["contract_form"]
+    },
+    {
+      "match": "--(accent|ink|layout-divider|muted|panel|surface)",
+      "status": "component_local",
+      "replacement": "Use Token v1 semantic aliases when the owning shell component is migrated",
+      "owner": "frontend.app_shell",
+      "allowedConsumerScope": ["app_shell"]
+    },
+    {
+      "match": "--(clickable|compact|designer-workspace|draggable|field|html|minimal|order-editable|readonly|readonly-empty-relation|selectable|smart|title-hidden)",
+      "status": "deprecated",
+      "replacement": "Selector lookalike; not a CSS custom-property declaration and forbidden for new token usage",
+      "owner": "frontend.design_token_authority",
+      "allowedConsumerScope": []
+    }
+  ]
+}

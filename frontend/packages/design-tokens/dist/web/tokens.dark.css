@@ -1,4 +1,8 @@
 :root[data-sc-theme="dark"] {
+  --sc-base-breakpoint-compact: 640px;
+  --sc-base-breakpoint-desktop: 1024px;
+  --sc-base-breakpoint-tablet: 768px;
+  --sc-base-breakpoint-wide: 1280px;
   --sc-base-color-amber-100: #fef3c7;
   --sc-base-color-amber-50: #fffbeb;
   --sc-base-color-amber-500: #f59e0b;
@@ -91,6 +95,11 @@
   --sc-base-space-sm: 12;
   --sc-base-space-xl: 32;
   --sc-base-space-xs: 8;
+  --sc-base-z-index-base: 0;
+  --sc-base-z-index-dropdown: 1000;
+  --sc-base-z-index-modal: 1100;
+  --sc-base-z-index-sticky: 100;
+  --sc-base-z-index-toast: 1200;
   --sc-component-badge-font-size: 12;
   --sc-component-badge-padding-x: 8;
   --sc-component-badge-padding-y: 4;
@@ -138,6 +147,20 @@
   --sc-component-toolbar-padding-x: 8;
   --sc-component-toolbar-padding-y: 4;
   --sc-component-toolbar-radius: 8px;
+  --sc-pattern-app-shell-page-gutter: 24;
+  --sc-pattern-app-shell-sidebar-collapsed-width: 56;
+  --sc-pattern-app-shell-sidebar-width: 248;
+  --sc-pattern-app-shell-topbar-height: 48;
+  --sc-pattern-collection-table-row-height: 44;
+  --sc-pattern-collection-toolbar-height: 52px;
+  --sc-pattern-overlay-dialog-padding: 16;
+  --sc-pattern-overlay-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  --sc-pattern-page-header-section-gap: 24;
+  --sc-pattern-page-header-title-size: 24;
+  --sc-pattern-task-form-content-max-width: 1200px;
+  --sc-pattern-task-form-field-gap: 12;
+  --sc-pattern-workspace-form-content-max-width: 1440px;
+  --sc-pattern-workspace-form-frame-max-width: 1920px;
   --sc-platform-density-touch-target-min: 32;
   --sc-semantic-border-default: rgba(148, 163, 184, 0.24);
   --sc-semantic-border-interactive: #00b6fe;

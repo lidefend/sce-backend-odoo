@@ -1,0 +1,28 @@
+{
+  "app_shell": {
+    "topbar_height": "{component.shell.topbar_height}",
+    "sidebar_width": "{component.shell.sidebar_width}",
+    "sidebar_collapsed_width": "{component.shell.sidebar_collapsed_width}",
+    "page_gutter": "{component.shell.page_gutter}"
+  },
+  "page_header": {
+    "title_size": "{font.size_2xl}",
+    "section_gap": "{space.lg}"
+  },
+  "task_form": {
+    "content_max_width": "1200px",
+    "field_gap": "{space.sm}"
+  },
+  "workspace_form": {
+    "content_max_width": "1440px",
+    "frame_max_width": "1920px"
+  },
+  "collection": {
+    "table_row_height": "{component.table.row_height}",
+    "toolbar_height": "52px"
+  },
+  "overlay": {
+    "dialog_padding": "{component.dialog.padding}",
+    "shadow": "{semantic.shadow.popover}"
+  }
+}
