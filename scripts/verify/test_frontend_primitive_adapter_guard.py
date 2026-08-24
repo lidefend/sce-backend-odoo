@@ -22,8 +22,9 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "export { Input } from 'tdesign-vue-next/es/input';\n", encoding="utf-8"
         )
         for name in PRIMITIVES:
+            modal_contract = "<!-- useModalLifecycle role=\"dialog\" aria-modal=\"true\" -->" if name in {"ScDialog", "ScDrawer"} else ""
             (design / f"{name}.vue").write_text(
-                f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive" /></template>\n',
+                f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive" /></template>{modal_contract}\n',
                 encoding="utf-8",
             )
         return root
@@ -58,6 +59,15 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("business-specific" in error for error in validate(root)))
+
+    def test_modal_without_shared_lifecycle_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScDrawer.vue"
+        source.write_text(
+            '<template><aside data-semantic-component="ScDrawer" data-semantic-layer="primitive" /></template>\n',
+            encoding="utf-8",
+        )
+        self.assertTrue(any("shared modal lifecycle" in error for error in validate(root)))
 
 
 if __name__ == "__main__":

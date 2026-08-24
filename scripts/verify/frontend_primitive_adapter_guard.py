@@ -44,6 +44,11 @@ def validate(root: Path = ROOT) -> list[str]:
         if f"export {{ default as {component} }}" not in index:
             errors.append(f"index.ts does not export {component}")
 
+    for modal in ("ScDialog", "ScDrawer"):
+        text = (design / f"{modal}.vue").read_text(encoding="utf-8") if (design / f"{modal}.vue").is_file() else ""
+        if "useModalLifecycle" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
+            errors.append(f"{modal} must use the shared modal lifecycle and dialog semantics")
+
     if not bridge:
         errors.append("missing TDesign primitive bridge")
     else:
