@@ -121,6 +121,47 @@ export interface NavMeta {
   groups_xmlids?: string[];
 }
 
+export type CanonicalNavigationNodeState = 'enabled' | 'disabled' | 'container';
+
+export interface CanonicalNavigationParent {
+  key: string;
+  menuId: number;
+  label: string;
+}
+
+export interface CanonicalNavigationAuthority {
+  state: 'allowed' | 'container';
+  source: string;
+  key: string;
+}
+
+export interface CanonicalNavigationNode {
+  key: string;
+  menuId: number;
+  actionId: number | null;
+  parentChain: CanonicalNavigationParent[];
+  label: string;
+  icon: string | null;
+  route: string | null;
+  authority: CanonicalNavigationAuthority;
+  state: CanonicalNavigationNodeState;
+  disabledReason: string | null;
+  order: number;
+  source: NavNode;
+  children: CanonicalNavigationNode[];
+}
+
+export interface CanonicalNavigationModel {
+  schemaVersion: '1.0';
+  source: 'system.init.navigation';
+  principal: {
+    userId: number;
+    companyId: number;
+    roleCode: string;
+  };
+  nodes: CanonicalNavigationNode[];
+}
+
 export interface AppInitResponse {
   capabilities?: Array<string | {
     key?: string;
