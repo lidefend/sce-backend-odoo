@@ -41,7 +41,8 @@ fe.gate:
 	@scripts/dev/pnpm_exec.sh -C frontend gate
 
 verify.frontend.build: guard.prod.forbid
-	@bash scripts/dev/frontend_static_build.sh
+	@ENV="$(ENV)" ENV_FILE="$(ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/dev/frontend_static_build.sh
 
 prod.frontend.build: guard.prod.danger check-compose-project check-compose-env
 	@bash scripts/dev/frontend_static_build.sh

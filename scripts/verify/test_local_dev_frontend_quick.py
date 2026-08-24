@@ -194,6 +194,60 @@ class LocalDevFrontendQuickTest(unittest.TestCase):
         self.assertIn("local.dev.ready", local_frontend)
         self.assertIn("frontend_static_build.sh", local_frontend)
 
+    def test_terminal_frontend_build_recipe_receives_the_authoritative_env_file(self):
+        """The final shell recipe, not only Python's make arguments, carries authority."""
+        with tempfile.TemporaryDirectory() as directory:
+            sandbox = Path(directory)
+            authority = sandbox / "primary.env.dev"
+            authority.write_text("ENV=dev\n", encoding="utf-8")
+            capture = sandbox / "terminal-env.txt"
+            bin_dir = sandbox / "bin"
+            bin_dir.mkdir()
+            fake_bash = bin_dir / "bash"
+            fake_bash.write_text(
+                "#!/bin/sh\n"
+                "case \"$*\" in *scripts/dev/frontend_static_build.sh*)\n"
+                "  printf '%s\\n%s\\n%s\\n' \"${ENV:-}\" \"${ENV_FILE:-}\" \"${ROOT_DIR:-}\" > \"$TERMINAL_ENV_CAPTURE\"\n"
+                "esac\n",
+                encoding="utf-8",
+            )
+            fake_bash.chmod(0o755)
+            environment = os.environ.copy()
+            environment.update(
+                PATH=f"{bin_dir}:{environment['PATH']}",
+                TERMINAL_ENV_CAPTURE=str(capture),
+                ENV="untrusted",
+                ENV_FILE="/tmp/untrusted",
+                ROOT_DIR="/tmp/untrusted",
+            )
+            result = subprocess.run(
+                [
+                    "make",
+                    "--no-print-directory",
+                    f"PATH={bin_dir}:{environment['PATH']}",
+                    f"TERMINAL_ENV_CAPTURE={capture}",
+                    "ENV=dev",
+                    f"ENV_FILE={authority}",
+                    f"ROOT_DIR={ROOT}",
+                    "verify.frontend.build",
+                ],
+                cwd=ROOT,
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(capture.read_text(encoding="utf-8").splitlines(), ["dev", str(authority), str(ROOT)])
+
+    def test_frontend_build_recipe_forwards_only_its_resolved_make_authority(self):
+        frontend_make = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        recipe = frontend_make.split("verify.frontend.build: guard.prod.forbid", 1)[1].split("\n\n", 1)[0]
+        self.assertIn('ENV="$(ENV)"', recipe)
+        self.assertIn('ENV_FILE="$(ENV_FILE)"', recipe)
+        self.assertIn('ROOT_DIR="$(ROOT_DIR)"', recipe)
+        self.assertIn("bash scripts/dev/frontend_static_build.sh", recipe)
+
     def test_new_governance_sources_contain_no_machine_specific_path_or_env_mutation(self):
         sources = [MODULE_PATH, ROOT / "scripts/verify/test_local_dev_frontend_quick.py"]
         combined = "\n".join(path.read_text(encoding="utf-8") for path in sources)
