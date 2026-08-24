@@ -5607,3 +5607,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   registry plus tests may emit readiness/capability states.
 - Rollback: revert this P4 audit-only commit; product source, runtime, and
   database state are unaffected.
+
+## Local development Frontend Quick authority forwarding (2026-08-24)
+
+- Branch / anchor: `fix/p4-local-dev-frontend-quick-env-forwarding-v2` /
+  `bbeec2df`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling /
+  governed local.dev Frontend Quick terminal environment forwarding /
+  `make/frontend.mk` and its focused verification.
+- Reason / boundary: a linked product worktree correctly resolved the primary
+  worktree's 0600 `.env.dev`, but the terminal static-build recipe did not
+  explicitly receive the Make-resolved authority. Forward only `ENV`, absolute
+  `ENV_FILE`, and `ROOT_DIR` at that recipe boundary.
+- Why Here / Why Not Elsewhere: this is a Make process-environment handoff, not
+  a Token, business, Contract, route, permission, database, or fixture defect.
+  The static build continues to require a real authority file and gains no
+  current-worktree fallback.
+- Blast radius / validation: ordinary Quick and CI build targets retain their
+  semantic modes; the local wrapper keeps stripping caller overrides. A focused
+  fake-shell test captures the terminal recipe environment, lifecycle tests and
+  Python compilation pass, and the actual governed local.dev Frontend Quick
+  reaches development static build successfully without logging credentials.
+- Rollback: revert the recipe forwarding and its focused tests; no runtime
+  data, role, environment file, symlink, database, or product source changes.
