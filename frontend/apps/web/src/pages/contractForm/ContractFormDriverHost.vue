@@ -62,7 +62,7 @@
           />
           <p v-else class="canonical-form-activity-empty">暂无活动记录</p>
         </template>
-        <template v-if="showProductActions" #actions>
+        <template v-if="showProductActions && !actionsInHeader" #actions>
           <nav class="canonical-product-edit-actions" aria-label="表单业务动作" data-canonical-action-bar>
             <SceneButton
               v-if="localSavePrimary"
@@ -113,7 +113,7 @@
             v-on="collaborationPanelListeners"
           />
         </section>
-        <nav v-if="visibleActions.length" class="canonical-form-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
+        <nav v-if="visibleActions.length && !actionsInHeader" class="canonical-form-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
             <button
               v-for="action in directActions"
               :key="action.key"
@@ -195,6 +195,7 @@ const props = defineProps<{
   collaborationPanelListeners?: NativeCollaborationPanelListeners;
   dirty?: boolean;
   busy?: boolean;
+  actionsInHeader?: boolean;
 }>();
 const emit = defineEmits<{
   'driver-change': [kit: SceneUiKitId];

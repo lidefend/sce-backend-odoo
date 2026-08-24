@@ -36,9 +36,10 @@
       :busy="busy || status === 'loading'" :busy-kind="busyKind" :show-return="showReturnToBusinessConfigAction" :show-draft-save="!canonicalProductRendererActive && showDraftSaveAction" :draft-save-disabled="draftSaveDisabled" :draft-save-label="draftSaveButtonLabel"
       :show-primary-form-action="!canonicalProductRendererActive && showPrimaryBusinessFormAction" :primary-form-action-disabled="primaryFormActionDisabled" :primary-form-action-hint="primaryFormActionHint" :submit-label="submitButtonLabel" :primary-action="primaryBusinessFormAction"
       :direct-actions="canonicalProductRendererActive ? [] : headerBusinessDirectActions" :overflow-actions="canonicalProductRendererActive ? [] : headerBusinessOverflowActions" :config-actions="canonicalProductRendererActive ? [] : headerConfigActionsVisible"
+      :canonical-direct-actions="canonicalProductRendererActive ? canonicalHeaderDirectActions : []" :canonical-overflow-actions="canonicalProductRendererActive ? canonicalHeaderOverflowActions : []" :canonical-local-save-primary="canonicalProductRendererActive && canonicalHeaderLocalSavePrimary"
       :show-discard="showDiscardAction" :show-debug="showDebugActionsVisible" :contract-present="Boolean(contract)" :discard-label="formUiLabel('discard')" :reload-label="formUiLabel('reload')"
       @back="returnToPreviousPage" @continue-processing="continueProcessing" @set-status="setStatusbarValue" @return-workbench="returnToBusinessConfigDesigner" @save-draft="saveRecord()"
-      @run-primary="runPrimaryFormAction" @run-action="runAction" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
+      @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     />
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
@@ -145,6 +146,7 @@
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
         <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
+          actions-in-header
           :busy="busy"
           :dirty="hasChanges"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
@@ -1190,6 +1192,17 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
   primaryCreateAction: primaryCreateFooterAction.value, primarySubmitAction: primarySubmitAction.value,
   quickSubmitDisabled: isQuickSubmitDisabled.value,
 }));
+const canonicalHeaderVisibleActions = computed(() => canonicalFormRenderState.value.model?.actionBar.filter((action) => action.visible) || []);
+const canonicalHeaderDirectActions = computed(() => canonicalProductFloorplan.value?.decisionMode
+  ? canonicalProductFloorplan.value.directActions
+  : canonicalHeaderVisibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
+const canonicalHeaderOverflowActions = computed(() => canonicalProductFloorplan.value?.decisionMode
+  ? canonicalProductFloorplan.value.overflowActions
+  : canonicalHeaderVisibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
+const canonicalHeaderLocalSavePrimary = computed(() => Boolean(
+  canonicalProductRendererActive.value
+  && ['create', 'edit'].includes(renderProfile.value),
+));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
 const blockedCanonicalPrimary = computed(() => Boolean(
   canonicalProductFloorplan.value?.decisionMode

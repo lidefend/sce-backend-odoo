@@ -46,6 +46,13 @@ def validate() -> list[str]:
     contract_page = source("frontend/apps/web/src/pages/ContractFormPage.vue")
     if '<h1 v-if="initialFormLoading"' not in contract_page:
         failures.append("ContractForm loading identity may duplicate the stable page header h1")
+    for marker in ('actions-in-header', "['create', 'edit'].includes(renderProfile.value)", '@canonical-save="saveRecord()"'):
+        if marker not in contract_page:
+            failures.append(f"ContractForm does not project direct edit actions into header: {marker}")
+    driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
+    for marker in ('showProductActions && !actionsInHeader', 'visibleActions.length && !actionsInHeader'):
+        if marker not in driver:
+            failures.append(f"DriverHost still owns a parallel action bar: {marker}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")
     for page_route in ("'action'", "'record'", "'model-form'", "'not-found'"):
         compact_section = app_shell.split("const compactRouteKeepsHeadline", 1)[1].split(");", 1)[0]

@@ -70,15 +70,20 @@
         ><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</button>
         <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
       </span>
-      <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length" class="form-header-primary-actions">
+      <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length || canonicalDirectActions.length || canonicalLocalSavePrimary" class="form-header-primary-actions">
         <button v-if="showContinueProcessing" data-product-primary-action data-form-mode-action="edit" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">{{ continueProcessingLabel }}</button>
         <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
         <button v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
         <button v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+        <button v-if="canonicalLocalSavePrimary" data-product-primary-action data-action-ref="form.save" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('canonical-save')">{{ mode === 'create' ? '保存草稿' : '保存修改' }}</button>
+        <button v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" :data-product-primary-action="action.tier === 'primary' || undefined" :data-action-ref="action.actionRef.actionId" :data-backend-identity="action.actionRef.backendIdentity" :class="canonicalButtonClass(action)" :disabled="busy || !action.enabled" :title="action.reasonCode || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
       </span>
-      <details v-if="presentedOverflowActions.length" class="form-header-more-actions">
+      <details v-if="presentedOverflowActions.length || canonicalPresentedOverflowActions.length" class="form-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
-        <div><button v-for="action in presentedOverflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button></div>
+        <div>
+          <button v-for="action in presentedOverflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+          <button v-for="action in canonicalPresentedOverflowActions" :key="`canonical-hdr-more-${action.key}`" :data-action-ref="action.actionRef.actionId" :data-backend-identity="action.actionRef.backendIdentity" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="action.reasonCode || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+        </div>
       </details>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
       <button v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
@@ -95,6 +100,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import type { ProductPageHeaderAction, ProductPagePresentationMode } from '../../app/presentation/productPageHeader';
+import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { nextBusinessActionLabel } from './nativeSectionNavigation';
 
@@ -113,6 +119,7 @@ const props = defineProps<{
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;
   primaryFormActionDisabled: boolean; primaryFormActionHint: string; submitLabel: string; primaryAction: ContractAction | null;
   directActions: ContractAction[]; overflowActions: ContractAction[];
+  canonicalDirectActions: CanonicalFormAction[]; canonicalOverflowActions: CanonicalFormAction[]; canonicalLocalSavePrimary: boolean;
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
   discardLabel: string; reloadLabel: string;
 }>();
@@ -135,9 +142,20 @@ const headerPrimaryActions = computed<ProductPageHeaderAction[]>(() => {
   if (props.showContinueProcessing) return [{ key: 'continue-processing', label: props.continueProcessingLabel, semantic: 'other', enabled: !props.busy }];
   if (props.showPrimaryFormAction) return [{ key: props.primaryAction?.key || 'save', label: props.submitLabel, semantic: props.primaryAction ? 'submit' : 'save', enabled: !props.primaryFormActionDisabled }];
   const action = presentedDirectActions.value.find((item) => item.presentationTier === 'primary' || item.semantic === 'primary_action');
-  return action ? [{ key: action.key, label: action.label, semantic: 'submit', enabled: action.enabled }] : [];
+  if (action) return [{ key: action.key, label: action.label, semantic: 'submit', enabled: action.enabled }];
+  if (props.canonicalLocalSavePrimary) return [{ key: 'form.save', label: props.mode === 'create' ? '保存草稿' : '保存修改', semantic: 'save', enabled: !props.busy }];
+  const canonical = props.canonicalDirectActions.find((item) => item.tier === 'primary');
+  return canonical ? [{ key: canonical.key, label: canonical.label, semantic: 'submit', enabled: canonical.enabled }] : [];
 });
-const headerOverflowModelActions = computed<ProductPageHeaderAction[]>(() => presentedOverflowActions.value.map((action) => ({ key: action.key, label: action.label, semantic: 'other', enabled: action.enabled })));
+const canonicalPresentedDirectActions = computed(() => props.canonicalLocalSavePrimary ? props.canonicalDirectActions.filter((action) => action.tier !== 'primary') : props.canonicalDirectActions);
+const canonicalPresentedOverflowActions = computed(() => [
+  ...(props.canonicalLocalSavePrimary ? props.canonicalDirectActions.filter((action) => action.tier === 'primary') : []),
+  ...props.canonicalOverflowActions,
+]);
+const headerOverflowModelActions = computed<ProductPageHeaderAction[]>(() => [
+  ...presentedOverflowActions.value.map((action) => ({ key: action.key, label: action.label, semantic: 'other' as const, enabled: action.enabled })),
+  ...canonicalPresentedOverflowActions.value.map((action) => ({ key: action.key, label: action.label, semantic: 'other' as const, enabled: action.enabled })),
+]);
 const headerExitAction = computed<ProductPageHeaderAction>(() => ({ key: props.backSemanticIdentity, label: props.backLabel, semantic: 'exit', enabled: !props.busy }));
 const statusTrackRef = ref<HTMLOListElement | null>(null);
 const workflowHasMoreBefore = ref(false);
@@ -148,6 +166,7 @@ let commandBarShell: HTMLElement | null = null;
 const emit = defineEmits<{
   back: []; 'continue-processing': []; 'set-status': [value: string]; 'return-workbench': []; 'save-draft': []; 'run-primary': [];
   'run-action': [action: ContractAction]; discard: []; copy: []; export: []; reload: [];
+  'canonical-action': [action: CanonicalFormAction]; 'canonical-save': [];
 }>();
 
 function actionEvidenceAttributes(action: ContractAction | null) {
@@ -209,6 +228,10 @@ onBeforeUnmount(() => {
 
 function buttonClass(action: ContractAction) {
   return ['sc-btn', 'sc-btn-sm', action.destructive ? 'sc-btn-danger' : action.presentationTier === 'primary' || action.semantic === 'primary_action' ? 'sc-btn-primary' : 'sc-btn-ghost'];
+}
+
+function canonicalButtonClass(action: CanonicalFormAction) {
+  return ['sc-btn', 'sc-btn-sm', action.tier === 'primary' ? 'sc-btn-primary' : 'sc-btn-ghost'];
 }
 </script>
 
