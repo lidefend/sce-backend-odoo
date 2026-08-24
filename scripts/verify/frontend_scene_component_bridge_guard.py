@@ -126,23 +126,21 @@ require(
 require(
     "['primary', 'secondary'].includes(action.tier)" in form_host
     and "['overflow', 'configuration'].includes(action.tier)" in form_host
-    and ":data-action-tier=\"action.tier\"" in form_host,
+    and ":data-action-tier=\"action.key === effectivePrimaryKey ? 'primary' : action.tier\"" in canonical_action_bar
+    and ":data-normalized-action-tier=\"action.tier\"" in canonical_action_bar,
     "form driver does not mechanically preserve normalized action tiers",
 )
 require(
-    "canonicalFormActionIconClass(action.icon)" in form_host
-    and "canonical-form-action-icon" in form_host
-    and "canonicalFormActionIconClass(action.icon)" in canonical_action_bar
+    "canonicalFormActionIconClass(action.icon)" in canonical_action_bar
     and "canonical-action-bar__icon" in canonical_action_bar
     and "SceneButton" in canonical_action_bar
     and "action.actionRef" in canonical_action_bar
-    and "action.reasonCode" not in canonical_action_bar
+    and "workflowDisabledReason(action)" in canonical_action_bar
     and "action.presentation?.icon" in presenter,
     "native and semantic action bars do not preserve canonical action identity and icon",
 )
 require(
     '/web/static/lib/fontawesome/css/font-awesome.css' not in web_index
-    and '<ScIcon v-if="canonicalFormActionIconClass(action.icon)"' in form_host
     and '<ScIcon v-if="canonicalFormActionIconClass(action.icon)"' in canonical_action_bar,
     "canonical action icons must render locally without coupling the product shell to an Odoo web asset",
 )
