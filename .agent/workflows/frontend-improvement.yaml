@@ -1,13 +1,33 @@
 workflow:
   id: frontend-improvement
+  purpose: frontend_product_iteration_router
+  authority: .agent/workflows/frontend-professionalization.yaml
 
-  purpose:
-    frontend_product_iteration
+  routing:
+    default_program: frontend-system-professionalization-v1
+    load_before_frontend_change:
+      - AGENTS.md
+      - .agent/context.yaml
+      - .agent/workflows/frontend-professionalization.yaml
+    require_phase_and_batch_selection: true
+    prohibit_unplanned_cross_phase_writes: true
 
-  steps:
-    - load_goal
-    - read_contract
-    - inspect_current_state
-    - implement_change
-    - run_browser_validation
-    - collect_evidence
+  lifecycle:
+    - select_one_independently_acceptable_batch
+    - declare_product_layer_target_scope_and_exclusions
+    - run_development_feedback_loop
+    - create_small_responsibility_commits
+    - freeze_candidate_once
+    - run_candidate_gate_once
+    - perform_independent_readonly_review
+    - publish_one_result_pr
+    - wait_for_exact_head_merge_gate
+
+  stop_conditions:
+    - missing_phase_or_batch_identity
+    - shared_file_single_writer_conflict
+    - unowned_scope_expansion
+    - product_and_environment_failure_mixed
+    - required_authority_missing
+    - candidate_fingerprint_drift
+    - browser_or_mutation_failure

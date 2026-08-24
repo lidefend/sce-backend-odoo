@@ -5735,3 +5735,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Rollback: revert this batch's token source, generated artifacts, CSS aliases,
   bridge, and guards together. Existing page rules retain their pre-Token-v1
   values and do not require data repair.
+
+## Frontend professionalization agent workflow (2026-08-24)
+
+- Branch / anchor: `fix/p4-agent-frontend-professionalization-workflow-v1` /
+  `b3d8c7c4`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool / agent
+  collaboration workflow authority / `.agent/workflows`.
+- Reason: persist the approved Phase 0–10 program, two delivery tracks,
+  development/candidate/PR feedback levels, single-writer sequencing, common
+  gates, browser metrics and failure ownership so later batches do not rebuild
+  the plan from conversation context.
+- Boundary: workflow and collaboration metadata only. No frontend product,
+  Contract, route, permission, runtime, database or fixture change.
+- Rollback: revert the workflow router and program file. Delivered Phase 0/1
+  product commits and runtime state are unaffected.

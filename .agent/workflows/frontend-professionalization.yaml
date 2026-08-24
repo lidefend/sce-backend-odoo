@@ -1,0 +1,199 @@
+workflow:
+  id: frontend-system-professionalization-v1
+  purpose: governed_systemwide_frontend_professionalization
+  formal_product_layer: P0_platform_kernel_product
+  program_owner: frontend_platform
+  status: active
+
+  objective: >-
+    Establish one professional frontend system from design authority through
+    primitives, shell, page patterns, component registry, professional
+    components and domain rollout without model-specific branching in P0.
+
+  authority_chain:
+    - AGENTS.md
+    - .agent/context.yaml
+    - docs/ops/codex_execution_allowlist.md
+    - docs/ops/codex_workspace_execution_rules.md
+    - docs/architecture/native_view_reuse_frontend_spec_v1.md
+    - docs/product/formal_product_boundary_v1.md
+    - docs/frontend_productization/page-surface-inventory.json
+    - docs/frontend_productization/navigation-authority-inventory.json
+    - docs/frontend_productization/design-token-inventory.json
+    - docs/frontend_productization/component-coverage-inventory.json
+    - docs/frontend_productization/professionalization-gap-plan.md
+
+  operating_model:
+    worktree_limit: 2
+    writers_per_worktree: 1
+    active_product_write_batches: 1
+    pr_unit: one_independently_acceptable_product_result
+    commit_unit: small_responsibility_change
+    next_phase_write_before_dependency_merge: forbidden
+    parallel_readonly_design: allowed
+    parallel_shared_shell_or_runtime_write: forbidden
+    browser_journeys_per_batch_max: 2
+    database_mutation_default: 0
+
+  delivery_tracks:
+    platform_foundation:
+      phases: [phase_0, phase_1, phase_2, phase_3, phase_4, phase_5, phase_6]
+      rule: complete_in_order
+      owns: [audit_authority, design_tokens, primitive_adapters, navigation_shell, page_header, page_patterns, component_registry]
+    professional_components_and_rollout:
+      phases: [phase_7, phase_8, phase_9, phase_10]
+      starts_after: phase_6_merged
+      owns: [base_field_families, workflow_audit_collaboration, industry_component_profiles, business_domain_rollout]
+
+  feedback_levels:
+    development:
+      target_duration: 1_to_5_minutes
+      loop: [modify_current_responsibility, run_nonzero_targeted_tests, run_relevant_lint_or_typecheck, inspect_one_local_surface, commit_small_responsibility]
+      excludes: [full_frontend_quick, production_build, complete_browser_matrix, complete_candidate_fingerprint, generated_report_refresh, pull_request_ci_wait]
+    candidate:
+      run_once_when_batch_complete: [targeted_tests, strict_typecheck, lint, frontend_quick, production_build, required_readonly_browser_journeys, complete_candidate_fingerprint, independent_readonly_review]
+      rerun_policy:
+        unchanged_source: do_not_repeat
+        product_source_changed: resume_from_earliest_invalidated_gate
+        environment_failure: split_to_p4_and_freeze_product_candidate
+        validation_tool_failure: fix_only_validation_owner
+    pull_request:
+      required: [accurate_scope_and_rollback_metadata, exact_head_ci, resolved_review_threads, independent_approval, live_head_reconciliation, explicit_merge_authorization]
+      waiting_policy: allow_only_readonly_next_batch_design
+
+  universal_boundaries:
+    required_declaration: [formal_product_layer, layer_target, module, standard_vs_user_specific, why_here, why_not_elsewhere, blast_radius, exclusions]
+    forbid:
+      - frontend_model_action_menu_or_label_special_case
+      - parallel_contract_or_registry_authority
+      - business_semantics_in_p0_primitives
+      - route_or_permission_change_in_visual_batches
+      - manual_runtime_database_credential_or_fixture_assembly
+      - silent_component_fallback
+      - broad_directory_allowlist
+      - fixed_wait_or_broad_locator_as_readiness
+      - next_phase_product_code_in_current_pr
+    renderer_contract:
+      presentation_mode: [task, workspace]
+      render_profile: [create, edit, readonly]
+      frontend_must_not_infer_presentation_mode: true
+      explicit_readonly_must_not_promote: true
+
+  phases:
+    phase_0:
+      name: formal_product_static_baseline
+      status: merged
+      branch_pattern: audit/p0-frontend-system-professionalization-baseline-v1
+      product_code_changes: forbidden
+      outputs: [page-surface-inventory.json, navigation-authority-inventory.json, design-token-inventory.json, component-coverage-inventory.json, professionalization-gap-plan.md]
+      exclusions: [demo_addons, external_customer_addons, runtime_installed_module_state, user_specific_visibility]
+    phase_1:
+      name: design_token_v1
+      status: merged
+      branch_pattern: feature/p0-design-token-system-v1
+      objective: establish_project_token_authority_and_tdesign_bridge
+      owns: [primitive_tokens, semantic_tokens, component_tokens, pattern_tokens, compatibility_aliases, token_guards]
+      excludes: [navigation_behavior, page_header_refactor, primitive_adapter, contract_v2, business_layout]
+    phase_2:
+      name: primitive_adapter_v1
+      status: next
+      branch_pattern: feature/p0-ui-primitive-adapter-v1
+      objective: establish_project_owned_stable_primitive_api
+      initial_components: [ScButton, ScInput, ScSelect, ScDialog, ScDrawer, ScTabs, ScTable, ScBadge, ScTooltip, ScDropdown, ScFormField, ScLoading, ScEmptyState, ScErrorState]
+      rules: [wrap_only_public_stable_tdesign_api, normalize_size_status_loading_disabled_focus, expose_data_semantic_identity, enforce_keyboard_focus_and_accessibility, no_business_copy_inside_primitive, migrate_only_consumers_required_by_next_shell_batch]
+      acceptance: [positive_and_negative_component_tests, v_model_and_event_contract, dialog_drawer_escape_and_focus, bundle_size_comparison]
+    phase_3:
+      name: navigation_shell_v1
+      status: planned
+      branch_pattern: feature/p0-product-navigation-shell-v1
+      objective: establish_one_canonical_navigation_model_and_product_shell
+      authority_split:
+        backend: [visibility, parent_authority_chain, action_menu_pair, disabled_reason, order, hierarchy]
+        frontend: [expanded_state, selected_state, drawer, focus, responsive_behavior]
+      components: [ProductAppShell, ProductSideNavigation, ProductMobileNavigationDrawer, NavigationBreadcrumb, WorkspaceContextIndicator]
+      acceptance: [three_level_menu, exact_action_menu, forbidden_menu, deep_link, refresh, collapse, mobile_drawer, keyboard, back_forward, mutation_zero]
+    phase_4:
+      name: product_page_header_v1
+      status: planned
+      branch_pattern: feature/p0-product-page-header-v1
+      model_fields: [title, subtitle, breadcrumb, presentationMode, renderProfile, dirtyState, statusbar, primaryAction, overflowActions, exitAction]
+      rules: [primary_action_count_is_zero_or_one, readonly_has_no_save, edit_has_direct_save_without_edit_transition, dialog_and_standalone_headers_are_separate_variants]
+    phase_5:
+      name: product_page_patterns_v1
+      status: planned
+      branch_pattern: feature/p0-product-page-patterns-v1
+      patterns:
+        TaskFormPattern: task_focused_create_edit_and_handling
+        WorkspaceFormPattern: native_notebook_professional_management_and_decision
+        CollectionPattern: search_filter_group_table_card_batch_and_pagination
+        DashboardPattern: metrics_risk_todo_fallback_and_drilldown
+      excludes: [industry_component_implementation]
+    phase_6:
+      name: professional_component_registry_v1
+      status: planned
+      branch_pattern: feature/p0-professional-component-registry-v1
+      record_fields: [componentKey, semanticType, supportedFieldTypes, supportedPresentationModes, supportedRenderProfiles, requiredCapabilities, renderer, fallback, readiness]
+      readiness: [ready, readable_fallback, fail_closed]
+      production_chain: [contract_payload, decoder, normalized_store, registry_resolver, component, semantic_dom_marker]
+      forbid: [unregistered_component_key, field_type_mismatch, missing_capability, renderer_model_branch, label_branch, silent_fallback, unreachable_registration]
+    phase_7:
+      name: base_component_families
+      status: planned
+      batches:
+        phase_7a: [char, text, html, integer, float, date, datetime, boolean, selection]
+        phase_7b: [money, currency, percentage, status, duration, user, company]
+        phase_7c: [many2one, many2many, relation_dialog, relation_create_maintain, action_menu_authority]
+        phase_7d: [one2many_readonly, one2many_editable, line_validation, subtotal, pagination]
+      matrix: [task_create, task_edit, task_readonly, workspace_create, workspace_edit, workspace_readonly]
+    phase_8:
+      name: workflow_audit_and_collaboration
+      status: planned
+      batches:
+        phase_8a: [statusbar, action_bar, disabled_reason, primary_overflow, confirm_dialog]
+        phase_8b: [actor, occurred_at, event, result, disclosure, empty_state]
+        phase_8c: [chatter, attachment, activity, comment, follower]
+        phase_8d: [relation_search, relation_create, cancel, success_settlement, dirty_preservation, exact_once_mutation]
+    phase_9:
+      name: industry_component_profiles
+      status: planned
+      ownership: P1_construction_industry_standard_product
+      branches: [feature/p1-project-structure-components-v1, feature/p1-contract-execution-components-v1, feature/p1-payment-settlement-components-v1]
+      rule: P1_supplies_component_profiles_P0_registry_remains_generic
+      examples: [wbs_tree, bill_of_quantities, project_progress, contract_performance, payment_execution, settlement_detail, cost_analysis]
+    phase_10:
+      name: business_domain_rollout
+      status: planned
+      order: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration]
+      per_domain_flow: [coverage_scan, gap_classification, contract_configuration, static_projection, one_primary_journey, one_security_counterexample, coverage_report]
+      stop_and_split_when: domain_requires_P0_registry_shell_or_presenter_change
+
+  batch_gate:
+    ordered_checks: [complete_candidate_fingerprint, contract_schema_targeted_tests, registry_presenter_targeted_tests, strict_typecheck, lint, frontend_quick, production_build, governed_runtime, at_most_two_browser_journeys, independent_readonly_review, generated_reports, exact_head_pr_ci, independent_approval, explicit_merge_authorization]
+    browser_metrics:
+      h1: 1
+      page_header: 1
+      selected_navigation_item: 1
+      primary_actions: zero_or_one
+      duplicate_fields: 0
+      duplicate_titles: 0
+      disabled_fake_readonly_controls: 0
+      unregistered_components: 0
+      mobile_390_overflow: 0
+      browser_errors: 0
+      readonly_mutations: 0
+      explicit_readonly_promotion: 0
+
+  failure_routing:
+    environment_or_entry_identity: P4
+    normalized_contract_or_generic_assembly: P0
+    industry_model_field_state_or_permission: P1
+    customer_preference_or_baseline: P2
+    runtime_low_code_configuration: P3
+    locator_or_evidence_collection: validation_owner
+    rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
+
+  next_action:
+    phase: phase_2
+    task: primitive_adapter_api_and_existing_component_gap_audit
+    prerequisite: phase_1_merged_and_main_synced
+    do_not_start_in_parallel: [phase_3, phase_4, phase_6, phase_7]
