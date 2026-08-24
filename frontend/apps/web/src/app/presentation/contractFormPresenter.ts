@@ -152,6 +152,8 @@ function fieldFromWidget(
     fieldType,
     componentKey: widget.componentKey,
     componentResolution,
+    presentationMode,
+    renderProfile: mode,
     span: widget.span,
     visible: ancestorVisible && statusResolved && bool(status?.visible, true),
     readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || !statusResolved || bool(status?.readonly, false),

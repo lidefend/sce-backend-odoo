@@ -12,7 +12,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     canonical_renderer = read_text("frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts")
     required_registration_fields = (
         "componentKey", "semanticType", "supportedFieldTypes", "supportedPresentationModes",
-        "supportedRenderProfiles", "requiredCapabilities", "renderer", "fallback", "readiness",
+        "supportedRenderProfiles", "requiredCapabilities", "renderer", "rendererByFieldType", "fallback", "readiness",
     )
     for marker in required_registration_fields:
         if marker not in registry:

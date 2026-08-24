@@ -10,7 +10,7 @@ const ready = resolveProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
 });
 assert.equal(ready.readiness, 'ready');
-assert.equal(ready.renderer, 'FormSectionField');
+assert.equal(ready.renderer, 'ProfessionalBaseFieldControl');
 
 assert.throws(() => resolveProfessionalComponent({
   componentKey: 'sc.unknown', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
@@ -28,6 +28,7 @@ const restricted: ProfessionalComponentRegistration = {
   supportedPresentationModes: ['task'],
   supportedRenderProfiles: ['edit'],
   requiredCapabilities: ['relation.read'],
+  rendererByFieldType: {},
 };
 const testRegistry = new Map([[restricted.componentKey, restricted]]);
 const fallbackRegistry = new Map([["sc.test.fallback", {

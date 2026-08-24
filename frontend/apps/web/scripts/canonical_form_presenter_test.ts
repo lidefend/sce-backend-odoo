@@ -738,6 +738,10 @@ const fields = collectFields([...model.zones.primary, ...model.zones.subordinate
 assert.deepEqual(fields.map((field) => field.fieldCode), ['name', 'state', 'line_ids']);
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.required, true);
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.hideLabel, true);
+assert.equal(fields.find((field) => field.fieldCode === 'name')?.componentResolution.renderer, 'ProfessionalBaseFieldControl');
+assert.equal(fields.find((field) => field.fieldCode === 'name')?.presentationMode, 'workspace');
+assert.equal(fields.find((field) => field.fieldCode === 'name')?.renderProfile, 'edit');
+assert.equal(fields.find((field) => field.fieldCode === 'line_ids')?.componentResolution.renderer, 'FormSectionField');
 assert.equal(fields.find((field) => field.fieldCode === 'state')?.hideLabel, false);
 assert.equal(canonicalFieldToFormSection(fields.find((field) => field.fieldCode === 'name')!).hideLabel, true);
 assert.equal(fields.find((field) => field.fieldCode === 'state')?.visible, false);

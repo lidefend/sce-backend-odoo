@@ -115,6 +115,19 @@
                   <span>{{ option.label }}</span>
                 </label>
               </div>
+              <ProfessionalBaseFieldControl
+                v-else-if="usesProfessionalBaseField(field)"
+                :field="field"
+                :control-id="fieldControlId(field)"
+                :described-by="fieldDescribedBy(field)"
+                :placeholder="field.inputPlaceholder || (field.type === 'selection' ? selectPlaceholderText(field) : inputPlaceholderText(field))"
+                :has-readonly-override="Boolean(slots.readonly)"
+                @update:value="emitFieldChange(field, $event)"
+              >
+                <template #readonly="readonlySlot">
+                  <slot name="readonly" v-bind="readonlySlot" />
+                </template>
+              </ProfessionalBaseFieldControl>
               <SceneFieldControl
                 v-else-if="usesSceneFieldControl(field) && !(preferReadonlyFacts && field.readonly)"
                 :field="sceneField(field)"
@@ -134,41 +147,15 @@
                   <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </template>
-              <template v-else-if="isBaseFieldType(field.type)">
-                <input
-                  v-if="field.type === 'boolean'"
-                  :id="fieldControlId(field)"
-                  :checked="Boolean(field.value)"
-                  class="input-checkbox"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
-                  type="checkbox"
-                  @change="emitFieldChange(field, ($event.target as HTMLInputElement).checked)"
-                />
+              <template v-else-if="isLegacyComplexField(field)">
                 <ScFileField
-                  v-else-if="field.type === 'binary'"
+                  v-if="field.type === 'binary'"
                   :id="fieldControlId(field)"
                   :required="field.required"
                   :invalid="field.invalid"
                   :described-by="fieldDescribedBy(field)"
                   @change="emitBinaryFieldChange(field, $event)"
                 />
-                <ScSelect
-                  v-else-if="field.type === 'selection'"
-                  :id="fieldControlId(field)"
-                  :model-value="String(field.inputValue ?? '')"
-                  class="input"
-                  :required="field.required"
-                  :invalid="field.invalid"
-                  :described-by="fieldDescribedBy(field)"
-                  @update:model-value="emitFieldChange(field, $event)"
-                >
-                  <option v-if="!field.required" value="">{{ selectPlaceholderText(field) }}</option>
-                  <option v-for="option in field.selectionOptions || []" :key="`${field.name}-${option.value}`" :value="option.value">
-                    {{ option.label }}
-                  </option>
-                </ScSelect>
                 <div v-else-if="field.type === 'many2one'" :class="['many2one-widget-shell', { 'many2one-widget-shell--avatar': isAvatarMany2oneWidget(field) }]">
                   <span v-if="isAvatarMany2oneWidget(field)" class="many2one-avatar" aria-hidden="true">
                     {{ avatarText(many2oneTextValue(field)) }}
@@ -273,30 +260,6 @@
                     @update:model-value="emitDateRangeEndChange(field, $event)"
                   />
                 </div>
-                <ScDateField
-                  v-else-if="field.type === 'date' || field.type === 'datetime'"
-                  :id="fieldControlId(field)"
-                  :model-value="String(field.inputValue ?? '')"
-                  class="input"
-                  :with-time="field.type === 'datetime'"
-                  :required="field.required"
-                  :invalid="field.invalid"
-                  :described-by="fieldDescribedBy(field)"
-                  :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                  @update:model-value="emitFieldChange(field, $event)"
-                />
-                <textarea
-                  v-else-if="isMultilineField(field.type)"
-                  :id="fieldControlId(field)"
-                  :value="String(field.inputValue ?? '')"
-                  class="input input--textarea"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
-                  :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                  rows="4"
-                  @input="emitFieldChange(field, ($event.target as HTMLTextAreaElement).value)"
-                />
                 <div v-else-if="field.type === 'monetary'" class="field-monetary-control">
                   <input
                     :id="fieldControlId(field)"
@@ -312,18 +275,6 @@
                   />
                   <span v-if="field.currencyLabel" class="field-currency-label">{{ field.currencyLabel }}</span>
                 </div>
-                <input
-                  v-else
-                  :id="fieldControlId(field)"
-                  :value="String(field.inputValue ?? '')"
-                  class="input"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
-                  :type="inputType(field.type)"
-                  :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                  @input="emitFieldChange(field, ($event.target as HTMLInputElement).value)"
-                />
               </template>
               <template v-else>
                 <input
@@ -356,7 +307,8 @@ import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
-import ScSelect from '../design-system/ScSelect.vue';
+import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
+import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
@@ -470,25 +422,19 @@ const slots = useSlots();
 const toneClass = computed(() => (props.tone === 'advanced' ? 'template-form-section--advanced' : 'template-form-section--core'));
 const showHead = computed(() => Boolean(props.title || slots.action));
 const allFieldsReadonly = computed(() => props.fields.length > 0 && props.fields.every((field) => field.readonly));
-function isBaseFieldType(type: TemplateFieldType) {
-  return [
-    'char',
-    'text',
-    'html',
-    'selection',
-    'many2one',
-    'boolean',
-    'binary',
-    'date',
-    'datetime',
-    'integer',
-    'float',
-    'monetary',
-  ].includes(String(type || '').trim().toLowerCase());
+function isLegacyComplexField(field: FormSectionFieldSchema) {
+  return ['many2one', 'binary', 'monetary'].includes(String(field.type || '').trim().toLowerCase())
+    || isDateRangeWidget(field);
 }
 
 function isRelationEditorField(field: FormSectionFieldSchema) {
   return ['many2many', 'one2many'].includes(String(field.type || '').trim().toLowerCase());
+}
+
+function usesProfessionalBaseField(field: FormSectionFieldSchema) {
+  const candidate = isProfessionalBaseFieldCandidate(String(field.type || ''), fieldWidget(field));
+  if (!candidate) return false;
+  return !field.componentRenderer || field.componentRenderer === 'ProfessionalBaseFieldControl';
 }
 
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
