@@ -51,7 +51,7 @@ try {
       const companyTrigger = page.getByRole('button', { name: '公司空间：切换公司' });
       await companyTrigger.click();
       const companySearchRoot = page.locator('[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"]');
-      const companySearch = companySearchRoot.locator('input');
+      const companySearch = page.locator('input[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"], [data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"] input');
       await companySearch.waitFor({ state: 'visible', timeout: 15000 });
       await companySearch.fill('__primitive_adapter_probe__');
       const inputContract = {

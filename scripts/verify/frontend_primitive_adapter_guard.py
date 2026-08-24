@@ -49,6 +49,10 @@ def validate(root: Path = ROOT) -> list[str]:
         if "useModalLifecycle" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
             errors.append(f"{modal} must use the shared modal lifecycle and dialog semantics")
 
+    input_text = (design / "ScInput.vue").read_text(encoding="utf-8") if (design / "ScInput.vue").is_file() else ""
+    if "<input" not in input_text or ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:
+        errors.append("ScInput must place accessible state on the native input control")
+
     if not bridge:
         errors.append("missing TDesign primitive bridge")
     else:

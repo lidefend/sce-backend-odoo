@@ -1,52 +1,70 @@
 <template>
-  <TDesignInput
-    v-bind="semanticPrimitiveIdentity('ScInput')"
-    :model-value="modelValue"
-    :size="normalizePrimitiveSize(size)"
-    :status="status === 'default' ? undefined : status"
-    :disabled="disabled"
-    :readonly="readonly"
-    :loading="loading"
+  <input
+    class="sc-input"
+    data-semantic-component="ScInput"
+    data-semantic-layer="primitive"
+    :data-size="normalizePrimitiveSize(size)"
+    :data-status="status"
+    :value="modelValue"
     :type="type"
+    :disabled="disabled || loading"
+    :readonly="readonly"
     :placeholder="placeholder"
-    :clearable="clearable"
+    :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
     :aria-invalid="status === 'error' || undefined"
-    @update:model-value="emit('update:modelValue', $event)"
-    @change="emit('change', $event)"
-    @input="emit('input', $event)"
-    @focus="emit('focus', $event)"
-    @blur="emit('blur', $event)"
+    @input="onInput"
+    @change="onChange"
+    @focus="onFocus"
+    @blur="onBlur"
   />
 </template>
 
 <script setup lang="ts">
-import { TDesignInput } from './tdesignPrimitiveBridge';
-import {
-  normalizePrimitiveSize,
-  semanticPrimitiveIdentity,
-  type ScPrimitiveSize,
-  type ScPrimitiveStatus,
-} from './primitiveAdapter';
+import { normalizePrimitiveSize, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
-defineProps<{
+const props = withDefaults(defineProps<{
   modelValue?: string | number;
   size?: ScPrimitiveSize;
   status?: ScPrimitiveStatus;
   disabled?: boolean;
   readonly?: boolean;
   loading?: boolean;
-  clearable?: boolean;
   type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password';
   placeholder?: string;
   describedBy?: string;
-}>();
+}>(), {
+  modelValue: '',
+  size: 'medium',
+  status: 'default',
+  type: 'text',
+  placeholder: undefined,
+  describedBy: undefined,
+});
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string | number];
-  change: [value: string | number, context?: unknown];
-  input: [value: string | number, context?: unknown];
-  focus: [value: string | number, context?: unknown];
-  blur: [value: string | number, context?: unknown];
+  'update:modelValue': [value: string];
+  input: [value: string, event: Event];
+  change: [value: string, event: Event];
+  focus: [value: string | number, event: FocusEvent];
+  blur: [value: string | number, event: FocusEvent];
 }>();
+
+function eventValue(event: Event): string {
+  return (event.target as HTMLInputElement).value;
+}
+function onInput(event: Event) {
+  const value = eventValue(event);
+  emit('update:modelValue', value);
+  emit('input', value, event);
+}
+function onChange(event: Event) {
+  emit('change', eventValue(event), event);
+}
+function onFocus(event: FocusEvent) {
+  emit('focus', props.modelValue, event);
+}
+function onBlur(event: FocusEvent) {
+  emit('blur', props.modelValue, event);
+}
 </script>

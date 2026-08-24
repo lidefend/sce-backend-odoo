@@ -23,8 +23,9 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         )
         for name in PRIMITIVES:
             modal_contract = "<!-- useModalLifecycle role=\"dialog\" aria-modal=\"true\" -->" if name in {"ScDialog", "ScDrawer"} else ""
+            input_contract = '<input :aria-describedby="describedBy" :aria-invalid="invalid" />' if name == "ScInput" else ""
             (design / f"{name}.vue").write_text(
-                f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive" /></template>{modal_contract}\n',
+                f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{input_contract}</div></template>{modal_contract}\n',
                 encoding="utf-8",
             )
         return root
@@ -68,6 +69,15 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("shared modal lifecycle" in error for error in validate(root)))
+
+    def test_input_without_native_accessibility_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScInput.vue"
+        source.write_text(
+            '<template><div data-semantic-component="ScInput" data-semantic-layer="primitive" /></template>\n',
+            encoding="utf-8",
+        )
+        self.assertTrue(any("native input control" in error for error in validate(root)))
 
 
 if __name__ == "__main__":
