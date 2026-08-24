@@ -76,13 +76,13 @@
         <button v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
         <button v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
         <button v-if="canonicalLocalSavePrimary" data-product-primary-action data-action-ref="form.save" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('canonical-save')">{{ mode === 'create' ? '保存草稿' : '保存修改' }}</button>
-        <button v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" :data-product-primary-action="action.tier === 'primary' || undefined" :data-action-ref="action.actionRef.actionId" :data-backend-identity="action.actionRef.backendIdentity" :class="canonicalButtonClass(action)" :disabled="busy || !action.enabled" :title="action.reasonCode || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+        <button v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :class="canonicalButtonClass(action)" :disabled="busy || !action.enabled" :title="action.reasonCode || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
       </span>
       <details v-if="presentedOverflowActions.length || canonicalPresentedOverflowActions.length" class="form-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
         <div>
           <button v-for="action in presentedOverflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-for="action in canonicalPresentedOverflowActions" :key="`canonical-hdr-more-${action.key}`" :data-action-ref="action.actionRef.actionId" :data-backend-identity="action.actionRef.backendIdentity" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="action.reasonCode || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+          <button v-for="action in canonicalPresentedOverflowActions" :key="`canonical-hdr-more-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="action.reasonCode || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
         </div>
       </details>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
@@ -178,6 +178,17 @@ function actionEvidenceAttributes(action: ContractAction | null) {
     'data-action-enabled': String(action.enabled),
     'data-action-allowed': String(action.authorizationAllowed !== false),
     'data-visible-profiles': action.visibleProfiles.join(','),
+  };
+}
+
+function canonicalActionEvidenceAttributes(action: CanonicalFormAction) {
+  return {
+    'data-action-ref': action.actionRef.actionId,
+    'data-action-key': action.key,
+    'data-backend-identity': action.actionRef.backendIdentity,
+    'data-action-method': action.actionRef.button?.name || action.actionRef.button?.method || '',
+    'data-action-enabled': String(action.enabled),
+    'data-action-allowed': String(action.actionRef.allowed === true),
   };
 }
 

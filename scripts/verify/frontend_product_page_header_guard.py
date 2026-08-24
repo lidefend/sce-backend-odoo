@@ -41,6 +41,9 @@ def validate() -> list[str]:
     for marker in (':presentation-mode="presentationMode"', ':render-profile="mode"', ':dirty-state="headerDirtyState"'):
         if marker not in contract:
             failures.append(f"contract header misses formal axis {marker}")
+    for marker in ('canonicalActionEvidenceAttributes(action)', "'data-action-method'", "'data-action-enabled'", "'data-action-allowed'"):
+        if marker not in contract:
+            failures.append(f"canonical header action misses evidence marker {marker}")
     action_view = source("frontend/apps/web/src/views/ActionView.vue")
     if "<ProductPageHeader" not in action_view or '<h1 class="sc-visually-hidden">{{ vm.page.title }}</h1>' in action_view:
         failures.append("ActionView does not delegate collection/scene identity to ProductPageHeader")
