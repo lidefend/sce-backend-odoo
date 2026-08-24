@@ -18,7 +18,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         if marker not in registry:
             failures.append(f"registry missing required field {marker}")
     for marker in (
-        "PROFESSIONAL_COMPONENT_UNREGISTERED", "PROFESSIONAL_COMPONENT_FIELD_TYPE_MISMATCH",
+        "PROFESSIONAL_COMPONENT_UNREGISTERED", "PROFESSIONAL_COMPONENT_FIELD_TYPE_MISSING", "PROFESSIONAL_COMPONENT_FIELD_TYPE_MISMATCH",
         "PROFESSIONAL_COMPONENT_PRESENTATION_MODE_MISMATCH", "PROFESSIONAL_COMPONENT_RENDER_PROFILE_MISMATCH",
         "PROFESSIONAL_COMPONENT_CAPABILITY_MISSING",
     ):

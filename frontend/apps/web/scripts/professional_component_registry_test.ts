@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import {
-  professionalComponentRegistry,
+  professionalComponentRegistrations,
   resolveProfessionalComponent,
   resolveProfessionalComponentRegistration,
   type ProfessionalComponentRegistration,
@@ -12,18 +12,15 @@ const ready = resolveProfessionalComponent({
 assert.equal(ready.readiness, 'ready');
 assert.equal(ready.renderer, 'FormSectionField');
 
-const fallback = resolveProfessionalComponent({
-  componentKey: 'sc.tree.data', fieldType: 'one2many', presentationMode: 'workspace', renderProfile: 'readonly',
-});
-assert.equal(fallback.readiness, 'readable_fallback');
-assert.equal(fallback.fallback, 'ReadableFieldValue');
-
 assert.throws(() => resolveProfessionalComponent({
   componentKey: 'sc.unknown', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
 }), /PROFESSIONAL_COMPONENT_UNREGISTERED/);
 assert.throws(() => resolveProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'many2one', presentationMode: 'task', renderProfile: 'edit',
 }), /PROFESSIONAL_COMPONENT_FIELD_TYPE_MISMATCH/);
+assert.throws(() => resolveProfessionalComponent({
+  componentKey: 'sc.input.text', fieldType: '', presentationMode: 'task', renderProfile: 'edit',
+}), /PROFESSIONAL_COMPONENT_FIELD_TYPE_MISSING/);
 
 const restricted: ProfessionalComponentRegistration = {
   ...ready,
@@ -33,6 +30,15 @@ const restricted: ProfessionalComponentRegistration = {
   requiredCapabilities: ['relation.read'],
 };
 const testRegistry = new Map([[restricted.componentKey, restricted]]);
+const fallbackRegistry = new Map([["sc.test.fallback", {
+  ...restricted,
+  componentKey: 'sc.test.fallback',
+  readiness: 'readable_fallback' as const,
+  fallback: 'ReadableFieldValue',
+}]]);
+assert.equal(resolveProfessionalComponentRegistration(fallbackRegistry, {
+  componentKey: 'sc.test.fallback', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit', capabilities: ['relation.read'],
+}).fallback, 'ReadableFieldValue');
 assert.throws(() => resolveProfessionalComponentRegistration(testRegistry, {
   componentKey: restricted.componentKey, fieldType: 'char', presentationMode: 'workspace', renderProfile: 'edit',
 }), /PROFESSIONAL_COMPONENT_PRESENTATION_MODE_MISMATCH/);
@@ -50,5 +56,5 @@ assert.equal(resolveProfessionalComponentRegistration(testRegistry, {
   capabilities: ['relation.read'],
 }).componentKey, restricted.componentKey);
 
-assert.equal(professionalComponentRegistry.size, 16);
-console.log('[professional_component_registry_test] PASS cases=9');
+assert.equal(professionalComponentRegistrations.length, 16);
+console.log('[professional_component_registry_test] PASS cases=10');

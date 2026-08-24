@@ -48,7 +48,7 @@ const REGISTRATIONS = [
   registration('sc.input.date', 'date', ['date']),
   registration('sc.input.datetime', 'datetime', ['datetime']),
   registration('sc.table.data', 'detail_collection', ['one2many', 'many2many']),
-  registration('sc.tree.data', 'hierarchical_collection', ['one2many', 'many2many'], 'readable_fallback'),
+  registration('sc.tree.data', 'hierarchical_collection', ['one2many', 'many2many']),
   registration('sc.relation.many2one', 'relation', ['many2one']),
   registration('sc.relation.table', 'detail_collection', ['one2many', 'many2many']),
   registration('sc.select.tags', 'tag_collection', ['many2many']),
@@ -57,8 +57,9 @@ const REGISTRATIONS = [
   registration('sc.display.text', 'readable_value', ['*']),
 ] as const;
 
-export const professionalComponentRegistry: ReadonlyMap<string, ProfessionalComponentRegistration> = Object.freeze(
-  new Map(REGISTRATIONS.map((entry) => [entry.componentKey, entry])),
+export const professionalComponentRegistrations: readonly ProfessionalComponentRegistration[] = Object.freeze([...REGISTRATIONS]);
+const professionalComponentRegistry: ReadonlyMap<string, ProfessionalComponentRegistration> = new Map(
+  professionalComponentRegistrations.map((entry) => [entry.componentKey, entry]),
 );
 
 export type ProfessionalComponentResolutionInput = {
@@ -75,7 +76,8 @@ export function resolveProfessionalComponentRegistration(
 ): ProfessionalComponentResolution {
   const entry = registry.get(input.componentKey);
   if (!entry || entry.readiness === 'fail_closed') throw new Error(`PROFESSIONAL_COMPONENT_UNREGISTERED:${input.componentKey}`);
-  const fieldType = input.fieldType.trim().toLowerCase() || 'char';
+  const fieldType = input.fieldType.trim().toLowerCase();
+  if (!fieldType) throw new Error(`PROFESSIONAL_COMPONENT_FIELD_TYPE_MISSING:${input.componentKey}`);
   if (!entry.supportedFieldTypes.includes('*') && !entry.supportedFieldTypes.includes(fieldType)) {
     throw new Error(`PROFESSIONAL_COMPONENT_FIELD_TYPE_MISMATCH:${input.componentKey}:${fieldType}`);
   }
