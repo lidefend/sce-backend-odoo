@@ -4,6 +4,8 @@ import {
   normalizePrimitiveSize,
   normalizePrimitiveStatus,
   semanticPrimitiveIdentity,
+  tdesignDropdownOptions,
+  tdesignTabsSize,
 } from '../src/components/design-system/primitiveAdapter.ts';
 import { resolveModalKeyboardAction } from '../src/composables/modalKeyboard.ts';
 
@@ -17,6 +19,16 @@ assert.equal(normalizePrimitiveSize(), 'medium');
 assert.equal(normalizePrimitiveSize('small'), 'small');
 assert.equal(normalizePrimitiveStatus(), 'default');
 assert.equal(normalizePrimitiveStatus('error'), 'error');
+assert.equal(tdesignTabsSize('small'), 'medium');
+assert.equal(tdesignTabsSize('medium'), 'medium');
+assert.equal(tdesignTabsSize('large'), 'large');
+assert.deepEqual(tdesignDropdownOptions([
+  { value: 'open', label: 'Open' },
+  { value: 2, label: 'Disabled', disabled: true },
+]), [
+  { value: 'open', content: 'Open', disabled: false },
+  { value: 2, content: 'Disabled', disabled: true },
+]);
 
 for (const key of SC_PRIMITIVE_KEYS) {
   assert.deepEqual(semanticPrimitiveIdentity(key), {

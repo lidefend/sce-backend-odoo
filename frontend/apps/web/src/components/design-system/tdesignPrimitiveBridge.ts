@@ -11,9 +11,5 @@ export { Tabs as TDesignTabs, TabPanel as TDesignTabPanel } from 'tdesign-vue-ne
 export { Table as TDesignTable } from 'tdesign-vue-next/es/table';
 export { Badge as TDesignBadge } from 'tdesign-vue-next/es/badge';
 export { Tooltip as TDesignTooltip } from 'tdesign-vue-next/es/tooltip';
-export {
-  Dropdown as TDesignDropdown,
-  DropdownMenu as TDesignDropdownMenu,
-  DropdownItem as TDesignDropdownItem,
-} from 'tdesign-vue-next/es/dropdown';
+export { Dropdown as TDesignDropdown } from 'tdesign-vue-next/es/dropdown';
 export { Loading as TDesignLoading } from 'tdesign-vue-next/es/loading';

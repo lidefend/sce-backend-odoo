@@ -2,7 +2,7 @@
   <TDesignTabs
     v-bind="semanticPrimitiveIdentity('ScTabs')"
     :value="modelValue"
-    :size="normalizePrimitiveSize(size)"
+    :size="tdesignTabsSize(size)"
     :aria-disabled="disabled || undefined"
     @change="onChange"
   >
@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { TDesignTabPanel, TDesignTabs } from './tdesignPrimitiveBridge';
-import { normalizePrimitiveSize, semanticPrimitiveIdentity, type ScPrimitiveSize } from './primitiveAdapter';
+import { semanticPrimitiveIdentity, tdesignTabsSize, type ScPrimitiveSize } from './primitiveAdapter';
 
 export interface ScTabItem {
   value: string | number;

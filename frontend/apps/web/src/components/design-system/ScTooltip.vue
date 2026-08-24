@@ -14,7 +14,9 @@
 import { TDesignTooltip } from './tdesignPrimitiveBridge';
 import { semanticPrimitiveIdentity } from './primitiveAdapter';
 
-withDefaults(defineProps<{ content: string; placement?: string; disabled?: boolean; showArrow?: boolean }>(), {
+export type ScTooltipPlacement = 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+withDefaults(defineProps<{ content: string; placement?: ScTooltipPlacement; disabled?: boolean; showArrow?: boolean }>(), {
   placement: 'top',
   showArrow: true,
 });

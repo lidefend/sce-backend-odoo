@@ -37,8 +37,11 @@ export {
   normalizePrimitiveSize,
   normalizePrimitiveStatus,
   semanticPrimitiveIdentity,
+  tdesignDropdownOptions,
+  tdesignTabsSize,
 } from './primitiveAdapter';
 export type {
+  ScDropdownOptionInput,
   ScPrimitiveKey,
   ScPrimitiveSize,
   ScPrimitiveStateProps,

@@ -40,3 +40,21 @@ export function normalizePrimitiveSize(size?: ScPrimitiveSize): ScPrimitiveSize 
 export function normalizePrimitiveStatus(status?: ScPrimitiveStatus): ScPrimitiveStatus {
   return status ?? 'default';
 }
+
+export function tdesignTabsSize(size?: ScPrimitiveSize): 'medium' | 'large' {
+  return normalizePrimitiveSize(size) === 'large' ? 'large' : 'medium';
+}
+
+export interface ScDropdownOptionInput {
+  value: string | number;
+  label: string;
+  disabled?: boolean;
+}
+
+export function tdesignDropdownOptions(items: readonly ScDropdownOptionInput[]) {
+  return items.map((item) => ({
+    value: item.value,
+    content: item.label,
+    disabled: Boolean(item.disabled),
+  }));
+}
