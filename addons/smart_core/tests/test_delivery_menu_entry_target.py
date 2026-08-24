@@ -109,6 +109,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(root["state"], "container")
         self.assertEqual(leaf["parent_chain"], [{"key": "root:synthetic", "menu_id": None, "label": "业务根"}])
         self.assertEqual(leaf["route"], "/a/30?menu_id=3")
+        self.assertEqual(leaf["order"], 0)
         self.assertEqual(
             leaf["authority"]["key"],
             "PRIMARY_NAV:test.menu_leaf:test.action_leaf",
@@ -135,6 +136,18 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
                     "source": "route_authority",
                 }],
             })
+
+    def test_canonical_navigation_projection_rejects_duplicate_menu_identity(self):
+        leaf = {"key": "child", "menu_id": 2, "label": "子项", "meta": {"action_id": 30}}
+        authority = {
+            "primary_actions": [{
+                "route_kind": "PRIMARY_NAV", "menu_id": 2, "menu_xmlid": "test.child",
+                "action_id": 30, "action_xmlid": "test.action", "route": "/a/30?menu_id=2",
+                "source": "route_authority",
+            }],
+        }
+        with self.assertRaisesRegex(ValueError, "identity is duplicated"):
+            menu_service.MenuService.project_canonical_navigation([leaf, dict(leaf)], authority)
 
     def test_followup_nodes_are_last_within_each_sibling_group(self):
         service = menu_service.MenuService()

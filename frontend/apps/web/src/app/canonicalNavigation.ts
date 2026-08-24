@@ -180,6 +180,23 @@ export function createCanonicalNavigationModel(
       'navigation requires an authenticated route-authority principal',
     );
   }
+  const nodes = buildNodes(nav, authorityIndex(routeAuthority), []);
+  const keys = new Set<string>();
+  const menuIds = new Set<number>();
+  const visit = (items: CanonicalNavigationNode[]) => {
+    for (const node of items) {
+      if (keys.has(node.key) || (node.menuId !== null && menuIds.has(node.menuId))) {
+        throw new CanonicalNavigationError(
+          'CANONICAL_NAVIGATION_IDENTITY_DUPLICATED',
+          `canonical navigation identity must be unique (${node.key})`,
+        );
+      }
+      keys.add(node.key);
+      if (node.menuId !== null) menuIds.add(node.menuId);
+      visit(node.children);
+    }
+  };
+  visit(nodes);
   return {
     schemaVersion: '1.0',
     source: 'system.init.navigation',
@@ -188,7 +205,7 @@ export function createCanonicalNavigationModel(
       companyId: routeAuthority.principal_scope.company_id,
       roleCode: routeAuthority.principal_scope.role_code,
     },
-    nodes: buildNodes(nav, authorityIndex(routeAuthority), []),
+    nodes,
   };
 }
 

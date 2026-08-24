@@ -588,6 +588,8 @@ class MenuService:
         """Attach the server-owned presentation identity to the final authorized tree."""
         authority = route_authority if isinstance(route_authority, dict) else {}
         authority_by_pair = {}
+        seen_keys = set()
+        seen_menu_ids = set()
         for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
             for entry in authority.get(bucket) or []:
                 if not isinstance(entry, dict):
@@ -623,6 +625,11 @@ class MenuService:
             key = node_key(node, menu_id)
             if not key or not label or (action_id > 0 and menu_id <= 0):
                 raise ValueError("canonical navigation node identity is incomplete")
+            if key in seen_keys or (menu_id > 0 and menu_id in seen_menu_ids):
+                raise ValueError("canonical navigation node identity is duplicated")
+            seen_keys.add(key)
+            if menu_id > 0:
+                seen_menu_ids.add(menu_id)
             entry = authority_by_pair.get((menu_id, action_id)) if action_id > 0 else None
             if action_id > 0 and not entry:
                 raise ValueError(
@@ -680,7 +687,7 @@ class MenuService:
                 "authority": authority_projection,
                 "state": state,
                 "disabled_reason": disabled_reason or None,
-                "order": int(node.get("sequence") or meta.get("sequence") or sibling_index),
+                "order": sibling_index,
             }
             return projected
 

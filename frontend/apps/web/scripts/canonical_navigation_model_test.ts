@@ -26,7 +26,7 @@ const nav: NavNode[] = [{
   canonical_navigation: {
     schema_version: '1.0', key: 'root', menu_id: 1, action_id: null, parent_chain: [], label: 'Root',
     icon: null, route: null, authority: { state: 'container', source: 'system.init.navigation.nav', key: 'container:1' },
-    state: 'container', disabled_reason: null, order: 20,
+    state: 'container', disabled_reason: null, order: 0,
   },
   children: [{
     key: 'group', menu_id: 2, label: 'Group',
@@ -47,7 +47,7 @@ const nav: NavNode[] = [{
         ],
         label: 'Leaf', icon: 'folder', route: '/a/30?menu_id=3',
         authority: { state: 'allowed', source: 'route_authority', key: 'PRIMARY_NAV:test.menu_leaf:test.action_leaf' },
-        state: 'enabled', disabled_reason: null, order: 7,
+        state: 'enabled', disabled_reason: null, order: 0,
       },
       children: [],
     }],
@@ -117,4 +117,13 @@ assert.throws(
   (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_EMPTY_NODE',
 );
 
-console.log('[canonical_navigation_model_test] PASS cases=7');
+const duplicateNav = structuredClone(nav);
+const duplicateLeaf = structuredClone(duplicateNav[0].children?.[0]?.children?.[0]);
+if (!duplicateLeaf) throw new Error('test duplicate leaf missing');
+duplicateNav[0].children?.[0]?.children?.push(duplicateLeaf);
+assert.throws(
+  () => createCanonicalNavigationModel(duplicateNav, authority),
+  (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_IDENTITY_DUPLICATED',
+);
+
+console.log('[canonical_navigation_model_test] PASS cases=8');
