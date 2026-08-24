@@ -1,6 +1,15 @@
 <template>
   <ul class="tree" :class="[`depth-${level}`, { 'tree--root': level === 0 }]">
-    <li v-for="node in nodes" :key="node.key">
+    <li
+      v-for="node in nodes"
+      :key="node.key"
+      data-navigation-node="canonical"
+      :data-navigation-key="node.key"
+      :data-navigation-menu-id="node.menuId ?? ''"
+      :data-navigation-action-id="node.actionId ?? ''"
+      :data-navigation-state="node.state"
+      :data-navigation-depth="level"
+    >
       <div
         class="node"
         :class="{
@@ -19,6 +28,7 @@
           class="label"
           :disabled="isBlocked(node)"
           :title="blockedTitle(node) || nodeLabel(node)"
+          :aria-current="activeMenuId === node.menuId ? 'page' : undefined"
           @click="onSelect(node)"
         >
           <span class="label-text" :title="nodeLabel(node)">{{ nodeLabel(node) }}</span>
