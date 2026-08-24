@@ -82,8 +82,9 @@ require(
 )
 require(
     "composeCanonicalFormFloorplan" in form_host
-    and 'v-if="floorplan.decisionMode"' in form_host
-    and '<article v-else class="sc-native-contract-page"' in form_host
+    and '<TaskFormPattern v-if="floorplan.decisionMode"' in form_host
+    and '<WorkspaceFormPattern v-else' in form_host
+    and '<article class="sc-native-contract-page"' in form_host
     and "nativeBridge.primaryNodes" in form_host
     and "nativeBridge.subordinateNodes" in form_host,
     "semantic readonly forms must use the canonical floorplan while native structure remains an explicit fallback",
