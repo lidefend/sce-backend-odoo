@@ -1,0 +1,15 @@
+/* Token v1 component compatibility aliases. Component-local values stay out of pages. */
+:root {
+  --sc-space-2xs: calc(var(--sc-base-space-2xs) * 1px);
+  --sc-space-xs: calc(var(--sc-base-space-xs) * 1px);
+  --sc-space-sm: calc(var(--sc-base-space-sm) * 1px);
+  --sc-space-md: calc(var(--sc-base-space-md) * 1px);
+  --sc-space-lg: calc(var(--sc-base-space-lg) * 1px);
+  --sc-space-xl: calc(var(--sc-base-space-xl) * 1px);
+  --sc-table-header-height: calc(var(--sc-component-table-header-height) * 1px);
+  --sc-table-row-height: calc(var(--sc-component-table-row-height) * 1px);
+  --sc-product-control-height: calc(var(--sc-component-button-height-md) * 1px);
+  --sc-product-radius-control: var(--sc-base-radius-sm);
+  --sc-product-radius-panel: var(--sc-component-panel-radius);
+  --sc-product-radius-dialog: var(--sc-component-dialog-radius);
+}

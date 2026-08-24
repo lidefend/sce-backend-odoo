@@ -1,13 +1,21 @@
-@import './tokens/index.css';
+/* Token v1 semantic compatibility aliases. Do not add palette values here. */
+:root {
+  --sc-color-surface: var(--sc-semantic-surface-page);
+  --sc-color-surface-subtle: var(--sc-semantic-surface-subtle);
+  --sc-color-surface-raised: var(--sc-semantic-surface-panel);
+  --sc-color-border: var(--sc-semantic-border-default);
+  --sc-color-border-strong: var(--sc-semantic-border-strong);
+  --sc-color-text-primary: var(--sc-semantic-text-primary);
+  --sc-color-text-secondary: var(--sc-semantic-text-secondary);
+  --sc-color-text-muted: var(--sc-semantic-text-muted);
+  --sc-color-interactive: var(--sc-semantic-surface-interactive);
+  --sc-color-focus: var(--sc-semantic-focus-ring);
 
-/* A width contract is only reliable when padding and borders stay inside it. */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-:root[data-sc-theme="dark"] {
+  --sc-app-bg: var(--sc-semantic-surface-page);
+  --sc-app-panel: var(--sc-semantic-surface-panel);
+  --sc-app-text-primary: var(--sc-semantic-text-primary);
+  --sc-app-text-secondary: var(--sc-semantic-text-secondary);
+  --sc-app-text-muted: var(--sc-semantic-text-muted);
   --sc-app-border: var(--sc-semantic-border-default);
   --sc-app-border-strong: var(--sc-semantic-border-strong);
   --sc-app-muted-bg: var(--sc-semantic-surface-panel-muted);
@@ -18,6 +26,10 @@
   --sc-app-selected-border: var(--sc-semantic-border-selected);
   --sc-app-selected-text: var(--sc-semantic-text-selected);
   --sc-app-shadow: var(--sc-semantic-shadow-panel);
+  --sc-app-shadow-popover: var(--sc-semantic-shadow-popover);
+  --sc-app-shadow-modal: var(--sc-semantic-shadow-modal);
+  --sc-app-overlay: var(--sc-semantic-surface-overlay);
+  --sc-app-accent: var(--sc-semantic-surface-interactive);
   --sc-app-focus-ring: var(--sc-semantic-focus-ring);
   --sc-app-danger-bg: var(--sc-semantic-state-danger-bg);
   --sc-app-danger-border: var(--sc-semantic-state-danger-border);
@@ -31,19 +43,4 @@
   --sc-app-info-bg: var(--sc-semantic-state-info-bg);
   --sc-app-info-border: var(--sc-semantic-state-info-border);
   --sc-app-info-text: var(--sc-semantic-state-info-text);
-}
-
-html,
-body,
-#app {
-  min-height: 100%;
-  margin: 0;
-  background: var(--sc-app-bg);
-  color: var(--sc-app-text-primary);
-}
-
-html[data-sc-theme="dark"],
-html[data-sc-theme="dark"] body,
-html[data-sc-theme="dark"] #app {
-  color-scheme: dark;
 }

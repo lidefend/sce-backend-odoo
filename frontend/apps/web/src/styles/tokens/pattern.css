@@ -1,0 +1,57 @@
+/* Token v1 page-pattern aliases. They retain legacy computed values without owning primitives. */
+:root {
+  --sc-product-space-1: var(--sc-space-xs);
+  --sc-product-space-2: var(--sc-space-md);
+  --sc-product-space-3: var(--sc-space-lg);
+  --sc-product-space-4: var(--sc-space-xl);
+  --sc-page-inline-padding: var(--sc-space-lg);
+  --sc-page-section-gap: var(--sc-space-lg);
+  --sc-surface-padding: var(--sc-space-md);
+  --sc-toolbar-gap: var(--sc-space-xs);
+  --sc-toolbar-group-gap: var(--sc-space-sm);
+  --sc-card-padding: var(--sc-space-md);
+  --sc-card-gap: var(--sc-space-sm);
+  --sc-field-row-gap: var(--sc-space-sm);
+  --sc-field-column-gap: var(--sc-space-md);
+  --sc-label-control-gap: var(--sc-space-2xs);
+  --sc-dialog-padding: var(--sc-space-md);
+  --sc-nav-row-gap: var(--sc-space-xs);
+  --sc-table-cell-inline-padding: var(--sc-space-sm);
+  --sc-workspace-frame-max: var(--sc-pattern-workspace-form-frame-max-width);
+  --sc-content-reading-max: 72ch;
+  --sc-content-record-max: var(--sc-pattern-workspace-form-content-max-width);
+  --sc-content-form-max: var(--sc-pattern-task-form-content-max-width);
+  --sc-page-padding-wide: var(--sc-space-lg);
+  --sc-page-padding-compact: var(--sc-space-md);
+  --sc-page-padding-mobile: var(--sc-space-sm);
+  --sc-page-padding: var(--sc-page-padding-wide);
+  --sc-product-page-gutter: var(--sc-page-padding);
+  --sc-product-text-sm: calc(var(--sc-base-font-size-sm) * 1px);
+  --sc-product-text-body: calc(var(--sc-base-font-size-md) * 1px);
+  --sc-product-text-section: calc(var(--sc-base-font-size-lg) * 1px);
+  --sc-product-text-title: calc(var(--sc-pattern-page-header-title-size) * 1px);
+  --sc-product-line-body: 22px;
+  --sc-product-table-row-height: var(--sc-table-row-height);
+  --sc-product-toolbar-height: var(--sc-pattern-collection-toolbar-height);
+  --sc-product-list-toolbar-height: 46px;
+  --sc-touch-target-min: 44px;
+  --sc-product-shadow-overlay: var(--sc-pattern-overlay-shadow);
+  --sc-shell-topbar-height: calc(var(--sc-pattern-app-shell-topbar-height) * 1px);
+  --sc-shell-sidebar-width: calc(var(--sc-pattern-app-shell-sidebar-width) * 1px);
+  --sc-shell-sidebar-collapsed-width: calc(var(--sc-pattern-app-shell-sidebar-collapsed-width) * 1px);
+  --sc-shell-navigation-item-height: calc(var(--sc-component-shell-navigation-item-height) * 1px);
+  --sc-shell-page-gutter: calc(var(--sc-pattern-app-shell-page-gutter) * 1px);
+  --sc-table-header-bg: var(--sc-semantic-surface-table-header, var(--sc-app-muted-bg));
+  --sc-table-divider: var(--sc-semantic-border-table, var(--sc-app-border));
+  --sc-navigation-bg: var(--sc-semantic-surface-navigation, var(--sc-app-panel));
+  --sc-navigation-active-bg: var(--sc-semantic-surface-navigation-active, var(--sc-app-info-bg));
+  --sc-text-link: var(--sc-semantic-text-link, var(--sc-app-accent));
+}
+
+@media (max-width: 1280px) {
+  :root { --sc-page-padding: var(--sc-page-padding-compact); }
+}
+
+@media (max-width: 768px) {
+  :root { --sc-page-padding: var(--sc-page-padding-mobile); }
+}

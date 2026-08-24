@@ -1,0 +1,6 @@
+/* Token v1 is the only Web style-token entrypoint. */
+@import './primitive.css';
+@import './semantic.css';
+@import './component.css';
+@import './pattern.css';
+@import './tdesign-bridge.css';
