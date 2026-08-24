@@ -144,6 +144,13 @@
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2many(field) && relationAdapter" :field="field">
                 <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
               </ProfessionalRelationFieldControl>
+              <ProfessionalDetailCollectionControl
+                v-else-if="usesProfessionalOne2many(field) && relationAdapter"
+                :field="field"
+                :adapter="relationAdapter"
+              >
+                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
+              </ProfessionalDetailCollectionControl>
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field) && field.readonly" :field="field">
                 <slot name="readonly" :field="field">
                   <span class="readonly-value">{{ readonlyText(field) }}</span>
@@ -323,9 +330,11 @@ import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
 import ProfessionalBusinessValueControl from '../professional-fields/ProfessionalBusinessValueControl.vue';
+import ProfessionalDetailCollectionControl from '../professional-fields/ProfessionalDetailCollectionControl.vue';
 import ProfessionalRelationFieldControl from '../professional-fields/ProfessionalRelationFieldControl.vue';
 import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
+import { isProfessionalDetailCollectionField } from '../professional-fields/professionalDetailCollectionModel';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
@@ -472,8 +481,14 @@ function usesProfessionalMany2many(field: FormSectionFieldSchema) {
     && isProfessionalRelationField(field);
 }
 
+function usesProfessionalOne2many(field: FormSectionFieldSchema) {
+  return field.type === 'one2many'
+    && field.componentRenderer === 'ProfessionalDetailCollectionControl'
+    && isProfessionalDetailCollectionField(field);
+}
+
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
-  if (isProfessionalRelationField(field)) return false;
+  if (isProfessionalRelationField(field) || isProfessionalDetailCollectionField(field)) return false;
   return usesContractFormDriverField(field, sceneUiKit?.kit.value || 'sc-native');
 }
 

@@ -104,7 +104,7 @@
     <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
       <div v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-readonly-list">
         <article
-          v-for="row in adapter.visibleOne2manyRows(field.name)"
+          v-for="row in paginatedOne2manyRows"
           :key="row.key"
           class="o2m-readonly-row"
         >
@@ -152,7 +152,7 @@
       <span class="o2m-header-cell o2m-header-action">操作</span>
     </div>
     <div class="o2m-list">
-      <div v-for="row in adapter.visibleOne2manyRows(field.name)" :key="row.key" class="o2m-row">
+      <div v-for="row in paginatedOne2manyRows" :key="row.key" class="o2m-row">
         <p class="o2m-row-state">{{ adapter.one2manyRowStateLabel(row) }}</p>
         <div class="o2m-fields">
           <label
@@ -223,6 +223,11 @@
       </div>
     </div>
     </template>
+    <nav v-if="one2manyPageCount > 1" class="o2m-pagination" aria-label="明细分页" data-detail-collection-pagination>
+      <button type="button" class="ghost" :disabled="one2manyPage <= 1" @click="one2manyPage -= 1">上一页</button>
+      <span>第 {{ one2manyPage }} / {{ one2manyPageCount }} 页</span>
+      <button type="button" class="ghost" :disabled="one2manyPage >= one2manyPageCount" @click="one2manyPage += 1">下一页</button>
+    </nav>
   </div>
   <input
   v-else
@@ -235,11 +240,23 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScIcon from '../design-system/ScIcon.vue';
 import type { X2ManyRelationRendererProps } from './relationField.types';
 
 const props = defineProps<X2ManyRelationRendererProps>();
+const one2manyPage = ref(1);
+const one2manyPageSize = 20;
+const one2manyRows = computed(() => props.field.type === 'one2many' ? props.adapter.visibleOne2manyRows(props.field.name) : []);
+const one2manyPageCount = computed(() => Math.max(1, Math.ceil(one2manyRows.value.length / one2manyPageSize)));
+const paginatedOne2manyRows = computed(() => {
+  const start = (one2manyPage.value - 1) * one2manyPageSize;
+  return one2manyRows.value.slice(start, start + one2manyPageSize);
+});
+watch(one2manyPageCount, (count) => {
+  if (one2manyPage.value > count) one2manyPage.value = count;
+});
 
 function isMany2manyTags(field: FormSectionFieldSchema) {
   return String(field.widget || '').trim().toLowerCase() === 'many2many_tags';

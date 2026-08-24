@@ -76,6 +76,8 @@ for (const target of targets) {
     const visibleProfessionalBusinessValues = professionalBusinessValues.filter(visible);
     const professionalRelations = [...document.querySelectorAll('[data-professional-field-family="relation"]')];
     const visibleProfessionalRelations = professionalRelations.filter(visible);
+    const professionalDetailCollections = [...document.querySelectorAll('[data-professional-field-family="detail-collection"]')];
+    const visibleProfessionalDetailCollections = professionalDetailCollections.filter(visible);
     const professionalBaseContextMismatches = professionalBaseFields.filter((node) => (
       node.getAttribute('data-presentation-mode') !== headerNode?.getAttribute('data-presentation-mode')
       || node.getAttribute('data-render-profile') !== headerNode?.getAttribute('data-render-profile')
@@ -105,6 +107,10 @@ for (const target of targets) {
       visibleProfessionalRelationCount: visibleProfessionalRelations.length,
       professionalRelationKinds: [...new Set(visibleProfessionalRelations.map((node) => node.getAttribute('data-relation-kind') || ''))].filter(Boolean),
       professionalRelationCreateModes: [...new Set(visibleProfessionalRelations.map((node) => node.getAttribute('data-relation-create-mode') || ''))].filter(Boolean),
+      professionalDetailCollectionCount: professionalDetailCollections.length,
+      visibleProfessionalDetailCollectionCount: visibleProfessionalDetailCollections.length,
+      professionalDetailCollectionRows: visibleProfessionalDetailCollections.map((node) => Number(node.getAttribute('data-row-count') || 0)),
+      professionalDetailCollectionColumns: visibleProfessionalDetailCollections.map((node) => Number(node.getAttribute('data-column-count') || 0)),
       professionalBaseContextMismatchCount: professionalBaseContextMismatches.length,
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     };
@@ -126,6 +132,9 @@ for (const target of targets) {
   }
   if (target.requireRelation) {
     check(snapshot.visibleProfessionalRelationCount > 0, `${target.key}: professional relation family is not visible`);
+  }
+  if (target.requireDetailCollection) {
+    check(snapshot.visibleProfessionalDetailCollectionCount > 0, `${target.key}: professional detail collection family is not visible`);
   }
   check(snapshot.professionalBaseContextMismatchCount === 0, `${target.key}: professional base field context mismatch`);
   if (target.renderProfile === 'edit') {

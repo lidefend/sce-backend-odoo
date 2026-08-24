@@ -230,6 +230,8 @@ def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str
         return "sc.relation.many2one"
     if field_type == "many2many" and normalized != "many2many_tags":
         return "sc.relation.many2many"
+    if field_type == "one2many":
+        return "sc.relation.table"
     mapping = {
         "input": "sc.input.text",
         "binary": "sc.input.binary",

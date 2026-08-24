@@ -59,7 +59,7 @@ const REGISTRATIONS = [
   registration('sc.tree.data', 'hierarchical_collection', ['one2many', 'many2many']),
   registration('sc.relation.many2one', 'relation', ['many2one'], 'ready', 'ProfessionalRelationFieldControl'),
   registration('sc.relation.many2many', 'relation_collection', ['many2many'], 'ready', 'ProfessionalRelationFieldControl'),
-  registration('sc.relation.table', 'detail_collection', ['one2many', 'many2many']),
+  registration('sc.relation.table', 'detail_collection', ['one2many'], 'ready', 'ProfessionalDetailCollectionControl'),
   registration('sc.select.tags', 'tag_collection', ['many2many'], 'ready', 'ProfessionalRelationFieldControl'),
   registration('sc.button.action', 'action', ['action']),
   registration('sc.value.money', 'money', ['monetary'], 'ready', 'ProfessionalBusinessValueControl'),
