@@ -150,14 +150,16 @@ workflow:
           status: merged
           capabilities: [many2one, many2many, relation_dialog, relation_create_maintain, action_menu_authority]
         phase_7d:
-          status: active
+          status: merged
           capabilities: [one2many_readonly, one2many_editable, line_validation, subtotal, pagination]
       matrix: [task_create, task_edit, task_readonly, workspace_create, workspace_edit, workspace_readonly]
     phase_8:
       name: workflow_audit_and_collaboration
-      status: planned
+      status: active
       batches:
-        phase_8a: [statusbar, action_bar, disabled_reason, primary_overflow, confirm_dialog]
+        phase_8a:
+          status: active
+          capabilities: [statusbar, action_bar, disabled_reason, primary_overflow, confirm_dialog]
         phase_8b: [actor, occurred_at, event, result, disclosure, empty_state]
         phase_8c: [chatter, attachment, activity, comment, follower]
         phase_8d: [relation_search, relation_create, cancel, success_settlement, dirty_preservation, exact_once_mutation]
@@ -201,7 +203,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_7d
-    task: professional_detail_collection_family_and_authority_adapter
-    prerequisite: phase_7c_merged_and_main_synced
-    do_not_start_in_parallel: [phase_8, phase_9]
+    phase: phase_8a
+    task: professional_workflow_status_action_and_confirmation_components
+    prerequisite: phase_7d_merged_and_main_synced
+    do_not_start_in_parallel: [phase_8b, phase_8c, phase_8d]
