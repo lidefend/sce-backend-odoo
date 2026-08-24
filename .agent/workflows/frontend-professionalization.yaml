@@ -114,13 +114,13 @@ workflow:
       acceptance: [three_level_menu, exact_action_menu, forbidden_menu, deep_link, refresh, collapse, mobile_drawer, keyboard, back_forward, mutation_zero]
     phase_4:
       name: product_page_header_v1
-      status: active
+      status: merged
       branch_pattern: feature/p0-product-page-header-v1
       model_fields: [title, subtitle, breadcrumb, presentationMode, renderProfile, dirtyState, statusbar, primaryAction, overflowActions, exitAction]
       rules: [primary_action_count_is_zero_or_one, readonly_has_no_save, edit_has_direct_save_without_edit_transition, dialog_and_standalone_headers_are_separate_variants]
     phase_5:
       name: product_page_patterns_v1
-      status: planned
+      status: active
       branch_pattern: feature/p0-product-page-patterns-v1
       patterns:
         TaskFormPattern: task_focused_create_edit_and_handling
@@ -193,7 +193,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_4
-    task: product_page_header_authority_and_adapter_unification
-    prerequisite: phase_3_merged_and_main_synced
-    do_not_start_in_parallel: [phase_5, phase_6, phase_7]
+    phase: phase_5
+    task: product_page_pattern_authority_and_production_wiring
+    prerequisite: phase_4_merged_and_main_synced
+    do_not_start_in_parallel: [phase_6, phase_7, phase_8]
