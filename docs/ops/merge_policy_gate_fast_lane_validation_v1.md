@@ -41,6 +41,14 @@ Each Fast-lane proof records the following values against the exact PR head:
 
 The record is review evidence, not a replacement for the GitHub check run.
 
+## Fast-run review procedure
+
+Review the aggregate workflow before opening the individual legacy workflow
+pages. A valid Fast run has a successful aggregate check even though the
+legacy `public_guard` history-scan job is intentionally skipped. The
+`public_guard_classify` check remains visible to show the fail-closed
+classification that caused that skip.
+
 ## Follow-up evidence
 
 After this Fast proof merges, a separate product-runtime PR must prove the
