@@ -46,16 +46,5 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn('API_PROXY = "http://127.0.0.1:18081"', source)
         self.assertNotIn("docker compose", source)
 
-    def test_candidate_browser_probe_is_fixed_to_the_managed_carrier(self):
-        dev_make = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
-        target = dev_make.split("local.dev.candidate.project_create_contract_action_scope:", 1)[1].split("\n\n", 1)[0]
-        self.assertIn("local.dev.candidate.frontend.health", target)
-        self.assertIn("LOCAL_DEV_CANDIDATE_FRONTEND_BINDING=1", target)
-        probe = (ROOT / "scripts/verify/local_dev_project_create_contract_action_scope.sh").read_text(encoding="utf-8")
-        self.assertIn('1) frontend_url="http://127.0.0.1:5176"', probe)
-        self.assertIn('*) echo "invalid local.dev candidate frontend binding selector"', probe)
-        self.assertNotIn("LOCAL_DEV_FRONTEND_URL", probe)
-
-
 if __name__ == "__main__":
     unittest.main()

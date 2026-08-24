@@ -14,12 +14,6 @@ set +a
 [[ "${DB_NAME:-}" == "sc_dev_demo" ]] || { echo "expected sc_dev_demo" >&2; exit 2; }
 [[ "${ODOO_DBFILTER:-}" == "^sc_dev_demo$" ]] || { echo "expected local.dev dbfilter" >&2; exit 2; }
 
-case "${LOCAL_DEV_CANDIDATE_FRONTEND_BINDING:-0}" in
-  0) frontend_url="http://127.0.0.1:${NGINX_PORT}" ;;
-  1) frontend_url="http://127.0.0.1:5176" ;;
-  *) echo "invalid local.dev candidate frontend binding selector" >&2; exit 2 ;;
-esac
-
 probe_output="$(DB_NAME="${DB_NAME}" bash "${ROOT_DIR}/scripts/ops/odoo_shell_exec.sh" \
   < "${ROOT_DIR}/scripts/verify/local_dev_project_create_contract_action_scope.py")"
 printf '%s\n' "${probe_output}"
@@ -27,6 +21,6 @@ probe_json="$(printf '%s\n' "${probe_output}" | sed -n 's/^LOCAL_DEV_PROJECT_CRE
 [[ -n "${probe_json}" ]] || { echo "project create Contract V2 scope probe returned no identity" >&2; exit 1; }
 
 LOCAL_DEV_PROJECT_CREATE_SCOPE_JSON="${probe_json}" \
-FRONTEND_URL="${frontend_url}" \
+FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}" \
 E2E_PASSWORD="${SC_DEMO_USER_PASSWORD:?SC_DEMO_USER_PASSWORD is required}" \
 node "${ROOT_DIR}/scripts/verify/local_dev_project_create_contract_driver_probe.mjs"
