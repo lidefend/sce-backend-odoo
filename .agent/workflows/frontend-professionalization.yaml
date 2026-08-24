@@ -138,7 +138,7 @@ workflow:
       forbid: [unregistered_component_key, field_type_mismatch, missing_capability, renderer_model_branch, label_branch, silent_fallback, unreachable_registration]
     phase_7:
       name: base_component_families
-      status: active
+      status: merged
       batches:
         phase_7a:
           status: merged
@@ -158,9 +158,11 @@ workflow:
       status: active
       batches:
         phase_8a:
-          status: active
+          status: merged
           capabilities: [statusbar, action_bar, disabled_reason, primary_overflow, confirm_dialog]
-        phase_8b: [actor, occurred_at, event, result, disclosure, empty_state]
+        phase_8b:
+          status: active
+          capabilities: [actor, occurred_at, event, result, disclosure, empty_state]
         phase_8c: [chatter, attachment, activity, comment, follower]
         phase_8d: [relation_search, relation_create, cancel, success_settlement, dirty_preservation, exact_once_mutation]
     phase_9:
@@ -203,7 +205,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_8a
-    task: professional_workflow_status_action_and_confirmation_components
-    prerequisite: phase_7d_merged_and_main_synced
-    do_not_start_in_parallel: [phase_8b, phase_8c, phase_8d]
+    phase: phase_8b
+    task: professional_audit_event_and_timeline_components
+    prerequisite: phase_8a_merged_and_main_synced
+    do_not_start_in_parallel: [phase_8c, phase_8d]
