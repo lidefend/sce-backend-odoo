@@ -1,7 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 <template>
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :content-layout="actionContentLayoutMode">
-    <h1 class="sc-visually-hidden">{{ vm.page.title }}</h1>
+    <ProductPageHeader
+      :title="vm.page.title || '业务列表'"
+      :subtitle="vm.page.subtitle"
+      :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'"
+      render-profile="readonly"
+    >
+      <template v-if="vm.header.actions.length" #actions>
+        <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">
+          {{ action.label || action.key }}
+        </button>
+      </template>
+    </ProductPageHeader>
     <!-- Page intent: 在列表场景中先判断状态，再给出下一步可执行动作。 -->
     <StatusPanel
       v-if="renderErrorMessage"
@@ -19,11 +30,6 @@
       @driver-change="handleSceneDriverChange"
     >
     <template #standard>
-    <section v-if="viewMode !== 'activity' && vm.header.actions.length" class="page-actions">
-      <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">
-        {{ action.label || action.key }}
-      </button>
-    </section>
     <SceneBlocksRenderer
       v-if="showSceneBlocksDebug && sceneReadyListSurface.sceneBlocks.length"
       :blocks="sceneReadyListSurface.sceneBlocks"
@@ -664,6 +670,7 @@ import { useRoute, useRouter } from 'vue-router';
 import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
+import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
 import { getUserViewPreference, setUserViewPreference } from '../api/preferences';
 import { executeButton } from '../api/executeButton';

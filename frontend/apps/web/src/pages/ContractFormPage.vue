@@ -19,7 +19,7 @@
     :data-v2-shadow-value-source="v2ShadowValueSourceKind"
     :data-v2-shadow-error="v2ContractDecodeError || '-'"
   >
-    <h1 class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
+    <h1 v-if="initialFormLoading" class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
     <ContractFormProductHeader
       v-if="!initialFormLoading"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="suppressPageHeaderTitle" :show-hud="showHud"
