@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3904`
+- Scanned files: `3907`
 - Files requiring split plan: `44`
 - Files above warning threshold: `77`
 
@@ -50,7 +50,7 @@ Generated from repository source files. This report is informational during the 
 | 1693 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1648 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1604 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1608 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1550 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 602 | YAML workflow | `scripts/verify/registry.yaml` |
@@ -182,7 +182,7 @@ Generated from repository source files. This report is informational during the 
 | 1693 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1648 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1604 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1608 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1550 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1493 | warning | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
