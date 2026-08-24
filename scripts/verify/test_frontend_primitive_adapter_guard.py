@@ -14,13 +14,16 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         root = Path(temp.name)
         design = root / "frontend/apps/web/src/components/design-system"
         design.mkdir(parents=True)
+        ui = root / "frontend/packages/ui/src"
+        ui.mkdir(parents=True)
         (design / "index.ts").write_text(
             "\n".join(f"export {{ default as {name} }} from './{name}.vue';" for name in PRIMITIVES),
             encoding="utf-8",
         )
         (design / "tdesignPrimitiveBridge.ts").write_text(
-            "export { Input } from 'tdesign-vue-next/es/input';\n", encoding="utf-8"
+            "export { TDesignInput } from '@sc/ui/primitives';\n", encoding="utf-8"
         )
+        (ui / "primitives.ts").write_text("export { Input } from 'tdesign-vue-next/es/input';\n", encoding="utf-8")
         for name in PRIMITIVES:
             modal_contract = "<!-- useModalLifecycle role=\"dialog\" aria-modal=\"true\" -->" if name in {"ScDialog", "ScDrawer"} else ""
             input_contract = '<input :aria-describedby="describedBy" :aria-invalid="invalid" />' if name == "ScInput" else ""
@@ -40,9 +43,9 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
 
     def test_private_tdesign_import_fails(self) -> None:
         root = self.make_root()
-        bridge = root / "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts"
+        bridge = root / "frontend/packages/ui/src/primitives.ts"
         bridge.write_text("export { Input } from 'tdesign-vue-next/src/input';\n", encoding="utf-8")
-        self.assertTrue(any("private path" in error for error in validate(root)))
+        self.assertTrue(any("public entrypoints" in error for error in validate(root)))
 
     def test_missing_semantic_identity_fails(self) -> None:
         root = self.make_root()

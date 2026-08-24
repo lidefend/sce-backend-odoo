@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./bridge": "./src/bridge.ts",
     "./collection": "./src/collection.ts",
-    "./form": "./src/form.ts"
+    "./form": "./src/form.ts",
+    "./primitives": "./src/primitives.ts"
   },
   "dependencies": {
     "@ui5/webcomponents-base": "2.25.0",

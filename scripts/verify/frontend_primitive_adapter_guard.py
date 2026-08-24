@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DESIGN_SYSTEM = ROOT / "frontend/apps/web/src/components/design-system"
 INDEX = DESIGN_SYSTEM / "index.ts"
 BRIDGE = DESIGN_SYSTEM / "tdesignPrimitiveBridge.ts"
+UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
 
 PRIMITIVES = (
     "ScButton", "ScInput", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
@@ -25,6 +26,8 @@ def validate(root: Path = ROOT) -> list[str]:
     design = root / "frontend/apps/web/src/components/design-system"
     index = (design / "index.ts").read_text(encoding="utf-8") if (design / "index.ts").is_file() else ""
     bridge = (design / "tdesignPrimitiveBridge.ts").read_text(encoding="utf-8") if (design / "tdesignPrimitiveBridge.ts").is_file() else ""
+    ui_primitives_path = root / "frontend/packages/ui/src/primitives.ts"
+    ui_primitives = ui_primitives_path.read_text(encoding="utf-8") if ui_primitives_path.is_file() else ""
     errors: list[str] = []
 
     for component in PRIMITIVES:
@@ -56,14 +59,17 @@ def validate(root: Path = ROOT) -> list[str]:
     if not bridge:
         errors.append("missing TDesign primitive bridge")
     else:
-        if FORBIDDEN_PRIVATE_TDESIGN.search(bridge):
-            errors.append("TDesign primitive bridge imports a private path")
-        if "tdesign-vue-next/es/" not in bridge:
-            errors.append("TDesign primitive bridge does not use public component entrypoints")
+        if "@sc/ui/primitives" not in bridge or "tdesign-vue-next" in bridge:
+            errors.append("web primitive bridge must consume the project UI authority")
         for path in design.glob("*.vue"):
             text = path.read_text(encoding="utf-8")
             if "tdesign-vue-next" in text:
                 errors.append(f"{path.name} bypasses the TDesign primitive bridge")
+
+    if not ui_primitives:
+        errors.append("missing project UI primitive driver authority")
+    elif FORBIDDEN_PRIVATE_TDESIGN.search(ui_primitives) or "tdesign-vue-next/es/" not in ui_primitives:
+        errors.append("project UI primitive driver must use TDesign public entrypoints")
 
     return errors
 
