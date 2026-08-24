@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +12,7 @@ import github_actions_security_guard as guard
 
 
 PIN = "11bd71901bbe5b1630ceea73d27597364c9af683"
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class GitHubActionsSecurityGuardTests(unittest.TestCase):
@@ -177,6 +181,93 @@ jobs:
             )
             classes = {item.classification for item in guard.scan(root)}
             self.assertIn("FRONTEND_RELEASE_TRUST_BOUNDARY_INCOMPLETE", classes)
+
+    def test_backend_suite_cleanup_identity_and_failure_visibility_are_required(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow = root / ".github/workflows/backend_test_suite.yml"
+            workflow.parent.mkdir(parents=True)
+            source = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
+            workflow.write_text(
+                source.replace("      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}\n", "", 1),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("BACKEND_SUITE_CLEANUP_SCOPE_INCOMPLETE", classes)
+
+            workflow.write_text(
+                source.replace(
+                    "bash scripts/ci/self_hosted_runner_cleanup.sh\n",
+                    "bash scripts/ci/self_hosted_runner_cleanup.sh || true\n",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("BACKEND_SUITE_CLEANUP_FAILURE_MASKED", classes)
+
+    def run_cleanup_fixture(self, project: str) -> tuple[subprocess.CompletedProcess[str], str]:
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = Path(directory)
+            root = fixture / "repo"
+            runner_temp = fixture / "_temp"
+            fake_bin = fixture / "bin"
+            script_dir = root / "scripts/ci"
+            script_dir.mkdir(parents=True)
+            runner_temp.mkdir()
+            fake_bin.mkdir()
+            shutil.copy(ROOT / "scripts/ci/self_hosted_runner_cleanup.sh", script_dir)
+
+            docker_log = fixture / "docker.log"
+            fake_docker = fake_bin / "docker"
+            fake_docker.write_text(
+                "#!/usr/bin/env bash\n"
+                "printf '%s\\n' \"$*\" >> \"$DOCKER_CALL_LOG\"\n",
+                encoding="utf-8",
+            )
+            fake_docker.chmod(0o755)
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{fake_bin}:{environment['PATH']}",
+                    "DOCKER_CALL_LOG": str(docker_log),
+                    "GITHUB_ACTIONS": "true",
+                    "GITHUB_REPOSITORY": "lidefend/sce-backend-odoo",
+                    "GITHUB_RUN_ID": "12345",
+                    "GITHUB_RUN_ATTEMPT": "1",
+                    "GITHUB_WORKSPACE": str(root),
+                    "RUNNER_TEMP": str(runner_temp),
+                    "CI_PROJECT_NAME": project,
+                }
+            )
+            result = subprocess.run(
+                ["bash", str(script_dir / "self_hosted_runner_cleanup.sh")],
+                cwd=root,
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            calls = docker_log.read_text(encoding="utf-8") if docker_log.exists() else ""
+            return result, calls
+
+    def test_backend_suite_cleanup_accepts_only_exact_run_project(self) -> None:
+        result, calls = self.run_cleanup_fixture("sc-suite-12345")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("[self_hosted_cleanup] PASS project=sc-suite-12345", result.stdout)
+        self.assertIn("compose -p sc-suite-12345 down -v --remove-orphans", calls)
+        self.assertIn("label=com.docker.compose.project=sc-suite-12345", calls)
+
+        for project in (
+            "sc-suite-1234",
+            "sc-suite-12345-extra",
+            "sc-suite-${GITHUB_RUN_ID}",
+        ):
+            with self.subTest(project=project):
+                result, calls = self.run_cleanup_fixture(project)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("invalid project scope", result.stderr)
+                self.assertEqual(calls, "")
 
 
 if __name__ == "__main__":

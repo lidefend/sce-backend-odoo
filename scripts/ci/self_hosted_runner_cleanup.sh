@@ -18,7 +18,9 @@ if [[ ! "${run_id}" =~ ^[0-9]+$ || ! "${run_attempt}" =~ ^[1-9][0-9]*$ ]]; then
   echo "[self_hosted_cleanup] invalid run identity" >&2
   exit 2
 fi
-if [[ "${project}" != "sc-prof-${run_id}" && "${project}" != "sc-fe-release-${run_id}-${run_attempt}" ]]; then
+if [[ "${project}" != "sc-prof-${run_id}" \
+  && "${project}" != "sc-suite-${run_id}" \
+  && "${project}" != "sc-fe-release-${run_id}-${run_attempt}" ]]; then
   echo "[self_hosted_cleanup] invalid project scope" >&2
   exit 2
 fi

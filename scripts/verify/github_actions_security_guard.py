@@ -108,6 +108,17 @@ def scan(root: Path) -> list[Finding]:
             )
             if any(item not in text for item in required):
                 findings.add(Finding("GA012", relative, "PROFESSIONAL_TRUST_BOUNDARY_INCOMPLETE"))
+        if path.name == "backend_test_suite.yml":
+            required = (
+                "CI_PROJECT_NAME: sc-suite-${{ github.run_id }}",
+                "COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}",
+                "if: always()",
+                "bash scripts/ci/self_hosted_runner_cleanup.sh",
+            )
+            if any(item not in text for item in required):
+                findings.add(Finding("GA016", relative, "BACKEND_SUITE_CLEANUP_SCOPE_INCOMPLETE"))
+            if "bash scripts/ci/self_hosted_runner_cleanup.sh || true" in text:
+                findings.add(Finding("GA017", relative, "BACKEND_SUITE_CLEANUP_FAILURE_MASKED"))
         if path.name == "frontend_release_gate.yml":
             required = (
                 "push:\n    branches: [main]",
