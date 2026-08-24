@@ -120,7 +120,7 @@ workflow:
       rules: [primary_action_count_is_zero_or_one, readonly_has_no_save, edit_has_direct_save_without_edit_transition, dialog_and_standalone_headers_are_separate_variants]
     phase_5:
       name: product_page_patterns_v1
-      status: active
+      status: merged
       branch_pattern: feature/p0-product-page-patterns-v1
       patterns:
         TaskFormPattern: task_focused_create_edit_and_handling
@@ -130,7 +130,7 @@ workflow:
       excludes: [industry_component_implementation]
     phase_6:
       name: professional_component_registry_v1
-      status: planned
+      status: active
       branch_pattern: feature/p0-professional-component-registry-v1
       record_fields: [componentKey, semanticType, supportedFieldTypes, supportedPresentationModes, supportedRenderProfiles, requiredCapabilities, renderer, fallback, readiness]
       readiness: [ready, readable_fallback, fail_closed]
@@ -193,7 +193,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_5
-    task: product_page_pattern_authority_and_production_wiring
-    prerequisite: phase_4_merged_and_main_synced
-    do_not_start_in_parallel: [phase_6, phase_7, phase_8]
+    phase: phase_6
+    task: professional_component_registry_authority_and_fail_closed_resolution
+    prerequisite: phase_5_merged_and_main_synced
+    do_not_start_in_parallel: [phase_7, phase_8, phase_9]
