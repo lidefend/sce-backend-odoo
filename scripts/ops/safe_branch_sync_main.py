@@ -241,12 +241,12 @@ def resolve_append_only_log_conflict(plan: SyncPlan) -> bool:
     return True
 
 
-def run_rebase(plan: SyncPlan) -> bool:
+def run_rebase(plan: SyncPlan) -> bool | None:
     append_only_log_resolved = False
     result = run(plan.root, "rebase", "--onto", plan.new_main, plan.old_base, check=False)
     while result.returncode:
         if not resolve_append_only_log_conflict(plan):
-            return False
+            return None
         append_only_log_resolved = True
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
     return append_only_log_resolved
@@ -266,9 +266,7 @@ def verify_append_only_log_resolution(plan: SyncPlan) -> None:
 def sync(plan: SyncPlan) -> str:
     create_bundle(plan)
     append_only_log_resolved = run_rebase(plan)
-    if not append_only_log_resolved and run(
-        plan.root, "rev-parse", "-q", "--verify", "REBASE_HEAD", check=False
-    ).returncode == 0:
+    if append_only_log_resolved is None:
         aborted = run(plan.root, "rebase", "--abort", check=False)
         restored_head = git_output(plan.root, "rev-parse", "HEAD")
         require_clean(plan.root)

@@ -164,6 +164,25 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             "base-log\nmain-entry\nfeature-entry\n",
         )
 
+    def test_rebase_outcome_distinguishes_success_from_unresolved_conflict(self) -> None:
+        self.assertFalse(syncer.run_rebase(self.plan()))
+        git(self.root, "reset", "--hard", self.head)
+        (self.root / "base.txt").write_text("feature-change\n", encoding="utf-8")
+        git(self.root, "add", "base.txt")
+        git(self.root, "commit", "-m", "unresolved feature conflict")
+        conflict_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        (self.root / "base.txt").write_text("main-change\n", encoding="utf-8")
+        git(self.root, "add", "base.txt")
+        git(self.root, "commit", "-m", "unresolved main conflict")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        conflict_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+        plan = self.plan(expected_head=conflict_head, expected_main=conflict_main)
+        self.assertIsNone(syncer.run_rebase(plan))
+        git(self.root, "rebase", "--abort")
+
     def test_root_mismatch_and_no_push_or_force_push_in_implementation(self) -> None:
         with self.assertRaisesRegex(syncer.SyncError, "repository root"):
             self.plan(expected_root=self.temp_path("other-root"))
