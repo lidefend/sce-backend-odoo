@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3915`
+- Scanned files: `3919`
 - Files requiring split plan: `44`
 - Files above warning threshold: `77`
 
@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 4577 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4579 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4552 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4194 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4169 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
@@ -50,7 +50,7 @@ Generated from repository source files. This report is informational during the 
 | 1693 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1648 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1568 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1590 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1550 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 602 | YAML workflow | `scripts/verify/registry.yaml` |
@@ -143,7 +143,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 4577 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4579 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4552 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4194 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4169 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
@@ -182,7 +182,7 @@ Generated from repository source files. This report is informational during the 
 | 1693 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1648 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1568 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1590 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1550 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1493 | warning | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
