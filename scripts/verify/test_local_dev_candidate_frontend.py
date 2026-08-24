@@ -103,5 +103,26 @@ class CandidateFrontendContractTest(unittest.TestCase):
         wait.assert_called_once_with(123)
         unlink.assert_called_once_with(missing_ok=True)
 
+    def test_visual_smoke_requires_routes_and_verified_process(self):
+        with mock.patch.object(MODULE_UNDER_TEST, "_candidate_identity", return_value=("feature/token", "a" * 40)), mock.patch.object(
+            MODULE_UNDER_TEST, "resolve_authority_env", return_value=ROOT / ".env.dev"
+        ), mock.patch.object(MODULE_UNDER_TEST, "_validate_process") as validate, mock.patch.object(
+            MODULE_UNDER_TEST, "_health", return_value=True
+        ), mock.patch.dict(os.environ, {"CANDIDATE_VISUAL_ROUTES_JSON": ""}, clear=False):
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "ROUTES_JSON"):
+                MODULE_UNDER_TEST.visual_smoke(ROOT)
+        validate.assert_called_once_with(ROOT, "a" * 40, MODULE_UNDER_TEST.PIDFILE)
+
+    def test_visual_smoke_uses_authority_wrapper_without_credentials(self):
+        source = MODULE.read_text(encoding="utf-8")
+        wrapper = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.sh").read_text(encoding="utf-8")
+        browser = (ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs").read_text(encoding="utf-8")
+        self.assertIn('ENV_FILE=str(authority)', source)
+        self.assertNotIn("SC_DEMO_USER_PASSWORD", source)
+        self.assertIn('source "${ENV_FILE}"', wrapper)
+        self.assertIn('E2E_PASSWORD="${SC_DEMO_USER_PASSWORD}"', wrapper)
+        self.assertIn("report.mutationCount += 1", browser)
+        self.assertIn("--sc-semantic-surface-interactive", browser)
+
 if __name__ == "__main__":
     unittest.main()
