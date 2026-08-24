@@ -291,9 +291,25 @@ class TestP1PaymentRequestCapability(TransactionCase):
             row.get("backendIdentity"): row
             for row in contract["statusContract"]["buttonStatus"]
         }
-        view_identity = "button:object:action_view_payment_execution"
-        view_rules = [row for row in rules if row.get("backendIdentity") == view_identity]
+        view_rules = [
+            row
+            for row in rules
+            if (row.get("button") or {}).get("type") == "object"
+            and (row.get("button") or {}).get("name")
+            == "action_view_payment_execution"
+        ]
         self.assertEqual(len(view_rules), 1, rules)
+        view_identity = view_rules[0].get("backendIdentity")
+        self.assertTrue(
+            str(view_identity or "").startswith(
+                "native_button:object:action_view_payment_execution:"
+            ),
+            view_rules[0],
+        )
+        self.assertTrue(
+            (view_rules[0].get("nativeIdentity") or {}).get("authoritative"),
+            view_rules[0],
+        )
         self.assertTrue(view_rules[0].get("allowed"), view_rules[0])
         self.assertTrue(view_rules[0].get("enabled"), view_rules[0])
         self.assertEqual((view_rules[0].get("presentation") or {}).get("tier"), "primary")
@@ -1656,18 +1672,15 @@ class TestP1PaymentRequestCapability(TransactionCase):
                     collect_project_relation_entries(nested)
 
         collect_project_relation_entries(contract)
-        project_action = self.env.ref(
-            "smart_construction_core.action_project_initiation"
-        )
-        project_menu = self.env.ref(
-            "smart_construction_core.menu_sc_project_initiation"
-        )
         self.assertTrue(project_relation_entries, contract)
         self.assertTrue(
             all(
-                entry.get("action_id") == project_action.id
-                and entry.get("menu_id") == project_menu.id
-                and entry.get("create_mode") == "dialog"
+                entry.get("action_id") is None
+                and entry.get("menu_id") is None
+                and entry.get("create_mode") == "disabled"
+                and entry.get("can_open") is False
+                and entry.get("reason_code")
+                == "RELATION_ENTRY_OVERRIDE_AUTHORITY_DENIED"
                 for entry in project_relation_entries
             ),
             project_relation_entries,
@@ -1831,20 +1844,16 @@ class TestP1PaymentRequestCapability(TransactionCase):
             for row in matrix["field_rules"]
             if row["model"] == "payment.request" and row["field"] in required_fields
         }
-        normalized_policies = contract["formStructureContract"]["fieldPolicies"]
         self.assertEqual(set(matrix_profiles), required_fields)
+        self.assertNotIn(
+            "fieldPolicies",
+            contract["formStructureContract"],
+            "cross-profile field policy facts must not leak into the projection-only "
+            "form structure contract",
+        )
         self.assertEqual(
-            {
-                field_name: sorted(
-                    matrix_profiles[field_name]
-                    ^ set(normalized_policies[field_name]["visible_profiles"])
-                )
-                for field_name in required_fields
-                if matrix_profiles[field_name]
-                != set(normalized_policies[field_name]["visible_profiles"])
-            },
-            {},
-            "field matrix surfaces must match P1 normalized policy visible_profiles",
+            contract["statusContract"]["globalStatus"]["effectiveRenderProfile"],
+            "readonly",
         )
 
         action_rules = contract["actionContract"]["actionRuleList"]
@@ -1885,27 +1894,50 @@ class TestP1PaymentRequestCapability(TransactionCase):
                 for row in primary_actions
             ],
         )
+        primary_action = primary_actions[0]
+        self.assertEqual((primary_action.get("button") or {}).get("type"), "object")
         self.assertEqual(
-            primary_actions[0].get("backendIdentity"),
-            "button:object:action_create_payment_execution",
+            (primary_action.get("button") or {}).get("name"),
+            "action_create_payment_execution",
         )
-        self.assertTrue(primary_actions[0].get("allowed"))
-        self.assertTrue(primary_actions[0].get("enabled"))
+        self.assertTrue(
+            str(primary_action.get("backendIdentity") or "").startswith(
+                "native_button:object:action_create_payment_execution:"
+            ),
+            primary_action,
+        )
+        self.assertTrue(
+            (primary_action.get("nativeIdentity") or {}).get("authoritative"),
+            primary_action,
+        )
+        self.assertTrue(primary_action.get("allowed"))
+        self.assertTrue(primary_action.get("enabled"))
 
-        source_trace = primary_actions[0].get("sourceTrace") or []
+        source_trace = primary_action.get("sourceTrace") or []
         self.assertTrue(
             source_trace,
             "primary action source provenance must survive normalization",
         )
         conditional_native_actions = {
-            row.get("backendIdentity"): row
+            (row.get("button") or {}).get("name"): row
             for row in action_rules
-            if row.get("backendIdentity") in {
-                "button:object:validate_tier",
-                "button:object:action_view_payment_execution",
+            if (row.get("button") or {}).get("type") == "object"
+            and (row.get("button") or {}).get("name") in {
+                "validate_tier",
+                "action_view_payment_execution",
             }
         }
         self.assertEqual(len(conditional_native_actions), 2)
+        self.assertTrue(
+            all(
+                str(row.get("backendIdentity") or "").startswith(
+                    f"native_button:object:{button_name}:"
+                )
+                and (row.get("nativeIdentity") or {}).get("authoritative")
+                for button_name, row in conditional_native_actions.items()
+            ),
+            conditional_native_actions,
+        )
         self.assertTrue(
             all(
                 contract_assembler._evaluate_action_modifier(
@@ -2049,6 +2081,10 @@ class TestP1PaymentRequestCapability(TransactionCase):
             str(edit_primary.get("backendIdentity") or "").startswith(
                 "native_button:object:action_submit:"
             ),
+            edit_primary,
+        )
+        self.assertTrue(
+            (edit_primary.get("nativeIdentity") or {}).get("authoritative"),
             edit_primary,
         )
         self.assertTrue(edit_primary_actions[0].get("allowed"))
