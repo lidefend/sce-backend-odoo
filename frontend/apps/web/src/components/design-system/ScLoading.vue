@@ -17,6 +17,8 @@ import { normalizePrimitiveSize, semanticPrimitiveIdentity, type ScPrimitiveSize
 
 withDefaults(defineProps<{ loading?: boolean; size?: ScPrimitiveSize; label?: string; fullscreen?: boolean; showOverlay?: boolean }>(), {
   loading: true,
+  size: 'medium',
+  label: undefined,
   showOverlay: false,
 });
 </script>

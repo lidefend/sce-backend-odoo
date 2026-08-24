@@ -34,6 +34,7 @@ withDefaults(defineProps<{
   data: () => [],
   columns: () => [],
   rowKey: 'id',
+  size: 'medium',
   hover: true,
 });
 const emit = defineEmits<{ rowClick: [context: unknown] }>();

@@ -26,6 +26,7 @@ export interface ScTabItem {
 
 const props = withDefaults(defineProps<{ modelValue: string | number; items?: ScTabItem[]; size?: ScPrimitiveSize; disabled?: boolean }>(), {
   items: () => [],
+  size: 'medium',
 });
 const emit = defineEmits<{ 'update:modelValue': [value: string | number]; change: [value: string | number] }>();
 function onChange(value: string | number) {
