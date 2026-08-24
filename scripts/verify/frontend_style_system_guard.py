@@ -22,7 +22,9 @@ REQUIRED_PRODUCT_COMPONENTS = {
     "ScField.vue", "ScSelect.vue", "ScRelationField.vue", "ScDateField.vue",
     "ScErrorSummary.vue", "ScEmptyState.vue", "ScErrorState.vue", "ScDialog.vue",
     "ScDrawer.vue", "ScActionBar.vue", "ScDataTable.vue", "ScMobileRecordCard.vue",
-    "ScRelationshipFlow.vue", "ScAuditTrail.vue",
+    "ScRelationshipFlow.vue", "ScAuditTrail.vue", "ScInput.vue", "ScTabs.vue",
+    "ScTable.vue", "ScBadge.vue", "ScTooltip.vue", "ScDropdown.vue",
+    "ScFormField.vue", "ScLoading.vue",
 }
 
 REQUIRED_PRODUCT_CONSUMERS = {

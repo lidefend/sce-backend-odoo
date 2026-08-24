@@ -384,6 +384,12 @@ entries:
   date: '2026-08-14'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_frontend_primitive_adapter_guard.py
+  status: orphan
+  owner: platform-team
+  date: unknown
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_frontend_release_ci_identity.py
   status: orphan
   owner: platform-team

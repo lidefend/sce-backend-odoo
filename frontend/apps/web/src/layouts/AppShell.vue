@@ -55,7 +55,7 @@
             <div><small>数据范围</small><h2 id="company-space-title">公司空间</h2></div>
             <span>{{ filteredCompanyOptions.length }}</span>
           </header>
-          <input v-model="companySearch" class="workspace-scope-search sc-search" type="search" placeholder="搜索公司" aria-label="搜索公司" />
+          <ScInput v-model="companySearch" class="workspace-scope-search sc-search" type="search" placeholder="搜索公司" aria-label="搜索公司" />
           <div class="workspace-scope-options">
             <button
               v-for="company in filteredCompanyOptions"
@@ -88,7 +88,7 @@
               @click.stop="changeOperationScope(operation.operation_strategy)"
             >{{ operationScopeLabel(operation) }}</button>
           </div>
-          <input
+          <ScInput
             v-model="recordContextSearch"
             class="workspace-scope-search sc-search"
             type="search"
@@ -360,6 +360,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import GlobalMessagePanel from '../components/GlobalMessagePanel.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
+import ScInput from '../components/design-system/ScInput.vue';
 import { useSessionStore, type ActivityPage } from '../stores/session';
 import { intentRequest } from '../api/intents';
 import { getSceneByKey, getSceneRegistryDiagnostics, resolveSceneLayout } from '../app/resolvers/sceneRegistry';

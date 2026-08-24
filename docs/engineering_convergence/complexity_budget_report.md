@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3871`
-- Files requiring split plan: `44`
-- Files above warning threshold: `77`
+- Scanned files: `3884`
+- Files requiring split plan: `45`
+- Files above warning threshold: `76`
 
 ## Split Plan Required
 
@@ -53,7 +53,8 @@ Generated from repository source files. This report is informational during the 
 | 1604 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1550 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1520 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1521 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 602 | YAML workflow | `scripts/verify/registry.yaml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -129,7 +130,6 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 815 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
-| 596 | YAML workflow | `scripts/verify/registry.yaml` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 445 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
@@ -185,7 +185,7 @@ Generated from repository source files. This report is informational during the 
 | 1604 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1550 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1520 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1521 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1483 | warning | Python source | `scripts/release/release_publication.py` |
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |

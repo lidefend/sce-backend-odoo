@@ -1,4 +1,5 @@
 import { nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue';
+import { resolveModalKeyboardAction } from './modalKeyboard';
 
 const FOCUSABLE = [
   'a[href]',
@@ -59,27 +60,34 @@ export function useModalLifecycle(options: {
   }
 
   function onKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
+    const focusable = options.surface.value
+      ? Array.from(options.surface.value.querySelectorAll<HTMLElement>(FOCUSABLE))
+        .filter((element) => element.getClientRects().length > 0 && element.getAttribute('aria-hidden') !== 'true')
+      : [];
+    const activeIndex = focusable.findIndex((element) => element === document.activeElement);
+    const action = resolveModalKeyboardAction({
+      key: event.key,
+      shiftKey: event.shiftKey,
+      focusableCount: focusable.length,
+      activeIndex,
+      surfaceActive: document.activeElement === options.surface.value,
+    });
+    if (action === 'close') {
       event.preventDefault();
       options.close();
       return;
     }
-    if (event.key !== 'Tab' || !options.surface.value) return;
-    const focusable = Array.from(options.surface.value.querySelectorAll<HTMLElement>(FOCUSABLE))
-      .filter((element) => element.getClientRects().length > 0 && element.getAttribute('aria-hidden') !== 'true');
-    if (!focusable.length) {
+    if (action === 'focus-surface') {
       event.preventDefault();
-      options.surface.value.focus();
+      options.surface.value?.focus();
       return;
     }
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && (document.activeElement === first || document.activeElement === options.surface.value)) {
+    if (action === 'focus-last') {
       event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
+      focusable.at(-1)?.focus();
+    } else if (action === 'focus-first') {
       event.preventDefault();
-      first.focus();
+      focusable[0]?.focus();
     }
   }
 

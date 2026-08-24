@@ -47,6 +47,21 @@ try {
       if (/(^|\.)(create|write|unlink|execute_button|upload)(\.|$)/.test(intent) || /^(create|write|unlink|web_save|action_)/.test(method)) report.mutationCount += 1;
     });
     await loginPage(page);
+    if (viewport.name === 'desktop') {
+      const companyTrigger = page.getByRole('button', { name: '公司空间：切换公司' });
+      await companyTrigger.click();
+      const companySearchRoot = page.locator('[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"]');
+      const companySearch = page.locator('input[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"], [data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"] input');
+      await companySearch.waitFor({ state: 'visible', timeout: 15000 });
+      await companySearch.fill('__primitive_adapter_probe__');
+      const inputContract = {
+        rootCount: await companySearchRoot.count(),
+        inputCount: await companySearch.count(),
+        value: await companySearch.inputValue(),
+      };
+      report.routes.push({ viewport: viewport.name, primitiveInputContract: inputContract });
+      await companySearch.fill('');
+    }
     for (const target of routes) {
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
@@ -74,6 +89,10 @@ try {
 
 const errors = report.routes.flatMap((item) => item.errors || []);
 const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded || item.h1 !== 1 || item.overflow > 0));
+const primitiveInput = report.routes.find((item) => item.primitiveInputContract)?.primitiveInputContract;
+if (!primitiveInput || primitiveInput.rootCount !== 1 || primitiveInput.inputCount !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {
+  failures.push({ primitiveInputContract: primitiveInput || null });
+}
 report.pass = errors.length === 0 && report.mutationCount === 0 && failures.length === 0;
 report.errors = errors;
 report.failures = failures;
