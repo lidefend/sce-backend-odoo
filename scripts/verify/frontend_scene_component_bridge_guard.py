@@ -290,9 +290,9 @@ require(
     "semantic readonly floorplan still renders disabled edit controls instead of business facts",
 )
 require(
-    form_section.index('v-else-if="isRelationEditorField(field) && relationAdapter"')
+    form_section.index('v-else-if="usesProfessionalMany2many(field) && relationAdapter"')
     < form_section.index('v-else-if="field.readonly"'),
-    "readonly x2many fields leak raw ids instead of using the governed relation renderer",
+    "readonly x2many fields leak raw ids instead of using the professional governed relation renderer",
 )
 scene_field_control = (UI_SRC / "components/primitives/SceneFieldControl.vue").read_text(encoding="utf-8")
 require(
