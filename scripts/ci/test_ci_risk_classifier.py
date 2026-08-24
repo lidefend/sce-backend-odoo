@@ -13,6 +13,22 @@ class CIRiskClassifierTests(unittest.TestCase):
     def test_documentation_is_fast(self) -> None:
         self.assertEqual(self.lane("docs/ops/runbook.md"), "FAST")
 
+    def test_agent_workflow_metadata_is_fast(self) -> None:
+        result = classify(
+            [
+                ".agent/workflows/frontend-professionalization.yaml",
+                "docs/ops/iterations/delivery_context_switch_log_v1.md",
+            ],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "FAST")
+        self.assertEqual(result.frontend_mode, "skip")
+        self.assertEqual(result.professional_mode, "fast")
+
+    def test_other_agent_authority_remains_fail_closed(self) -> None:
+        self.assertEqual(self.lane(".agent/context.yaml"), "HIGH_RISK")
+        self.assertEqual(self.lane(".agent/decisions/runtime-authority.yaml"), "HIGH_RISK")
+
     def test_version_only_change_is_fast_but_not_unclassified(self) -> None:
         result = classify(["VERSION"], event_name="pull_request")
         self.assertEqual(result.lane, "FAST")

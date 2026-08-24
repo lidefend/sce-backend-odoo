@@ -11,6 +11,7 @@
     "VERSION",
     "*.md",
     "docs/**",
+    ".agent/workflows/**",
     ".github/ISSUE_TEMPLATE/**"
   ],
   "standard_frontend_paths": [
