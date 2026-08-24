@@ -27,6 +27,10 @@ The formal axes are `title`, `subtitle`, `breadcrumb`, `presentationMode`, `rend
 - Contract form secondary primary claims are moved to overflow;
 - AppShell does not emit a competing H1 on routes whose page owns the header.
 
+## Candidate acceptance
+
+The governed readonly browser probe covers one task/edit surface and one workspace/readonly surface. It requires exactly one page header and one H1, zero parallel body action bars, at most one primary action, no save action in readonly, no edit-transition action in edit, no 390px overflow, zero browser/HTTP errors, and zero business mutations.
+
 ## Exclusions
 
 - navigation behavior;

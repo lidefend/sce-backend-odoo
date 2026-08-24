@@ -112,6 +112,10 @@ verify.frontend.product_page_header.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_product_page_header_guard.py
 	@python3 scripts/verify/frontend_product_page_header_guard.py
 
+.PHONY: verify.frontend.product_page_header.browser
+verify.frontend.product_page_header.browser: guard.prod.forbid
+	@node scripts/verify/frontend_product_page_header_browser.mjs
+
 verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit
 
 verify.frontend.release.unit: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit
