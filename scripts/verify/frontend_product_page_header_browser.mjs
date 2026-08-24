@@ -53,6 +53,11 @@ for (const target of targets) {
   const header = page.locator('[data-product-page-header]');
   await header.waitFor({ state: 'visible', timeout: 45_000 });
   await page.waitForFunction(() => !/正在载入|正在加载|正在初始化/.test(document.body.innerText || ''), null, { timeout: 45_000 });
+  if (target.activateTab) {
+    const tab = page.locator('.native-tab').filter({ hasText: String(target.activateTab) });
+    check(await tab.count() === 1, `${target.key}: native tab ${target.activateTab} is not unique`);
+    await tab.click();
+  }
   const snapshot = await page.evaluate(() => {
     const visible = (node) => node instanceof HTMLElement && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
     const headerNode = document.querySelector('[data-product-page-header]');
@@ -65,7 +70,8 @@ for (const target of targets) {
       const readiness = node.getAttribute('data-component-readiness');
       return !node.getAttribute('data-component-key') || !['ready', 'readable_fallback'].includes(readiness || '');
     });
-    const professionalBaseFields = [...document.querySelectorAll('[data-professional-field-family="base"]')].filter(visible);
+    const professionalBaseFields = [...document.querySelectorAll('[data-professional-field-family="base"]')];
+    const visibleProfessionalBaseFields = professionalBaseFields.filter(visible);
     const professionalBaseContextMismatches = professionalBaseFields.filter((node) => (
       node.getAttribute('data-presentation-mode') !== headerNode?.getAttribute('data-presentation-mode')
       || node.getAttribute('data-render-profile') !== headerNode?.getAttribute('data-render-profile')
@@ -87,6 +93,7 @@ for (const target of targets) {
       componentCount: componentNodes.length,
       unresolvedComponentCount: unresolvedComponents.length,
       professionalBaseFieldCount: professionalBaseFields.length,
+      visibleProfessionalBaseFieldCount: visibleProfessionalBaseFields.length,
       professionalBaseContextMismatchCount: professionalBaseContextMismatches.length,
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     };
@@ -102,6 +109,7 @@ for (const target of targets) {
   check(snapshot.componentCount > 0, `${target.key}: no registered component evidence`);
   check(snapshot.unresolvedComponentCount === 0, `${target.key}: unresolved component evidence remains`);
   check(snapshot.professionalBaseFieldCount > 0, `${target.key}: professional base field family is absent`);
+  check(snapshot.visibleProfessionalBaseFieldCount > 0, `${target.key}: professional base field family is not visible`);
   check(snapshot.professionalBaseContextMismatchCount === 0, `${target.key}: professional base field context mismatch`);
   if (target.renderProfile === 'edit') {
     check(snapshot.saveCount === 1 && snapshot.primaryCount === 1 && snapshot.enabledPrimaryCount === 1, `${target.key}: edit save action is not uniquely available`);
