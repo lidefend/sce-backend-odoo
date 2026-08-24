@@ -2650,6 +2650,24 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(structure["mode"], "native_structured_form")
         self.assertEqual(structure["layoutPolicy"], "native_authority")
 
+        default_structure = handler._build_form_structure_contract(
+            model="project.project",
+            profile={
+                "common_fields": ["name"],
+                "amount_fields": [],
+                "date_fields": [],
+                "status_field": "",
+                "note_field": "",
+                "attachment_field": "",
+                "detail_fields": [],
+            },
+            field_type=lambda name: "char",
+            unique=lambda items: list(dict.fromkeys(str(item or "").strip() for item in items if str(item or "").strip())),
+            governance=None,
+        )
+        self.assertEqual(default_structure["mode"], "native_structured_form")
+        self.assertEqual(default_structure["layoutPolicy"], "native_authority")
+
     def test_project_form_contract_selection_drives_task_and_native_modes(self):
         class _Field:
             def __init__(self, field_type, label):

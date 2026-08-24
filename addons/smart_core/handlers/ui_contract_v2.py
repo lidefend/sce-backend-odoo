@@ -2813,7 +2813,7 @@ class UiContractV2Handler(BaseIntentHandler):
             if item.get("fieldRefs") or item.get("groups")
         ]
 
-        semantic_surface = governance is None or str(
+        semantic_surface = str(
             (governance or {}).get("form_structure_authority") or ""
         ).strip() == "entry_semantic_surface"
         return {
