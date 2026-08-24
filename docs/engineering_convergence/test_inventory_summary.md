@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1228`
+- Total assets: `1230`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `172`
+- Long-running assets: `173`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `831`
+- PR dedupe candidates: `832`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 462 |
 | contract | 353 |
-| unit | 211 |
+| unit | 213 |
 | odoo_integration | 102 |
 | e2e | 44 |
 | security | 28 |
@@ -30,8 +30,8 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1050 |
-| integration_candidate | 127 |
+| pr_candidate | 1051 |
+| integration_candidate | 128 |
 | release_candidate | 42 |
 | manual_review | 4 |
 | release_required | 2 |
@@ -43,9 +43,9 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 831 |
+| deduplicate_before_required | 832 |
 | covered_by_aggregate | 220 |
-| keep_integration_or_release_only | 126 |
+| keep_integration_or_release_only | 127 |
 | keep_release_only | 42 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
@@ -142,8 +142,8 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1052 |
-| 10-30m | 128 |
+| <5m | 1053 |
+| 10-30m | 129 |
 | 30-60m | 44 |
 | unknown | 3 |
 | 10-15m | 1 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 462 |
 | platform owner | 353 |
-| test owner | 212 |
+| test owner | 214 |
 | backend owner | 102 |
 | qa owner | 44 |
 | security owner | 28 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1095 |
+| scripts/verify | 1097 |
 | scripts/ops | 68 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 15 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-190 | unit | `scripts/verify/business_form_user_perspective_acceptance.py` | test owner |
 | T-ASSET-191 | governance | `scripts/verify/business_list_config_boundary_audit.py` | architecture owner |
 | T-ASSET-193 | governance | `scripts/verify/business_shape_assembly_guard.py` | architecture owner |
-| ... | ... | 751 more | ... |
+| ... | ... | 752 more | ... |
 
 ## Dedupe Hotspots
 
