@@ -3763,6 +3763,11 @@ class PageAssembler:
                 return bool(self.env[model_name].check_access_rights("read", raise_exception=False))
             except Exception:
                 return False
+        def _safe_can_write(model_name):
+            try:
+                return bool(self.env[model_name].check_access_rights("write", raise_exception=False))
+            except Exception:
+                return False
         def _safe_delete_policy(model_name):
             try:
                 return resolve_unlink_policy(self.env, model_name)
@@ -3811,6 +3816,8 @@ class PageAssembler:
                     "menu_id": int(menu_by_action.get(act.id) or 0) or None,
                     "view_type": "form",
                     "view_mode": str(act.view_mode or "form"),
+                    "entry_intent": "open",
+                    "model_write_authority": _safe_can_write(relation),
                     "can_read": _safe_can_read(relation),
                     "can_create": _safe_can_create(relation),
                     "delete_policy": _safe_delete_policy(relation),
@@ -3823,6 +3830,8 @@ class PageAssembler:
                 "menu_id": None,
                 "view_type": "form",
                 "view_mode": "form",
+                "entry_intent": "open",
+                "model_write_authority": _safe_can_write(relation),
                 "can_read": _safe_can_read(relation),
                 "can_create": _safe_can_create(relation),
                 "delete_policy": _safe_delete_policy(relation),

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2/store';
+import { resolveRecordOpenTarget } from '../../app/runtime/recordEntryContract';
 
 type NavigationDependencies = Record<string, any>;
 
@@ -145,10 +146,14 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     });
     const returnUrl = `${window.location.pathname}${window.location.search}`;
     try {
-      await router.push({
-        name: 'model-form',
-        params: { model: relation, id: String(recordId) },
-        query: {
+      const target = resolveRecordOpenTarget({
+        model: relation,
+        recordId,
+        entryIntent: entry?.entryIntent || 'open',
+        modelWriteAuthority: entry?.modelWriteAuthority ?? null,
+        actionId: relationActionId || undefined,
+        menuId: menuId || undefined,
+        carryQuery: {
           ...nextQuery,
           return_url: encodeURIComponent(returnUrl),
           return_field: fieldName,
@@ -157,6 +162,7 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
           return_menu_id: Number(route.query.menu_id || 0) || undefined,
         },
       });
+      if (target) await router.push(target as never);
     } catch (err) {
       validationErrors.value = [sanitizeUiErrorMessage(err instanceof Error ? err.message : err, relationUiLabel(descriptor, 'open_record_failed'))];
     }

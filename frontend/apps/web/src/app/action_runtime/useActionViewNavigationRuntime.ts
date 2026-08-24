@@ -2,7 +2,8 @@ import type { Ref } from 'vue';
 import { pickContractNavQuery } from '../navigationContext';
 import { readWorkspaceContext } from '../workspaceContext';
 import { buildEntryTargetRouteTarget } from '../routeQuery';
-import { buildActionViewRowClickTarget, normalizeModelWriteAuthority, normalizeRecordOpenIntent, resolveRecordOpenTarget, shouldUseCanonicalCollectionDetail } from '../runtime/actionViewInteractionRuntime';
+import { buildActionViewRowClickTarget, shouldUseCanonicalCollectionDetail } from '../runtime/actionViewInteractionRuntime';
+import { adaptLegacyRecordEntry, decodeFormalRecordEntry, resolveRecordOpenTarget } from '../runtime/recordEntryContract';
 import { resolveRowClickPushState } from '../runtime/actionViewNavigationApplyRuntime';
 import {
   resolveContractV2ActionRules,
@@ -105,24 +106,27 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
       entry_intent: routeQueryValue(target.entry_intent || target.entryIntent),
       record_id: routeQueryValue(target.record_id || target.recordId),
     };
-    const targetIntent = normalizeRecordOpenIntent(
-      target.open_intent ?? target.openIntent ?? target.intent ?? target.entry_intent ?? target.entryIntent,
-    );
-    const targetAuthority = normalizeModelWriteAuthority(
-      target.model_write_authority ?? target.modelWriteAuthority ?? target.model_write,
-    );
-    const targetModel = String(target.model || target.res_model || row.model || '').trim();
-    const targetRecordId = target.record_id || target.recordId || row.id;
-    if (targetModel && (targetIntent !== 'open' || targetAuthority !== null)) {
-      const resolved = resolveRecordOpenTarget({
-        model: targetModel,
-        recordId: targetRecordId,
-        actionId: options.actionId.value || undefined,
-        menuId: options.menuId.value || undefined,
-        requestedIntent: targetIntent,
-        modelWriteAuthority: targetAuthority,
-        carryQuery: query,
-      });
+    const formalEntry = decodeFormalRecordEntry(target.record_entry);
+    const hasLegacyRecordCarrier = [
+      target.open_intent, target.openIntent, target.intent, target.entry_intent, target.entryIntent,
+      target.model_write_authority, target.modelWriteAuthority, target.model_write,
+    ].some((value) => value !== undefined && value !== null && String(value).trim() !== '');
+    const recordEntry = formalEntry
+      ? {
+          ...formalEntry,
+          actionId: formalEntry.actionId || options.actionId.value || undefined,
+          menuId: formalEntry.menuId || options.menuId.value || undefined,
+          carryQuery: query,
+        }
+      : hasLegacyRecordCarrier ? adaptLegacyRecordEntry(target, {
+          fallbackModel: row.model,
+          fallbackRecordId: row.id,
+          fallbackActionId: options.actionId.value || undefined,
+          fallbackMenuId: options.menuId.value || undefined,
+          carryQuery: query,
+        }) : null;
+    if (recordEntry) {
+      const resolved = resolveRecordOpenTarget(recordEntry);
       if (resolved) return resolved;
     }
     const entryTarget = target.entry_target && typeof target.entry_target === 'object'
