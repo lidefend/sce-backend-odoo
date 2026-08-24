@@ -65,6 +65,11 @@ for (const target of targets) {
       const readiness = node.getAttribute('data-component-readiness');
       return !node.getAttribute('data-component-key') || !['ready', 'readable_fallback'].includes(readiness || '');
     });
+    const professionalBaseFields = [...document.querySelectorAll('[data-professional-field-family="base"]')].filter(visible);
+    const professionalBaseContextMismatches = professionalBaseFields.filter((node) => (
+      node.getAttribute('data-presentation-mode') !== headerNode?.getAttribute('data-presentation-mode')
+      || node.getAttribute('data-render-profile') !== headerNode?.getAttribute('data-render-profile')
+    ));
     return {
       url: location.href,
       headerCount: document.querySelectorAll('[data-product-page-header]').length,
@@ -81,6 +86,8 @@ for (const target of targets) {
       bodyActionBarCount: [...document.querySelectorAll('.sc-form-driver-host [data-canonical-action-bar]')].filter(visible).length,
       componentCount: componentNodes.length,
       unresolvedComponentCount: unresolvedComponents.length,
+      professionalBaseFieldCount: professionalBaseFields.length,
+      professionalBaseContextMismatchCount: professionalBaseContextMismatches.length,
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     };
   });
@@ -94,6 +101,8 @@ for (const target of targets) {
   check(snapshot.bodyActionBarCount === 0, `${target.key}: parallel body action bar remains`);
   check(snapshot.componentCount > 0, `${target.key}: no registered component evidence`);
   check(snapshot.unresolvedComponentCount === 0, `${target.key}: unresolved component evidence remains`);
+  check(snapshot.professionalBaseFieldCount > 0, `${target.key}: professional base field family is absent`);
+  check(snapshot.professionalBaseContextMismatchCount === 0, `${target.key}: professional base field context mismatch`);
   if (target.renderProfile === 'edit') {
     check(snapshot.saveCount === 1 && snapshot.primaryCount === 1 && snapshot.enabledPrimaryCount === 1, `${target.key}: edit save action is not uniquely available`);
     check(snapshot.editTransitionCount === 0, `${target.key}: edit transition button remains`);

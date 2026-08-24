@@ -131,6 +131,13 @@ function emitValue(value: string | number | boolean | null) {
   width: 100%;
 }
 
+.professional-base-field-control :deep(.sc-input) {
+  box-sizing: border-box;
+  height: calc(var(--sc-component-input-height-md) * 1px);
+  min-height: calc(var(--sc-component-input-height-md) * 1px);
+  padding-inline: calc(var(--sc-component-input-padding-x) * 1px);
+}
+
 .professional-base-field-control__textarea {
   box-sizing: border-box;
   width: 100%;
@@ -145,7 +152,25 @@ function emitValue(value: string | number | boolean | null) {
 }
 
 .professional-base-field-control__readonly {
+  min-height: calc(var(--sc-component-input-height-md) * 1px);
+  color: var(--sc-app-text-primary);
+  font-size: calc(var(--sc-component-input-font-size) * 1px);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.professional-base-field-control[data-professional-field-type='integer'] :deep(.sc-input),
+.professional-base-field-control[data-professional-field-type='float'] :deep(.sc-input),
+.professional-base-field-control[data-professional-field-type='integer'] .professional-base-field-control__readonly,
+.professional-base-field-control[data-professional-field-type='float'] .professional-base-field-control__readonly {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.professional-base-field-control[data-professional-field-type='date'] :deep(.sc-input),
+.professional-base-field-control[data-professional-field-type='datetime'] :deep(.sc-input),
+.professional-base-field-control[data-professional-field-type='date'] .professional-base-field-control__readonly,
+.professional-base-field-control[data-professional-field-type='datetime'] .professional-base-field-control__readonly {
+  font-variant-numeric: tabular-nums;
 }
 </style>
