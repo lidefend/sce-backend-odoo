@@ -77,13 +77,24 @@ require(
 )
 app_shell = require(
     "frontend/apps/web/src/layouts/AppShell.vue",
-    'id="primary-sidebar"',
-    'v-if="sidebarVisible"',
+    "<ProductMobileNavigationDrawer",
+    ':visible="sidebarVisible"',
+    'surface-id="primary-sidebar"',
     'aria-controls="primary-sidebar"',
     ':aria-expanded="sidebarVisible"',
+    '@close="closeMobileSidebar"',
     "mobileViewport.value ? mobileSidebarOpen.value : !sidebarHidden.value",
     "event.key !== 'Escape'",
     "sidebarToggleButton.value?.focus()",
+)
+require(
+    "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+    'v-if="visible"',
+    ':id="surfaceId"',
+    ":role=\"mobile ? 'dialog' : undefined\"",
+    ":aria-modal=\"mobile ? 'true' : undefined\"",
+    "useModalLifecycle",
+    '@keydown="onKeydown"',
 )
 toggle_match = re.search(
     r"<button\b(?=[^>]*\baria-controls=\"primary-sidebar\")"

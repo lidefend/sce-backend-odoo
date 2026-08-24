@@ -64,7 +64,7 @@ const emit = defineEmits<{
 
 .product-side-navigation__search > .sc-icon {
   position: absolute;
-  z-index: 1;
+  z-index: var(--sc-component-shell-navigation-search-icon-z-index);
   left: 11px;
   color: var(--sc-app-text-muted);
   pointer-events: none;
