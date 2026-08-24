@@ -58,6 +58,7 @@
             v-if="showCollaborationPanel"
             v-bind="collaborationPanelProps"
             readonly
+            :show-audit-timeline="false"
             v-on="collaborationPanelListeners"
           />
           <p v-else class="canonical-form-activity-empty">暂无活动记录</p>
@@ -112,6 +113,7 @@
         <section v-if="showCollaborationPanel && hasCollaborationNode" class="sc-native-contract-collaboration">
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
+            :show-audit-timeline="true"
             v-on="collaborationPanelListeners"
           />
         </section>
@@ -143,6 +145,7 @@ import NativeCollaborationPanel, {
   type NativeCollaborationPanelListeners,
   type NativeCollaborationPanelProps,
 } from './NativeCollaborationPanel.vue';
+import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 import ObjectTaskPage from './ObjectTaskPage.vue';
 import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
@@ -214,22 +217,7 @@ const directActions = computed(() => visibleActions.value.filter((action) => ['p
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
 const hasCollaboration = computed(() => props.showCollaborationPanel === true || hasCollaborationNode.value);
-const auditEvents = computed<CanonicalAuditEvent[]>(() => (props.collaborationPanelProps?.timeline || []).flatMap((entry) => {
-  if (entry.type !== 'audit' || !entry.audit) return [];
-  const actor = String(entry.audit.actor || '').trim();
-  const occurredAt = String(entry.audit.occurred_at || '').trim();
-  const event = String(entry.audit.event || '').trim();
-  const result = String(entry.audit.result || '').trim();
-  if (!actor || !occurredAt || !event || !result) return [];
-  return [{
-    key: entry.key,
-    actor,
-    occurredAt,
-    event,
-    result,
-    detail: String(entry.body || '').trim(),
-  }];
-}));
+const auditEvents = computed<CanonicalAuditEvent[]>(() => resolveProfessionalAuditEvents(props.collaborationPanelProps?.timeline || []));
 const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
   const model = props.renderModel;
   if (!model || model.identity.mode !== 'create') return model;

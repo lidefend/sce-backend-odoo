@@ -229,28 +229,20 @@
       data-floorplan-region="activity"
       data-canonical-zone="subordinate"
     ><slot name="collaboration" /></section>
-    <details v-if="auditNodes.length || auditEvents.length" class="object-task-page__audit" data-floorplan-region="audit">
-      <summary>审批与历史审计</summary>
-      <div data-audit-content>
-        <ol v-if="auditEvents.length" class="object-task-page__audit-events" aria-label="审计事件">
-          <li v-for="event in auditEvents" :key="event.key" class="object-task-page__audit-event" data-audit-event>
-            <strong data-audit-event-name>{{ event.event }}</strong>
-            <span data-audit-result>{{ event.result }}</span>
-            <span data-audit-actor>{{ event.actor }}</span>
-            <time :datetime="event.occurredAt" data-audit-time>{{ formatAuditTime(event.occurredAt) }}</time>
-            <p v-if="event.detail">{{ event.detail }}</p>
-          </li>
-        </ol>
+    <section v-if="hasAudit || auditNodes.length || auditEvents.length" class="object-task-page__audit" data-floorplan-region="audit">
+      <ProfessionalAuditTimeline :events="auditEvents" :declared="hasAudit" :fallback-available="auditNodes.length > 0">
+        <div data-audit-content>
         <CanonicalFormNodeRenderer
-          v-for="node in auditEvents.length ? [] : auditNodes"
+          v-for="node in auditNodes"
           :key="node.nodeId"
           :node="node"
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
-      </div>
-    </details>
+        </div>
+      </ProfessionalAuditTimeline>
+    </section>
     <footer v-if="!decisionMode && $slots.actions" class="object-task-page__actions" data-floorplan-region="action-bar">
       <slot name="actions" />
     </footer>
@@ -262,6 +254,7 @@ import type { CanonicalAuditEvent, CanonicalFormNode } from '../../app/presentat
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
+import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 
 defineProps<{
   summaryNodes: CanonicalFormNode[];
@@ -285,18 +278,6 @@ defineProps<{
 }>();
 const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>();
 
-function formatAuditTime(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(parsed);
-}
 </script>
 
 <style scoped>

@@ -139,6 +139,12 @@
         </button>
       </li>
     </ul>
+    <ProfessionalAuditTimeline
+      v-if="showAuditTimeline !== false && auditEvents.length"
+      :events="auditEvents"
+      declared
+      summary="历史审计"
+    />
     <ul v-if="!unavailableMessage && visibleTimeline.length" class="native-chatter-timeline">
       <li v-for="entry in visibleTimeline" :key="entry.key" class="native-chatter-entry">
         <span class="native-chatter-type">{{ entry.typeLabel }}</span>
@@ -190,6 +196,8 @@
 import { computed } from 'vue';
 import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
 import type { NativeChatterAction } from './types';
+import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
+import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 
 type PendingNativeAttachment = {
   key: string;
@@ -200,6 +208,7 @@ type PendingNativeAttachment = {
 
 export type NativeCollaborationPanelProps = {
   readonly?: boolean;
+  showAuditTimeline?: boolean;
   title: string;
   unavailableMessage: string;
   actions: NativeChatterAction[];
@@ -263,6 +272,7 @@ export type NativeCollaborationPanelListeners = {
 
 const props = defineProps<NativeCollaborationPanelProps>();
 const visibleTimeline = computed(() => props.timeline.filter((entry) => entry.type !== 'audit'));
+const auditEvents = computed(() => resolveProfessionalAuditEvents(props.timeline));
 
 function displayTimelineMeta(value: string) {
   return String(value || '').replace(
