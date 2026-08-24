@@ -31,6 +31,7 @@ def _view_modes(value) -> list[str]:
 
 def build_scene_entry_target(
     *,
+    env=None,
     scene_key: str,
     route: str = "",
     menu_id=None,
@@ -38,6 +39,7 @@ def build_scene_entry_target(
     model: str = "",
     view_modes=None,
     record_id=None,
+    entry_intent: str = "",
 ) -> dict:
     normalized_scene_key = _text(scene_key)
     normalized_route = _text(route)
@@ -59,7 +61,14 @@ def build_scene_entry_target(
     )
     if compatibility_refs:
         entry_target["compatibility_refs"] = compatibility_refs
-    record_entry = _build_record_entry(model=model, record_id=record_id, action_id=action_id, menu_id=menu_id)
+    record_entry = _build_record_entry(
+        env=env,
+        model=model,
+        record_id=record_id,
+        action_id=action_id,
+        menu_id=menu_id,
+        entry_intent=entry_intent,
+    )
     if record_entry:
         entry_target["record_entry"] = record_entry
     return entry_target
@@ -67,6 +76,7 @@ def build_scene_entry_target(
 
 def build_compatibility_entry_target(
     *,
+    env=None,
     route: str = "",
     menu_id=None,
     action_id=None,
@@ -76,6 +86,7 @@ def build_compatibility_entry_target(
     url: str = "",
     target_type: str = "",
     delivery_mode: str = "",
+    entry_intent: str = "",
 ) -> dict:
     normalized_action_id = _to_int(action_id)
     normalized_url = _text(url)
@@ -105,7 +116,14 @@ def build_compatibility_entry_target(
         "route": normalized_route,
         "compatibility_refs": compatibility_refs,
     }
-    record_entry = _build_record_entry(model=model, record_id=record_id, action_id=normalized_action_id, menu_id=menu_id)
+    record_entry = _build_record_entry(
+        env=env,
+        model=model,
+        record_id=record_id,
+        action_id=normalized_action_id,
+        menu_id=menu_id,
+        entry_intent=entry_intent,
+    )
     if record_entry:
         entry_target["record_entry"] = record_entry
     return entry_target
@@ -125,9 +143,14 @@ def normalize_entry_target(
     url: str = "",
     target_type: str = "",
     delivery_mode: str = "",
+    entry_intent: str = "",
 ) -> dict:
     if isinstance(entry_target, dict) and _text(entry_target.get("type")):
-        return entry_target
+        return _normalize_explicit_record_entry(
+            env,
+            entry_target,
+            entry_intent=entry_intent,
+        )
     resolved_scene_key = _text(scene_key) or resolve_scene_key(
         env,
         menu_id=menu_id,
@@ -137,6 +160,7 @@ def normalize_entry_target(
     )
     if resolved_scene_key:
         return build_scene_entry_target(
+            env=env,
             scene_key=resolved_scene_key,
             route=route,
             menu_id=menu_id,
@@ -144,8 +168,10 @@ def normalize_entry_target(
             model=model,
             view_modes=view_modes,
             record_id=record_id,
+            entry_intent=entry_intent,
         )
     return build_compatibility_entry_target(
+        env=env,
         route=route,
         menu_id=menu_id,
         action_id=action_id,
@@ -155,6 +181,7 @@ def normalize_entry_target(
         url=url,
         target_type=target_type,
         delivery_mode=delivery_mode,
+        entry_intent=entry_intent,
     )
 
 
@@ -167,6 +194,11 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     # of pairing the returned action with the caller's current menu.
     effective_menu_id = _to_int(payload.get("menu_id")) or _to_int(menu_id)
     if isinstance(payload.get("entry_target"), dict) and _text(payload["entry_target"].get("type")):
+        payload["entry_target"] = _normalize_explicit_record_entry(
+            env,
+            payload["entry_target"],
+            entry_intent=_action_result_entry_intent(payload),
+        )
         _project_action_result_presentation(payload["entry_target"], payload)
         return payload
     action_type = _text(payload.get("type"))
@@ -228,6 +260,7 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
         route=route,
         target_type="url" if url else "action",
         delivery_mode="external_url" if url else "odoo_action_result",
+        entry_intent=_action_result_entry_intent(payload),
     )
     if entry_target:
         if view_id:
@@ -342,7 +375,7 @@ def _build_compatibility_refs(*, menu_id=None, action_id=None, model: str = "", 
     return refs
 
 
-def _build_record_entry(*, model: str = "", record_id=None, action_id=None, menu_id=None) -> dict:
+def _build_record_entry(*, env=None, model: str = "", record_id=None, action_id=None, menu_id=None, entry_intent: str = "") -> dict:
     normalized_model = _text(model)
     normalized_record_id = _to_int(record_id)
     if not normalized_model or not normalized_record_id:
@@ -350,7 +383,11 @@ def _build_record_entry(*, model: str = "", record_id=None, action_id=None, menu
     record_entry = {
         "model": normalized_model,
         "record_id": normalized_record_id,
+        "entry_intent": _normalize_record_entry_intent(entry_intent),
     }
+    model_write_authority = _resolve_model_write_authority(env, normalized_model)
+    if model_write_authority is not None:
+        record_entry["model_write_authority"] = model_write_authority
     normalized_action_id = _to_int(action_id)
     normalized_menu_id = _to_int(menu_id)
     if normalized_action_id:
@@ -358,3 +395,51 @@ def _build_record_entry(*, model: str = "", record_id=None, action_id=None, menu
     if normalized_menu_id:
         record_entry["menu_id"] = normalized_menu_id
     return record_entry
+
+
+def _normalize_record_entry_intent(value) -> str:
+    normalized = _text(value).lower()
+    return normalized if normalized in {"open", "handling", "explicit_readonly", "explicit_edit"} else "open"
+
+
+def _action_result_entry_intent(payload: dict) -> str:
+    explicit = payload.get("entry_intent")
+    if explicit is not None:
+        return _normalize_record_entry_intent(explicit)
+    context = payload.get("context") if isinstance(payload.get("context"), dict) else {}
+    return _normalize_record_entry_intent(context.get("entry_intent"))
+
+
+def _resolve_model_write_authority(env, model: str):
+    if env is None or not model:
+        return None
+    try:
+        return bool(env[model].check_access_rights("write", raise_exception=False))
+    except Exception:
+        return None
+
+
+def _normalize_explicit_record_entry(env, entry_target: dict, *, entry_intent: str = "") -> dict:
+    """Complete an existing formal record carrier without consulting its route."""
+    target = dict(entry_target)
+    raw_record_entry = target.get("record_entry")
+    if not isinstance(raw_record_entry, dict):
+        return target
+    record_entry = dict(raw_record_entry)
+    model = _text(record_entry.get("model"))
+    record_id = _to_int(record_entry.get("record_id"))
+    if not model or not record_id:
+        return target
+    record_entry["model"] = model
+    record_entry["record_id"] = record_id
+    record_entry["entry_intent"] = _normalize_record_entry_intent(
+        record_entry.get("entry_intent") or entry_intent
+    )
+    if not isinstance(record_entry.get("model_write_authority"), bool):
+        model_write_authority = _resolve_model_write_authority(env, model)
+        if model_write_authority is not None:
+            record_entry["model_write_authority"] = model_write_authority
+        else:
+            record_entry.pop("model_write_authority", None)
+    target["record_entry"] = record_entry
+    return target

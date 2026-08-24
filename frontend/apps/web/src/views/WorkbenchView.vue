@@ -124,7 +124,7 @@ import { isHudEnabled } from '../config/debug';
 import { capabilityTooltip, evaluateCapabilityPolicy } from '../app/capabilityPolicy';
 import { hasWorkspaceContext as hasWorkspaceContextValue, readWorkspaceContext, stripWorkspaceContext } from '../app/workspaceContext';
 import { normalizeEmbeddedSceneQuery, parseSceneKeyFromQuery } from '../app/routeQuery';
-import { normalizeModelWriteAuthority, normalizeRecordOpenIntent, resolveRecordOpenTarget } from '../app/runtime/actionViewInteractionRuntime';
+import { adaptLegacyRecordEntry, decodeFormalRecordEntry, resolveRecordOpenTarget } from '../app/runtime/recordEntryContract';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import PageRenderer from '../components/page/PageRenderer.vue';
@@ -470,16 +470,21 @@ async function handleTileClick(tile: EnrichedWorkbenchTile) {
     });
     return;
   }
-  if (payload.model && payload.record_id) {
-    const target = resolveRecordOpenTarget({
-      model: String(payload.model),
-      recordId: Number(payload.record_id),
-      actionId: Number(payload.action_id || 0) || undefined,
-      menuId: Number(payload.menu_id || 0) || undefined,
-      requestedIntent: normalizeRecordOpenIntent(payload.open_intent ?? payload.openIntent ?? payload.intent ?? payload.entry_intent),
-      modelWriteAuthority: normalizeModelWriteAuthority(payload.model_write_authority ?? payload.modelWrite ?? payload.model_write),
-      carryQuery: workspaceContextQuery.value,
-    });
+  if ((payload.model && payload.record_id) || payload.record_entry) {
+    const formalEntry = decodeFormalRecordEntry(payload.record_entry);
+    const entry = formalEntry
+      ? {
+          ...formalEntry,
+          actionId: formalEntry.actionId || Number(payload.action_id || 0) || undefined,
+          menuId: formalEntry.menuId || Number(payload.menu_id || 0) || undefined,
+          carryQuery: workspaceContextQuery.value,
+        }
+      : adaptLegacyRecordEntry(payload, {
+          fallbackActionId: payload.action_id,
+          fallbackMenuId: payload.menu_id,
+          carryQuery: workspaceContextQuery.value,
+        });
+    const target = entry ? resolveRecordOpenTarget(entry) : null;
     if (target) await router.push(target as never);
   }
 }

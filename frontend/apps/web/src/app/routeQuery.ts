@@ -1,5 +1,5 @@
 import type { LocationQueryRaw } from 'vue-router';
-import { normalizeModelWriteAuthority, normalizeRecordOpenIntent, resolveRecordOpenTarget } from './runtime/actionViewInteractionRuntime';
+import { adaptLegacyRecordEntry, decodeFormalRecordEntry, resolveRecordOpenTarget } from './runtime/recordEntryContract';
 
 type QueryLike = LocationQueryRaw;
 type SceneRouteSource = {
@@ -268,29 +268,19 @@ export function buildEntryTargetRouteTarget(
   const recordModel = String(recordEntry.model || '').trim();
   const recordId = positiveInteger(recordEntry.record_id);
   if (type === 'compatibility' && recordModel && recordId) {
-    const rawRecordIntent = recordEntry.open_intent
-      ?? recordEntry.openIntent
-      ?? recordEntry.intent
-      ?? recordEntry.entry_intent;
-    const hasFormalRecordIntent = rawRecordIntent !== undefined && rawRecordIntent !== null && String(rawRecordIntent).trim() !== '';
-    const explicitRouteIntent = hasFormalRecordIntent
-      ? normalizeRecordOpenIntent(rawRecordIntent)
-      : route.startsWith('/f/')
-        ? 'explicit_edit'
-        : route.startsWith('/r/')
-          ? 'explicit_readonly'
-          : 'open';
-    const target = resolveRecordOpenTarget({
-      model: recordModel,
-      recordId,
-      actionId,
-      menuId,
-      requestedIntent: explicitRouteIntent,
-      modelWriteAuthority: normalizeModelWriteAuthority(
-        recordEntry.model_write_authority ?? recordEntry.modelWriteAuthority ?? recordEntry.model_write,
-      ),
-      carryQuery: query,
-    });
+    // Compatibility only adapts the old route carrier.  A formal record_entry
+    // always wins over a legacy /r or /f hint, while missing authority stays
+    // unknown and therefore fails closed in the shared resolver.
+    const formalEntry = decodeFormalRecordEntry(recordEntry);
+    const entry = formalEntry
+      ? { ...formalEntry, actionId: formalEntry.actionId || actionId, menuId: formalEntry.menuId || menuId, carryQuery: query }
+      : adaptLegacyRecordEntry(recordEntry, {
+          legacyRoute: route,
+          fallbackActionId: actionId,
+          fallbackMenuId: menuId,
+          carryQuery: query,
+        });
+    const target = entry ? resolveRecordOpenTarget(entry) : null;
     return {
       path: target?.path || `/r/${encodeURIComponent(recordModel)}/${recordId}`,
       query: target?.query || query,

@@ -90,6 +90,80 @@ class TestNavigationEntryTarget(unittest.TestCase):
         self.assertNotIn("entry_target", result)
         self.assertNotIn("action_id", result)
 
+    def test_record_entry_carries_formal_intent_and_current_user_write_authority(self):
+        class _Model:
+            def check_access_rights(self, mode, raise_exception=False):
+                assert mode == "write"
+                assert raise_exception is False
+                return True
+
+        class _Env(dict):
+            def __getitem__(self, key):
+                if key == "project.project":
+                    return _Model()
+                return super().__getitem__(key)
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            _Env(),
+            {
+                "type": "ir.actions.act_window",
+                "res_model": "project.project",
+                "res_id": 42,
+                "view_mode": "form",
+                "context": {"entry_intent": "handling"},
+            },
+        )
+
+        self.assertEqual(
+            action["entry_target"]["record_entry"],
+            {
+                "model": "project.project",
+                "record_id": 42,
+                "entry_intent": "handling",
+                "model_write_authority": True,
+            },
+        )
+
+    def test_record_entry_omits_unavailable_write_authority(self):
+        entry = navigation_entry_target.normalize_entry_target(
+            model="project.project",
+            record_id=42,
+            entry_intent="handling",
+        )
+
+        self.assertEqual(entry["record_entry"]["entry_intent"], "handling")
+        self.assertNotIn("model_write_authority", entry["record_entry"])
+
+    def test_explicit_entry_target_is_completed_without_using_legacy_route_as_authority(self):
+        class _Model:
+            def check_access_rights(self, mode, raise_exception=False):
+                assert mode == "write"
+                assert raise_exception is False
+                return True
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            {"payment.request": _Model()},
+            {
+                "type": "ir.actions.act_window",
+                "context": {"entry_intent": "handling"},
+                "entry_target": {
+                    "type": "compatibility",
+                    "route": "/r/payment.request/100",
+                    "record_entry": {"model": "payment.request", "record_id": 100},
+                },
+            },
+        )
+
+        self.assertEqual(
+            action["entry_target"]["record_entry"],
+            {
+                "model": "payment.request",
+                "record_id": 100,
+                "entry_intent": "handling",
+                "model_write_authority": True,
+            },
+        )
+
     def test_client_action_next_is_wrapped_and_promoted_to_entry_target(self):
         action = navigation_entry_target.normalize_odoo_action_result(
             None,

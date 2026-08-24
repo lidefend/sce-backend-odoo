@@ -3,7 +3,7 @@ import type { Router } from 'vue-router';
 import { useSessionStore } from '../stores/session';
 import { recordTrace, digestParams, createTraceId } from './trace';
 import { buildEntryTargetRouteTarget } from '../app/routeQuery';
-import { normalizeRecordOpenIntent, resolveRecordOpenTarget, type RecordOpenIntent } from '../app/runtime/actionViewInteractionRuntime';
+import { resolveRecordOpenTarget, type RecordEntryContract } from '../app/runtime/recordEntryContract';
 import { BUSINESS_CONFIG_MODELS, MENU_CONFIG_POLICY_MODEL } from '../app/businessConfigBoundaries';
 
 function normalizeDomain(domain: unknown) {
@@ -130,7 +130,14 @@ export function openAction(
   router.push({ path: `/a/${action.action_id}`, query });
 }
 
-export function openForm(router: Router, model: string, id: number, action?: NavMeta, menuId?: number, modelWriteAuthority?: boolean | null, requestedIntent?: RecordOpenIntent) {
+export function openForm(
+  router: Router,
+  model: string,
+  id: number,
+  action?: NavMeta,
+  menuId?: number,
+  recordEntry: Partial<Omit<RecordEntryContract, 'model' | 'recordId' | 'actionId' | 'menuId' | 'carryQuery'>> = {},
+) {
   const query = {
     menu_id: menuId?.toString(),
     action_id: action?.action_id?.toString(),
@@ -154,8 +161,8 @@ export function openForm(router: Router, model: string, id: number, action?: Nav
     recordId: id,
     actionId: action?.action_id,
     menuId,
-    requestedIntent: normalizeRecordOpenIntent(requestedIntent),
-    modelWriteAuthority,
+    entryIntent: recordEntry.entryIntent || 'open',
+    modelWriteAuthority: recordEntry.modelWriteAuthority ?? null,
     carryQuery: query,
   });
   if (target) router.push(target as never);

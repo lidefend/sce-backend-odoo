@@ -18,9 +18,8 @@ import {
   groupCollectionRecords,
   resolveResponsiveCollectionPresentation,
 } from '../src/app/runtime/collectionViewRuntime';
-import { buildActionViewRowClickTarget, normalizeModelWriteAuthority, resolveCollectionWriteAuthority, resolveRecordOpenTarget, shouldUseCanonicalCollectionDetail } from '../src/app/runtime/actionViewInteractionRuntime';
+import { buildActionViewRowClickTarget, resolveCollectionWriteAuthority, shouldUseCanonicalCollectionDetail } from '../src/app/runtime/actionViewInteractionRuntime';
 import { pickContractNavQuery } from '../src/app/navigationContext';
-import { buildEntryTargetRouteTarget } from '../src/app/routeQuery';
 import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import { resolveLoadKanbanFieldApplyState } from '../src/app/runtime/actionViewLoadViewFieldStateRuntime';
 import { resolveDesktopListCandidates } from '../src/pages/listPage/listColumnVisibility';
@@ -205,45 +204,10 @@ const detailFromCard = buildActionViewRowClickTarget({ targetModel: 'x.model', r
 const editableDetail = buildActionViewRowClickTarget({ targetModel: 'x.model', rawId: 7, menuId: 3, actionId: 4, carryQuery: {}, editable: true });
 assert.equal(detailFromTable?.path, detailFromCard?.path);
 assert.equal(editableDetail?.path, '/f/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, modelWriteAuthority: true })?.path, '/f/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, modelWriteAuthority: false })?.path, '/r/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, modelWriteAuthority: null })?.path, '/r/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, requestedIntent: 'explicit_readonly', modelWriteAuthority: true })?.path, '/r/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, requestedIntent: 'explicit_edit', modelWriteAuthority: null })?.path, '/r/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, requestedIntent: 'explicit_edit', modelWriteAuthority: false })?.path, '/r/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, requestedIntent: 'explicit_edit', modelWriteAuthority: true })?.path, '/f/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, requestedIntent: 'handling', modelWriteAuthority: true })?.path, '/f/x.model/7');
-assert.equal(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, requestedIntent: 'handling', modelWriteAuthority: null })?.path, '/r/x.model/7');
-assert.equal(normalizeModelWriteAuthority(true), true);
-assert.equal(normalizeModelWriteAuthority(false), false);
-assert.equal(normalizeModelWriteAuthority('true'), null);
-assert.equal(normalizeModelWriteAuthority('edit'), null);
 assert.equal(resolveCollectionWriteAuthority({ modelRights: undefined }), false);
 assert.equal(resolveCollectionWriteAuthority({ modelRights: { write: undefined } }), false);
 assert.equal(resolveCollectionWriteAuthority({ modelRights: { write: false } }), false);
 assert.equal(resolveCollectionWriteAuthority({ modelRights: { write: true } }), true);
-assert.deepEqual(resolveRecordOpenTarget({ model: 'x.model', recordId: 7, actionId: 4, menuId: 3, requestedIntent: 'explicit_edit', modelWriteAuthority: true, carryQuery: { view_id: 9, entry_intent: 'edit' } }), {
-  path: '/f/x.model/7',
-  query: { menu_id: 3, action_id: 4, view_id: 9, entry_intent: 'edit' },
-});
-const compatibilityEdit = buildEntryTargetRouteTarget({
-  type: 'compatibility',
-  record_entry: { model: 'x.model', record_id: 7, open_intent: 'explicit_edit', model_write_authority: true },
-}, { query: { view_id: 9 }, actionId: 4, menuId: 3 });
-assert.equal(compatibilityEdit.path, '/f/x.model/7');
-assert.deepEqual(compatibilityEdit.query, { view_id: 9, menu_id: 3, action_id: 4 });
-const compatibilityHandling = buildEntryTargetRouteTarget({
-  type: 'compatibility',
-  route: '/r/x.model/7',
-  record_entry: { model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: true },
-}, { query: {}, actionId: 4, menuId: 3 });
-assert.equal(compatibilityHandling.path, '/f/x.model/7');
-const compatibilityHandlingUnknown = buildEntryTargetRouteTarget({
-  type: 'compatibility',
-  route: '/r/x.model/7',
-  record_entry: { model: 'x.model', record_id: 7, entry_intent: 'handling' },
-}, { query: {}, actionId: 4, menuId: 3 });
-assert.equal(compatibilityHandlingUnknown.path, '/r/x.model/7');
 assert.equal(shouldUseCanonicalCollectionDetail({ viewMode: 'kanban', collectionSemantic: 'card' }), true);
 assert.equal(shouldUseCanonicalCollectionDetail({ viewMode: 'kanban', collectionSemantic: 'workflow_board' }), false);
 

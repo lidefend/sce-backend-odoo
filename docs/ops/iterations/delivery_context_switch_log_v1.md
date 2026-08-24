@@ -5533,3 +5533,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   workspace, plus repeat-invocation coverage for the exact two-XMLID migration.
 - Rebuilt and installed the isolated `local.clean` profile successfully; the
   loader reached both project contract files after their action/view sources.
+
+## Record-entry contract unification — Phase A (2026-08-24)
+
+- Branch / anchor: `feature/p0-record-entry-contract-unification` / `e188e92a`.
+- Formal Product Layer / Layer Target / Module: P0 platform contract authority /
+  generic `record_entry` intent and model-write envelope, `smart_core` contract
+  projection, and the shared frontend navigation resolver.
+- Reason / boundary: formal `entry_intent` plus strict boolean
+  `model_write_authority` decide the first record route. ActionView, Workbench,
+  Suggested Action, relation navigation and action service consume the same
+  resolver; missing authority fails closed to `/r`. Compatibility only adapts
+  legacy carriers and cannot establish write authority.
+- Why Here / Why Not Elsewhere: this is cross-model navigation infrastructure.
+  No model, action, menu, role, ACL, fixture or page-specific presentation rule
+  is changed.
+- Blast radius / validation: generic entry target projection, relation entry
+  projection and frontend adapters. Shared resolver matrix, entry-target unit
+  tests, collection semantics gate, strict typecheck, frontend Quick, local.dev
+  restart and health checks passed. `local.dev.upgrade` was correctly rejected
+  by the fast-mode guard because this batch has no views/security/data/schema
+  mutation; no database write was attempted.
+- Rollback: revert this batch only. The former per-entry loose parsing resumes;
+  no data migration or fixture cleanup is required.

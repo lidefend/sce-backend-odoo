@@ -4,7 +4,7 @@ import type {
   SuggestedActionExecuteOptions,
   SuggestedActionParsed,
 } from './types';
-import { normalizeRecordOpenIntent, resolveRecordOpenTarget } from '../runtime/actionViewInteractionRuntime';
+import { normalizeLegacyRecordOpenIntent, resolveRecordOpenTarget } from '../runtime/recordEntryContract';
 
 const ROUTE_ACTIONS = new Set<SuggestedActionKind>(['open_route', 'open_url']);
 const RETRY_ACTIONS = new Set<SuggestedActionKind>(['refresh', 'retry']);
@@ -257,7 +257,7 @@ export function executeSuggestedAction(
     const target = resolveRecordOpenTarget({
       model: parsed.model,
       recordId: parsed.recordId,
-      requestedIntent: normalizeRecordOpenIntent(
+      entryIntent: normalizeLegacyRecordOpenIntent(
         authorityQuery.get('open_intent') || authorityQuery.get('intent') || authorityQuery.get('entry_intent'),
       ),
       // Query strings may request an opening intent, but cannot assert permissions.

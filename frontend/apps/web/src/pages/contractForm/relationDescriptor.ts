@@ -1,5 +1,6 @@
 import type { FieldDescriptor } from '@sc/schema';
 import { toPositiveInt } from '../../app/contractRuntime';
+import { normalizeModelWriteAuthority, normalizeRecordOpenIntent } from '../../app/runtime/recordEntryContract';
 import { cleanRelationDisplayLabel, fieldType, normalizeRelationIds } from './fieldUtils';
 import type { RelationOption, RelationSearchColumn, RelationSearchRow, RelationUiLabels } from './types';
 
@@ -30,6 +31,8 @@ export function relationEntry(descriptor?: FieldDescriptor) {
     menuId,
     canRead: row.can_read !== false,
     canOpen: row.can_open !== false,
+    entryIntent: normalizeRecordOpenIntent(row.entry_intent) || 'open',
+    modelWriteAuthority: normalizeModelWriteAuthority(row.model_write_authority),
     canCreate: Boolean(row.can_create),
     createMode,
     defaultVals,
