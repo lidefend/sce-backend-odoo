@@ -5630,3 +5630,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   reaches development static build successfully without logging credentials.
 - Rollback: revert the recipe forwarding and its focused tests; no runtime
   data, role, environment file, symlink, database, or product source changes.
+
+## Governed unpublished branch main sync (2026-08-24)
+
+- Branch / anchor: `fix/p4-governed-local-branch-sync-v1` / `d002dc36`.
+- Formal Product Layer / Layer Target / Module: P4 delivery governance /
+  controlled local unpublished-branch baseline sync / `make/codex.mk`,
+  `scripts/ops/safe_branch_sync_main.py`, and focused tests.
+- Reason / boundary: daily responsibility commits need an auditable way to
+  consume an exact newer main without opening a raw history-rewrite path.
+  Only the Make target invokes the internal replay; direct rebase, merge,
+  cherry-pick and force push remain prohibited.
+- Safety contract: requires exact expected root/branch/head/old-base/main,
+  clean worktree, no Git writer, current `origin/main`, no merge commit, no
+  remote branch and no open PR. It writes a verified local recovery bundle,
+  aborts and restores the original HEAD on conflict, then verifies commit
+  count, responsibility patch identity and changed-path set.
+- Blast radius / validation: local Git metadata and an unpublished branch only;
+  no push, force push, runtime, database, credential or product files. Focused
+  tests cover success, protected main, dirty identity drift, remote/PR
+  publication, merge commits, writer locks, conflict recovery, bundle
+  verification, environment sanitization and root mismatch.
+- Rollback: revert this P4 governance commit. Existing published branches keep
+  their immutable-history policy; recovery bundles remain local evidence.

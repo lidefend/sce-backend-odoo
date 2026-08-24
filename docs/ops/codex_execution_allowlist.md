@@ -261,6 +261,16 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 * `git checkout -b <new-allowed-branch>`
 * `git pull --ff-only origin <same-branch>`
 
+#### D) 受管本地分支基线同步（唯一例外）
+
+* `make workspace.branch.sync-main`
+
+  仅允许同步未发布、没有开放 PR 的合规本地分支。调用者必须提供当前
+  分支、HEAD、旧基线和 `origin/main` 的完整 SHA，并提供精确确认短语。
+  入口会创建本地恢复 bundle，拒绝 dirty、merge commit、远端同名分支、
+  开放 PR、身份漂移和 Git writer；冲突时自动 abort 并恢复原 HEAD。该入口
+  不执行 push 或 force push，并会核对责任 patch、变更路径和提交数量。
+
 ---
 
 ### 1.4.2 明确禁止的 Git 命令（Hard Ban）
@@ -287,6 +297,9 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   精确基线和状态校验）
 * ❌ `git config`
 * ❌ `git clean -fdx`
+
+`git rebase` 的唯一实现级例外是受上述 Make target 调用的
+`scripts/ops/safe_branch_sync_main.py`；用户和 Codex 均不得直接执行底层命令。
 
 > ⚠️ 所有 **远端状态变更**
 > 必须通过 Makefile 封装流程完成。
