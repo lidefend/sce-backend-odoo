@@ -9,7 +9,6 @@ import ast
 from pathlib import Path
 
 from contract_form_semantic_identity_guard import validate_semantic_identity_projection
-from scene_audit_disclosure_guard import audit_disclosure_is_governed
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -63,6 +62,7 @@ form_host = (WEB_SRC / "pages/contractForm/ContractFormDriverHost.vue").read_tex
 contract_form_page = (WEB_SRC / "pages/ContractFormPage.vue").read_text(encoding="utf-8")
 web_index = (ROOT / "frontend/apps/web/index.html").read_text(encoding="utf-8")
 object_task_page = (WEB_SRC / "pages/contractForm/ObjectTaskPage.vue").read_text(encoding="utf-8")
+professional_audit_timeline = (WEB_SRC / "pages/contractForm/ProfessionalAuditTimeline.vue").read_text(encoding="utf-8")
 canonical_action_bar = (WEB_SRC / "pages/contractForm/CanonicalActionBar.vue").read_text(encoding="utf-8")
 form_floorplan = (WEB_SRC / "app/presentation/canonicalFormFloorplan.ts").read_text(encoding="utf-8")
 canonical_native_bridge = (WEB_SRC / "pages/contractForm/canonicalNativeFormBridge.ts").read_text(encoding="utf-8")
@@ -217,7 +217,11 @@ for semantic_region in ("summary", "current-task", "business-context", "relation
         f"object-task floorplan does not expose {semantic_region} semantic region",
     )
 require(
-    audit_disclosure_is_governed(object_task_page),
+    "<ProfessionalAuditTimeline" in object_task_page
+    and 'data-floorplan-region="audit"' in object_task_page
+    and "<details" in professional_audit_timeline
+    and " open" not in professional_audit_timeline.split("<details", 1)[1].split(">", 1)[0]
+    and "ScEmptyState" in professional_audit_timeline,
     "audit region must be content-backed and default-collapsed",
 )
 require(
