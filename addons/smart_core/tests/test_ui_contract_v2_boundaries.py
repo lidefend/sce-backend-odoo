@@ -2617,7 +2617,8 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(slot_titles, ["办理总览", "主业务事实", "金额与进度", "办理协作", "明细与来源"])
         self.assertNotIn("合同事实", slot_titles)
         self.assertNotIn("工程与合同约定", slot_titles)
-        self.assertEqual(structure["layoutPolicy"], "overview_then_task_slots")
+        self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["source"], "ui.contract.v2.form_structure_contract")
         self.assertNotIn("businessSectionAliases", structure)
         self.assertEqual(structure["sourceSectionTitles"], ["Source Section"])
@@ -2648,6 +2649,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         )
 
         self.assertEqual(structure["mode"], "native_structured_form")
+        self.assertEqual(structure["presentationMode"], "workspace")
         self.assertEqual(structure["layoutPolicy"], "native_authority")
 
         default_structure = handler._build_form_structure_contract(
@@ -2666,9 +2668,10 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             governance=None,
         )
         self.assertEqual(default_structure["mode"], "native_structured_form")
+        self.assertEqual(default_structure["presentationMode"], "workspace")
         self.assertEqual(default_structure["layoutPolicy"], "native_authority")
 
-    def test_project_form_contract_selection_drives_task_and_native_modes(self):
+    def test_form_contract_scope_drives_task_and_workspace_presentation_modes(self):
         class _Field:
             def __init__(self, field_type, label):
                 self.type = field_type
@@ -2689,9 +2692,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     if name in names
                 }
 
-        class _Config:
+        class _EntryConfig:
             id = 90
-            name = "project_project_form_structure_v1"
+            name = "entry_form_structure_v1"
             priority = 90
             view_type = "form"
             contract_json = {
@@ -2707,8 +2710,21 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         class _ConfigModel:
             def _effective_view_orchestration_contracts(self, model, *, view_type, action_id, view_id=None, **_kwargs):
-                if model == "project.project" and view_type == "form" and action_id == 11 and view_id == 22:
-                    return [_Config()]
+                self.request = {
+                    "model": model,
+                    "view_type": view_type,
+                    "action_id": action_id,
+                    "view_id": view_id,
+                    "role_key": _kwargs.get("role_key"),
+                }
+                if (
+                    model == "project.project"
+                    and view_type == "form"
+                    and action_id == 722
+                    and view_id == 1503
+                    and _kwargs.get("role_key") == "entry_operator"
+                ):
+                    return [_EntryConfig()]
                 return []
 
         class _Env(dict):
@@ -2721,12 +2737,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         })
         handler = self.module.UiContractV2Handler(env=env)
 
+        authoritative_role_key = "entry_operator"
+
         def project_contract(action_id, view_id):
             source = {
                 "model": "project.project",
                 "view_type": "form",
                 "action_id": action_id,
                 "view_ids_by_type": {"form": view_id},
+                # Transport/source data cannot select a role-bound contract.
+                "role_key": "untrusted_source_role",
                 "fields": {
                     name: {"type": field.type, "string": field.string}
                     for name, field in _ProjectModel._fields.items()
@@ -2736,12 +2756,106 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             handler._inject_business_operation_contract(source, model="project.project", view_type="form")
             return source
 
-        task_source = project_contract(11, 22)
-        native_source = project_contract(859, 44)
+        original_role_resolver = self.module.authoritative_form_role_key
+        self.module.authoritative_form_role_key = lambda _env: authoritative_role_key
+        try:
+            task_source = project_contract(722, 1503)
+            native_source = project_contract(859, 1504)
+            authoritative_role_key = "workspace_manager"
+            role_mismatch_source = project_contract(722, 1503)
+        finally:
+            self.module.authoritative_form_role_key = original_role_resolver
         self.assertEqual(task_source["form_structure_contract"]["mode"], "business_task_form")
         self.assertEqual(native_source["form_structure_contract"]["mode"], "native_structured_form")
+        self.assertEqual(task_source["form_structure_contract"]["presentationMode"], "task")
+        self.assertEqual(native_source["form_structure_contract"]["presentationMode"], "workspace")
+        self.assertEqual(role_mismatch_source["form_structure_contract"]["presentationMode"], "workspace")
         self.assertEqual(task_source["form_structure_contract"]["layoutPolicy"], "overview_then_task_slots")
         self.assertEqual(native_source["form_structure_contract"]["layoutPolicy"], "native_authority")
+        self.assertEqual(env["ui.business.config.contract"].request["role_key"], "workspace_manager")
+        self.assertNotEqual(env["ui.business.config.contract"].request["role_key"], "untrusted_source_role")
+        self.assertEqual(
+            task_source["source_trace"]["view_orchestration"]["authenticated_role_key"],
+            "entry_operator",
+        )
+        self.assertEqual(
+            task_source["source_trace"]["view_orchestration"]["role_authority"],
+            "identity_resolver",
+        )
+
+    def test_resolved_native_form_layout_emits_workspace_presentation_mode_without_overlay(self):
+        class _Field:
+            type = "char"
+            string = "项目名称"
+
+        class _ProjectModel:
+            _fields = {"name": _Field()}
+
+            def fields_get(self, names):
+                return {
+                    name: {"type": field.type, "string": field.string}
+                    for name, field in self._fields.items()
+                    if name in names
+                }
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, *_args, **_kwargs):
+                return []
+
+        class _Env(dict):
+            def __contains__(self, key):
+                return dict.__contains__(self, key)
+
+        handler = self.module.UiContractV2Handler(env=_Env({
+            "project.project": _ProjectModel(),
+            "ui.business.config.contract": _ConfigModel(),
+        }))
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "action_id": 859,
+            "view_ids_by_type": {"form": 1504},
+            "fields": {"name": {"type": "char", "string": "项目名称"}},
+            "views": {"form": {"layout": [{"type": "field", "name": "name"}]}},
+        }
+
+        handler._inject_business_operation_contract(source, model="project.project", view_type="form")
+
+        structure = source["form_structure_contract"]
+        self.assertEqual(structure["structureVersion"], "1.1")
+        self.assertEqual(structure["presentationMode"], "workspace")
+        self.assertEqual(structure["mode"], "native_structured_form")
+        self.assertEqual(structure["layoutPolicy"], "native_authority")
+        self.assertEqual(
+            structure["sourceAuthority"]["governance_source"]["source"],
+            "native_form_layout",
+        )
+
+    def test_form_contract_role_selection_uses_authenticated_role_surface(self):
+        class _Resolver:
+            def __init__(self, env):
+                self.env = env
+
+            def user_group_xmlids(self, user):
+                self.user = user
+                return {"smart_construction_core.group_entry_operator"}
+
+            def resolve_role_code(self, groups):
+                self.groups = groups
+                return "entry_operator"
+
+        class _Env:
+            user = object()
+
+        original_resolver = self.module.IdentityResolver
+        self.module.IdentityResolver = _Resolver
+        try:
+            self.assertEqual(
+                self.module.authoritative_form_role_key(_Env()),
+                "entry_operator",
+            )
+        finally:
+            self.module.IdentityResolver = original_resolver
 
     def test_project_contract_scope_migration_is_repeatable_and_exact(self):
         migration_path = (
@@ -3358,7 +3472,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             source_contract["form_structure_contract"]["sourceAuthority"]["governed_form_structure"]
         )
 
-    def test_form_structure_contract_requires_view_governance(self):
+    def test_resolved_native_form_layout_requires_workspace_contract_without_overlay(self):
         class _Field:
             def __init__(self, field_type, string="", relation=""):
                 self.type = field_type
@@ -3425,7 +3539,11 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             view_type="form",
         )
 
-        self.assertNotIn("form_structure_contract", source_contract)
+        structure = source_contract["form_structure_contract"]
+        self.assertEqual(structure["structureVersion"], "1.1")
+        self.assertEqual(structure["presentationMode"], "workspace")
+        self.assertEqual(structure["mode"], "native_structured_form")
+        self.assertEqual(structure["layoutPolicy"], "native_authority")
         self.assertNotIn("list_profile", source_contract)
         self.assertEqual(source_contract["visible_fields"], ["name"])
 

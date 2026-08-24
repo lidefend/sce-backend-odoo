@@ -14,6 +14,9 @@ NO_BUSINESS_FACT_AUTHORITY = True
 FORM_STRUCTURE_ROLES = frozenset(CANONICAL_FORM_STRUCTURE_ROLES)
 FORM_STRUCTURE_SOURCE = "ui.contract.v2.form_structure_contract"
 FORM_STRUCTURE_RUNTIME_CARRIER = "ui.contract.v2.form_structure_contract"
+FORM_PRESENTATION_MODES = frozenset({"task", "workspace"})
+FORM_STRUCTURE_LEGACY_VERSION = "1.0"
+FORM_STRUCTURE_PRESENTATION_VERSION = "1.1"
 
 
 def source_authority_contract() -> dict[str, Any]:
@@ -339,6 +342,16 @@ def find_form_structure_contract_issues(contract: dict[str, Any]) -> list[str]:
         issues.append(f"formStructureContract.source must be {FORM_STRUCTURE_SOURCE}")
     if _text(structure.get("viewType")) != "form":
         issues.append("formStructureContract.viewType must be form")
+    structure_version = _text(structure.get("structureVersion"))
+    if structure_version not in {FORM_STRUCTURE_LEGACY_VERSION, FORM_STRUCTURE_PRESENTATION_VERSION}:
+        issues.append("formStructureContract.structureVersion must be 1.0 or 1.1")
+    if (
+        structure_version == FORM_STRUCTURE_PRESENTATION_VERSION
+        and _text(structure.get("presentationMode")) not in FORM_PRESENTATION_MODES
+    ):
+        issues.append("formStructureContract.presentationMode must be task or workspace")
+    if structure_version == FORM_STRUCTURE_LEGACY_VERSION and "presentationMode" in structure:
+        issues.append("formStructureContract.presentationMode requires structureVersion 1.1")
     source_authority = _dict(structure.get("sourceAuthority"))
     if not source_authority:
         issues.append("formStructureContract.sourceAuthority is required")

@@ -42,6 +42,7 @@ from ..utils.load_contract_response_cache import (
     projection_base_params,
     projection_role_code,
 )
+from ..identity.identity_resolver import IdentityResolver
 from . import ui_contract_v2_adapters as _adapters
 from . import ui_contract_v2_authority as _authority
 from .ui_contract_v2_constants import (
@@ -70,6 +71,31 @@ REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
 REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
 REASON_ACTION_GROUP_ACCESS_DENIED = _authority.REASON_ACTION_GROUP_ACCESS_DENIED
 REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INVALID
+
+
+def form_structure_presentation_mode(authority: Any) -> str:
+    """Return the formal form-shape authority without exposing renderer details."""
+    return "task" if str(authority or "").strip() == "entry_semantic_surface" else "workspace"
+
+
+def authoritative_form_role_key(env: Any) -> str:
+    """Resolve the current server session's formal role surface for form selection.
+
+    Form orchestration contracts are server-owned policy. The selector must not
+    receive a role from request/query/source payloads, which are transport data
+    rather than authenticated role authority.
+    """
+    try:
+        resolver = IdentityResolver(env)
+        user = env.user
+        return str(resolver.resolve_role_code(resolver.user_group_xmlids(user)) or "").strip()
+    except Exception:
+        # Test/preview contexts without an authenticated Odoo session must not
+        # select a role-bound task surface. They safely fall back to workspace.
+        _logger.debug("authenticated role surface unavailable for form selection", exc_info=True)
+        return ""
+
+
 class UiContractV2Handler(BaseIntentHandler):
     INTENT_TYPE = "ui.contract.v2"
     DESCRIPTION = "统一页面契约 v2 入口；以 ui.contract 为事实来源，按终端类型裁剪 v2 契约"
@@ -1724,10 +1750,11 @@ class UiContractV2Handler(BaseIntentHandler):
             return
         source_contract["form_structure_contract"] = {
             "source": "ui.contract.v2.form_structure_contract",
-            "structureVersion": "1.0",
+            "structureVersion": "1.1",
             "model": model,
             "viewType": "form",
             "mode": "business_category_task_form",
+            "presentationMode": "task",
             "layoutPolicy": "category_sections_as_task_tabs",
             "objectProfile": {
                 "model": model,
@@ -2229,7 +2256,11 @@ class UiContractV2Handler(BaseIntentHandler):
         governance = source_contract.get("governance") if isinstance(source_contract.get("governance"), dict) else {}
         view_governance = governance.get("view_orchestration") if isinstance(governance.get("view_orchestration"), dict) else {}
         source_trace = source_contract.get("source_trace") if isinstance(source_contract.get("source_trace"), dict) else {}
+        if not source_trace:
+            source_contract["source_trace"] = source_trace
         view_trace = source_trace.get("view_orchestration") if isinstance(source_trace.get("view_orchestration"), dict) else {}
+        if not view_trace:
+            source_trace["view_orchestration"] = view_trace
         business_contracts = view_trace.get("business_config_contracts")
         if not isinstance(business_contracts, list):
             business_contracts = view_governance.get("business_config_contracts")
@@ -2289,11 +2320,15 @@ class UiContractV2Handler(BaseIntentHandler):
         if business_config_contract is not None:
             try:
                 view_ids = source_contract.get("view_ids_by_type") if isinstance(source_contract.get("view_ids_by_type"), dict) else {}
+                role_key = authoritative_form_role_key(self.env)
+                view_trace["authenticated_role_key"] = role_key
+                view_trace["role_authority"] = "identity_resolver"
                 configs = business_config_contract._effective_view_orchestration_contracts(
                     model,
                     view_type="form",
                     action_id=self._source_action_id(source_contract),
                     view_id=view_ids.get("form"),
+                    role_key=role_key or None,
                 )
             except Exception:
                 _logger.exception("business config form preview projection failed for model=%s", model)
@@ -2414,7 +2449,36 @@ class UiContractV2Handler(BaseIntentHandler):
                                 existing_section["fields"].append(name)
         applied = bool(view_governance.get("applied") or business_contracts or legacy_overlay or field_names)
         if not applied:
-            return {}
+            # A resolved native form layout is itself the formal authority for a
+            # structured workspace.  Do not require an optional business
+            # overlay merely to emit the presentation-mode contract: that
+            # would leave ordinary form actions with no explicit mode and
+            # force the web client to infer one.  Task mode remains opt-in
+            # through a selected entry-semantic orchestration contract.
+            views = source_contract.get("views") if isinstance(source_contract.get("views"), dict) else {}
+            form_view = views.get("form") if isinstance(views.get("form"), dict) else {}
+            native_layout = form_view.get("layout")
+            if not isinstance(native_layout, list) or not native_layout:
+                return {}
+            return {
+                "source": "native_form_layout",
+                "owner_layer": "native_form_layout",
+                "business_config_contracts": [],
+                "legacy_field_policy_overlay": False,
+                "form_layout_overlay": False,
+                "form_structure_authority": "native_authority",
+                "field_names": [],
+                "field_labels": {},
+                "field_semantic_roles": {},
+                "section_semantic_roles": {},
+                "configured_sections": [],
+                "section_titles": [],
+                "field_groups": {},
+                "hidden_field_names": [],
+                "form_columns": 0,
+                "group_columns": {},
+                "group_visibility": {},
+            }
         return {
             "source": "business_view_orchestration",
             "owner_layer": str(view_trace.get("owner_layer") or view_governance.get("owner_layer") or "business_view_orchestration"),
@@ -2592,23 +2656,19 @@ class UiContractV2Handler(BaseIntentHandler):
                 group_rows.append(row)
             if group_rows:
                 form_columns = self._form_layout_columns_from_governance(governance)
+                presentation_mode = form_structure_presentation_mode(
+                    (governance or {}).get("form_structure_authority")
+                )
                 return {
                     "source": "ui.contract.v2.form_structure_contract",
-                    "structureVersion": "1.0",
+                    "structureVersion": "1.1",
                     "model": model,
                     "viewType": "form",
                     **({"columns": form_columns} if form_columns > 0 else {}),
-                    "mode": (
-                        "business_task_form"
-                        if str((governance or {}).get("form_structure_authority") or "").strip()
-                        == "entry_semantic_surface"
-                        else "native_structured_form"
-                    ),
+                    "mode": "business_task_form" if presentation_mode == "task" else "native_structured_form",
+                    "presentationMode": presentation_mode,
                     "layoutPolicy": (
-                        "business_config_sections"
-                        if str((governance or {}).get("form_structure_authority") or "").strip()
-                        == "entry_semantic_surface"
-                        else "native_authority"
+                        "business_config_sections" if presentation_mode == "task" else "native_authority"
                     ),
                     "objectProfile": {
                         "model": model,
@@ -2816,12 +2876,16 @@ class UiContractV2Handler(BaseIntentHandler):
         semantic_surface = str(
             (governance or {}).get("form_structure_authority") or ""
         ).strip() == "entry_semantic_surface"
+        presentation_mode = form_structure_presentation_mode(
+            (governance or {}).get("form_structure_authority")
+        )
         return {
             "source": "ui.contract.v2.form_structure_contract",
-            "structureVersion": "1.0",
+            "structureVersion": "1.1",
             "model": model,
             "viewType": "form",
             "mode": "business_task_form" if semantic_surface else "native_structured_form",
+            "presentationMode": presentation_mode,
             "layoutPolicy": "overview_then_task_slots" if semantic_surface else "native_authority",
             "objectProfile": {
                 "model": model,

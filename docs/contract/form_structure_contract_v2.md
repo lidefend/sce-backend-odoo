@@ -36,6 +36,29 @@ groups, pages, legacy fields, projection fields and relation fields.
 
 It must not create business facts. It only arranges facts that already exist.
 
+`presentationMode` is the explicit form-shape authority introduced by structure
+version `1.1`. Its only stable values
+are `task` and `workspace`: `task` opts into the task Floorplan, while
+`workspace` preserves the normalized Odoo structure for comprehensive work.
+The separate effective render profile (`create`, `edit`, or `readonly`)
+determines whether fields and actions are editable; it never changes the form
+shape. Native renderer selection remains an implementation detail of the
+`workspace` path, not a contract semantic.
+
+`mode` and `layoutPolicy` remain structural metadata for the normalized form
+projection. Consumers must not infer page shape from either field; they consume
+only `presentationMode`.
+
+## Structure Version Compatibility
+
+`structureVersion: "1.1"` requires `presentationMode`. All current server
+producers emit 1.1. A 1.0 structure is an explicitly supported deployed-snapshot
+compatibility carrier: it has no presentation authority and is normalized only
+to `workspace`. It can never opt into `task`. Unknown versions and a 1.1
+structure without `presentationMode` are rejected. This keeps old assembled
+assets safe during rollout while preventing a missing new authority from being
+silently guessed.
+
 ### V2 Projection Layer
 
 The v2 assembler projects `formStructureContract` into
@@ -52,10 +75,11 @@ model names, field names, or Chinese titles.
 ```json
 {
   "source": "ui.contract.v2.form_structure_contract",
-  "structureVersion": "1.0",
+  "structureVersion": "1.1",
   "model": "example.model",
   "viewType": "form",
   "mode": "business_task_form",
+  "presentationMode": "task",
   "layoutPolicy": "overview_then_task_slots",
   "objectProfile": {
     "model": "example.model",

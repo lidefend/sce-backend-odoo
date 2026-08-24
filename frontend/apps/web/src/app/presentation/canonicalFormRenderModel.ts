@@ -1,7 +1,7 @@
-import type { ContractV2ActionRule } from '../contracts/v2/types';
+import type { ContractV2ActionRule, ContractV2FormPresentationMode } from '../contracts/v2/types';
 
 export type CanonicalFormRenderMode = 'create' | 'edit' | 'readonly';
-export type CanonicalFormPresentationMode = 'task' | 'native';
+export type CanonicalFormPresentationMode = ContractV2FormPresentationMode;
 export type CanonicalFormZoneRole = 'primary' | 'subordinate';
 export type CanonicalFormSemanticRole = 'summary' | 'task' | 'context' | 'risk' | 'relation' | 'activity' | 'audit';
 
