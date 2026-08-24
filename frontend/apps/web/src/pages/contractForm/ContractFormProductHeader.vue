@@ -10,6 +10,10 @@
     :primary-actions="headerPrimaryActions"
     :overflow-actions="headerOverflowModelActions"
     :exit-action="headerExitAction"
+    :data-professional-workflow-component="canonicalWorkflowAuthority.actionCount ? 'action-bar' : undefined"
+    :data-workflow-action-count="canonicalWorkflowAuthority.actionCount || undefined"
+    :data-workflow-disabled-count="canonicalWorkflowAuthority.disabledCount || undefined"
+    :data-workflow-primary-key="canonicalWorkflowAuthority.primaryKey || undefined"
   >
     <template #meta>
       <p v-if="showHud" class="meta">model={{ model }} · id={{ recordIdDisplay }} · action={{ actionId || '-' }}</p>
@@ -28,7 +32,15 @@
           <p class="header-status-item">当前进度：{{ intakeRequiredSummary }}</p>
           <p class="header-status-item" :class="{ 'header-status-item--danger': intakeMissingSummary !== '无' }">缺少：{{ intakeMissingSummary }}</p>
         </div>
-        <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态流程">
+        <section
+          v-else-if="statusbar.visible"
+          class="native-statusbar native-statusbar--header"
+          aria-label="业务状态流程"
+          data-professional-workflow-component="statusbar"
+          :data-workflow-current="workflowStatusAuthority.current"
+          :data-workflow-readonly="String(mode === 'readonly' || !statusInteractive || workflowStatusAuthority.readonly)"
+          :data-workflow-state-count="workflowStatusAuthority.stateCount"
+        >
           <p :class="['native-statusbar-summary', { 'native-statusbar-summary--readonly': mode === 'readonly' || !statusInteractive }]">
             <span>当前状态</span><strong>{{ currentStatusLabel }}</strong>
             <span v-if="statusInteractive && nextActionLabel">下一步 {{ nextActionLabel }}</span>
@@ -76,13 +88,13 @@
         <button v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
         <button v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
         <button v-if="canonicalLocalSavePrimary" data-product-primary-action data-action-ref="form.save" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('canonical-save')">{{ mode === 'create' ? '保存草稿' : '保存修改' }}</button>
-        <button v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :class="canonicalButtonClass(action)" :disabled="busy || !action.enabled" :title="action.reasonCode || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+        <button v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :class="canonicalButtonClass(action)" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
       </span>
       <details v-if="presentedOverflowActions.length || canonicalPresentedOverflowActions.length" class="form-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
         <div>
           <button v-for="action in presentedOverflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-for="action in canonicalPresentedOverflowActions" :key="`canonical-hdr-more-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="action.reasonCode || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+          <button v-for="action in canonicalPresentedOverflowActions" :key="`canonical-hdr-more-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
         </div>
       </details>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
@@ -103,6 +115,7 @@ import type { ProductPageHeaderAction, ProductPagePresentationMode } from '../..
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { nextBusinessActionLabel } from './nativeSectionNavigation';
+import { resolveWorkflowActionBarAuthority, resolveWorkflowStatusAuthority, workflowDisabledReason } from './professionalWorkflowModel';
 
 const props = defineProps<{
   title: string; subtitle: string; hideTitle: boolean; showHud: boolean; model: string; recordIdDisplay: string;
@@ -123,6 +136,7 @@ const props = defineProps<{
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
   discardLabel: string; reloadLabel: string;
 }>();
+const workflowStatusAuthority = computed(() => resolveWorkflowStatusAuthority(props.statusbar));
 
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
@@ -152,6 +166,11 @@ const canonicalPresentedOverflowActions = computed(() => [
   ...(props.canonicalLocalSavePrimary ? props.canonicalDirectActions.filter((action) => action.tier === 'primary') : []),
   ...props.canonicalOverflowActions,
 ]);
+const canonicalWorkflowAuthority = computed(() => resolveWorkflowActionBarAuthority(
+  canonicalPresentedDirectActions.value,
+  canonicalPresentedOverflowActions.value,
+  props.canonicalDirectActions.find((action) => action.tier === 'primary')?.key || '',
+));
 const headerOverflowModelActions = computed<ProductPageHeaderAction[]>(() => [
   ...presentedOverflowActions.value.map((action) => ({ key: action.key, label: action.label, semantic: 'other' as const, enabled: action.enabled })),
   ...canonicalPresentedOverflowActions.value.map((action) => ({ key: action.key, label: action.label, semantic: 'other' as const, enabled: action.enabled })),

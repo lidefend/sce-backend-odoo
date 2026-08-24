@@ -64,10 +64,16 @@ require(
 )
 require(
     "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue",
-    "<dialog",
-    "showModal()",
-    "@cancel.prevent",
+    "<ScDialog",
+    '@close="settle(false)"',
+    'data-professional-workflow-component="confirm-dialog"',
     "trigger?.focus()",
+)
+require(
+    "frontend/apps/web/src/components/design-system/ScDialog.vue",
+    "useModalLifecycle",
+    '@keydown="onKeydown"',
+    "role=\"dialog\"",
 )
 require(
     "frontend/apps/web/src/layouts/AppShell.vue",
