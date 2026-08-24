@@ -29,6 +29,18 @@ The proof is invalid if an unlisted changed path causes a fail-closed
 classification, if the aggregate check binds a different head, or if a
 repository rule grants a bypass actor.
 
+## Execution evidence record
+
+Each Fast-lane proof records the following values against the exact PR head:
+
+- base SHA and head SHA;
+- the complete changed-path list;
+- classifier lane and reason;
+- conclusion of `fast`, `full`, and `merge_policy_gate`;
+- PR mergeability and the absence of bypass actors.
+
+The record is review evidence, not a replacement for the GitHub check run.
+
 ## Follow-up evidence
 
 After this Fast proof merges, a separate product-runtime PR must prove the
