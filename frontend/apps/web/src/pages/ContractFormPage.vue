@@ -26,6 +26,7 @@
       :model="model" :record-id-display="recordIdDisplay" :action-id="actionId" :contract-meta-line="contractMetaLine"
       :intake-mode="isIntakeCreateMode" :intake-required-summary="intakeRequiredSummary" :intake-missing-summary="intakeMissingSummary" :statusbar="nativeStatusbar"
       :status-interactive="!canonicalProductRendererActive"
+      :presentation-mode="canonicalProductFloorplan?.decisionMode ? 'task' : 'workspace'"
       :mode="renderProfile" :mode-label="currentRenderProfileLabel" :dirty="hasChanges" :changed-field-count="changedFieldCount"
       :show-continue-processing="showContinueProcessing"
       :continue-processing-label="continueProcessingLabel"

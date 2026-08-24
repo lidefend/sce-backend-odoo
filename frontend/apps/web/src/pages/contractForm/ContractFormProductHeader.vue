@@ -1,5 +1,16 @@
 <template>
-  <PageHeaderTemplate class="contract-form-command-bar" :title="title" :subtitle="subtitle || undefined" :hide-title="hideTitle">
+  <PageHeaderTemplate
+    class="contract-form-command-bar"
+    :title="title"
+    :subtitle="subtitle || undefined"
+    :hide-title="hideTitle"
+    :presentation-mode="presentationMode"
+    :render-profile="mode"
+    :dirty-state="headerDirtyState"
+    :primary-actions="headerPrimaryActions"
+    :overflow-actions="headerOverflowModelActions"
+    :exit-action="headerExitAction"
+  >
     <template #meta>
       <p v-if="showHud" class="meta">model={{ model }} · id={{ recordIdDisplay }} · action={{ actionId || '-' }}</p>
       <p v-if="showHud && contractMetaLine" class="meta">{{ contractMetaLine }}</p>
@@ -60,14 +71,14 @@
         <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
       </span>
       <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length" class="form-header-primary-actions">
-        <button v-if="showContinueProcessing" data-form-mode-action="edit" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">{{ continueProcessingLabel }}</button>
+        <button v-if="showContinueProcessing" data-product-primary-action data-form-mode-action="edit" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">{{ continueProcessingLabel }}</button>
         <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
-        <button v-if="showPrimaryFormAction" v-bind="actionEvidenceAttributes(primaryAction)" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
-        <button v-for="action in directActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+        <button v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
+        <button v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
       </span>
-      <details v-if="overflowActions.length" class="form-header-more-actions">
+      <details v-if="presentedOverflowActions.length" class="form-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
-        <div><button v-for="action in overflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button></div>
+        <div><button v-for="action in presentedOverflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button></div>
       </details>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
       <button v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
@@ -83,6 +94,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
+import type { ProductPageHeaderAction, ProductPagePresentationMode } from '../../app/presentation/productPageHeader';
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { nextBusinessActionLabel } from './nativeSectionNavigation';
 
@@ -91,6 +103,7 @@ const props = defineProps<{
   actionId: number | null; contractMetaLine: string; intakeMode: boolean; intakeRequiredSummary: string;
   intakeMissingSummary: string; statusbar: NativeStatusbarVm; busy: boolean; busyKind: BusyKind; showReturn: boolean;
   mode: 'create' | 'edit' | 'readonly'; modeLabel: string; dirty: boolean; changedFieldCount: number;
+  presentationMode: ProductPagePresentationMode;
   showContinueProcessing: boolean;
   showBack?: boolean;
   backLabel: string;
@@ -107,6 +120,25 @@ const props = defineProps<{
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
 const nextActionLabel = computed(() => nextBusinessActionLabel(props.primaryAction, props.directActions));
+const headerDirtyState = computed(() => props.busyKind === 'save' ? 'saving' : props.dirty ? 'dirty' : 'clean');
+const builtInPrimaryClaimed = computed(() => props.showContinueProcessing || props.showPrimaryFormAction);
+const presentedDirectActions = computed(() => builtInPrimaryClaimed.value
+  ? props.directActions.filter((action) => action.presentationTier !== 'primary' && action.semantic !== 'primary_action')
+  : props.directActions);
+const presentedOverflowActions = computed(() => {
+  const displaced = builtInPrimaryClaimed.value
+    ? props.directActions.filter((action) => action.presentationTier === 'primary' || action.semantic === 'primary_action')
+    : [];
+  return [...displaced, ...props.overflowActions];
+});
+const headerPrimaryActions = computed<ProductPageHeaderAction[]>(() => {
+  if (props.showContinueProcessing) return [{ key: 'continue-processing', label: props.continueProcessingLabel, semantic: 'other', enabled: !props.busy }];
+  if (props.showPrimaryFormAction) return [{ key: props.primaryAction?.key || 'save', label: props.submitLabel, semantic: props.primaryAction ? 'submit' : 'save', enabled: !props.primaryFormActionDisabled }];
+  const action = presentedDirectActions.value.find((item) => item.presentationTier === 'primary' || item.semantic === 'primary_action');
+  return action ? [{ key: action.key, label: action.label, semantic: 'submit', enabled: action.enabled }] : [];
+});
+const headerOverflowModelActions = computed<ProductPageHeaderAction[]>(() => presentedOverflowActions.value.map((action) => ({ key: action.key, label: action.label, semantic: 'other', enabled: action.enabled })));
+const headerExitAction = computed<ProductPageHeaderAction>(() => ({ key: props.backSemanticIdentity, label: props.backLabel, semantic: 'exit', enabled: !props.busy }));
 const statusTrackRef = ref<HTMLOListElement | null>(null);
 const workflowHasMoreBefore = ref(false);
 const workflowHasMoreAfter = ref(false);
