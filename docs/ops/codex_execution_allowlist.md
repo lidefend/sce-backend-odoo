@@ -268,6 +268,8 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   对于尚未包含同步 target 的旧 linked worktree，允许由主工作树通过
   `WORKSPACE_BRANCH_SYNC_ROOT=<absolute-linked-worktree-path>` 调用；脚本必须
   验证两者共享同一 Git common directory。
+  仅对 `docs/ops/iterations/delivery_context_switch_log_v1.md` 的纯追加冲突
+  允许确定性合并；其余冲突一律 abort，禁止人工或脚本猜测业务内容。
 
   仅允许同步未发布、没有开放 PR 的合规本地分支。调用者必须提供当前
   分支、HEAD、旧基线和 `origin/main` 的完整 SHA，并提供精确确认短语。
