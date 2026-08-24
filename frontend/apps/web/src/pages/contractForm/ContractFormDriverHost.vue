@@ -132,7 +132,7 @@
 import { computed } from 'vue';
 import { SCENE_UI_KITS, SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
-import type { CanonicalAuditEvent, CanonicalFormAction, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
+import type { CanonicalAuditEvent, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
 import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
