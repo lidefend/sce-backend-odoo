@@ -147,9 +147,11 @@ workflow:
           status: merged
           capabilities: [money, currency, percentage, status, duration, user, company]
         phase_7c:
-          status: active
+          status: merged
           capabilities: [many2one, many2many, relation_dialog, relation_create_maintain, action_menu_authority]
-        phase_7d: [one2many_readonly, one2many_editable, line_validation, subtotal, pagination]
+        phase_7d:
+          status: active
+          capabilities: [one2many_readonly, one2many_editable, line_validation, subtotal, pagination]
       matrix: [task_create, task_edit, task_readonly, workspace_create, workspace_edit, workspace_readonly]
     phase_8:
       name: workflow_audit_and_collaboration
@@ -199,7 +201,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_7c
-    task: professional_relation_family_and_authority_adapter
-    prerequisite: phase_7b_merged_and_main_synced
-    do_not_start_in_parallel: [phase_7d, phase_8]
+    phase: phase_7d
+    task: professional_detail_collection_family_and_authority_adapter
+    prerequisite: phase_7c_merged_and_main_synced
+    do_not_start_in_parallel: [phase_8, phase_9]

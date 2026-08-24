@@ -17,6 +17,9 @@ assert.equal(resolveProfessionalComponent({
 assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.relation.many2many', fieldType: 'many2many', presentationMode: 'workspace', renderProfile: 'readonly',
 }).renderer, 'ProfessionalRelationFieldControl');
+assert.equal(resolveProfessionalComponent({
+  componentKey: 'sc.relation.table', fieldType: 'one2many', presentationMode: 'workspace', renderProfile: 'edit',
+}).renderer, 'ProfessionalDetailCollectionControl');
 for (const [componentKey, fieldType] of [
   ['sc.value.money', 'monetary'], ['sc.value.currency', 'many2one'], ['sc.value.percentage', 'float'],
   ['sc.display.status', 'selection'], ['sc.value.duration', 'float'], ['sc.value.user', 'many2one'],
@@ -73,4 +76,4 @@ assert.equal(resolveProfessionalComponentRegistration(testRegistry, {
 }).componentKey, restricted.componentKey);
 
 assert.equal(professionalComponentRegistrations.length, 23);
-console.log('[professional_component_registry_test] PASS cases=19');
+console.log('[professional_component_registry_test] PASS cases=20');
