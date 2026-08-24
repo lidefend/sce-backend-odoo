@@ -16,6 +16,8 @@ FILES = {
     "layout": WEB / "components/template/LayoutShell.vue",
     "patterns": WEB / "styles/product-patterns.css",
     "tokens": WEB / "styles/design-system.css",
+    "token_patterns": WEB / "styles/tokens/pattern.css",
+    "generated_tokens": ROOT / "frontend/packages/design-tokens/dist/web/tokens.light.css",
     "shell_css": WEB / "layouts/AppShell.css",
     "list": WEB / "pages/ListPage.vue",
     "list_css": WEB / "pages/ListPage.css",
@@ -46,6 +48,8 @@ sources = {key: read(key) for key in FILES}
 contract = sources["contract"]
 patterns = sources["patterns"]
 tokens = sources["tokens"]
+token_patterns = sources["token_patterns"]
+generated_tokens = sources["generated_tokens"]
 shell_css = sources["shell_css"]
 list_vue = sources["list"]
 list_css = sources["list_css"]
@@ -72,7 +76,8 @@ for source_key in ("page", "layout"):
     if re.search(r"max-width\s*:", source):
         fail(f"{source_key} owns a second max-width")
 
-require(tokens, "--sc-workspace-frame-max: 1920px", "workspace token")
+require(token_patterns, "--sc-workspace-frame-max: var(--sc-pattern-workspace-form-frame-max-width)", "workspace token alias")
+require(generated_tokens, "--sc-pattern-workspace-form-frame-max-width: 1920px", "workspace token value")
 require(tokens, "min-height: 100%", "document viewport height reset")
 require(tokens, "margin: 0", "document margin reset")
 if "--sc-content-focused-form-max" in tokens:

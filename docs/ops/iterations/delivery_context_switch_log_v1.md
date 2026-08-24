@@ -5711,3 +5711,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   overflow and mutations fail closed; no database or fixture setup is performed.
 - Rollback: revert the visual-smoke target, controller subcommand, wrapper and
   browser probe. The existing candidate up/health/down carrier remains intact.
+
+## Frontend system professionalization — Phase 1 Token authority (2026-08-24)
+
+- Branch / anchor: `feature/p0-design-token-system-v1` / `bbeec2df`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  frontend design-token authority and public TDesign theme bridge /
+  `frontend/packages/design-tokens`, `frontend/apps/web`, and the generic UI
+  kit bridge.
+- Reason / boundary: establish the one Web Token v1 entrypoint and formal
+  primitive, semantic, component, and pattern layers while preserving existing
+  computed style values through explicit compatibility aliases. The TDesign
+  bridge consumes project-owned bridge values; business pages do not write
+  TDesign variables directly.
+- Why Here / Why Not Elsewhere: token ownership is shared frontend platform
+  infrastructure. It does not belong to a business model, Contract V2,
+  navigation, permissions, a customer theme, or a page-specific renderer.
+- Blast radius / validation: generated token artifacts, Web style imports,
+  TDesign bridge, static token authority guard, and existing style-layout guard.
+  Phase 0's 131 scanned names are fully classified; selector lookalikes are
+  explicitly deprecated rather than treated as component capability. No route,
+  action, model, fixture, database, mutation or page-layout change is included.
+- Rollback: revert this batch's token source, generated artifacts, CSS aliases,
+  bridge, and guards together. Existing page rules retain their pre-Token-v1
+  values and do not require data repair.
