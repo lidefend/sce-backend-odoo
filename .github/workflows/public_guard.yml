@@ -15,12 +15,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  classify:
+    name: public_guard_classify
+    runs-on: ubuntu-latest
+    outputs:
+      lane: ${{ steps.risk.outputs.lane }}
+    env:
+      CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+    steps:
+      - name: Checkout untrusted source without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CHECKOUT_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Classify change risk
+        id: risk
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/ci_risk_classifier.py \
+            --base "${BASE_SHA}" \
+            --head "${CHECKOUT_SHA}" \
+            --event "${GITHUB_EVENT_NAME}" \
+            --ref "${GITHUB_REF}" \
+            --github-output "${GITHUB_OUTPUT}"
+
   public_guard:
     name: public_guard
+    needs: classify
+    if: needs.classify.outputs.lane != 'FAST'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout untrusted source without persisted credentials
+      - name: Checkout classified source without persisted credentials
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0

@@ -53,6 +53,14 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
 
+    def test_public_guard_skips_history_scan_only_for_fast_lane(self) -> None:
+        text = self.text("public_guard.yml")
+        self.assertIn("name: public_guard_classify", text)
+        self.assertIn("steps.risk.outputs.lane", text)
+        self.assertIn("if: needs.classify.outputs.lane != 'FAST'", text)
+        self.assertIn("Scan all reachable product history", text)
+        self.assertIn("make verify.repository.clean_history", text)
+
     def test_professional_lane_commands_are_explicit(self) -> None:
         text = self.text("professional_quality_gate.yml")
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
