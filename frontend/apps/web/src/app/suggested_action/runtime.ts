@@ -4,6 +4,7 @@ import type {
   SuggestedActionExecuteOptions,
   SuggestedActionParsed,
 } from './types';
+import { normalizeRecordOpenIntent, resolveRecordOpenTarget } from '../runtime/actionViewInteractionRuntime';
 
 const ROUTE_ACTIONS = new Set<SuggestedActionKind>(['open_route', 'open_url']);
 const RETRY_ACTIONS = new Set<SuggestedActionKind>(['refresh', 'retry']);
@@ -252,9 +253,19 @@ export function executeSuggestedAction(
     return finish(safeNavigate(appendHash(appendQuery(`/a/${parsed.actionId}`, parsed.query), parsed.hash)));
   }
   if (parsed.kind === 'open_record' && parsed.model && parsed.recordId) {
+    const authorityQuery = new URLSearchParams(String(parsed.query || ''));
+    const target = resolveRecordOpenTarget({
+      model: parsed.model,
+      recordId: parsed.recordId,
+      requestedIntent: normalizeRecordOpenIntent(
+        authorityQuery.get('open_intent') || authorityQuery.get('intent') || authorityQuery.get('entry_intent'),
+      ),
+      // Query strings may request an opening intent, but cannot assert permissions.
+      modelWriteAuthority: null,
+    });
     return finish(
       safeNavigate(
-        appendHash(appendQuery(`/r/${encodeURIComponent(parsed.model)}/${parsed.recordId}`, parsed.query), parsed.hash),
+        appendHash(appendQuery(target?.path || `/r/${encodeURIComponent(parsed.model)}/${parsed.recordId}`, parsed.query), parsed.hash),
       ),
     );
   }

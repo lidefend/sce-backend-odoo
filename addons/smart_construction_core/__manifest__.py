@@ -2,7 +2,7 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.132',
+    'version': '17.0.0.133',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [
@@ -50,8 +50,6 @@
         'data/sc_cap_config_admin_user.xml',
         'data/sc_scene_seed.xml',
         'data/view_orchestration_contract_data.xml',
-        'data/view_orchestration_contract_generated_data.xml',
-        'data/view_orchestration_form_section_contract_data.xml',
         'data/p1_daily_business_form_orchestration_contract_data.xml',
         'data/formal_list_contract_sync.xml',
         'views/res_groups_menu_views.xml',
@@ -187,6 +185,9 @@
         'views/projection/finance_interfund_position_menu.xml',
         'views/core/workflow_views.xml',
         'views/menu.xml',
+        # Project form contracts reference the action and view declared above.
+        'data/view_orchestration_contract_generated_data.xml',
+        'data/view_orchestration_form_section_contract_data.xml',
         'views/support/business_category_views.xml',
         'views/support/approval_policy_views.xml',
         'views/support/approval_scope_views.xml',

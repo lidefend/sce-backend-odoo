@@ -2628,6 +2628,295 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(structure["slots"][2]["groups"][0]["title"], "金额信息")
         self.assertIn("line_ids", structure["slots"][4]["groups"][0]["fieldRefs"])
 
+    def test_form_structure_contract_uses_native_mode_without_entry_authority(self):
+        handler = self.module.UiContractV2Handler(env=object())
+
+        structure = handler._build_form_structure_contract(
+            model="project.project",
+            profile={
+                "common_fields": ["name"],
+                "amount_fields": [],
+                "date_fields": [],
+                "status_field": "",
+                "note_field": "",
+                "attachment_field": "",
+                "detail_fields": [],
+            },
+            field_type=lambda name: "char",
+            unique=lambda items: list(dict.fromkeys(str(item or "").strip() for item in items if str(item or "").strip())),
+            governance={"form_structure_authority": "native_authority"},
+        )
+
+        self.assertEqual(structure["mode"], "native_structured_form")
+        self.assertEqual(structure["layoutPolicy"], "native_authority")
+
+        default_structure = handler._build_form_structure_contract(
+            model="project.project",
+            profile={
+                "common_fields": ["name"],
+                "amount_fields": [],
+                "date_fields": [],
+                "status_field": "",
+                "note_field": "",
+                "attachment_field": "",
+                "detail_fields": [],
+            },
+            field_type=lambda name: "char",
+            unique=lambda items: list(dict.fromkeys(str(item or "").strip() for item in items if str(item or "").strip())),
+            governance=None,
+        )
+        self.assertEqual(default_structure["mode"], "native_structured_form")
+        self.assertEqual(default_structure["layoutPolicy"], "native_authority")
+
+    def test_project_form_contract_selection_drives_task_and_native_modes(self):
+        class _Field:
+            def __init__(self, field_type, label):
+                self.type = field_type
+                self.string = label
+
+        class _ProjectModel:
+            _fields = {
+                "name": _Field("char", "项目名称"),
+                "amount": _Field("monetary", "金额"),
+                "state": _Field("selection", "状态"),
+                "line_ids": _Field("one2many", "明细"),
+            }
+
+            def fields_get(self, names):
+                return {
+                    name: {"type": field.type, "string": field.string}
+                    for name, field in self._fields.items()
+                    if name in names
+                }
+
+        class _Config:
+            id = 90
+            name = "project_project_form_structure_v1"
+            priority = 90
+            view_type = "form"
+            contract_json = {
+                "view_orchestration": {
+                    "views": {
+                        "form": {
+                            "composition_mode": "entry_semantic_surface",
+                            "sections": [{"key": "overview", "title": "项目概览", "fields": ["name"]}],
+                        },
+                    },
+                },
+            }
+
+        class _ConfigModel:
+            def _effective_view_orchestration_contracts(self, model, *, view_type, action_id, view_id=None, **_kwargs):
+                if model == "project.project" and view_type == "form" and action_id == 11 and view_id == 22:
+                    return [_Config()]
+                return []
+
+        class _Env(dict):
+            def __contains__(self, key):
+                return dict.__contains__(self, key)
+
+        env = _Env({
+            "project.project": _ProjectModel(),
+            "ui.business.config.contract": _ConfigModel(),
+        })
+        handler = self.module.UiContractV2Handler(env=env)
+
+        def project_contract(action_id, view_id):
+            source = {
+                "model": "project.project",
+                "view_type": "form",
+                "action_id": action_id,
+                "view_ids_by_type": {"form": view_id},
+                "fields": {
+                    name: {"type": field.type, "string": field.string}
+                    for name, field in _ProjectModel._fields.items()
+                },
+                "governance": {"view_orchestration": {"applied": True}},
+            }
+            handler._inject_business_operation_contract(source, model="project.project", view_type="form")
+            return source
+
+        task_source = project_contract(11, 22)
+        native_source = project_contract(859, 44)
+        self.assertEqual(task_source["form_structure_contract"]["mode"], "business_task_form")
+        self.assertEqual(native_source["form_structure_contract"]["mode"], "native_structured_form")
+        self.assertEqual(task_source["form_structure_contract"]["layoutPolicy"], "overview_then_task_slots")
+        self.assertEqual(native_source["form_structure_contract"]["layoutPolicy"], "native_authority")
+
+    def test_project_contract_scope_migration_is_repeatable_and_exact(self):
+        migration_path = (
+            Path(__file__).resolve().parents[2]
+            / "smart_construction_core"
+            / "migrations"
+            / "17.0.0.133"
+            / "post-migration.py"
+        )
+        spec = importlib.util.spec_from_file_location("project_scope_migration", migration_path)
+        migration = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(migration)
+
+        class _Cursor:
+            def __init__(self):
+                self.statements = []
+
+            def execute(self, statement):
+                self.statements.append(statement)
+
+        cursor = _Cursor()
+        migration.migrate(cursor, "17.0.0.132")
+        migration.migrate(cursor, "17.0.0.133")
+
+        self.assertEqual(len(cursor.statements), 2)
+        self.assertEqual(cursor.statements[0], cursor.statements[1])
+        self.assertIn("business_config_contract_project_project_form_structure_generated", cursor.statements[0])
+        self.assertIn("business_config_contract_project_project_form_structure_v1", cursor.statements[0])
+        self.assertIn("IS DISTINCT FROM", cursor.statements[0])
+
+    def test_form_structure_projection_uses_current_user_field_authority(self):
+        class _Field:
+            def __init__(self, field_type, string, groups=""):
+                self.type = field_type
+                self.string = string
+                self.groups = groups
+
+        class _Model:
+            _fields = {
+                "name": _Field("char", "名称"),
+                "restricted_count": _Field("integer", "受限计数", "project.group_project_milestone"),
+            }
+
+            def fields_get(self, names):
+                return {
+                    name: {"type": self._fields[name].type, "string": self._fields[name].string}
+                    for name in names
+                    if name == "name"
+                }
+
+        class _Env(dict):
+            def __contains__(self, model):
+                return model == "project.project"
+
+            def __getitem__(self, model):
+                if model != "project.project":
+                    raise KeyError(model)
+                return _Model()
+
+        handler = self.module.UiContractV2Handler(env=_Env())
+        handler._form_structure_governance = lambda *_args, **_kwargs: {
+            "form_structure_authority": "entry_semantic_surface",
+            "field_names": ["name", "restricted_count"],
+            "field_groups": {"总览": ["name", "restricted_count"]},
+            "section_titles": ["总览"],
+        }
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "fields": {"name": {"type": "char", "string": "名称"}},
+            "governance": {"view_orchestration": {"applied": True}},
+        }
+
+        handler._inject_business_operation_contract(source, model="project.project", view_type="form")
+
+        self.assertNotIn("restricted_count", source["fields"])
+        self.assertNotIn("restricted_count", source["business_operation_profile"]["form_structure_common_fields"])
+        refs = [
+            field
+            for slot in source["form_structure_contract"]["slots"]
+            for group in slot.get("groups", [])
+            for field in group.get("fieldRefs", [])
+        ]
+        self.assertNotIn("restricted_count", refs)
+
+    def test_form_structure_projection_accepts_authorized_field_descriptor(self):
+        class _Field:
+            type = "integer"
+            string = "里程碑计数"
+            groups = "project.group_project_milestone"
+
+        class _Model:
+            _fields = {"name": _Field(), "milestone_count_reached": _Field()}
+
+            def fields_get(self, names):
+                return {
+                    name: {"type": self._fields[name].type, "string": self._fields[name].string}
+                    for name in names
+                }
+
+        class _Env(dict):
+            def __contains__(self, model):
+                return model == "project.project"
+
+            def __getitem__(self, model):
+                if model != "project.project":
+                    raise KeyError(model)
+                return _Model()
+
+        handler = self.module.UiContractV2Handler(env=_Env())
+        handler._form_structure_governance = lambda *_args, **_kwargs: {
+            "form_structure_authority": "entry_semantic_surface",
+            "field_names": ["name", "milestone_count_reached"],
+            "field_groups": {"进度": ["name", "milestone_count_reached"]},
+            "section_titles": ["进度"],
+        }
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "fields": {"name": {"type": "char", "string": "名称"}},
+            "governance": {"view_orchestration": {"applied": True}},
+        }
+
+        handler._inject_business_operation_contract(source, model="project.project", view_type="form")
+
+        descriptor = source["fields"]["milestone_count_reached"]
+        self.assertEqual(descriptor["type"], "integer")
+        self.assertEqual(descriptor["string"], "里程碑计数")
+        self.assertIn("milestone_count_reached", source["business_operation_profile"]["form_structure_common_fields"])
+
+    def test_form_structure_projection_does_not_use_registry_metadata_for_unknown_fields(self):
+        class _Field:
+            type = "char"
+            string = "名称"
+
+        class _Model:
+            _fields = {"name": _Field()}
+
+            def fields_get(self, names):
+                return {"name": {"type": "char", "string": "名称"}} if "name" in names else {}
+
+        class _Env(dict):
+            def __contains__(self, model):
+                return model == "demo.business"
+
+            def __getitem__(self, model):
+                if model != "demo.business":
+                    raise KeyError(model)
+                return _Model()
+
+        handler = self.module.UiContractV2Handler(env=_Env())
+        handler._form_structure_governance = lambda *_args, **_kwargs: {
+            "form_structure_authority": "entry_semantic_surface",
+            "field_names": ["name", "missing_field"],
+            "field_groups": {"总览": ["name", "missing_field"]},
+            "section_titles": ["总览"],
+        }
+        source = {
+            "model": "demo.business",
+            "view_type": "form",
+            "fields": {"name": {"type": "char", "string": "名称"}},
+            "governance": {"view_orchestration": {"applied": True}},
+        }
+
+        handler._inject_business_operation_contract(source, model="demo.business", view_type="form")
+
+        refs = [
+            field
+            for slot in source["form_structure_contract"]["slots"]
+            for group in slot.get("groups", [])
+            for field in group.get("fieldRefs", [])
+        ]
+        self.assertEqual(refs, ["name"])
+
     def test_form_structure_contract_omits_undeclared_governance_form_columns(self):
         handler = self.module.UiContractV2Handler(env=object())
 

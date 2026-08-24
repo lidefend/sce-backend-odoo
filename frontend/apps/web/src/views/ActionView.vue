@@ -972,6 +972,7 @@ import {
   resolveActionViewAdvancedHint,
   resolveActionViewAdvancedTitle,
 } from '../app/contracts/actionViewAdvancedContract';
+import { resolveCollectionWriteAuthority } from '../app/runtime/actionViewInteractionRuntime';
 import { useActionPageModel } from '../app/assemblers/action/useActionPageModel';
 import {
   isActionViewLoadLeaseCurrent,
@@ -1359,11 +1360,13 @@ function resolveCreateRight(contract: ActionViewRuntimeContract | null): boolean
 }
 
 function resolveWriteRight(contract: ActionViewRuntimeContract | null): boolean {
-  const capabilities = resolveContractV2EffectiveFormCapabilities(contract);
-  if (capabilities) return capabilities.write;
   const globalStatus = resolveContractV2GlobalStatus(contract);
-  const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
-  return ['edit', 'write', 'manage'].includes(pageAuth);
+  // The action contract is loaded without a record while rendering a
+  // collection.  Its effectiveRecordCapabilities therefore reflects the
+  // empty record context and may report write=false even when the user has
+  // model-level write authority.  Use that authority only to choose the
+  // editable row route; the /f form contract rechecks record-level rights.
+  return resolveCollectionWriteAuthority({ modelRights: globalStatus?.modelRights });
 }
 
 const canEditRecord = computed(() => resolveWriteRight(actionContract.value));

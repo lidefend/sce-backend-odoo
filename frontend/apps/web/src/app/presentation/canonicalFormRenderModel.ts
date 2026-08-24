@@ -1,6 +1,7 @@
 import type { ContractV2ActionRule } from '../contracts/v2/types';
 
 export type CanonicalFormRenderMode = 'create' | 'edit' | 'readonly';
+export type CanonicalFormPresentationMode = 'task' | 'native';
 export type CanonicalFormZoneRole = 'primary' | 'subordinate';
 export type CanonicalFormSemanticRole = 'summary' | 'task' | 'context' | 'risk' | 'relation' | 'activity' | 'audit';
 
@@ -84,6 +85,7 @@ export type CanonicalFormRenderModel = {
     model: string;
     viewType: string;
     mode: CanonicalFormRenderMode;
+    presentationMode: CanonicalFormPresentationMode;
     sourceContractSha256: string;
   };
   shell: {

@@ -5504,3 +5504,32 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   manifest guard passed.
 - Rollback: revert the guard classification commit; runtime and database state
   are unaffected.
+
+## Form presentation mode authority (2026-08-24)
+
+- Branch / anchor: `fix/p0-form-presentation-mode-authority` / `5e233e45`.
+- Formal Product Layer / Layer Target / Module: P0 platform contract authority /
+  project entry-contract scope, backend `smart_core` form-contract generation,
+  and generic frontend Floorplan presentation selection.
+- Reason / boundary: the project entry semantic contract was model-wide and the
+  backend/frontend inferred task presentation from any semantic role. Scope the
+  contract to the project initiation action/view, emit explicit native mode for
+  non-entry governance, and consume that mode without model-specific routing.
+- Why Here / Why Not Elsewhere: the defect is in contract authority and generic
+  presentation selection; `/r` versus `/f`, NativeCanvas, and project-specific
+  frontend branches are outside the correction boundary.
+- Blast radius / validation: project contract data plus idempotent migration,
+  generic backend mode emission, and presenter/Floorplan mode selection. Targeted
+  backend boundary, frontend presenter, scene bridge, strict typecheck, upgrade,
+  and diff guards passed.
+- Rollback: revert this branch's contract, migration, backend, and frontend
+  changes; no unrelated product records or routes are modified.
+
+### Review remediation (2026-08-24)
+
+- Moved the project contract data files after `views/core/project_views.xml`
+  and `views/menu.xml` so clean installation resolves both referenced XMLIDs.
+- Added effective-selection coverage for project initiation versus the complete
+  workspace, plus repeat-invocation coverage for the exact two-XMLID migration.
+- Rebuilt and installed the isolated `local.clean` profile successfully; the
+  loader reached both project contract files after their action/view sources.

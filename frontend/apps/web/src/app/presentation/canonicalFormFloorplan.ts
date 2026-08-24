@@ -200,12 +200,6 @@ function collectVisibleFields(node: CanonicalFormNode): CanonicalFormNode['field
   ];
 }
 
-function nodeHasSemanticRole(node: CanonicalFormNode): boolean {
-  return ['summary', 'task', 'context', 'risk', 'audit'].includes(node.semanticRole)
-    || node.fields.some((field) => ['summary', 'task', 'context', 'risk', 'audit'].includes(field.semanticRole))
-    || node.children.some(nodeHasSemanticRole);
-}
-
 function nodeDeclaresRole(node: CanonicalFormNode, role: CanonicalFormSemanticRole): boolean {
   return node.semanticRole === role
     || node.fields.some((field) => field.semanticRole === role)
@@ -414,7 +408,7 @@ export function composeCanonicalFormFloorplan(
   const createNodes = renderModel.identity.mode === 'create'
     ? deduplicateEquivalentCreateFields(visiblePrimaryNodes)
     : visiblePrimaryNodes;
-  const semanticProductMode = createNodes.some(nodeHasSemanticRole);
+  const semanticProductMode = renderModel.identity.presentationMode === 'task';
   const writeMode = renderModel.identity.mode !== 'readonly';
   const primaryNodes = semanticProductMode && writeMode ? deduplicateProductFields(createNodes) : createNodes;
   const editableNodes = primaryNodes.filter(hasEditableField);

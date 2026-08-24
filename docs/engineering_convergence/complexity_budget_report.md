@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3857`
+- Scanned files: `3858`
 - Files requiring split plan: `44`
 - Files above warning threshold: `77`
 
@@ -13,10 +13,10 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 4560 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4434 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4160 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 4145 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 4084 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
-| 3684 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 4130 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 3687 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3669 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -46,7 +46,7 @@ Generated from repository source files. This report is informational during the 
 | 1738 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1722 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1710 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
-| 1697 | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1704 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1693 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1648 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
@@ -79,7 +79,7 @@ Generated from repository source files. This report is informational during the 
 | 1260 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
-| 1245 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
+| 1247 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1195 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
@@ -144,10 +144,10 @@ Generated from repository source files. This report is informational during the 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
 | 4560 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4434 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4160 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 4145 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 4084 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
-| 3684 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 4130 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 3687 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3669 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -178,7 +178,7 @@ Generated from repository source files. This report is informational during the 
 | 1738 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1722 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1710 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
-| 1697 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
+| 1704 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1693 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1648 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
@@ -203,7 +203,7 @@ Generated from repository source files. This report is informational during the 
 | 1260 | warning | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1256 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
-| 1245 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
+| 1247 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
 | 1218 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1195 | warning | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |

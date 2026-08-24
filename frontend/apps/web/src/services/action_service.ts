@@ -3,6 +3,7 @@ import type { Router } from 'vue-router';
 import { useSessionStore } from '../stores/session';
 import { recordTrace, digestParams, createTraceId } from './trace';
 import { buildEntryTargetRouteTarget } from '../app/routeQuery';
+import { normalizeRecordOpenIntent, resolveRecordOpenTarget, type RecordOpenIntent } from '../app/runtime/actionViewInteractionRuntime';
 import { BUSINESS_CONFIG_MODELS, MENU_CONFIG_POLICY_MODEL } from '../app/businessConfigBoundaries';
 
 function normalizeDomain(domain: unknown) {
@@ -129,7 +130,7 @@ export function openAction(
   router.push({ path: `/a/${action.action_id}`, query });
 }
 
-export function openForm(router: Router, model: string, id: number, action?: NavMeta, menuId?: number) {
+export function openForm(router: Router, model: string, id: number, action?: NavMeta, menuId?: number, modelWriteAuthority?: boolean | null, requestedIntent?: RecordOpenIntent) {
   const query = {
     menu_id: menuId?.toString(),
     action_id: action?.action_id?.toString(),
@@ -148,5 +149,14 @@ export function openForm(router: Router, model: string, id: number, action?: Nav
     params_digest: digestParams({ id }),
   });
 
-  router.push({ path: `/r/${model}/${id}`, query });
+  const target = resolveRecordOpenTarget({
+    model,
+    recordId: id,
+    actionId: action?.action_id,
+    menuId,
+    requestedIntent: normalizeRecordOpenIntent(requestedIntent),
+    modelWriteAuthority,
+    carryQuery: query,
+  });
+  if (target) router.push(target as never);
 }
