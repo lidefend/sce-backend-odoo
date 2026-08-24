@@ -34,10 +34,7 @@ GITHUB_URLS = {
 GITEE_URL = "git@gitee.com:leegege/sce-product-odoo.git"
 RULESET_NAME = "main-github-authoritative-pr"
 REQUIRED_CHECKS = (
-    "public_guard",
-    "professional_authorization",
-    "professional_quality_gate",
-    "frontend_release_gate",
+    "merge_policy_gate",
 )
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 BRANCH_RE = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+")
