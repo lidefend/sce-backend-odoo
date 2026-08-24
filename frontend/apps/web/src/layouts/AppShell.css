@@ -845,7 +845,7 @@
 }
 
 .topbar-context-kicker {
-  color: var(--sc-app-text-muted);
+  color: var(--sc-app-text-secondary);
 }
 
 .topbar-context-trigger strong {
