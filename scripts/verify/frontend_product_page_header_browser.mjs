@@ -72,6 +72,8 @@ for (const target of targets) {
     });
     const professionalBaseFields = [...document.querySelectorAll('[data-professional-field-family="base"]')];
     const visibleProfessionalBaseFields = professionalBaseFields.filter(visible);
+    const professionalBusinessValues = [...document.querySelectorAll('[data-professional-field-family="business-value"]')];
+    const visibleProfessionalBusinessValues = professionalBusinessValues.filter(visible);
     const professionalBaseContextMismatches = professionalBaseFields.filter((node) => (
       node.getAttribute('data-presentation-mode') !== headerNode?.getAttribute('data-presentation-mode')
       || node.getAttribute('data-render-profile') !== headerNode?.getAttribute('data-render-profile')
@@ -94,6 +96,9 @@ for (const target of targets) {
       unresolvedComponentCount: unresolvedComponents.length,
       professionalBaseFieldCount: professionalBaseFields.length,
       visibleProfessionalBaseFieldCount: visibleProfessionalBaseFields.length,
+      professionalBusinessValueCount: professionalBusinessValues.length,
+      visibleProfessionalBusinessValueCount: visibleProfessionalBusinessValues.length,
+      professionalBusinessValueKinds: [...new Set(visibleProfessionalBusinessValues.map((node) => node.getAttribute('data-business-value-kind') || ''))].filter(Boolean),
       professionalBaseContextMismatchCount: professionalBaseContextMismatches.length,
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     };
@@ -110,6 +115,9 @@ for (const target of targets) {
   check(snapshot.unresolvedComponentCount === 0, `${target.key}: unresolved component evidence remains`);
   check(snapshot.professionalBaseFieldCount > 0, `${target.key}: professional base field family is absent`);
   check(snapshot.visibleProfessionalBaseFieldCount > 0, `${target.key}: professional base field family is not visible`);
+  if (target.requireBusinessValue) {
+    check(snapshot.visibleProfessionalBusinessValueCount > 0, `${target.key}: professional business-value family is not visible`);
+  }
   check(snapshot.professionalBaseContextMismatchCount === 0, `${target.key}: professional base field context mismatch`);
   if (target.renderProfile === 'edit') {
     check(snapshot.saveCount === 1 && snapshot.primaryCount === 1 && snapshot.enabledPrimaryCount === 1, `${target.key}: edit save action is not uniquely available`);

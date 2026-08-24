@@ -138,6 +138,11 @@ function fieldFromWidget(
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
   const fieldSemantics = fieldSemanticIdentity(widget, container);
+  const componentConfig = { ...widget.componentConfig };
+  const currencyField = text(componentConfig.currencyField || componentConfig.currency_field);
+  if (fieldType === 'monetary' && currencyField) {
+    componentConfig.currencyValue = runtimeValues?.[currencyField] ?? contractValues[currencyField];
+  }
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
@@ -163,7 +168,7 @@ function fieldFromWidget(
     semanticRole: fieldSemantics.role,
     semanticSlot: fieldSemantics.slot,
     semanticGroup: fieldSemantics.group,
-    componentConfig: Object.freeze({ ...widget.componentConfig }),
+    componentConfig: Object.freeze(componentConfig),
     fieldDescriptor: Object.freeze({ ...(widget.fieldDescriptor || {}) }),
   };
 }
