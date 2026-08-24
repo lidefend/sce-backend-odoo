@@ -207,8 +207,25 @@ def _resolve_source_type(source: dict[str, Any], explicit: str = "") -> str:
     return "unknown"
 
 
-def _component_key(widget_type: str) -> str:
+def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str:
     normalized = _text(widget_type).lower()
+    descriptor = _dict(field)
+    field_type = _text(descriptor.get("ttype") or descriptor.get("type")).lower()
+    relation = _text(descriptor.get("relation")).lower()
+    if field_type == "monetary" or normalized == "monetary":
+        return "sc.value.money"
+    if normalized in {"percentage", "percentpie"}:
+        return "sc.value.percentage"
+    if normalized == "float_time":
+        return "sc.value.duration"
+    if normalized == "statusbar":
+        return "sc.display.status"
+    if relation == "res.currency":
+        return "sc.value.currency"
+    if relation == "res.users":
+        return "sc.value.user"
+    if relation == "res.company":
+        return "sc.value.company"
     if normalized.endswith("many2one"):
         return "sc.select.remote"
     mapping = {
@@ -1439,7 +1456,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         widget_id = f"field.{field_name}.occ.{_fingerprint({'locator': native_locator, 'occurrence': occurrence_index})}"
     explicit_widget = _text(field.get("widget"))
     widget_type = "table" if layout_type == "table" else explicit_widget or _widget_type_from_field(field)
-    component_key = _component_key(widget_type)
+    component_key = _component_key(widget_type, field)
     capabilities = ["sortable", "filterable"] if layout_type == "table" else []
     if widget_type == "select":
         capabilities.append("searchable")
@@ -1447,7 +1464,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     for key in (
         "optional", "invisible", "column_invisible", "readonly", "required",
         "display_field", "value_field", "aggregation_field", "data_type",
-        "currency_field", "precision", "sum", "aggregate", "aggregate_label",
+        "currency_field", "digits", "precision", "sum", "aggregate", "aggregate_label",
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
         "native_locator", "occurrence_index", "source_position", "modifiers",

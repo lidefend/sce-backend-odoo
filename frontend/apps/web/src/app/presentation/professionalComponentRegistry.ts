@@ -27,9 +27,10 @@ function registration(
   semanticType: string,
   supportedFieldTypes: readonly string[],
   readiness: ProfessionalComponentReadiness = 'ready',
+  renderer = 'FormSectionField',
 ): ProfessionalComponentRegistration {
   const rendererByFieldType = Object.freeze(Object.fromEntries(
-    supportedFieldTypes
+    (renderer === 'FormSectionField' ? supportedFieldTypes : [])
       .filter((fieldType) => ['char', 'text', 'html', 'integer', 'float', 'date', 'datetime', 'boolean', 'selection'].includes(fieldType))
       .map((fieldType) => [fieldType, 'ProfessionalBaseFieldControl']),
   ));
@@ -38,7 +39,7 @@ function registration(
     supportedPresentationModes: FORM_MODES,
     supportedRenderProfiles: FORM_PROFILES,
     requiredCapabilities: Object.freeze([]),
-    renderer: 'FormSectionField',
+    renderer,
     rendererByFieldType,
     fallback: readiness === 'readable_fallback' ? 'ReadableFieldValue' : null,
     readiness,
@@ -60,7 +61,13 @@ const REGISTRATIONS = [
   registration('sc.relation.table', 'detail_collection', ['one2many', 'many2many']),
   registration('sc.select.tags', 'tag_collection', ['many2many']),
   registration('sc.button.action', 'action', ['action']),
-  registration('sc.display.status', 'status', ['selection', 'char']),
+  registration('sc.value.money', 'money', ['monetary'], 'ready', 'ProfessionalBusinessValueControl'),
+  registration('sc.value.currency', 'currency', ['many2one'], 'ready', 'ProfessionalBusinessValueControl'),
+  registration('sc.value.percentage', 'percentage', ['float', 'integer'], 'ready', 'ProfessionalBusinessValueControl'),
+  registration('sc.display.status', 'status', ['selection', 'char'], 'ready', 'ProfessionalBusinessValueControl'),
+  registration('sc.value.duration', 'duration', ['float', 'integer'], 'ready', 'ProfessionalBusinessValueControl'),
+  registration('sc.value.user', 'user', ['many2one'], 'ready', 'ProfessionalBusinessValueControl'),
+  registration('sc.value.company', 'company', ['many2one'], 'ready', 'ProfessionalBusinessValueControl'),
   registration('sc.display.text', 'readable_value', ['*']),
 ] as const;
 

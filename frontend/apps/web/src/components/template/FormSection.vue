@@ -115,6 +115,13 @@
                   <span>{{ option.label }}</span>
                 </label>
               </div>
+              <ProfessionalBusinessValueControl
+                v-else-if="usesProfessionalBusinessValue(field)"
+                :field="field"
+                :control-id="fieldControlId(field)"
+                :placeholder="field.inputPlaceholder || selectPlaceholderText(field)"
+                @update:value="emitFieldChange(field, $event)"
+              />
               <ProfessionalBaseFieldControl
                 v-else-if="usesProfessionalBaseField(field)"
                 :field="field"
@@ -308,7 +315,9 @@ import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
+import ProfessionalBusinessValueControl from '../professional-fields/ProfessionalBusinessValueControl.vue';
 import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
+import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
@@ -435,6 +444,11 @@ function usesProfessionalBaseField(field: FormSectionFieldSchema) {
   const candidate = isProfessionalBaseFieldCandidate(String(field.type || ''), fieldWidget(field));
   if (!candidate) return false;
   return !field.componentRenderer || field.componentRenderer === 'ProfessionalBaseFieldControl';
+}
+
+function usesProfessionalBusinessValue(field: FormSectionFieldSchema) {
+  return field.componentRenderer === 'ProfessionalBusinessValueControl'
+    && isProfessionalBusinessValueField(field);
 }
 
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
