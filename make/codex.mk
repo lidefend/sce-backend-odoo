@@ -407,7 +407,7 @@ pr.status:
 	@gh pr status || true
 
 # ------------------ Branch cleanup (Codex-safe) ------------------
-.PHONY: branch.cleanup branch.cleanup.feature workspace.worktree.create workspace.worktree.cleanup verify.workspace.worktree.guard
+.PHONY: branch.cleanup branch.cleanup.feature workspace.worktree.create workspace.worktree.cleanup workspace.branch.sync-main verify.workspace.worktree.guard
 
 CLEAN_BRANCH ?=
 CREATE_WORKTREE ?=
@@ -417,6 +417,10 @@ CREATE_WORKTREE_CONFIRM ?=
 CLEAN_WORKTREE_KEEP_BRANCH ?=
 CLEAN_WORKTREE_EXPECTED_HEAD ?=
 CLEAN_WORKTREE_CONFIRM ?=
+EXPECTED_BRANCH ?=
+EXPECTED_OLD_BASE ?=
+EXPECTED_MAIN ?=
+CONFIRM_WORKSPACE_BRANCH_SYNC ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -466,6 +470,15 @@ workspace.worktree.cleanup: guard.prod.forbid
 		--path "$(CLEAN_WORKTREE)" \
 		$(if $(filter 1,$(APPLY)),--apply,) \
 		$(if $(filter 1,$(CLEAN_WORKTREE_KEEP_BRANCH)),--detach-keep-branch --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",)
+
+workspace.branch.sync-main: guard.prod.forbid
+	@python3 scripts/ops/safe_branch_sync_main.py \
+		--expected-root "$(ROOT_DIR)" \
+		--expected-branch "$(EXPECTED_BRANCH)" \
+		--expected-head "$(EXPECTED_HEAD)" \
+		--expected-old-base "$(EXPECTED_OLD_BASE)" \
+		--expected-main "$(EXPECTED_MAIN)" \
+		--confirm "$(CONFIRM_WORKSPACE_BRANCH_SYNC)"
 
 verify.workspace.worktree.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/safe_worktree_create.py scripts/ops/test_safe_worktree_create.py scripts/ops/safe_worktree_cleanup.py scripts/ops/test_safe_worktree_cleanup.py

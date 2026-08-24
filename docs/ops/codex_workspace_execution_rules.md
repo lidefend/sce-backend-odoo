@@ -146,6 +146,10 @@
 - 创建入口默认 dry-run；实际创建要求精确 40 位基线 SHA、仓库同级受控路径、
   未占用的合规分支和显式确认短语。
 - 创建后的工作区必须再次执行本文件规定的完整 preflight，才能开始写入。
+- 已完成本地责任提交但尚未发布的合规分支，如需同步最新 main，只能使用
+  `make workspace.branch.sync-main`。该入口要求完整 expected branch/head/old
+  base/main 身份、clean worktree、无开放 PR/远端分支和可验证 recovery bundle；
+  禁止裸 `git rebase`、`git merge`、`git cherry-pick` 和任何 force push。
 
 ## 禁止行为
 - 未完成上述校验即直接改文件。
