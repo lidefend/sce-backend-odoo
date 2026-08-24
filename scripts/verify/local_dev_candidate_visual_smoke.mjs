@@ -50,11 +50,13 @@ try {
     if (viewport.name === 'desktop') {
       const companyTrigger = page.getByRole('button', { name: '公司空间：切换公司' });
       await companyTrigger.click();
-      const companySearch = page.locator('[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"]');
+      const companySearchRoot = page.locator('[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"]');
+      const companySearch = companySearchRoot.locator('input');
       await companySearch.waitFor({ state: 'visible', timeout: 15000 });
       await companySearch.fill('__primitive_adapter_probe__');
       const inputContract = {
-        count: await companySearch.count(),
+        rootCount: await companySearchRoot.count(),
+        inputCount: await companySearch.count(),
         value: await companySearch.inputValue(),
       };
       report.routes.push({ viewport: viewport.name, primitiveInputContract: inputContract });
@@ -88,7 +90,7 @@ try {
 const errors = report.routes.flatMap((item) => item.errors || []);
 const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded || item.h1 !== 1 || item.overflow > 0));
 const primitiveInput = report.routes.find((item) => item.primitiveInputContract)?.primitiveInputContract;
-if (!primitiveInput || primitiveInput.count !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {
+if (!primitiveInput || primitiveInput.rootCount !== 1 || primitiveInput.inputCount !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {
   failures.push({ primitiveInputContract: primitiveInput || null });
 }
 report.pass = errors.length === 0 && report.mutationCount === 0 && failures.length === 0;
