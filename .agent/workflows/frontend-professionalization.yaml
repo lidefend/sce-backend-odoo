@@ -130,7 +130,7 @@ workflow:
       excludes: [industry_component_implementation]
     phase_6:
       name: professional_component_registry_v1
-      status: active
+      status: merged
       branch_pattern: feature/p0-professional-component-registry-v1
       record_fields: [componentKey, semanticType, supportedFieldTypes, supportedPresentationModes, supportedRenderProfiles, requiredCapabilities, renderer, fallback, readiness]
       readiness: [ready, readable_fallback, fail_closed]
@@ -138,7 +138,7 @@ workflow:
       forbid: [unregistered_component_key, field_type_mismatch, missing_capability, renderer_model_branch, label_branch, silent_fallback, unreachable_registration]
     phase_7:
       name: base_component_families
-      status: planned
+      status: active
       batches:
         phase_7a: [char, text, html, integer, float, date, datetime, boolean, selection]
         phase_7b: [money, currency, percentage, status, duration, user, company]
@@ -193,7 +193,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_6
-    task: professional_component_registry_authority_and_fail_closed_resolution
-    prerequisite: phase_5_merged_and_main_synced
-    do_not_start_in_parallel: [phase_7, phase_8, phase_9]
+    phase: phase_7a
+    task: professional_base_field_family_for_task_and_workspace_forms
+    prerequisite: phase_6_merged_and_main_synced
+    do_not_start_in_parallel: [phase_7b, phase_7c, phase_7d, phase_8]

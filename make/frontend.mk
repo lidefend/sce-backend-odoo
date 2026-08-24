@@ -116,7 +116,7 @@ verify.frontend.product_page_header.unit: guard.prod.forbid
 verify.frontend.product_page_header.browser: guard.prod.forbid
 	@node scripts/verify/frontend_product_page_header_browser.mjs
 
-.PHONY: verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit
+.PHONY: verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit
 verify.frontend.product_page_pattern.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_pattern_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-pattern-model-test.mjs >/dev/null
 	@node /tmp/product-page-pattern-model-test.mjs
@@ -129,9 +129,15 @@ verify.frontend.professional_component_registry.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_professional_component_registry_guard.py
 	@python3 scripts/verify/frontend_professional_component_registry_guard.py
 
-verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit
+verify.frontend.professional_base_field.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_base_field_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-base-field-model-test.mjs >/dev/null
+	@node /tmp/professional-base-field-model-test.mjs
+	@python3 -m unittest scripts/verify/test_frontend_professional_base_field_guard.py
+	@python3 scripts/verify/frontend_professional_base_field_guard.py
 
-verify.frontend.release.unit: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit
+verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit
+
+verify.frontend.release.unit: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit
 
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
