@@ -6,6 +6,7 @@
         <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</button>
       </template>
     </ProductPageHeader>
+    <component :is="viewMode === 'dashboard' ? DashboardPattern : CollectionPattern">
     <!-- Page intent: 在列表场景中先判断状态，再给出下一步可执行动作。 -->
     <StatusPanel
       v-if="renderErrorMessage"
@@ -616,7 +617,6 @@
         </button>
       </div>
     </section>
-
     <DevContextPanel
       :visible="isSectionVisible('dev_context', { defaultEnabled: pageSectionEnabled('dev_context', true), tag: 'div', vmVisible: vm.sections.hud && Boolean(vm.hud?.visible) })"
       :style="getSectionStyle('dev_context')"
@@ -654,6 +654,7 @@
     </div>
     </template>
     </ActionSurfaceRendererHost>
+    </component>
   </ScPage>
 </template>
 <script setup lang="ts">
@@ -664,6 +665,8 @@ import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
+import CollectionPattern from '../components/product-page-patterns/CollectionPattern.vue';
+import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
 import { getUserViewPreference, setUserViewPreference } from '../api/preferences';
 import { executeButton } from '../api/executeButton';
@@ -994,17 +997,14 @@ let latestLoadGeneration = 0;
 let loadPageInvoker: (loadGeneration: number) => Promise<void> = async () => {};
 function requestLoadPage(): Promise<void> { latestLoadGeneration += 1; return loadPageInvoker(latestLoadGeneration); }
 function currentActionActivityRouteKey(): string { return buildActionActivityRouteKey({ actionId: route.params.actionId, queryActionId: route.query.action_id, menuId: route.query.menu_id }); }
-
 function resolveCurrentRouteActionId(): number {
   const fromParam = Number(route.params.actionId || 0);
   if (Number.isFinite(fromParam) && fromParam > 0) return fromParam;
   const fromQuery = Number(route.query.action_id || 0);
   return Number.isFinite(fromQuery) && fromQuery > 0 ? fromQuery : 0;
 }
-
 let clearSelectionInvoker: () => void = () => {};
 function clearSelection(): void { clearSelectionInvoker(); }
-
 const { t } = useActionViewTextRuntime({ pageText });
 const pageActionIntent = pageContract.actionIntent;
 const pageActionTarget = pageContract.actionTarget;

@@ -25,8 +25,8 @@
       </select>
     </div>
     <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" density="compact">
+      <TaskFormPattern v-if="floorplan.decisionMode" :render-profile="renderModel.identity.mode">
       <ObjectTaskPage
-        v-if="floorplan.decisionMode"
         :summary-nodes="floorplan.summaryNodes"
         :task-nodes="floorplan.taskNodes"
         :core-input-nodes="floorplan.coreInputNodes"
@@ -83,7 +83,9 @@
           </nav>
         </template>
       </ObjectTaskPage>
-      <article v-else class="sc-native-contract-page" data-native-contract-structure>
+      </TaskFormPattern>
+      <WorkspaceFormPattern v-else :render-profile="renderModel.identity.mode">
+      <article class="sc-native-contract-page" data-native-contract-structure>
         <main class="sc-native-contract-tree" data-canonical-zone="primary">
           <NativeFormTreeRenderer
             v-if="nativeBridge"
@@ -154,6 +156,7 @@
             </details>
         </nav>
       </article>
+      </WorkspaceFormPattern>
     </SceneUiProvider>
   </section>
 </template>
@@ -176,6 +179,8 @@ import NativeCollaborationPanel, {
   type NativeCollaborationPanelProps,
 } from './NativeCollaborationPanel.vue';
 import ObjectTaskPage from './ObjectTaskPage.vue';
+import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
+import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent } from './canonicalFormRenderer';
 
 const props = defineProps<{
