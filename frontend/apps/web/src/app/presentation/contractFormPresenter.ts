@@ -21,6 +21,7 @@ import type {
 } from '../contracts/v2/types';
 import type { ContractV2FormStructureRoleName } from '../contracts/v2/types';
 import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructureRoles';
+import { resolveProfessionalComponent } from './professionalComponentRegistry';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -120,11 +121,20 @@ function fieldFromWidget(
   contractValues: ContractV2Dictionary,
   runtimeValues: ContractV2Dictionary | undefined,
   mode: CanonicalFormRenderMode,
+  presentationMode: CanonicalFormPresentationMode,
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
+  const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type);
+  const componentResolution = resolveProfessionalComponent({
+    componentKey: widget.componentKey,
+    fieldType,
+    presentationMode,
+    renderProfile: mode,
+    capabilities: widget.capabilities,
+  });
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
   const fieldSemantics = fieldSemanticIdentity(widget, container);
@@ -139,8 +149,9 @@ function fieldFromWidget(
       runtimeValues?.[widget.fieldCode],
       hasRuntimeValue,
     ),
-    fieldType: text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type),
+    fieldType,
     componentKey: widget.componentKey,
+    componentResolution,
     span: widget.span,
     visible: ancestorVisible && statusResolved && bool(status?.visible, true),
     readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || !statusResolved || bool(status?.readonly, false),
@@ -163,6 +174,7 @@ function presentNode(
   contractValues: ContractV2Dictionary,
   runtimeValues: ContractV2Dictionary | undefined,
   mode: CanonicalFormRenderMode,
+  presentationMode: CanonicalFormPresentationMode,
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
@@ -183,6 +195,7 @@ function presentNode(
       contractValues,
       runtimeValues,
       mode,
+      presentationMode,
       pageCanEdit,
       visible,
       disabled,
@@ -225,7 +238,7 @@ function presentNode(
     children: container.children.map((child, childIndex) => (
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
-        mode, pageCanEdit, visible, disabled, actionsByIdentity, actionsByNativeOccurrence,
+        mode, presentationMode, pageCanEdit, visible, disabled, actionsByIdentity, actionsByNativeOccurrence,
         rawTitle || ancestorTitle,
       )
     )),
@@ -383,7 +396,7 @@ export function presentContractV2Form(
   }));
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
-      container, zoneRole(container), index, store, contractValues, runtimeValues, mode, pageCanEdit,
+      container, zoneRole(container), index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
       pageVisible, pageAuth === 'none', actionsByIdentity, actionsByNativeOccurrence,
     )
   ));

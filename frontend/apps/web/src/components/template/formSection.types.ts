@@ -25,6 +25,10 @@ export type FormSectionFieldSchema = {
   type: TemplateFieldType;
   widget?: string;
   widgetSemantics?: Record<string, unknown>;
+  componentKey?: string;
+  componentReadiness?: 'ready' | 'readable_fallback' | 'fail_closed';
+  componentRenderer?: string;
+  componentFallback?: string | null;
   required: boolean;
   readonly: boolean;
   invalid?: boolean;

@@ -41,6 +41,7 @@ export type CanonicalFormField = {
   value: unknown | CanonicalRelationValue;
   fieldType: string;
   componentKey: string;
+  componentResolution: import('./professionalComponentRegistry').ProfessionalComponentResolution;
   span: number;
   visible: boolean;
   readonly: boolean;
