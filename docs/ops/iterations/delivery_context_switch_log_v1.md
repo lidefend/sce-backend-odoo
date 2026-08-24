@@ -5654,6 +5654,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Rollback: revert this P4 governance commit. Existing published branches keep
   their immutable-history policy; recovery bundles remain local evidence.
 
+## Candidate worktree frontend browser binding (2026-08-24)
+
+- Branch / anchor: `fix/p4-local-dev-candidate-browser-binding-v1` /
+  `d071dd03`.
+- Formal Product Layer / Layer Target / Module: P4 delivery tooling /
+  frozen linked-worktree frontend static carrier for local.dev browser checks /
+  `make/dev.mk` and `scripts/dev/local_dev_candidate_frontend.py`.
+- Reason / boundary: local.dev Nginx intentionally mounts the primary worktree
+  static directory, so it cannot prove an unpublished linked candidate. The
+  new carrier builds only the exact current topic SHA, then serves that
+  worktree's `dist-dev` on loopback port 5176 while proxying API traffic only
+  to the existing governed local.dev endpoint at 18081.
+- Safety contract: requires an allowed non-main branch, exact full candidate
+  SHA, explicit confirmation, and the primary worktree's owned 0600 `.env.dev`
+  authority. It neither remounts Nginx nor copies credentials, creates no
+  Compose project/database/volume, and refuses a stale or unhealthy process.
+- Blast radius / validation: local browser preview carrier only; the primary
+  18081 asset mount, product source, Contract, routes, permissions and fixture
+  data are unchanged. Focused identity tests plus a governed `up`, `health`,
+  and `down` proof validate the final static server process and proxy boundary.
+- Rollback: revert the three P4 files. Existing local.dev and formal release
+  acceptance routes continue unchanged.
+
 ## Merge policy Fast/Full aggregation (2026-08-24)
 
 - Branch / anchor: `fix/p4-merge-policy-gate-v1` / `cb255a0d`.
