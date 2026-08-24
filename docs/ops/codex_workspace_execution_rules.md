@@ -150,6 +150,9 @@
   `make workspace.branch.sync-main`。该入口要求完整 expected branch/head/old
   base/main 身份、clean worktree、无开放 PR/远端分支和可验证 recovery bundle；
   禁止裸 `git rebase`、`git merge`、`git cherry-pick` 和任何 force push。
+  当目标工作树仍使用缺少该 target 的旧基线时，可从主工作树调用同一 Make
+  target，并显式传入 `WORKSPACE_BRANCH_SYNC_ROOT=<absolute-linked-worktree-path>`。
+  入口会在目标目录执行，并要求目标与调用者共享同一 Git common directory。
 
 ## 禁止行为
 - 未完成上述校验即直接改文件。

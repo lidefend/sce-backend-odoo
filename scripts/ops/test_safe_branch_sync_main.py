@@ -51,7 +51,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.temp.cleanup()
 
     def plan(self, **overrides: object) -> syncer.SyncPlan:
-        values: dict[str, object] = dict(root=self.root, expected_root=self.root, expected_branch="feature/local-sync", expected_head=self.head, expected_old_base=self.old_base, expected_main=self.new_main, pr_checker=lambda _: False, origin_checker=lambda _: True)
+        values: dict[str, object] = dict(root=self.root, expected_root=self.root, governance_root=self.root, expected_branch="feature/local-sync", expected_head=self.head, expected_old_base=self.old_base, expected_main=self.new_main, pr_checker=lambda _: False, origin_checker=lambda _: True)
         values.update(overrides)
         return syncer.validate(**values)  # type: ignore[arg-type]
 
@@ -147,6 +147,22 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         source = Path(syncer.__file__).read_text(encoding="utf-8")
         self.assertNotIn('["git", "push"', source)
         self.assertNotIn('["git", "push", "--force"', source)
+
+    def test_governance_root_must_share_common_git_directory(self) -> None:
+        foreign = self.temp_path("foreign")
+        git(foreign.parent, "init", str(foreign))
+        with self.assertRaisesRegex(syncer.SyncError, "governance repository identity"):
+            self.plan(root=foreign, expected_root=foreign)
+
+    def test_make_entry_executes_in_the_target_worktree(self) -> None:
+        makefile = (Path(__file__).resolve().parents[2] / "make/codex.mk").read_text(
+            encoding="utf-8"
+        )
+        target = makefile.split("workspace.branch.sync-main:", 1)[1].split(
+            "verify.workspace.worktree.guard:", 1
+        )[0]
+        self.assertIn('cd "$(WORKSPACE_BRANCH_SYNC_ROOT)"', target)
+        self.assertIn('--governance-root "$(ROOT_DIR)"', target)
 
     def test_repository_origin_identity_is_denied(self) -> None:
         with self.assertRaisesRegex(syncer.SyncError, "repository identity"):

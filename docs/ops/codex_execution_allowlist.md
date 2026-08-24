@@ -265,6 +265,10 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 
 * `make workspace.branch.sync-main`
 
+  对于尚未包含同步 target 的旧 linked worktree，允许由主工作树通过
+  `WORKSPACE_BRANCH_SYNC_ROOT=<absolute-linked-worktree-path>` 调用；脚本必须
+  验证两者共享同一 Git common directory。
+
   仅允许同步未发布、没有开放 PR 的合规本地分支。调用者必须提供当前
   分支、HEAD、旧基线和 `origin/main` 的完整 SHA，并提供精确确认短语。
   入口会创建本地恢复 bundle，拒绝 dirty、merge commit、远端同名分支、

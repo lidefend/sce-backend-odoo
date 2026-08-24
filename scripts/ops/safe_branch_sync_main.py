@@ -129,17 +129,25 @@ def recovery_path(root: Path, branch: str, head: str) -> Path:
 
 
 def validate(
-    *, root: Path, expected_root: Path, expected_branch: str, expected_head: str,
+    *, root: Path, expected_root: Path, governance_root: Path, expected_branch: str, expected_head: str,
     expected_old_base: str, expected_main: str, pr_checker: Callable[[str], bool] = has_open_pr,
     origin_checker: Callable[[Path], bool] = has_canonical_origin,
 ) -> SyncPlan:
     root = root.resolve()
     expected_root = expected_root.resolve()
+    governance_root = governance_root.resolve()
     for label, value in (("EXPECTED_HEAD", expected_head), ("EXPECTED_OLD_BASE", expected_old_base), ("EXPECTED_MAIN", expected_main)):
         ensure_sha(label, value)
     actual_root = Path(git_output(root, "rev-parse", "--show-toplevel")).resolve()
     if root != actual_root or expected_root != actual_root:
         raise SyncError("worktree path and expected repository root must match")
+    actual_governance_root = Path(
+        git_output(governance_root, "rev-parse", "--show-toplevel")
+    ).resolve()
+    if governance_root != actual_governance_root:
+        raise SyncError("governance root must be a repository root")
+    if common_git_dir(root) != common_git_dir(governance_root):
+        raise SyncError("worktree must share the governance repository identity")
     actual_branch = git_output(root, "branch", "--show-current")
     if actual_branch != expected_branch or not ALLOWED_BRANCH.fullmatch(actual_branch):
         raise SyncError("current branch does not match a write-eligible expected branch")
@@ -221,6 +229,7 @@ def sync(plan: SyncPlan) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--expected-root", required=True)
+    parser.add_argument("--governance-root", required=True)
     parser.add_argument("--expected-branch", required=True)
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--expected-old-base", required=True)
@@ -232,7 +241,8 @@ def main() -> int:
         return 2
     try:
         plan = validate(
-            root=Path.cwd(), expected_root=Path(args.expected_root), expected_branch=args.expected_branch,
+            root=Path.cwd(), expected_root=Path(args.expected_root), governance_root=Path(args.governance_root),
+            expected_branch=args.expected_branch,
             expected_head=args.expected_head, expected_old_base=args.expected_old_base,
             expected_main=args.expected_main,
         )
