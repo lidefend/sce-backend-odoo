@@ -61,6 +61,8 @@ def _read_process_identity(pidfile: Path = PIDFILE) -> dict[str, object]:
         raise CandidateFrontendError("candidate pidfile must be a regular non-symlink file")
     if metadata.st_uid != os.getuid():
         raise CandidateFrontendError("candidate pidfile owner mismatch")
+    if stat.S_IMODE(metadata.st_mode) != 0o600:
+        raise CandidateFrontendError("candidate pidfile must use mode 0600")
     try:
         payload = json.loads(pidfile.read_text(encoding="utf-8"))
         pid = int(payload["pid"])

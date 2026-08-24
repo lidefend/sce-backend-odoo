@@ -61,13 +61,20 @@ class CandidateFrontendContractTest(unittest.TestCase):
 
             link.unlink()
             link.write_text("not-a-pid\n", encoding="utf-8")
+            link.chmod(0o600)
             with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "invalid identity"):
                 MODULE_UNDER_TEST._read_process_identity(link)
 
             link.write_text('{"pid":123,"head":"' + "a" * 40 + '","root":"/tmp/root"}\n', encoding="utf-8")
+            link.chmod(0o600)
             fake_metadata = mock.Mock(st_mode=stat.S_IFREG | 0o600, st_uid=os.getuid() + 1)
             with mock.patch.object(Path, "lstat", return_value=fake_metadata):
                 with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "owner"):
+                    MODULE_UNDER_TEST._read_process_identity(link)
+
+            wrong_mode = mock.Mock(st_mode=stat.S_IFREG | 0o644, st_uid=os.getuid())
+            with mock.patch.object(Path, "lstat", return_value=wrong_mode):
+                with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "0600"):
                     MODULE_UNDER_TEST._read_process_identity(link)
 
     def test_down_refuses_live_process_identity_mismatch(self):
