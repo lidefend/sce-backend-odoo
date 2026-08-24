@@ -19,10 +19,6 @@
   ],
   "frontend_full_paths": [
     ".github/workflows/frontend_release_gate.yml",
-    "config/ci/risk_tiering_v1.json",
-    "scripts/ci/ci_risk_classifier.py",
-    "scripts/ci/test_ci_risk_classifier.py",
-    "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/verify/frontend_release_*",
     "frontend/pnpm-lock.yaml",
     "frontend/pnpm-workspace.yaml",

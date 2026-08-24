@@ -82,6 +82,18 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertEqual(result.lane, "HIGH_RISK")
         self.assertEqual(result.frontend_mode, "full")
 
+    def test_ci_risk_policy_change_is_high_risk_without_product_frontend_release(self) -> None:
+        result = classify(
+            [
+                "config/ci/risk_tiering_v1.json",
+                "scripts/ci/test_ci_risk_classifier.py",
+            ],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertEqual(result.professional_mode, "full")
+        self.assertEqual(result.frontend_mode, "skip")
+
     def test_docker_and_release_are_high_risk_on_pr(self) -> None:
         self.assertEqual(self.lane("Dockerfile"), "HIGH_RISK")
         result = classify(["scripts/release/publish.py"], event_name="pull_request")
