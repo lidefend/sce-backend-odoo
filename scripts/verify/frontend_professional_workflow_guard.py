@@ -14,6 +14,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         if marker not in action_bar: failures.append(f"workflow action bar missing {marker}")
     if driver.count("<CanonicalActionBar") < 2: failures.append("task and workspace do not share CanonicalActionBar")
     if 'data-professional-workflow-component="statusbar"' not in header: failures.append("workflow statusbar lacks semantic identity")
+    for marker in (":data-professional-workflow-component", "canonicalWorkflowAuthority", "workflowDisabledReason(action)"):
+        if marker not in header: failures.append(f"header workflow actions bypass shared authority {marker}")
     if "<ScDialog" not in confirm or 'data-professional-workflow-component="confirm-dialog"' not in confirm: failures.append("workflow confirmation bypasses the dialog primitive")
     if "当前操作不可用" not in model: failures.append("disabled workflow action lacks a fail-closed reason")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
