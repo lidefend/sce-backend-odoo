@@ -10,6 +10,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalBaseFieldModel.ts")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     renderer = read_text("frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts")
+    registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     for field_type in ("char", "text", "html", "integer", "float", "date", "datetime", "boolean", "selection"):
         if f"'{field_type}'" not in model:
             failures.append(f"base field model missing {field_type}")
@@ -21,6 +22,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"professional base field missing marker {marker}")
     if "<ProfessionalBaseFieldControl" not in section or "isProfessionalBaseFieldCandidate" not in section:
         failures.append("FormSection does not route through the professional base field family")
+    if "ProfessionalBaseFieldControl" not in registry or "rendererByFieldType[fieldType]" not in registry:
+        failures.append("component registry does not authorize the professional base field renderer")
     for marker in ("presentationMode: field.presentationMode", "renderProfile: field.renderProfile"):
         if marker not in renderer:
             failures.append(f"canonical renderer missing profile projection {marker}")

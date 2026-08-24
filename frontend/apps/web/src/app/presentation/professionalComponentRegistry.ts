@@ -10,6 +10,7 @@ export type ProfessionalComponentRegistration = {
   supportedRenderProfiles: readonly CanonicalFormRenderMode[];
   requiredCapabilities: readonly string[];
   renderer: string;
+  rendererByFieldType: Readonly<Record<string, string>>;
   fallback: string | null;
   readiness: ProfessionalComponentReadiness;
 };
@@ -27,12 +28,18 @@ function registration(
   supportedFieldTypes: readonly string[],
   readiness: ProfessionalComponentReadiness = 'ready',
 ): ProfessionalComponentRegistration {
+  const rendererByFieldType = Object.freeze(Object.fromEntries(
+    supportedFieldTypes
+      .filter((fieldType) => ['char', 'text', 'html', 'integer', 'float', 'date', 'datetime', 'boolean', 'selection'].includes(fieldType))
+      .map((fieldType) => [fieldType, 'ProfessionalBaseFieldControl']),
+  ));
   return Object.freeze({
     componentKey, semanticType, supportedFieldTypes,
     supportedPresentationModes: FORM_MODES,
     supportedRenderProfiles: FORM_PROFILES,
     requiredCapabilities: Object.freeze([]),
     renderer: 'FormSectionField',
+    rendererByFieldType,
     fallback: readiness === 'readable_fallback' ? 'ReadableFieldValue' : null,
     readiness,
   });
@@ -90,7 +97,11 @@ export function resolveProfessionalComponentRegistration(
   const capabilities = new Set(input.capabilities || []);
   const missing = entry.requiredCapabilities.filter((capability) => !capabilities.has(capability));
   if (missing.length) throw new Error(`PROFESSIONAL_COMPONENT_CAPABILITY_MISSING:${input.componentKey}:${missing.join(',')}`);
-  return Object.freeze({ ...entry, fieldType });
+  return Object.freeze({
+    ...entry,
+    renderer: entry.rendererByFieldType[fieldType] || entry.renderer,
+    fieldType,
+  });
 }
 
 export function resolveProfessionalComponent(

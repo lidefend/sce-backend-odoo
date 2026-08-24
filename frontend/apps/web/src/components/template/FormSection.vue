@@ -427,7 +427,9 @@ function isRelationEditorField(field: FormSectionFieldSchema) {
 }
 
 function usesProfessionalBaseField(field: FormSectionFieldSchema) {
-  return isProfessionalBaseFieldCandidate(String(field.type || ''), fieldWidget(field));
+  const candidate = isProfessionalBaseFieldCandidate(String(field.type || ''), fieldWidget(field));
+  if (!candidate) return false;
+  return !field.componentRenderer || field.componentRenderer === 'ProfessionalBaseFieldControl';
 }
 
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
