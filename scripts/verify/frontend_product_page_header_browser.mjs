@@ -60,6 +60,11 @@ for (const target of targets) {
     const primary = [...document.querySelectorAll('[data-product-primary-action]')].filter(visible);
     const enabledPrimary = primary.filter((node) => !(node instanceof HTMLButtonElement) || !node.disabled);
     const save = [...document.querySelectorAll('[data-action-ref="form.save"], [data-action-method="save"], [data-action-method="write"]')].filter(visible);
+    const componentNodes = [...document.querySelectorAll('[data-component-key]')].filter(visible);
+    const unresolvedComponents = componentNodes.filter((node) => {
+      const readiness = node.getAttribute('data-component-readiness');
+      return !node.getAttribute('data-component-key') || !['ready', 'readable_fallback'].includes(readiness || '');
+    });
     return {
       url: location.href,
       headerCount: document.querySelectorAll('[data-product-page-header]').length,
@@ -74,6 +79,8 @@ for (const target of targets) {
       saveCount: save.length,
       editTransitionCount: [...document.querySelectorAll('[data-form-mode-action="edit"]')].filter(visible).length,
       bodyActionBarCount: [...document.querySelectorAll('.sc-form-driver-host [data-canonical-action-bar]')].filter(visible).length,
+      componentCount: componentNodes.length,
+      unresolvedComponentCount: unresolvedComponents.length,
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     };
   });
@@ -85,6 +92,8 @@ for (const target of targets) {
   check(snapshot.renderProfile === target.renderProfile, `${target.key}: render profile ${snapshot.renderProfile}`);
   check(snapshot.primaryCount <= 1, `${target.key}: multiple primary actions`);
   check(snapshot.bodyActionBarCount === 0, `${target.key}: parallel body action bar remains`);
+  check(snapshot.componentCount > 0, `${target.key}: no registered component evidence`);
+  check(snapshot.unresolvedComponentCount === 0, `${target.key}: unresolved component evidence remains`);
   if (target.renderProfile === 'edit') {
     check(snapshot.saveCount === 1 && snapshot.primaryCount === 1 && snapshot.enabledPrimaryCount === 1, `${target.key}: edit save action is not uniquely available`);
     check(snapshot.editTransitionCount === 0, `${target.key}: edit transition button remains`);
