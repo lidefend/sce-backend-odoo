@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `3858`
+- Scanned files: `3859`
 - Files requiring split plan: `44`
 - Files above warning threshold: `77`
 
@@ -14,7 +14,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 4560 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4434 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 4160 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4169 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4130 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3687 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3669 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
@@ -145,7 +145,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- | --- |
 | 4560 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4434 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 4160 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4169 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4130 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3687 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3669 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
