@@ -5672,7 +5672,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Compose project/database/volume, and refuses a stale or unhealthy process.
 - Blast radius / validation: local browser preview carrier only; the primary
   18081 asset mount, product source, Contract, routes, permissions and fixture
-  data are unchanged. Focused identity tests plus a governed `up`, `health`,
+  data are unchanged. The existing read-only project Contract driver probe has
+  a dedicated candidate target fixed to 5176; arbitrary frontend URLs remain
+  unavailable. Focused identity tests plus a governed `up`, `health`, `probe`,
   and `down` proof validate the final static server process and proxy boundary.
 - Rollback: revert the three P4 files. Existing local.dev and formal release
   acceptance routes continue unchanged.

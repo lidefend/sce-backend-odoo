@@ -36,11 +36,14 @@ def _candidate_identity(root: Path = ROOT) -> tuple[str, str]:
         raise CandidateFrontendError("candidate root is not the active git worktree")
     branch = _git_output(root, "branch", "--show-current")
     head = _git_output(root, "rev-parse", "HEAD")
+    status = _git_output(root, "status", "--porcelain=v2", "--untracked-files=all")
     requested = os.environ.get("CANDIDATE_GIT_HEAD", "")
     if not ALLOWED_BRANCH.fullmatch(branch) or branch == "main":
         raise CandidateFrontendError("candidate branch is not an allowed topic branch")
     if not SHA.fullmatch(requested) or requested != head:
         raise CandidateFrontendError("CANDIDATE_GIT_HEAD must equal the current full candidate SHA")
+    if status:
+        raise CandidateFrontendError("candidate worktree must be clean")
     if os.environ.get("CONFIRM_LOCAL_DEV_CANDIDATE_FRONTEND") != CONFIRMATION:
         raise CandidateFrontendError("candidate static service confirmation is missing")
     return branch, head
