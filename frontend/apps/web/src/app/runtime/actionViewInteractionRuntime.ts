@@ -1,5 +1,58 @@
 type Dict = Record<string, unknown>;
 
+export type RecordOpenIntent = 'open' | 'handling' | 'explicit_readonly' | 'explicit_edit';
+
+export function normalizeRecordOpenIntent(raw: unknown): RecordOpenIntent {
+  const value = String(raw || '').trim().toLowerCase();
+  if (['readonly', 'read', 'view', 'explicit_readonly', 'explicit-readonly'].includes(value)) {
+    return 'explicit_readonly';
+  }
+  if (['edit', 'write', 'explicit_edit', 'explicit-edit'].includes(value)) {
+    return 'explicit_edit';
+  }
+  if (['handling', 'process', 'work_on'].includes(value)) {
+    return 'handling';
+  }
+  return 'open';
+}
+
+export function normalizeModelWriteAuthority(raw: unknown): boolean | null {
+  if (typeof raw === 'boolean') return raw;
+  return null;
+}
+
+export function resolveCollectionWriteAuthority(options: { modelRights?: unknown }): boolean {
+  const rights = options.modelRights;
+  if (!rights || typeof rights !== 'object' || Array.isArray(rights)) return false;
+  const write = (rights as Record<string, unknown>).write;
+  return typeof write === 'boolean' ? write : false;
+}
+
+export function resolveRecordOpenTarget(options: {
+  model: string;
+  recordId: number | string;
+  actionId?: number;
+  menuId?: number;
+  requestedIntent?: RecordOpenIntent;
+  modelWriteAuthority?: boolean | null;
+  carryQuery?: Dict;
+}): { path: string; query: Dict } | null {
+  const model = String(options.model || '').trim();
+  const recordId = resolveActionViewRecordId(options.recordId);
+  if (!model || recordId === null) return null;
+  const intent = normalizeRecordOpenIntent(options.requestedIntent);
+  const editable = (intent === 'open' || intent === 'handling' || intent === 'explicit_edit')
+    && options.modelWriteAuthority === true;
+  return {
+    path: `/${editable ? 'f' : 'r'}/${model}/${recordId}`,
+    query: {
+      menu_id: options.menuId || undefined,
+      action_id: options.actionId || undefined,
+      ...(options.carryQuery || {}),
+    },
+  };
+}
+
 export function resolveActionViewRecordId(rawId: unknown): number | string | null {
   if (typeof rawId === 'number') return rawId;
   if (typeof rawId === 'string' && rawId.trim()) return rawId;
@@ -14,17 +67,16 @@ export function buildActionViewRowClickTarget(options: {
   carryQuery: Dict;
   editable: boolean;
 }): { path: string; query: Dict } | null {
-  if (!options.targetModel) return null;
-  const recordId = resolveActionViewRecordId(options.rawId);
-  if (recordId === null) return null;
-  return {
-    path: `/${recordId === 'new' || options.editable ? 'f' : 'r'}/${options.targetModel}/${recordId}`,
-    query: {
-      menu_id: options.menuId || undefined,
-      action_id: options.actionId || undefined,
-      ...options.carryQuery,
-    },
-  };
+  const recordId = resolveActionViewRecordId(options.rawId) || '';
+  return resolveRecordOpenTarget({
+    model: options.targetModel,
+    recordId,
+    actionId: options.actionId,
+    menuId: options.menuId,
+    requestedIntent: recordId === 'new' ? 'explicit_edit' : 'open',
+    modelWriteAuthority: options.editable,
+    carryQuery: options.carryQuery,
+  });
 }
 
 export function shouldUseCanonicalCollectionDetail(options: {

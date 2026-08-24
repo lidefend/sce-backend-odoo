@@ -819,6 +819,7 @@ assert.deepEqual(
 assert.deepEqual(readonlyFloorplan.contextNodes, []);
 
 const semanticReadonlySnapshot = snapshot();
+semanticReadonlySnapshot.formStructureContract = governedFormStructure('context');
 semanticReadonlySnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
   role: 'summary', slot: 'identity', group: 'identity',
 };
@@ -907,6 +908,20 @@ semanticEditNameNode.fields.push({
 });
 const semanticEditFloorplan = composeCanonicalFormFloorplan(semanticEditModel);
 assert.equal(semanticEditFloorplan.decisionMode, true, 'semantic create/edit forms must enter the Product Floorplan');
+const nativeAuthoritySnapshot = snapshot();
+nativeAuthoritySnapshot.formStructureContract = governedFormStructure('context');
+nativeAuthoritySnapshot.formStructureContract!.mode = 'native_structured_form';
+nativeAuthoritySnapshot.formStructureContract!.layoutPolicy = 'native_authority';
+nativeAuthoritySnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
+  role: 'context', slot: 'governed', group: 'governed',
+};
+assert.equal(
+  composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(nativeAuthoritySnapshot), 'readonly',
+  )).decisionMode,
+  false,
+  'native authority must fail closed even when layout nodes carry semantic roles',
+);
 assert.equal(
   semanticEditFloorplan.preExecutionInputTitle,
   '',

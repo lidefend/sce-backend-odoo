@@ -1,4 +1,5 @@
 import type { LocationQueryRaw } from 'vue-router';
+import { normalizeModelWriteAuthority, normalizeRecordOpenIntent, resolveRecordOpenTarget } from './runtime/actionViewInteractionRuntime';
 
 type QueryLike = LocationQueryRaw;
 type SceneRouteSource = {
@@ -240,7 +241,7 @@ export function buildEntryTargetRouteTarget(
   const refs = entryTargetRefs(entryTarget);
   const menuId = positiveInteger(options.menuId) ?? positiveInteger(refs.menu_id);
   const actionId = positiveInteger(options.actionId) ?? entryTargetActionId(entryTarget);
-  const viewId = positiveInteger(refs.view_id);
+  const viewId = positiveInteger(refs.view_id) ?? positiveInteger(normalizedQuery.view_id);
   const domainRaw = firstQueryValue(normalizedQuery.domain_raw) || firstQueryValue(refs.domain_raw);
   const contextRaw = firstQueryValue(normalizedQuery.context_raw) || firstQueryValue(refs.context_raw);
   const entryTitle = entryTargetPresentationTitle(entryTarget);
@@ -267,9 +268,32 @@ export function buildEntryTargetRouteTarget(
   const recordModel = String(recordEntry.model || '').trim();
   const recordId = positiveInteger(recordEntry.record_id);
   if (type === 'compatibility' && recordModel && recordId) {
+    const rawRecordIntent = recordEntry.open_intent
+      ?? recordEntry.openIntent
+      ?? recordEntry.intent
+      ?? recordEntry.entry_intent;
+    const hasFormalRecordIntent = rawRecordIntent !== undefined && rawRecordIntent !== null && String(rawRecordIntent).trim() !== '';
+    const explicitRouteIntent = hasFormalRecordIntent
+      ? normalizeRecordOpenIntent(rawRecordIntent)
+      : route.startsWith('/f/')
+        ? 'explicit_edit'
+        : route.startsWith('/r/')
+          ? 'explicit_readonly'
+          : 'open';
+    const target = resolveRecordOpenTarget({
+      model: recordModel,
+      recordId,
+      actionId,
+      menuId,
+      requestedIntent: explicitRouteIntent,
+      modelWriteAuthority: normalizeModelWriteAuthority(
+        recordEntry.model_write_authority ?? recordEntry.modelWriteAuthority ?? recordEntry.model_write,
+      ),
+      carryQuery: query,
+    });
     return {
-      path: `/r/${encodeURIComponent(recordModel)}/${recordId}`,
-      query,
+      path: target?.path || `/r/${encodeURIComponent(recordModel)}/${recordId}`,
+      query: target?.query || query,
     };
   }
   if (

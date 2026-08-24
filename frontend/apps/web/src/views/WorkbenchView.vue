@@ -124,6 +124,7 @@ import { isHudEnabled } from '../config/debug';
 import { capabilityTooltip, evaluateCapabilityPolicy } from '../app/capabilityPolicy';
 import { hasWorkspaceContext as hasWorkspaceContextValue, readWorkspaceContext, stripWorkspaceContext } from '../app/workspaceContext';
 import { normalizeEmbeddedSceneQuery, parseSceneKeyFromQuery } from '../app/routeQuery';
+import { normalizeModelWriteAuthority, normalizeRecordOpenIntent, resolveRecordOpenTarget } from '../app/runtime/actionViewInteractionRuntime';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import PageRenderer from '../components/page/PageRenderer.vue';
@@ -470,14 +471,16 @@ async function handleTileClick(tile: EnrichedWorkbenchTile) {
     return;
   }
   if (payload.model && payload.record_id) {
-    await router.push({
-      path: `/r/${payload.model}/${payload.record_id}`,
-      query: {
-        menu_id: payload.menu_id || undefined,
-        action_id: payload.action_id || undefined,
-        ...workspaceContextQuery.value,
-      },
+    const target = resolveRecordOpenTarget({
+      model: String(payload.model),
+      recordId: Number(payload.record_id),
+      actionId: Number(payload.action_id || 0) || undefined,
+      menuId: Number(payload.menu_id || 0) || undefined,
+      requestedIntent: normalizeRecordOpenIntent(payload.open_intent ?? payload.openIntent ?? payload.intent ?? payload.entry_intent),
+      modelWriteAuthority: normalizeModelWriteAuthority(payload.model_write_authority ?? payload.modelWrite ?? payload.model_write),
+      carryQuery: workspaceContextQuery.value,
     });
+    if (target) await router.push(target as never);
   }
 }
 

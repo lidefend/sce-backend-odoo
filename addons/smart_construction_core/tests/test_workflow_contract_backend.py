@@ -337,6 +337,42 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertEqual(projected["workflowContract"]["editability"], "editable")
         self.assertEqual(projected["statusContract"]["globalStatus"]["pageAuth"], "read")
 
+    def test_workflow_readonly_narrows_effective_form_surface(self):
+        payment = self.env["payment.request"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "amount": 10.0,
+            }
+        )
+        payment.with_context(allow_transition=True).write({"state": "approved"})
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            self.env,
+            {
+                "statusContract": {
+                    "globalStatus": {
+                        "pageAuth": "edit",
+                        "effectiveRecordCapabilities": {"read": True, "write": True},
+                        "effectiveRenderProfile": "edit",
+                    }
+                },
+                "runtimeContract": {},
+            },
+            {
+                "source_contract": {
+                    "model": "payment.request",
+                    "view_type": "form",
+                    "record_id": payment.id,
+                },
+                "view_type": "form",
+            },
+        )
+        global_status = projected["statusContract"]["globalStatus"]
+        self.assertEqual(projected["workflowContract"]["editability"], "readonly")
+        self.assertEqual(global_status["pageAuth"], "read")
+        self.assertFalse(global_status["effectiveRecordCapabilities"]["write"])
+        self.assertEqual(global_status["effectiveRenderProfile"], "readonly")
+
     def test_workflow_rejected_editability_preserves_existing_edit_authority(self):
         payment = self.env["payment.request"].create(
             {

@@ -2,7 +2,7 @@ import type { Ref } from 'vue';
 import { pickContractNavQuery } from '../navigationContext';
 import { readWorkspaceContext } from '../workspaceContext';
 import { buildEntryTargetRouteTarget } from '../routeQuery';
-import { buildActionViewRowClickTarget, shouldUseCanonicalCollectionDetail } from '../runtime/actionViewInteractionRuntime';
+import { buildActionViewRowClickTarget, normalizeModelWriteAuthority, normalizeRecordOpenIntent, resolveRecordOpenTarget, shouldUseCanonicalCollectionDetail } from '../runtime/actionViewInteractionRuntime';
 import { resolveRowClickPushState } from '../runtime/actionViewNavigationApplyRuntime';
 import {
   resolveContractV2ActionRules,
@@ -105,6 +105,26 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
       entry_intent: routeQueryValue(target.entry_intent || target.entryIntent),
       record_id: routeQueryValue(target.record_id || target.recordId),
     };
+    const targetIntent = normalizeRecordOpenIntent(
+      target.open_intent ?? target.openIntent ?? target.intent ?? target.entry_intent ?? target.entryIntent,
+    );
+    const targetAuthority = normalizeModelWriteAuthority(
+      target.model_write_authority ?? target.modelWriteAuthority ?? target.model_write,
+    );
+    const targetModel = String(target.model || target.res_model || row.model || '').trim();
+    const targetRecordId = target.record_id || target.recordId || row.id;
+    if (targetModel && (targetIntent !== 'open' || targetAuthority !== null)) {
+      const resolved = resolveRecordOpenTarget({
+        model: targetModel,
+        recordId: targetRecordId,
+        actionId: options.actionId.value || undefined,
+        menuId: options.menuId.value || undefined,
+        requestedIntent: targetIntent,
+        modelWriteAuthority: targetAuthority,
+        carryQuery: query,
+      });
+      if (resolved) return resolved;
+    }
     const entryTarget = target.entry_target && typeof target.entry_target === 'object'
       ? target.entry_target as Dict
       : (String(target.scene_key || target.sceneKey || '').trim()

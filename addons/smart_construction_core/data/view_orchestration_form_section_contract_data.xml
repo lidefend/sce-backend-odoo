@@ -5,6 +5,8 @@
             <field name="name">project_project_form_structure_v1</field>
             <field name="model">project.project</field>
             <field name="view_type">form</field>
+            <field name="action_id" ref="smart_construction_core.action_project_initiation"/>
+            <field name="view_id" ref="smart_construction_core.view_project_create_form"/>
             <field name="priority">90</field>
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>

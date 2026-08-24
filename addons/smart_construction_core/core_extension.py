@@ -668,6 +668,13 @@ def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
     editability = _sc_text(workflow_contract.get("editability"))
     if editability in {"readonly", "locked"}:
         global_status["pageAuth"] = "read"
+        # Workflow authority is a narrowing layer.  Keep the normalized ORM
+        # rights for audit, but ensure the effective record capabilities and
+        # render profile cannot continue to advertise an editable surface.
+        effective_capabilities = global_status.get("effectiveRecordCapabilities")
+        if isinstance(effective_capabilities, dict):
+            effective_capabilities["write"] = False
+        global_status["effectiveRenderProfile"] = "readonly"
     # Workflow state may narrow the ORM-derived page authority, but it must
     # never elevate a caller from read to edit.  Editable means the workflow
     # does not add a lock; the existing normalized permission remains final.

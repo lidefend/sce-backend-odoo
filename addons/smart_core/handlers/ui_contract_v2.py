@@ -1779,35 +1779,50 @@ class UiContractV2Handler(BaseIntentHandler):
             return
 
         fields_contract = source_contract.get("fields") if isinstance(source_contract.get("fields"), dict) else {}
+        # ``_fields`` is the registry's complete field set, not the set this
+        # request is authorized to expose.  Hydrate the authority through the
+        # current user's environment; never use sudo or infer Contract fields
+        # from registry metadata alone.
+        try:
+            authorized_field_descriptors = model_obj.fields_get(list(model_fields)) or {}
+        except Exception:
+            _logger.debug(
+                "ui.contract.v2 permission-aware field hydration failed for model=%s",
+                model,
+                exc_info=True,
+            )
+            authorized_field_descriptors = {}
+        authorized_field_descriptors = {
+            str(name): dict(descriptor)
+            for name, descriptor in authorized_field_descriptors.items()
+            if str(name) in model_fields and isinstance(descriptor, dict)
+        }
         descriptor_cache: dict[str, dict[str, Any]] = {}
 
         def descriptor(name: str) -> dict[str, Any]:
             if name in descriptor_cache:
                 return descriptor_cache[name]
-            current = fields_contract.get(name) if isinstance(fields_contract.get(name), dict) else {}
-            if current:
-                descriptor_cache[name] = dict(current)
+            if name not in authorized_field_descriptors:
+                descriptor_cache[name] = {}
                 return descriptor_cache[name]
-            try:
-                fetched = self.env[model].fields_get([name]).get(name) or {}
-            except Exception:
-                fetched = {}
-            descriptor_cache[name] = dict(fetched)
-            if fetched:
+            current = fields_contract.get(name) if isinstance(fields_contract.get(name), dict) else {}
+            fetched = authorized_field_descriptors.get(name) or {}
+            descriptor_cache[name] = dict(current or fetched)
+            if not current and fetched:
                 fields_contract[name] = dict(fetched)
                 source_contract["fields"] = fields_contract
             return descriptor_cache[name]
 
         def has_field(name: str) -> bool:
-            return bool(name and name in model_fields)
+            return bool(name and name in authorized_field_descriptors)
 
         def field_type(name: str) -> str:
             meta = descriptor(name)
-            return str(meta.get("type") or getattr(model_fields.get(name), "type", "") or "").strip()
+            return str(meta.get("type") or "").strip()
 
         def field_relation(name: str) -> str:
             meta = descriptor(name)
-            return str(meta.get("relation") or getattr(model_fields.get(name), "comodel_name", "") or "").strip()
+            return str(meta.get("relation") or "").strip()
 
         form_structure_field_labels: dict[str, str] = {}
 
@@ -1817,7 +1832,7 @@ class UiContractV2Handler(BaseIntentHandler):
             if override:
                 return override
             meta = descriptor(field_name)
-            label = str(meta.get("string") or getattr(model_fields.get(field_name), "string", "") or field_name).strip()
+            label = str(meta.get("string") or field_name).strip()
             if field_name == "source_created_by":
                 return "录入人"
             if field_name == "source_created_at":
@@ -2583,8 +2598,18 @@ class UiContractV2Handler(BaseIntentHandler):
                     "model": model,
                     "viewType": "form",
                     **({"columns": form_columns} if form_columns > 0 else {}),
-                    "mode": "business_task_form",
-                    "layoutPolicy": "business_config_sections",
+                    "mode": (
+                        "business_task_form"
+                        if str((governance or {}).get("form_structure_authority") or "").strip()
+                        == "entry_semantic_surface"
+                        else "native_structured_form"
+                    ),
+                    "layoutPolicy": (
+                        "business_config_sections"
+                        if str((governance or {}).get("form_structure_authority") or "").strip()
+                        == "entry_semantic_surface"
+                        else "native_authority"
+                    ),
                     "objectProfile": {
                         "model": model,
                         "kind": "business_form",
@@ -2788,13 +2813,16 @@ class UiContractV2Handler(BaseIntentHandler):
             if item.get("fieldRefs") or item.get("groups")
         ]
 
+        semantic_surface = governance is None or str(
+            (governance or {}).get("form_structure_authority") or ""
+        ).strip() == "entry_semantic_surface"
         return {
             "source": "ui.contract.v2.form_structure_contract",
             "structureVersion": "1.0",
             "model": model,
             "viewType": "form",
-            "mode": "business_task_form",
-            "layoutPolicy": "overview_then_task_slots",
+            "mode": "business_task_form" if semantic_surface else "native_structured_form",
+            "layoutPolicy": "overview_then_task_slots" if semantic_surface else "native_authority",
             "objectProfile": {
                 "model": model,
                 "kind": "business_form",
@@ -3844,6 +3872,24 @@ class UiContractV2Handler(BaseIntentHandler):
             raise ValueError("native form projection requires a resolved native form layout")
         data["model"] = model
         data["view_type"] = "form"
+        # Preserve the action's resolved form view identity through the native
+        # source carrier.  Form orchestration contracts are scoped by
+        # action/view; dropping this identity makes a correctly scoped task
+        # contract look like an ungoverned native form.
+        resolved_view_id = 0
+        try:
+            resolved_view_id = int(data.get("view_id") or direct_params.get("view_id") or 0)
+        except (TypeError, ValueError):
+            resolved_view_id = 0
+        if not resolved_view_id:
+            action_id = int(direct_params.get("action_id") or 0)
+            if action_id and "ir.actions.act_window" in env:
+                action = env["ir.actions.act_window"].sudo().browse(action_id)
+                if action.exists():
+                    resolved_view_id = int(action.view_id.id or 0)
+        if resolved_view_id:
+            data["view_id"] = resolved_view_id
+            data["view_ids_by_type"] = {"form": resolved_view_id}
         data["nativeFormProjection"] = {
             "schemaVersion": "2.0",
             "model": model,

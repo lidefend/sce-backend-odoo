@@ -5,6 +5,7 @@ import type {
   CanonicalFormRenderModel,
   CanonicalFormSemanticRole,
   CanonicalFormRenderMode,
+  CanonicalFormPresentationMode,
   CanonicalRelationValue,
   CanonicalFormZoneRole,
 } from './canonicalFormRenderModel';
@@ -340,6 +341,11 @@ export function presentContractV2Form(
   runtimeValues?: ContractV2Dictionary,
 ): CanonicalFormRenderModel {
   const snapshot = store.snapshot;
+  const formStructureMode = text(snapshot.formStructureContract?.mode).toLowerCase();
+  const presentationMode: CanonicalFormPresentationMode = [
+    'business_task_form',
+    'business_category_task_form',
+  ].includes(formStructureMode) ? 'task' : 'native';
   const contractValues = Object.keys(snapshot.dataContract.mainData).length
     ? snapshot.dataContract.mainData
     : store.primaryDataSource || {};
@@ -406,6 +412,7 @@ export function presentContractV2Form(
       model: snapshot.pageInfo.model,
       viewType: snapshot.pageInfo.viewType,
       mode,
+      presentationMode,
       sourceContractSha256: snapshot.meta.lifecycle.integrity.contractSha256,
     },
     shell: {
