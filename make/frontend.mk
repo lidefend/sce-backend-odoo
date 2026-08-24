@@ -102,7 +102,7 @@ verify.frontend.navigation_shell.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_navigation_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/canonical-navigation-model-test.mjs >/dev/null
 	@node /tmp/canonical-navigation-model-test.mjs
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
-	@python3 -m unittest scripts.verify.test_frontend_navigation_shell_guard
+	@python3 -m unittest scripts/verify/test_frontend_navigation_shell_guard.py
 	@python3 scripts/verify/frontend_navigation_shell_guard.py
 
 verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit
