@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import stat
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -45,6 +47,37 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn('"FRONTEND_DIST_DIR=frontend/apps/web/dist-dev"', source)
         self.assertIn('API_PROXY = "http://127.0.0.1:18081"', source)
         self.assertNotIn("docker compose", source)
+
+    def test_pidfile_rejects_symlink_invalid_pid_and_foreign_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            target = base / "target"
+            target.write_text("123\n", encoding="utf-8")
+            link = base / "pid"
+            link.symlink_to(target)
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "non-symlink"):
+                MODULE_UNDER_TEST._read_pid(link)
+
+            link.unlink()
+            link.write_text("not-a-pid\n", encoding="utf-8")
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "invalid pid"):
+                MODULE_UNDER_TEST._read_pid(link)
+
+            link.write_text("123\n", encoding="utf-8")
+            fake_metadata = mock.Mock(st_mode=stat.S_IFREG | 0o600, st_uid=os.getuid() + 1)
+            with mock.patch.object(Path, "lstat", return_value=fake_metadata):
+                with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "owner"):
+                    MODULE_UNDER_TEST._read_pid(link)
+
+    def test_down_refuses_live_process_identity_mismatch(self):
+        with mock.patch.object(MODULE_UNDER_TEST, "_candidate_identity", return_value=("feature/token", "a" * 40)), mock.patch.object(
+            MODULE_UNDER_TEST, "_pidfile", return_value=Path("/tmp/managed-candidate.pid")
+        ), mock.patch.object(Path, "exists", return_value=True), mock.patch.object(
+            MODULE_UNDER_TEST, "_validate_process", side_effect=MODULE_UNDER_TEST.CandidateFrontendError("candidate process command mismatch")
+        ), mock.patch.object(os, "killpg") as killpg:
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "command mismatch"):
+                MODULE_UNDER_TEST.down(ROOT)
+            killpg.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()

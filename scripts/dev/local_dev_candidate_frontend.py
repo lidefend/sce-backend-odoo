@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -53,6 +54,49 @@ def _pidfile(head: str) -> Path:
     return Path(f"/tmp/sc-local-dev-candidate-frontend-{head}.pid")
 
 
+def _read_pid(pidfile: Path) -> int:
+    try:
+        metadata = pidfile.lstat()
+    except FileNotFoundError as exc:
+        raise CandidateFrontendError("candidate pidfile is missing") from exc
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        raise CandidateFrontendError("candidate pidfile must be a regular non-symlink file")
+    if metadata.st_uid != os.getuid():
+        raise CandidateFrontendError("candidate pidfile owner mismatch")
+    try:
+        pid = int(pidfile.read_text(encoding="utf-8").strip())
+    except ValueError as exc:
+        raise CandidateFrontendError("candidate pidfile contains an invalid pid") from exc
+    if pid <= 1:
+        raise CandidateFrontendError("candidate pid is unsafe")
+    return pid
+
+
+def _validate_process(root: Path, head: str, pidfile: Path) -> int:
+    pid = _read_pid(pidfile)
+    process_root = Path(f"/proc/{pid}")
+    if not process_root.is_dir():
+        raise ProcessLookupError(pid)
+    if process_root.stat().st_uid != os.getuid():
+        raise CandidateFrontendError("candidate process owner mismatch")
+    if Path(os.readlink(process_root / "cwd")).resolve() != root.resolve():
+        raise CandidateFrontendError("candidate process cwd mismatch")
+    command = (process_root / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", errors="replace")
+    expected_script = str(root / "scripts/release/release_static_server.mjs")
+    if expected_script not in command or "node" not in command:
+        raise CandidateFrontendError("candidate process command mismatch")
+    environment = (process_root / "environ").read_bytes().split(b"\0")
+    expected_environment = {
+        f"STATIC_ROOT={root / 'frontend/apps/web/dist-dev'}".encode(),
+        f"STATIC_PORT={PORT}".encode(),
+        f"API_PROXY_TARGET={API_PROXY}".encode(),
+        f"CANDIDATE_GIT_HEAD={head}".encode(),
+    }
+    if not expected_environment.issubset(set(environment)):
+        raise CandidateFrontendError("candidate process environment mismatch")
+    return pid
+
+
 def _run_make(root: Path, authority: Path, target: str, extra: list[str] | None = None) -> None:
     command = ["make", "--no-print-directory", "ENV=dev", f"ENV_FILE={authority}", f"LOCAL_DEV_ENV_FILE={authority}"]
     command.extend(extra or [])
@@ -81,9 +125,8 @@ def up(root: Path = ROOT) -> None:
     pidfile = _pidfile(head)
     if pidfile.exists():
         try:
-            pid = int(pidfile.read_text(encoding="utf-8").strip())
-            os.kill(pid, 0)
-        except (ValueError, OSError):
+            _validate_process(root, head, pidfile)
+        except ProcessLookupError:
             pidfile.unlink(missing_ok=True)
         else:
             if _health():
@@ -97,6 +140,7 @@ def up(root: Path = ROOT) -> None:
         env=process_env, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     pidfile.write_text(f"{process.pid}\n", encoding="utf-8")
+    pidfile.chmod(0o600)
     for _ in range(30):
         if process.poll() is not None:
             pidfile.unlink(missing_ok=True)
@@ -117,16 +161,19 @@ def down(root: Path = ROOT) -> None:
         print("[local.dev.candidate.frontend] PASS already absent")
         return
     try:
-        pid = int(pidfile.read_text(encoding="utf-8").strip())
-        os.killpg(pid, signal.SIGTERM)
-    except (ValueError, ProcessLookupError):
-        pass
+        pid = _validate_process(root, head, pidfile)
+    except ProcessLookupError:
+        pidfile.unlink(missing_ok=True)
+        print(f"[local.dev.candidate.frontend] PASS removed stale pidfile sha={head}")
+        return
+    os.killpg(pid, signal.SIGTERM)
     pidfile.unlink(missing_ok=True)
     print(f"[local.dev.candidate.frontend] PASS stopped sha={head}")
 
 
 def health(root: Path = ROOT) -> None:
     _branch, head = _candidate_identity(root)
+    _validate_process(root, head, _pidfile(head))
     if not _health():
         raise CandidateFrontendError("candidate static service is not healthy")
     print(f"[local.dev.candidate.frontend] PASS healthy url=http://127.0.0.1:{PORT} sha={head}")

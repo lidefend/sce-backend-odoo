@@ -5669,7 +5669,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Safety contract: requires an allowed non-main branch, exact full candidate
   SHA, explicit confirmation, and the primary worktree's owned 0600 `.env.dev`
   authority. It neither remounts Nginx nor copies credentials, creates no
-  Compose project/database/volume, and refuses a stale or unhealthy process.
+  Compose project/database/volume, and refuses a dirty candidate, unsafe PID
+  carrier, mismatched process owner/cwd/command/environment, or unhealthy
+  process before reuse, health acknowledgement, or termination.
 - Blast radius / validation: local browser preview carrier only; the primary
   18081 asset mount, product source, Contract, routes, permissions and fixture
   data are unchanged. Focused identity tests plus a governed `up`, `health`,
