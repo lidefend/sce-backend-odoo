@@ -301,6 +301,11 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 `git rebase` 的唯一实现级例外是受上述 Make target 调用的
 `scripts/ops/safe_branch_sync_main.py`；用户和 Codex 均不得直接执行底层命令。
 
+最高决策者可逐次授权 `make main.owner-authorized-integrate`，但仅限没有开放
+PR 的 `fix/p4-*` 治理分支。该入口要求 exact main/head、canonical origin、
+clean worktree、无 merge commit、远端同名分支与受限 P4 路径，并且只执行非
+force 的 main 快进。它不是普通产品 PR 或 CI 的绕过通道。
+
 > ⚠️ 所有 **远端状态变更**
 > 必须通过 Makefile 封装流程完成。
 

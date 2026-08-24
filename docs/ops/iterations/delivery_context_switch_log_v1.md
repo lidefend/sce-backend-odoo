@@ -5667,3 +5667,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   checks remain anchored to the target, not the controller.
 - Rollback: revert this bootstrap-only P4 change; the original same-worktree
   invocation remains available and no Token or product source is changed.
+
+## Owner-authorized narrow P4 main integration (2026-08-24)
+
+- Formal Product Layer / Layer Target: P4 governance / non-force direct main
+  integration for a highest-owner-authorized, no-PR P4 repair.
+- Boundary: exact main/head, canonical origin, clean state, remote branch,
+  no merge commit, no open PR and P4 path allowlist are mandatory. Product,
+  database and P0-P3 paths are rejected.

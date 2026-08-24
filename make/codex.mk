@@ -250,7 +250,7 @@ codex.run: guard.prod.forbid
 	esac
 
 # ------------------ PR (Codex-safe) ------------------
-.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge
+.PHONY: pr.create pr.status pr.push pr.update pr.ready pr.merge main.owner-authorized-integrate
 
 PR_BASE ?= main
 PR_TITLE ?=
@@ -260,8 +260,18 @@ PR_MERGE_METHOD ?= squash
 PR_MERGE_SUBJECT ?=
 PR_MERGE_BODY ?= Merged by Codex through make pr.merge.
 EXPECTED_HEAD ?=
+OWNER_AUTHORIZATION ?=
+OWNER_AUTHORIZATION_REFERENCE ?=
 
 export PR PR_MERGE_METHOD PR_MERGE_SUBJECT PR_MERGE_BODY EXPECTED_HEAD
+
+main.owner-authorized-integrate: guard.prod.forbid
+	@python3 scripts/ops/safe_owner_authorized_main_integrate.py \
+		--expected-root "$(ROOT_DIR)" \
+		--expected-head "$(EXPECTED_HEAD)" \
+		--expected-main "$(EXPECTED_MAIN)" \
+		--owner-authorization "$(OWNER_AUTHORIZATION)" \
+		--owner-authorization-reference "$(OWNER_AUTHORIZATION_REFERENCE)"
 
 pr.create: guard.prod.forbid
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \

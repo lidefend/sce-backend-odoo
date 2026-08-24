@@ -150,6 +150,9 @@
   `make workspace.branch.sync-main`。该入口要求完整 expected branch/head/old
   base/main 身份、clean worktree、无开放 PR/远端分支和可验证 recovery bundle；
   禁止裸 `git rebase`、`git merge`、`git cherry-pick` 和任何 force push。
+- 最高决策者可以逐次明确授权 `make main.owner-authorized-integrate`，仅用于
+  无 PR 的 `fix/p4-*` 治理修复。入口必须核对 exact SHA、canonical remote、
+  clean 状态、受限路径和非 force 快进；它不得用于普通产品交付或数据库改动。
 
 ## 禁止行为
 - 未完成上述校验即直接改文件。
