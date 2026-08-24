@@ -104,6 +104,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             ({"type": "float"}, "float_time", "sc.value.duration"),
             ({"type": "many2one", "relation": "res.users"}, "select", "sc.value.user"),
             ({"type": "many2one", "relation": "res.company"}, "select", "sc.value.company"),
+            ({"type": "many2one", "relation": "x.related"}, "select", "sc.relation.many2one"),
+            ({"type": "many2many", "relation": "x.related"}, "table", "sc.relation.many2many"),
         )
         for descriptor, widget_type, expected in cases:
             with self.subTest(expected=expected):

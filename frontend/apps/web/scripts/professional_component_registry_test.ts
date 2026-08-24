@@ -11,6 +11,12 @@ const ready = resolveProfessionalComponent({
 });
 assert.equal(ready.readiness, 'ready');
 assert.equal(ready.renderer, 'ProfessionalBaseFieldControl');
+assert.equal(resolveProfessionalComponent({
+  componentKey: 'sc.relation.many2one', fieldType: 'many2one', presentationMode: 'task', renderProfile: 'edit',
+}).renderer, 'ProfessionalRelationFieldControl');
+assert.equal(resolveProfessionalComponent({
+  componentKey: 'sc.relation.many2many', fieldType: 'many2many', presentationMode: 'workspace', renderProfile: 'readonly',
+}).renderer, 'ProfessionalRelationFieldControl');
 for (const [componentKey, fieldType] of [
   ['sc.value.money', 'monetary'], ['sc.value.currency', 'many2one'], ['sc.value.percentage', 'float'],
   ['sc.display.status', 'selection'], ['sc.value.duration', 'float'], ['sc.value.user', 'many2one'],
@@ -66,5 +72,5 @@ assert.equal(resolveProfessionalComponentRegistration(testRegistry, {
   capabilities: ['relation.read'],
 }).componentKey, restricted.componentKey);
 
-assert.equal(professionalComponentRegistrations.length, 22);
-console.log('[professional_component_registry_test] PASS cases=17');
+assert.equal(professionalComponentRegistrations.length, 23);
+console.log('[professional_component_registry_test] PASS cases=19');
