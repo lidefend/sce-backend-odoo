@@ -87,15 +87,16 @@ async function desktopJourney(browser, report) {
   check(page.url() === firstTarget, '刷新必须恢复相同 action/menu 深链', { firstTarget, afterReload: page.url() });
   check(await page.locator('[data-navigation-node="canonical"] > .node.active button[aria-current="page"]').count() === 1, '刷新后当前叶子菜单必须保持唯一');
 
-  const projectToggle = projectGroup.locator(':scope > .node > button.toggle');
-  const beforeCollapse = await projectToggle.getAttribute('aria-expanded');
-  await projectToggle.click();
-  const afterCollapse = await projectToggle.getAttribute('aria-expanded');
+  const collapsibleGroup = await expandNode(page, '合同中心');
+  const collapsibleToggle = collapsibleGroup.locator(':scope > .node > button.toggle');
+  const beforeCollapse = await collapsibleToggle.getAttribute('aria-expanded');
+  await collapsibleToggle.click();
+  const afterCollapse = await collapsibleToggle.getAttribute('aria-expanded');
   check(beforeCollapse !== afterCollapse, '桌面导航折叠状态必须可切换');
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('[data-navigation-state="ready"]').waitFor({ timeout: 45000 });
-  const reloadedProjectGroup = nodeByLabel(page, '项目中心');
-  check(await reloadedProjectGroup.locator(':scope > .node > button.toggle').getAttribute('aria-expanded') === afterCollapse, '桌面导航折叠偏好必须在刷新后保持');
+  const reloadedCollapsibleGroup = nodeByLabel(page, '合同中心');
+  check(await reloadedCollapsibleGroup.locator(':scope > .node > button.toggle').getAttribute('aria-expanded') === afterCollapse, '桌面导航折叠偏好必须在刷新后保持');
 
   await page.goBack({ waitUntil: 'domcontentloaded' });
   await page.goForward({ waitUntil: 'domcontentloaded' });
