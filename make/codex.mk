@@ -417,6 +417,7 @@ CREATE_WORKTREE_CONFIRM ?=
 CLEAN_WORKTREE_KEEP_BRANCH ?=
 CLEAN_WORKTREE_EXPECTED_HEAD ?=
 CLEAN_WORKTREE_CONFIRM ?=
+WORKSPACE_BRANCH_SYNC_ROOT ?= $(ROOT_DIR)
 EXPECTED_BRANCH ?=
 EXPECTED_OLD_BASE ?=
 EXPECTED_MAIN ?=
@@ -472,8 +473,10 @@ workspace.worktree.cleanup: guard.prod.forbid
 		$(if $(filter 1,$(CLEAN_WORKTREE_KEEP_BRANCH)),--detach-keep-branch --expected-head "$(CLEAN_WORKTREE_EXPECTED_HEAD)" --confirm "$(CLEAN_WORKTREE_CONFIRM)",)
 
 workspace.branch.sync-main: guard.prod.forbid
-	@python3 scripts/ops/safe_branch_sync_main.py \
-		--expected-root "$(ROOT_DIR)" \
+	@test -d "$(WORKSPACE_BRANCH_SYNC_ROOT)" || { echo "❌ WORKSPACE_BRANCH_SYNC_ROOT is not a directory"; exit 2; }
+	@cd "$(WORKSPACE_BRANCH_SYNC_ROOT)" && python3 "$(ROOT_DIR)/scripts/ops/safe_branch_sync_main.py" \
+		--expected-root "$(WORKSPACE_BRANCH_SYNC_ROOT)" \
+		--governance-root "$(ROOT_DIR)" \
 		--expected-branch "$(EXPECTED_BRANCH)" \
 		--expected-head "$(EXPECTED_HEAD)" \
 		--expected-old-base "$(EXPECTED_OLD_BASE)" \
