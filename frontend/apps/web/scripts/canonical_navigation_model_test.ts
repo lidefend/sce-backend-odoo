@@ -22,10 +22,34 @@ const authority: RouteAuthorityContract = {
 };
 
 const nav: NavNode[] = [{
-  key: 'root', menu_id: 1, label: 'Root', sequence: 20, children: [{
-    key: 'group', menu_id: 2, label: 'Group', children: [{
+  key: 'root', menu_id: 1, label: 'Root', sequence: 20,
+  canonical_navigation: {
+    schema_version: '1.0', key: 'root', menu_id: 1, action_id: null, parent_chain: [], label: 'Root',
+    icon: null, route: null, authority: { state: 'container', source: 'system.init.navigation.nav', key: 'container:1' },
+    state: 'container', disabled_reason: null, order: 20,
+  },
+  children: [{
+    key: 'group', menu_id: 2, label: 'Group',
+    canonical_navigation: {
+      schema_version: '1.0', key: 'group', menu_id: 2, action_id: null,
+      parent_chain: [{ key: 'root', menu_id: 1, label: 'Root' }], label: 'Group', icon: null, route: null,
+      authority: { state: 'container', source: 'system.init.navigation.nav', key: 'container:2' },
+      state: 'container', disabled_reason: null, order: 0,
+    },
+    children: [{
       key: 'leaf', menu_id: 3, label: 'Leaf', sequence: 7, icon: 'folder',
-      meta: { action_id: 30 }, children: [],
+      meta: { action_id: 30 },
+      canonical_navigation: {
+        schema_version: '1.0', key: 'leaf', menu_id: 3, action_id: 30,
+        parent_chain: [
+          { key: 'root', menu_id: 1, label: 'Root' },
+          { key: 'group', menu_id: 2, label: 'Group' },
+        ],
+        label: 'Leaf', icon: 'folder', route: '/a/30?menu_id=3',
+        authority: { state: 'allowed', source: 'route_authority', key: 'PRIMARY_NAV:test.menu_leaf:test.action_leaf' },
+        state: 'enabled', disabled_reason: null, order: 7,
+      },
+      children: [],
     }],
   }],
 }];
@@ -43,6 +67,21 @@ assert.deepEqual(leaf.parentChain, [
   { key: 'group', menuId: 2, label: 'Group' },
 ]);
 
+const syntheticRoot = structuredClone(nav);
+syntheticRoot[0].menu_id = undefined;
+syntheticRoot[0].key = 'root:synthetic';
+if (!syntheticRoot[0].canonical_navigation) throw new Error('test carrier missing');
+syntheticRoot[0].canonical_navigation.key = 'root:synthetic';
+syntheticRoot[0].canonical_navigation.menu_id = null;
+syntheticRoot[0].canonical_navigation.authority.key = 'container:root:synthetic';
+const syntheticGroup = syntheticRoot[0].children?.[0];
+if (!syntheticGroup?.canonical_navigation) throw new Error('test group carrier missing');
+syntheticGroup.canonical_navigation.parent_chain[0] = { key: 'root:synthetic', menu_id: null, label: 'Root' };
+const syntheticLeaf = syntheticGroup.children?.[0];
+if (!syntheticLeaf?.canonical_navigation) throw new Error('test leaf carrier missing');
+syntheticLeaf.canonical_navigation.parent_chain[0] = { key: 'root:synthetic', menu_id: null, label: 'Root' };
+assert.equal(createCanonicalNavigationModel(syntheticRoot, authority).nodes[0].menuId, null);
+
 assert.throws(
   () => createCanonicalNavigationModel(nav, { ...authority, primary_actions: [] }),
   (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_AUTHORITY_MISSING',
@@ -53,21 +92,29 @@ const disabledLeaf = disabledNav[0].children?.[0]?.children?.[0] as NavNode & {
   availability_status?: string;
   disabled_reason?: string;
 };
-disabledLeaf.availability_status = 'disabled';
-disabledLeaf.disabled_reason = 'Backend declared reason';
+if (!disabledLeaf.canonical_navigation) throw new Error('test disabled carrier missing');
+disabledLeaf.canonical_navigation.state = 'disabled';
+disabledLeaf.canonical_navigation.disabled_reason = 'Backend declared reason';
 const disabled = canonicalNavigationNodeByMenuId(createCanonicalNavigationModel(disabledNav, authority).nodes, 3);
 assert.equal(disabled?.state, 'disabled');
 assert.equal(disabled?.disabledReason, 'Backend declared reason');
 
-delete disabledLeaf.disabled_reason;
+disabledLeaf.canonical_navigation.disabled_reason = null;
 assert.throws(
   () => createCanonicalNavigationModel(disabledNav, authority),
   (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_DISABLED_REASON_MISSING',
 );
 
 assert.throws(
-  () => createCanonicalNavigationModel([{ key: 'empty', menu_id: 9, label: 'Empty' }], authority),
+  () => createCanonicalNavigationModel([{
+    key: 'empty', menu_id: 9, label: 'Empty',
+    canonical_navigation: {
+      schema_version: '1.0', key: 'empty', menu_id: 9, action_id: null, parent_chain: [], label: 'Empty',
+      icon: null, route: null, authority: { state: 'container', source: 'system.init.navigation.nav', key: 'container:9' },
+      state: 'container', disabled_reason: null, order: 0,
+    },
+  }], authority),
   (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_EMPTY_NODE',
 );
 
-console.log('[canonical_navigation_model_test] PASS cases=6');
+console.log('[canonical_navigation_model_test] PASS cases=7');

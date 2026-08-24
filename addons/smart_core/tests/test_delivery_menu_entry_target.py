@@ -76,6 +76,66 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         surface.update(overrides)
         return surface
 
+    def test_canonical_navigation_projection_owns_parent_and_authority_identity(self):
+        nav = [{
+            "key": "root:synthetic",
+            "label": "业务根",
+            "children": [{
+                "key": "menu_3",
+                "menu_id": 3,
+                "label": "项目台账",
+                "sequence": 7,
+                "meta": {"action_id": 30, "icon": "project"},
+                "children": [],
+            }],
+        }]
+        authority = {
+            "primary_actions": [{
+                "route_kind": "PRIMARY_NAV",
+                "menu_id": 3,
+                "menu_xmlid": "test.menu_leaf",
+                "action_id": 30,
+                "action_xmlid": "test.action_leaf",
+                "route": "/a/30?menu_id=3",
+                "source": "route_authority",
+            }],
+        }
+
+        projected = menu_service.MenuService.project_canonical_navigation(nav, authority)
+
+        root = projected[0]["canonical_navigation"]
+        leaf = projected[0]["children"][0]["canonical_navigation"]
+        self.assertEqual(root["menu_id"], None)
+        self.assertEqual(root["state"], "container")
+        self.assertEqual(leaf["parent_chain"], [{"key": "root:synthetic", "menu_id": None, "label": "业务根"}])
+        self.assertEqual(leaf["route"], "/a/30?menu_id=3")
+        self.assertEqual(
+            leaf["authority"]["key"],
+            "PRIMARY_NAV:test.menu_leaf:test.action_leaf",
+        )
+
+    def test_canonical_navigation_projection_rejects_missing_authority(self):
+        nav = [{"key": "menu_3", "menu_id": 3, "label": "项目台账", "meta": {"action_id": 30}}]
+        with self.assertRaisesRegex(ValueError, "lacks exact authority"):
+            menu_service.MenuService.project_canonical_navigation(nav, {})
+
+    def test_canonical_navigation_projection_rejects_disabled_without_reason(self):
+        nav = [{
+            "key": "root",
+            "menu_id": 1,
+            "label": "业务根",
+            "is_clickable": False,
+            "children": [{"key": "child", "menu_id": 2, "label": "子项", "meta": {"action_id": 30}, "children": []}],
+        }]
+        with self.assertRaisesRegex(ValueError, "requires a server reason"):
+            menu_service.MenuService.project_canonical_navigation(nav, {
+                "primary_actions": [{
+                    "route_kind": "PRIMARY_NAV", "menu_id": 2, "menu_xmlid": "test.child",
+                    "action_id": 30, "action_xmlid": "test.action", "route": "/a/30?menu_id=2",
+                    "source": "route_authority",
+                }],
+            })
+
     def test_followup_nodes_are_last_within_each_sibling_group(self):
         service = menu_service.MenuService()
         nodes = [

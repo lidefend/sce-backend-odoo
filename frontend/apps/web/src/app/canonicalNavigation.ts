@@ -1,5 +1,6 @@
 import type {
   CanonicalNavigationModel,
+  CanonicalNavigationAuthority,
   CanonicalNavigationNode,
   CanonicalNavigationParent,
   NavNode,
@@ -7,17 +8,11 @@ import type {
 import type { RouteAuthorityContract, RouteAuthorityEntry } from './routeAuthority';
 import { routeAuthorityEntries } from './routeAuthority';
 
-type UnknownRecord = Record<string, unknown>;
-
 export class CanonicalNavigationError extends Error {
   constructor(public readonly code: string, message: string) {
     super(message);
     this.name = 'CanonicalNavigationError';
   }
-}
-
-function record(value: unknown): UnknownRecord {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as UnknownRecord : {};
 }
 
 function text(value: unknown): string {
@@ -46,10 +41,6 @@ function nodeKey(node: NavNode, menuId: number): string {
   return text(node.xmlid || node.xml_id || node.key) || (menuId ? `menu_${menuId}` : '');
 }
 
-function nodeMeta(node: NavNode): UnknownRecord {
-  return record(node.meta);
-}
-
 function authorityKey(entry: RouteAuthorityEntry): string {
   return [entry.route_kind, entry.menu_xmlid || entry.menu_id, entry.action_xmlid || entry.action_id].join(':');
 }
@@ -64,33 +55,24 @@ function authorityIndex(contract: RouteAuthorityContract): Map<string, RouteAuth
   return result;
 }
 
-function explicitDisabledReason(node: NavNode): string {
-  const raw = node as NavNode & { disabled_reason?: unknown };
-  return text(raw.disabled_reason || nodeMeta(node).disabled_reason);
-}
-
-function explicitDisabled(node: NavNode): boolean {
-  const raw = node as NavNode & {
-    is_clickable?: unknown;
-    availability_status?: unknown;
-    state?: unknown;
-  };
-  const meta = nodeMeta(node);
-  const status = text(raw.availability_status || meta.availability_status || raw.state || meta.state).toLowerCase();
-  return raw.is_clickable === false || meta.is_clickable === false || ['disabled', 'blocked', 'unavailable', 'denied'].includes(status);
-}
-
 function buildNodes(
   source: NavNode[],
   authorityByPair: Map<string, RouteAuthorityEntry>,
   parentChain: CanonicalNavigationParent[],
 ): CanonicalNavigationNode[] {
   return source.map((node, index) => {
+    const carrier = node.canonical_navigation;
+    if (!carrier || carrier.schema_version !== '1.0') {
+      throw new CanonicalNavigationError(
+        'CANONICAL_NAVIGATION_CARRIER_MISSING',
+        'navigation node requires the server-owned canonical_navigation v1 carrier',
+      );
+    }
     const menuId = nodeMenuId(node);
     const actionId = nodeActionId(node);
     const label = nodeLabel(node);
     const key = nodeKey(node, menuId);
-    if (!menuId || !key || !label) {
+    if (!key || !label || (actionId > 0 && !menuId)) {
       throw new CanonicalNavigationError(
         'CANONICAL_NAVIGATION_NODE_IDENTITY_INVALID',
         `navigation node requires menuId, key and label (key=${key || 'missing'})`,
@@ -105,11 +87,36 @@ function buildNodes(
       );
     }
 
-    const nextParent: CanonicalNavigationParent = { key, menuId, label };
+    const carrierParents = carrier.parent_chain.map((parent) => ({
+      key: text(parent.key),
+      menuId: positiveInteger(parent.menu_id) || null,
+      label: text(parent.label),
+    }));
+    const expectedIdentity = {
+      key,
+      menuId: menuId || null,
+      actionId: actionId || null,
+      label,
+      parentChain,
+    };
+    const actualIdentity = {
+      key: text(carrier.key),
+      menuId: positiveInteger(carrier.menu_id) || null,
+      actionId: positiveInteger(carrier.action_id) || null,
+      label: text(carrier.label),
+      parentChain: carrierParents,
+    };
+    if (JSON.stringify(actualIdentity) !== JSON.stringify(expectedIdentity)) {
+      throw new CanonicalNavigationError(
+        'CANONICAL_NAVIGATION_CARRIER_IDENTITY_MISMATCH',
+        `canonical navigation carrier does not match its tree identity (${key})`,
+      );
+    }
+
+    const nextParent: CanonicalNavigationParent = { key, menuId: menuId || null, label };
     const children = buildNodes(node.children || [], authorityByPair, [...parentChain, nextParent]);
-    const disabledReason = explicitDisabledReason(node);
-    const disabled = explicitDisabled(node);
-    if (disabled && !disabledReason) {
+    const disabledReason = text(carrier.disabled_reason);
+    if (carrier.state === 'disabled' && !disabledReason) {
       throw new CanonicalNavigationError(
         'CANONICAL_NAVIGATION_DISABLED_REASON_MISSING',
         `disabled navigation node requires a backend reason (${menuId})`,
@@ -122,22 +129,41 @@ function buildNodes(
       );
     }
 
-    const state = disabled ? 'disabled' : actionId ? 'enabled' : 'container';
-    const raw = node as NavNode & { icon?: unknown };
+    const expectedState = actionId ? 'enabled' : 'container';
+    if (carrier.state !== 'disabled' && carrier.state !== expectedState) {
+      throw new CanonicalNavigationError(
+        'CANONICAL_NAVIGATION_STATE_MISMATCH',
+        `canonical navigation state conflicts with its target identity (${key})`,
+      );
+    }
+    const expectedAuthority: CanonicalNavigationAuthority = authority
+      ? { state: 'allowed', source: authority.source, key: authorityKey(authority) }
+      : { state: 'container', source: 'system.init.navigation.nav', key: `container:${menuId || key}` };
+    if (JSON.stringify(carrier.authority) !== JSON.stringify(expectedAuthority)) {
+      throw new CanonicalNavigationError(
+        'CANONICAL_NAVIGATION_AUTHORITY_MISMATCH',
+        `canonical navigation carrier authority conflicts with route authority (${key})`,
+      );
+    }
+    const expectedRoute = authority ? text(authority.route) || null : null;
+    if ((text(carrier.route) || null) !== expectedRoute) {
+      throw new CanonicalNavigationError(
+        'CANONICAL_NAVIGATION_ROUTE_MISMATCH',
+        `canonical navigation route conflicts with route authority (${key})`,
+      );
+    }
     return {
       key,
-      menuId,
+      menuId: menuId || null,
       actionId: actionId || null,
       parentChain,
       label,
-      icon: text(raw.icon || node.meta?.icon) || null,
-      route: authority ? text(authority.route) || null : null,
-      authority: authority
-        ? { state: 'allowed', source: authority.source, key: authorityKey(authority) }
-        : { state: 'container', source: 'system.init.navigation.nav', key: `container:${menuId}` },
-      state,
+      icon: text(carrier.icon) || null,
+      route: expectedRoute,
+      authority: expectedAuthority,
+      state: carrier.state,
       disabledReason: disabledReason || null,
-      order: Number.isFinite(Number(node.sequence)) ? Number(node.sequence) : index,
+      order: Number.isFinite(Number(carrier.order)) ? Number(carrier.order) : index,
       source: node,
       children,
     } satisfies CanonicalNavigationNode;

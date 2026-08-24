@@ -583,6 +583,109 @@ class MenuService:
 
         return [kept for node in nav or [] if (kept := walk(node))]
 
+    @staticmethod
+    def project_canonical_navigation(nav: list[dict], route_authority: dict | None) -> list[dict]:
+        """Attach the server-owned presentation identity to the final authorized tree."""
+        authority = route_authority if isinstance(route_authority, dict) else {}
+        authority_by_pair = {}
+        for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            for entry in authority.get(bucket) or []:
+                if not isinstance(entry, dict):
+                    continue
+                try:
+                    pair = (int(entry.get("menu_id") or 0), int(entry.get("action_id") or 0))
+                except (TypeError, ValueError):
+                    pair = (0, 0)
+                if pair[0] > 0 and pair[1] > 0:
+                    authority_by_pair[pair] = entry
+
+        def text(value) -> str:
+            return str(value or "").strip()
+
+        def node_label(node: dict) -> str:
+            return text(node.get("title") or node.get("label") or node.get("name"))
+
+        def node_key(node: dict, menu_id: int) -> str:
+            return text(node.get("xmlid") or node.get("xml_id") or node.get("key")) or (
+                "menu_%s" % menu_id if menu_id > 0 else ""
+            )
+
+        def walk(node: dict, parents: list[dict], sibling_index: int) -> dict:
+            if not isinstance(node, dict):
+                raise ValueError("canonical navigation node must be an object")
+            meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+            menu_id = MenuService._node_route_menu_id(node)
+            try:
+                action_id = int(node.get("action_id") or meta.get("action_id") or 0)
+            except (TypeError, ValueError):
+                action_id = 0
+            label = node_label(node)
+            key = node_key(node, menu_id)
+            if not key or not label or (action_id > 0 and menu_id <= 0):
+                raise ValueError("canonical navigation node identity is incomplete")
+            entry = authority_by_pair.get((menu_id, action_id)) if action_id > 0 else None
+            if action_id > 0 and not entry:
+                raise ValueError(
+                    "canonical navigation action lacks exact authority: %s/%s" % (menu_id, action_id)
+                )
+
+            availability = text(
+                node.get("availability_status") or meta.get("availability_status")
+                or node.get("state") or meta.get("state")
+            ).lower()
+            explicitly_disabled = (
+                node.get("is_clickable") is False
+                or meta.get("is_clickable") is False
+                or availability in {"disabled", "blocked", "unavailable", "denied"}
+            )
+            disabled_reason = text(node.get("disabled_reason") or meta.get("disabled_reason"))
+            children = [
+                walk(child, parents + [{"key": key, "menu_id": menu_id or None, "label": label}], index)
+                for index, child in enumerate(node.get("children") or [])
+            ]
+            if explicitly_disabled and not disabled_reason:
+                raise ValueError("disabled canonical navigation node requires a server reason")
+            if action_id <= 0 and not children:
+                raise ValueError("canonical navigation node has neither target nor children")
+
+            state = "disabled" if explicitly_disabled else "enabled" if action_id > 0 else "container"
+            authority_projection = (
+                {
+                    "state": "allowed",
+                    "source": text(entry.get("source")),
+                    "key": ":".join((
+                        text(entry.get("route_kind")),
+                        text(entry.get("menu_xmlid") or entry.get("menu_id")),
+                        text(entry.get("action_xmlid") or entry.get("action_id")),
+                    )),
+                }
+                if entry
+                else {
+                    "state": "container",
+                    "source": "system.init.navigation.nav",
+                    "key": "container:%s" % (menu_id or key),
+                }
+            )
+            projected = dict(node)
+            projected["children"] = children
+            projected["canonical_navigation"] = {
+                "schema_version": "1.0",
+                "key": key,
+                "menu_id": menu_id or None,
+                "action_id": action_id or None,
+                "parent_chain": list(parents),
+                "label": label,
+                "icon": text(node.get("icon") or meta.get("icon")) or None,
+                "route": text(entry.get("route")) if entry else None,
+                "authority": authority_projection,
+                "state": state,
+                "disabled_reason": disabled_reason or None,
+                "order": int(node.get("sequence") or meta.get("sequence") or sibling_index),
+            }
+            return projected
+
+        return [walk(node, [], index) for index, node in enumerate(nav or [])]
+
     def build_route_authority(self, role_surface: dict | None, *, nav: list[dict] | None = None) -> dict:
         surface = role_surface if isinstance(role_surface, dict) else {}
         buckets = {

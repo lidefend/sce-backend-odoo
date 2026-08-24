@@ -101,6 +101,20 @@ export interface NavNode {
   icon?: string | null;
   meta?: NavMeta;
   children?: NavNode[];
+  canonical_navigation?: {
+    schema_version: '1.0';
+    key: string;
+    menu_id: number | null;
+    action_id: number | null;
+    parent_chain: Array<{ key: string; menu_id: number | null; label: string }>;
+    label: string;
+    icon: string | null;
+    route: string | null;
+    authority: CanonicalNavigationAuthority;
+    state: CanonicalNavigationNodeState;
+    disabled_reason: string | null;
+    order: number;
+  };
 }
 
 export interface NavMeta {
@@ -125,7 +139,7 @@ export type CanonicalNavigationNodeState = 'enabled' | 'disabled' | 'container';
 
 export interface CanonicalNavigationParent {
   key: string;
-  menuId: number;
+  menuId: number | null;
   label: string;
 }
 
@@ -137,7 +151,7 @@ export interface CanonicalNavigationAuthority {
 
 export interface CanonicalNavigationNode {
   key: string;
-  menuId: number;
+  menuId: number | null;
   actionId: number | null;
   parentChain: CanonicalNavigationParent[];
   label: string;
