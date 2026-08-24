@@ -28,7 +28,15 @@
           <p class="header-status-item">当前进度：{{ intakeRequiredSummary }}</p>
           <p class="header-status-item" :class="{ 'header-status-item--danger': intakeMissingSummary !== '无' }">缺少：{{ intakeMissingSummary }}</p>
         </div>
-        <section v-else-if="statusbar.visible" class="native-statusbar native-statusbar--header" aria-label="业务状态流程">
+        <section
+          v-else-if="statusbar.visible"
+          class="native-statusbar native-statusbar--header"
+          aria-label="业务状态流程"
+          data-professional-workflow-component="statusbar"
+          :data-workflow-current="workflowStatusAuthority.current"
+          :data-workflow-readonly="String(mode === 'readonly' || !statusInteractive || workflowStatusAuthority.readonly)"
+          :data-workflow-state-count="workflowStatusAuthority.stateCount"
+        >
           <p :class="['native-statusbar-summary', { 'native-statusbar-summary--readonly': mode === 'readonly' || !statusInteractive }]">
             <span>当前状态</span><strong>{{ currentStatusLabel }}</strong>
             <span v-if="statusInteractive && nextActionLabel">下一步 {{ nextActionLabel }}</span>
@@ -103,6 +111,7 @@ import type { ProductPageHeaderAction, ProductPagePresentationMode } from '../..
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { nextBusinessActionLabel } from './nativeSectionNavigation';
+import { resolveWorkflowStatusAuthority } from './professionalWorkflowModel';
 
 const props = defineProps<{
   title: string; subtitle: string; hideTitle: boolean; showHud: boolean; model: string; recordIdDisplay: string;
@@ -123,6 +132,7 @@ const props = defineProps<{
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
   discardLabel: string; reloadLabel: string;
 }>();
+const workflowStatusAuthority = computed(() => resolveWorkflowStatusAuthority(props.statusbar));
 
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');

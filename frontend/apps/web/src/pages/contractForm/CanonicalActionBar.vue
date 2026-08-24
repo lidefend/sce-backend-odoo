@@ -1,5 +1,14 @@
 <template>
-  <nav v-if="directActions.length || overflowActions.length" class="canonical-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
+  <nav
+    v-if="directActions.length || overflowActions.length"
+    class="canonical-action-bar"
+    aria-label="表单业务动作"
+    data-canonical-action-bar
+    data-professional-workflow-component="action-bar"
+    :data-workflow-action-count="authority.actionCount"
+    :data-workflow-disabled-count="authority.disabledCount"
+    :data-workflow-primary-key="authority.primaryKey"
+  >
     <SceneButton
       v-for="action in directActions"
       :key="action.key"
@@ -12,6 +21,8 @@
       :data-action-tier="action.key === effectivePrimaryKey ? 'primary' : action.tier"
       :data-normalized-action-tier="action.tier"
       :data-action-enabled="String(action.enabled)"
+      :data-disabled-reason="workflowDisabledReason(action) || undefined"
+      :title="workflowDisabledReason(action) || undefined"
       :data-action-allowed="String(action.actionRef.allowed === true)"
       :data-visible-profiles="action.visibleProfiles.join(',')"
       @activate="action.enabled && emit('action-ref', action.actionRef)"
@@ -33,6 +44,8 @@
           :data-backend-identity="action.actionRef.backendIdentity"
           :data-action-tier="action.tier"
           :data-action-enabled="String(action.enabled)"
+          :data-disabled-reason="workflowDisabledReason(action) || undefined"
+          :title="workflowDisabledReason(action) || undefined"
           :data-action-allowed="String(action.actionRef.allowed === true)"
           :data-visible-profiles="action.visibleProfiles.join(',')"
           @activate="action.enabled && emit('action-ref', action.actionRef)"
@@ -46,17 +59,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { SceneButton } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
+import { resolveWorkflowActionBarAuthority, workflowDisabledReason } from './professionalWorkflowModel';
 
-defineProps<{
+const props = defineProps<{
   directActions: CanonicalFormAction[];
   overflowActions: CanonicalFormAction[];
   effectivePrimaryKey: string;
 }>();
+const authority = computed(() => resolveWorkflowActionBarAuthority(
+  props.directActions,
+  props.overflowActions,
+  props.effectivePrimaryKey,
+));
 const emit = defineEmits<{ 'action-ref': [action: ContractV2ActionRule] }>();
 </script>
 

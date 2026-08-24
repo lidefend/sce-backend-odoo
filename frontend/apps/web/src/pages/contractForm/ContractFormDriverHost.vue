@@ -115,46 +115,13 @@
             v-on="collaborationPanelListeners"
           />
         </section>
-        <nav v-if="visibleActions.length && !actionsInHeader" class="canonical-form-action-bar" aria-label="表单业务动作" data-canonical-action-bar>
-            <button
-              v-for="action in directActions"
-              :key="action.key"
-              type="button"
-              :class="['canonical-form-action', `canonical-form-action--${action.tier}`, { 'is-danger': actionDanger(action) }]"
-              :disabled="!action.enabled"
-              :title="action.reasonCode || undefined"
-              :data-action-ref="action.actionRef.actionId"
-              :data-backend-identity="action.actionRef.backendIdentity"
-              :data-action-tier="action.tier"
-              :data-normalized-action-tier="action.tier"
-              :data-action-enabled="String(action.enabled)"
-              @click="action.enabled && emit('action-ref', action.actionRef)"
-            >
-              <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-form-action-icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
-              <span>{{ action.label }}</span>
-            </button>
-            <details v-if="overflowActions.length" class="canonical-form-action-overflow">
-              <summary>更多操作</summary>
-              <div class="canonical-form-action-overflow-panel">
-                <button
-                  v-for="action in overflowActions"
-                  :key="action.key"
-                  type="button"
-                  class="canonical-form-action canonical-form-action--overflow"
-                  :disabled="!action.enabled"
-                  :title="action.reasonCode || undefined"
-                  :data-action-ref="action.actionRef.actionId"
-                  :data-backend-identity="action.actionRef.backendIdentity"
-                  :data-action-tier="action.tier"
-                  :data-action-enabled="String(action.enabled)"
-                  @click="action.enabled && emit('action-ref', action.actionRef)"
-                >
-                  <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-form-action-icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
-                  <span>{{ action.label }}</span>
-                </button>
-              </div>
-            </details>
-        </nav>
+        <CanonicalActionBar
+          v-if="visibleActions.length && !actionsInHeader"
+          :direct-actions="directActions"
+          :overflow-actions="overflowActions"
+          :effective-primary-key="floorplan.effectivePrimaryKey"
+          @action-ref="emit('action-ref', $event)"
+        />
       </article>
       </WorkspaceFormPattern>
     </SceneUiProvider>
@@ -170,8 +137,6 @@ import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../.
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
-import ScIcon from '../../components/design-system/ScIcon.vue';
-import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
 import CanonicalActionBar from './CanonicalActionBar.vue';
 import NativeCollaborationPanel, {
@@ -283,11 +248,6 @@ const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNode
 
 function collaborationKind(kind: string) {
   return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
-}
-
-function actionDanger(action: CanonicalFormAction) {
-  const classification = String(action.safety.classification || action.safety.level || '').trim().toLowerCase();
-  return classification === 'danger' || action.safety.destructive === true;
 }
 
 function runNativeCanonicalAction(payload: Record<string, unknown>) {
