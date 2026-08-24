@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 import re
 import signal
 import stat
@@ -25,6 +26,7 @@ API_PROXY = "http://127.0.0.1:18081"
 CONFIRMATION = "SERVE_FROZEN_LOCAL_DEV_CANDIDATE"
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
+PIDFILE = Path("/tmp/sc-local-dev-candidate-frontend.pid")
 
 
 class CandidateFrontendError(RuntimeError):
@@ -50,11 +52,7 @@ def _candidate_identity(root: Path = ROOT) -> tuple[str, str]:
     return branch, head
 
 
-def _pidfile(head: str) -> Path:
-    return Path(f"/tmp/sc-local-dev-candidate-frontend-{head}.pid")
-
-
-def _read_pid(pidfile: Path) -> int:
+def _read_process_identity(pidfile: Path = PIDFILE) -> dict[str, object]:
     try:
         metadata = pidfile.lstat()
     except FileNotFoundError as exc:
@@ -64,16 +62,24 @@ def _read_pid(pidfile: Path) -> int:
     if metadata.st_uid != os.getuid():
         raise CandidateFrontendError("candidate pidfile owner mismatch")
     try:
-        pid = int(pidfile.read_text(encoding="utf-8").strip())
-    except ValueError as exc:
-        raise CandidateFrontendError("candidate pidfile contains an invalid pid") from exc
+        payload = json.loads(pidfile.read_text(encoding="utf-8"))
+        pid = int(payload["pid"])
+        head = str(payload["head"])
+        root = str(payload["root"])
+    except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        raise CandidateFrontendError("candidate pidfile contains an invalid identity") from exc
     if pid <= 1:
         raise CandidateFrontendError("candidate pid is unsafe")
-    return pid
+    if not SHA.fullmatch(head) or not Path(root).is_absolute():
+        raise CandidateFrontendError("candidate pidfile identity is unsafe")
+    return {"pid": pid, "head": head, "root": root}
 
 
-def _validate_process(root: Path, head: str, pidfile: Path) -> int:
-    pid = _read_pid(pidfile)
+def _validate_process(root: Path, head: str, pidfile: Path = PIDFILE) -> int:
+    identity = _read_process_identity(pidfile)
+    pid = int(identity["pid"])
+    if Path(str(identity["root"])).resolve() != root.resolve() or identity["head"] != head:
+        raise CandidateFrontendError("candidate pidfile root or head mismatch")
     process_root = Path(f"/proc/{pid}")
     if not process_root.is_dir():
         raise ProcessLookupError(pid)
@@ -114,6 +120,16 @@ def _health() -> bool:
         return False
 
 
+def _wait_until_stopped(pid: int) -> None:
+    for _ in range(30):
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return
+        time.sleep(0.1)
+    raise CandidateFrontendError("candidate process did not stop after SIGTERM")
+
+
 def up(root: Path = ROOT) -> None:
     _branch, head = _candidate_identity(root)
     authority = resolve_authority_env(root)
@@ -122,7 +138,7 @@ def up(root: Path = ROOT) -> None:
     dist = root / "frontend/apps/web/dist-dev"
     if not (dist / "index.html").is_file():
         raise CandidateFrontendError("candidate static build is missing index.html")
-    pidfile = _pidfile(head)
+    pidfile = PIDFILE
     if pidfile.exists():
         try:
             _validate_process(root, head, pidfile)
@@ -139,7 +155,7 @@ def up(root: Path = ROOT) -> None:
         ["node", str(root / "scripts/release/release_static_server.mjs")], cwd=root,
         env=process_env, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
-    pidfile.write_text(f"{process.pid}\n", encoding="utf-8")
+    pidfile.write_text(json.dumps({"pid": process.pid, "root": str(root.resolve()), "head": head}) + "\n", encoding="utf-8")
     pidfile.chmod(0o600)
     for _ in range(30):
         if process.poll() is not None:
@@ -156,24 +172,27 @@ def up(root: Path = ROOT) -> None:
 
 def down(root: Path = ROOT) -> None:
     _branch, head = _candidate_identity(root)
-    pidfile = _pidfile(head)
+    pidfile = PIDFILE
     if not pidfile.exists():
         print("[local.dev.candidate.frontend] PASS already absent")
         return
     try:
-        pid = _validate_process(root, head, pidfile)
+        running_identity = _read_process_identity(pidfile)
+        running_head = str(running_identity["head"])
+        pid = _validate_process(root, running_head, pidfile)
     except ProcessLookupError:
         pidfile.unlink(missing_ok=True)
         print(f"[local.dev.candidate.frontend] PASS removed stale pidfile sha={head}")
         return
     os.killpg(pid, signal.SIGTERM)
+    _wait_until_stopped(pid)
     pidfile.unlink(missing_ok=True)
-    print(f"[local.dev.candidate.frontend] PASS stopped sha={head}")
+    print(f"[local.dev.candidate.frontend] PASS stopped sha={running_head} current_sha={head}")
 
 
 def health(root: Path = ROOT) -> None:
     _branch, head = _candidate_identity(root)
-    _validate_process(root, head, _pidfile(head))
+    _validate_process(root, head, PIDFILE)
     if not _health():
         raise CandidateFrontendError("candidate static service is not healthy")
     print(f"[local.dev.candidate.frontend] PASS healthy url=http://127.0.0.1:{PORT} sha={head}")

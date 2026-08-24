@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import signal
 import stat
 import tempfile
 import unittest
@@ -52,32 +53,48 @@ class CandidateFrontendContractTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
             target = base / "target"
-            target.write_text("123\n", encoding="utf-8")
+            target.write_text('{"pid":123,"head":"' + "a" * 40 + '","root":"/tmp/root"}\n', encoding="utf-8")
             link = base / "pid"
             link.symlink_to(target)
             with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "non-symlink"):
-                MODULE_UNDER_TEST._read_pid(link)
+                MODULE_UNDER_TEST._read_process_identity(link)
 
             link.unlink()
             link.write_text("not-a-pid\n", encoding="utf-8")
-            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "invalid pid"):
-                MODULE_UNDER_TEST._read_pid(link)
+            with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "invalid identity"):
+                MODULE_UNDER_TEST._read_process_identity(link)
 
-            link.write_text("123\n", encoding="utf-8")
+            link.write_text('{"pid":123,"head":"' + "a" * 40 + '","root":"/tmp/root"}\n', encoding="utf-8")
             fake_metadata = mock.Mock(st_mode=stat.S_IFREG | 0o600, st_uid=os.getuid() + 1)
             with mock.patch.object(Path, "lstat", return_value=fake_metadata):
                 with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "owner"):
-                    MODULE_UNDER_TEST._read_pid(link)
+                    MODULE_UNDER_TEST._read_process_identity(link)
 
     def test_down_refuses_live_process_identity_mismatch(self):
-        with mock.patch.object(MODULE_UNDER_TEST, "_candidate_identity", return_value=("feature/token", "a" * 40)), mock.patch.object(
-            MODULE_UNDER_TEST, "_pidfile", return_value=Path("/tmp/managed-candidate.pid")
-        ), mock.patch.object(Path, "exists", return_value=True), mock.patch.object(
+        with mock.patch.object(MODULE_UNDER_TEST, "_candidate_identity", return_value=("feature/token", "a" * 40)), mock.patch.object(Path, "exists", return_value=True), mock.patch.object(
+            MODULE_UNDER_TEST, "_read_process_identity", return_value={"pid": 123, "head": "b" * 40, "root": str(ROOT)}
+        ), mock.patch.object(
             MODULE_UNDER_TEST, "_validate_process", side_effect=MODULE_UNDER_TEST.CandidateFrontendError("candidate process command mismatch")
         ), mock.patch.object(os, "killpg") as killpg:
             with self.assertRaisesRegex(MODULE_UNDER_TEST.CandidateFrontendError, "command mismatch"):
                 MODULE_UNDER_TEST.down(ROOT)
             killpg.assert_not_called()
+
+    def test_down_can_clean_verified_previous_head_after_branch_advances(self):
+        current_head = "a" * 40
+        running_head = "b" * 40
+        with mock.patch.object(MODULE_UNDER_TEST, "_candidate_identity", return_value=("feature/token", current_head)), mock.patch.object(
+            Path, "exists", return_value=True
+        ), mock.patch.object(
+            MODULE_UNDER_TEST, "_read_process_identity", return_value={"pid": 123, "head": running_head, "root": str(ROOT)}
+        ), mock.patch.object(MODULE_UNDER_TEST, "_validate_process", return_value=123) as validate, mock.patch.object(
+            MODULE_UNDER_TEST, "_wait_until_stopped"
+        ) as wait, mock.patch.object(Path, "unlink") as unlink, mock.patch.object(os, "killpg") as killpg:
+            MODULE_UNDER_TEST.down(ROOT)
+        validate.assert_called_once_with(ROOT, running_head, MODULE_UNDER_TEST.PIDFILE)
+        killpg.assert_called_once_with(123, signal.SIGTERM)
+        wait.assert_called_once_with(123)
+        unlink.assert_called_once_with(missing_ok=True)
 
 if __name__ == "__main__":
     unittest.main()

@@ -5671,7 +5671,9 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   authority. It neither remounts Nginx nor copies credentials, creates no
   Compose project/database/volume, and refuses a dirty candidate, unsafe PID
   carrier, mismatched process owner/cwd/command/environment, or unhealthy
-  process before reuse, health acknowledgement, or termination.
+  process before reuse, health acknowledgement, or termination. The fixed
+  0600 identity carrier records PID, source root and running SHA, allowing an
+  old exact process to be safely stopped after the topic branch advances.
 - Blast radius / validation: local browser preview carrier only; the primary
   18081 asset mount, product source, Contract, routes, permissions and fixture
   data are unchanged. Focused identity tests plus a governed `up`, `health`,
