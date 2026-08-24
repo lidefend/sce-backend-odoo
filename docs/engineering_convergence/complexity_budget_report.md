@@ -16,7 +16,7 @@ Generated from repository source files. This report is informational during the 
 | 4434 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4169 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4130 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
-| 3687 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3684 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3669 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -147,7 +147,7 @@ Generated from repository source files. This report is informational during the 
 | 4434 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4169 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4130 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
-| 3687 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3684 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3669 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
