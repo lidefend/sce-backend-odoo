@@ -121,8 +121,13 @@
                 :control-id="fieldControlId(field)"
                 :described-by="fieldDescribedBy(field)"
                 :placeholder="field.inputPlaceholder || (field.type === 'selection' ? selectPlaceholderText(field) : inputPlaceholderText(field))"
+                :has-readonly-override="Boolean(slots.readonly)"
                 @update:value="emitFieldChange(field, $event)"
-              />
+              >
+                <template #readonly="readonlySlot">
+                  <slot name="readonly" v-bind="readonlySlot" />
+                </template>
+              </ProfessionalBaseFieldControl>
               <SceneFieldControl
                 v-else-if="usesSceneFieldControl(field) && !(preferReadonlyFacts && field.readonly)"
                 :field="sceneField(field)"

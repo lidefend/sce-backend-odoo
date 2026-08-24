@@ -16,7 +16,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"base field model missing {field_type}")
     for marker in (
         'data-professional-field-family="base"', ":data-professional-field-type", ":data-control-kind",
-        ":data-presentation-mode", ":data-render-profile", ":data-control-state",
+        ":data-presentation-mode", ":data-render-profile", ":data-control-state", 'name="readonly"', "hasReadonlyOverride",
     ):
         if marker not in component:
             failures.append(f"professional base field missing marker {marker}")

@@ -9,12 +9,15 @@
     :data-control-state="model.controlState"
   >
     <template v-if="field.readonly">
-      <div
-        v-if="field.type === 'html'"
-        class="professional-base-field-control__readonly professional-base-field-control__readonly--html"
-        v-html="readonlyHtml"
-      />
-      <span v-else class="professional-base-field-control__readonly">{{ readonlyText }}</span>
+      <slot v-if="hasReadonlyOverride" name="readonly" :field="field" />
+      <template v-else>
+        <div
+          v-if="field.type === 'html'"
+          class="professional-base-field-control__readonly professional-base-field-control__readonly--html"
+          v-html="readonlyHtml"
+        />
+        <span v-else class="professional-base-field-control__readonly">{{ readonlyText }}</span>
+      </template>
     </template>
     <input
       v-else-if="field.type === 'boolean'"
@@ -93,6 +96,7 @@ const props = defineProps<{
   controlId: string;
   describedBy?: string;
   placeholder: string;
+  hasReadonlyOverride?: boolean;
 }>();
 
 const emit = defineEmits<{
