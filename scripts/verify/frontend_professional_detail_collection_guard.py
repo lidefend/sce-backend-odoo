@@ -9,6 +9,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     component = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalDetailCollectionControl.vue")
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
+    renderer = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
     if "sc.relation.table" not in model or "ProfessionalDetailCollectionControl" not in registry:
@@ -25,6 +26,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("FormSection does not route one2many through the detail collection adapter")
     if "<X2ManyRelationRenderer" not in section:
         failures.append("detail collection bypasses the governed x2many runtime")
+    if "data-detail-collection-pagination" not in renderer or "one2manyPageSize = 20" not in renderer:
+        failures.append("detail collection pagination is not bounded and explicit")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in model:
             failures.append(f"detail collection contains forbidden product special case {forbidden}")
