@@ -5653,3 +5653,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   verification, environment sanitization and root mismatch.
 - Rollback: revert this P4 governance commit. Existing published branches keep
   their immutable-history policy; recovery bundles remain local evidence.
+
+## Merge policy Fast/Full aggregation (2026-08-24)
+
+- Branch / anchor: `fix/p4-merge-policy-gate-v1` / `cb255a0d`.
+- Formal Product Layer / Layer Target / Module: P4 delivery governance /
+  PR merge policy aggregation / GitHub workflows, CI risk contract, ruleset
+  configurator and controlled-cutover check binding.
+- Reason: keep PR-only protected main while allowing existing `FAST` paths to
+  complete a minimal public/security/history/diff gate without waiting for
+  unrelated backend/frontend release jobs. Any non-FAST, mixed, unknown,
+  workflow, policy, Make, verification or product path remains Full.
+- Safety contract: `merge_policy_gate` is the only intended required status.
+  Its Fast and Full paths are mutually exclusive. Full binds all four existing
+  authoritative checks to the exact head and rejects missing, failed or timed-
+  out evidence. Ruleset changes occur only after this P4 code is merged.

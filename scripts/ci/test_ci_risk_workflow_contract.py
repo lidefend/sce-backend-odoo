@@ -13,7 +13,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
     def text(self, name: str) -> str:
         return (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
 
-    def test_required_checks_are_unconditional_workflow_jobs(self) -> None:
+    def test_merge_policy_gate_is_the_single_required_aggregation_job(self) -> None:
         contracts = {
             "public_guard.yml": ("  public_guard:", "    name: public_guard"),
             "professional_quality_gate.yml": (
@@ -34,6 +34,12 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             self.assertIn("cancel-in-progress: true", text)
             for item in required:
                 self.assertIn(item, text)
+        aggregate = self.text("merge_policy_gate.yml")
+        self.assertIn("name: merge_policy_gate", aggregate)
+        self.assertIn("name: merge_policy_gate", aggregate)
+        self.assertIn("needs: [fast, full]", aggregate)
+        self.assertIn("Wait for exact-head full checks", aggregate)
+        self.assertNotIn("continue-on-error:", aggregate)
 
     def test_frontend_lane_commands_are_explicit(self) -> None:
         text = self.text("frontend_release_gate.yml")
