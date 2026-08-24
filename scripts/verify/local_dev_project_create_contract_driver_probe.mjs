@@ -14,6 +14,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, loc
 const mutations = [];
 const executeRequests = [];
 const contractActions = [];
+const contractPresentations = [];
 const browserErrors = [];
 page.on('console', (message) => {
   if (message.type() === 'error') browserErrors.push(`console:${message.text()}`);
@@ -40,6 +41,18 @@ page.on('response', async (response) => {
   let body = {};
   try { body = await response.json(); } catch {}
   const data = body?.data && typeof body.data === 'object' ? body.data : {};
+  const params = request?.params && typeof request.params === 'object' ? request.params : {};
+  const structure = data?.formStructureContract && typeof data.formStructureContract === 'object'
+    ? data.formStructureContract
+    : {};
+  contractPresentations.push({
+    actionId: String(params.action_id ?? request.action_id ?? ''),
+    menuId: String(params.menu_id ?? request.menu_id ?? ''),
+    model: String(params.model ?? request.model ?? ''),
+    recordId: String(params.record_id ?? request.record_id ?? ''),
+    structureVersion: structure.structureVersion,
+    presentationMode: structure.presentationMode,
+  });
   const rules = Array.isArray(data?.actionContract?.actionRuleList)
     ? data.actionContract.actionRuleList
     : [];
@@ -119,8 +132,57 @@ try {
     url: page.url(),
     drivers,
     errors,
+    taskPage: await surface.locator('[data-object-task-page]').count(),
+    nativeStructure: await surface.locator('[data-native-contract-structure]').count(),
     contractActions: [...contractActions],
   };
+  const projectPresentation = contractPresentations
+    .filter((row) => row.actionId === String(target.action_id))
+    .at(-1);
+  if (projectPresentation?.structureVersion !== '1.1' || projectPresentation?.presentationMode !== 'task') {
+    throw new Error(`project initiation did not resolve task presentation: ${JSON.stringify(projectPresentation)}`);
+  }
+  if (projectResult.taskPage !== 1 || projectResult.nativeStructure !== 0) {
+    throw new Error(`project initiation did not render Floorplan: ${JSON.stringify(projectResult)}`);
+  }
+
+  contractActions.length = 0;
+  const workspaceRoute = `${frontendUrl}/r/project.project/${target.project_record_id}`
+    + `?menu_id=${target.workspace_menu_id}&action_id=${target.workspace_action_id}`;
+  await page.goto(workspaceRoute, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const workspaceSurface = page.locator(
+    `[data-product-page-mode="form"][data-form-model="project.project"]`
+    + `[data-form-record="${target.project_record_id}"]`
+    + `[data-form-action-id="${target.workspace_action_id}"][data-form-menu-id="${target.workspace_menu_id}"]`,
+  );
+  await workspaceSurface.waitFor({ state: 'visible', timeout: 45000 });
+  await page.waitForFunction(() => (
+    document.querySelectorAll('[data-contract-form-driver]').length
+    + document.querySelectorAll('[data-contract-form-driver-error]').length === 1
+  ), undefined, { timeout: 45000 });
+  const workspaceResult = {
+    url: page.url(),
+    drivers: await workspaceSurface.locator('[data-contract-form-driver]').count(),
+    errors: await workspaceSurface.locator('[data-contract-form-driver-error]').allTextContents(),
+    taskPage: await workspaceSurface.locator('[data-object-task-page]').count(),
+    nativeStructure: await workspaceSurface.locator('[data-native-contract-structure]').count(),
+    notebookPages: await workspaceSurface.locator('[data-native-contract-structure] .native-tabs .native-tab').count(),
+  };
+  const workspacePresentation = contractPresentations
+    .filter((row) => row.actionId === String(target.workspace_action_id))
+    .at(-1);
+  if (workspacePresentation?.structureVersion !== '1.1' || workspacePresentation?.presentationMode !== 'workspace') {
+    throw new Error(`project workspace did not resolve workspace presentation: ${JSON.stringify(workspacePresentation)}`);
+  }
+  if (
+    workspaceResult.drivers !== 1
+    || workspaceResult.errors.length !== 0
+    || workspaceResult.taskPage !== 0
+    || workspaceResult.nativeStructure !== 1
+    || workspaceResult.notebookPages !== 11
+  ) {
+    throw new Error(`project workspace did not preserve native notebook structure: ${JSON.stringify(workspaceResult)}`);
+  }
 
   contractActions.length = 0;
   const paymentRoute = `${frontendUrl}/f/payment.request/${target.payment_record_id}`
@@ -146,7 +208,9 @@ try {
   };
   console.log('LOCAL_DEV_CONTRACT_DRIVER_JSON=' + JSON.stringify({
     project: projectResult,
+    workspace: workspaceResult,
     payment: paymentResult,
+    contractPresentations,
     mutations,
     executeRequests,
     browserErrors,

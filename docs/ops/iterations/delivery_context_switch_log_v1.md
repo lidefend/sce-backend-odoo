@@ -5556,3 +5556,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   mutation; no database write was attempted.
 - Rollback: revert this batch only. The former per-entry loose parsing resumes;
   no data migration or fixture cleanup is required.
+## Form shape authority formalization (2026-08-24)
+
+- Branch / anchor: `feature/p0-form-presentation-mode-authority` / `e188e92a`.
+- Formal Product Layer / Layer Target / Module: P0 platform contract authority /
+  Contract V2 form shape and generic Presenter/Floorplan selection /
+  `smart_core` and `frontend/apps/web`.
+- Reason / boundary: formalize `formStructureContract.presentationMode` in
+  structure version `1.1` as `task` or `workspace`. Task shape serves concise creation and handling;
+  workspace shape preserves the normalized comprehensive form. `create`,
+  `edit`, and `readonly` remain independent backend render profiles. Renderer
+  names are implementation details and are not contract semantics.
+- Why Here / Why Not Elsewhere: form shape is a generic Contract V2 fact, so it
+  belongs in the platform producer and generic consumer. No construction model,
+  action/menu ID, ACL, fixture, route, customer preference, or frontend
+  business inference is added.
+- Blast radius / validation: current producers emit 1.1; deployed 1.0
+  structures are explicitly normalized to conservative workspace and cannot
+  opt into task. Role-bound selection reads the authenticated server-side
+  `IdentityResolver` surface, never a request/source role hint. Action/view/
+  role selection is covered for task versus workspace; Presenter and Floorplan
+  cover task/workspace across create/edit/readonly. Targeted backend tests,
+  Contract V2 guards, strict typecheck, lint, and production frontend build are
+  required before publication.
+- Rollback: revert the field emission, strict decoder/runtime guard, generic
+  Presenter consumption, fixtures, and tests as one P0 contract batch. No
+  database migration or fixture mutation is involved.

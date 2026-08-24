@@ -68,10 +68,11 @@
   },
   "form_structure_contract": {
     "source": "ui.contract.v2.form_structure_contract",
-    "structureVersion": "1.0",
+    "structureVersion": "1.1",
     "model": "project.project",
     "viewType": "form",
     "mode": "business_task_form",
+    "presentationMode": "task",
     "layoutPolicy": "overview_then_task_slots",
     "objectProfile": {
       "model": "project.project",

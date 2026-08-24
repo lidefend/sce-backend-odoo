@@ -606,7 +606,7 @@
           "const": "ui.contract.v2.form_structure_contract"
         },
         "structureVersion": {
-          "const": "1.0"
+          "enum": ["1.0", "1.1"]
         },
         "model": {
           "type": "string",
@@ -618,6 +618,9 @@
         "mode": {
           "type": "string",
           "minLength": 1
+        },
+        "presentationMode": {
+          "enum": ["task", "workspace"]
         },
         "layoutPolicy": {
           "type": "string",
@@ -655,7 +658,17 @@
         "sourceAuthority": {
           "$ref": "#/$defs/formStructureSourceAuthority"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"structureVersion": {"const": "1.1"}}},
+          "then": {"required": ["presentationMode"]}
+        },
+        {
+          "if": {"properties": {"structureVersion": {"const": "1.0"}}},
+          "then": {"not": {"required": ["presentationMode"]}}
+        }
+      ]
     },
     "formStructureObjectProfile": {
       "type": "object",

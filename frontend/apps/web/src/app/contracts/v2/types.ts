@@ -24,6 +24,7 @@ export type ContractV2CanonicalFormSemanticRole =
   | 'audit';
 
 export type ContractV2FormStructureRoleName = ContractV2CanonicalFormSemanticRole;
+export type ContractV2FormPresentationMode = 'task' | 'workspace';
 
 export interface ContractV2FormStructureRole {
   role: ContractV2FormStructureRoleName;
@@ -98,10 +99,11 @@ export interface ContractV2FormStructureSourceAuthority {
 
 export interface ContractV2FormStructureContract {
   source: 'ui.contract.v2.form_structure_contract';
-  structureVersion: '1.0';
+  structureVersion: '1.0' | '1.1';
   model: string;
   viewType: 'form';
   mode: string;
+  presentationMode: ContractV2FormPresentationMode;
   layoutPolicy: string;
   columns?: number;
   objectProfile: {

@@ -1175,19 +1175,27 @@ function decodeFormStructureContract(
     return undefined;
   }
   rejectUnknownKeys(raw, [
-    'source', 'structureVersion', 'model', 'viewType', 'mode', 'layoutPolicy', 'columns',
+    'source', 'structureVersion', 'model', 'viewType', 'mode', 'presentationMode', 'layoutPolicy', 'columns',
     'objectProfile', 'navigation', 'sourceSectionTitles', 'fieldLabels', 'slots', 'fieldRoles',
     'sourceAuthority',
   ], path, issues);
   if (raw.source !== 'ui.contract.v2.form_structure_contract') {
     issues.push({ path: `${path}.source`, message: 'must equal ui.contract.v2.form_structure_contract' });
   }
-  if (raw.structureVersion !== '1.0') {
-    issues.push({ path: `${path}.structureVersion`, message: 'must equal 1.0' });
+  const structureVersion = raw.structureVersion;
+  if (structureVersion !== '1.0' && structureVersion !== '1.1') {
+    issues.push({ path: `${path}.structureVersion`, message: 'must equal 1.0 or 1.1' });
   }
   const model = requiredString(raw, 'model', path, issues);
   if (model && model !== pageInfo.model) issues.push({ path: `${path}.model`, message: 'must match pageInfo.model' });
   if (raw.viewType !== 'form') issues.push({ path: `${path}.viewType`, message: 'must equal form' });
+  const presentationMode = raw.presentationMode;
+  if (structureVersion === '1.1' && presentationMode !== 'task' && presentationMode !== 'workspace') {
+    issues.push({ path: `${path}.presentationMode`, message: 'must equal task or workspace' });
+  }
+  if (structureVersion === '1.0' && presentationMode !== undefined) {
+    issues.push({ path: `${path}.presentationMode`, message: 'requires structureVersion 1.1' });
+  }
   const columns = raw.columns;
   if (columns !== undefined && (
     typeof columns !== 'number' || !Number.isInteger(columns) || columns < 1
@@ -1261,10 +1269,14 @@ function decodeFormStructureContract(
   if (!sourceAuthority) return undefined;
   return {
     source: 'ui.contract.v2.form_structure_contract',
-    structureVersion: '1.0',
+    structureVersion: structureVersion === '1.1' ? '1.1' : '1.0',
     model,
     viewType: 'form',
     mode: requiredString(raw, 'mode', path, issues),
+    // Version 1.0 predates formal presentation authority. It is explicitly
+    // normalized to the conservative workspace path; new 1.1 structures must
+    // declare their authority above.
+    presentationMode: structureVersion === '1.1' && presentationMode === 'task' ? 'task' : 'workspace',
     layoutPolicy: requiredString(raw, 'layoutPolicy', path, issues),
     ...(typeof columns === 'number' && Number.isInteger(columns) && columns > 0 ? { columns } : {}),
     objectProfile: {

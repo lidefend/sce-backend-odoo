@@ -38,7 +38,9 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
         return {
             "formStructureContract": {
                 "source": "ui.contract.v2.form_structure_contract",
+                "structureVersion": "1.1",
                 "viewType": "form",
+                "presentationMode": "workspace",
                 "slots": [
                     {
                         "slot": "overview",
@@ -109,6 +111,30 @@ class TestUnifiedPageContractV2Runtime(unittest.TestCase):
     def test_form_structure_contract_accepts_projected_known_fields(self):
         issues = runtime.find_form_structure_contract_issues(self._contract())
         self.assertEqual(issues, [])
+
+    def test_form_structure_contract_requires_explicit_presentation_mode(self):
+        contract = self._contract()
+        contract["formStructureContract"].pop("presentationMode")
+        issues = runtime.find_form_structure_contract_issues(contract)
+        self.assertIn(
+            "formStructureContract.presentationMode must be task or workspace",
+            issues,
+        )
+
+    def test_legacy_form_structure_without_presentation_mode_remains_valid(self):
+        contract = self._contract()
+        contract["formStructureContract"]["structureVersion"] = "1.0"
+        contract["formStructureContract"].pop("presentationMode")
+        self.assertEqual(runtime.find_form_structure_contract_issues(contract), [])
+
+    def test_legacy_form_structure_cannot_carry_presentation_mode(self):
+        contract = self._contract()
+        contract["formStructureContract"]["structureVersion"] = "1.0"
+        issues = runtime.find_form_structure_contract_issues(contract)
+        self.assertIn(
+            "formStructureContract.presentationMode requires structureVersion 1.1",
+            issues,
+        )
 
     def test_data_source_authority_rejects_missing_source_authority(self):
         issues = runtime.find_data_source_authority_issues({

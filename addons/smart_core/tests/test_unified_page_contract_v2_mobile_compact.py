@@ -3062,6 +3062,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "form_structure_contract": {
                 "source": "ui.contract.v2.form_structure_contract",
                 "mode": "business_task_form",
+                "presentationMode": "task",
                 "navigation": {"title": "业务办理"},
                 "fieldRoles": {
                     "name": {"role": "identity", "slot": "primary_facts", "group": "identity"},
@@ -3125,6 +3126,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "form_structure_contract": {
                 "source": "ui.contract.v2.form_structure_contract",
                 "mode": "business_task_form",
+                "presentationMode": "task",
                 "navigation": {"title": "关联信息"},
                 "slots": [
                     {
@@ -3195,6 +3197,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "form_structure_contract": {
                 "source": "ui.contract.v2.form_structure_contract",
                 "mode": "business_task_form",
+                "presentationMode": "task",
                 "fieldRoles": {
                     "category_id": {"role": "identity", "slot": "primary_facts", "group": "identity"},
                     "name": {"role": "identity", "slot": "primary_facts", "group": "identity"},
@@ -3260,6 +3263,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "form_structure_contract": {
                 "source": "ui.contract.v2.form_structure_contract",
                 "mode": "business_task_form",
+                "presentationMode": "task",
                 "slots": [
                     {
                         "slot": "configured_form",
@@ -3327,6 +3331,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             "form_structure_contract": {
                 "source": "ui.contract.v2.form_structure_contract",
                 "mode": "business_task_form",
+                "presentationMode": "task",
                 "columns": 2,
                 "slots": [
                     {

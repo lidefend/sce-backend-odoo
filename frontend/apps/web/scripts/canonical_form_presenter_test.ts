@@ -597,10 +597,11 @@ assert.deepEqual(
 function governedFormStructure(role: ContractV2FormStructureRoleName) {
   return {
     source: 'ui.contract.v2.form_structure_contract' as const,
-    structureVersion: '1.0' as const,
+    structureVersion: '1.1' as const,
     model: 'x.document',
     viewType: 'form' as const,
     mode: 'business_task_form',
+    presentationMode: 'task' as const,
     layoutPolicy: 'governed_slots',
     objectProfile: {
       model: 'x.document', kind: 'business_form' as const, factAuthority: 'business_object_model_and_view',
@@ -662,6 +663,41 @@ const missingStructureAuthoritySnapshot = snapshot() as ContractV2Snapshot & { f
 missingStructureAuthoritySnapshot.formStructureContract = governedFormStructure('context') as unknown as Record<string, unknown>;
 delete missingStructureAuthoritySnapshot.formStructureContract.sourceAuthority;
 assert.throws(() => decodeContractV2Snapshot(missingStructureAuthoritySnapshot), /sourceAuthority.*must be an object/);
+
+const missingPresentationModeSnapshot = snapshot() as ContractV2Snapshot & { formStructureContract?: Record<string, unknown> };
+missingPresentationModeSnapshot.formStructureContract = governedFormStructure('context') as unknown as Record<string, unknown>;
+delete missingPresentationModeSnapshot.formStructureContract.presentationMode;
+assert.throws(
+  () => decodeContractV2Snapshot(missingPresentationModeSnapshot),
+  /presentationMode.*must equal task or workspace/,
+  'form shape authority must be explicit rather than inferred from the legacy mode label',
+);
+
+const legacyStructureSnapshot = snapshot() as ContractV2Snapshot & { formStructureContract?: Record<string, unknown> };
+legacyStructureSnapshot.formStructureContract = governedFormStructure('context') as unknown as Record<string, unknown>;
+legacyStructureSnapshot.formStructureContract.structureVersion = '1.0';
+delete legacyStructureSnapshot.formStructureContract.presentationMode;
+assert.equal(
+  decodeContractV2Snapshot(legacyStructureSnapshot).formStructureContract?.presentationMode,
+  'workspace',
+  'a deployed 1.0 structure must take the explicit conservative workspace compatibility path',
+);
+
+const decoderBypassSnapshot = snapshot();
+decoderBypassSnapshot.formStructureContract = governedFormStructure('context');
+const decodedBypassStore = createContractV2Store(decodeContractV2Snapshot(decoderBypassSnapshot));
+const invalidBypassStore = {
+  ...decodedBypassStore,
+  snapshot: {
+    ...decodedBypassStore.snapshot,
+    formStructureContract: { ...decodedBypassStore.snapshot.formStructureContract!, presentationMode: undefined },
+  },
+} as unknown as typeof decodedBypassStore;
+assert.throws(
+  () => presentContractV2Form(invalidBypassStore, 'edit'),
+  /CANONICAL_FORM_PRESENTATION_MODE_MISSING/,
+  'a store constructed outside the decoder must not silently default a missing presentation authority',
+);
 
 const legacyChildCarrierSnapshot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 legacyChildCarrierSnapshot.layoutContract.containerTree[0].tabs = [];
@@ -911,6 +947,7 @@ assert.equal(semanticEditFloorplan.decisionMode, true, 'semantic create/edit for
 const nativeAuthoritySnapshot = snapshot();
 nativeAuthoritySnapshot.formStructureContract = governedFormStructure('context');
 nativeAuthoritySnapshot.formStructureContract!.mode = 'native_structured_form';
+nativeAuthoritySnapshot.formStructureContract!.presentationMode = 'workspace';
 nativeAuthoritySnapshot.formStructureContract!.layoutPolicy = 'native_authority';
 nativeAuthoritySnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
   role: 'context', slot: 'governed', group: 'governed',
@@ -922,6 +959,48 @@ assert.equal(
   false,
   'native authority must fail closed even when layout nodes carry semantic roles',
 );
+const explicitTaskSnapshot = snapshot();
+explicitTaskSnapshot.formStructureContract = governedFormStructure('context');
+explicitTaskSnapshot.formStructureContract!.mode = 'native_structured_form';
+explicitTaskSnapshot.formStructureContract!.presentationMode = 'task';
+assert.equal(
+  composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(explicitTaskSnapshot), 'edit',
+  )).decisionMode,
+  true,
+  'the explicit task form shape must win even when the legacy mode label is native',
+);
+const explicitWorkspaceSnapshot = snapshot();
+explicitWorkspaceSnapshot.formStructureContract = governedFormStructure('context');
+explicitWorkspaceSnapshot.formStructureContract!.presentationMode = 'workspace';
+assert.equal(
+  composeCanonicalFormFloorplan(presentContractV2Form(
+    createContractV2Store(explicitWorkspaceSnapshot), 'edit',
+  )).decisionMode,
+  false,
+  'the explicit workspace form shape must win even when semantic roles are present',
+);
+for (const renderMode of ['create', 'edit', 'readonly'] as const) {
+  assert.equal(
+    presentContractV2Form(createContractV2Store(explicitTaskSnapshot), renderMode).identity.presentationMode,
+    'task',
+    `task shape must remain explicit for ${renderMode}`,
+  );
+  assert.equal(
+    composeCanonicalFormFloorplan(presentContractV2Form(
+      createContractV2Store(explicitTaskSnapshot), renderMode,
+    )).decisionMode,
+    true,
+    `task shape must enter the task Floorplan for ${renderMode}`,
+  );
+  assert.equal(
+    composeCanonicalFormFloorplan(presentContractV2Form(
+      createContractV2Store(explicitWorkspaceSnapshot), renderMode,
+    )).decisionMode,
+    false,
+    `workspace shape must stay out of the task Floorplan for ${renderMode}`,
+  );
+}
 assert.equal(
   semanticEditFloorplan.preExecutionInputTitle,
   '',

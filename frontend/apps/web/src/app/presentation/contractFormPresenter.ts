@@ -341,11 +341,11 @@ export function presentContractV2Form(
   runtimeValues?: ContractV2Dictionary,
 ): CanonicalFormRenderModel {
   const snapshot = store.snapshot;
-  const formStructureMode = text(snapshot.formStructureContract?.mode).toLowerCase();
-  const presentationMode: CanonicalFormPresentationMode = [
-    'business_task_form',
-    'business_category_task_form',
-  ].includes(formStructureMode) ? 'task' : 'native';
+  const structure = snapshot.formStructureContract;
+  if (structure && structure.presentationMode !== 'task' && structure.presentationMode !== 'workspace') {
+    throw new Error('CANONICAL_FORM_PRESENTATION_MODE_MISSING');
+  }
+  const presentationMode: CanonicalFormPresentationMode = structure ? structure.presentationMode : 'workspace';
   const contractValues = Object.keys(snapshot.dataContract.mainData).length
     ? snapshot.dataContract.mainData
     : store.primaryDataSource || {};

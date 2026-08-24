@@ -52,6 +52,8 @@ user = env.ref("smart_construction_demo.sc_demo_user_test_admin")
 action = env.ref("smart_construction_core.action_project_initiation")
 menu = env.ref("smart_construction_core.menu_sc_project_initiation")
 project_record = env.ref("smart_construction_demo.sc_demo_project_001")
+workspace_action = env.ref("smart_construction_core.action_sc_product_project_edit_v1")
+workspace_menu = env.ref("smart_construction_core.menu_sc_product_project_edit_v1")
 payment_action = env.ref("smart_construction_core.action_payment_request_user_payment_apply")
 payment_menu = env.ref("smart_construction_core.menu_sc_user_payment_apply")
 payment_record = env["payment.request"].sudo().search([
@@ -281,6 +283,8 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "menu_id": int(menu.id),
     "project_record_id": int(project_record.id),
     "project_record_xmlid": project_record.get_external_id().get(project_record.id, ""),
+    "workspace_action_id": int(workspace_action.id),
+    "workspace_menu_id": int(workspace_menu.id),
     "create_occurrence_integrity": create_integrity,
     "readonly_occurrence_integrity": record_integrity,
     "share_action_execute": {
