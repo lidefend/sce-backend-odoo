@@ -5695,3 +5695,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Its Fast and Full paths are mutually exclusive. Full binds all four existing
   authoritative checks to the exact head and rejects missing, failed or timed-
   out evidence. Ruleset changes occur only after this P4 code is merged.
+
+## Local.dev candidate visual smoke binding (2026-08-24)
+
+- Branch / anchor: `fix/p4-local-dev-candidate-visual-smoke-v1` / `c10620db`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool / governed
+  linked-worktree browser evidence / `make/dev.mk`, `scripts/dev` and
+  `scripts/verify`.
+- Reason / boundary: let a frozen candidate on port 5176 run a generic readonly
+  route matrix while credentials remain sourced only from the primary-worktree
+  local.dev authority. The route list is caller-owned input; this layer contains
+  no business model, action, menu, Contract or permission semantics.
+- Safety: exact candidate head, clean topic branch, live process identity and
+  local.dev profile are verified before launch. Browser/API errors, horizontal
+  overflow and mutations fail closed; no database or fixture setup is performed.
+- Rollback: revert the visual-smoke target, controller subcommand, wrapper and
+  browser probe. The existing candidate up/health/down carrier remains intact.

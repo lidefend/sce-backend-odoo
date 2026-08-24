@@ -200,12 +200,40 @@ def health(root: Path = ROOT) -> None:
     print(f"[local.dev.candidate.frontend] PASS healthy url=http://127.0.0.1:{PORT} sha={head}")
 
 
+def visual_smoke(root: Path = ROOT) -> None:
+    _branch, head = _candidate_identity(root)
+    authority = resolve_authority_env(root)
+    _validate_process(root, head, PIDFILE)
+    if not _health():
+        raise CandidateFrontendError("candidate static service is not healthy")
+    routes = os.environ.get("CANDIDATE_VISUAL_ROUTES_JSON", "")
+    if not routes:
+        raise CandidateFrontendError("CANDIDATE_VISUAL_ROUTES_JSON is required")
+    environment = _isolated_environment()
+    environment.update(
+        ENV_FILE=str(authority),
+        ROOT_DIR=str(root),
+        FRONTEND_URL=f"http://127.0.0.1:{PORT}",
+        CANDIDATE_GIT_HEAD=head,
+        CANDIDATE_VISUAL_ROUTES_JSON=routes,
+    )
+    result = subprocess.run(
+        ["bash", str(root / "scripts/verify/local_dev_candidate_visual_smoke.sh")],
+        cwd=root,
+        env=environment,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise CandidateFrontendError("candidate visual smoke failed")
+
+
 def main() -> int:
-    if len(sys.argv) != 2 or sys.argv[1] not in {"up", "down", "health"}:
-        print("usage: local_dev_candidate_frontend.py {up|down|health}", file=sys.stderr)
+    if len(sys.argv) != 2 or sys.argv[1] not in {"up", "down", "health", "visual-smoke"}:
+        print("usage: local_dev_candidate_frontend.py {up|down|health|visual-smoke}", file=sys.stderr)
         return 2
     try:
-        {"up": up, "down": down, "health": health}[sys.argv[1]]()
+        {"up": up, "down": down, "health": health, "visual-smoke": visual_smoke}[sys.argv[1]]()
         return 0
     except (CandidateFrontendError, LocalDevAuthorityError, subprocess.CalledProcessError) as exc:
         print(f"[local.dev.candidate.frontend] DENY {exc}", file=sys.stderr)
