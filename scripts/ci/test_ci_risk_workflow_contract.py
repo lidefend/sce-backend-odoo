@@ -64,6 +64,17 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("pnpm -C frontend install", text)
         self.assertIn("make test.unit test.contract test.e2e.preflight", text)
         self.assertIn("make verify.product.release.version", text)
+        fast_section = text.split("- name: Run Fast lightweight quality gate", 1)[1].split(
+            "- name: Run standard frontend quality gate", 1
+        )[0]
+        self.assertIn("if: env.PROFESSIONAL_MODE == 'fast'", fast_section)
+        self.assertNotIn("verify.contract.lint", fast_section)
+        self.assertNotIn("verify.guard.registry", fast_section)
+        standard_frontend_section = text.split(
+            "- name: Run standard frontend quality gate", 1
+        )[1].split("- name: Clean isolated runner state", 1)[0]
+        self.assertIn("if: env.PROFESSIONAL_MODE == 'standard_frontend'", standard_frontend_section)
+        self.assertIn("make verify.contract.lint verify.guard.registry", standard_frontend_section)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
 
