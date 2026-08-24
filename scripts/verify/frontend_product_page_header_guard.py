@@ -15,6 +15,7 @@ def validate() -> list[str]:
     required_component = [
         "data-product-page-header", "data-presentation-mode", "data-render-profile",
         "data-dirty-state", "data-header-variant", "data-workspace-action-bar",
+        ":class=\"{ 'sc-visually-hidden': hideTitle }\"",
     ]
     required_model = [
         "title", "subtitle", "breadcrumb", "presentationMode", "renderProfile", "dirtyState",
@@ -53,6 +54,15 @@ def validate() -> list[str]:
     for marker in ('showProductActions && !actionsInHeader', 'visibleActions.length && !actionsInHeader'):
         if marker not in driver:
             failures.append(f"DriverHost still owns a parallel action bar: {marker}")
+    nested_heading_paths = (
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/packages/ui/src/components/SceneHierarchySurface.vue",
+        "frontend/packages/ui/src/components/SceneCollectionSurface.vue",
+        "frontend/packages/ui/src/components/SceneObjectPage.vue",
+    )
+    for nested in nested_heading_paths:
+        if "<h1" in source(nested):
+            failures.append(f"nested renderer competes with ProductPageHeader h1: {nested}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")
     for page_route in ("'action'", "'record'", "'model-form'", "'not-found'"):
         compact_section = app_shell.split("const compactRouteKeepsHeadline", 1)[1].split(");", 1)[0]

@@ -14,7 +14,7 @@
       <nav v-if="model.breadcrumb.length" class="product-page-header__breadcrumb" aria-label="页面路径">
         <span v-for="(item, index) in model.breadcrumb" :key="`${item}-${index}`">{{ item }}</span>
       </nav>
-      <h1 v-if="!hideTitle">{{ model.title }}</h1>
+      <h1 :class="{ 'sc-visually-hidden': hideTitle }">{{ model.title }}</h1>
       <p v-if="!hideTitle && model.subtitle" class="product-page-header__subtitle">{{ model.subtitle }}</p>
       <slot name="meta" />
     </div>
