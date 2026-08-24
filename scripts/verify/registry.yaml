@@ -354,6 +354,12 @@ entries:
   date: '2026-08-06'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_design_token_system.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-24'
+  review_by: '2026-09-30'
+  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_dev_acceptance_release_identity.py
   status: orphan
   owner: platform-team
