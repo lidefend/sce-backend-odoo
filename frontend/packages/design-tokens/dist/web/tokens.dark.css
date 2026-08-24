@@ -130,6 +130,7 @@
   --sc-component-panel-padding: 16;
   --sc-component-panel-radius: 8px;
   --sc-component-shell-navigation-item-height: 44;
+  --sc-component-shell-navigation-search-icon-z-index: 1;
   --sc-component-shell-page-gutter: 24;
   --sc-component-shell-sidebar-collapsed-width: 56;
   --sc-component-shell-sidebar-width: 248;

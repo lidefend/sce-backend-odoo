@@ -96,7 +96,7 @@ workflow:
       excludes: [navigation_behavior, page_header_refactor, primitive_adapter, contract_v2, business_layout]
     phase_2:
       name: primitive_adapter_v1
-      status: next
+      status: merged
       branch_pattern: feature/p0-ui-primitive-adapter-v1
       objective: establish_project_owned_stable_primitive_api
       initial_components: [ScButton, ScInput, ScSelect, ScDialog, ScDrawer, ScTabs, ScTable, ScBadge, ScTooltip, ScDropdown, ScFormField, ScLoading, ScEmptyState, ScErrorState]
@@ -104,7 +104,7 @@ workflow:
       acceptance: [positive_and_negative_component_tests, v_model_and_event_contract, dialog_drawer_escape_and_focus, bundle_size_comparison]
     phase_3:
       name: navigation_shell_v1
-      status: planned
+      status: verification_pending
       branch_pattern: feature/p0-product-navigation-shell-v1
       objective: establish_one_canonical_navigation_model_and_product_shell
       authority_split:
@@ -193,7 +193,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_2
-    task: primitive_adapter_api_and_existing_component_gap_audit
-    prerequisite: phase_1_merged_and_main_synced
-    do_not_start_in_parallel: [phase_3, phase_4, phase_6, phase_7]
+    phase: phase_3
+    task: navigation_shell_candidate_gate_and_independent_review
+    prerequisite: phase_2_merged_and_main_synced
+    do_not_start_in_parallel: [phase_4, phase_5, phase_6, phase_7]

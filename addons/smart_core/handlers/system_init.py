@@ -2343,6 +2343,11 @@ class SystemInitHandler(BaseIntentHandler):
             _final_route_authority.get("principal_scope") or {}
         )
         _final_route_authority["principal_scope"]["company_id"] = _route_company_id
+        _final_navigation = delivery_engine.menu_service.project_canonical_navigation(
+            _final_navigation,
+            _final_route_authority,
+        )
+        data["nav"] = _final_navigation
         _navigation_meta = dict(delivery_payload.get("meta") or {})
         _navigation_meta.update({
             "product_key": str(delivery_payload.get("product_key") or ""),

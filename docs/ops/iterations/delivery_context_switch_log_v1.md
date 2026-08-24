@@ -5750,3 +5750,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Contract, route, permission, runtime, database or fixture change.
 - Rollback: revert the workflow router and program file. Delivered Phase 0/1
   product commits and runtime state are unaffected.
+
+## Frontend system professionalization — Phase 3 Navigation Shell (2026-08-25)
+
+- Branch / baseline: `feature/p0-product-navigation-shell-v1` /
+  `038e97684b6944b3683e61f742bd713e4d82997f`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  canonical navigation authority and unique product shell /
+  `addons/smart_core` and `frontend/apps/web`.
+- Authority split: the authenticated backend response owns visibility, parent
+  chain, exact action/menu pairing, disabled reason, sibling order and
+  hierarchy. The frontend validates that carrier against route authority and
+  owns only selection, expansion preference, responsive Drawer and focus.
+- Product boundary: no business model, action, menu, role or label branch was
+  added to production code. Contract form presentation, Page Header, page
+  patterns, component registry and database fixtures remain out of scope.
+- Runtime evidence: the governed candidate carrier proved the real
+  `sc_test_admin` system-init tree, three-level project navigation, exact
+  `menu_id=679/action_id=859`, direct deep-link restoration, one active leaf,
+  non-active group collapse persistence, browser back/forward, 390px modal
+  Drawer Escape/focus restoration, zero browser errors and zero mutations.
+- Fail-closed repair: a real synthetic directory uses a generated tree id but
+  a formal `config_menu_id`. Both producer and consumer now resolve the formal
+  menu carrier consistently; a mismatched or missing carrier remains rejected.
+- Rollback: revert the Phase 3 merge commit. The prior session navigation tree
+  and shell components are restored; no data migration or database repair is
+  required.
