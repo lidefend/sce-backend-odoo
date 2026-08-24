@@ -178,34 +178,27 @@
         <div class="topbar-main">
           <p v-if="!useMinimalTopbar" class="eyebrow">{{ config.appBrand.name }}</p>
           <div class="topbar-title-row">
-            <div class="breadcrumb">
-              <button
-                v-for="(item, index) in displayBreadcrumb"
-                :key="`${item.label}-${index}`"
-                class="crumb"
-                :class="{ active: index === displayBreadcrumb.length - 1 }"
-                :disabled="!item.to"
-                :aria-current="index === displayBreadcrumb.length - 1 ? 'page' : undefined"
-                @click="item.to && router.push(item.to)"
-              >
-                {{ item.label }}
-              </button>
-            </div>
+            <NavigationBreadcrumb
+              :items="displayBreadcrumb"
+              :minimal="useMinimalTopbar"
+              :compact="activeLayout.header === 'compact'"
+              @navigate="router.push"
+            />
             <h1 v-if="showTopbarHeadline" class="headline">{{ pageTitle }}</h1>
           </div>
           <p v-if="!useMinimalTopbar && topbarSubtitle" class="headline-subtitle">{{ topbarSubtitle }}</p>
         </div>
         <div class="topbar-actions">
-          <div v-if="showRecordContext && (mobileViewport || sidebarHidden)" class="topbar-scope" :aria-label="`当前公司和${recordContextSubject}`">
-            <button type="button" :title="`切换公司：${currentCompanyLabel || '全部公司'}`" :aria-label="`切换公司：${currentCompanyLabel || '全部公司'}`" @click="openWorkspacePanel('company')">
-              <ScIcon name="building" :size="16" />
-              <span class="topbar-scope-label">{{ currentCompanyLabel || '全部公司' }}</span>
-            </button>
-            <button type="button" :title="`${switchRecordContextLabel}：${currentRecordContextLabel}`" :aria-label="`${switchRecordContextLabel}：${currentRecordContextLabel}`" @click="openWorkspacePanel('record')">
-              <ScIcon :name="recordContextIcon" :size="16" />
-              <span class="topbar-scope-label">{{ currentRecordContextLabel }}</span>
-            </button>
-          </div>
+          <WorkspaceContextIndicator
+            v-if="showRecordContext && (mobileViewport || sidebarHidden)"
+            :company-label="currentCompanyLabel || '全部公司'"
+            :record-subject="recordContextSubject"
+            :record-label="currentRecordContextLabel"
+            :record-action-label="switchRecordContextLabel"
+            :record-icon="recordContextIcon"
+            @company="openWorkspacePanel('company')"
+            @record="openWorkspacePanel('record')"
+          />
           <div class="topbar-account" @click.stop>
             <button
               ref="roleContextTrigger"
@@ -346,6 +339,8 @@ import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import ProductSideNavigation from '../components/product-shell/ProductSideNavigation.vue';
 import ProductAppShell from '../components/product-shell/ProductAppShell.vue';
 import ProductMobileNavigationDrawer from '../components/product-shell/ProductMobileNavigationDrawer.vue';
+import NavigationBreadcrumb from '../components/product-shell/NavigationBreadcrumb.vue';
+import WorkspaceContextIndicator from '../components/product-shell/WorkspaceContextIndicator.vue';
 import ProductIdentity from '../components/product-shell/ProductIdentity.vue';
 import ActivityPageTabs from '../components/product-shell/ActivityPageTabs.vue';
 import StatusPanel from '../components/StatusPanel.vue';
