@@ -41,8 +41,7 @@ async function login(page) {
   if (DB_NAME && await inputs.nth(2).isEditable()) await inputs.nth(2).fill(DB_NAME);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
-  await page.locator('[data-navigation-state="ready"] [data-semantic-component="ProductSideNavigation"]')
-    .waitFor({ state: 'attached', timeout: 45000 });
+  await page.locator('[data-semantic-component="ProductAppShell"]').waitFor({ state: 'visible', timeout: 45000 });
 }
 
 function canonicalNode(page, menuId, actionId) {
@@ -66,6 +65,8 @@ async function desktopJourney(browser, report) {
   const page = await context.newPage();
   observe(page, report);
   await login(page);
+  await page.locator('[data-navigation-state="ready"] [data-semantic-component="ProductSideNavigation"]')
+    .waitFor({ state: 'visible', timeout: 45000 });
 
   const projectGroup = await expandNode(page, '项目中心');
   await expandNode(page, '项目创建');
