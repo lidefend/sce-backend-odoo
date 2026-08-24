@@ -1,0 +1,612 @@
+{
+  "baselineScope": "repository formal-product declarative baseline",
+  "candidateRegistryOrRendererFiles": [
+    "frontend/apps/web/src/app/contracts/unifiedPageContractLiteTerminalRenderer.ts",
+    "frontend/apps/web/src/app/contracts/unifiedPageContractLiteTerminalRendererInput.ts",
+    "frontend/apps/web/src/app/renderers/actionSurfaceRendererRegistry.ts",
+    "frontend/apps/web/src/app/runtime/relationRendererDataRuntime.ts",
+    "frontend/apps/web/src/components/action/ActionSurfaceRendererHost.vue",
+    "frontend/apps/web/src/components/action/SceneReadonlyCollectionRenderer.vue",
+    "frontend/apps/web/src/components/action/actionSurfaceRendererComponents.ts",
+    "frontend/apps/web/src/components/page/BlockRenderer.vue",
+    "frontend/apps/web/src/components/page/PageRenderer.vue",
+    "frontend/apps/web/src/components/page/ZoneRenderer.vue",
+    "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
+    "frontend/apps/web/src/components/view/ViewGroupRenderer.vue",
+    "frontend/apps/web/src/components/view/ViewLayoutRenderer.vue",
+    "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue",
+    "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue",
+    "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts"
+  ],
+  "componentKeyUseSites": [],
+  "coveragePolicy": {
+    "currentState": "Source presence is inventoried only. Phase 0 has no formal registry or test authority for readiness, capability, fallback, or supported-mode assertions.",
+    "futureRequirement": "Phase 6 registry must declare key, semantic type, supported field types, presentation modes, render profiles, capability requirements, renderer, fallback, and readiness.",
+    "noSilentFallback": true
+  },
+  "declaredComponents": [
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScActionBar",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScActionBar.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScAuditTrail",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScAuditTrail.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScButton",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScDataTable",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScDataTable.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScDateField",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScDateField.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScDialog",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScDialog.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScDrawer",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScDrawer.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScEmptyState",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScEmptyState.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScErrorState",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScErrorState.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScErrorSummary",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScErrorSummary.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScField",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScField.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScFileField",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScFileField.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScIcon",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScIcon.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScIconButton",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScLinkButton",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScLinkButton.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScMobileRecordCard",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScMobileRecordCard.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScMoney",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScMoney.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScPage",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScPage.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScPageHeader",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScPageHeader.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScPanel",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScPanel.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScRelationField",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScRelationField.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScRelationshipFlow",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScRelationshipFlow.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScSection",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScSection.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScSelect",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScSelect.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScStatusBadge",
+      "evidence": {
+        "formalRegistryAbsent": true,
+        "sourcePresentOnly": true
+      },
+      "fallback": "not_declared",
+      "semanticType": "not_declared",
+      "sourceFiles": [
+        "frontend/apps/web/src/components/design-system/ScStatusBadge.vue"
+      ],
+      "sourcePresent": true,
+      "supportedFieldTypes": "not_declared",
+      "supportedPresentationModes": "not_declared",
+      "supportedRenderProfiles": "not_declared"
+    }
+  ],
+  "excludedScopes": [
+    "demo_addons",
+    "external customer_addons",
+    "runtime installed-module state",
+    "user-specific visibility"
+  ],
+  "generatedFromDirtyWorktree": false,
+  "generatorDigest": "71dc9437a14b608f0e3e5a19330ed9002af185761e7ca697703ea341f341d4b1",
+  "inputDigest": "93649de63c5057cdbf33a3d1ff0d21b8bc94dffbe17d57f91bb0d73e31d0c8c7",
+  "inputScopes": [
+    {
+      "path": "frontend/apps/web/src",
+      "scope": "component_and_renderer_candidate_source"
+    }
+  ],
+  "kind": "component_coverage_inventory",
+  "phase2PrimitiveGaps": [
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScInput",
+      "reason": "No exact Sc* source file exists; an adapter or alias remains a Phase 2 decision, not a current capability assertion.",
+      "sourcePresent": false
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScTabs",
+      "reason": "No exact Sc* source file exists; an adapter or alias remains a Phase 2 decision, not a current capability assertion.",
+      "sourcePresent": false
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScTable",
+      "reason": "No exact Sc* source file exists; an adapter or alias remains a Phase 2 decision, not a current capability assertion.",
+      "sourcePresent": false
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScBadge",
+      "reason": "No exact Sc* source file exists; an adapter or alias remains a Phase 2 decision, not a current capability assertion.",
+      "sourcePresent": false
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScTooltip",
+      "reason": "No exact Sc* source file exists; an adapter or alias remains a Phase 2 decision, not a current capability assertion.",
+      "sourcePresent": false
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScDropdown",
+      "reason": "No exact Sc* source file exists; an adapter or alias remains a Phase 2 decision, not a current capability assertion.",
+      "sourcePresent": false
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScFormField",
+      "reason": "No exact Sc* source file exists; an adapter or alias remains a Phase 2 decision, not a current capability assertion.",
+      "sourcePresent": false
+    },
+    {
+      "assessmentStatus": "unassessed",
+      "componentKey": "ScLoading",
+      "reason": "No exact Sc* source file exists; an adapter or alias remains a Phase 2 decision, not a current capability assertion.",
+      "sourcePresent": false
+    }
+  ],
+  "phase2TargetPrimitives": [
+    {
+      "componentKey": "ScButton",
+      "currentExactSourcePresent": true,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScInput",
+      "currentExactSourcePresent": false,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScSelect",
+      "currentExactSourcePresent": true,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScDialog",
+      "currentExactSourcePresent": true,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScDrawer",
+      "currentExactSourcePresent": true,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScTabs",
+      "currentExactSourcePresent": false,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScTable",
+      "currentExactSourcePresent": false,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScBadge",
+      "currentExactSourcePresent": false,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScTooltip",
+      "currentExactSourcePresent": false,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScDropdown",
+      "currentExactSourcePresent": false,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScFormField",
+      "currentExactSourcePresent": false,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScLoading",
+      "currentExactSourcePresent": false,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScEmptyState",
+      "currentExactSourcePresent": true,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    },
+    {
+      "componentKey": "ScErrorState",
+      "currentExactSourcePresent": true,
+      "notCurrentCapability": true,
+      "targetState": "planned_phase_2_adapter_api"
+    }
+  ],
+  "schemaVersion": "1.0",
+  "sourceCommit": "1068da05ea9b198f97bbf06b49b7361fabbd9e4f"
+}

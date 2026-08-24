@@ -1,0 +1,4449 @@
+{
+  "baselineScope": "repository formal-product declarative baseline",
+  "classification": {
+    "breakpoints": [
+      {
+        "condition": "max-width: 760px",
+        "count": 14
+      },
+      {
+        "condition": "max-width: 860px",
+        "count": 10
+      },
+      {
+        "condition": "max-width: 900px",
+        "count": 8
+      },
+      {
+        "condition": "max-width: 720px",
+        "count": 7
+      },
+      {
+        "condition": "max-width: 960px",
+        "count": 5
+      },
+      {
+        "condition": "max-width: 640px",
+        "count": 5
+      },
+      {
+        "condition": "max-width: 520px",
+        "count": 5
+      },
+      {
+        "condition": "min-width: 761px",
+        "count": 5
+      },
+      {
+        "condition": "max-width: 768px",
+        "count": 4
+      },
+      {
+        "condition": "max-width: 560px",
+        "count": 3
+      },
+      {
+        "condition": "max-width:600px",
+        "count": 2
+      },
+      {
+        "condition": "max-width: 1200px",
+        "count": 2
+      },
+      {
+        "condition": "min-width: 961px",
+        "count": 2
+      },
+      {
+        "condition": "max-width: 1300px",
+        "count": 2
+      },
+      {
+        "condition": "max-width: 480px",
+        "count": 2
+      },
+      {
+        "condition": "max-width: 1199px",
+        "count": 1
+      },
+      {
+        "condition": "max-width: 1100px",
+        "count": 1
+      },
+      {
+        "condition": "max-width: 800px",
+        "count": 1
+      },
+      {
+        "condition": "max-width:640px",
+        "count": 1
+      },
+      {
+        "condition": "max-width: 600px",
+        "count": 1
+      },
+      {
+        "condition": "max-width:960px",
+        "count": 1
+      },
+      {
+        "condition": "max-width: 680px",
+        "count": 1
+      },
+      {
+        "condition": "min-width: 861px",
+        "count": 1
+      },
+      {
+        "condition": "min-width: 1301px",
+        "count": 1
+      },
+      {
+        "condition": "max-width: 620px",
+        "count": 1
+      },
+      {
+        "condition": "max-width: 1280px",
+        "count": 1
+      },
+      {
+        "condition": "max-width: 920px",
+        "count": 1
+      }
+    ],
+    "componentStyleSurface": [
+      {
+        "score": 74,
+        "source": "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue"
+      },
+      {
+        "score": 53,
+        "source": "frontend/apps/web/src/components/template/FormSection.vue"
+      },
+      {
+        "score": 53,
+        "source": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+      },
+      {
+        "score": 42,
+        "source": "frontend/apps/web/src/components/GlobalMessagePanel.vue"
+      },
+      {
+        "score": 40,
+        "source": "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue"
+      },
+      {
+        "score": 35,
+        "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+      },
+      {
+        "score": 28,
+        "source": "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue"
+      },
+      {
+        "score": 28,
+        "source": "frontend/apps/web/src/components/action/HierarchyPlanner.vue"
+      },
+      {
+        "score": 28,
+        "source": "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue"
+      },
+      {
+        "score": 24,
+        "source": "frontend/apps/web/src/components/action/HierarchyBrowser.vue"
+      },
+      {
+        "score": 24,
+        "source": "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue"
+      },
+      {
+        "score": 22,
+        "source": "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      },
+      {
+        "score": 19,
+        "source": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue"
+      },
+      {
+        "score": 18,
+        "source": "frontend/apps/web/src/components/StatusPanel.vue"
+      },
+      {
+        "score": 16,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue"
+      },
+      {
+        "score": 14,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockAlertPanel.vue"
+      },
+      {
+        "score": 14,
+        "source": "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue"
+      },
+      {
+        "score": 13,
+        "source": "frontend/apps/web/src/components/attachment/AttachmentViewer.vue"
+      },
+      {
+        "score": 13,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue"
+      },
+      {
+        "score": 12,
+        "source": "frontend/apps/web/src/components/GroupSummaryBar.vue"
+      },
+      {
+        "score": 12,
+        "source": "frontend/apps/web/src/components/MenuTree.vue"
+      },
+      {
+        "score": 12,
+        "source": "frontend/apps/web/src/components/page/PageRenderer.vue"
+      },
+      {
+        "score": 12,
+        "source": "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue"
+      },
+      {
+        "score": 11,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockProgressSummary.vue"
+      },
+      {
+        "score": 9,
+        "source": "frontend/apps/web/src/components/DevContextPanel.vue"
+      },
+      {
+        "score": 9,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockActivityFeed.vue"
+      },
+      {
+        "score": 9,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue"
+      },
+      {
+        "score": 9,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue"
+      },
+      {
+        "score": 9,
+        "source": "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
+      },
+      {
+        "score": 7,
+        "source": "frontend/apps/web/src/components/action/HierarchyTreeNode.vue"
+      },
+      {
+        "score": 7,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockAccordionGroup.vue"
+      },
+      {
+        "score": 7,
+        "source": "frontend/apps/web/src/components/template/PageHeader.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/design-system/ScFileField.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/page/BlockRenderer.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/page/ZoneRenderer.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/product-shell/PrimaryNavigation.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/product-shell/ProductIdentity.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/view/ViewFieldRenderer.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/design-system/ScMobileRecordCard.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/design-system/ScPageHeader.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/design-system/ScDialog.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/design-system/ScField.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/page/PageHeader.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/product-record/ProductRecordStatus.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/template/PageFooter.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/FieldValue.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScDrawer.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScEmptyState.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScMoney.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScSection.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/view/ViewGroupRenderer.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/action/ActionSurfaceRendererHost.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/action/SceneReadonlyCollectionRenderer.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScAuditTrail.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScButton.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScDataTable.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScErrorState.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScErrorSummary.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScIcon.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScIconButton.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScPanel.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScRelationshipFlow.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/design-system/ScStatusBadge.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/template/LayoutShell.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/view/ViewLayoutRenderer.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScActionBar.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScDateField.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScLinkButton.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScPage.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScRelationField.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScSelect.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/product-record/ProductFormErrorSummary.vue"
+      }
+    ],
+    "existingScPrefixedVariables": [
+      "--sc-app-accent",
+      "--sc-app-bg",
+      "--sc-app-border",
+      "--sc-app-border-strong",
+      "--sc-app-danger-bg",
+      "--sc-app-danger-border",
+      "--sc-app-danger-text",
+      "--sc-app-focus-ring",
+      "--sc-app-hover-bg",
+      "--sc-app-info-bg",
+      "--sc-app-info-border",
+      "--sc-app-info-text",
+      "--sc-app-input-bg",
+      "--sc-app-muted-bg",
+      "--sc-app-overlay",
+      "--sc-app-panel",
+      "--sc-app-selected-bg",
+      "--sc-app-selected-border",
+      "--sc-app-selected-text",
+      "--sc-app-shadow",
+      "--sc-app-shadow-modal",
+      "--sc-app-shadow-popover",
+      "--sc-app-subtle-bg",
+      "--sc-app-success-bg",
+      "--sc-app-success-border",
+      "--sc-app-success-text",
+      "--sc-app-text-primary",
+      "--sc-app-text-secondary",
+      "--sc-app-warning-bg",
+      "--sc-app-warning-border",
+      "--sc-app-warning-text",
+      "--sc-card-gap",
+      "--sc-card-padding",
+      "--sc-color-border",
+      "--sc-color-border-strong",
+      "--sc-color-focus",
+      "--sc-color-interactive",
+      "--sc-color-surface",
+      "--sc-color-surface-raised",
+      "--sc-color-surface-subtle",
+      "--sc-color-text-muted",
+      "--sc-color-text-primary",
+      "--sc-color-text-secondary",
+      "--sc-content-form-max",
+      "--sc-content-layout-inline-size",
+      "--sc-content-reading-max",
+      "--sc-content-record-max",
+      "--sc-dialog-padding",
+      "--sc-field-column-gap",
+      "--sc-field-row-gap",
+      "--sc-form-command-bar-height",
+      "--sc-form-section-nav-height",
+      "--sc-form-sticky-gap",
+      "--sc-label-control-gap",
+      "--sc-lowcode-panel-gap",
+      "--sc-lowcode-panel-radius",
+      "--sc-lowcode-workspace-gap",
+      "--sc-nav-row-gap",
+      "--sc-navigation-active-bg",
+      "--sc-navigation-bg",
+      "--sc-page-inline-padding",
+      "--sc-page-padding",
+      "--sc-page-padding-compact",
+      "--sc-page-padding-mobile",
+      "--sc-page-padding-wide",
+      "--sc-page-section-gap",
+      "--sc-product-control-height",
+      "--sc-product-line-body",
+      "--sc-product-list-inline-end",
+      "--sc-product-list-inline-start",
+      "--sc-product-list-toolbar-height",
+      "--sc-product-page-gutter",
+      "--sc-product-panel-gap",
+      "--sc-product-panel-radius",
+      "--sc-product-radius-control",
+      "--sc-product-radius-dialog",
+      "--sc-product-radius-panel",
+      "--sc-product-shadow-overlay",
+      "--sc-product-space-1",
+      "--sc-product-space-2",
+      "--sc-product-space-3",
+      "--sc-product-space-4",
+      "--sc-product-table-row-height",
+      "--sc-product-text-body",
+      "--sc-product-text-section",
+      "--sc-product-text-sm",
+      "--sc-product-text-title",
+      "--sc-product-toolbar-height",
+      "--sc-product-workspace-gap",
+      "--sc-product-workspace-stack-gap",
+      "--sc-shell-navigation-item-height",
+      "--sc-shell-page-gutter",
+      "--sc-shell-sidebar-collapsed-width",
+      "--sc-shell-sidebar-width",
+      "--sc-shell-topbar-height",
+      "--sc-space-2xs",
+      "--sc-space-lg",
+      "--sc-space-md",
+      "--sc-space-sm",
+      "--sc-space-xl",
+      "--sc-space-xs",
+      "--sc-surface-padding",
+      "--sc-table-cell-inline-padding",
+      "--sc-table-divider",
+      "--sc-table-header-bg",
+      "--sc-table-header-height",
+      "--sc-table-row-height",
+      "--sc-text-link",
+      "--sc-toolbar-gap",
+      "--sc-toolbar-group-gap",
+      "--sc-touch-target-min",
+      "--sc-workspace-frame-max"
+    ],
+    "hardcodedColorValues": [],
+    "otherVariablesNeedingTaxonomy": [
+      "--accent",
+      "--clickable",
+      "--compact",
+      "--designer-workspace",
+      "--draggable",
+      "--field",
+      "--html",
+      "--ink",
+      "--layout-divider",
+      "--minimal",
+      "--muted",
+      "--order-editable",
+      "--panel",
+      "--readonly",
+      "--readonly-empty-relation",
+      "--selectable",
+      "--smart",
+      "--surface",
+      "--title-hidden"
+    ],
+    "pageWidthValues": [
+      {
+        "count": 268,
+        "value": "0"
+      },
+      {
+        "count": 175,
+        "value": "100%"
+      },
+      {
+        "count": 14,
+        "value": "760px)"
+      },
+      {
+        "count": 12,
+        "value": "1px"
+      },
+      {
+        "count": 12,
+        "value": "auto"
+      },
+      {
+        "count": 11,
+        "value": "44px"
+      },
+      {
+        "count": 10,
+        "value": "20px"
+      },
+      {
+        "count": 10,
+        "value": "220px"
+      },
+      {
+        "count": 10,
+        "value": "860px)"
+      },
+      {
+        "count": 9,
+        "value": "32px"
+      },
+      {
+        "count": 8,
+        "value": "900px)"
+      },
+      {
+        "count": 8,
+        "value": "none"
+      },
+      {
+        "count": 7,
+        "value": "720px)"
+      },
+      {
+        "count": 7,
+        "value": "72px"
+      },
+      {
+        "count": 7,
+        "value": "180px"
+      },
+      {
+        "count": 7,
+        "value": "52px"
+      },
+      {
+        "count": 6,
+        "value": "960px)"
+      },
+      {
+        "count": 6,
+        "value": "640px)"
+      },
+      {
+        "count": 6,
+        "value": "36px"
+      },
+      {
+        "count": 6,
+        "value": "40px"
+      },
+      {
+        "count": 5,
+        "value": "520px)"
+      },
+      {
+        "count": 5,
+        "value": "761px)"
+      },
+      {
+        "count": 5,
+        "value": "thin"
+      },
+      {
+        "count": 4,
+        "value": "30px"
+      },
+      {
+        "count": 4,
+        "value": "240px"
+      },
+      {
+        "count": 4,
+        "value": "96px"
+      },
+      {
+        "count": 4,
+        "value": "22px"
+      },
+      {
+        "count": 4,
+        "value": "120px"
+      },
+      {
+        "count": 4,
+        "value": "768px)"
+      },
+      {
+        "count": 4,
+        "value": "12px"
+      },
+      {
+        "count": 3,
+        "value": "min(520px, 92vw)"
+      },
+      {
+        "count": 3,
+        "value": "`$"
+      },
+      {
+        "count": 3,
+        "value": "560px"
+      },
+      {
+        "count": 3,
+        "value": "600px)"
+      },
+      {
+        "count": 3,
+        "value": "5px"
+      },
+      {
+        "count": 3,
+        "value": "104px"
+      },
+      {
+        "count": 3,
+        "value": "76px"
+      },
+      {
+        "count": 3,
+        "value": "18px"
+      },
+      {
+        "count": 3,
+        "value": "max-content"
+      },
+      {
+        "count": 3,
+        "value": "92px"
+      },
+      {
+        "count": 3,
+        "value": "1%"
+      },
+      {
+        "count": 3,
+        "value": "128px"
+      },
+      {
+        "count": 3,
+        "value": "560px)"
+      },
+      {
+        "count": 3,
+        "value": "34px"
+      },
+      {
+        "count": 3,
+        "value": "42px"
+      },
+      {
+        "count": 2,
+        "value": "300px"
+      },
+      {
+        "count": 2,
+        "value": "100vw"
+      },
+      {
+        "count": 2,
+        "value": "64%"
+      },
+      {
+        "count": 2,
+        "value": "28px"
+      },
+      {
+        "count": 2,
+        "value": "140px"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-space-sm)"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-touch-target-min)"
+      },
+      {
+        "count": 2,
+        "value": "1200px)"
+      },
+      {
+        "count": 2,
+        "value": "190px"
+      },
+      {
+        "count": 2,
+        "value": "54px"
+      },
+      {
+        "count": 2,
+        "value": "42%"
+      },
+      {
+        "count": 2,
+        "value": "46px"
+      },
+      {
+        "count": 2,
+        "value": "961px)"
+      },
+      {
+        "count": 2,
+        "value": "680px)"
+      },
+      {
+        "count": 2,
+        "value": "24px"
+      },
+      {
+        "count": 2,
+        "value": "4px"
+      },
+      {
+        "count": 2,
+        "value": "260px"
+      },
+      {
+        "count": 2,
+        "value": "fit-content"
+      },
+      {
+        "count": 2,
+        "value": "10px"
+      },
+      {
+        "count": 2,
+        "value": "min(240px, 100%)"
+      },
+      {
+        "count": 2,
+        "value": "26px"
+      },
+      {
+        "count": 2,
+        "value": "420px"
+      },
+      {
+        "count": 2,
+        "value": "80px"
+      },
+      {
+        "count": 2,
+        "value": "108px"
+      },
+      {
+        "count": 2,
+        "value": "1300px)"
+      },
+      {
+        "count": 2,
+        "value": "min(460px, 100%)"
+      },
+      {
+        "count": 2,
+        "value": "480px)"
+      },
+      {
+        "count": 1,
+        "value": "min(620px, calc(100vw - 16px))"
+      },
+      {
+        "count": 1,
+        "value": "84%"
+      },
+      {
+        "count": 1,
+        "value": "min(520px, 100%)"
+      },
+      {
+        "count": 1,
+        "value": "82%"
+      },
+      {
+        "count": 1,
+        "value": "min(150px, 38%)"
+      },
+      {
+        "count": 1,
+        "value": "min(680px, calc(100vw - 32px))"
+      },
+      {
+        "count": 1,
+        "value": "calc(100% - 24px)"
+      },
+      {
+        "count": 1,
+        "value": "1199px)"
+      },
+      {
+        "count": 1,
+        "value": "34%"
+      },
+      {
+        "count": 1,
+        "value": "number"
+      },
+      {
+        "count": 1,
+        "value": "2px"
+      },
+      {
+        "count": 1,
+        "value": "1100px)"
+      },
+      {
+        "count": 1,
+        "value": "800px)"
+      },
+      {
+        "count": 1,
+        "value": "column.field === outlineField.value ? 'min(36vw, 520px)' : '150px'"
+      },
+      {
+        "count": 1,
+        "value": "min(420px, 42vw)"
+      },
+      {
+        "count": 1,
+        "value": "min(1040px, 100%)"
+      },
+      {
+        "count": 1,
+        "value": "min(calc(100% - 2 * var(--sc-product-space-2)), 460px)"
+      },
+      {
+        "count": 1,
+        "value": "min(480px, calc(100vw - 32px))"
+      },
+      {
+        "count": 1,
+        "value": "min(100%,560px)"
+      },
+      {
+        "count": 1,
+        "value": "min(90vw,420px)"
+      },
+      {
+        "count": 1,
+        "value": "7px"
+      },
+      {
+        "count": 1,
+        "value": "max(100%, 560px)"
+      },
+      {
+        "count": 1,
+        "value": "210px"
+      },
+      {
+        "count": 1,
+        "value": "100cqw"
+      },
+      {
+        "count": 1,
+        "value": "320px"
+      },
+      {
+        "count": 1,
+        "value": "82px"
+      },
+      {
+        "count": 1,
+        "value": "84px"
+      },
+      {
+        "count": 1,
+        "value": "820px"
+      },
+      {
+        "count": 1,
+        "value": "78%"
+      },
+      {
+        "count": 1,
+        "value": "90%"
+      },
+      {
+        "count": 1,
+        "value": "58%"
+      },
+      {
+        "count": 1,
+        "value": "72%"
+      },
+      {
+        "count": 1,
+        "value": "48%"
+      },
+      {
+        "count": 1,
+        "value": "92%"
+      },
+      {
+        "count": 1,
+        "value": "68%"
+      },
+      {
+        "count": 1,
+        "value": "88px"
+      },
+      {
+        "count": 1,
+        "value": "86px"
+      },
+      {
+        "count": 1,
+        "value": "1240px)"
+      },
+      {
+        "count": 1,
+        "value": "160px"
+      },
+      {
+        "count": 1,
+        "value": "min(280px, 80vw)"
+      },
+      {
+        "count": 1,
+        "value": "116px"
+      },
+      {
+        "count": 1,
+        "value": "min(280px, calc(100vw - 32px))"
+      },
+      {
+        "count": 1,
+        "value": "min(340px, calc(100vw - 44px))"
+      },
+      {
+        "count": 1,
+        "value": "960px)')"
+      },
+      {
+        "count": 1,
+        "value": "60px"
+      },
+      {
+        "count": 1,
+        "value": "clamp(280px, 32vw, 460px)"
+      },
+      {
+        "count": 1,
+        "value": "56px"
+      },
+      {
+        "count": 1,
+        "value": "64px"
+      },
+      {
+        "count": 1,
+        "value": "136px"
+      },
+      {
+        "count": 1,
+        "value": "176px"
+      },
+      {
+        "count": 1,
+        "value": "3px"
+      },
+      {
+        "count": 1,
+        "value": "8px"
+      },
+      {
+        "count": 1,
+        "value": "16px"
+      },
+      {
+        "count": 1,
+        "value": "resolveListColumnBudgetWidth("
+      },
+      {
+        "count": 1,
+        "value": "min(320px, calc(100vw - 24px))"
+      },
+      {
+        "count": 1,
+        "value": "6px"
+      },
+      {
+        "count": 1,
+        "value": "calc(100% + 2px)"
+      },
+      {
+        "count": 1,
+        "value": "calc(100% + 36px)"
+      },
+      {
+        "count": 1,
+        "value": "360px"
+      },
+      {
+        "count": 1,
+        "value": "861px)"
+      },
+      {
+        "count": 1,
+        "value": "78ch"
+      },
+      {
+        "count": 1,
+        "value": "124px"
+      },
+      {
+        "count": 1,
+        "value": "1301px)"
+      },
+      {
+        "count": 1,
+        "value": "68px"
+      },
+      {
+        "count": 1,
+        "value": "38px"
+      },
+      {
+        "count": 1,
+        "value": "min(420px, 100%)"
+      },
+      {
+        "count": 1,
+        "value": "min(1180px, calc(100vw - 2 * var(--sc-product-page-gutter)))"
+      },
+      {
+        "count": 1,
+        "value": "min(920px, 100%)"
+      },
+      {
+        "count": 1,
+        "value": "max(100%, 720px)"
+      },
+      {
+        "count": 1,
+        "value": "720px"
+      },
+      {
+        "count": 1,
+        "value": "calc(100% - 2 * var(--sc-product-page-gutter))"
+      },
+      {
+        "count": 1,
+        "value": "620px)"
+      },
+      {
+        "count": 1,
+        "value": "calc(var(--sc-component-shell-sidebar-width, 248) * 1px)"
+      },
+      {
+        "count": 1,
+        "value": "calc(var(--sc-component-shell-sidebar-collapsed-width, 56) * 1px)"
+      },
+      {
+        "count": 1,
+        "value": "1280px)"
+      },
+      {
+        "count": 1,
+        "value": "min(100%, var(--sc-content-layout-inline-size, 100%))"
+      },
+      {
+        "count": 1,
+        "value": "min(100%, var(--sc-workspace-frame-max))"
+      },
+      {
+        "count": 1,
+        "value": "42vw"
+      },
+      {
+        "count": 1,
+        "value": "1px !important"
+      },
+      {
+        "count": 1,
+        "value": "min(1180px, 100%)"
+      },
+      {
+        "count": 1,
+        "value": "620px"
+      },
+      {
+        "count": 1,
+        "value": "920px)"
+      },
+      {
+        "count": 1,
+        "value": "min(560px, 100%)"
+      },
+      {
+        "count": 1,
+        "value": "760px"
+      },
+      {
+        "count": 1,
+        "value": "min(100%, 220px)"
+      },
+      {
+        "count": 1,
+        "value": "768px"
+      },
+      {
+        "count": 1,
+        "value": "390px"
+      },
+      {
+        "count": 1,
+        "value": "900px"
+      },
+      {
+        "count": 1,
+        "value": "106px"
+      }
+    ],
+    "radiusValues": [
+      {
+        "count": 97,
+        "value": "8px"
+      },
+      {
+        "count": 85,
+        "value": "6px"
+      },
+      {
+        "count": 69,
+        "value": "999px"
+      },
+      {
+        "count": 39,
+        "value": "0"
+      },
+      {
+        "count": 35,
+        "value": "var(--sc-component-panel-radius)"
+      },
+      {
+        "count": 22,
+        "value": "4px"
+      },
+      {
+        "count": 20,
+        "value": "var(--sc-product-radius-control)"
+      },
+      {
+        "count": 18,
+        "value": "12px"
+      },
+      {
+        "count": 18,
+        "value": "10px"
+      },
+      {
+        "count": 15,
+        "value": "var(--sc-product-radius-panel)"
+      },
+      {
+        "count": 14,
+        "value": "5px"
+      },
+      {
+        "count": 10,
+        "value": "var(--sc-component-input-radius)"
+      },
+      {
+        "count": 8,
+        "value": "var(--sc-component-button-radius)"
+      },
+      {
+        "count": 7,
+        "value": "var(--sc-product-panel-radius)"
+      },
+      {
+        "count": 5,
+        "value": "7px"
+      },
+      {
+        "count": 3,
+        "value": "var(--sc-component-dialog-radius)"
+      },
+      {
+        "count": 3,
+        "value": "var(--sc-component-table-radius)"
+      },
+      {
+        "count": 3,
+        "value": "var(--sc-component-toolbar-radius) var(--sc-component-toolbar-radius) 0 0"
+      },
+      {
+        "count": 3,
+        "value": "9px"
+      },
+      {
+        "count": 2,
+        "value": "0 0 var(--sc-component-panel-radius) var(--sc-component-panel-radius)"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-component-tag-radius)"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-radius-md, 8px)"
+      },
+      {
+        "count": 2,
+        "value": "8px 8px 0 0"
+      },
+      {
+        "count": 2,
+        "value": "14px"
+      },
+      {
+        "count": 2,
+        "value": "0 5px 5px 0"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-component-badge-radius)"
+      },
+      {
+        "count": 2,
+        "value": "16px"
+      },
+      {
+        "count": 2,
+        "value": "0 8px 8px 0"
+      },
+      {
+        "count": 1,
+        "value": "10px 10px 0 0"
+      },
+      {
+        "count": 1,
+        "value": "0 999px 999px 0"
+      },
+      {
+        "count": 1,
+        "value": "9px 9px 0 0"
+      },
+      {
+        "count": 1,
+        "value": "2px"
+      },
+      {
+        "count": 1,
+        "value": "0 0 var(--sc-product-radius-panel) var(--sc-product-radius-panel)"
+      },
+      {
+        "count": 1,
+        "value": "999px 999px 0 0"
+      },
+      {
+        "count": 1,
+        "value": "18px"
+      },
+      {
+        "count": 1,
+        "value": "3px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-product-panel-radius) var(--sc-product-panel-radius) 0 0"
+      },
+      {
+        "count": 1,
+        "value": "6px 0 0 6px"
+      },
+      {
+        "count": 1,
+        "value": "0 6px 6px 0"
+      },
+      {
+        "count": 1,
+        "value": "4px 0 0 4px"
+      },
+      {
+        "count": 1,
+        "value": "0 4px 4px 0"
+      },
+      {
+        "count": 1,
+        "value": "5px 0 0 5px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-component-toolbar-radius)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-component-control-radius)"
+      },
+      {
+        "count": 1,
+        "value": "50%"
+      },
+      {
+        "count": 1,
+        "value": "8px 0 0 8px"
+      }
+    ],
+    "shadowValues": [
+      {
+        "count": 36,
+        "value": "none"
+      },
+      {
+        "count": 12,
+        "value": "var(--sc-app-shadow)"
+      },
+      {
+        "count": 11,
+        "value": "0 0 0 3px var(--sc-app-focus-ring)"
+      },
+      {
+        "count": 7,
+        "value": "var(--sc-semantic-shadow-modal)"
+      },
+      {
+        "count": 6,
+        "value": "var(--sc-app-shadow-popover)"
+      },
+      {
+        "count": 5,
+        "value": "var(--sc-product-shadow-overlay)"
+      },
+      {
+        "count": 4,
+        "value": "inset 3px 0 0 var(--sc-app-accent)"
+      },
+      {
+        "count": 3,
+        "value": "inset 3px 0 0 var(--sc-semantic-surface-interactive)"
+      },
+      {
+        "count": 3,
+        "value": "inset 0 0 0 1px var(--sc-semantic-border-subtle)"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-app-shadow-modal)"
+      },
+      {
+        "count": 2,
+        "value": "0 16px 30px var(--sc-app-shadow)"
+      },
+      {
+        "count": 2,
+        "value": "inset 0 -2px 0 var(--sc-semantic-surface-interactive)"
+      },
+      {
+        "count": 2,
+        "value": "0 12px 28px var(--sc-app-shadow)"
+      },
+      {
+        "count": 2,
+        "value": "0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 38%, transparent)"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-semantic-shadow-popover)"
+      },
+      {
+        "count": 2,
+        "value": "0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 36%, transparent)"
+      },
+      {
+        "count": 2,
+        "value": "8px 0 10px -10px var(--sc-app-shadow)"
+      },
+      {
+        "count": 2,
+        "value": "inset 0 0 0 1px var(--sc-semantic-surface-interactive)"
+      },
+      {
+        "count": 2,
+        "value": "0 0 0 1px var(--sc-app-border)"
+      },
+      {
+        "count": 1,
+        "value": "0 16px 36px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-app-shadow-md)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-app-shadow-lg)"
+      },
+      {
+        "count": 1,
+        "value": "0 1px 2px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "0 10px 24px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "0 18px 36px var(--sc-app-focus-ring)"
+      },
+      {
+        "count": 1,
+        "value": "0 10px 20px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "0 14px 28px var(--sc-app-focus-ring)"
+      },
+      {
+        "count": 1,
+        "value": "0 10px 20px var(--sc-app-focus-ring)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 6%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 3px 0 var(--sc-semantic-surface-interactive)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 -3px 0 var(--sc-semantic-surface-interactive)"
+      },
+      {
+        "count": 1,
+        "value": "0 2px 8px color-mix(in srgb, var(--sc-app-shadow) 8%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 3px 0 var(--sc-app-border)"
+      },
+      {
+        "count": 1,
+        "value": "8px 0 28px color-mix(in srgb, var(--sc-app-shadow) 12%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "inset 3px 0 0 var(--sc-app-accent), 0 3px 10px color-mix(in srgb, var(--sc-app-shadow) 14%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "0 4px 12px color-mix(in srgb, var(--sc-app-accent) 28%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "0 4px 16px color-mix(in srgb, var(--sc-app-shadow) 10%, transparent), inset 0 3px 0 var(--sc-app-border)"
+      },
+      {
+        "count": 1,
+        "value": "0 -3px 12px color-mix(in srgb, var(--sc-app-shadow) 12%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "0 20px 34px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 0 0 2px var(--sc-app-info-text)"
+      },
+      {
+        "count": 1,
+        "value": "0 8px 24px color-mix(in srgb, var(--sc-app-shadow) 14%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "0 10px 30px color-mix(in srgb, var(--sc-app-shadow) 16%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 0 0 1px var(--sc-app-border)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 0 0 1px var(--sc-semantic-surface-interactive), 0 2px 8px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "0 18px 50px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "0 4px 12px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "0 10px 22px var(--sc-app-focus-ring)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 2px 0 var(--sc-app-accent)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 -2px 0 var(--sc-app-accent)"
+      },
+      {
+        "count": 1,
+        "value": "inset 3px 0 0 var(--sc-app-warning-text)"
+      },
+      {
+        "count": 1,
+        "value": "inset 0 2px 0 var(--sc-semantic-surface-interactive)"
+      }
+    ],
+    "spacingValues": [
+      {
+        "count": 277,
+        "value": "0"
+      },
+      {
+        "count": 165,
+        "value": "8px"
+      },
+      {
+        "count": 127,
+        "value": "12px"
+      },
+      {
+        "count": 124,
+        "value": "6px"
+      },
+      {
+        "count": 112,
+        "value": "10px"
+      },
+      {
+        "count": 62,
+        "value": "4px"
+      },
+      {
+        "count": 45,
+        "value": "16px"
+      },
+      {
+        "count": 36,
+        "value": "8px 10px"
+      },
+      {
+        "count": 29,
+        "value": "10px 12px"
+      },
+      {
+        "count": 27,
+        "value": "14px"
+      },
+      {
+        "count": 26,
+        "value": "var(--sc-product-space-2)"
+      },
+      {
+        "count": 25,
+        "value": "4px 8px"
+      },
+      {
+        "count": 23,
+        "value": "var(--sc-space-xs)"
+      },
+      {
+        "count": 20,
+        "value": "0 8px"
+      },
+      {
+        "count": 19,
+        "value": "2px"
+      },
+      {
+        "count": 17,
+        "value": "0 10px"
+      },
+      {
+        "count": 15,
+        "value": "5px"
+      },
+      {
+        "count": 14,
+        "value": "4px 0 0"
+      },
+      {
+        "count": 14,
+        "value": "18px"
+      },
+      {
+        "count": 14,
+        "value": "2px 0 0"
+      },
+      {
+        "count": 13,
+        "value": "var(--sc-space-sm)"
+      },
+      {
+        "count": 13,
+        "value": "var(--sc-toolbar-gap)"
+      },
+      {
+        "count": 13,
+        "value": "6px 0 0"
+      },
+      {
+        "count": 13,
+        "value": "6px 10px"
+      },
+      {
+        "count": 12,
+        "value": "3px 8px"
+      },
+      {
+        "count": 11,
+        "value": "var(--sc-product-space-3)"
+      },
+      {
+        "count": 11,
+        "value": "var(--sc-product-workspace-stack-gap)"
+      },
+      {
+        "count": 10,
+        "value": "8px 12px"
+      },
+      {
+        "count": 10,
+        "value": "8px 0 0"
+      },
+      {
+        "count": 10,
+        "value": "var(--sc-product-space-1)"
+      },
+      {
+        "count": 10,
+        "value": "3px"
+      },
+      {
+        "count": 10,
+        "value": "var(--sc-product-workspace-gap)"
+      },
+      {
+        "count": 9,
+        "value": "var(--sc-space-2xs)"
+      },
+      {
+        "count": 9,
+        "value": "0 var(--sc-space-sm)"
+      },
+      {
+        "count": 9,
+        "value": "var(--sc-space-xs) var(--sc-space-sm)"
+      },
+      {
+        "count": 8,
+        "value": "0 0 8px"
+      },
+      {
+        "count": 8,
+        "value": "4px 10px"
+      },
+      {
+        "count": 8,
+        "value": "2px 8px"
+      },
+      {
+        "count": 8,
+        "value": "24px"
+      },
+      {
+        "count": 8,
+        "value": "var(--sc-toolbar-group-gap)"
+      },
+      {
+        "count": 8,
+        "value": "12px 14px"
+      },
+      {
+        "count": 8,
+        "value": "20px"
+      },
+      {
+        "count": 8,
+        "value": "var(--sc-space-3, 12px)"
+      },
+      {
+        "count": 8,
+        "value": "12px 16px"
+      },
+      {
+        "count": 7,
+        "value": "0 0 10px"
+      },
+      {
+        "count": 7,
+        "value": "var(--sc-space-xs) var(--sc-surface-padding)"
+      },
+      {
+        "count": 7,
+        "value": "0 12px"
+      },
+      {
+        "count": 7,
+        "value": "6px 12px"
+      },
+      {
+        "count": 7,
+        "value": "0 9px"
+      },
+      {
+        "count": 6,
+        "value": "7px 12px"
+      },
+      {
+        "count": 6,
+        "value": "6px 8px"
+      },
+      {
+        "count": 6,
+        "value": "var(--sc-space-md)"
+      },
+      {
+        "count": 6,
+        "value": "10px 14px"
+      },
+      {
+        "count": 5,
+        "value": "7px"
+      },
+      {
+        "count": 5,
+        "value": "1px"
+      },
+      {
+        "count": 5,
+        "value": "var(--sc-surface-padding)"
+      },
+      {
+        "count": 5,
+        "value": "0 2px"
+      },
+      {
+        "count": 5,
+        "value": "5px 8px"
+      },
+      {
+        "count": 5,
+        "value": "0 6px"
+      },
+      {
+        "count": 5,
+        "value": "var(--sc-product-panel-gap)"
+      },
+      {
+        "count": 4,
+        "value": "14px 16px"
+      },
+      {
+        "count": 4,
+        "value": "0 var(--sc-space-xs)"
+      },
+      {
+        "count": 4,
+        "value": "0 0 6px"
+      },
+      {
+        "count": 4,
+        "value": "var(--sc-field-row-gap)"
+      },
+      {
+        "count": 4,
+        "value": "2px 0"
+      },
+      {
+        "count": 4,
+        "value": "10px 0 0"
+      },
+      {
+        "count": 4,
+        "value": "5px 11px"
+      },
+      {
+        "count": 4,
+        "value": "12px 0 0"
+      },
+      {
+        "count": 4,
+        "value": "0 0 4px"
+      },
+      {
+        "count": 3,
+        "value": "7px 8px"
+      },
+      {
+        "count": 3,
+        "value": "5px 9px"
+      },
+      {
+        "count": 3,
+        "value": "var(--sc-space-2xs) var(--sc-space-xs)"
+      },
+      {
+        "count": 3,
+        "value": "calc(var(--sc-component-panel-padding) * 1px)"
+      },
+      {
+        "count": 3,
+        "value": "22px"
+      },
+      {
+        "count": 3,
+        "value": "1px 6px"
+      },
+      {
+        "count": 3,
+        "value": "var(--sc-space-2, 8px)"
+      },
+      {
+        "count": 3,
+        "value": "7px 10px"
+      },
+      {
+        "count": 3,
+        "value": "4px 9px"
+      },
+      {
+        "count": 3,
+        "value": "3px 7px"
+      },
+      {
+        "count": 3,
+        "value": "0 0 12px"
+      },
+      {
+        "count": 3,
+        "value": "28px"
+      },
+      {
+        "count": 2,
+        "value": "6px 0"
+      },
+      {
+        "count": 2,
+        "value": "2px 4px"
+      },
+      {
+        "count": 2,
+        "value": "2px 6px"
+      },
+      {
+        "count": 2,
+        "value": "0 0 var(--sc-space-xs)"
+      },
+      {
+        "count": 2,
+        "value": "calc(var(--sc-component-table-cell-padding-y) * 1px) calc(var(--sc-component-table-cell-padding-x) * 1px)"
+      },
+      {
+        "count": 2,
+        "value": "0 0 var(--sc-product-space-1)"
+      },
+      {
+        "count": 2,
+        "value": "3px 0 0"
+      },
+      {
+        "count": 2,
+        "value": "16px 20px"
+      },
+      {
+        "count": 2,
+        "value": "5px 10px"
+      },
+      {
+        "count": 2,
+        "value": "0 16px"
+      },
+      {
+        "count": 2,
+        "value": "9px"
+      },
+      {
+        "count": 2,
+        "value": "0 4px"
+      },
+      {
+        "count": 2,
+        "value": "0 var(--sc-space-3, 12px)"
+      },
+      {
+        "count": 2,
+        "value": "-1px"
+      },
+      {
+        "count": 2,
+        "value": "1px 2px 6px"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-space-4, 16px)"
+      },
+      {
+        "count": 2,
+        "value": "-6px"
+      },
+      {
+        "count": 2,
+        "value": "0 5px"
+      },
+      {
+        "count": 2,
+        "value": "10px 0"
+      },
+      {
+        "count": 2,
+        "value": "1px 0"
+      },
+      {
+        "count": 2,
+        "value": "4px 0"
+      },
+      {
+        "count": 2,
+        "value": "8px 14px"
+      },
+      {
+        "count": 2,
+        "value": "9px 10px"
+      },
+      {
+        "count": 2,
+        "value": "3px 0"
+      },
+      {
+        "count": 2,
+        "value": "1px 5px"
+      },
+      {
+        "count": 2,
+        "value": "0 var(--sc-page-inline-padding)"
+      },
+      {
+        "count": 2,
+        "value": "14px 16px 16px"
+      },
+      {
+        "count": 2,
+        "value": "2px 10px"
+      },
+      {
+        "count": 2,
+        "value": "0 0 18px"
+      },
+      {
+        "count": 2,
+        "value": "0 0 0 -1px"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-space-lg)"
+      },
+      {
+        "count": 2,
+        "value": "calc(var(--sc-component-badge-padding-y) * 1px) calc(var(--sc-component-badge-padding-x) * 1px)"
+      },
+      {
+        "count": 2,
+        "value": "32px"
+      },
+      {
+        "count": 2,
+        "value": "14px 18px"
+      },
+      {
+        "count": 1,
+        "value": "8px 9px 8px 8px"
+      },
+      {
+        "count": 1,
+        "value": "20px 0 0"
+      },
+      {
+        "count": 1,
+        "value": "1px 0 3px"
+      },
+      {
+        "count": 1,
+        "value": "0 6px 0 8px"
+      },
+      {
+        "count": 1,
+        "value": "5px 0"
+      },
+      {
+        "count": 1,
+        "value": "3px 3px 3px 8px"
+      },
+      {
+        "count": 1,
+        "value": "4px 7px"
+      },
+      {
+        "count": 1,
+        "value": "8px 0 12px"
+      },
+      {
+        "count": 1,
+        "value": "5px 12px"
+      },
+      {
+        "count": 1,
+        "value": "6px 12px 10px 36px"
+      },
+      {
+        "count": 1,
+        "value": "7px 12px 7px 36px"
+      },
+      {
+        "count": 1,
+        "value": "1px 4px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-2xs) 0 0"
+      },
+      {
+        "count": 1,
+        "value": "0 var(--sc-surface-padding) var(--sc-surface-padding)"
+      },
+      {
+        "count": 1,
+        "value": "0 0 var(--sc-space-sm)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-2)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-6)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-product-space-2) 0"
+      },
+      {
+        "count": 1,
+        "value": "10px 0 14px"
+      },
+      {
+        "count": 1,
+        "value": "10px 20px"
+      },
+      {
+        "count": 1,
+        "value": "9px 0 12px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-product-page-gutter)"
+      },
+      {
+        "count": 1,
+        "value": "6px 0 10px"
+      },
+      {
+        "count": 1,
+        "value": "2px var(--sc-space-2xs)"
+      },
+      {
+        "count": 1,
+        "value": "0 3px"
+      },
+      {
+        "count": 1,
+        "value": "22px 24px 28px"
+      },
+      {
+        "count": 1,
+        "value": "20px 26px"
+      },
+      {
+        "count": 1,
+        "value": "28px 0 22px"
+      },
+      {
+        "count": 1,
+        "value": "18px 16px 22px"
+      },
+      {
+        "count": 1,
+        "value": "14px 0 0"
+      },
+      {
+        "count": 1,
+        "value": "-4px 0 10px"
+      },
+      {
+        "count": 1,
+        "value": "18px 20px 20px"
+      },
+      {
+        "count": 1,
+        "value": "-18px -20px 14px"
+      },
+      {
+        "count": 1,
+        "value": "12px 16px 10px 20px"
+      },
+      {
+        "count": 1,
+        "value": "26px"
+      },
+      {
+        "count": 1,
+        "value": "14px 14px 16px"
+      },
+      {
+        "count": 1,
+        "value": "-14px -14px 12px"
+      },
+      {
+        "count": 1,
+        "value": "10px 12px 9px 16px"
+      },
+      {
+        "count": 1,
+        "value": "6px 6px 0"
+      },
+      {
+        "count": 1,
+        "value": "8px 16px"
+      },
+      {
+        "count": 1,
+        "value": "0 8px 8px"
+      },
+      {
+        "count": 1,
+        "value": "16px 24px"
+      },
+      {
+        "count": 1,
+        "value": "8px 14px 14px"
+      },
+      {
+        "count": 1,
+        "value": "10px 6px"
+      },
+      {
+        "count": 1,
+        "value": "-10px -10px 2px"
+      },
+      {
+        "count": 1,
+        "value": "8px 0"
+      },
+      {
+        "count": 1,
+        "value": "8px 4px 10px"
+      },
+      {
+        "count": 1,
+        "value": "6px 4px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-xs) var(--sc-page-inline-padding)"
+      },
+      {
+        "count": 1,
+        "value": "12px 6px"
+      },
+      {
+        "count": 1,
+        "value": "-14px -16px 2px"
+      },
+      {
+        "count": 1,
+        "value": "15px 18px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-2xs) var(--sc-page-inline-padding)"
+      },
+      {
+        "count": 1,
+        "value": "0 var(--sc-space-2xs) 0 var(--sc-space-xs)"
+      },
+      {
+        "count": 1,
+        "value": "8px 4px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-2xs) var(--sc-space-sm)"
+      },
+      {
+        "count": 1,
+        "value": "3px 6px"
+      },
+      {
+        "count": 1,
+        "value": "9px 12px"
+      },
+      {
+        "count": 1,
+        "value": "0 auto"
+      },
+      {
+        "count": 1,
+        "value": "8px 12px 8px 18px"
+      },
+      {
+        "count": 1,
+        "value": "2px 9px"
+      },
+      {
+        "count": 1,
+        "value": "12px 24px"
+      },
+      {
+        "count": 1,
+        "value": "8px 24px"
+      },
+      {
+        "count": 1,
+        "value": "0 30px 0 10px"
+      },
+      {
+        "count": 1,
+        "value": "6px 62px 6px 7px"
+      },
+      {
+        "count": 1,
+        "value": "0 8px 4px"
+      },
+      {
+        "count": 1,
+        "value": "7px 8px 2px"
+      },
+      {
+        "count": 1,
+        "value": "16px 18px 18px"
+      },
+      {
+        "count": 1,
+        "value": "0 20px 24px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-sm) var(--sc-surface-padding)"
+      },
+      {
+        "count": 1,
+        "value": "9px 14px"
+      },
+      {
+        "count": 1,
+        "value": "8px 0 9px"
+      },
+      {
+        "count": 1,
+        "value": "calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) 0"
+      },
+      {
+        "count": 1,
+        "value": "0 var(--sc-surface-padding)"
+      },
+      {
+        "count": 1,
+        "value": "calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) var(--sc-field-row-gap)"
+      },
+      {
+        "count": 1,
+        "value": "8px 2px"
+      },
+      {
+        "count": 1,
+        "value": "10px 22px 10px 30px"
+      },
+      {
+        "count": 1,
+        "value": "14px 12px 20px"
+      },
+      {
+        "count": 1,
+        "value": "calc(-1 * var(--sc-space-sm)) calc(-1 * var(--sc-space-sm)) 0"
+      },
+      {
+        "count": 1,
+        "value": "calc(-1 * var(--sc-space-sm)) calc(-1 * var(--sc-space-sm)) var(--sc-field-row-gap)"
+      },
+      {
+        "count": 1,
+        "value": "1px 7px"
+      },
+      {
+        "count": 1,
+        "value": "4px 16px"
+      },
+      {
+        "count": 1,
+        "value": "10px 12px calc(10px + env(safe-area-inset-bottom, 0px))"
+      },
+      {
+        "count": 1,
+        "value": "10px 16px"
+      },
+      {
+        "count": 1,
+        "value": "11px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-2xs) 0 var(--sc-space-xs)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-page-padding-wide)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-page-padding-compact)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-page-padding-mobile)"
+      },
+      {
+        "count": 1,
+        "value": "0px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-page-padding)"
+      },
+      {
+        "count": 1,
+        "value": "calc(var(--sc-component-toolbar-gap) * 1px)"
+      },
+      {
+        "count": 1,
+        "value": "calc(var(--sc-component-toolbar-padding-y) * 1px) calc(var(--sc-component-toolbar-padding-x) * 1px)"
+      },
+      {
+        "count": 1,
+        "value": "calc(var(--sc-component-button-padding-y) * 1px) calc(var(--sc-component-button-padding-x) * 1px)"
+      },
+      {
+        "count": 1,
+        "value": "calc(var(--sc-component-tag-padding-y) * 1px) calc(var(--sc-component-tag-padding-x) * 1px)"
+      },
+      {
+        "count": 1,
+        "value": "calc(var(--sc-component-dialog-padding) * 1px)"
+      },
+      {
+        "count": 1,
+        "value": "0 !important"
+      },
+      {
+        "count": 1,
+        "value": "-1px !important"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-product-space-4)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-product-space-1) 0 0"
+      },
+      {
+        "count": 1,
+        "value": "0 var(--sc-product-space-1)"
+      },
+      {
+        "count": 1,
+        "value": "0 var(--sc-product-space-2)"
+      },
+      {
+        "count": 1,
+        "value": "30px 16px"
+      },
+      {
+        "count": 1,
+        "value": "clamp(28px, 5vw, 80px)"
+      },
+      {
+        "count": 1,
+        "value": "11px 12px"
+      },
+      {
+        "count": 1,
+        "value": "11px 14px"
+      },
+      {
+        "count": 1,
+        "value": "16px 10px 18px"
+      },
+      {
+        "count": 1,
+        "value": "2px 0 8px"
+      },
+      {
+        "count": 1,
+        "value": "7px 0"
+      },
+      {
+        "count": 1,
+        "value": "10px 8px"
+      },
+      {
+        "count": 1,
+        "value": "16px 18px 12px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-product-space-3) 0 0"
+      },
+      {
+        "count": 1,
+        "value": "-2px 0 0"
+      },
+      {
+        "count": 1,
+        "value": "0 6px 0 9px"
+      },
+      {
+        "count": 1,
+        "value": "18px 12px"
+      },
+      {
+        "count": 1,
+        "value": "2px 4px 2px 6px"
+      },
+      {
+        "count": 1,
+        "value": "12px 12px 10px"
+      },
+      {
+        "count": 1,
+        "value": "8px 10px 10px"
+      },
+      {
+        "count": 1,
+        "value": "12px 0"
+      }
+    ],
+    "tdesignDirectUse": [],
+    "zIndexValues": [
+      {
+        "count": 11,
+        "value": "1"
+      },
+      {
+        "count": 7,
+        "value": "2"
+      },
+      {
+        "count": 7,
+        "value": "20"
+      },
+      {
+        "count": 4,
+        "value": "90"
+      },
+      {
+        "count": 4,
+        "value": "40"
+      },
+      {
+        "count": 3,
+        "value": "80"
+      },
+      {
+        "count": 3,
+        "value": "5"
+      },
+      {
+        "count": 3,
+        "value": "1000"
+      },
+      {
+        "count": 2,
+        "value": "10"
+      },
+      {
+        "count": 2,
+        "value": "4"
+      },
+      {
+        "count": 2,
+        "value": "12"
+      },
+      {
+        "count": 2,
+        "value": "6"
+      },
+      {
+        "count": 2,
+        "value": "14"
+      },
+      {
+        "count": 1,
+        "value": "91"
+      },
+      {
+        "count": 1,
+        "value": "35"
+      },
+      {
+        "count": 1,
+        "value": "0"
+      },
+      {
+        "count": 1,
+        "value": "36"
+      },
+      {
+        "count": 1,
+        "value": "13"
+      },
+      {
+        "count": 1,
+        "value": "26"
+      },
+      {
+        "count": 1,
+        "value": "25"
+      },
+      {
+        "count": 1,
+        "value": "24"
+      },
+      {
+        "count": 1,
+        "value": "15"
+      },
+      {
+        "count": 1,
+        "value": "8"
+      },
+      {
+        "count": 1,
+        "value": "30"
+      },
+      {
+        "count": 1,
+        "value": "50"
+      },
+      {
+        "count": 1,
+        "value": "10000"
+      }
+    ]
+  },
+  "cssVariableDefinitions": [
+    {
+      "name": "--accent",
+      "sources": [
+        {
+          "line": 5,
+          "source": "frontend/apps/web/src/layouts/AppShell.css"
+        },
+        {
+          "line": 242,
+          "source": "frontend/apps/web/src/views/LoginView.vue"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-interactive)"
+      ]
+    },
+    {
+      "name": "--clickable",
+      "sources": [
+        {
+          "line": 557,
+          "source": "frontend/apps/web/src/views/businessConfigSurface/style.css"
+        }
+      ],
+      "values": [
+        "hover"
+      ]
+    },
+    {
+      "name": "--compact",
+      "sources": [
+        {
+          "line": 1671,
+          "source": "frontend/apps/web/src/views/SceneView.vue"
+        }
+      ],
+      "values": [
+        "deep(.ghost)"
+      ]
+    },
+    {
+      "name": "--designer-workspace",
+      "sources": [
+        {
+          "line": 1101,
+          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
+        }
+      ],
+      "values": [
+        "deep(.template-form-section-grid--columns-3)"
+      ]
+    },
+    {
+      "name": "--draggable",
+      "sources": [
+        {
+          "line": 681,
+          "source": "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.css"
+        }
+      ],
+      "values": [
+        "active"
+      ]
+    },
+    {
+      "name": "--field",
+      "sources": [
+        {
+          "line": 98,
+          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        },
+        {
+          "line": 106,
+          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        },
+        {
+          "line": 107,
+          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        },
+        {
+          "line": 108,
+          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        },
+        {
+          "line": 109,
+          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        },
+        {
+          "line": 110,
+          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        },
+        {
+          "line": 111,
+          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        }
+      ],
+      "values": [
+        "deep(.contract-readonly-value)",
+        "deep(.field),",
+        "deep(.field-control-main)",
+        "deep(.field-control-row),",
+        "deep(.readonly-value),",
+        "deep(.template-form-section)",
+        "deep(.template-form-section-grid),"
+      ]
+    },
+    {
+      "name": "--html",
+      "sources": [
+        {
+          "line": 1244,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        },
+        {
+          "line": 1245,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        },
+        {
+          "line": 1250,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        }
+      ],
+      "values": [
+        "deep(ol)",
+        "deep(p)",
+        "deep(ul),"
+      ]
+    },
+    {
+      "name": "--ink",
+      "sources": [
+        {
+          "line": 3,
+          "source": "frontend/apps/web/src/layouts/AppShell.css"
+        },
+        {
+          "line": 240,
+          "source": "frontend/apps/web/src/views/LoginView.vue"
+        }
+      ],
+      "values": [
+        "var(--sc-app-text-primary)",
+        "var(--sc-semantic-text-primary)"
+      ]
+    },
+    {
+      "name": "--layout-divider",
+      "sources": [
+        {
+          "line": 7,
+          "source": "frontend/apps/web/src/layouts/AppShell.css"
+        }
+      ],
+      "values": [
+        "var(--sc-app-border)"
+      ]
+    },
+    {
+      "name": "--minimal",
+      "sources": [
+        {
+          "line": 1312,
+          "source": "frontend/apps/web/src/layouts/AppShell.css"
+        },
+        {
+          "line": 1322,
+          "source": "frontend/apps/web/src/layouts/AppShell.css"
+        }
+      ],
+      "values": [
+        "is(.sidebar-toggle, .theme-switch)",
+        "is(.sidebar-toggle, .theme-switch):hover"
+      ]
+    },
+    {
+      "name": "--muted",
+      "sources": [
+        {
+          "line": 4,
+          "source": "frontend/apps/web/src/layouts/AppShell.css"
+        },
+        {
+          "line": 241,
+          "source": "frontend/apps/web/src/views/LoginView.vue"
+        }
+      ],
+      "values": [
+        "var(--sc-app-text-secondary)",
+        "var(--sc-semantic-text-secondary)"
+      ]
+    },
+    {
+      "name": "--order-editable",
+      "sources": [
+        {
+          "line": 1191,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        }
+      ],
+      "values": [
+        "active"
+      ]
+    },
+    {
+      "name": "--panel",
+      "sources": [
+        {
+          "line": 6,
+          "source": "frontend/apps/web/src/layouts/AppShell.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel)"
+      ]
+    },
+    {
+      "name": "--readonly",
+      "sources": [
+        {
+          "line": 167,
+          "source": "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue"
+        },
+        {
+          "line": 1260,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        },
+        {
+          "line": 1331,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        }
+      ],
+      "values": [
+        "deep(.contract-readonly-value)",
+        "hover"
+      ]
+    },
+    {
+      "name": "--readonly-empty-relation",
+      "sources": [
+        {
+          "line": 1320,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        }
+      ],
+      "values": [
+        "deep(.relation-readonly-empty)"
+      ]
+    },
+    {
+      "name": "--sc-app-accent",
+      "sources": [
+        {
+          "line": 98,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-interactive)"
+      ]
+    },
+    {
+      "name": "--sc-app-bg",
+      "sources": [
+        {
+          "line": 81,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-page)"
+      ]
+    },
+    {
+      "name": "--sc-app-border",
+      "sources": [
+        {
+          "line": 85,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 123,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-default)"
+      ]
+    },
+    {
+      "name": "--sc-app-border-strong",
+      "sources": [
+        {
+          "line": 86,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 124,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-strong)"
+      ]
+    },
+    {
+      "name": "--sc-app-danger-bg",
+      "sources": [
+        {
+          "line": 100,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 134,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-danger-bg)"
+      ]
+    },
+    {
+      "name": "--sc-app-danger-border",
+      "sources": [
+        {
+          "line": 101,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 135,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-danger-border)"
+      ]
+    },
+    {
+      "name": "--sc-app-danger-text",
+      "sources": [
+        {
+          "line": 102,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 136,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-danger-text)"
+      ]
+    },
+    {
+      "name": "--sc-app-focus-ring",
+      "sources": [
+        {
+          "line": 99,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 133,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-focus-ring)"
+      ]
+    },
+    {
+      "name": "--sc-app-hover-bg",
+      "sources": [
+        {
+          "line": 90,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 128,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-hover)"
+      ]
+    },
+    {
+      "name": "--sc-app-info-bg",
+      "sources": [
+        {
+          "line": 109,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 143,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-info-bg)"
+      ]
+    },
+    {
+      "name": "--sc-app-info-border",
+      "sources": [
+        {
+          "line": 110,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 144,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-info-border)"
+      ]
+    },
+    {
+      "name": "--sc-app-info-text",
+      "sources": [
+        {
+          "line": 111,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 145,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-info-text)"
+      ]
+    },
+    {
+      "name": "--sc-app-input-bg",
+      "sources": [
+        {
+          "line": 89,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 127,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-input)"
+      ]
+    },
+    {
+      "name": "--sc-app-muted-bg",
+      "sources": [
+        {
+          "line": 87,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 125,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel-muted)"
+      ]
+    },
+    {
+      "name": "--sc-app-overlay",
+      "sources": [
+        {
+          "line": 97,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-overlay)"
+      ]
+    },
+    {
+      "name": "--sc-app-panel",
+      "sources": [
+        {
+          "line": 82,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel)"
+      ]
+    },
+    {
+      "name": "--sc-app-selected-bg",
+      "sources": [
+        {
+          "line": 91,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 129,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-selected)"
+      ]
+    },
+    {
+      "name": "--sc-app-selected-border",
+      "sources": [
+        {
+          "line": 92,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 130,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-selected)"
+      ]
+    },
+    {
+      "name": "--sc-app-selected-text",
+      "sources": [
+        {
+          "line": 93,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 131,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-selected)"
+      ]
+    },
+    {
+      "name": "--sc-app-shadow",
+      "sources": [
+        {
+          "line": 94,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 132,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-shadow-panel)"
+      ]
+    },
+    {
+      "name": "--sc-app-shadow-modal",
+      "sources": [
+        {
+          "line": 96,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-shadow-modal)"
+      ]
+    },
+    {
+      "name": "--sc-app-shadow-popover",
+      "sources": [
+        {
+          "line": 95,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-shadow-popover)"
+      ]
+    },
+    {
+      "name": "--sc-app-subtle-bg",
+      "sources": [
+        {
+          "line": 88,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 126,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-subtle)"
+      ]
+    },
+    {
+      "name": "--sc-app-success-bg",
+      "sources": [
+        {
+          "line": 106,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 140,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-success-bg)"
+      ]
+    },
+    {
+      "name": "--sc-app-success-border",
+      "sources": [
+        {
+          "line": 107,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 141,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-success-border)"
+      ]
+    },
+    {
+      "name": "--sc-app-success-text",
+      "sources": [
+        {
+          "line": 108,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 142,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-success-text)"
+      ]
+    },
+    {
+      "name": "--sc-app-text-primary",
+      "sources": [
+        {
+          "line": 83,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-primary)"
+      ]
+    },
+    {
+      "name": "--sc-app-text-secondary",
+      "sources": [
+        {
+          "line": 84,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-secondary)"
+      ]
+    },
+    {
+      "name": "--sc-app-warning-bg",
+      "sources": [
+        {
+          "line": 103,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 137,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-warning-bg)"
+      ]
+    },
+    {
+      "name": "--sc-app-warning-border",
+      "sources": [
+        {
+          "line": 104,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 138,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-warning-border)"
+      ]
+    },
+    {
+      "name": "--sc-app-warning-text",
+      "sources": [
+        {
+          "line": 105,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 139,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-warning-text)"
+      ]
+    },
+    {
+      "name": "--sc-card-gap",
+      "sources": [
+        {
+          "line": 39,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-sm)"
+      ]
+    },
+    {
+      "name": "--sc-card-padding",
+      "sources": [
+        {
+          "line": 38,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-md)"
+      ]
+    },
+    {
+      "name": "--sc-color-border",
+      "sources": [
+        {
+          "line": 16,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-default)"
+      ]
+    },
+    {
+      "name": "--sc-color-border-strong",
+      "sources": [
+        {
+          "line": 17,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-strong)"
+      ]
+    },
+    {
+      "name": "--sc-color-focus",
+      "sources": [
+        {
+          "line": 22,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-focus-ring)"
+      ]
+    },
+    {
+      "name": "--sc-color-interactive",
+      "sources": [
+        {
+          "line": 21,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-interactive)"
+      ]
+    },
+    {
+      "name": "--sc-color-surface",
+      "sources": [
+        {
+          "line": 13,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-page)"
+      ]
+    },
+    {
+      "name": "--sc-color-surface-raised",
+      "sources": [
+        {
+          "line": 15,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel)"
+      ]
+    },
+    {
+      "name": "--sc-color-surface-subtle",
+      "sources": [
+        {
+          "line": 14,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-subtle)"
+      ]
+    },
+    {
+      "name": "--sc-color-text-muted",
+      "sources": [
+        {
+          "line": 20,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-muted)"
+      ]
+    },
+    {
+      "name": "--sc-color-text-primary",
+      "sources": [
+        {
+          "line": 18,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-primary)"
+      ]
+    },
+    {
+      "name": "--sc-color-text-secondary",
+      "sources": [
+        {
+          "line": 19,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-secondary)"
+      ]
+    },
+    {
+      "name": "--sc-content-form-max",
+      "sources": [
+        {
+          "line": 49,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "1200px"
+      ]
+    },
+    {
+      "name": "--sc-content-layout-inline-size",
+      "sources": [
+        {
+          "line": 70,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        },
+        {
+          "line": 75,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        },
+        {
+          "line": 76,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        },
+        {
+          "line": 77,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        },
+        {
+          "line": 78,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "100%",
+        "var(--sc-content-form-max)",
+        "var(--sc-content-reading-max)",
+        "var(--sc-content-record-max)"
+      ]
+    },
+    {
+      "name": "--sc-content-reading-max",
+      "sources": [
+        {
+          "line": 47,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "72ch"
+      ]
+    },
+    {
+      "name": "--sc-content-record-max",
+      "sources": [
+        {
+          "line": 48,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "1440px"
+      ]
+    },
+    {
+      "name": "--sc-dialog-padding",
+      "sources": [
+        {
+          "line": 43,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-md)"
+      ]
+    },
+    {
+      "name": "--sc-field-column-gap",
+      "sources": [
+        {
+          "line": 41,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-md)"
+      ]
+    },
+    {
+      "name": "--sc-field-row-gap",
+      "sources": [
+        {
+          "line": 40,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-sm)"
+      ]
+    },
+    {
+      "name": "--sc-form-command-bar-height",
+      "sources": [
+        {
+          "line": 107,
+          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
+        }
+      ],
+      "values": [
+        "72px"
+      ]
+    },
+    {
+      "name": "--sc-form-section-nav-height",
+      "sources": [
+        {
+          "line": 108,
+          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
+        }
+      ],
+      "values": [
+        "0px"
+      ]
+    },
+    {
+      "name": "--sc-form-sticky-gap",
+      "sources": [
+        {
+          "line": 109,
+          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
+        }
+      ],
+      "values": [
+        "8px"
+      ]
+    },
+    {
+      "name": "--sc-label-control-gap",
+      "sources": [
+        {
+          "line": 42,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-2xs)"
+      ]
+    },
+    {
+      "name": "--sc-lowcode-panel-gap",
+      "sources": [
+        {
+          "line": 11,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "var(--sc-product-panel-gap)"
+      ]
+    },
+    {
+      "name": "--sc-lowcode-panel-radius",
+      "sources": [
+        {
+          "line": 12,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "var(--sc-product-panel-radius)"
+      ]
+    },
+    {
+      "name": "--sc-lowcode-workspace-gap",
+      "sources": [
+        {
+          "line": 10,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "var(--sc-product-workspace-gap)"
+      ]
+    },
+    {
+      "name": "--sc-nav-row-gap",
+      "sources": [
+        {
+          "line": 44,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-xs)"
+      ]
+    },
+    {
+      "name": "--sc-navigation-active-bg",
+      "sources": [
+        {
+          "line": 79,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-navigation-active, var(--sc-app-info-bg))"
+      ]
+    },
+    {
+      "name": "--sc-navigation-bg",
+      "sources": [
+        {
+          "line": 78,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-navigation, var(--sc-app-panel))"
+      ]
+    },
+    {
+      "name": "--sc-page-inline-padding",
+      "sources": [
+        {
+          "line": 33,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-lg)"
+      ]
+    },
+    {
+      "name": "--sc-page-padding",
+      "sources": [
+        {
+          "line": 53,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 115,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        },
+        {
+          "line": 119,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-page-padding-compact)",
+        "var(--sc-page-padding-mobile)",
+        "var(--sc-page-padding-wide)"
+      ]
+    },
+    {
+      "name": "--sc-page-padding-compact",
+      "sources": [
+        {
+          "line": 51,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-md)"
+      ]
+    },
+    {
+      "name": "--sc-page-padding-mobile",
+      "sources": [
+        {
+          "line": 52,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-sm)"
+      ]
+    },
+    {
+      "name": "--sc-page-padding-wide",
+      "sources": [
+        {
+          "line": 50,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-lg)"
+      ]
+    },
+    {
+      "name": "--sc-page-section-gap",
+      "sources": [
+        {
+          "line": 34,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-lg)"
+      ]
+    },
+    {
+      "name": "--sc-product-control-height",
+      "sources": [
+        {
+          "line": 62,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "36px"
+      ]
+    },
+    {
+      "name": "--sc-product-line-body",
+      "sources": [
+        {
+          "line": 61,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "22px"
+      ]
+    },
+    {
+      "name": "--sc-product-list-inline-end",
+      "sources": [
+        {
+          "line": 9,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "var(--sc-page-padding)"
+      ]
+    },
+    {
+      "name": "--sc-product-list-inline-start",
+      "sources": [
+        {
+          "line": 8,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "0px"
+      ]
+    },
+    {
+      "name": "--sc-product-list-toolbar-height",
+      "sources": [
+        {
+          "line": 65,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "46px"
+      ]
+    },
+    {
+      "name": "--sc-product-page-gutter",
+      "sources": [
+        {
+          "line": 54,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-page-padding)"
+      ]
+    },
+    {
+      "name": "--sc-product-panel-gap",
+      "sources": [
+        {
+          "line": 6,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "12px"
+      ]
+    },
+    {
+      "name": "--sc-product-panel-radius",
+      "sources": [
+        {
+          "line": 7,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "8px"
+      ]
+    },
+    {
+      "name": "--sc-product-radius-control",
+      "sources": [
+        {
+          "line": 67,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "6px"
+      ]
+    },
+    {
+      "name": "--sc-product-radius-dialog",
+      "sources": [
+        {
+          "line": 69,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "8px"
+      ]
+    },
+    {
+      "name": "--sc-product-radius-panel",
+      "sources": [
+        {
+          "line": 68,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "8px"
+      ]
+    },
+    {
+      "name": "--sc-product-shadow-overlay",
+      "sources": [
+        {
+          "line": 70,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-shadow-popover)"
+      ]
+    },
+    {
+      "name": "--sc-product-space-1",
+      "sources": [
+        {
+          "line": 29,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-xs)"
+      ]
+    },
+    {
+      "name": "--sc-product-space-2",
+      "sources": [
+        {
+          "line": 30,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-md)"
+      ]
+    },
+    {
+      "name": "--sc-product-space-3",
+      "sources": [
+        {
+          "line": 31,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-lg)"
+      ]
+    },
+    {
+      "name": "--sc-product-space-4",
+      "sources": [
+        {
+          "line": 32,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-xl)"
+      ]
+    },
+    {
+      "name": "--sc-product-table-row-height",
+      "sources": [
+        {
+          "line": 63,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "44px"
+      ]
+    },
+    {
+      "name": "--sc-product-text-body",
+      "sources": [
+        {
+          "line": 58,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "14px"
+      ]
+    },
+    {
+      "name": "--sc-product-text-section",
+      "sources": [
+        {
+          "line": 59,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "16px"
+      ]
+    },
+    {
+      "name": "--sc-product-text-sm",
+      "sources": [
+        {
+          "line": 57,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "12px"
+      ]
+    },
+    {
+      "name": "--sc-product-text-title",
+      "sources": [
+        {
+          "line": 60,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "24px"
+      ]
+    },
+    {
+      "name": "--sc-product-toolbar-height",
+      "sources": [
+        {
+          "line": 64,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "52px"
+      ]
+    },
+    {
+      "name": "--sc-product-workspace-gap",
+      "sources": [
+        {
+          "line": 4,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "0px"
+      ]
+    },
+    {
+      "name": "--sc-product-workspace-stack-gap",
+      "sources": [
+        {
+          "line": 5,
+          "source": "frontend/apps/web/src/styles/product-patterns.css"
+        }
+      ],
+      "values": [
+        "12px"
+      ]
+    },
+    {
+      "name": "--sc-shell-navigation-item-height",
+      "sources": [
+        {
+          "line": 74,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "calc(var(--sc-component-shell-navigation-item-height, 44) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-shell-page-gutter",
+      "sources": [
+        {
+          "line": 75,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "calc(var(--sc-component-shell-page-gutter, 24) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-shell-sidebar-collapsed-width",
+      "sources": [
+        {
+          "line": 73,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "calc(var(--sc-component-shell-sidebar-collapsed-width, 56) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-shell-sidebar-width",
+      "sources": [
+        {
+          "line": 72,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "calc(var(--sc-component-shell-sidebar-width, 248) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-shell-topbar-height",
+      "sources": [
+        {
+          "line": 71,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "calc(var(--sc-component-shell-topbar-height, 48) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-space-2xs",
+      "sources": [
+        {
+          "line": 23,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "4px"
+      ]
+    },
+    {
+      "name": "--sc-space-lg",
+      "sources": [
+        {
+          "line": 27,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "24px"
+      ]
+    },
+    {
+      "name": "--sc-space-md",
+      "sources": [
+        {
+          "line": 26,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "16px"
+      ]
+    },
+    {
+      "name": "--sc-space-sm",
+      "sources": [
+        {
+          "line": 25,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "12px"
+      ]
+    },
+    {
+      "name": "--sc-space-xl",
+      "sources": [
+        {
+          "line": 28,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "32px"
+      ]
+    },
+    {
+      "name": "--sc-space-xs",
+      "sources": [
+        {
+          "line": 24,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "8px"
+      ]
+    },
+    {
+      "name": "--sc-surface-padding",
+      "sources": [
+        {
+          "line": 35,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-md)"
+      ]
+    },
+    {
+      "name": "--sc-table-cell-inline-padding",
+      "sources": [
+        {
+          "line": 45,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-sm)"
+      ]
+    },
+    {
+      "name": "--sc-table-divider",
+      "sources": [
+        {
+          "line": 77,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-table, var(--sc-app-border))"
+      ]
+    },
+    {
+      "name": "--sc-table-header-bg",
+      "sources": [
+        {
+          "line": 76,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-table-header, var(--sc-app-muted-bg))"
+      ]
+    },
+    {
+      "name": "--sc-table-header-height",
+      "sources": [
+        {
+          "line": 161,
+          "source": "frontend/apps/web/src/pages/ListPage.css"
+        },
+        {
+          "line": 55,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "40px",
+        "42px"
+      ]
+    },
+    {
+      "name": "--sc-table-row-height",
+      "sources": [
+        {
+          "line": 162,
+          "source": "frontend/apps/web/src/pages/ListPage.css"
+        },
+        {
+          "line": 56,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "44px",
+        "46px"
+      ]
+    },
+    {
+      "name": "--sc-text-link",
+      "sources": [
+        {
+          "line": 80,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-link, var(--sc-app-accent))"
+      ]
+    },
+    {
+      "name": "--sc-toolbar-gap",
+      "sources": [
+        {
+          "line": 36,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-xs)"
+      ]
+    },
+    {
+      "name": "--sc-toolbar-group-gap",
+      "sources": [
+        {
+          "line": 37,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-sm)"
+      ]
+    },
+    {
+      "name": "--sc-touch-target-min",
+      "sources": [
+        {
+          "line": 66,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "44px"
+      ]
+    },
+    {
+      "name": "--sc-workspace-frame-max",
+      "sources": [
+        {
+          "line": 46,
+          "source": "frontend/apps/web/src/styles/design-system.css"
+        }
+      ],
+      "values": [
+        "1920px"
+      ]
+    },
+    {
+      "name": "--selectable",
+      "sources": [
+        {
+          "line": 1022,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        },
+        {
+          "line": 1023,
+          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+        }
+      ],
+      "values": [
+        "focus-visible",
+        "hover,"
+      ]
+    },
+    {
+      "name": "--smart",
+      "sources": [
+        {
+          "line": 1085,
+          "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+        }
+      ],
+      "values": [
+        "hover"
+      ]
+    },
+    {
+      "name": "--surface",
+      "sources": [
+        {
+          "line": 2,
+          "source": "frontend/apps/web/src/layouts/AppShell.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-page)"
+      ]
+    },
+    {
+      "name": "--title-hidden",
+      "sources": [
+        {
+          "line": 593,
+          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
+        },
+        {
+          "line": 673,
+          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
+        }
+      ],
+      "values": [
+        "not(:has(.template-page-header-status > *)))"
+      ]
+    }
+  ],
+  "excludedScopes": [
+    "demo_addons",
+    "external customer_addons",
+    "runtime installed-module state",
+    "user-specific visibility"
+  ],
+  "generatedFromDirtyWorktree": false,
+  "generatorDigest": "71dc9437a14b608f0e3e5a19330ed9002af185761e7ca697703ea341f341d4b1",
+  "inputDigest": "10b485c359af181336e64d94e4af4858b12ab56faa08b2ae09fa7b74f55167b9",
+  "inputScopes": [
+    {
+      "path": "frontend/apps/web/src/**/*.{css,scss,sass,vue}",
+      "scope": "style_bearing_frontend_source"
+    }
+  ],
+  "interpretationRules": {
+    "hardcodedColor": "A lexical CSS value; this report does not claim every occurrence is invalid before an allowlist exists.",
+    "mobile": "Breakpoint inventory is static only; overflow requires later browser evidence.",
+    "spacingRadiusShadow": "Phase 0 records variables and direct CSS evidence. Token hierarchy classification is a Phase 1 design decision."
+  },
+  "kind": "design_token_inventory",
+  "schemaVersion": "1.0",
+  "sourceCommit": "1068da05ea9b198f97bbf06b49b7361fabbd9e4f"
+}

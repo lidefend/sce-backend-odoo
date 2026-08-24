@@ -5582,3 +5582,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Rollback: revert the field emission, strict decoder/runtime guard, generic
   Presenter consumption, fixtures, and tests as one P0 contract batch. No
   database migration or fixture mutation is involved.
+
+## Frontend system professionalization — Phase 0 baseline (2026-08-24)
+
+- Branch / anchor: `audit/p0-frontend-system-professionalization-baseline-v1` /
+  `1068da05`.
+- Formal Product Layer / Layer Target / Module: P4 engineering evidence /
+  reproducible static frontend surface, navigation, token, and component
+  inventory / `scripts/audit` plus `docs/frontend_productization`.
+- Reason / boundary: establish a machine-readable baseline before the separate
+  P0 Tokens, Primitives, Navigation Shell, Header, Pattern, and Registry
+  batches. The scan records source evidence and explicitly reports runtime
+  authority gaps; it does not infer menu visibility, task/workspace mode, or
+  record permissions from frontend labels or routes.
+- Why Here / Why Not Elsewhere: this is delivery planning evidence, not a
+  product behavior, industry default, customer preference, or low-code
+  configuration. No frontend runtime, backend Contract, business model, route,
+  database, fixture, or browser journey is modified.
+- Blast radius / validation: one deterministic audit generator, focused unit
+  tests, four JSON inventories, and a Markdown gap plan. Python compilation,
+  six focused tests, output JSON parsing, repeat-generation digest comparison,
+  `verify.frontend.style_system.guard`, and `git diff --check` pass. The audit
+  records component source presence as `unassessed`; only a future formal
+  registry plus tests may emit readiness/capability states.
+- Rollback: revert this P4 audit-only commit; product source, runtime, and
+  database state are unaffected.
