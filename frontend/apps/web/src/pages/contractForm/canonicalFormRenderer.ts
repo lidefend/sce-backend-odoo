@@ -152,6 +152,8 @@ export function canonicalFieldToFormSection(
     componentReadiness: field.componentResolution.readiness,
     componentRenderer: field.componentResolution.renderer,
     componentFallback: field.componentResolution.fallback,
+    presentationMode: field.presentationMode,
+    renderProfile: field.renderProfile,
     digits,
     currencyField: currencyField || undefined,
     currencyLabel: currencyLabel || undefined,

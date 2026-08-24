@@ -1,4 +1,5 @@
 import type { FieldDescriptor } from '@sc/schema';
+import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
 
 export type TemplateFieldType =
   | 'char'
@@ -29,6 +30,8 @@ export type FormSectionFieldSchema = {
   componentReadiness?: 'ready' | 'readable_fallback' | 'fail_closed';
   componentRenderer?: string;
   componentFallback?: string | null;
+  presentationMode?: CanonicalFormPresentationMode;
+  renderProfile?: CanonicalFormRenderMode;
   required: boolean;
   readonly: boolean;
   invalid?: boolean;

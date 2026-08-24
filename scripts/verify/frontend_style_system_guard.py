@@ -42,7 +42,7 @@ REQUIRED_PRODUCT_CONSUMERS = {
     "ScPanel": "components/business/MyWorkApprovalWorkspace.vue",
     "ScRelationField": "components/template/FormSection.vue",
     "ScSection": "components/business/MyWorkApprovalWorkspace.vue",
-    "ScSelect": "components/template/FormSection.vue",
+    "ScSelect": "components/professional-fields/ProfessionalBaseFieldControl.vue",
     "ScStatusBadge": "components/product-record/ProductRecordStatus.vue",
 }
 
