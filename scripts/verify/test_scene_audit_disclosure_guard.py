@@ -39,6 +39,12 @@ class SceneAuditDisclosureGuardTests(unittest.TestCase):
             'v-if="hasAudit || auditNodes.length || auditEvents.length" data-floorplan-region="audit"',
         )))
 
+    def test_accepts_declared_professional_empty_state(self) -> None:
+        source = component(
+            'v-if="declared || events.length || fallbackAvailable" data-floorplan-region="audit"',
+        ).replace('<div data-audit-content />', '<div data-audit-readable-fallback /><ScEmptyState />')
+        self.assertTrue(audit_disclosure_is_governed(source))
+
     def test_comments_and_unrelated_strings_cannot_fake_compliance(self) -> None:
         source = '''<template><section /></template>
 <!-- <details v-if="auditNodes.length || auditEvents.length" data-floorplan-region="audit"> -->

@@ -27,6 +27,7 @@ def _has_exact_content_condition(attributes: str) -> bool:
     return expression in {
         "auditNodes.length||auditEvents.length",
         "auditEvents.length||auditNodes.length",
+        "declared||events.length||fallbackAvailable",
     }
 
 
@@ -42,4 +43,10 @@ def audit_disclosure_is_governed(source: str) -> bool:
     attributes = matches[0]
     if re.search(r"\bopen\b", attributes, re.IGNORECASE):
         return False
-    return _has_exact_content_condition(attributes)
+    if not _has_exact_content_condition(attributes):
+        return False
+    match = _V_IF.search(attributes)
+    expression = re.sub(r"[\s()]", "", match.group("expression")) if match else ""
+    if expression == "declared||events.length||fallbackAvailable":
+        return "ScEmptyState" in source and "data-audit-readable-fallback" in source
+    return True

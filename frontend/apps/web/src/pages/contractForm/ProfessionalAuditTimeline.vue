@@ -3,6 +3,7 @@
     v-if="declared || events.length || fallbackAvailable"
     class="professional-audit-timeline"
     data-professional-audit-timeline
+    data-floorplan-region="audit"
     :data-audit-event-count="events.length"
   >
     <summary>{{ summary }}</summary>

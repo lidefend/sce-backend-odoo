@@ -9,6 +9,7 @@ import ast
 from pathlib import Path
 
 from contract_form_semantic_identity_guard import validate_semantic_identity_projection
+from scene_audit_disclosure_guard import audit_disclosure_is_governed
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -219,9 +220,7 @@ for semantic_region in ("summary", "current-task", "business-context", "relation
 require(
     "<ProfessionalAuditTimeline" in object_task_page
     and 'data-floorplan-region="audit"' in object_task_page
-    and "<details" in professional_audit_timeline
-    and " open" not in professional_audit_timeline.split("<details", 1)[1].split(">", 1)[0]
-    and "ScEmptyState" in professional_audit_timeline,
+    and audit_disclosure_is_governed(professional_audit_timeline),
     "audit region must be content-backed and default-collapsed",
 )
 require(
