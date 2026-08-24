@@ -35,8 +35,8 @@ def main() -> int:
             errors.append(f"{APP_SHELL.relative_to(ROOT)}: {message}: {token}")
 
     required = {
-        "<PrimaryNavigation": "产品配置必须随统一主导航发布",
-        ':nodes="filteredMenu"': "主导航必须使用后端菜单树的统一过滤结果",
+        "<ProductSideNavigation": "产品配置必须随统一主导航发布",
+        ':nodes="filteredNavigation"': "主导航必须使用后端权威生成的 Canonical Navigation Model",
         '@select="handleSelect"': "产品配置必须复用统一菜单选择与权限快照链路",
     }
     for token, message in required.items():

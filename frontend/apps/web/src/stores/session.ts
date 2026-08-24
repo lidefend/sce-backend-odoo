@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { AppInitResponse, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
+import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
 import { config } from '../config';
@@ -10,6 +10,7 @@ import { applySceneValidationRecoveryStrategyRuntime, setSceneValidationRecovery
 import { isConfiguredDbPinned, resolveActiveDb, resolveConfiguredDb, resolveLoginRoutingDb, setActiveDb } from '../services/dbContext';
 import { beginContextTransition, currentContextEpoch, invalidateContextRequests, isCurrentContextEpoch } from '../app/contextEpoch';
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
+import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
 import type {
   WorkspaceAdviceRow,
   WorkspaceCapabilityGroupRow,
@@ -229,6 +230,7 @@ export interface SessionState {
   sessionDb: string;
   user: AppInitResponse['user'] | null;
   menuTree: NavNode[];
+  navigationModel: CanonicalNavigationModel | null;
   routeAuthority: RouteAuthorityContract | null;
   menuExpandedKeys: string[];
   currentAction: NavMeta | null;
@@ -520,6 +522,7 @@ export const useSessionStore = defineStore('session', {
     sessionDb: '',
     user: null,
     menuTree: [],
+    navigationModel: null,
     routeAuthority: null,
     menuExpandedKeys: [],
     currentAction: null,
@@ -794,6 +797,7 @@ export const useSessionStore = defineStore('session', {
           // localStorage, otherwise menu/model changes can look stale until a
           // manual cache clear.
           this.menuTree = [];
+          this.navigationModel = null;
           this.menuExpandedKeys = parsed.menuExpandedKeys ?? [];
           this.currentAction = null;
           this.capabilities = parsed.capabilities ?? [];
@@ -841,6 +845,7 @@ export const useSessionStore = defineStore('session', {
       this.sessionDb = '';
       this.user = null;
       this.menuTree = [];
+      this.navigationModel = null;
       this.menuExpandedKeys = [];
       this.currentAction = null;
       this.capabilities = [];
@@ -1171,6 +1176,7 @@ export const useSessionStore = defineStore('session', {
       this.isReady = false;
       this.routeAuthority = null;
       this.menuTree = [];
+      this.navigationModel = null;
       this.currentAction = null;
       this.featureFlags = {};
       this.scenes = [];
@@ -1248,6 +1254,7 @@ export const useSessionStore = defineStore('session', {
         this.isReady = false;
         this.routeAuthority = null;
         this.menuTree = [];
+        this.navigationModel = null;
         this.currentAction = null;
         setSceneRegistry([]);
         throw err;
@@ -1564,6 +1571,7 @@ export const useSessionStore = defineStore('session', {
       // 为导航项添加 key 属性
       const menuTreeWithKeys = nav.map((item, index) => addKeys(item, index));
       this.menuTree = menuTreeWithKeys;
+      this.navigationModel = createCanonicalNavigationModel(menuTreeWithKeys, this.routeAuthority);
       this.menuExpandedKeys = filterExpandedKeys(this.menuTree, this.menuExpandedKeys);
       this.isReady = true;
       this.initStatus = 'ready';

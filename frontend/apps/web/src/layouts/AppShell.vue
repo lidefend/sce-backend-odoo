@@ -1,5 +1,5 @@
 <template>
-  <div
+  <ProductAppShell
     class="shell layout-shell"
     data-component="LayoutShell"
     :class="{
@@ -14,18 +14,15 @@
     :data-page-identity-title="pageTitle"
   >
     <a class="skip-link" href="#main-content">跳至主要内容</a>
-    <aside
-      v-if="sidebarVisible"
-      id="primary-sidebar"
-      ref="mobileSidebarSurface"
+    <ProductMobileNavigationDrawer
+      :visible="sidebarVisible"
+      :mobile="mobileViewport"
+      surface-id="primary-sidebar"
       class="sidebar sidebar-nav"
       :class="sidebarClass"
       data-component="SidebarNav"
       aria-label="主导航"
-      :role="mobileViewport ? 'dialog' : undefined"
-      :aria-modal="mobileViewport ? 'true' : undefined"
-      :tabindex="mobileViewport ? -1 : undefined"
-      @keydown="onMobileSidebarKeydown"
+      @close="closeMobileSidebar"
     >
       <nav class="workspace-activity-rail" aria-label="工作空间切换">
         <span class="workspace-activity-brand" aria-hidden="true">{{ shellLogoText }}</span>
@@ -148,15 +145,15 @@
           <span>{{ initStatus === 'error' ? '请重试初始化，业务入口仍保持关闭。' : '业务入口将在权限与导航完成校验后开放。' }}</span>
         </div>
         <div class="menu">
-          <PrimaryNavigation
+          <ProductSideNavigation
             v-if="navigationReady"
-            :nodes="filteredMenu"
+            :nodes="filteredNavigation"
             :active-menu-id="activeMenuId"
-            :capabilities="capabilities"
-            :active-path="route.path"
+            :expanded-keys="session.menuExpandedKeys"
             :search="query"
             @select="handleSelect"
-            @navigate="pushRoute"
+            @toggle="session.toggleMenuExpanded"
+            @ensure-expanded="session.ensureMenuExpanded"
             @update:search="query = $event"
           />
         </div>
@@ -167,14 +164,7 @@
           <button class="ghost sc-btn sc-btn-ghost" @click="logout">退出登录</button>
         </div>
       </div>
-    </aside>
-    <button
-      v-if="mobileViewport && mobileSidebarOpen"
-      class="mobile-sidebar-backdrop"
-      type="button"
-      aria-label="关闭导航遮罩"
-      @click="closeMobileSidebar"
-    />
+    </ProductMobileNavigationDrawer>
 
     <section
       class="content"
@@ -347,13 +337,15 @@
         :message="hudMessage"
       />
     </section>
-  </div>
+  </ProductAppShell>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
-import PrimaryNavigation from '../components/product-shell/PrimaryNavigation.vue';
+import ProductSideNavigation from '../components/product-shell/ProductSideNavigation.vue';
+import ProductAppShell from '../components/product-shell/ProductAppShell.vue';
+import ProductMobileNavigationDrawer from '../components/product-shell/ProductMobileNavigationDrawer.vue';
 import ProductIdentity from '../components/product-shell/ProductIdentity.vue';
 import ActivityPageTabs from '../components/product-shell/ActivityPageTabs.vue';
 import StatusPanel from '../components/StatusPanel.vue';
@@ -369,14 +361,13 @@ import { buildCanonicalSceneRouteTarget, buildEntryTargetRouteTarget, parseScene
 import { buildRuntimeNavigationRegistry } from '../app/navigationRegistry';
 import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
-import { useModalLifecycle } from '../composables/useModalLifecycle';
 import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
 import { config } from '../config';
 import { BUSINESS_CONFIG_MODES } from '../app/businessConfigBoundaries';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
 import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore.js';
-import type { BusinessScopeOperationOption, NavNode, RecordContextOption } from '@sc/schema';
+import type { BusinessScopeOperationOption, CanonicalNavigationNode, NavNode, RecordContextOption } from '@sc/schema';
 import {
   exportSuggestedActionTraces,
   getLatestSuggestedActionTrace,
@@ -438,7 +429,6 @@ const sidebarHidden = ref(false);
 const mobileViewport = ref(false);
 const mobileSidebarOpen = ref(false);
 const sidebarToggleButton = ref<HTMLButtonElement | null>(null);
-const mobileSidebarSurface = ref<HTMLElement | null>(null);
 const roleContextTrigger = ref<HTMLButtonElement | null>(null);
 const roleContextPanel = ref<HTMLElement | null>(null);
 const workspacePanelMode = ref<WorkspacePanelMode>('navigation');
@@ -458,12 +448,13 @@ let recordContextSearchRequestSequence = 0;
 let appCatalogRequestSequence = 0;
 
 const menuTree = computed(() => session.menuTree);
+const navigationNodes = computed(() => session.navigationModel?.nodes || []);
 const roleSurface = computed(() => session.roleSurface);
 const shellLogoText = computed(() => config.appBrand.shellLogoText || 'SC');
 const rootNode = computed(() => (menuTree.value.length === 1 ? menuTree.value[0] : null));
-const menuNodes = computed(() => rootNode.value?.children ?? menuTree.value);
-const visibleMenuNodes = computed(() => menuNodes.value);
-const menuCount = computed(() => visibleMenuNodes.value.length);
+const navigationRootNode = computed(() => (navigationNodes.value.length === 1 ? navigationNodes.value[0] : null));
+const visibleNavigationNodes = computed(() => navigationRootNode.value?.children ?? navigationNodes.value);
+const menuCount = computed(() => visibleNavigationNodes.value.length);
 
 const routeAllowsEmptyMenu = computed(() => {
   const actionId = asInteger(route.params.actionId || route.query.action_id) || 0;
@@ -551,7 +542,6 @@ const recordContextSearchPlaceholder = computed(() =>
     || `搜索${recordContextSubject.value}名称`,
 );
 const roleLandingPath = computed(() => session.resolveLandingPath('/'));
-const capabilities = computed(() => session.capabilities);
 const initMeta = computed(() => asDict(session.initMeta));
 const isPlatformAdmin = computed(() => session.user?.is_platform_admin === true);
 const visiblePublishedApps = computed(() => (isPlatformAdmin.value ? appCatalog.value : []));
@@ -964,12 +954,6 @@ function persistSidebarHidden(hidden: boolean): void {
 const sidebarVisible = computed(() => mobileViewport.value ? mobileSidebarOpen.value : !sidebarHidden.value);
 const showMobileWorkShortcut = computed(() => mobileViewport.value && !['my-work', 'scene-my-work'].includes(String(route.name || '')));
 
-const { onKeydown: onMobileSidebarKeydown } = useModalLifecycle({
-  open: () => mobileViewport.value && mobileSidebarOpen.value,
-  surface: mobileSidebarSurface,
-  close: () => { void closeMobileSidebar(); },
-});
-
 async function toggleRoleContext(): Promise<void> {
   roleContextOpen.value = !roleContextOpen.value;
   if (roleContextOpen.value) {
@@ -1378,16 +1362,13 @@ const activeMenuId = computed(() => {
   return undefined;
 });
 
-function filterNodes(nodes: NavNode[], q: string): NavNode[] {
+function filterNavigationNodes(nodes: CanonicalNavigationNode[], q: string): CanonicalNavigationNode[] {
   const term = q.trim().toLowerCase();
   if (!term) {
     return nodes;
   }
-  const matches = (node: NavNode) => {
-    const label = node.title || node.name || node.label || '';
-    return label.toLowerCase().includes(term);
-  };
-  const walk = (items: NavNode[]): NavNode[] => {
+  const matches = (node: CanonicalNavigationNode) => node.label.toLowerCase().includes(term);
+  const walk = (items: CanonicalNavigationNode[]): CanonicalNavigationNode[] => {
     return items
       .map((node) => {
         const children = node.children ? walk(node.children) : [];
@@ -1396,12 +1377,12 @@ function filterNodes(nodes: NavNode[], q: string): NavNode[] {
         }
         return null;
       })
-      .filter(Boolean) as NavNode[];
+      .filter(Boolean) as CanonicalNavigationNode[];
   };
   return walk(nodes);
 }
 
-const filteredMenu = computed(() => filterNodes(visibleMenuNodes.value, query.value));
+const filteredNavigation = computed(() => filterNavigationNodes(visibleNavigationNodes.value, query.value));
 const isConfigurationRoute = computed(() => route.path.startsWith('/admin/'));
 const activityPages = computed(() => (isConfigurationRoute.value ? [] : session.activityPages));
 const activeActivityPageKey = computed(() => (isConfigurationRoute.value ? '' : session.activeActivityPageKey));
@@ -1418,10 +1399,10 @@ function buildMenuSelectionQuery(): LocationQueryRaw {
   return next;
 }
 
-function handleSelect(node: NavNode) {
+function handleSelect(node: CanonicalNavigationNode) {
   if (!navigationReady.value) return;
   closeMobileSidebar();
-  const selection = createNavigationSelectionSnapshot(node, session.routeAuthority);
+  const selection = createNavigationSelectionSnapshot(node.source, session.routeAuthority);
   if (!selection) return;
   const menuQuery: LocationQueryRaw = {
     ...buildMenuSelectionQuery(),

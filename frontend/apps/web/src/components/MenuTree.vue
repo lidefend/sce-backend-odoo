@@ -1,14 +1,14 @@
 <template>
   <ul class="tree" :class="[`depth-${level}`, { 'tree--root': level === 0 }]">
-    <li v-for="node in sorted" :key="nodeKey(node)">
+    <li v-for="node in nodes" :key="node.key">
       <div
         class="node"
         :class="{
-          active: activeMenuId === (node.menu_id ?? node.id),
-          ancestor: activeParents.has(nodeKey(node)),
-          expanded: Boolean(node.children?.length) && expanded.has(nodeKey(node)),
-          group: Boolean(node.children?.length),
-          leaf: !node.children?.length,
+          active: activeMenuId === node.menuId,
+          ancestor: activeParents.has(node.key),
+          expanded: Boolean(node.children.length) && expanded.has(node.key),
+          group: Boolean(node.children.length),
+          leaf: !node.children.length,
           disabled: isBlocked(node),
         }"
       >
@@ -25,27 +25,29 @@
           <span v-if="nodeBadge(node)" class="label-badge">{{ nodeBadge(node) }}</span>
         </button>
         <button
-          v-if="node.children?.length"
+          v-if="node.children.length"
           class="toggle"
-          :aria-label="`${expanded.has(nodeKey(node)) ? '收起' : '展开'}${nodeLabel(node)}`"
-          :aria-expanded="expanded.has(nodeKey(node))"
-          :title="`${expanded.has(nodeKey(node)) ? '收起' : '展开'}${nodeLabel(node)}`"
-          @click="toggle(nodeKey(node))"
+          :aria-label="`${expanded.has(node.key) ? '收起' : '展开'}${node.label}`"
+          :aria-expanded="expanded.has(node.key)"
+          :title="`${expanded.has(node.key) ? '收起' : '展开'}${node.label}`"
+          @click="emit('toggle', node.key)"
         >
-          <ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expanded.has(nodeKey(node)) }" />
+          <ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expanded.has(node.key) }" />
         </button>
         <span v-else class="toggle-spacer" aria-hidden="true"></span>
       </div>
       <transition name="expand">
         <MenuTree
-          v-if="node.children?.length"
-          v-show="searchActive || expanded.has(nodeKey(node))"
+          v-if="node.children.length"
+          v-show="searchActive || expanded.has(node.key)"
           :nodes="node.children"
           :active-menu-id="activeMenuId"
-          :capabilities="capabilities"
+          :expanded-keys="expandedKeys"
           :level="level + 1"
           :search-active="searchActive"
           @select="emit('select', $event)"
+          @toggle="emit('toggle', $event)"
+          @ensure-expanded="emit('ensure-expanded', $event)"
         />
       </transition>
     </li>
@@ -53,159 +55,78 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watchEffect } from 'vue';
-import type { NavNode } from '@sc/schema';
-import { capabilityTooltip, evaluateCapabilityPolicy } from '../app/capabilityPolicy';
-import { useSessionStore } from '../stores/session';
+import { computed, watchEffect } from 'vue';
+import type { CanonicalNavigationNode } from '@sc/schema';
 import ScIcon from './design-system/ScIcon.vue';
 
-const props = withDefaults(defineProps<{ nodes: NavNode[]; activeMenuId?: number; capabilities?: string[]; level?: number; searchActive?: boolean }>(), {
+const props = withDefaults(defineProps<{ nodes: CanonicalNavigationNode[]; activeMenuId?: number; expandedKeys?: string[]; level?: number; searchActive?: boolean }>(), {
   activeMenuId: undefined,
-  capabilities: () => [],
+  expandedKeys: () => [],
   level: 0,
   searchActive: false,
 });
-const emit = defineEmits<{ (e: 'select', node: NavNode): void }>();
+const emit = defineEmits<{
+  (event: 'select', node: CanonicalNavigationNode): void;
+  (event: 'toggle', key: string): void;
+  (event: 'ensure-expanded', keys: string[]): void;
+}>();
 
-const session = useSessionStore();
-const expanded = computed(() => new Set(session.menuExpandedKeys));
-const activeParents = ref<Set<string>>(new Set());
+const expanded = computed(() => new Set(props.expandedKeys));
+const activeParents = computed(() => {
+  const active = findNode(props.nodes, props.activeMenuId);
+  return new Set(active?.parentChain.map((parent) => parent.key) || []);
+});
 
 type NavigationIconName = 'apps' | 'briefcase' | 'building' | 'clipboard' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'project' | 'settings' | 'user';
 const navigationIconNames = new Set<NavigationIconName>([
   'apps', 'briefcase', 'building', 'clipboard', 'construction', 'contract', 'file-text', 'folder', 'home', 'project', 'settings', 'user',
 ]);
 
-const sorted = computed(() => {
-  const nodes = hideEmptyDirectoryLeaves(hideDuplicateLeafBesideGroup(props.nodes));
-  return [...nodes];
-});
-
-function hideEmptyDirectoryLeaves(nodes: NavNode[]) {
-  return nodes.filter((node) => {
-    if (node.children?.length) return true;
-    const raw = node as NavNode & {
-      target_type?: unknown;
-      delivery_mode?: unknown;
-      is_clickable?: unknown;
-    };
-    const targetType = String(raw.target_type || node.meta?.target_type || '').trim();
-    const deliveryMode = String(raw.delivery_mode || node.meta?.delivery_mode || '').trim();
-    return !(targetType === 'directory' && deliveryMode === 'none' && raw.is_clickable === false);
-  });
-}
-
-function hideDuplicateLeafBesideGroup(nodes: NavNode[]) {
-  const groupLabels = new Set(
-    nodes
-      .filter((node) => Boolean(node.children?.length))
-      .map((node) => normalizedNodeLabel(node))
-      .filter(Boolean),
-  );
-  if (!groupLabels.size) return [...nodes];
-  return nodes.filter((node) => {
-    if (node.children?.length) return true;
-    return !groupLabels.has(normalizedNodeLabel(node));
-  });
-}
-
 const level = computed(() => Number(props.level || 0));
 
-function toggle(key: string) {
-  session.toggleMenuExpanded(key);
+function nodeLabel(node: CanonicalNavigationNode) {
+  return node.label;
 }
 
-function nodeKey(node: NavNode) {
-  return (node as NavNode & { xmlid?: string }).xmlid || node.key || `menu_${node.menu_id || node.id}`;
-}
-
-function nodeLabel(node: NavNode) {
-  const raw = String(node.title || node.name || node.label || 'Unnamed');
-  return raw.replace(/\s*\(\d+\)\s*$/g, '');
-}
-
-function normalizedNodeLabel(node: NavNode) {
-  return nodeLabel(node).trim();
-}
-
-function nodeIcon(node: NavNode): NavigationIconName {
-  const requested = String(node.icon || node.meta?.icon || '').trim() as NavigationIconName;
+function nodeIcon(node: CanonicalNavigationNode): NavigationIconName {
+  const requested = String(node.icon || '').trim() as NavigationIconName;
   if (navigationIconNames.has(requested)) return requested;
-  return node.children?.length ? 'folder' : 'file-text';
+  return node.children.length ? 'folder' : 'file-text';
 }
 
-function nodeBadge(node: NavNode): string {
-  return String(node.meta?.badge_label || '').trim();
+function nodeBadge(node: CanonicalNavigationNode): string {
+  return String(node.source.meta?.badge_label || '').trim();
 }
 
-function onSelect(node: NavNode) {
+function onSelect(node: CanonicalNavigationNode) {
   if (isBlocked(node)) {
     return;
   }
-  if (node.children?.length && !hasNavigationTarget(node)) {
-    toggle(nodeKey(node));
+  if (node.state === 'container') {
+    emit('toggle', node.key);
     return;
   }
   emit('select', node);
 }
 
-function hasNavigationTarget(node: NavNode) {
-  const raw = node as NavNode & {
-    action?: unknown;
-    action_id?: unknown;
-    actionId?: unknown;
-    model?: unknown;
-    route?: unknown;
-    scene_key?: unknown;
-    sceneKey?: unknown;
-  };
-  const meta = (node.meta && typeof node.meta === 'object') ? node.meta : {};
-  return Boolean(
-    raw.action
-      || raw.action_id
-      || raw.actionId
-      || raw.model
-      || raw.route
-      || raw.scene_key
-      || raw.sceneKey
-      || meta.action_id
-      || meta.actionId
-      || meta.model
-      || meta.route
-      || meta.scene_key
-      || meta.sceneKey,
-  );
-}
-
-function ensureExpandedForActive(nodes: NavNode[], menuId?: number): Set<string> {
-  if (!menuId) {
-    return new Set();
+function findNode(nodes: CanonicalNavigationNode[], menuId?: number): CanonicalNavigationNode | null {
+  if (!menuId) return null;
+  for (const node of nodes) {
+    if (node.menuId === menuId) return node;
+    const child = findNode(node.children, menuId);
+    if (child) return child;
   }
-  const next = new Set<string>();
-  const walk = (items: NavNode[], parents: string[] = []) => {
-    for (const node of items) {
-      const key = nodeKey(node);
-      if ((node.menu_id ?? node.id) === menuId) {
-        parents.forEach((p) => next.add(p));
-      }
-      if (node.children?.length) {
-        walk(node.children, [...parents, key]);
-      }
-    }
-  };
-  walk(nodes);
-  return next;
+  return null;
 }
 
-function ensureExpandedForDefaultGroups(nodes: NavNode[]): Set<string> {
+function ensureExpandedForDefaultGroups(nodes: CanonicalNavigationNode[]): Set<string> {
   const next = new Set<string>();
-  const walk = (items: NavNode[]) => {
+  const walk = (items: CanonicalNavigationNode[]) => {
     for (const node of items) {
-      const key = nodeKey(node);
-      if (node.children?.length && node.meta?.default_expanded === true) {
-        next.add(key);
+      if (node.children.length && node.source.meta?.default_expanded === true) {
+        next.add(node.key);
       }
-      if (node.children?.length) {
+      if (node.children.length) {
         walk(node.children);
       }
     }
@@ -215,43 +136,20 @@ function ensureExpandedForDefaultGroups(nodes: NavNode[]): Set<string> {
 }
 
 watchEffect(() => {
-  const parents = ensureExpandedForActive(props.nodes, props.activeMenuId);
+  const parents = activeParents.value;
   const defaults = ensureExpandedForDefaultGroups(props.nodes);
-  if (parents.size) {
-    session.ensureMenuExpanded([...parents]);
-  }
-  if (defaults.size) {
-    session.ensureMenuExpanded([...defaults]);
-  }
-  activeParents.value = parents;
+  const required = new Set([...parents, ...defaults]);
+  const missing = [...required].filter((key) => !expanded.value.has(key));
+  if (missing.length) emit('ensure-expanded', missing);
 });
 
-function isBlocked(node: NavNode) {
-  return evaluateCapabilityPolicy({ source: node.meta, available: props.capabilities }).state !== 'enabled';
+function isBlocked(node: CanonicalNavigationNode) {
+  return node.state === 'disabled';
 }
 
-function blockedTitle(node: NavNode) {
-  const policy = evaluateCapabilityPolicy({ source: node.meta, available: props.capabilities });
-  const tip = capabilityTooltip(policy);
-  return tip || undefined;
+function blockedTitle(node: CanonicalNavigationNode) {
+  return node.disabledReason || undefined;
 }
-
-// 调试：打印接收到的节点
-onMounted(() => {
-  if (import.meta.env.DEV) {
-    console.info('[MenuTree] Received nodes:', props.nodes.length);
-    if (props.nodes.length > 0) {
-      console.info('[MenuTree] First node:', {
-        key: props.nodes[0].key,
-        name: props.nodes[0].name,
-        label: props.nodes[0].label,
-        menu_id: props.nodes[0].menu_id,
-        children: props.nodes[0].children?.length || 0,
-        meta: props.nodes[0].meta
-      });
-    }
-  }
-});
 </script>
 
 <style scoped>

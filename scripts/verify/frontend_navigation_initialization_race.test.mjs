@@ -73,9 +73,9 @@ assert.equal(createNavigationSelectionSnapshot(node, null), null);
 
 const appShell = fs.readFileSync('frontend/apps/web/src/layouts/AppShell.vue', 'utf8');
 assert.match(appShell, /:data-navigation-state="navigationReady \? 'ready' : initStatus === 'error' \? 'error' : 'loading'"/);
-assert.match(appShell, /<PrimaryNavigation[\s\S]*v-if="navigationReady"/);
+assert.match(appShell, /<ProductSideNavigation[\s\S]*v-if="navigationReady"/);
 assert.match(appShell, /if \(!navigationReady\.value\) return;/);
-assert.match(appShell, /createNavigationSelectionSnapshot\(node, session\.routeAuthority\)/);
+assert.match(appShell, /createNavigationSelectionSnapshot\(node\.source, session\.routeAuthority\)/);
 assert.match(appShell, /routeAuthorityContextAllowed\(selection\.authority,/);
 assert.doesNotMatch(appShell, /findRouteAuthority\(session\.routeAuthority/, 'menu click must not re-read mutable route authority');
 assert.doesNotMatch(appShell, /node\.menu_id\s*=(?!=)/, 'menu click must not mutate the selected node');
