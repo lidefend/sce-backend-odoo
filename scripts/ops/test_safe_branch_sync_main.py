@@ -27,7 +27,10 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         git(self.root, "config", "user.email", "test@example.invalid")
         git(self.root, "config", "user.name", "Test")
         (self.root / "base.txt").write_text("base\n", encoding="utf-8")
-        git(self.root, "add", "base.txt")
+        self.delivery_log = self.root / syncer.APPEND_ONLY_CONFLICT_PATH
+        self.delivery_log.parent.mkdir(parents=True, exist_ok=True)
+        self.delivery_log.write_text("base-log\n", encoding="utf-8")
+        git(self.root, "add", "base.txt", syncer.APPEND_ONLY_CONFLICT_PATH)
         git(self.root, "commit", "-m", "base")
         git(self.root, "push", "origin", "HEAD:main")
         git(self.root, "branch", "-M", "main")
@@ -140,6 +143,45 @@ class SafeBranchSyncMainTest(unittest.TestCase):
                 os.environ.pop("GIT_DIR", None)
             else:
                 os.environ["GIT_DIR"] = original
+
+    def test_append_only_delivery_log_conflict_is_merged_deterministically(self) -> None:
+        self.delivery_log.write_text("base-log\nfeature-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append feature delivery log")
+        feature_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        self.delivery_log.write_text("base-log\nmain-entry\n", encoding="utf-8")
+        git(self.root, "add", syncer.APPEND_ONLY_CONFLICT_PATH)
+        git(self.root, "commit", "-m", "append main delivery log")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        conflict_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+        plan = self.plan(expected_head=feature_head, expected_main=conflict_main)
+        syncer.sync(plan)
+        self.assertEqual(
+            self.delivery_log.read_text(encoding="utf-8"),
+            "base-log\nmain-entry\nfeature-entry\n",
+        )
+
+    def test_rebase_outcome_distinguishes_success_from_unresolved_conflict(self) -> None:
+        self.assertFalse(syncer.run_rebase(self.plan()))
+        git(self.root, "reset", "--hard", self.head)
+        (self.root / "base.txt").write_text("feature-change\n", encoding="utf-8")
+        git(self.root, "add", "base.txt")
+        git(self.root, "commit", "-m", "unresolved feature conflict")
+        conflict_head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "switch", "main")
+        (self.root / "base.txt").write_text("main-change\n", encoding="utf-8")
+        git(self.root, "add", "base.txt")
+        git(self.root, "commit", "-m", "unresolved main conflict")
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        conflict_main = git(self.root, "rev-parse", "origin/main").stdout.strip()
+        git(self.root, "switch", "feature/local-sync")
+        plan = self.plan(expected_head=conflict_head, expected_main=conflict_main)
+        self.assertIsNone(syncer.run_rebase(plan))
+        git(self.root, "rebase", "--abort")
 
     def test_root_mismatch_and_no_push_or_force_push_in_implementation(self) -> None:
         with self.assertRaisesRegex(syncer.SyncError, "repository root"):

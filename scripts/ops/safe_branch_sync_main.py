@@ -21,6 +21,7 @@ ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 CONFIRMATION = "REBASE_UNPUBLISHED_BRANCH_ON_EXACT_MAIN"
 MAX_RESPONSIBILITY_COMMITS = 12
+APPEND_ONLY_CONFLICT_PATH = "docs/ops/iterations/delivery_context_switch_log_v1.md"
 CANONICAL_ORIGIN_URLS = {
     "https://github.com/lidefend/sce-backend-odoo.git",
     "git@github.com:lidefend/sce-backend-odoo.git",
@@ -204,10 +205,68 @@ def create_bundle(plan: SyncPlan) -> None:
     run(plan.root, "bundle", "verify", str(plan.recovery_bundle))
 
 
+def text_at_revision(root: Path, revision: str, path: str) -> str:
+    result = run(root, "show", f"{revision}:{path}", check=False)
+    if result.returncode:
+        raise SyncError(f"append-only conflict source is unavailable: {path}")
+    return result.stdout
+
+
+def resolve_append_only_log_conflict(plan: SyncPlan) -> bool:
+    """Resolve only a pure append conflict in the formal delivery log.
+
+    Both branch versions must retain the old-base text verbatim and only append
+    new entries. The result keeps main's entries first, then appends the local
+    branch's suffix. Any other conflict remains a fail-closed abort.
+    """
+    conflicts = tuple(
+        sorted(
+            filter(
+                None,
+                git_output(plan.root, "diff", "--name-only", "--diff-filter=U").splitlines(),
+            )
+        )
+    )
+    if conflicts != (APPEND_ONLY_CONFLICT_PATH,):
+        return False
+    base = text_at_revision(plan.root, plan.old_base, APPEND_ONLY_CONFLICT_PATH)
+    main = text_at_revision(plan.root, plan.new_main, APPEND_ONLY_CONFLICT_PATH)
+    topic = text_at_revision(plan.root, plan.head, APPEND_ONLY_CONFLICT_PATH)
+    if not main.startswith(base) or not topic.startswith(base):
+        return False
+    target = plan.root / APPEND_ONLY_CONFLICT_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(main + topic[len(base):], encoding="utf-8")
+    run(plan.root, "add", "--", APPEND_ONLY_CONFLICT_PATH)
+    return True
+
+
+def run_rebase(plan: SyncPlan) -> bool | None:
+    append_only_log_resolved = False
+    result = run(plan.root, "rebase", "--onto", plan.new_main, plan.old_base, check=False)
+    while result.returncode:
+        if not resolve_append_only_log_conflict(plan):
+            return None
+        append_only_log_resolved = True
+        result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
+    return append_only_log_resolved
+
+
+def verify_append_only_log_resolution(plan: SyncPlan) -> None:
+    base = text_at_revision(plan.root, plan.old_base, APPEND_ONLY_CONFLICT_PATH)
+    main = text_at_revision(plan.root, plan.new_main, APPEND_ONLY_CONFLICT_PATH)
+    topic = text_at_revision(plan.root, plan.head, APPEND_ONLY_CONFLICT_PATH)
+    current = (plan.root / APPEND_ONLY_CONFLICT_PATH).read_text(encoding="utf-8")
+    if not main.startswith(base) or not topic.startswith(base):
+        raise SyncError("append-only conflict inputs changed during sync")
+    if current != main + topic[len(base):]:
+        raise SyncError("append-only delivery log suffix was not preserved")
+
+
 def sync(plan: SyncPlan) -> str:
     create_bundle(plan)
-    rebased = run(plan.root, "rebase", "--onto", plan.new_main, plan.old_base, check=False)
-    if rebased.returncode:
+    append_only_log_resolved = run_rebase(plan)
+    if append_only_log_resolved is None:
         aborted = run(plan.root, "rebase", "--abort", check=False)
         restored_head = git_output(plan.root, "rev-parse", "HEAD")
         require_clean(plan.root)
@@ -221,7 +280,9 @@ def sync(plan: SyncPlan) -> str:
         raise SyncError("responsibility commit count changed after sync")
     if commit_paths(plan.root, plan.new_main, new_head) != plan.paths:
         raise SyncError("responsibility path set changed after sync")
-    if patch_id(plan.root, plan.old_base, plan.head) != patch_id(plan.root, plan.new_main, new_head):
+    if append_only_log_resolved:
+        verify_append_only_log_resolution(plan)
+    elif patch_id(plan.root, plan.old_base, plan.head) != patch_id(plan.root, plan.new_main, new_head):
         raise SyncError("responsibility patch identity changed after sync")
     return new_head
 

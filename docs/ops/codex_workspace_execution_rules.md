@@ -153,6 +153,9 @@
   当目标工作树仍使用缺少该 target 的旧基线时，可从主工作树调用同一 Make
   target，并显式传入 `WORKSPACE_BRANCH_SYNC_ROOT=<absolute-linked-worktree-path>`。
   入口会在目标目录执行，并要求目标与调用者共享同一 Git common directory。
+  若 rebase 唯一冲突是正式 delivery context log，且 main 与本地候选都仅在
+  相同旧基线后追加内容，入口可确定性地保留 main 追加项后再追加候选项；其他
+  任意冲突仍自动 abort 并恢复原 head。
 
 ## 禁止行为
 - 未完成上述校验即直接改文件。
