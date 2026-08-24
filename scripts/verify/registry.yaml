@@ -390,6 +390,12 @@ entries:
   date: '2026-07-30'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_local_dev_candidate_frontend.py
+  status: orphan
+  owner: platform-team
+  date: '2026-08-24'
+  review_by: '2026-09-30'
+  reason: candidate frontend binding regression suite is run as a targeted P4 check
 - script: test_local_dev_frontend_quick.py
   status: orphan
   owner: platform-team
