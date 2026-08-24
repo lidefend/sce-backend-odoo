@@ -141,9 +141,14 @@
                 :model-value="contractFormDriverValue(field)"
                 @update:model-value="emitFieldChange(field, $event)"
               />
-              <template v-else-if="isRelationEditorField(field) && relationAdapter">
+              <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2many(field) && relationAdapter" :field="field">
                 <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
-              </template>
+              </ProfessionalRelationFieldControl>
+              <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field) && field.readonly" :field="field">
+                <slot name="readonly" :field="field">
+                  <span class="readonly-value">{{ readonlyText(field) }}</span>
+                </slot>
+              </ProfessionalRelationFieldControl>
               <template v-else-if="field.readonly">
                 <slot name="readonly" :field="field">
                   <div
@@ -163,7 +168,8 @@
                   :described-by="fieldDescribedBy(field)"
                   @change="emitBinaryFieldChange(field, $event)"
                 />
-                <div v-else-if="field.type === 'many2one'" :class="['many2one-widget-shell', { 'many2one-widget-shell--avatar': isAvatarMany2oneWidget(field) }]">
+                <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field)" :field="field">
+                <div :class="['many2one-widget-shell', { 'many2one-widget-shell--avatar': isAvatarMany2oneWidget(field) }]">
                   <span v-if="isAvatarMany2oneWidget(field)" class="many2one-avatar" aria-hidden="true">
                     {{ avatarText(many2oneTextValue(field)) }}
                   </span>
@@ -245,6 +251,7 @@
                     </div>
                   </div>
                 </div>
+                </ProfessionalRelationFieldControl>
                 <div v-else-if="isDateRangeWidget(field)" class="native-date-range">
                   <ScDateField
                     :id="fieldControlId(field)"
@@ -316,8 +323,10 @@ import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
 import ProfessionalBusinessValueControl from '../professional-fields/ProfessionalBusinessValueControl.vue';
+import ProfessionalRelationFieldControl from '../professional-fields/ProfessionalRelationFieldControl.vue';
 import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
+import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
@@ -451,7 +460,20 @@ function usesProfessionalBusinessValue(field: FormSectionFieldSchema) {
     && isProfessionalBusinessValueField(field);
 }
 
+function usesProfessionalMany2one(field: FormSectionFieldSchema) {
+  return field.type === 'many2one'
+    && field.componentRenderer === 'ProfessionalRelationFieldControl'
+    && isProfessionalRelationField(field);
+}
+
+function usesProfessionalMany2many(field: FormSectionFieldSchema) {
+  return field.type === 'many2many'
+    && field.componentRenderer === 'ProfessionalRelationFieldControl'
+    && isProfessionalRelationField(field);
+}
+
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
+  if (isProfessionalRelationField(field)) return false;
   return usesContractFormDriverField(field, sceneUiKit?.kit.value || 'sc-native');
 }
 

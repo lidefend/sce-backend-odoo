@@ -226,8 +226,10 @@ def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str
         return "sc.value.user"
     if relation == "res.company":
         return "sc.value.company"
-    if normalized.endswith("many2one"):
-        return "sc.select.remote"
+    if field_type == "many2one" or normalized.endswith("many2one"):
+        return "sc.relation.many2one"
+    if field_type == "many2many" and normalized != "many2many_tags":
+        return "sc.relation.many2many"
     mapping = {
         "input": "sc.input.text",
         "binary": "sc.input.binary",
