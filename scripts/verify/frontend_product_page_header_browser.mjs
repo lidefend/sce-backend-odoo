@@ -56,12 +56,15 @@ for (const target of targets) {
   const snapshot = await page.evaluate(() => {
     const visible = (node) => node instanceof HTMLElement && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
     const headerNode = document.querySelector('[data-product-page-header]');
+    const patternNode = document.querySelector('[data-product-page-pattern]');
     const primary = [...document.querySelectorAll('[data-product-primary-action]')].filter(visible);
     const enabledPrimary = primary.filter((node) => !(node instanceof HTMLButtonElement) || !node.disabled);
     const save = [...document.querySelectorAll('[data-action-ref="form.save"], [data-action-method="save"], [data-action-method="write"]')].filter(visible);
     return {
       url: location.href,
       headerCount: document.querySelectorAll('[data-product-page-header]').length,
+      patternCount: document.querySelectorAll('[data-product-page-pattern]').length,
+      pagePattern: patternNode?.getAttribute('data-product-page-pattern') || '',
       h1Count: document.querySelectorAll('h1').length,
       presentationMode: headerNode?.getAttribute('data-presentation-mode') || '',
       renderProfile: headerNode?.getAttribute('data-render-profile') || '',
@@ -75,6 +78,8 @@ for (const target of targets) {
     };
   });
   check(snapshot.headerCount === 1, `${target.key}: page header count ${snapshot.headerCount}`);
+  check(snapshot.patternCount === 1, `${target.key}: page pattern count ${snapshot.patternCount}`);
+  check(snapshot.pagePattern === target.pagePattern, `${target.key}: page pattern ${snapshot.pagePattern}`);
   check(snapshot.h1Count === 1, `${target.key}: h1 count ${snapshot.h1Count}`);
   check(snapshot.presentationMode === target.presentationMode, `${target.key}: presentation mode ${snapshot.presentationMode}`);
   check(snapshot.renderProfile === target.renderProfile, `${target.key}: render profile ${snapshot.renderProfile}`);
