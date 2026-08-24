@@ -25,7 +25,24 @@ function positiveInteger(value: unknown): number {
 }
 
 function nodeMenuId(node: NavNode): number {
-  return positiveInteger(node.menu_id || node.id || node.meta?.menu_id);
+  const meta = node.meta && typeof node.meta === 'object' ? node.meta : {};
+  const raw = node as NavNode & {
+    config_menu_id?: unknown;
+    config_ref?: { model?: unknown; id?: unknown };
+    synthetic?: unknown;
+  };
+  const metaConfigRef = meta.config_ref && typeof meta.config_ref === 'object'
+    ? meta.config_ref as { model?: unknown; id?: unknown }
+    : {};
+  const configRef = raw.config_ref && typeof raw.config_ref === 'object' ? raw.config_ref : metaConfigRef;
+  const configuredMenuId = positiveInteger(
+    raw.config_menu_id
+    || meta.config_menu_id
+    || (text(configRef.model || 'ir.ui.menu') === 'ir.ui.menu' ? configRef.id : 0),
+  );
+  if (configuredMenuId) return configuredMenuId;
+  if (raw.synthetic === true || meta.synthetic === true) return 0;
+  return positiveInteger(node.menu_id || node.id || meta.menu_id);
 }
 
 function nodeActionId(node: NavNode): number {

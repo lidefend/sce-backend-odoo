@@ -82,6 +82,17 @@ if (!syntheticLeaf?.canonical_navigation) throw new Error('test leaf carrier mis
 syntheticLeaf.canonical_navigation.parent_chain[0] = { key: 'root:synthetic', menu_id: null, label: 'Root' };
 assert.equal(createCanonicalNavigationModel(syntheticRoot, authority).nodes[0].menuId, null);
 
+const configuredSyntheticGroup = structuredClone(nav);
+const configuredGroup = configuredSyntheticGroup[0].children?.[0] as NavNode & {
+  synthetic?: boolean;
+  meta?: NavNode['meta'] & { config_menu_id?: number };
+};
+if (!configuredGroup?.canonical_navigation) throw new Error('test configured synthetic group carrier missing');
+configuredGroup.menu_id = 883881237;
+configuredGroup.synthetic = true;
+configuredGroup.meta = { ...(configuredGroup.meta || {}), synthetic: true, config_menu_id: 2 };
+assert.equal(createCanonicalNavigationModel(configuredSyntheticGroup, authority).nodes[0].children[0].menuId, 2);
+
 assert.throws(
   () => createCanonicalNavigationModel(nav, { ...authority, primary_actions: [] }),
   (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_AUTHORITY_MISSING',
@@ -126,4 +137,4 @@ assert.throws(
   (error) => error instanceof CanonicalNavigationError && error.code === 'CANONICAL_NAVIGATION_IDENTITY_DUPLICATED',
 );
 
-console.log('[canonical_navigation_model_test] PASS cases=8');
+console.log('[canonical_navigation_model_test] PASS cases=9');
