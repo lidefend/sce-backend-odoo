@@ -49,12 +49,26 @@ function canonicalNode(page, menuId, actionId) {
   return page.locator(`[data-navigation-node="canonical"][data-navigation-menu-id="${menuId}"][data-navigation-action-id="${actionId}"]`);
 }
 
+function nodeByLabel(page, label) {
+  return page.getByRole('button', { name: label, exact: true }).locator('xpath=ancestor::li[@data-navigation-node="canonical"][1]');
+}
+
+async function expandNode(page, label) {
+  const node = nodeByLabel(page, label);
+  check(await node.count() === 1, `${label} canonical navigation node must be unique`, { count: await node.count() });
+  const toggle = node.locator(':scope > .node > button.toggle');
+  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  return node;
+}
+
 async function desktopJourney(browser, report) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
   const page = await context.newPage();
   observe(page, report);
   await login(page);
 
+  await expandNode(page, '系统菜单');
+  const projectGroup = await expandNode(page, '项目中心');
   const target = canonicalNode(page, 679, 859);
   check(await target.count() === 1, '项目完整工作区必须拥有唯一 canonical menu/action 身份', { count: await target.count() });
   const targetButton = target.locator(':scope > .node > button.label');
@@ -62,12 +76,6 @@ async function desktopJourney(browser, report) {
   const depth = Number(await target.getAttribute('data-navigation-depth'));
   check(depth >= 2, '正式项目入口必须保留至少三级父子层级', { depth });
 
-  const parentToggles = target.locator('xpath=ancestor::li[data-navigation-node="canonical"]')
-    .locator(':scope > .node > button.toggle');
-  for (let index = 0; index < await parentToggles.count(); index += 1) {
-    const toggle = parentToggles.nth(index);
-    if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
-  }
   const sourceUrl = page.url();
   await targetButton.click();
   await page.waitForURL((url) => url.pathname === '/a/859' && url.searchParams.get('menu_id') === '679', { timeout: 45000 });
@@ -79,8 +87,6 @@ async function desktopJourney(browser, report) {
   check(page.url() === firstTarget, '刷新必须恢复相同 action/menu 深链', { firstTarget, afterReload: page.url() });
   check(await page.locator('[data-navigation-node="canonical"] > .node.active button[aria-current="page"]').count() === 1, '刷新后当前叶子菜单必须保持唯一');
 
-  const projectGroup = page.locator('[data-navigation-node="canonical"]').filter({ has: page.getByRole('button', { name: '项目中心', exact: true }) });
-  check(await projectGroup.count() === 1, '项目中心分组必须唯一');
   const projectToggle = projectGroup.locator(':scope > .node > button.toggle');
   const beforeCollapse = await projectToggle.getAttribute('aria-expanded');
   await projectToggle.click();
@@ -88,7 +94,7 @@ async function desktopJourney(browser, report) {
   check(beforeCollapse !== afterCollapse, '桌面导航折叠状态必须可切换');
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('[data-navigation-state="ready"]').waitFor({ timeout: 45000 });
-  const reloadedProjectGroup = page.locator('[data-navigation-node="canonical"]').filter({ has: page.getByRole('button', { name: '项目中心', exact: true }) });
+  const reloadedProjectGroup = nodeByLabel(page, '项目中心');
   check(await reloadedProjectGroup.locator(':scope > .node > button.toggle').getAttribute('aria-expanded') === afterCollapse, '桌面导航折叠偏好必须在刷新后保持');
 
   await page.goBack({ waitUntil: 'domcontentloaded' });
