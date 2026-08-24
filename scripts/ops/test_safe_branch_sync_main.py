@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import safe_branch_sync_main as syncer
@@ -151,6 +152,32 @@ class SafeBranchSyncMainTest(unittest.TestCase):
     def test_repository_origin_identity_is_denied(self) -> None:
         with self.assertRaisesRegex(syncer.SyncError, "repository identity"):
             self.plan(origin_checker=lambda _: False)
+
+    def test_cli_uses_an_explicit_target_worktree_for_bootstrap(self) -> None:
+        plan = self.plan()
+        arguments = [
+            "safe_branch_sync_main.py",
+            "--worktree", str(self.root),
+            "--expected-root", str(self.root),
+            "--expected-branch", "feature/local-sync",
+            "--expected-head", self.head,
+            "--expected-old-base", self.old_base,
+            "--expected-main", self.new_main,
+            "--confirm", syncer.CONFIRMATION,
+        ]
+        with mock.patch.object(syncer, "validate", return_value=plan) as validate, \
+             mock.patch.object(syncer, "sync", return_value="a" * 40), \
+             mock.patch.object(sys, "argv", arguments):
+            self.assertEqual(syncer.main(), 0)
+        self.assertEqual(validate.call_args.kwargs["root"], self.root)
+        self.assertEqual(validate.call_args.kwargs["expected_root"], self.root)
+
+    def test_make_target_keeps_target_worktree_as_the_expected_root(self) -> None:
+        makefile = Path(__file__).resolve().parents[2] / "make" / "codex.mk"
+        source = makefile.read_text(encoding="utf-8")
+        recipe = source.split("workspace.branch.sync-main: guard.prod.forbid", 1)[1].split("\n\n", 1)[0]
+        self.assertIn('--worktree "$(WORKSPACE_BRANCH_SYNC_WORKTREE)"', recipe)
+        self.assertIn('--expected-root "$(WORKSPACE_BRANCH_SYNC_WORKTREE)"', recipe)
 
 
 if __name__ == "__main__":

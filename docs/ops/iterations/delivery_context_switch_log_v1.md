@@ -5653,3 +5653,17 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   verification, environment sanitization and root mismatch.
 - Rollback: revert this P4 governance commit. Existing published branches keep
   their immutable-history policy; recovery bundles remain local evidence.
+
+## Governed branch sync bootstrap target (2026-08-24)
+
+- Branch / anchor: `fix/p4-governed-branch-sync-bootstrap-v1` / `cb255a0d`.
+- Formal Product Layer / Layer Target / Module: P4 delivery governance /
+  controller-worktree invocation of an unpublished candidate sync /
+  `make/codex.mk` and `safe_branch_sync_main.py`.
+- Reason / boundary: an old candidate worktree cannot contain a target that was
+  added only on newer main. The controller Makefile may therefore pass one
+  explicit target worktree path, and the script treats that same path as its
+  required expected root. All branch, origin, cleanliness and publication
+  checks remain anchored to the target, not the controller.
+- Rollback: revert this bootstrap-only P4 change; the original same-worktree
+  invocation remains available and no Token or product source is changed.

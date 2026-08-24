@@ -220,6 +220,7 @@ def sync(plan: SyncPlan) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--worktree", default=".")
     parser.add_argument("--expected-root", required=True)
     parser.add_argument("--expected-branch", required=True)
     parser.add_argument("--expected-head", required=True)
@@ -232,7 +233,7 @@ def main() -> int:
         return 2
     try:
         plan = validate(
-            root=Path.cwd(), expected_root=Path(args.expected_root), expected_branch=args.expected_branch,
+            root=Path(args.worktree), expected_root=Path(args.expected_root), expected_branch=args.expected_branch,
             expected_head=args.expected_head, expected_old_base=args.expected_old_base,
             expected_main=args.expected_main,
         )

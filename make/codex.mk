@@ -421,6 +421,7 @@ EXPECTED_BRANCH ?=
 EXPECTED_OLD_BASE ?=
 EXPECTED_MAIN ?=
 CONFIRM_WORKSPACE_BRANCH_SYNC ?=
+WORKSPACE_BRANCH_SYNC_WORKTREE ?= $(CURDIR)
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -473,7 +474,8 @@ workspace.worktree.cleanup: guard.prod.forbid
 
 workspace.branch.sync-main: guard.prod.forbid
 	@python3 scripts/ops/safe_branch_sync_main.py \
-		--expected-root "$(ROOT_DIR)" \
+		--worktree "$(WORKSPACE_BRANCH_SYNC_WORKTREE)" \
+		--expected-root "$(WORKSPACE_BRANCH_SYNC_WORKTREE)" \
 		--expected-branch "$(EXPECTED_BRANCH)" \
 		--expected-head "$(EXPECTED_HEAD)" \
 		--expected-old-base "$(EXPECTED_OLD_BASE)" \
