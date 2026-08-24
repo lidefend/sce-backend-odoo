@@ -58,6 +58,11 @@ for (const target of targets) {
     check(await tab.count() === 1, `${target.key}: native tab ${target.activateTab} is not unique`);
     await tab.click();
   }
+  if (target.openAuditTimeline) {
+    const auditTimeline = page.locator('[data-professional-audit-timeline]');
+    check(await auditTimeline.count() === 1, `${target.key}: professional audit timeline is not unique`);
+    if (!await auditTimeline.evaluate((node) => node.hasAttribute('open'))) await auditTimeline.locator('summary').click();
+  }
   const snapshot = await page.evaluate(() => {
     const visible = (node) => node instanceof HTMLElement && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
     const headerNode = document.querySelector('[data-product-page-header]');
@@ -80,6 +85,8 @@ for (const target of targets) {
     const visibleProfessionalDetailCollections = professionalDetailCollections.filter(visible);
     const workflowStatusbars = [...document.querySelectorAll('[data-professional-workflow-component="statusbar"]')].filter(visible);
     const workflowActionBars = [...document.querySelectorAll('[data-professional-workflow-component="action-bar"]')].filter(visible);
+    const professionalAuditTimelines = [...document.querySelectorAll('[data-professional-audit-timeline]')].filter(visible);
+    const professionalAuditEvents = [...document.querySelectorAll('[data-professional-audit-event]')].filter(visible);
     const professionalBaseContextMismatches = professionalBaseFields.filter((node) => (
       node.getAttribute('data-presentation-mode') !== headerNode?.getAttribute('data-presentation-mode')
       || node.getAttribute('data-render-profile') !== headerNode?.getAttribute('data-render-profile')
@@ -117,6 +124,8 @@ for (const target of targets) {
       workflowActionBarCount: workflowActionBars.length,
       workflowActionCount: workflowActionBars.map((node) => Number(node.getAttribute('data-workflow-action-count') || 0)),
       workflowDisabledCount: workflowActionBars.map((node) => Number(node.getAttribute('data-workflow-disabled-count') || 0)),
+      professionalAuditTimelineCount: professionalAuditTimelines.length,
+      professionalAuditEventCount: professionalAuditEvents.length,
       professionalBaseContextMismatchCount: professionalBaseContextMismatches.length,
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     };
@@ -147,6 +156,12 @@ for (const target of targets) {
   }
   if (target.requireWorkflowActionBar) {
     check(snapshot.workflowActionBarCount === 1, `${target.key}: workflow action bar count ${snapshot.workflowActionBarCount}`);
+  }
+  if (target.requireAuditTimeline) {
+    check(snapshot.professionalAuditTimelineCount === 1, `${target.key}: professional audit timeline count ${snapshot.professionalAuditTimelineCount}`);
+  }
+  if (target.requireAuditEvent) {
+    check(snapshot.professionalAuditEventCount > 0, `${target.key}: professional audit event is absent`);
   }
   check(snapshot.professionalBaseContextMismatchCount === 0, `${target.key}: professional base field context mismatch`);
   if (target.renderProfile === 'edit') {
