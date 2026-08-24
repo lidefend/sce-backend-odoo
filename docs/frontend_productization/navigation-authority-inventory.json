@@ -1,0 +1,1690 @@
+{
+  "baselineScope": "repository formal-product declarative baseline",
+  "canonicalRuntimeAuthority": {
+    "declared": "backend runtime navigation response / session.menuTree",
+    "frontendConsumers": [
+      "frontend/apps/web/src/stores/session.ts",
+      "frontend/apps/web/src/layouts/AppShell.vue",
+      "frontend/apps/web/src/components/product-shell/PrimaryNavigation.vue",
+      "frontend/apps/web/src/app/menu.ts"
+    ],
+    "staticEvidence": "AppShell passes session-derived filteredMenu to PrimaryNavigation; final visibility requires runtime inspection."
+  },
+  "excludedScopes": [
+    "demo_addons",
+    "external customer_addons",
+    "runtime installed-module state",
+    "user-specific visibility"
+  ],
+  "generatedFromDirtyWorktree": true,
+  "generatorDigest": "3d5fec45cc5c48bc1ea30d133db734bdc81e602770660ba104e5d51c48efad7c",
+  "inputDigest": "34e2a57b5d02c016f7e8953d1c7ab0f1ea644c87af0381271abcd9be00829c44",
+  "inputScopes": [
+    {
+      "path": "frontend/apps/web/src/**/*navigation|menu|shell|route|session|activity*",
+      "scope": "navigation_candidate_source"
+    }
+  ],
+  "kind": "navigation_authority_inventory",
+  "knownStaticGaps": [
+    "No static scan can prove the current leaf menu is exactly one after runtime authorization and user preference application.",
+    "Favorites/recent and collapsed state need explicit schema ownership before they become canonical navigation inputs.",
+    "A future Canonical Navigation Model must make backend authority, disabled reason, parent chain, and route identity explicit instead of relying on scattered adapter shapes."
+  ],
+  "navigationSources": [
+    {
+      "source": "frontend/apps/web/src/api/menuConfig.ts",
+      "topics": [
+        {
+          "lines": [
+            65
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            7,
+            24,
+            26,
+            46,
+            55,
+            56,
+            161,
+            162,
+            198,
+            211,
+            212,
+            231,
+            232,
+            246
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/actionViewRouteLeaseCore.js",
+      "topics": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            12
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            2,
+            7,
+            15,
+            28
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            4,
+            16,
+            25,
+            30,
+            35,
+            50,
+            51,
+            74,
+            75,
+            78,
+            82,
+            85,
+            88,
+            104,
+            105,
+            106
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            112
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/action_runtime/useActionViewRoutePresetRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            6,
+            21,
+            22,
+            23,
+            27,
+            28,
+            51,
+            54,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            70,
+            75
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            14,
+            48,
+            78,
+            102,
+            166,
+            174,
+            234
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
+      "topics": [
+        {
+          "lines": [
+            267
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            38,
+            101,
+            231,
+            232,
+            233,
+            234,
+            235,
+            236,
+            250,
+            252,
+            253,
+            285
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/menu.ts",
+      "topics": [
+        {
+          "lines": [
+            5,
+            20,
+            35,
+            44,
+            59
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/navigationContext.ts",
+      "topics": [
+        {
+          "lines": [
+            1,
+            4,
+            5,
+            72
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/navigationRegistry.ts",
+      "topics": [
+        {
+          "lines": [
+            4,
+            6,
+            8,
+            15,
+            16,
+            17,
+            18,
+            38,
+            41,
+            42,
+            43
+          ],
+          "topic": "runtime_menu_authority"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/navigationSelectionCore.js",
+      "topics": [
+        {
+          "lines": [
+            13,
+            49
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            47,
+            49,
+            50,
+            52,
+            58,
+            60,
+            61,
+            64,
+            65,
+            66,
+            82,
+            83
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            26,
+            36,
+            38,
+            39,
+            40,
+            45,
+            49,
+            50,
+            64,
+            68,
+            71,
+            73,
+            74,
+            92,
+            93
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/pageIdentityRoute.ts",
+      "topics": [
+        {
+          "lines": [
+            40,
+            54,
+            55,
+            56,
+            60,
+            71,
+            72,
+            73,
+            75
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            1,
+            7,
+            14,
+            25,
+            34,
+            35,
+            40,
+            41,
+            44,
+            49,
+            50,
+            69,
+            70,
+            88,
+            93,
+            100
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            43
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/resolvers/menuResolver.ts",
+      "topics": [
+        {
+          "lines": [
+            14,
+            15
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            9
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/resolvers/menuResolverCore.js",
+      "topics": [
+        {
+          "lines": [
+            1,
+            2
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            6,
+            9,
+            14,
+            15,
+            43,
+            49,
+            51,
+            52,
+            60,
+            61,
+            77,
+            85,
+            94,
+            118,
+            139
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/routeAuthority.ts",
+      "topics": [
+        {
+          "lines": [
+            3,
+            5,
+            13,
+            15,
+            16,
+            18,
+            25,
+            34,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            56,
+            58
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            3,
+            5,
+            13,
+            15,
+            34,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            56,
+            87,
+            92,
+            93,
+            109
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/routeQuery.ts",
+      "topics": [
+        {
+          "lines": [
+            1,
+            5,
+            6,
+            10,
+            11,
+            12,
+            18,
+            19,
+            27,
+            31,
+            32,
+            36,
+            187,
+            190,
+            192,
+            199
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            272
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewGroupRouteSyncRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            3,
+            6,
+            15,
+            16,
+            17,
+            18,
+            27,
+            28,
+            29,
+            30
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewGroupedRouteNormalizeRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            14,
+            19,
+            34,
+            35,
+            36,
+            61,
+            76,
+            77,
+            78
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            17,
+            22,
+            24,
+            29,
+            30,
+            31,
+            32,
+            53,
+            55,
+            62,
+            68
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewGroupedRouteStateRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            3,
+            5,
+            44,
+            49,
+            56,
+            64,
+            69,
+            89,
+            98,
+            117,
+            129,
+            142,
+            149,
+            156,
+            162,
+            163
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            8,
+            13,
+            16,
+            23,
+            26,
+            31,
+            34,
+            36,
+            39,
+            47,
+            54,
+            62,
+            90,
+            95,
+            99,
+            104
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewLoadRouteApplyRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            3,
+            30
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            9,
+            17,
+            25
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewLoadRouteRequestRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            1,
+            2,
+            78,
+            81,
+            95,
+            98,
+            106
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewNavigationApplyRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            7,
+            8,
+            15,
+            38,
+            44,
+            45,
+            53,
+            66,
+            76,
+            87,
+            90,
+            91
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewRoutePresetRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            1,
+            2,
+            7,
+            12,
+            27,
+            65,
+            111,
+            140,
+            144,
+            145,
+            146,
+            151,
+            170,
+            180,
+            187
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            68,
+            76,
+            101,
+            102,
+            107
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewRouteRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            122
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            3,
+            8,
+            23,
+            24,
+            25,
+            29,
+            45,
+            46,
+            47,
+            52,
+            90,
+            100,
+            101,
+            112,
+            170,
+            174
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            16,
+            38,
+            62,
+            134,
+            159,
+            185
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/runtime/actionViewRouteSyncStateRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            3,
+            41,
+            46
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            11,
+            29
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/app/workspaceHomeNavigation.ts",
+      "topics": [
+        {
+          "lines": [
+            1,
+            8,
+            17,
+            24,
+            25,
+            26,
+            27,
+            36,
+            49,
+            53,
+            54,
+            62,
+            63,
+            66,
+            67,
+            69
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            7,
+            10,
+            13,
+            21,
+            29,
+            36,
+            38,
+            39,
+            42,
+            43,
+            44,
+            54,
+            63,
+            64,
+            66,
+            68
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/components/MenuTree.vue",
+      "topics": [
+        {
+          "lines": [
+            40,
+            74,
+            75,
+            131,
+            132,
+            133,
+            145,
+            152,
+            242,
+            244,
+            328,
+            338
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            7,
+            119,
+            155,
+            158,
+            165,
+            168,
+            171,
+            174,
+            188,
+            248
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/components/product-shell/PrimaryNavigation.vue",
+      "topics": [
+        {
+          "lines": [
+            2,
+            3,
+            7,
+            12,
+            13,
+            27,
+            53,
+            59,
+            65,
+            80,
+            85,
+            92,
+            93,
+            98,
+            108,
+            114
+          ],
+          "topic": "runtime_menu_authority"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
+      "topics": [
+        {
+          "lines": [
+            5,
+            10
+          ],
+          "topic": "mobile_drawer_or_sidebar"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/layouts/AppShell.css",
+      "topics": [
+        {
+          "lines": [
+            33,
+            41,
+            62,
+            98,
+            123,
+            1160,
+            1170,
+            1193,
+            1201
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            734,
+            744,
+            749,
+            753,
+            758,
+            1061,
+            1065,
+            1068,
+            1183,
+            1373,
+            1377,
+            1382,
+            1386,
+            1401
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            18,
+            26,
+            46,
+            50,
+            108,
+            118,
+            126,
+            134,
+            264,
+            265,
+            1018,
+            1032,
+            1035,
+            1043,
+            1177,
+            1184
+          ],
+          "topic": "mobile_drawer_or_sidebar"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/layouts/AppShell.vue",
+      "topics": [
+        {
+          "lines": [
+            32,
+            118,
+            141,
+            144,
+            146,
+            151,
+            152,
+            356,
+            368,
+            369,
+            377,
+            399,
+            443,
+            459,
+            462,
+            463
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            6,
+            156,
+            159,
+            199,
+            271,
+            290,
+            331,
+            338,
+            355,
+            367,
+            376,
+            433,
+            434,
+            467,
+            468,
+            469
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            7,
+            209,
+            280,
+            281,
+            287,
+            436,
+            843,
+            844,
+            845,
+            934,
+            947,
+            949,
+            955,
+            957,
+            963,
+            1015
+          ],
+          "topic": "user_preference_or_local_state"
+        },
+        {
+          "lines": [
+            7,
+            8,
+            11,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            28,
+            43,
+            47,
+            50,
+            172,
+            173,
+            176
+          ],
+          "topic": "mobile_drawer_or_sidebar"
+        },
+        {
+          "lines": [
+            181,
+            305,
+            1405
+          ],
+          "topic": "favorites_or_recent"
+        },
+        {
+          "lines": [
+            87,
+            376,
+            469,
+            576,
+            613,
+            627,
+            1423,
+            1433
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts",
+      "topics": [
+        {
+          "lines": [
+            1,
+            8
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/routeRelationLabel.ts",
+      "topics": [
+        {
+          "lines": [
+            1,
+            5
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/useActionResponseNavigation.ts",
+      "topics": [
+        {
+          "lines": [
+            9
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            1,
+            3,
+            6,
+            10,
+            20,
+            21,
+            45,
+            47,
+            50,
+            52,
+            53,
+            56,
+            58,
+            61,
+            70
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            2,
+            76
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            1,
+            84,
+            90,
+            107,
+            111,
+            112,
+            113,
+            122,
+            127
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/useFormNavigationActionsRuntime.ts",
+      "topics": [
+        {
+          "lines": [
+            2,
+            4
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            1,
+            10,
+            19,
+            23,
+            34,
+            38,
+            40
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
+      "topics": [
+        {
+          "lines": [
+            6,
+            8
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            9,
+            71,
+            72,
+            73,
+            79,
+            92,
+            103,
+            111,
+            112,
+            142,
+            143,
+            144,
+            161,
+            162,
+            165
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            153
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/router/index.ts",
+      "topics": [
+        {
+          "lines": [
+            150,
+            151,
+            154,
+            162,
+            163,
+            166,
+            246,
+            338,
+            343,
+            392
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            1,
+            7,
+            12,
+            14,
+            17,
+            18,
+            46,
+            63,
+            68,
+            86,
+            89,
+            90,
+            107,
+            108,
+            119,
+            134
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            218
+          ],
+          "topic": "favorites_or_recent"
+        },
+        {
+          "lines": [
+            14,
+            41,
+            245,
+            282,
+            284,
+            290,
+            293,
+            300,
+            301,
+            302,
+            305,
+            309,
+            318,
+            320,
+            321,
+            322
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/stores/session.ts",
+      "topics": [
+        {
+          "lines": [
+            231,
+            522,
+            793,
+            796,
+            843,
+            913,
+            1173,
+            1250,
+            1271,
+            1272,
+            1273,
+            1274,
+            1276,
+            1281,
+            1504,
+            1505
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            8,
+            12,
+            38,
+            47,
+            52,
+            53,
+            64,
+            161,
+            168,
+            171,
+            172,
+            232,
+            267,
+            269,
+            271,
+            487
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            287,
+            300,
+            777,
+            779,
+            787,
+            794,
+            829,
+            834,
+            877,
+            878,
+            879,
+            940,
+            966,
+            968,
+            1208
+          ],
+          "topic": "user_preference_or_local_state"
+        },
+        {
+          "lines": [
+            446
+          ],
+          "topic": "mobile_drawer_or_sidebar"
+        },
+        {
+          "lines": [
+            242,
+            469,
+            533,
+            805,
+            854,
+            922,
+            954,
+            982,
+            987,
+            1009,
+            1013,
+            1021,
+            1032,
+            1042,
+            1053,
+            1070
+          ],
+          "topic": "favorites_or_recent"
+        },
+        {
+          "lines": [
+            12,
+            161,
+            232,
+            390,
+            523,
+            852,
+            1098,
+            1101,
+            1172,
+            1249,
+            1507,
+            1511,
+            1520,
+            1530,
+            1531,
+            1538
+          ],
+          "topic": "access_denial"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/stores/sessionWorkspaceTypes.ts",
+      "topics": [
+        {
+          "lines": [
+            40,
+            80
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/ActionViewShell.vue",
+      "topics": [
+        {
+          "lines": [
+            8,
+            15,
+            24,
+            25,
+            26,
+            27
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/MenuConfigView.vue",
+      "topics": [
+        {
+          "lines": [
+            36,
+            37,
+            141,
+            209,
+            213,
+            222,
+            303,
+            342,
+            362,
+            463,
+            470,
+            471,
+            472,
+            474,
+            483,
+            484
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            5,
+            32,
+            71,
+            74,
+            117,
+            118,
+            128,
+            131,
+            132,
+            316,
+            449,
+            451,
+            540,
+            760,
+            761,
+            771
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            110,
+            948
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/MenuView.vue",
+      "topics": [
+        {
+          "lines": [
+            45,
+            80,
+            100
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            39,
+            48,
+            50,
+            52,
+            53,
+            69,
+            83,
+            92,
+            94,
+            97,
+            107,
+            110,
+            111,
+            120,
+            122,
+            127
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/businessConfigSurface/navigation.ts",
+      "topics": [
+        {
+          "lines": [
+            29,
+            43
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            3,
+            12
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigNavigation.ts",
+      "topics": [
+        {
+          "lines": [
+            6,
+            11,
+            74
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            2,
+            4,
+            12,
+            13,
+            15,
+            49,
+            51,
+            52,
+            54,
+            65,
+            67,
+            76,
+            77,
+            78,
+            79,
+            80
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/menuConfig/createMenuConfigTree.ts",
+      "topics": [
+        {
+          "lines": [
+            10,
+            121
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            23,
+            30,
+            104,
+            106,
+            112,
+            126,
+            135
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/menuConfig/menuDraftAdapter.ts",
+      "topics": [
+        {
+          "lines": [
+            5,
+            6,
+            16,
+            17,
+            27,
+            31
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/menuConfig/menuSaveNotice.ts",
+      "topics": [
+        {
+          "lines": [
+            5,
+            10,
+            11
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/menuConfig/menuTreeAdapter.ts",
+      "topics": [
+        {
+          "lines": [
+            19,
+            21,
+            23,
+            49,
+            64,
+            92,
+            119,
+            120,
+            123,
+            126,
+            130,
+            145,
+            151,
+            152,
+            153,
+            154
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            5,
+            7,
+            11,
+            25,
+            33,
+            34,
+            69,
+            133,
+            141
+          ],
+          "topic": "route_identity"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/menuConfig/responsive.css",
+      "topics": [
+        {
+          "lines": [
+            60
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    },
+    {
+      "source": "frontend/apps/web/src/views/menuConfig/useMenuTreeEditor.ts",
+      "topics": [
+        {
+          "lines": [
+            7
+          ],
+          "topic": "runtime_menu_authority"
+        },
+        {
+          "lines": [
+            5,
+            167,
+            212
+          ],
+          "topic": "route_identity"
+        },
+        {
+          "lines": [
+            9,
+            26,
+            55,
+            59,
+            62
+          ],
+          "topic": "user_preference_or_local_state"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": "1.0",
+  "shell": {
+    "component": "AppShell",
+    "deepLinkAuthority": "router keeps menu_id/action_id query context; runtime menu identity remains server/session supplied",
+    "mobileDrawerEvidenceLines": [
+      7,
+      8,
+      11,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      26,
+      28,
+      43,
+      47,
+      50,
+      172,
+      173,
+      176,
+      182,
+      209,
+      277,
+      278,
+      280,
+      281,
+      282
+    ],
+    "sidebar": "PrimaryNavigation in desktop sidebar; dialog-style mobile sidebar",
+    "source": "frontend/apps/web/src/layouts/AppShell.vue"
+  },
+  "sourceCommit": "1068da05ea9b198f97bbf06b49b7361fabbd9e4f"
+}
