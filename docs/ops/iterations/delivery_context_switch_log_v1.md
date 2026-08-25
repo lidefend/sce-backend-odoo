@@ -6041,3 +6041,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   authority gaps. Tax, accounting and reporting remain separate batches.
 - Rollback: revert finance evidence and workflow wiring. Product runtime,
   permissions, roles, fixtures and business data are unaffected.
+
+## Frontend system professionalization — Phase 10 tax center (2026-08-25)
+
+- Branch / baseline: `feature/p1-tax-center-domain-rollout-v1` /
+  `f22596419fa2a6aca073dcf599b3c8c4ac879d1c`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  standard product / formal tax-center rollout evidence /
+  `smart_construction_core` tax-center menus and actions.
+- Reason: the locked tax center exposes nine formal entries across invoice,
+  output adjustment, certificate, deduction and filing workflows. They require
+  one complete center authority and professional presentation proof.
+- Why Here / Why Not Elsewhere: these menu/action/view identities and finance
+  capability groups are construction-standard tax semantics. Existing P0
+  navigation, Contract V2 and collection mechanisms already render them; no
+  model, route, renderer or permission special case is introduced.
+- Blast radius / validation: nine exact menu/action pairs across five models.
+  Runtime coverage proves nine ready collection surfaces, nine structural forms
+  and zero fallback/fail-closed gaps. The governed input-invoice journey proves
+  exact action/menu/model, one H1, one product header and one professional
+  table; a non-finance role is denied by navigation authority. Browser errors
+  and mutations are zero, and visible invoice identity is unchanged.
+- Systemwide effect: exact covered surfaces increase from 70 to 79 of 88;
+  remaining unqualified surfaces decrease from 18 to 9 with zero runtime
+  authority gaps. Accounting and reporting remain separate batches.
+- Rollback: revert tax evidence and workflow wiring. Product runtime,
+  permissions, roles, fixtures and business data are unaffected.

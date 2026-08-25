@@ -1,0 +1,559 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "tax_center",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_tax_center"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 9,
+    "model_count": 5,
+    "ready_surface_count": 9,
+    "readable_fallback_count": 0,
+    "structural_form_count": 9,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 533,
+      "menuXmlid": "smart_construction_core.menu_sc_invoice_application_user",
+      "menuName": "开票申请",
+      "actionId": 784,
+      "actionXmlid": "smart_construction_core.action_sc_invoice_application_user",
+      "actionName": "销项开票申请",
+      "model": "sc.invoice.registration",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_invoice_application_user",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_initiator",
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_invoice_application_user_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_invoice_registration_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 531,
+      "menuXmlid": "smart_construction_core.menu_sc_invoice_input",
+      "menuName": "进项发票",
+      "actionId": 783,
+      "actionXmlid": "smart_construction_core.action_sc_invoice_input",
+      "actionName": "进项发票",
+      "model": "sc.invoice.registration",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_invoice_input",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_finance_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_invoice_application_user_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_invoice_registration_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 535,
+      "menuXmlid": "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
+      "menuName": "预缴登记",
+      "actionId": 786,
+      "actionXmlid": "smart_construction_core.action_sc_invoice_prepaid_tax_user",
+      "actionName": "预缴税款",
+      "model": "sc.invoice.registration",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_initiator",
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_invoice_registration_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_invoice_registration_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 534,
+      "menuXmlid": "smart_construction_core.menu_sc_invoice_registration_user",
+      "menuName": "销项开票",
+      "actionId": 785,
+      "actionXmlid": "smart_construction_core.action_sc_invoice_registration_user",
+      "actionName": "销项开票登记",
+      "model": "sc.invoice.registration",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_invoice_registration_user",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_initiator",
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_invoice_registration_output_registration_formal_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_invoice_registration_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 334,
+      "menuXmlid": "smart_construction_core.menu_sc_output_invoice_change_registration",
+      "menuName": "发票红冲",
+      "actionId": 632,
+      "actionXmlid": "smart_construction_core.action_sc_output_invoice_change_registration",
+      "actionName": "销项变更登记",
+      "model": "sc.output.invoice.adjustment",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_output_invoice_change_registration",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_output_invoice_adjustment_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_output_invoice_adjustment_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 699,
+      "menuXmlid": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
+      "menuName": "项目专项抵扣",
+      "actionId": 877,
+      "actionXmlid": "smart_construction_core.action_sc_product_project_tax_deduction_v1",
+      "actionName": "项目专项抵扣",
+      "model": "sc.tax.deduction.registration",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_tax_deduction_registration_formal_deduction_bill_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_tax_deduction_registration_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 700,
+      "menuXmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
+      "menuName": "税务申报",
+      "actionId": 878,
+      "actionXmlid": "smart_construction_core.action_sc_product_tax_filing_v1",
+      "actionName": "税务申报",
+      "model": "sc.tax.filing",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_finance_manager"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_tax_filing_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_tax_filing_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 538,
+      "menuXmlid": "smart_construction_core.menu_sc_tax_certificate_registration_user",
+      "menuName": "外经证",
+      "actionId": 638,
+      "actionXmlid": "smart_construction_core.action_sc_tax_certificate_registration_user",
+      "actionName": "外经证登记",
+      "model": "sc.tax.certificate.registration",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_certificate_registration_user",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user",
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user",
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_tax_certificate_registration_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_tax_certificate_registration_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 537,
+      "menuXmlid": "smart_construction_core.menu_sc_tax_deduction_registration_user",
+      "menuName": "税额抵扣",
+      "actionId": 788,
+      "actionXmlid": "smart_construction_core.action_sc_tax_deduction_registration_user",
+      "actionName": "抵扣登记",
+      "model": "sc.tax.deduction.registration",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tax_deduction_registration_user",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_initiator",
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_tax_deduction_registration_formal_deduction_bill_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_tax_deduction_registration_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}

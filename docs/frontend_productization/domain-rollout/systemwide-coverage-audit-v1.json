@@ -10,13 +10,13 @@
   ],
   "summary": {
     "primaryCenterCount": 10,
-    "deliveredReportCount": 12,
+    "deliveredReportCount": 13,
     "runtimeSurfaceCount": 88,
     "excludedSurfaceCount": 1,
-    "coveredSurfaceCount": 70,
-    "uncoveredSurfaceCount": 18,
+    "coveredSurfaceCount": 79,
+    "uncoveredSurfaceCount": 9,
     "runtimeGapCount": 0,
-    "gapCount": 18
+    "gapCount": 9
   },
   "deliveredReports": [
     {
@@ -102,6 +102,13 @@
       "status": "PASS",
       "actionCount": 11,
       "gapCount": 0
+    },
+    {
+      "file": "tax-center-coverage-v1.json",
+      "domain": "tax_center",
+      "status": "PASS",
+      "actionCount": 9,
+      "gapCount": 0
     }
   ],
   "centers": [
@@ -144,8 +151,8 @@
       "center": "tax",
       "rootMenuXmlid": "smart_construction_core.menu_sc_tax_center",
       "surfaceCount": 9,
-      "coveredCount": 0,
-      "uncoveredCount": 9
+      "coveredCount": 9,
+      "uncoveredCount": 0
     },
     {
       "center": "accounting",
@@ -3868,7 +3875,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -3935,7 +3942,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -4002,7 +4009,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -4069,7 +4076,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -4132,7 +4139,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -4195,7 +4202,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -4262,7 +4269,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -4325,7 +4332,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -4386,7 +4393,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "accounting",
@@ -5818,60 +5825,6 @@
     }
   ],
   "gaps": [
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_tax_certificate_registration_user",
-      "actionXmlid": "smart_construction_core.action_sc_tax_certificate_registration_user",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
-      "actionXmlid": "smart_construction_core.action_sc_invoice_prepaid_tax_user",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_invoice_application_user",
-      "actionXmlid": "smart_construction_core.action_sc_invoice_application_user",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_invoice_registration_user",
-      "actionXmlid": "smart_construction_core.action_sc_invoice_registration_user",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_output_invoice_change_registration",
-      "actionXmlid": "smart_construction_core.action_sc_output_invoice_change_registration",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_invoice_input",
-      "actionXmlid": "smart_construction_core.action_sc_invoice_input",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_tax_deduction_registration_user",
-      "actionXmlid": "smart_construction_core.action_sc_tax_deduction_registration_user",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
-      "actionXmlid": "smart_construction_core.action_sc_product_project_tax_deduction_v1",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "tax",
-      "menuXmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
-      "actionXmlid": "smart_construction_core.action_sc_product_tax_filing_v1",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
     {
       "center": "accounting",
       "menuXmlid": "smart_construction_core.menu_sc_account_journal_foundation",
