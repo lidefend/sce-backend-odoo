@@ -44,6 +44,7 @@ from . import test_core_extension_v2_finalize
 from . import test_api_data_write_unlink_idempotency_backend
 from . import test_project_context_resolver
 from . import test_project_structure_component_profile
+from . import test_contract_execution_component_profile
 from . import test_project_authorization_foundation
 from . import test_patch_b_read_aggregate_security
 from . import test_my_work_backend
