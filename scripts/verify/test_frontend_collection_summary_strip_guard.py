@@ -22,6 +22,10 @@ class CollectionSummaryStripGuardTest(unittest.TestCase):
         altered = self.list_source + '\n<CollectionSummaryStrip />\n'
         self.assertTrue(any("exactly one" in item for item in validate(altered, self.summary_source, self.css_source)))
 
+    def test_nonempty_projection_activation_fails(self):
+        altered = self.list_source.replace('v-if="enableSummaryStrip || summaryItems.length"', 'v-if="enableSummaryStrip"')
+        self.assertTrue(any("summaryItems.length" in item for item in validate(altered, self.summary_source, self.css_source)))
+
     def test_missing_semantic_owner_fails(self):
         altered = self.summary_source.replace('data-semantic-component="CollectionSummaryStrip"', '')
         self.assertTrue(any("semantic-component" in item for item in validate(self.list_source, altered, self.css_source)))

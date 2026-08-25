@@ -36,7 +36,7 @@ def validate(
         if legacy in list_text:
             failures.append(f"ListPage retains legacy summary rendering {legacy}")
     for marker in (
-        'v-if="enableSummaryStrip"',
+        'v-if="enableSummaryStrip || summaryItems.length"',
         ':aria-label="uiLabel(\'list_summary\', \'列表摘要\')"',
         ':items="summaryItems"',
     ):
