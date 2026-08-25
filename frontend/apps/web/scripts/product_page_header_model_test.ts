@@ -1,5 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { resolveProductPageHeaderModel, type ProductPageHeaderAction } from '../src/app/presentation/productPageHeader';
+import { resolveCanonicalHeaderActionPresentation } from '../src/pages/contractForm/contractFormHeaderCanonicalActions';
+import type { CanonicalFormAction } from '../src/app/presentation/canonicalFormRenderModel';
+import type { CanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
 
 const save: ProductPageHeaderAction = { key: 'save', label: '保存', semantic: 'save', enabled: true };
 const submit: ProductPageHeaderAction = { key: 'submit', label: '提交', semantic: 'submit', enabled: true };
@@ -22,4 +25,29 @@ for (const presentationMode of ['task', 'workspace'] as const) {
     assert.equal(result.renderProfile, renderProfile);
   }
 }
-console.log('[product_page_header_model_test] PASS cases=12');
+
+const saveAction = {
+  key: 'form.save', label: '保存草稿', visible: true, enabled: true, tier: 'secondary',
+  actionRef: { actionId: 'form.save' },
+} as CanonicalFormAction;
+const submitAction = {
+  key: 'submit', label: '提交', visible: true, enabled: true, tier: 'primary',
+  actionRef: { actionId: 'submit' },
+} as CanonicalFormAction;
+const taskFloorplan = {
+  decisionMode: true,
+  directActions: [saveAction, submitAction],
+  overflowActions: [saveAction],
+} as CanonicalFormFloorplan;
+const createHeader = resolveCanonicalHeaderActionPresentation({
+  floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'create', rendererActive: true,
+});
+assert.equal(createHeader.localSavePrimary, true);
+assert.deepEqual(createHeader.direct.map((action) => action.actionRef.actionId), ['submit']);
+assert.deepEqual(createHeader.overflow, []);
+const readonlyHeader = resolveCanonicalHeaderActionPresentation({
+  floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'readonly', rendererActive: true,
+});
+assert.equal(readonlyHeader.localSavePrimary, false);
+assert.deepEqual(readonlyHeader.direct.map((action) => action.actionRef.actionId), ['form.save', 'submit']);
+console.log('[product_page_header_model_test] PASS cases=18');
