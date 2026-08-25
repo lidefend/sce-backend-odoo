@@ -3,9 +3,17 @@ name: public_guard
 on:
   pull_request:
     branches: [main]
+    types: [opened, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      expected_head:
+        required: true
+        type: string
+      expected_base:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -21,8 +29,8 @@ jobs:
     outputs:
       lane: ${{ steps.risk.outputs.lane }}
     env:
-      CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+      CHECKOUT_SHA: ${{ inputs.expected_head || github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ inputs.expected_base || github.event.pull_request.base.sha || github.event.before || github.sha }}
     steps:
       - name: Checkout untrusted source without persisted credentials
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -38,7 +46,7 @@ jobs:
           python3 scripts/ci/ci_risk_classifier.py \
             --base "${BASE_SHA}" \
             --head "${CHECKOUT_SHA}" \
-            --event "${GITHUB_EVENT_NAME}" \
+            --event "${{ github.event_name == 'workflow_dispatch' && 'pull_request' || github.event_name }}" \
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
 
@@ -49,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+      BASE_SHA: ${{ inputs.expected_base || github.event.pull_request.base.sha || github.event.before || github.sha }}
     steps:
       - name: Checkout classified source without persisted credentials
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -89,7 +97,7 @@ jobs:
       - name: Scan governed product history
         run: |
           set -euo pipefail
-          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ] || [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             python3 scripts/verify/repository_clean_history_guard.py --trusted-base "${BASE_SHA}"
           else
             make verify.repository.clean_history

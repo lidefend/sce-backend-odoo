@@ -546,10 +546,14 @@ candidate.required_checks.dispatch: guard.prod.forbid
 	[ "$$(git rev-parse HEAD)" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED local_sha_mismatch"; exit 2; }; \
 	remote_sha="$$(git ls-remote origin "refs/heads/$$branch" | awk "{print \$$1}")"; \
 	[ "$$remote_sha" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED remote_sha_mismatch"; exit 2; }; \
-	for workflow in public_guard.yml professional_quality_gate.yml frontend_release_gate.yml; do \
-	  gh workflow run "$$workflow" --ref "$$branch"; \
+	read -r pr_number live_head base_sha < <(gh pr list --head "$$branch" --state open --json number,headRefOid,baseRefOid --jq "if length == 1 then .[0] | [.number, .headRefOid, .baseRefOid] | @tsv else empty end"); \
+	[ -n "$$pr_number" ] || { echo "[candidate.required_checks.dispatch] BLOCKED exactly_one_open_pr_required"; exit 2; }; \
+	[ "$$live_head" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED pr_head_mismatch"; exit 2; }; \
+	[[ "$$base_sha" =~ ^[0-9a-f]{40}$$ ]] || { echo "[candidate.required_checks.dispatch] BLOCKED invalid_pr_base"; exit 2; }; \
+	for workflow in public_guard.yml professional_quality_gate.yml frontend_release_gate.yml merge_policy_gate.yml; do \
+	  gh workflow run "$$workflow" --ref "$$branch" -f expected_head="$$expected" -f expected_base="$$base_sha"; \
 	done; \
-	echo "[candidate.required_checks.dispatch] PASS branch=$$branch sha=$$expected workflows=3"; \
+	echo "[candidate.required_checks.dispatch] PASS branch=$$branch pr=$$pr_number sha=$$expected base=$$base_sha workflows=4"; \
 	'
 
 candidate.mirror.gitee: guard.prod.forbid

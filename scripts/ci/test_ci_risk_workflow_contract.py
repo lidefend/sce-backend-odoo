@@ -41,6 +41,39 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("Wait for exact-head full checks", aggregate)
         self.assertNotIn("continue-on-error:", aggregate)
 
+    def test_candidate_checks_run_once_per_explicit_candidate_head(self) -> None:
+        workflows = (
+            "merge_policy_gate.yml",
+            "public_guard.yml",
+            "professional_quality_gate.yml",
+            "frontend_release_gate.yml",
+        )
+        for workflow in workflows:
+            text = self.text(workflow)
+            self.assertIn("types: [opened, reopened, ready_for_review]", text)
+            self.assertNotIn("synchronize", text)
+            self.assertIn("workflow_dispatch:", text)
+            self.assertIn("expected_head:", text)
+            self.assertIn("expected_base:", text)
+            self.assertIn("inputs.expected_head", text)
+            self.assertIn("inputs.expected_base", text)
+            self.assertIn(
+                "github.event_name == 'workflow_dispatch' && 'pull_request'",
+                text,
+            )
+
+        makefile = (ROOT / "make/codex.mk").read_text(encoding="utf-8")
+        dispatch = makefile.split("candidate.required_checks.dispatch:", 1)[1].split(
+            "candidate.mirror.gitee:", 1
+        )[0]
+        self.assertIn("exactly_one_open_pr_required", dispatch)
+        self.assertIn("pr_head_mismatch", dispatch)
+        self.assertIn("invalid_pr_base", dispatch)
+        self.assertIn('expected_head="$$expected"', dispatch)
+        self.assertIn('expected_base="$$base_sha"', dispatch)
+        for workflow in workflows:
+            self.assertIn(workflow, dispatch)
+
     def test_frontend_lane_commands_are_explicit(self) -> None:
         text = self.text("frontend_release_gate.yml")
         self.assertIn("frontend_mode == 'full'", text)
@@ -60,6 +93,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("steps.risk.outputs.lane", text)
         self.assertIn("if: needs.classify.outputs.lane != 'FAST'", text)
         self.assertIn("Scan governed product history", text)
+        self.assertIn('"${GITHUB_EVENT_NAME}" = "workflow_dispatch"', text)
         self.assertIn('repository_clean_history_guard.py --trusted-base "${BASE_SHA}"', text)
         self.assertIn("make verify.repository.clean_history", text)
 

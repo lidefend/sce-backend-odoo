@@ -3,9 +3,17 @@ name: frontend_release_gate
 on:
   pull_request:
     branches: [main]
+    types: [opened, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      expected_head:
+        required: true
+        type: string
+      expected_base:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -28,9 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
-      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+      CHECKOUT_SHA: ${{ inputs.expected_head || github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ inputs.expected_base || github.event.pull_request.base.sha || github.event.before || github.sha }}
+      PR_HEAD_SHA: ${{ inputs.expected_head || github.event.pull_request.head.sha || '' }}
       CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
@@ -58,7 +66,7 @@ jobs:
           python3 scripts/ci/ci_risk_classifier.py \
             --base "${BASE_SHA}" \
             --head "${CHECKOUT_SHA}" \
-            --event "${GITHUB_EVENT_NAME}" \
+            --event "${{ github.event_name == 'workflow_dispatch' && 'pull_request' || github.event_name }}" \
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
 
