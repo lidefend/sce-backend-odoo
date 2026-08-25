@@ -1,0 +1,410 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "reporting_center",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_data_center"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 6,
+    "model_count": 6,
+    "ready_surface_count": 6,
+    "readable_fallback_count": 9,
+    "structural_form_count": 4,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 591,
+      "menuXmlid": "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
+      "menuName": "成本报表",
+      "actionId": 824,
+      "actionXmlid": "smart_construction_core.action_sc_comprehensive_cost_statistics_report",
+      "actionName": "成本统计表（综合）",
+      "model": "sc.comprehensive.cost.summary",
+      "viewMode": "tree,form,pivot,graph",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_data_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_contract_manager",
+              "smart_construction_core.group_sc_cap_contract_read",
+              "smart_construction_core.group_sc_cap_contract_user",
+              "smart_construction_core.group_sc_cap_cost_manager",
+              "smart_construction_core.group_sc_cap_cost_read",
+              "smart_construction_core.group_sc_cap_cost_user",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_initiator",
+          "smart_construction_core.group_sc_cap_contract_manager",
+          "smart_construction_core.group_sc_cap_contract_read",
+          "smart_construction_core.group_sc_cap_contract_user",
+          "smart_construction_core.group_sc_cap_cost_manager",
+          "smart_construction_core.group_sc_cap_cost_read",
+          "smart_construction_core.group_sc_cap_cost_user",
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_comprehensive_cost_summary_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_comprehensive_cost_summary_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        },
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_sc_comprehensive_cost_summary_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "viewType": "graph",
+          "viewXmlid": "",
+          "jsClass": "",
+          "semantic": "graph",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_GRAPH_PLANNED"
+        }
+      ]
+    },
+    {
+      "menuId": 365,
+      "menuXmlid": "smart_construction_core.menu_sc_fund_daily_summary",
+      "menuName": "资金报表",
+      "actionId": 697,
+      "actionXmlid": "smart_construction_core.action_sc_fund_daily_summary",
+      "actionName": "企业资金日报汇总",
+      "model": "sc.fund.daily.summary",
+      "viewMode": "tree,form,pivot,graph",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_data_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_fund_daily_summary",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_fund_daily_summary_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_fund_daily_summary_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        },
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_sc_fund_daily_summary_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "viewType": "graph",
+          "viewXmlid": "smart_construction_core.view_sc_fund_daily_summary_graph",
+          "jsClass": "",
+          "semantic": "graph",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_GRAPH_PLANNED"
+        }
+      ]
+    },
+    {
+      "menuId": 428,
+      "menuXmlid": "smart_construction_core.menu_sc_legacy_business_entity_map",
+      "menuName": "历史业务主体对照",
+      "actionId": 733,
+      "actionXmlid": "smart_construction_core.action_sc_legacy_business_entity_map",
+      "actionName": "历史业务主体对照",
+      "model": "sc.business.entity",
+      "viewMode": "tree",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_data_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_legacy_business_entity_map",
+            "groups": [
+              "smart_construction_core.group_sc_cap_finance_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_finance_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_business_entity_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 702,
+      "menuXmlid": "smart_construction_core.menu_sc_product_labor_subcontract_report_v1",
+      "menuName": "劳务分包报表",
+      "actionId": 880,
+      "actionXmlid": "smart_construction_core.action_sc_product_labor_subcontract_report_v1",
+      "actionName": "劳务分包报表",
+      "model": "sc.labor.subcontract.report",
+      "viewMode": "pivot,graph,tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_data_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_labor_subcontract_report_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_data_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_data_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_sc_labor_subcontract_report_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "viewType": "graph",
+          "viewXmlid": "smart_construction_core.view_sc_labor_subcontract_report_graph",
+          "jsClass": "",
+          "semantic": "graph",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_GRAPH_PLANNED"
+        },
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_labor_subcontract_report_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_labor_subcontract_report_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 701,
+      "menuXmlid": "smart_construction_core.menu_sc_product_tax_report_v1",
+      "menuName": "税务报表",
+      "actionId": 879,
+      "actionXmlid": "smart_construction_core.action_sc_product_tax_report_v1",
+      "actionName": "税务报表",
+      "model": "sc.tax.filing",
+      "viewMode": "pivot,graph,tree",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_data_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_tax_report_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_data_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_data_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_sc_product_tax_report_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "viewType": "graph",
+          "viewXmlid": "smart_construction_core.view_sc_product_tax_report_graph",
+          "jsClass": "",
+          "semantic": "graph",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_GRAPH_PLANNED"
+        },
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_tax_report_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 599,
+      "menuXmlid": "smart_construction_core.menu_sc_project_operation_statistics_report",
+      "menuName": "项目报表",
+      "actionId": 827,
+      "actionXmlid": "smart_construction_core.action_sc_project_operation_statistics_report",
+      "actionName": "项目经营统计表",
+      "model": "sc.operating.metrics.project",
+      "viewMode": "tree,form,pivot",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_data_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_operation_statistics_report",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_read",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_cost_read",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_operating_metrics_project_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_operating_metrics_project_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        },
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_sc_operating_metrics_project_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}

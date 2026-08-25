@@ -1,6 +1,6 @@
 {
   "schemaVersion": "frontend_systemwide_coverage_audit.v1",
-  "status": "FAIL",
+  "status": "PASS",
   "formalProductLayer": "P0_P1_systemwide_frontend",
   "primaryCenterAuthority": "config/product_primary_center_baseline_v1.json",
   "excludedScopes": [
@@ -10,13 +10,13 @@
   ],
   "summary": {
     "primaryCenterCount": 10,
-    "deliveredReportCount": 14,
+    "deliveredReportCount": 15,
     "runtimeSurfaceCount": 88,
     "excludedSurfaceCount": 1,
-    "coveredSurfaceCount": 82,
-    "uncoveredSurfaceCount": 6,
+    "coveredSurfaceCount": 88,
+    "uncoveredSurfaceCount": 0,
     "runtimeGapCount": 0,
-    "gapCount": 6
+    "gapCount": 0
   },
   "deliveredReports": [
     {
@@ -116,6 +116,13 @@
       "status": "PASS",
       "actionCount": 3,
       "gapCount": 0
+    },
+    {
+      "file": "reporting-center-coverage-v1.json",
+      "domain": "reporting_center",
+      "status": "PASS",
+      "actionCount": 6,
+      "gapCount": 0
     }
   ],
   "centers": [
@@ -172,8 +179,8 @@
       "center": "reporting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_data_center",
       "surfaceCount": 6,
-      "coveredCount": 0,
-      "uncoveredCount": 6
+      "coveredCount": 6,
+      "uncoveredCount": 0
     },
     {
       "center": "administration",
@@ -4643,7 +4650,7 @@
           "reason": "RENDERER_PIVOT_PLANNED"
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "reporting",
@@ -4690,7 +4697,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "reporting",
@@ -4782,7 +4789,7 @@
           "reason": "RENDERER_GRAPH_PLANNED"
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "reporting",
@@ -4860,7 +4867,7 @@
           "reason": "RENDERER_GRAPH_PLANNED"
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "reporting",
@@ -4925,7 +4932,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "reporting",
@@ -4999,7 +5006,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "administration",
@@ -5831,42 +5838,5 @@
       "reason": "OUTSIDE_FORMAL_PRODUCT_MODULE"
     }
   ],
-  "gaps": [
-    {
-      "center": "reporting",
-      "menuXmlid": "smart_construction_core.menu_sc_project_operation_statistics_report",
-      "actionXmlid": "smart_construction_core.action_sc_project_operation_statistics_report",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "reporting",
-      "menuXmlid": "smart_construction_core.menu_sc_legacy_business_entity_map",
-      "actionXmlid": "smart_construction_core.action_sc_legacy_business_entity_map",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "reporting",
-      "menuXmlid": "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
-      "actionXmlid": "smart_construction_core.action_sc_comprehensive_cost_statistics_report",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "reporting",
-      "menuXmlid": "smart_construction_core.menu_sc_fund_daily_summary",
-      "actionXmlid": "smart_construction_core.action_sc_fund_daily_summary",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "reporting",
-      "menuXmlid": "smart_construction_core.menu_sc_product_tax_report_v1",
-      "actionXmlid": "smart_construction_core.action_sc_product_tax_report_v1",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "reporting",
-      "menuXmlid": "smart_construction_core.menu_sc_product_labor_subcontract_report_v1",
-      "actionXmlid": "smart_construction_core.action_sc_product_labor_subcontract_report_v1",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    }
-  ]
+  "gaps": []
 }
