@@ -33,7 +33,7 @@ def validate(page_source: str | None = None, card_source: str | None = None, sty
         failures.append("KanbanPage retains inline lane presentation")
     for marker in ('data-semantic-component="CollectionKanbanLane"', ':data-lane-key="laneKey"', ':count="recordCount"', '<slot />'):
         if marker not in lane: failures.append(f"shared kanban lane missing {marker}")
-    for marker in ('captureCollectionKanban', 'collectionKanbanEvidence', 'CollectionKanbanRecordCard', 'paginationOwnerCount === 1'):
+    for marker in ('captureCollectionKanban', 'collectionKanbanEvidence', 'CollectionKanbanRecordCard', 'paginationOwnerCount === 1', 'target.expectContractResponse !== false'):
         if marker not in visual: failures.append(f"kanban browser evidence missing {marker}")
     for marker in ('CollectionKanbanRecordCard', 'CollectionKanbanLane', 'collection-kanban-record-card__fact'):
         if marker not in semantics_browser: failures.append(f"collection semantics browser missing {marker}")

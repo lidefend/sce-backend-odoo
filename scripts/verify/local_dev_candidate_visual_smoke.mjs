@@ -342,7 +342,7 @@ try {
       let contractAggregates = [];
       let contractSummaryItems = [];
       let listAggregates = [];
-      const contractResponse = /^\/(?:a|r|f)\//.test(target.path)
+      const contractResponse = target.expectContractResponse !== false && /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
         : null;
       const listDataResponse = target.captureCollectionAggregate === true
