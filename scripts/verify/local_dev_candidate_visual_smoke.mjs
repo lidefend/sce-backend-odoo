@@ -41,6 +41,15 @@ async function waitForStableProductSurface(page) {
   }));
 }
 
+function isContractV2Response(response) {
+  if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
+  try {
+    return JSON.parse(response.request().postData() || '{}').intent === 'ui.contract.v2';
+  } catch {
+    return false;
+  }
+}
+
 try {
   for (const viewport of [{ name: 'desktop', width: 1440, height: 960 }, { name: 'mobile', width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
@@ -74,7 +83,14 @@ try {
       await companySearch.fill('');
     }
     for (const target of routes) {
+      const contractResponse = /^\/(?:a|r|f)\//.test(target.path)
+        ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
+        : null;
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      if (contractResponse) {
+        const response = await contractResponse;
+        if (!response.ok()) throw new Error(`contract request failed: ${response.status()} ${target.path}`);
+      }
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);

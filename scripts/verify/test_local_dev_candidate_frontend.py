@@ -127,6 +127,9 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn('[data-workspace-primary-content][aria-busy="true"]', browser)
         self.assertIn('.product-loading-shell[aria-busy="true"]', browser)
         self.assertIn("requestAnimationFrame(() => requestAnimationFrame(resolve))", browser)
+        self.assertIn("isContractV2Response", browser)
+        self.assertIn("response.request().postData()", browser)
+        self.assertIn("response.ok()", browser)
         self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":
