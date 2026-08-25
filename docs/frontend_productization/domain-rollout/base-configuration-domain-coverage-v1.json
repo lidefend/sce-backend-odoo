@@ -1,0 +1,336 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "base_configuration",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_business_config_center",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_business_config_center"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 6,
+    "model_count": 6,
+    "ready_surface_count": 5,
+    "readable_fallback_count": 0,
+    "structural_form_count": 6,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 423,
+      "menuXmlid": "smart_construction_core.menu_sc_approval_policy",
+      "menuName": "流程审批配置",
+      "actionId": 725,
+      "actionXmlid": "smart_construction_core.action_sc_approval_policy",
+      "actionName": "审批规则",
+      "model": "sc.approval.policy",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_business_config_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_approval_policy",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_approval_policy_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_approval_policy_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 430,
+      "menuXmlid": "smart_construction_core.menu_sc_business_config_workbench",
+      "menuName": "表单配置",
+      "actionId": 735,
+      "actionXmlid": "smart_construction_core.action_sc_business_config_workbench",
+      "actionName": "配置工作台",
+      "model": "ui.business.config.contract",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_business_config_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_business_config_workbench",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_core.group_smart_core_admin",
+              "smart_core.group_smart_core_business_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin",
+          "smart_core.group_smart_core_admin",
+          "smart_core.group_smart_core_business_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 707,
+      "menuXmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
+      "menuName": "数据权限",
+      "actionId": 884,
+      "actionXmlid": "smart_construction_core.action_sc_product_data_permission_v1",
+      "actionName": "数据权限",
+      "model": "res.users",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_business_config_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_data_permission_user_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_data_permission_user_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 709,
+      "menuXmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
+      "menuName": "编码规则",
+      "actionId": 886,
+      "actionXmlid": "smart_construction_core.action_sc_product_numbering_rule_v1",
+      "actionName": "编码规则",
+      "model": "ir.sequence",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_business_config_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_numbering_rule_tree_v1",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_product_numbering_rule_form_v1",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 708,
+      "menuXmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
+      "menuName": "系统参数",
+      "actionId": 885,
+      "actionXmlid": "smart_construction_core.action_sc_product_system_parameter_v1",
+      "actionName": "系统参数",
+      "model": "sc.product.system.settings",
+      "viewMode": "form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_business_config_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_product_system_settings_form_v1",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 444,
+      "menuXmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
+      "menuName": "字段管理",
+      "actionId": 747,
+      "actionXmlid": "smart_construction_core.action_ui_form_field_policy_business_config",
+      "actionName": "表单字段配置",
+      "model": "ui.form.field.policy",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_business_config_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_ui_form_field_policy_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_ui_form_field_policy_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}
