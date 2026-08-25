@@ -131,6 +131,8 @@ verify.frontend.collection_group_header.unit: guard.prod.forbid
 	@python3 scripts/verify/frontend_collection_group_header_guard.py
 
 verify.frontend.collection_summary_strip.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_summary_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/collection-summary-presentation-test.mjs >/dev/null
+	@node /tmp/collection-summary-presentation-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_collection_summary_strip_guard.py
 	@python3 scripts/verify/frontend_collection_summary_strip_guard.py
 

@@ -29,9 +29,9 @@ class CollectionSummaryStripGuardTest(unittest.TestCase):
         altered = self.summary_source.replace(':aria-label="ariaLabel"', '')
         self.assertTrue(any("aria-label" in item for item in validate(self.list_source, altered, self.css_source)))
 
-    def test_unknown_tone_fail_closed_fails(self):
-        altered = self.summary_source.replace(": 'neutral'", ": normalized as CollectionSummaryTone")
-        self.assertTrue(any("neutral" in item for item in validate(self.list_source, altered, self.css_source)))
+    def test_missing_tone_authority_fails(self):
+        altered = self.summary_source.replace("resolveCollectionSummaryTone", "legacyTone")
+        self.assertTrue(any("resolveCollectionSummaryTone" in item for item in validate(self.list_source, altered, self.css_source)))
 
     def test_mobile_single_column_fails(self):
         altered = self.css_source.replace("max-width: 420px", "max-width: 320px")

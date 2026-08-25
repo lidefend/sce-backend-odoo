@@ -22,8 +22,7 @@ def validate(
         ':aria-label="ariaLabel"',
         ':data-summary-key="item.key"',
         ':data-summary-tone="resolveTone(item.tone)"',
-        "allowedTones.has",
-        ": 'neutral'",
+        "resolveCollectionSummaryTone",
     ):
         if marker not in summary_text:
             failures.append(f"collection summary strip missing {marker}")
@@ -63,4 +62,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_collection_summary_strip_guard] PASS owner=1 tones=neutral,danger,warning,success,info")
+    print("[frontend_collection_summary_strip_guard] PASS owner=1 tone_authority=collectionSummaryPresentation")
