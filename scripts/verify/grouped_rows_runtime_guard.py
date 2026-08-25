@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 API_DATA = ROOT / "addons/smart_core/handlers/api_data.py"
 ACTION_VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
+GROUPING_TOOLBAR = ROOT / "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue"
+GROUP_PAGE_CONTROLS = ROOT / "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue"
 LIST_GROUP_PAGINATION = ROOT / "frontend/apps/web/src/pages/listPage/listGroupPagination.ts"
 SCHEMA = ROOT / "frontend/packages/schema/src/index.ts"
 
@@ -25,6 +27,8 @@ def main() -> int:
         api_data = _read(API_DATA)
         action_view = _read(ACTION_VIEW)
         list_page = _read(LIST_PAGE)
+        grouping_toolbar = _read(GROUPING_TOOLBAR)
+        group_page_controls = _read(GROUP_PAGE_CONTROLS)
         list_group_pagination = (
             _read(LIST_GROUP_PAGINATION) if LIST_GROUP_PAGINATION.exists() else ""
         )
@@ -101,7 +105,7 @@ def main() -> int:
         "v-for=\"group in sortedGroupedRows\"",
         "sampleRows",
         "toggleGroupCollapsed(",
-        "grouped-sort-btn",
+        "<CollectionGroupingToolbar",
         "onGroupSampleLimitSelectChange",
         "props.groupSort",
         "props.collapsedGroupKeys",
@@ -109,8 +113,7 @@ def main() -> int:
         "pageWindow?: { start?: number; end?: number };",
         "pageHasPrev?: boolean;",
         "pageHasNext?: boolean;",
-        "group-page-btn",
-        "group-page-input",
+        "<CollectionGroupPageControls",
         "onGroupJumpInputChange(",
         "groupPageInfoText(",
         "jumpGroupPage(",
@@ -125,6 +128,27 @@ def main() -> int:
     for marker in list_markers:
         if marker not in list_page:
             errors.append(f"list_page missing marker: {marker}")
+
+    component_markers = {
+        "grouping_toolbar": (
+            'data-semantic-component="CollectionGroupingToolbar"',
+            "grouped-sort-btn",
+            "@click=\"$emit('expand-all')\"",
+            "@click=\"$emit('collapse-all')\"",
+        ),
+        "group_page_controls": (
+            'data-semantic-component="CollectionGroupPageControls"',
+            '<ScInput',
+            "@click=\"$emit('previous')\"",
+            "@click=\"$emit('next')\"",
+            "@click=\"$emit('jump')\"",
+        ),
+    }
+    for source_name, markers in component_markers.items():
+        source = grouping_toolbar if source_name == "grouping_toolbar" else group_page_controls
+        for marker in markers:
+            if marker not in source:
+                errors.append(f"{source_name} missing marker: {marker}")
 
     if list_group_pagination:
         extracted_list_markers = [

@@ -99,7 +99,8 @@ async function snapshot(page) {
     const groupedBlocks = Array.from(document.querySelectorAll('.grouped-table .group-block'));
     const groupRows = Array.from(document.querySelectorAll('.grouped-table tbody tr'));
     const groupPages = groupedBlocks.map((block, index) => {
-      const buttons = Array.from(block.querySelectorAll('.group-page-btn'));
+      const controls = block.querySelector('[data-semantic-component="CollectionGroupPageControls"]');
+      const buttons = Array.from(controls?.querySelectorAll('[data-semantic-component="ScButton"]') || []);
       return {
         index,
         label: normalize(block.querySelector('.group-head p')?.textContent || ''),
@@ -1000,7 +1001,7 @@ async function main() {
     let groupPagePrevClicked = false;
     if (pageCandidate) {
       const block = page.locator('.grouped-table .group-block').nth(pageCandidate.index);
-      await block.locator('.group-page-btn').nth(1).click();
+      await block.locator('[data-semantic-component="CollectionGroupPageControls"] [data-semantic-component="ScButton"]').nth(1).click();
       groupPageNextClicked = true;
       await page.waitForFunction(({ index, previousPageText }) => {
         const url = new URL(window.location.href);
@@ -1013,7 +1014,7 @@ async function main() {
       afterGroupPageNext = await snapshot(page);
       const nextPage = (afterGroupPageNext.group_pages || [])[pageCandidate.index];
       if (nextPage && nextPage.prev_disabled === false) {
-        await block.locator('.group-page-btn').nth(0).click();
+        await block.locator('[data-semantic-component="CollectionGroupPageControls"] [data-semantic-component="ScButton"]').nth(0).click();
         groupPagePrevClicked = true;
         await page.waitForFunction((nextUrl) => window.location.href !== nextUrl, afterGroupPageNext.url, { timeout: 20000 }).catch(() => {});
         await waitForListReady(page).catch(() => {});
