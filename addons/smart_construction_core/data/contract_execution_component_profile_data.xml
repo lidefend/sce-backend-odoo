@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      Phase 9 contract-execution profile. The released income and expense
+      contract workspaces are the product entry authority; their native views
+      own the columns, while this context only supplies generic worksheet
+      organization. Superseded execution leaves intentionally remain unbound.
+    -->
+    <record id="action_construction_contract_income" model="ir.actions.act_window">
+        <field name="context" eval="{
+            'default_type': 'out',
+            'default_business_category_code': 'contract.income',
+            'search_default_visible_income': 1,
+            'hierarchical_worksheet': {
+                'navigation_mode': 'sheet_groups',
+                'navigation_groups': [
+                    {'field': 'project_id', 'label': '项目', 'empty_label': '未归属项目'},
+                    {'field': 'partner_id', 'label': '发包人', 'empty_label': '未登记发包人'},
+                    {'field': 'document_status', 'label': '执行状态', 'empty_label': '未登记状态'},
+                ],
+                'tree_column': 'subject',
+                'presentation_mode': 'source_order',
+                'navigation_title': '收入合同履约结构',
+                'exclude_fields': ['business_category_id'],
+                'column_widths': {
+                    'document_status': 96,
+                    'date_contract': 112,
+                    'partner_id': 160,
+                    'project_id': 180,
+                    'subject': 220,
+                    'visible_contract_amount': 132,
+                    'settlement_amount': 132,
+                    'invoice_amount': 132,
+                    'received_amount': 132,
+                    'unreceived_amount': 132,
+                    'visible_unreceived_rate': 108,
+                },
+                'column_precisions': {
+                    'visible_contract_amount': 2,
+                    'settlement_amount': 2,
+                    'invoice_amount': 2,
+                    'received_amount': 2,
+                    'unreceived_amount': 2,
+                    'visible_unreceived_rate': 2,
+                },
+                'tabs': [
+                    {'key': 'execution', 'label': '履约概览', 'fields': ['document_status', 'date_contract', 'visible_contract_amount', 'settlement_amount', 'invoice_amount', 'received_amount', 'unreceived_amount', 'visible_unreceived_rate']},
+                    {'key': 'contract', 'label': '合同信息', 'fields': ['project_id', 'partner_id', 'subject', 'engineering_category_text', 'engineering_address', 'engineering_content']},
+                    {'key': 'ownership', 'label': '责任与来源', 'fields': ['affiliated_person', 'operation_strategy', 'entry_user_text', 'entry_time', 'attachment_text']},
+                ],
+                'labels': {
+                    'surface_aria': '收入合同履约工作表',
+                    'all': '全部收入合同',
+                    'select_hint': '请选择合同查看履约明细',
+                },
+            },
+        }"/>
+    </record>
+
+    <record id="action_construction_contract_expense" model="ir.actions.act_window">
+        <field name="context" eval="{
+            'default_type': 'in',
+            'default_business_category_code': 'contract.expense',
+            'hierarchical_worksheet': {
+                'navigation_mode': 'sheet_groups',
+                'navigation_groups': [
+                    {'field': 'project_id', 'label': '项目', 'empty_label': '未归属项目'},
+                    {'field': 'partner_id', 'label': '供应商/分包方', 'empty_label': '未登记往来单位'},
+                    {'field': 'document_status', 'label': '执行状态', 'empty_label': '未登记状态'},
+                ],
+                'tree_column': 'subject',
+                'presentation_mode': 'source_order',
+                'navigation_title': '支出合同履约结构',
+                'exclude_fields': ['business_category_id'],
+                'column_widths': {
+                    'document_status': 96,
+                    'date_contract': 112,
+                    'partner_id': 160,
+                    'project_id': 180,
+                    'subject': 220,
+                    'expense_contract_category_id': 132,
+                    'visible_contract_amount': 132,
+                    'settlement_amount': 132,
+                    'paid_amount': 132,
+                    'unpaid_amount': 132,
+                    'state': 96,
+                },
+                'column_precisions': {
+                    'visible_contract_amount': 2,
+                    'settlement_amount': 2,
+                    'paid_amount': 2,
+                    'unpaid_amount': 2,
+                },
+                'tabs': [
+                    {'key': 'execution', 'label': '履约概览', 'fields': ['document_status', 'date_contract', 'visible_contract_amount', 'settlement_amount', 'paid_amount', 'unpaid_amount', 'state']},
+                    {'key': 'contract', 'label': '合同信息', 'fields': ['project_id', 'partner_id', 'subject', 'expense_contract_category_id', 'operation_strategy']},
+                    {'key': 'ownership', 'label': '责任与备注', 'fields': ['handler_id', 'note']},
+                ],
+                'labels': {
+                    'surface_aria': '支出合同履约工作表',
+                    'all': '全部支出合同',
+                    'select_hint': '请选择合同查看履约明细',
+                },
+            },
+        }"/>
+    </record>
+</odoo>
