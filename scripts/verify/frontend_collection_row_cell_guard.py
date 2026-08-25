@@ -48,6 +48,9 @@ def validate(list_source: str | None = None, cell_source: str | None = None, css
     for selector in (".favorite-toggle", ".status-badge", ".cell-primary-link", ".attachment-links", ".attachment-count-link"):
         if selector not in css_text:
             failures.append(f"CollectionRowCell missing style ownership {selector}")
+    for marker in ("white-space: nowrap", "overflow: hidden", "text-overflow: ellipsis"):
+        if marker not in css_text:
+            failures.append(f"CollectionRowCell primary identity missing truncation contract {marker}")
     return failures
 
 

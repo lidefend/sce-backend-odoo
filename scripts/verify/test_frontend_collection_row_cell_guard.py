@@ -33,6 +33,10 @@ class CollectionRowCellGuardTest(unittest.TestCase):
         altered = self.css_source.replace(".status-badge", ".legacy-status-badge")
         self.assertTrue(any("style ownership" in item for item in validate(self.list_source, self.cell_source, altered)))
 
+    def test_missing_primary_truncation_fails(self):
+        altered = self.css_source.replace("text-overflow: ellipsis", "text-overflow: clip")
+        self.assertTrue(any("truncation contract" in item for item in validate(self.list_source, self.cell_source, altered)))
+
 
 if __name__ == "__main__":
     unittest.main()
