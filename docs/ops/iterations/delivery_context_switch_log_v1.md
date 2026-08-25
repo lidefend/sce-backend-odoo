@@ -6200,3 +6200,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `/home/lidefend/workspace/sce-daily-frontend-snapshot-20260826`; environment
   files, dependencies and built artifacts were excluded. The snapshot is an
   analysis input only and is not a product-code authority.
+
+## Product rendering detail convergence v1 — candidate closeout (2026-08-26)
+
+- Candidate head before this evidence-only closeout: `093b9a1ab1053d360f37bc60518b1fe6f1b923e1`.
+- Delivered presentation changes: token-backed side-navigation focus and
+  density, distinct collection/task/workspace/dashboard geometry, canonical
+  Page Header hierarchy, authoritative native record titles, and canonical
+  backend action identities with duplicate occurrences removed by identity.
+- Delivered native detail closure: selection metadata is projected from the
+  effective native tree field descriptor into column occurrences, merged with
+  `columns_schema` by the generic frontend projection, and rendered as the
+  authorized display label. Unknown values remain visible as their raw value;
+  no model, field-name, action, menu or translated-label special case exists.
+- Static verification: navigation, Page Header, page-pattern, collection and
+  canonical-form units/guards pass; strict TypeScript passes; the governed
+  Frontend Quick and development static build pass.
+- Runtime verification: the payment list, payment task form and project
+  workspace pass at 1440px and 390px with one H1, one Page Header, no overflow,
+  zero browser errors and zero business mutations. The workspace retains its
+  authoritative record title, has no duplicate visible backend action identity,
+  and displays selection labels such as `中标` and `已提交` rather than storage
+  codes.
+- Review boundary: Contract schema, route semantics, permission decisions,
+  database records, fixtures and business-model productization remain
+  unchanged. The daily-server snapshot remains a read-only comparison input
+  and is not copied into the product tree.
