@@ -139,6 +139,9 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         self.assertIn('if [[ "${CLEANUP_FORCE:-0}" == "1" ]]', source)
         self.assertIn('delete_flag="-D"', source)
         self.assertIn('git branch "${delete_flag}" -- "${branch}"', source)
+        self.assertIn('squash_merge_verified=1', source)
+        self.assertIn('--head "$branch" --json headRefOid,number', source)
+        self.assertIn('select(.headRefOid == $sha)', source)
 
 
 if __name__ == "__main__":
