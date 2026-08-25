@@ -89,13 +89,19 @@ export function one2manyColumnsFromSubview(
         if (!normalized) return;
         const descriptor = resolveDescriptor(normalized);
         const ttype = fieldType(descriptor) || 'char';
+        const descriptorSemantics = {
+          required: Boolean(descriptor?.required),
+          readonly: Boolean(descriptor?.readonly),
+          selection: one2manySelectionOptions(descriptor?.selection),
+        };
+        const businessColumn = businessColumnsByName.get(normalized);
         out.push({
           name: normalized,
-          label: one2manyColumnLabel(businessColumnsByName.get(normalized)?.label || businessColumnsByName.get(normalized)?.string || descriptor?.string, normalized),
-          ttype: String(businessColumnsByName.get(normalized)?.ttype || businessColumnsByName.get(normalized)?.type || ttype),
-          required: Boolean(businessColumnsByName.get(normalized)?.required ?? descriptor?.required),
-          readonly: Boolean(businessColumnsByName.get(normalized)?.readonly ?? descriptor?.readonly),
-          selection: one2manySelectionOptions(businessColumnsByName.get(normalized)?.selection || descriptor?.selection),
+          label: one2manyColumnLabel(businessColumn?.label || businessColumn?.string || descriptor?.string, normalized),
+          ttype: String(businessColumn?.ttype || businessColumn?.type || ttype),
+          required: businessColumn?.required === undefined ? descriptorSemantics.required : Boolean(businessColumn.required),
+          readonly: businessColumn?.readonly === undefined ? descriptorSemantics.readonly : Boolean(businessColumn.readonly),
+          selection: one2manySelectionOptions(businessColumn?.selection) || descriptorSemantics.selection,
         });
         return;
       }
