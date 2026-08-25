@@ -54,6 +54,12 @@ class CollectionSummaryStripGuardTest(unittest.TestCase):
             self.list_source, self.summary_source, self.css_source, altered,
         )))
 
+    def test_parallel_section_fixture_fails(self):
+        altered = self.visual_source + "\nfunction applySummarySectionFixture() {}\n"
+        self.assertTrue(any("parallel section authority" in item for item in validate(
+            self.list_source, self.summary_source, self.css_source, altered,
+        )))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -68,9 +68,6 @@ def validate(
         "applyFirstContractSummaryFixture",
         "summaryFixtureSceneKey",
         "scene.projection = { ...projection, summary_items: fixture }",
-        "applySummarySectionFixture",
-        "section_key: 'summary_strip'",
-        "bootSummarySectionFixtureApplied",
         "value.projection.summary_items = fixture",
         "normalizeSummaryTone",
         "data-summary-key",
@@ -79,6 +76,9 @@ def validate(
     ):
         if marker not in visual_text:
             failures.append(f"collection summary browser evidence missing {marker}")
+    for forbidden in ("applySummarySectionFixture", "bootSummarySectionFixtureApplied"):
+        if forbidden in visual_text:
+            failures.append(f"collection summary browser fixture must not create parallel section authority: {forbidden}")
     return failures
 
 
