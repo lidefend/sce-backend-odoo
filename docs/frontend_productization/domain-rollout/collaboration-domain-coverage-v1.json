@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "collaboration",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_product_message_notification_v1"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 1,
+    "model_count": 1,
+    "ready_surface_count": 1,
+    "readable_fallback_count": 0,
+    "structural_form_count": 1,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 673,
+      "menuXmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+      "menuName": "消息通知",
+      "actionId": 858,
+      "actionXmlid": "smart_construction_core.action_sc_product_message_notification_v1",
+      "actionName": "消息通知",
+      "model": "mail.notification",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_workspace_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_mail_notification_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_product_mail_notification_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": [],
+  "formContractRuntime": {
+    "actionXmlid": "smart_construction_core.action_sc_product_message_notification_v1",
+    "viewXmlid": "smart_construction_core.view_sc_product_mail_notification_form",
+    "selectedContractXmlid": "smart_construction_core.business_config_contract_mail_notification_form_v1",
+    "presentationMode": "task",
+    "effectiveRenderProfile": "readonly",
+    "formStructureAuthority": "entry_semantic_surface"
+  }
+}
