@@ -5,7 +5,7 @@
         <field name="name">execution.structure.wbs.tree</field>
         <field name="model">construction.work.breakdown</field>
         <field name="arch" type="xml">
-            <tree string="执行结构 · 工作分解（WBS）" default_order="project_id, parent_path, sequence, id">
+            <tree string="执行结构 · 工作分解（WBS）" js_class="smart_hierarchy_browser" default_order="project_id, parent_path, sequence, id">
                 <field name="code"/>
                 <field name="name"/>
                 <field name="parent_id" optional="hide"/>
