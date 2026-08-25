@@ -166,7 +166,6 @@ const props = defineProps<{
   showCollaborationPanel?: boolean;
   collaborationPanelProps?: NativeCollaborationPanelProps;
   collaborationPanelListeners?: NativeCollaborationPanelListeners;
-  dirty?: boolean;
   busy?: boolean;
   actionsInHeader?: boolean;
 }>();
@@ -195,8 +194,10 @@ const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorpl
 const productWriteMode = computed(() => Boolean(
   floorplan.value.decisionMode && props.renderModel && props.renderModel.identity.mode !== 'readonly',
 ));
+const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
 const localSavePrimary = computed(() => Boolean(
-  productWriteMode.value && (props.renderModel?.identity.mode === 'create' || props.dirty),
+  productWriteMode.value
+  && visibleActions.value.some((action) => action.actionRef.actionId === 'form.save' && action.enabled),
 ));
 const showProductActions = computed(() => Boolean(
   localSavePrimary.value || productWriteMode.value
@@ -212,7 +213,6 @@ const allowUserOverride = computed(() => (
   && props.driverConfig?.allowUserOverride === true
   && allowedKits.value.length > 1
 ));
-const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
 const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));

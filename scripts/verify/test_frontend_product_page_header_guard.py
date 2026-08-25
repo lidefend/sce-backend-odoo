@@ -18,6 +18,21 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("data-product-page-header" in item for item in validate()))
 
+    def test_dirty_gated_edit_save_fails(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "contractFormHeaderCanonicalActions.ts":
+                return value.replace("input.renderProfile === 'edit'", "input.renderProfile === 'edit' && input.dirty")
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "canonical edit save authority must not wait for dirty state",
+                validate(),
+            )
+
 
 from pathlib import Path
 

@@ -57,13 +57,19 @@ def validate() -> list[str]:
         if marker not in contract_page:
             failures.append(f"ContractForm does not project direct edit actions into header: {marker}")
     canonical_actions = source("frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts")
-    for marker in ("input.renderProfile === 'create'", "input.renderProfile === 'edit' && input.dirty", "authorizedLocalSave?.enabled"):
+    for marker in ("input.renderProfile === 'create'", "input.renderProfile === 'edit'", "authorizedLocalSave?.enabled"):
         if marker not in canonical_actions:
             failures.append(f"canonical edit/create save authority misses {marker}")
+    if "input.renderProfile === 'edit' && input.dirty" in canonical_actions:
+        failures.append("canonical edit save authority must not wait for dirty state")
     driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     for marker in ('showProductActions && !actionsInHeader', 'visibleActions.length && !actionsInHeader'):
         if marker not in driver:
             failures.append(f"DriverHost still owns a parallel action bar: {marker}")
+    if "action.actionRef.actionId === 'form.save' && action.enabled" not in driver:
+        failures.append("DriverHost local save is not bound to authorized canonical form.save")
+    if "props.renderModel?.identity.mode === 'create' || props.dirty" in driver:
+        failures.append("DriverHost edit save must not wait for dirty state")
     nested_heading_paths = (
         "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
         "frontend/packages/ui/src/components/SceneHierarchySurface.vue",
