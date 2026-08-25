@@ -72,6 +72,18 @@ def validate(root: Path = ROOT) -> list[str]:
     if ':data-readonly="readonly || undefined"' not in select_text or ':aria-readonly="readonly || undefined"' not in select_text:
         errors.append("ScSelect must expose readonly state without inventing write authority")
 
+    state_contracts = {
+        "ScLoading": ('data-state', 'aria-busy'),
+        "ScEmptyState": ('data-state="empty"', 'role="status"'),
+        "ScErrorState": ('data-state="error"', 'role="alert"'),
+        "ScFormField": (':data-state=', ':data-required='),
+    }
+    for component, markers in state_contracts.items():
+        text = (design / f"{component}.vue").read_text(encoding="utf-8")
+        for marker in markers:
+            if marker not in text:
+                errors.append(f"{component} missing deterministic state marker: {marker}")
+
     if not bridge:
         errors.append("missing TDesign primitive bridge")
     else:

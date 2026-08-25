@@ -35,6 +35,10 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScButton": '<button :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined"><span class="sc-btn__spinner" /></button>',
                 "ScInput": '<input :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<select :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
+                "ScLoading": '<div data-state="loading" aria-busy="true" />',
+                "ScEmptyState": '<section data-state="empty" role="status" />',
+                "ScErrorState": '<section data-state="error" role="alert" />',
+                "ScFormField": '<label :data-state="state" :data-required="required" />',
             }.get(name, "")
             (design / f"{name}.vue").write_text(
                 f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',

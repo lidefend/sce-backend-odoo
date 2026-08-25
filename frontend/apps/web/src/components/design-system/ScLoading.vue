@@ -1,6 +1,9 @@
 <template>
   <TDesignLoading
     v-bind="semanticPrimitiveIdentity('ScLoading')"
+    :data-state="loading ? 'loading' : 'idle'"
+    :aria-busy="loading || undefined"
+    :aria-live="loading ? 'polite' : undefined"
     :loading="loading"
     :size="normalizePrimitiveSize(size)"
     :text="label"
