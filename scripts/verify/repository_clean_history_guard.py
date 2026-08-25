@@ -218,6 +218,69 @@ def public_revision_args() -> tuple[str, ...]:
     return ("HEAD", "--branches", "--tags", "--remotes")
 
 
+def trusted_incremental_revision_args(root: Path, trusted_base: str) -> tuple[str, ...]:
+    if not re.fullmatch(r"[0-9a-f]{40}", trusted_base):
+        raise ValueError("trusted base must be a full lowercase commit SHA")
+    if run_git(root, "cat-file", "-e", f"{trusted_base}^{{commit}}", check=False).returncode != 0:
+        raise ValueError("trusted base commit is unavailable")
+    if run_git(root, "merge-base", "--is-ancestor", trusted_base, "HEAD", check=False).returncode != 0:
+        raise ValueError("trusted base must be an ancestor of HEAD")
+    return ("HEAD", f"^{trusted_base}")
+
+
+def incremental_authority_paths(rules: dict[str, object]) -> set[str]:
+    paths = {
+        "scripts/verify/repository_clean_history_guard.py",
+        ".github/workflows/public_guard.yml",
+    }
+    for key in (
+        "_policy_relative",
+        "personal_data_false_positive_registry",
+        "oversized_blob_exception_registry",
+    ):
+        value = str(rules.get(key) or "")
+        if value:
+            paths.add(value)
+    return paths
+
+
+def incremental_authority_changed(root: Path, trusted_base: str, rules: dict[str, object]) -> bool:
+    changed = set(
+        git(
+            root,
+            "diff",
+            "--name-only",
+            "--diff-filter=ACMRTUXB",
+            f"{trusted_base}...HEAD",
+            "--",
+            check=False,
+        ).splitlines()
+    )
+    return bool(changed & incremental_authority_paths(rules))
+
+
+def current_changed_tree_rows(root: Path, trusted_base: str) -> list[ObjectRow]:
+    paths = git(
+        root,
+        "diff",
+        "--name-only",
+        "--diff-filter=ACMRTUXB",
+        f"{trusted_base}...HEAD",
+        "--",
+        check=False,
+    ).splitlines()
+    rows: list[ObjectRow] = []
+    for path in paths:
+        line = git(root, "ls-tree", "-l", "HEAD", "--", path, check=False).strip()
+        if not line:
+            continue
+        metadata, _separator, resolved_path = line.partition("\t")
+        parts = metadata.split()
+        if len(parts) == 4 and parts[1] == "blob" and parts[3].isdigit():
+            rows.append(ObjectRow(parts[2], parts[1], int(parts[3]), resolved_path))
+    return rows
+
+
 def read_blob(root: Path, object_id: str) -> bytes:
     return subprocess.run(
         ["git", "cat-file", "blob", object_id],
@@ -409,6 +472,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--policy", type=Path, default=POLICY_PATH)
     parser.add_argument("--local-hygiene", action="store_true")
+    parser.add_argument("--trusted-base")
     return parser.parse_args(argv)
 
 
@@ -434,6 +498,23 @@ def main(argv: list[str] | None = None) -> int:
 
     errors: set[Finding] = set()
     publication_revisions = public_revision_args()
+    scan_revisions = publication_revisions
+    scan_mode = "public_refs"
+    trusted_base = str(args.trusted_base or "")
+    if trusted_base:
+        try:
+            incremental_revisions = trusted_incremental_revision_args(root, trusted_base)
+        except ValueError as exc:
+            print(
+                f"[repository_clean_history_guard] FAIL rule=RH022 classification=TRUSTED_BASE_INVALID detail={exc}",
+                file=sys.stderr,
+            )
+            return 2
+        if incremental_authority_changed(root, trusted_base, rules):
+            scan_mode = "public_refs_authority_fallback"
+        else:
+            scan_revisions = incremental_revisions
+            scan_mode = "trusted_base_incremental"
     roots = [
         line
         for line in git(
@@ -459,7 +540,13 @@ def main(argv: list[str] | None = None) -> int:
         if run_git(root, "cat-file", "-e", f"{commit_id}^{{commit}}", check=False).returncode == 0:
             errors.add(Finding("RH004", f"object:{commit_id[:12]}", "OLD_COMMIT_IMPORTED"))
 
-    for row in object_rows(root, publication_revisions):
+    scan_rows = object_rows(root, scan_revisions)
+    if scan_mode == "trusted_base_incremental":
+        scan_rows.extend(current_changed_tree_rows(root, trusted_base))
+    for row in sorted(
+        set(scan_rows),
+        key=lambda item: (item.object_id, item.path, item.object_type, item.size),
+    ):
         if row.object_type == "blob" and row.path:
             errors.update(blob_findings(root, row, rules))
 
@@ -471,7 +558,7 @@ def main(argv: list[str] | None = None) -> int:
 
     oversized_exceptions = rules.get("_oversized_blob_exceptions", set())
     used_oversized_exceptions = rules.get("_used_oversized_blob_exceptions", set())
-    if isinstance(oversized_exceptions, set) and isinstance(used_oversized_exceptions, set):
+    if scan_mode != "trusted_base_incremental" and isinstance(oversized_exceptions, set) and isinstance(used_oversized_exceptions, set):
         for _rule_id, path, object_id, _classification in sorted(
             oversized_exceptions - used_oversized_exceptions
         ):
@@ -504,7 +591,7 @@ def main(argv: list[str] | None = None) -> int:
         print("sensitive_values_recorded=false", file=sys.stderr)
         return 1
     print(
-        f"[repository_clean_history_guard] PASS roots={len(roots)} reachable_scan=public_refs "
+        f"[repository_clean_history_guard] PASS roots={len(roots)} reachable_scan={scan_mode} "
         f"local_hygiene={args.local_hygiene} reflog_only={hygiene['reflog_only']} "
         f"unreachable={hygiene['unreachable']} tags={hygiene['tags']} "
         f"stash_refs={hygiene['stash_refs']} "

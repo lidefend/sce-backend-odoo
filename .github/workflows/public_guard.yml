@@ -48,6 +48,8 @@ jobs:
     if: needs.classify.outputs.lane != 'FAST'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
     steps:
       - name: Checkout classified source without persisted credentials
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -84,8 +86,14 @@ jobs:
           python3 scripts/ci/frontend_professional_extension_guard.py
           python3 scripts/verify/test_frontend_release_evidence_bundle.py
 
-      - name: Scan all reachable product history
-        run: make verify.repository.clean_history
+      - name: Scan governed product history
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            python3 scripts/verify/repository_clean_history_guard.py --trusted-base "${BASE_SHA}"
+          else
+            make verify.repository.clean_history
+          fi
 
       - name: Run clean product boundary scan
         run: >-

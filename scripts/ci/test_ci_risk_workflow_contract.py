@@ -59,7 +59,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("name: public_guard_classify", text)
         self.assertIn("steps.risk.outputs.lane", text)
         self.assertIn("if: needs.classify.outputs.lane != 'FAST'", text)
-        self.assertIn("Scan all reachable product history", text)
+        self.assertIn("Scan governed product history", text)
+        self.assertIn('repository_clean_history_guard.py --trusted-base "${BASE_SHA}"', text)
         self.assertIn("make verify.repository.clean_history", text)
 
     def test_professional_lane_commands_are_explicit(self) -> None:
