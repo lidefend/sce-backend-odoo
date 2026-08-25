@@ -1468,6 +1468,18 @@ verify.frontend.professionalization.administration_domain.runtime: guard.prod.fo
 		--json-output docs/frontend_productization/domain-rollout/administration-domain-coverage-v1.json \
 		--markdown-output docs/frontend_productization/domain-rollout/administration-domain-coverage-v1.md
 
+.PHONY: verify.frontend.professionalization.systemwide_coverage.runtime
+verify.frontend.professionalization.systemwide_coverage.runtime: guard.prod.forbid check-compose-project check-compose-env
+	@mkdir -p artifacts/frontend-professionalization docs/frontend_productization/domain-rollout
+	@python3 -m py_compile scripts/verify/frontend_systemwide_coverage_audit.py scripts/verify/frontend_systemwide_coverage_audit_report.py scripts/verify/test_frontend_systemwide_coverage_audit.py
+	@python3 -m unittest scripts.verify.test_frontend_systemwide_coverage_audit
+	@$(RUN_ENV) FRONTEND_SYSTEMWIDE_COVERAGE_AUDIT_PATH=/tmp/frontend_systemwide_coverage_audit_v1.json DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_systemwide_coverage_audit.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/frontend_systemwide_coverage_audit_v1.json artifacts/frontend-professionalization/frontend_systemwide_coverage_audit_runtime_v1.json >/dev/null
+	@python3 scripts/verify/frontend_systemwide_coverage_audit_report.py \
+		--input artifacts/frontend-professionalization/frontend_systemwide_coverage_audit_runtime_v1.json \
+		--json-output docs/frontend_productization/domain-rollout/systemwide-coverage-audit-v1.json \
+		--markdown-output docs/frontend_productization/domain-rollout/systemwide-coverage-audit-v1.md
+
 .PHONY: verify.product.menu.governance.m4.runtime
 verify.product.menu.governance.m4.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@install -d -m 0777 artifacts/menu-governance

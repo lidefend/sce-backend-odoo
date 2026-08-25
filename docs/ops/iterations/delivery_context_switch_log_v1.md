@@ -5968,3 +5968,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   browser errors and zero business mutations.
 - Rollback: revert the administration evidence and workflow wiring. Shared P0
   product runtime, database state, roles, and fixtures are unaffected.
+## Frontend system professionalization — final systemwide coverage audit (2026-08-25)
+
+- Branch / baseline: `audit/p0-frontend-systemwide-coverage-final-v1` /
+  `142825ff9df565bd80a5e366ce62b9c3ceef7f65`.
+- Formal Product Layer: P0/P1 systemwide frontend delivery evidence.
+- Layer Target: exact-set reconciliation between the locked ten primary-center
+  runtime menu/action graph and the ten delivered domain reports.
+- Result: 10 centers, 88 formal product menu/action surfaces, 58 exact
+  menu/action identities covered, 30 unqualified, and zero runtime authority
+  or assembly gaps. One demo-owned project showcase entry is explicitly
+  excluded rather than counted as formal product coverage.
+- Remaining centers: workbench 3, finance 9, tax 9, accounting 3, reporting 6.
+  They are separate P1 rollout batches in that order; internal system
+  management remains non-primary and outside the locked product baseline.
+- This audit changes no product runtime, Contract, permissions, roles, fixture,
+  or database state. Its FAIL status is the evidence-backed remediation input,
+  not a CI or product-runtime failure.
