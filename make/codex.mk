@@ -384,7 +384,8 @@ pr.merge: guard.prod.forbid
 	fi; \
 	METHOD="$${PR_MERGE_METHOD:-squash}"; \
 	case "$$METHOD" in merge|squash|rebase) ;; *) echo "[DENY] pr.merge: invalid PR_MERGE_METHOD=$$METHOD"; exit 7 ;; esac; \
-	if ! gh pr merge --help | grep -q -- "--match-head-commit"; then \
+	MERGE_HELP="$$(gh pr merge --help 2>&1)" || { echo "[DENY] pr.merge: unable to inspect gh merge capabilities"; exit 8; }; \
+	if [[ "$$MERGE_HELP" != *"--match-head-commit"* ]]; then \
 	  echo "[DENY] pr.merge: gh CLI lacks --match-head-commit support"; exit 8; \
 	fi; \
 	ACTUAL="$$(gh pr view "$$PR" --json headRefOid --jq .headRefOid)"; \

@@ -108,6 +108,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     sanitizeUiErrorMessage,
     saveContractFieldOrder,
     sceneReadyFormSurface,
+    snapshotOriginalFormValues,
     selectedFormSettingsFieldGroupTitle,
     selectedFormSettingsFieldGroupTitleDraft,
     selectedFormSettingsFieldGroupTitleEdit,
@@ -489,6 +490,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         });
         submissionFeedback.value = { kind: 'success', message: formUiLabel('save_success') };
         formConflict.value = false;
+        originalValues.value = snapshotOriginalFormValues(Object.keys(formData), formData);
         dirtyFieldSet.clear();
         await applyProjectionRefreshPolicy(refreshPolicy || { on_success: ['scene_projection'] });
         return true;
