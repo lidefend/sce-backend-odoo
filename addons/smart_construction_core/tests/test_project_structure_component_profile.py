@@ -8,6 +8,7 @@ from odoo.tests.common import TransactionCase
 from odoo.tools.safe_eval import safe_eval
 
 from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import PageAssembler
+from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 
 
 EXPECTED_LEVELS = [
@@ -69,6 +70,19 @@ class TestProjectStructureComponentProfile(TransactionCase):
         self.assertEqual(context["hierarchy_levels"], EXPECTED_LEVELS)
         self.assertNotIn("hierarchy_create", context)
         self.assertNotIn("hierarchy_commands", context)
+
+    def test_formal_menu_targets_canonical_window_action(self):
+        menu = self.env.ref("smart_construction_core.menu_sc_project_wbs")
+
+        self.assertEqual(
+            menu.action,
+            self.env.ref("smart_construction_core.action_exec_structure_wbs"),
+        )
+        self.assertEqual(
+            menu.parent_id,
+            self.env.ref("smart_construction_core.menu_sc_construction_management_center"),
+        )
+        self.assertTrue(menu.active)
 
     def test_generated_tree_contract_is_owned_only_by_wbs_planner(self):
         contract = self.env.ref(
@@ -146,6 +160,45 @@ class TestProjectStructureComponentProfile(TransactionCase):
         self.assertEqual(config["list"]["domain"], [("project_id", "=", project.id)])
         self.assertEqual(config["create"], {"enabled": False, "label": ""})
         self.assertEqual(config["commands"], [])
+
+    def test_project_manager_receives_execution_structure_contract(self):
+        user = self.env["res.users"].create(
+            {
+                "name": "Phase 9 project structure contract user",
+                "login": "phase9_project_structure_contract_user",
+                "groups_id": [
+                    (6, 0, [
+                        self.env.ref("base.group_user").id,
+                        self.env.ref(
+                            "smart_construction_core.group_sc_role_project_manager"
+                        ).id,
+                    ])
+                ],
+            }
+        )
+        action = self.env.ref("smart_construction_core.action_exec_structure_wbs")
+        menu = self.env.ref("smart_construction_core.menu_sc_project_wbs")
+        user_env = self.env(user=user)
+
+        result = UiContractV2Handler(
+            user_env,
+            su_env=user_env["ir.model"].sudo().env,
+        ).handle(
+            {
+                "model": "construction.work.breakdown",
+                "view_type": "tree",
+                "action_id": action.id,
+                "menu_id": menu.id,
+                "client_type": "web_pc",
+            }
+        )
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+
+        self.assertTrue(envelope.get("ok", True), envelope)
+        presentation = envelope["data"]["layoutContract"]["listProfile"][
+            "collection_presentation"
+        ]
+        self.assertEqual(presentation["semantic"], "hierarchy_browser")
 
     def test_missing_project_still_returns_selection_notification_without_profile_guessing(self):
         action = self.env["project.project"]._exec_structure_action()

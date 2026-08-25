@@ -84,6 +84,9 @@
         <record id="menu_sc_safety_issue" model="ir.ui.menu">
             <field name="name">安全检查</field><field name="parent_id" ref="smart_construction_core.menu_sc_construction_management_center"/><field name="sequence">10</field><field name="active">True</field>
         </record>
+        <record id="menu_sc_project_wbs" model="ir.ui.menu">
+            <field name="name">执行结构</field><field name="parent_id" ref="smart_construction_core.menu_sc_construction_management_center"/><field name="sequence">20</field><field name="active">True</field>
+        </record>
         <record id="menu_sc_project_documents" model="ir.ui.menu">
             <field name="name">工程资料</field><field name="parent_id" ref="smart_construction_core.menu_sc_construction_management_center"/><field name="sequence">30</field><field name="active">True</field>
         </record>
