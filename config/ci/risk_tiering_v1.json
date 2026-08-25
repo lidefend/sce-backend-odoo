@@ -15,7 +15,18 @@
     ".github/ISSUE_TEMPLATE/**"
   ],
   "standard_frontend_paths": [
-    "frontend/**"
+    "frontend/**",
+    "make/frontend_professional_extensions.mk",
+    "scripts/verify/frontend_professional_*",
+    "scripts/verify/test_frontend_professional_*"
+  ],
+  "standard_frontend_owned_paths": [
+    "make/frontend_professional_extensions.mk",
+    "scripts/verify/frontend_professional_*",
+    "scripts/verify/test_frontend_professional_*"
+  ],
+  "high_risk_override_paths": [
+    "make/frontend_professional_extensions.mk"
   ],
   "frontend_full_paths": [
     ".github/workflows/frontend_release_gate.yml",
