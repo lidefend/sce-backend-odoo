@@ -38,7 +38,7 @@
         <ScButton class="pagination-btn" size="small" :disabled="loading || totalPages <= 1" @click="$emit('page-jump')">
           {{ labels.jump }}
         </ScButton>
-        <label class="pagination-size-control">
+        <label v-if="showPageSize" class="pagination-size-control">
           <span class="pagination-size-label">{{ labels.pageSize }}</span>
           <span class="pagination-size-combo">
             <ScInput
@@ -78,7 +78,7 @@ import ScSelect from '../design-system/ScSelect.vue';
 
 export type CollectionPaginationMode = 'count' | 'grouped' | 'paged';
 
-defineProps<{
+withDefaults(defineProps<{
   mode: CollectionPaginationMode;
   recordCountText: string;
   loading: boolean;
@@ -90,6 +90,7 @@ defineProps<{
   listLimit: number;
   totalPages: number;
   pageLimitOptions: number[];
+  showPageSize?: boolean;
   labels: {
     region: string;
     previous: string;
@@ -102,7 +103,7 @@ defineProps<{
     pageSizeInput: string;
     pageSizeSelect: string;
   };
-}>();
+}>(), { showPageSize: true });
 
 defineEmits<{
   previous: [];

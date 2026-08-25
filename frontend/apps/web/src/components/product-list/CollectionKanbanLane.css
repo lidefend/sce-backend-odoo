@@ -1,0 +1,4 @@
+.collection-kanban-lane { min-width: 0; }
+.collection-kanban-lane__header { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-space-xs); margin-bottom: var(--sc-space-sm); border-bottom: 2px solid var(--sc-app-border); padding: var(--sc-space-xs) var(--sc-space-2xs); }
+.collection-kanban-lane__header h3 { margin: 0; color: var(--sc-app-text-primary); font-size: calc(var(--sc-base-font-size-md) * 1px); }
+.collection-kanban-lane__cards { display: grid; gap: var(--sc-space-md); }
