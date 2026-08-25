@@ -58,7 +58,7 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
 
     def test_snapshot_drops_database_identity_and_sorts_authority(self):
         payload = {
-            "schemaVersion": "frontend_project_domain_rollout.v1",
+            "schemaVersion": "frontend_domain_rollout.v1",
             "status": "PASS",
             "domain": "project",
             "database": "must-not-leak",
@@ -67,8 +67,10 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
             "summary": {"action_count": 1},
             "actions": [
                 {
+                    "menu_id": 10,
                     "menu_xmlid": "module.menu",
                     "menu_name": "Menu",
+                    "action_id": 20,
                     "action_xmlid": "module.action",
                     "action_name": "Action",
                     "model": "x.model",
@@ -106,6 +108,8 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
             ["module.group_action_a", "module.group_action_b"],
         )
         self.assertIn("demo_addons", snapshot["excludedScopes"])
+        self.assertEqual(snapshot["actions"][0]["menuId"], 10)
+        self.assertEqual(snapshot["actions"][0]["actionId"], 20)
 
     def test_authority_preserves_and_of_layers_and_requires_action_policy(self):
         root_group = self.Record(1, "module.group_root")
@@ -155,6 +159,7 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
         actual = {"smart_construction_core.action_project_initiation"}
         missing = runtime.EXPECTED_ANCHORS - actual
         self.assertIn("smart_construction_core.action_exec_structure_wbs", missing)
+        self.assertIn("EXPECTED_DOMAIN_ANCHOR_MISSING", Path(runtime.__file__).read_text())
 
     def test_report_output_is_deterministic(self):
         snapshot = {

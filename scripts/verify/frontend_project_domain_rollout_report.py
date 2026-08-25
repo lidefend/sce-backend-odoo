@@ -13,8 +13,10 @@ def normalized_snapshot(payload: dict[str, object]) -> dict[str, object]:
     for row in payload.get("actions", []):
         actions.append(
             {
+                "menuId": row["menu_id"],
                 "menuXmlid": row["menu_xmlid"],
                 "menuName": row["menu_name"],
+                "actionId": row["action_id"],
                 "actionXmlid": row["action_xmlid"],
                 "actionName": row["action_name"],
                 "model": row["model"],
@@ -57,12 +59,12 @@ def normalized_snapshot(payload: dict[str, object]) -> dict[str, object]:
     }
 
 
-def markdown(snapshot: dict[str, object]) -> str:
+def markdown(snapshot: dict[str, object], title: str = "Project Domain Frontend Rollout v1") -> str:
     summary = snapshot["summary"]
     lines = [
-        "# Project Domain Frontend Rollout v1",
+        f"# {title}",
         "",
-        "This report covers the repository formal-product runtime baseline for the project center.",
+        f"This report covers the repository formal-product runtime baseline for the {snapshot.get('domain', 'business')} center.",
         "Demo, customer overlays, and user-specific visibility are deliberately excluded.",
         "",
         "## Summary",
@@ -112,14 +114,16 @@ def markdown(snapshot: dict[str, object]) -> str:
             for item in snapshot["gaps"]
         )
     else:
-        lines.append("No P0/P1 frontend rollout gaps were detected for the formal project-center entries.")
+        lines.append(
+            f"No P0/P1 frontend rollout gaps were detected for the formal {snapshot.get('domain', 'business')}-center entries."
+        )
     lines.extend(
         [
             "",
             "## Acceptance routing",
             "",
-            "- Primary journey: project ledger opens through its formal action/menu and preserves workspace form authority.",
-            "- Security counterexample: a project-read user cannot gain manager-only project lifecycle authority.",
+            f"- Primary journey: a formal {snapshot.get('domain', 'business')} entry preserves its resolved action/menu and form authority.",
+            "- Security counterexample: an unauthorized user cannot gain entry or write authority.",
             "- Any future unregistered `smart_*` view class fails this audit closed.",
             "",
         ]

@@ -164,8 +164,8 @@ def _authority_gaps(action_xmlid: str, authority: dict[str, object]) -> list[dic
     return gaps
 
 
-def _is_formal_owner(action_xmlid: str) -> bool:
-    return action_xmlid.partition(".")[0] == OWNER_MODULE
+def _is_formal_owner(action_xmlid: str, owner_module: str = OWNER_MODULE) -> bool:
+    return action_xmlid.partition(".")[0] == owner_module
 
 
 def _resolved_views(env, action, assembly_semantics: dict[str, str]) -> list[dict[str, object]]:
@@ -252,8 +252,15 @@ def _assembly_semantics(env, action) -> dict[str, str]:
     }
 
 
-def collect(env) -> dict[str, object]:
-    root = env.ref(ROOT_MENU_XMLID)
+def collect_domain(
+    env,
+    *,
+    domain_key: str,
+    root_menu_xmlid: str,
+    owner_module: str,
+    expected_anchors: set[str],
+) -> dict[str, object]:
+    root = env.ref(root_menu_xmlid)
     Menu = env["ir.ui.menu"].sudo().with_context(active_test=False)
     actions: list[dict[str, object]] = []
     excluded: list[dict[str, str]] = []
@@ -266,7 +273,7 @@ def collect(env) -> dict[str, object]:
         action = env["ir.actions.act_window"].sudo().browse(action.id).exists()
         menu_xmlid = _xmlid(menu)
         action_xmlid = _xmlid(action)
-        if not _is_formal_owner(action_xmlid):
+        if not _is_formal_owner(action_xmlid, owner_module):
             excluded.append(
                 {
                     "menu_xmlid": menu_xmlid,
@@ -296,8 +303,10 @@ def collect(env) -> dict[str, object]:
         views = _resolved_views(env, action, assembly_semantics)
         authority = _authority_contract(menu, action)
         row = {
+            "menu_id": menu.id,
             "menu_xmlid": menu_xmlid,
             "menu_name": _text(menu.name),
+            "action_id": action.id,
             "action_xmlid": action_xmlid,
             "action_name": _text(action.name),
             "model": action.res_model,
@@ -331,8 +340,8 @@ def collect(env) -> dict[str, object]:
                 )
 
     actual_actions = {str(row["action_xmlid"]) for row in actions}
-    for missing in sorted(EXPECTED_ANCHORS - actual_actions):
-        gaps.append({"action_xmlid": missing, "reason": "EXPECTED_PROJECT_ANCHOR_MISSING"})
+    for missing in sorted(expected_anchors - actual_actions):
+        gaps.append({"action_xmlid": missing, "reason": "EXPECTED_DOMAIN_ANCHOR_MISSING"})
 
     summary = {
         "action_count": len(actions),
@@ -355,17 +364,27 @@ def collect(env) -> dict[str, object]:
         "gap_count": len(gaps),
     }
     return {
-        "schemaVersion": "frontend_project_domain_rollout.v1",
+        "schemaVersion": "frontend_domain_rollout.v1",
         "status": "PASS" if not gaps and actions else "FAIL",
-        "domain": DOMAIN_KEY,
+        "domain": domain_key,
         "database": env.cr.dbname,
-        "root_menu_xmlid": ROOT_MENU_XMLID,
-        "owner_module": OWNER_MODULE,
+        "root_menu_xmlid": root_menu_xmlid,
+        "owner_module": owner_module,
         "summary": summary,
         "actions": actions,
         "excluded": excluded,
         "gaps": gaps,
     }
+
+
+def collect(env) -> dict[str, object]:
+    return collect_domain(
+        env,
+        domain_key=DOMAIN_KEY,
+        root_menu_xmlid=ROOT_MENU_XMLID,
+        owner_module=OWNER_MODULE,
+        expected_anchors=EXPECTED_ANCHORS,
+    )
 
 
 def write_report(report: dict[str, object], output: Path = OUTPUT_PATH) -> None:
