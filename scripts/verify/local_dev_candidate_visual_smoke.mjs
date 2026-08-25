@@ -383,6 +383,7 @@ try {
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
       if (bootSummaryFixtureTarget === target) {
+        await page.locator('[data-semantic-component="CollectionSummaryStrip"]').waitFor({ state: 'visible', timeout: 45000 });
         while (bootSummaryRouteHandling) await new Promise((resolve) => setTimeout(resolve, 10));
         await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
       }

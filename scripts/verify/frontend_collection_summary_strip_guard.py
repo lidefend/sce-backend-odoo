@@ -64,6 +64,7 @@ def validate(
         "bootSummaryFixtureApplied",
         "collectSummaryCarrierPaths",
         "fixtureCarrierPaths",
+        "CollectionSummaryStrip\"]').waitFor({ state: 'visible'",
         "applyFirstContractSummaryFixture",
         "summaryFixtureSceneKey",
         "scene.projection = { ...projection, summary_items: fixture }",
