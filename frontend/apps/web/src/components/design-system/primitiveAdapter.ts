@@ -41,6 +41,16 @@ export function normalizePrimitiveStatus(status?: ScPrimitiveStatus): ScPrimitiv
   return status ?? 'default';
 }
 
+export function resolvePrimitiveControlUpdate(input: {
+  value: unknown;
+  disabled?: boolean;
+  readonly?: boolean;
+  loading?: boolean;
+}): string | null {
+  if (input.disabled || input.readonly || input.loading) return null;
+  return String(input.value ?? '');
+}
+
 export function tdesignTabsSize(size?: ScPrimitiveSize): 'medium' | 'large' {
   return normalizePrimitiveSize(size) === 'large' ? 'large' : 'medium';
 }

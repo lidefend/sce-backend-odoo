@@ -45,6 +45,11 @@ def validate() -> list[str]:
     for marker in ('canonicalActionEvidenceAttributes(action)', "'data-action-method'", "'data-action-enabled'", "'data-action-allowed'"):
         if marker not in contract:
             failures.append(f"canonical header action misses evidence marker {marker}")
+    for marker in ('form-header-mobile-actions', 'mobileActionAuthority', 'mobilePresentedDirectActions', 'aria-label="更多页面操作"', ':data-mobile-action-count', ':data-mobile-action-keys'):
+        if marker not in contract:
+            failures.append(f"contract header mobile action settlement misses {marker}")
+    if 'role="menu"' in contract or 'role="menuitem"' in contract:
+        failures.append("contract header disclosure must preserve native button semantics")
     for marker in ('data-action-ref="form.save"', 'data-action-tier="primary"', ':data-action-enabled="String(!busy)"'):
         if marker not in contract:
             failures.append(f"canonical local save misses primary-action evidence {marker}")
@@ -86,11 +91,23 @@ def validate() -> list[str]:
     for marker in ("data-action-key", "data-action-ref", "data-backend-identity"):
         if marker not in native_renderer:
             failures.append(f"native action evidence is missing {marker}")
+    for marker in ("line-break: strict", "text-wrap: balance", "font-size: 24px"):
+        if marker not in native_renderer:
+            failures.append(f"native record title responsive treatment is missing {marker}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")
-    for page_route in ("'action'", "'record'", "'model-form'", "'not-found'"):
-        compact_section = app_shell.split("const compactRouteKeepsHeadline", 1)[1].split(");", 1)[0]
-        if page_route in compact_section:
-            failures.append(f"AppShell still owns h1 for page-header route {page_route}")
+    router = source("frontend/apps/web/src/router/index.ts")
+    for page_route in ("api-key-management", "action", "record", "model-form", "not-found"):
+        route_declaration = next(
+            (line for line in router.splitlines() if f"name: '{page_route}'" in line),
+            "",
+        )
+        if "pageHeadingOwner: 'content'" not in route_declaration:
+            failures.append(f"page-header route does not declare content heading authority: {page_route}")
+    for marker in ("contentOwnsPageHeading", "route.meta?.pageHeadingOwner === 'content'", "!contentOwnsPageHeading.value"):
+        if marker not in app_shell:
+            failures.append(f"AppShell does not consume route heading authority: {marker}")
+    if "formDesignerKeepsHeadline" in app_shell or "BUSINESS_CONFIG_MODES.lowCode" in app_shell:
+        failures.append("AppShell must not override content heading authority for low-code form routes")
     return failures
 
 

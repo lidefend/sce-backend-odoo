@@ -3,6 +3,7 @@ import {
   SC_PRIMITIVE_KEYS,
   normalizePrimitiveSize,
   normalizePrimitiveStatus,
+  resolvePrimitiveControlUpdate,
   semanticPrimitiveIdentity,
   tdesignDropdownOptions,
   tdesignTabsSize,
@@ -19,6 +20,11 @@ assert.equal(normalizePrimitiveSize(), 'medium');
 assert.equal(normalizePrimitiveSize('small'), 'small');
 assert.equal(normalizePrimitiveStatus(), 'default');
 assert.equal(normalizePrimitiveStatus('error'), 'error');
+assert.equal(resolvePrimitiveControlUpdate({ value: 'next' }), 'next');
+assert.equal(resolvePrimitiveControlUpdate({ value: 7 }), '7');
+assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', disabled: true }), null);
+assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', readonly: true }), null);
+assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', loading: true }), null);
 assert.equal(tdesignTabsSize('small'), 'medium');
 assert.equal(tdesignTabsSize('medium'), 'medium');
 assert.equal(tdesignTabsSize('large'), 'large');

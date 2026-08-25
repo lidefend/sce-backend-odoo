@@ -99,10 +99,24 @@
       </details>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
       <button v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-      <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</button>
-      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</button>
-      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</button>
-      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('reload')">{{ reloadLabel }}</button>
+      <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</button>
+      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</button>
+      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</button>
+      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy" type="button" @click="$emit('reload')">{{ reloadLabel }}</button>
+      <details v-if="mobileActionAuthority.count" class="form-header-mobile-actions" :data-mobile-action-count="mobileActionAuthority.count" :data-mobile-action-keys="mobileActionAuthority.keys.join(',')">
+        <summary class="sc-btn sc-btn-secondary sc-btn-sm" aria-label="打开更多页面操作">更多</summary>
+        <div class="form-header-mobile-actions__panel" aria-label="更多页面操作">
+          <button v-if="showBack !== false" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="back:form.back" :disabled="busy" type="button" @click="$emit('back')"><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</button>
+          <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="return:form.return-workbench" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
+          <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="draft:form.save-draft" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
+          <button v-for="action in mobilePresentedDirectActions" :key="`mobile-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`business:${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+          <button v-for="action in presentedOverflowActions" :key="`mobile-overflow-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`business:${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+          <button v-for="action in mobileCanonicalDirectActions" :key="`mobile-canonical-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-mobile-action-key="`canonical:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+          <button v-for="action in canonicalPresentedOverflowActions" :key="`mobile-canonical-overflow-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-mobile-action-key="`canonical:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+          <button v-for="action in configActions" :key="`mobile-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`config:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+          <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="discard:form.discard" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</button>
+        </div>
+      </details>
     </template>
   </PageHeaderTemplate>
 </template>
@@ -116,6 +130,7 @@ import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRe
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { nextBusinessActionLabel } from './nativeSectionNavigation';
 import { resolveWorkflowActionBarAuthority, resolveWorkflowStatusAuthority, workflowDisabledReason } from './professionalWorkflowModel';
+import { resolveMobileFormActionAuthority } from './mobileFormActionSettlement';
 
 const props = defineProps<{
   title: string; subtitle: string; hideTitle: boolean; showHud: boolean; model: string; recordIdDisplay: string;
@@ -162,10 +177,25 @@ const headerPrimaryActions = computed<ProductPageHeaderAction[]>(() => {
   return canonical ? [{ key: canonical.key, label: canonical.label, semantic: 'submit', enabled: canonical.enabled }] : [];
 });
 const canonicalPresentedDirectActions = computed(() => props.canonicalLocalSavePrimary ? props.canonicalDirectActions.filter((action) => action.tier !== 'primary') : props.canonicalDirectActions);
+const mobilePresentedDirectActions = computed(() => presentedDirectActions.value.filter((action) => action.presentationTier !== 'primary' && action.semantic !== 'primary_action'));
+const mobileCanonicalDirectActions = computed(() => canonicalPresentedDirectActions.value.filter((action) => action.tier !== 'primary'));
 const canonicalPresentedOverflowActions = computed(() => [
   ...(props.canonicalLocalSavePrimary ? props.canonicalDirectActions.filter((action) => action.tier === 'primary') : []),
   ...props.canonicalOverflowActions,
 ]);
+const mobileActionAuthority = computed(() => resolveMobileFormActionAuthority({
+  showBack: props.showBack !== false,
+  showReturn: props.showReturn,
+  showDraftSave: props.showDraftSave,
+  draftSaveDisabled: props.draftSaveDisabled,
+  businessDirect: mobilePresentedDirectActions.value,
+  businessOverflow: presentedOverflowActions.value,
+  canonicalDirect: mobileCanonicalDirectActions.value,
+  canonicalOverflow: canonicalPresentedOverflowActions.value,
+  config: props.configActions,
+  showDiscard: props.showDiscard,
+  busy: props.busy,
+}));
 const canonicalWorkflowAuthority = computed(() => resolveWorkflowActionBarAuthority(
   canonicalPresentedDirectActions.value,
   canonicalPresentedOverflowActions.value,
@@ -279,6 +309,11 @@ function canonicalButtonClass(action: CanonicalFormAction) {
 .form-header-config-action { color: var(--sc-semantic-text-muted); }
 .form-header-navigation-actions,
 .form-header-primary-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.form-header-mobile-actions { display: none; position: relative; }
+.form-header-mobile-actions > summary { list-style: none; cursor: pointer; }
+.form-header-mobile-actions > summary::-webkit-details-marker { display: none; }
+.form-header-mobile-actions__panel { position: absolute; z-index: var(--sc-component-button-overflow-z-index); top: calc(100% + 6px); right: 0; display: grid; width: min(280px, calc(100vw - 24px)); max-height: min(65vh, 460px); gap: 4px; overflow-y: auto; padding: 8px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
+.form-header-mobile-actions__panel .sc-btn { width: 100%; justify-content: flex-start; }
 .native-statusbar--header {
   position: relative;
   max-width: 100%;
@@ -388,7 +423,13 @@ function canonicalButtonClass(action: CanonicalFormAction) {
   .native-statusbar--header .native-statusbar-step:first-child { margin-left: 0; border-radius: 5px 0 0 5px; }
   .native-statusbar--header .native-statusbar-step:last-child { border-radius: 0 5px 5px 0; }
   .native-statusbar-step-index { display: grid; }
-  .form-header-navigation-actions { order: 2; }
-  .form-header-primary-actions { order: 1; }
+  .form-header-navigation-actions,
+  .form-header-more-actions,
+  .form-header-action-separator,
+  .form-header-config-action,
+  .form-header-desktop-secondary-action { display: none; }
+  .form-header-primary-actions { order: 1; flex: 1 1 auto; }
+  .form-header-primary-actions > .sc-btn:not([data-product-primary-action]) { display: none; }
+  .form-header-mobile-actions { display: block; order: 2; margin-left: auto; }
 }
 </style>

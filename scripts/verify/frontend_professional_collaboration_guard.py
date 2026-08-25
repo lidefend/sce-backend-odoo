@@ -18,6 +18,15 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("native collaboration panel bypasses shared composer")
     if "<ProfessionalAttachmentManager" not in panel or 'data-professional-collaboration-component="attachments"' not in attachments:
         failures.append("native collaboration panel bypasses shared attachment manager")
+    if "<ScButton" not in attachments:
+        failures.append("attachment settlement bypasses the governed button primitive")
+    if "<ScButton" not in panel:
+        failures.append("collaboration entry actions bypass the governed button primitive")
+    for primitive in ("<ScButton", "<ScInput", "<ScSelect"):
+        if primitive not in composer:
+            failures.append(f"collaboration composer bypasses governed primitive {primitive}")
+    if "<ScButton" not in timeline or ':loading="timelineLoading"' not in timeline:
+        failures.append("collaboration timeline does not expose governed loading actions")
     for marker in ('data-professional-collaboration-component="panel"', ":data-follower-readiness"):
         if marker not in panel: failures.append(f"collaboration panel missing {marker}")
     if "follower: 'fail_closed'" not in model:

@@ -25,10 +25,23 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         )
         (ui / "primitives.ts").write_text("export { Input } from 'tdesign-vue-next/es/input';\n", encoding="utf-8")
         for name in PRIMITIVES:
-            modal_contract = "<!-- useModalLifecycle role=\"dialog\" aria-modal=\"true\" -->" if name in {"ScDialog", "ScDrawer"} else ""
-            input_contract = '<input :aria-describedby="describedBy" :aria-invalid="invalid" />' if name == "ScInput" else ""
+            overlay_kind = name.removeprefix("Sc").lower()
+            modal_contract = (
+                f'<!-- useModalLifecycle role="dialog" aria-modal="true" data-overlay-kind="{overlay_kind}" '
+                f'data-state="open" --sc-component-{overlay_kind}-z-index -->'
+                if name in {"ScDialog", "ScDrawer"} else ""
+            )
+            state_contract = {
+                "ScButton": '<button :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined"><span class="sc-btn__spinner" /></button>',
+                "ScInput": '<input :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
+                "ScSelect": '<select :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
+                "ScLoading": '<div data-state="loading" aria-busy="true" />',
+                "ScEmptyState": '<section data-state="empty" role="status" />',
+                "ScErrorState": '<section data-state="error" role="alert" />',
+                "ScFormField": '<label :data-state="state" :data-required="required" />',
+            }.get(name, "")
             (design / f"{name}.vue").write_text(
-                f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{input_contract}</div></template>{modal_contract}\n',
+                f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
                 encoding="utf-8",
             )
         return root
@@ -81,6 +94,15 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("native input control" in error for error in validate(root)))
+
+    def test_interaction_state_markers_are_required(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScButton.vue"
+        source.write_text(
+            '<template><button data-semantic-component="ScButton" data-semantic-layer="primitive" /></template>\n',
+            encoding="utf-8",
+        )
+        self.assertTrue(any("interaction-state marker" in error for error in validate(root)))
 
 
 if __name__ == "__main__":

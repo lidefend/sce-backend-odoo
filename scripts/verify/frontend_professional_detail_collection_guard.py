@@ -28,6 +28,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection bypasses the governed x2many runtime")
     if "data-detail-collection-pagination" not in renderer or "one2manyPageSize = 20" not in renderer:
         failures.append("detail collection pagination is not bounded and explicit")
+    if "<ScInput" not in renderer or "<ScSelect" not in renderer:
+        failures.append("editable detail rows bypass the governed input/select primitives")
+    if "--sc-component-relation-dropdown-z-index" not in renderer or "--sc-component-relation-dropdown-shadow" not in renderer:
+        failures.append("relation dropdown stacking and elevation are not token governed")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in model:
             failures.append(f"detail collection contains forbidden product special case {forbidden}")

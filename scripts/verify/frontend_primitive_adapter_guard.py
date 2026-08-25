@@ -51,10 +51,38 @@ def validate(root: Path = ROOT) -> list[str]:
         text = (design / f"{modal}.vue").read_text(encoding="utf-8") if (design / f"{modal}.vue").is_file() else ""
         if "useModalLifecycle" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
             errors.append(f"{modal} must use the shared modal lifecycle and dialog semantics")
+        overlay_kind = modal.removeprefix("Sc").lower()
+        if f'data-overlay-kind="{overlay_kind}"' not in text or 'data-state="open"' not in text:
+            errors.append(f"{modal} must expose deterministic overlay state")
+        if f"--sc-component-{overlay_kind}-z-index" not in text:
+            errors.append(f"{modal} must consume its registered overlay stacking token")
 
     input_text = (design / "ScInput.vue").read_text(encoding="utf-8") if (design / "ScInput.vue").is_file() else ""
     if "<input" not in input_text or ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:
         errors.append("ScInput must place accessible state on the native input control")
+    if ':data-loading="loading || undefined"' not in input_text or ':aria-busy="loading || undefined"' not in input_text:
+        errors.append("ScInput must expose loading state on the native input control")
+
+    button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
+    for marker in (':data-loading="loading || undefined"', ':aria-disabled="disabled || loading || undefined"', 'class="sc-btn__spinner"'):
+        if marker not in button_text:
+            errors.append(f"ScButton missing governed interaction-state marker: {marker}")
+
+    select_text = (design / "ScSelect.vue").read_text(encoding="utf-8") if (design / "ScSelect.vue").is_file() else ""
+    if ':data-readonly="readonly || undefined"' not in select_text or ':aria-readonly="readonly || undefined"' not in select_text:
+        errors.append("ScSelect must expose readonly state without inventing write authority")
+
+    state_contracts = {
+        "ScLoading": ('data-state', 'aria-busy'),
+        "ScEmptyState": ('data-state="empty"', 'role="status"'),
+        "ScErrorState": ('data-state="error"', 'role="alert"'),
+        "ScFormField": (':data-state=', ':data-required='),
+    }
+    for component, markers in state_contracts.items():
+        text = (design / f"{component}.vue").read_text(encoding="utf-8")
+        for marker in markers:
+            if marker not in text:
+                errors.append(f"{component} missing deterministic state marker: {marker}")
 
     if not bridge:
         errors.append("missing TDesign primitive bridge")

@@ -1156,6 +1156,15 @@ function closeMore(node: NativeFormLayoutNode) {
   font-size: 27px;
   font-weight: 600;
   line-height: 1.25;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  line-break: strict;
+  text-wrap: balance;
+}
+
+@media (max-width: 520px) {
+  .native-title-row { align-items: flex-start; gap: 8px; }
+  .native-title-favorite { flex: 0 0 auto; margin-top: 2px; font-size: 23px; }
+  .native-title-input,
+  .native-title-text { font-size: 24px; line-height: 1.3; }
 }
 </style>

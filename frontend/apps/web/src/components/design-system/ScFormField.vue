@@ -1,6 +1,8 @@
 <template>
   <ScField
     v-bind="semanticPrimitiveIdentity('ScFormField')"
+    :data-state="invalid || error ? 'error' : 'default'"
+    :data-required="required || undefined"
     :label="label"
     :field-key="fieldKey"
     :required="required"

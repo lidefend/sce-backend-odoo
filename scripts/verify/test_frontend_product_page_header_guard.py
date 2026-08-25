@@ -33,6 +33,45 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
                 validate(),
             )
 
+    def test_content_heading_authority_is_required(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "index.ts" and path.parent.name == "router":
+                return value.replace(
+                    "name: 'api-key-management', component:",
+                    "name: 'api-key-management', pageHeadingOwnerRemoved: true, component:",
+                ).replace(
+                    "meta: { layout: 'shell', pageHeadingOwner: 'content' } },\n    { path: '/a/:actionId'",
+                    "meta: { layout: 'shell' } },\n    { path: '/a/:actionId'",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "page-header route does not declare content heading authority: api-key-management",
+                validate(),
+            )
+
+    def test_low_code_query_cannot_override_content_heading_authority(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "AppShell.vue":
+                return value.replace(
+                    "const contentOwnsPageHeading",
+                    "const formDesignerKeepsHeadline = BUSINESS_CONFIG_MODES.lowCode;\nconst contentOwnsPageHeading",
+                )
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "AppShell must not override content heading authority for low-code form routes",
+                validate(),
+            )
+
 
 from pathlib import Path
 

@@ -1,23 +1,21 @@
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="attachment-viewer-backdrop" @click.self="close" @keydown="onKeydown">
-      <section ref="viewerRef" class="attachment-viewer" role="dialog" aria-modal="true" aria-label="附件查看" tabindex="-1">
+    <div v-if="visible" class="attachment-viewer-backdrop" data-semantic-overlay="attachment-viewer" data-state="open" @click.self="close" @keydown="onKeydown">
+      <section ref="viewerRef" class="attachment-viewer" role="dialog" aria-modal="true" aria-label="附件查看" :aria-busy="loading || undefined" tabindex="-1">
         <header class="attachment-viewer-header">
           <div class="attachment-viewer-title">
             <h3>{{ displayName }}</h3>
             <p v-if="statusText">{{ statusText }}</p>
           </div>
           <div class="attachment-viewer-actions">
-            <button class="ghost" type="button" :disabled="!canDownload" @click="downloadCurrent">下载</button>
-            <button class="ghost" type="button" @click="close">关闭</button>
+            <ScButton variant="ghost" :disabled="!canDownload" @click="downloadCurrent">下载</ScButton>
+            <ScButton variant="ghost" @click="close">关闭</ScButton>
           </div>
         </header>
 
         <div class="attachment-viewer-body">
-          <div v-if="loading" class="attachment-viewer-state">附件加载中...</div>
-          <div v-else-if="errorMessage" class="attachment-viewer-state attachment-viewer-state--error">
-            {{ errorMessage }}
-          </div>
+          <ScLoading v-if="loading" class="attachment-viewer-state" label="附件加载中" />
+          <ScErrorState v-else-if="errorMessage" class="attachment-viewer-state" title="附件打开失败" :description="errorMessage" />
           <iframe
             v-else-if="previewUrl"
             class="attachment-viewer-frame"
@@ -39,6 +37,9 @@ import { computed, onBeforeUnmount, ref } from 'vue';
 import { downloadFile } from '../../api/files';
 import type { FileDownloadRequest, FileDownloadResponse } from '@sc/schema';
 import { useModalLifecycle } from '../../composables/useModalLifecycle';
+import ScButton from '../design-system/ScButton.vue';
+import ScErrorState from '../design-system/ScErrorState.vue';
+import ScLoading from '../design-system/ScLoading.vue';
 
 const INLINE_MIMETYPE_PREFIXES = ['image/', 'text/'];
 const INLINE_MIMETYPES = new Set(['application/pdf']);
@@ -154,7 +155,7 @@ defineExpose({ open, close });
 .attachment-viewer-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--sc-component-dialog-z-index);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -244,10 +245,6 @@ defineExpose({ open, close });
 .attachment-viewer-state span {
   max-width: 560px;
   line-height: 1.6;
-}
-
-.attachment-viewer-state--error {
-  color: var(--sc-app-danger-text);
 }
 
 @media (max-width: 720px) {
