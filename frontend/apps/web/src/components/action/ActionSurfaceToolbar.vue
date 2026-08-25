@@ -67,10 +67,12 @@
           <span>{{ activeGroupChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
         </button>
-        <input
+        <ScInput
           type="search"
-          :value="searchValue"
+          :model-value="searchValue"
+          size="small"
           :disabled="loading"
+          :loading="loading"
           :placeholder="searchPlaceholder"
           @compositionstart="$emit('search-composition-start')"
           @compositionend="$emit('search-composition-end', $event)"
@@ -334,6 +336,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScInput from '../design-system/ScInput.vue';
 
 type SearchChip = { key: string; label: string };
 type CustomOperator = { value: string; label: string; needs_value?: boolean };
@@ -391,7 +394,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'switch-view': [mode: string];
-  'search-input': [event: Event];
+  'search-input': [value: string];
   'search-composition-start': [];
   'search-composition-end': [event: CompositionEvent];
   'search-submit': [];

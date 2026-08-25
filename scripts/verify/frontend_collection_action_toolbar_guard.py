@@ -24,6 +24,9 @@ def validate(source: str | None = None, list_source: str | None = None) -> list[
         'searchMenuToggle.value?.focus()',
         'overflowMenuToggle.value?.focus()',
         'focusOpenLayer',
+        'import ScInput',
+        '<ScInput',
+        "'search-input': [value: string]",
     )
     for marker in required:
         if marker not in text:
