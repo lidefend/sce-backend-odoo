@@ -5776,3 +5776,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Rollback: revert the Phase 3 merge commit. The prior session navigation tree
   and shell components are restored; no data migration or database repair is
   required.
+
+## CI feedback latency — professional frontend standard lane (2026-08-25)
+
+- Branch / baseline: `fix/p4-ci-feedback-latency-v1` /
+  `eb88811873ca863b46e955e7f9ae686a42c05864`.
+- Formal Product Layer / Layer Target / Module: P4 engineering governance /
+  pull-request feedback latency and risk classification / `config/ci`,
+  `scripts/ci`, GitHub workflows and the governed frontend Make extension.
+- Evidence: recent professional frontend pull requests spent 10–16 minutes in
+  the frontend release workflow and 9–14 minutes in the professional quality
+  workflow. Frontend-only guards were counted as backend changes, and ordinary
+  component test registration in `make/frontend.mk` promoted the batch to a
+  complete release audit.
+- Change: professional frontend guards and the exact
+  `make/frontend_professional_extensions.mk` surface select the standard
+  frontend lane. The extension grammar permits only declared esbuild, Node and
+  Python component tests; privileged, environment, database, network, Docker,
+  shell and arbitrary Make operations fail closed.
+- Preserved boundary: release configuration, dependency locks, core Makefiles,
+  CI policy, security, identity, tenant, importer, migration and unknown paths
+  remain High Risk. Exact-head aggregation and the full release command are not
+  weakened.
+- Rollback: revert this governance batch. Product runtime and database state are
+  unaffected; later component targets can be moved back to the core frontend
+  Makefile at the cost of restoring the prior Full-lane latency.

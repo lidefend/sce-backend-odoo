@@ -157,6 +157,7 @@ jobs:
         if: steps.risk.outputs.frontend_mode != 'skip'
         run: |
           set -euo pipefail
+          python3 scripts/ci/frontend_professional_extension_guard.py
           corepack enable
           corepack prepare pnpm@9.12.3 --activate
           pnpm config set store-dir "${HOME}/.local/share/pnpm/store"

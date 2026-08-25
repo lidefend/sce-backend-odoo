@@ -43,6 +43,49 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertEqual(result.lane, "STANDARD")
         self.assertEqual(result.frontend_mode, "standard")
 
+    def test_professional_frontend_delivery_batch_avoids_release_and_backend_lanes(self) -> None:
+        result = classify(
+            [
+                "frontend/apps/web/src/components/professional/ProfessionalWbsTree.vue",
+                "frontend/apps/web/scripts/professional_wbs_tree_model_test.ts",
+                "scripts/verify/frontend_professional_wbs_tree_guard.py",
+                "scripts/verify/test_frontend_professional_wbs_tree_guard.py",
+                "make/frontend_professional_extensions.mk",
+            ],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "STANDARD")
+        self.assertEqual(result.frontend_mode, "standard")
+        self.assertEqual(result.professional_mode, "standard_frontend")
+        self.assertTrue(result.frontend_changed)
+        self.assertFalse(result.backend_changed)
+        self.assertFalse(result.frontend_full_required)
+
+    def test_only_exact_frontend_extension_makefile_is_standard(self) -> None:
+        self.assertEqual(
+            self.lane("make/frontend_professional_extensions.mk"),
+            "STANDARD",
+        )
+        self.assertEqual(self.lane("make/frontend.mk"), "HIGH_RISK")
+        self.assertEqual(self.lane("make/ci.mk"), "HIGH_RISK")
+
+    def test_non_frontend_verify_script_remains_backend(self) -> None:
+        result = classify(
+            ["scripts/verify/backend_contract_guard.py"],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "STANDARD")
+        self.assertTrue(result.backend_changed)
+        self.assertFalse(result.frontend_changed)
+
+    def test_frontend_guard_name_cannot_override_identity_high_risk_rule(self) -> None:
+        result = classify(
+            ["scripts/verify/frontend_professional_identity_lock_guard.py"],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertEqual(result.professional_mode, "full")
+
     def test_backend_is_standard(self) -> None:
         result = classify(
             ["addons/smart_construction_core/models/project.py"],

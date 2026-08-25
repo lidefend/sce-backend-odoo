@@ -50,6 +50,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("pnpm -C frontend/apps/web lint:src", text)
         self.assertIn("pnpm -C frontend/apps/web typecheck:strict", text)
         self.assertIn("pnpm -C frontend/apps/web build", text)
+        self.assertIn("python3 scripts/ci/frontend_professional_extension_guard.py", text)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
 
@@ -83,6 +84,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )[1].split("- name: Clean isolated runner state", 1)[0]
         self.assertIn("if: env.PROFESSIONAL_MODE == 'standard_frontend'", standard_frontend_section)
         self.assertIn("make verify.contract.lint verify.guard.registry", standard_frontend_section)
+        self.assertIn("python3 scripts/ci/frontend_professional_extension_guard.py", standard_frontend_section)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
 
@@ -107,6 +109,24 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("frontend/pnpm-lock.yaml", patterns)
         self.assertIn(".github/workflows/frontend_release_gate.yml", patterns)
         self.assertNotIn("scripts/release/**", patterns)
+
+    def test_professional_frontend_extension_surface_is_narrow_and_standard(self) -> None:
+        policy = json.loads(
+            (ROOT / "config/ci/risk_tiering_v1.json").read_text(encoding="utf-8")
+        )
+        owned = set(policy["standard_frontend_owned_paths"])
+        self.assertEqual(
+            owned,
+            {
+                "make/frontend_professional_extensions.mk",
+                "scripts/verify/frontend_professional_*",
+                "scripts/verify/test_frontend_professional_*",
+            },
+        )
+        overrides = set(policy["high_risk_override_paths"])
+        self.assertEqual(overrides, {"make/frontend_professional_extensions.mk"})
+        self.assertNotIn("make/frontend.mk", owned)
+        self.assertNotIn("make/**", overrides)
 
     def test_high_risk_policy_contains_mandatory_surfaces(self) -> None:
         policy = json.loads(

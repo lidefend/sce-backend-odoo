@@ -98,10 +98,24 @@ def classify(
     if not changed:
         return Classification("HIGH_RISK", changed, ("empty_change_set_fail_closed",), True, True, True)
 
-    high = tuple(path for path in changed if _matches(path, policy["high_risk_paths"]))
+    frontend_owned = tuple(
+        path for path in changed
+        if _matches(path, policy.get("standard_frontend_owned_paths", ()))
+    )
+    high_risk_override = tuple(
+        path for path in changed
+        if _matches(path, policy.get("high_risk_override_paths", ()))
+    )
+    high = tuple(
+        path for path in changed
+        if _matches(path, policy["high_risk_paths"]) and path not in high_risk_override
+    )
     invalid = tuple(path for path in changed if path.startswith("__INVALID_PATH__/"))
     frontend = tuple(path for path in changed if _matches(path, policy["standard_frontend_paths"]))
-    backend = tuple(path for path in changed if _matches(path, policy["standard_backend_paths"]))
+    backend = tuple(
+        path for path in changed
+        if _matches(path, policy["standard_backend_paths"]) and path not in frontend_owned
+    )
     frontend_full = tuple(path for path in changed if _matches(path, policy["frontend_full_paths"]))
     fast = tuple(path for path in changed if _matches(path, policy["fast_paths"]))
     known = set(high) | set(frontend) | set(backend) | set(fast)
