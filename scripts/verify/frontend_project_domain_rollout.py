@@ -303,8 +303,10 @@ def collect_domain(
         views = _resolved_views(env, action, assembly_semantics)
         authority = _authority_contract(menu, action)
         row = {
+            "menu_id": menu.id,
             "menu_xmlid": menu_xmlid,
             "menu_name": _text(menu.name),
+            "action_id": action.id,
             "action_xmlid": action_xmlid,
             "action_name": _text(action.name),
             "model": action.res_model,

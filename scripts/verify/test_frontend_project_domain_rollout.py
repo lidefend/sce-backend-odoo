@@ -67,8 +67,10 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
             "summary": {"action_count": 1},
             "actions": [
                 {
+                    "menu_id": 10,
                     "menu_xmlid": "module.menu",
                     "menu_name": "Menu",
+                    "action_id": 20,
                     "action_xmlid": "module.action",
                     "action_name": "Action",
                     "model": "x.model",
@@ -106,6 +108,8 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
             ["module.group_action_a", "module.group_action_b"],
         )
         self.assertIn("demo_addons", snapshot["excludedScopes"])
+        self.assertEqual(snapshot["actions"][0]["menuId"], 10)
+        self.assertEqual(snapshot["actions"][0]["actionId"], 20)
 
     def test_authority_preserves_and_of_layers_and_requires_action_policy(self):
         root_group = self.Record(1, "module.group_root")

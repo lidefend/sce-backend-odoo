@@ -13,8 +13,10 @@ def normalized_snapshot(payload: dict[str, object]) -> dict[str, object]:
     for row in payload.get("actions", []):
         actions.append(
             {
+                "menuId": row["menu_id"],
                 "menuXmlid": row["menu_xmlid"],
                 "menuName": row["menu_name"],
+                "actionId": row["action_id"],
                 "actionXmlid": row["action_xmlid"],
                 "actionName": row["action_name"],
                 "model": row["model"],
