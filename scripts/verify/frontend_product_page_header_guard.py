@@ -79,6 +79,12 @@ def validate() -> list[str]:
     for nested in nested_heading_paths:
         if "<h1" in source(nested):
             failures.append(f"nested renderer competes with ProductPageHeader h1: {nested}")
+    native_renderer = source("frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue")
+    if 'v-bind="nativeActionEvidenceAttributes' not in native_renderer:
+        failures.append("native action controls must expose canonical action evidence attributes")
+    for marker in ("data-action-key", "data-action-ref", "data-backend-identity"):
+        if marker not in native_renderer:
+            failures.append(f"native action evidence is missing {marker}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")
     for page_route in ("'action'", "'record'", "'model-form'", "'not-found'"):
         compact_section = app_shell.split("const compactRouteKeepsHeadline", 1)[1].split(");", 1)[0]
