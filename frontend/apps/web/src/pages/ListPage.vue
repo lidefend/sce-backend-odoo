@@ -271,54 +271,13 @@
                   :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, columnValue(row, col)).text === '--' }]"
                   :title="semanticCell(col, columnValue(row, col)).text"
                 >
-                  <button
-                    v-if="isFavoriteColumn(col)"
-                    type="button"
-                    class="favorite-toggle"
-                    :class="{ active: isFavoriteValue(columnValue(row, col)) }"
-                    :disabled="loading || !onToggleRecordFavorite"
-                    :title="favoriteTitle(col)"
-                    :aria-label="favoriteTitle(col)"
-                    @click.stop="toggleRecordFavorite(row, col)"
-                  >
-                    <ScIcon class="favorite-star" :name="isFavoriteValue(columnValue(row, col)) ? 'star' : 'star-outline'" :size="16" />
-                  </button>
-                  <span
-                    v-else-if="isStatusLikeColumn(col)"
-                    class="status-badge"
-                    :class="`tone-${semanticCell(col, columnValue(row, col)).tone}`"
-                  >
-                    {{ semanticCell(col, columnValue(row, col)).text }}
-                  </span>
-                  <button
-                    v-else-if="isPrimaryTextColumn(col)"
-                    type="button"
-                    class="cell-primary-link"
-                    @click.stop="handleRow(row)"
-                  >
-                    {{ semanticCell(col, columnValue(row, col)).text }}
-                  </button>
-                  <span v-else-if="attachmentLinks(columnValue(row, col)).length" class="attachment-links">
-                    <a
-                      v-for="link in attachmentLinks(columnValue(row, col))"
-                      :key="`${link.name}-${link.url}`"
-                      href="#"
-                      target="_blank"
-                      rel="noopener"
-                      @click.prevent.stop="previewAttachmentLink(link, row)"
-                    >
-                      {{ link.name }}
-                    </a>
-                  </span>
-                  <button
-                    v-else-if="isAttachmentCountCell(col, columnValue(row, col))"
-                    type="button"
-                    class="attachment-count-link"
-                    @click.prevent.stop="previewRecordAttachmentCount(row, columnValue(row, col))"
-                  >
-                    {{ semanticCell(col, columnValue(row, col)).text }}
-                  </button>
-                  <span v-else>{{ semanticCell(col, columnValue(row, col)).text }}</span>
+                  <CollectionRowCell
+                    v-bind="collectionRowCellProps(row, col)"
+                    @toggle-favorite="toggleRecordFavorite(row, col)"
+                    @open-record="handleRow(row)"
+                    @open-attachment="previewAttachmentLink($event, row)"
+                    @open-attachment-count="previewRecordAttachmentCount(row, columnValue(row, col))"
+                  />
                 </td>
               </tr>
             </tbody>
@@ -475,52 +434,13 @@
             <td v-for="col in displayedColumns" :key="col" :style="columnWidthStyle(col)"
               :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, columnValue(row, col)).text === '--' }]"
               :title="semanticCell(col, columnValue(row, col)).text">
-              <button
-                v-if="isFavoriteColumn(col)"
-                type="button"
-                class="favorite-toggle"
-                :class="{ active: isFavoriteValue(columnValue(row, col)) }"
-                :disabled="loading || !onToggleRecordFavorite"
-                :title="favoriteTitle(col)"
-                :aria-label="favoriteTitle(col)"
-                @click.stop="toggleRecordFavorite(row, col)"
-              >
-                <ScIcon class="favorite-star" :name="isFavoriteValue(columnValue(row, col)) ? 'star' : 'star-outline'" :size="16" />
-              </button>
-              <div v-else-if="isStatusLikeColumn(col)">
-                <span class="status-badge" :class="`tone-${semanticCell(col, columnValue(row, col)).tone}`">
-                  {{ semanticCell(col, columnValue(row, col)).text }}
-                </span>
-              </div>
-              <div v-else-if="isPrimaryTextColumn(col)" class="cell-primary">
-                <button type="button" class="primary cell-primary-link" @click.stop="handleRow(row)">
-                  {{ semanticCell(col, columnValue(row, col)).text }}
-                </button>
-                <div v-if="shouldRenderRowSecondary(col, row)" class="secondary">{{ semanticCell(rowSecondary, columnValue(row, rowSecondary)).text }}</div>
-              </div>
-              <div v-else-if="attachmentLinks(columnValue(row, col)).length" class="attachment-links">
-                <a
-                  v-for="link in attachmentLinks(columnValue(row, col))"
-                  :key="`${link.name}-${link.url}`"
-                  href="#"
-                  target="_blank"
-                  rel="noopener"
-                  @click.prevent.stop="previewAttachmentLink(link, row)"
-                >
-                  {{ link.name }}
-                </a>
-              </div>
-              <button
-                v-else-if="isAttachmentCountCell(col, columnValue(row, col))"
-                type="button"
-                class="attachment-count-link"
-                @click.prevent.stop="previewRecordAttachmentCount(row, columnValue(row, col))"
-              >
-                {{ semanticCell(col, columnValue(row, col)).text }}
-              </button>
-              <div v-else>
-                {{ semanticCell(col, columnValue(row, col)).text }}
-              </div>
+              <CollectionRowCell
+                v-bind="collectionRowCellProps(row, col)"
+                @toggle-favorite="toggleRecordFavorite(row, col)"
+                @open-record="handleRow(row)"
+                @open-attachment="previewAttachmentLink($event, row)"
+                @open-attachment-count="previewRecordAttachmentCount(row, columnValue(row, col))"
+              />
             </td>
           </tr>
         </tbody>
@@ -589,6 +509,7 @@ import CollectionColumnHeaderControl from '../components/product-list/Collection
 import CollectionGroupPageControls from '../components/product-list/CollectionGroupPageControls.vue';
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
+import CollectionRowCell, { type CollectionRowCellKind } from '../components/product-list/CollectionRowCell.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
@@ -1045,6 +966,30 @@ function isFavoriteValue(value: unknown) {
 
 function favoriteTitle(field: string) {
   return columnLabel(field);
+}
+
+function collectionRowCellProps(row: Record<string, unknown>, field: string) {
+  const value = columnValue(row, field);
+  const presentation = semanticCell(field, value);
+  const links = attachmentLinks(value);
+  let kind: CollectionRowCellKind = 'text';
+  if (isFavoriteColumn(field)) kind = 'favorite';
+  else if (isStatusLikeColumn(field)) kind = 'status';
+  else if (isPrimaryTextColumn(field)) kind = 'primary';
+  else if (links.length) kind = 'attachments';
+  else if (isAttachmentCountCell(field, value)) kind = 'attachment-count';
+  return {
+    kind,
+    text: presentation.text,
+    tone: presentation.tone,
+    label: favoriteTitle(field),
+    favoriteActive: isFavoriteValue(value),
+    disabled: props.loading || !props.onToggleRecordFavorite,
+    secondaryText: shouldRenderRowSecondary(field, row)
+      ? semanticCell(rowSecondary.value, columnValue(row, rowSecondary.value)).text
+      : '',
+    links,
+  };
 }
 
 function toggleRecordFavorite(row: Record<string, unknown>, field: string) {
