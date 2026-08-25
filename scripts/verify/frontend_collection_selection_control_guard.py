@@ -6,23 +6,24 @@ LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
 CONTROL = ROOT / "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue"
 CONTROL_CSS = ROOT / "frontend/apps/web/src/components/product-list/CollectionSelectionControl.css"
 VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
+MOBILE_ROW = ROOT / "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue"
 
 
-def validate(list_source: str | None = None, control_source: str | None = None, css_source: str | None = None, visual_source: str | None = None) -> list[str]:
+def validate(list_source: str | None = None, control_source: str | None = None, css_source: str | None = None, visual_source: str | None = None, mobile_row_source: str | None = None) -> list[str]:
     list_text = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     control_text = control_source if control_source is not None else CONTROL.read_text(encoding="utf-8")
     css_text = css_source if css_source is not None else CONTROL_CSS.read_text(encoding="utf-8")
     visual_text = visual_source if visual_source is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
+    mobile_row_text = mobile_row_source if mobile_row_source is not None else MOBILE_ROW.read_text(encoding="utf-8")
     failures: list[str] = []
-    if list_text.count("<CollectionSelectionControl") != 5:
+    if list_text.count("<CollectionSelectionControl") + mobile_row_text.count("<CollectionSelectionControl") != 5:
         failures.append("collection list must project exactly five shared selection-control adapters")
     if 'type="checkbox"' in list_text:
         failures.append("ListPage retains parallel native checkbox DOM")
     required_list = (
         ':indeterminate="someSelected"',
         ':indeterminate="isGroupSomeSelected(group)"',
-        'size="touch"',
-        ':label="rowSelectionLabel(row)"',
+        ':selection-label="rowSelectionLabel(row)"',
         'function onSelectAllChange(checked: boolean)',
         'function onRowCheckboxChange(row: Record<string, unknown>, checked: boolean)',
         'function onGroupSelectAllChange(group: { sampleRows?: Array<Record<string, unknown>> }, selected: boolean)',
@@ -30,6 +31,9 @@ def validate(list_source: str | None = None, control_source: str | None = None, 
     for marker in required_list:
         if marker not in list_text:
             failures.append(f"collection selection adapter missing {marker}")
+    for marker in ('size="touch"', ':label="selectionLabel"', "emit('selection-change', $event)"):
+        if marker not in mobile_row_text:
+            failures.append(f"mobile collection selection adapter missing {marker}")
     required_control = (
         'data-semantic-component="CollectionSelectionControl"',
         ':data-selection-state="presentation.state"',

@@ -352,37 +352,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  .mobile-record-list .mobile-record-row {
-    position: relative;
-    min-width: 0;
-    border: 1px solid transparent;
-    border-radius: 10px;
-  }
-
-  .mobile-record-list .mobile-record-row.is-selected {
-    border-color: var(--sc-app-border-strong);
-    background: var(--sc-app-hover-bg);
-  }
-
-  .mobile-record-list .mobile-record-select {
-    position: absolute;
-    z-index: 2;
-    top: var(--sc-space-2xs);
-    right: var(--sc-space-2xs);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--sc-touch-target-min);
-    height: var(--sc-touch-target-min);
-    cursor: pointer;
-  }
-
-  .mobile-record-list .mobile-record-row:has(.mobile-record-select) .mobile-record-card {
-    padding-right: calc(var(--sc-touch-target-min) + var(--sc-space-xs));
-  }
-}
-
 .list-plain-search {
   display: inline-flex;
   align-items: center;

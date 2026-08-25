@@ -6287,3 +6287,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   empty-authority counterexample still renders zero owners/items. Both journeys
   have zero browser errors, overflow and mutations. Contract schemas,
   permissions, routes, list data and database state are unchanged.
+
+## Collection mobile record row convergence v1 (2026-08-26)
+
+- Branch / baseline: `feature/p0-collection-mobile-record-row-convergence-v1` /
+  `911c1b0ccd80458f97b6cd8b006b65e064f62819`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  responsive collection record presentation / `frontend/apps/web` shared
+  product-list components.
+- Reason: `ListPage` still assembled mobile identity, status, facts, selection
+  and open affordance inline, while obsolete CSS targeted DOM classes no longer
+  produced by `ScMobileRecordCard`. One shared `CollectionMobileRecordRow` now
+  owns the complete responsive row and its semantic identities.
+- Why Here / Why Not Elsewhere: record values, field labels, tone, selection
+  authority and open behavior remain in the existing ListPage/runtime chain and
+  are passed through unchanged. The shared component owns only mobile
+  composition, accessibility and responsive geometry; it contains no model,
+  action, field or translated-label special case.
+- Blast radius / evidence: ungrouped mobile list presentation only. Action 807
+  at 390px renders 10 semantic owners with nonempty identity and facts, matching
+  status/open copy, identity-bound open ARIA labels and 44x44 selection targets.
+  Desktop remains on the existing table path. Browser errors, overflow and
+  business mutations are all zero; contracts, routes, permissions, list data
+  and database state are unchanged.

@@ -296,51 +296,23 @@
         :role="showSelectionColumn ? 'listbox' : undefined"
         :aria-multiselectable="showSelectionColumn || undefined"
       >
-        <article
+        <CollectionMobileRecordRow
           v-for="(row, index) in records"
           :key="`mobile-${String(row.id ?? index)}`"
-          class="mobile-record-row"
-          data-mobile-record-row
-          :class="{ 'is-selected': isSelected(row) }"
-          :role="showSelectionColumn ? 'option' : undefined"
-          :aria-selected="showSelectionColumn ? isSelected(row) : undefined"
-        >
-          <CollectionSelectionControl
-            v-if="showSelectionColumn"
-            class="mobile-record-select"
-            data-mobile-record-select
-            size="touch"
-            :checked="isSelected(row)"
-            :disabled="loading || !rowId(row)"
-            :label="rowSelectionLabel(row)"
-            @click.stop
-            @change="onRowCheckboxChange(row, $event)"
-          />
-          <ScMobileRecordCard
-            class="mobile-record-card"
-            as="button"
-            @click="handleRow(row)"
-          >
-            <template #identity>
-              <strong>{{ semanticCell(mobileIdentityField, columnValue(row, mobileIdentityField)).text }}</strong>
-            </template>
-            <template #status>
-              <ScStatusBadge
-                v-if="mobileStatusField"
-                :value="String(columnValue(row, mobileStatusField) ?? '')"
-                :label="semanticCell(mobileStatusField, columnValue(row, mobileStatusField)).text"
-                :semantic="statusSemantic(semanticCell(mobileStatusField, columnValue(row, mobileStatusField)).tone)"
-              />
-            </template>
-            <template v-for="col in mobileFactColumns" :key="`mobile-${String(row.id ?? index)}-${col}`">
-              <span class="mobile-record-fact">
-                <small>{{ columnLabel(col) }}</small>
-                <b>{{ semanticCell(col, columnValue(row, col)).text }}</b>
-              </span>
-            </template>
-            <template #actions><span class="mobile-record-card__open">查看详情 <ScIcon name="arrow-right" :size="16" /></span></template>
-          </ScMobileRecordCard>
-        </article>
+          :record-key="String(row.id ?? index)"
+          :identity="semanticCell(mobileIdentityField, columnValue(row, mobileIdentityField)).text"
+          :facts="mobileRecordFacts(row)"
+          :status-value="mobileStatusField ? String(columnValue(row, mobileStatusField) ?? '') : ''"
+          :status-label="mobileStatusField ? semanticCell(mobileStatusField, columnValue(row, mobileStatusField)).text : ''"
+          :status-semantic="mobileStatusField ? statusSemantic(semanticCell(mobileStatusField, columnValue(row, mobileStatusField)).tone) : 'default'"
+          :selected="isSelected(row)"
+          :selection-enabled="showSelectionColumn"
+          :selection-disabled="loading || !rowId(row)"
+          :selection-label="rowSelectionLabel(row)"
+          :open-label="uiLabel('open_record_detail', '查看详情')"
+          @selection-change="onRowCheckboxChange(row, $event)"
+          @open="handleRow(row)"
+        />
       </section>
       <CollectionAggregateFooter
         v-if="!showGroupedRows"
@@ -473,6 +445,7 @@ import CollectionAggregateFooter, { type CollectionAggregateRow } from '../compo
 import CollectionColumnHeaderControl from '../components/product-list/CollectionColumnHeaderControl.vue';
 import CollectionGroupHeader from '../components/product-list/CollectionGroupHeader.vue';
 import CollectionGroupPageControls from '../components/product-list/CollectionGroupPageControls.vue';
+import CollectionMobileRecordRow, { type CollectionMobileRecordFact } from '../components/product-list/CollectionMobileRecordRow.vue';
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import CollectionRowCell, { type CollectionRowCellKind } from '../components/product-list/CollectionRowCell.vue';
@@ -484,10 +457,7 @@ import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectio
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
-import ScIcon from '../components/design-system/ScIcon.vue';
-import ScMobileRecordCard from '../components/design-system/ScMobileRecordCard.vue';
 import ScPageHeader from '../components/design-system/ScPageHeader.vue';
-import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
@@ -864,6 +834,13 @@ function statusSemantic(tone: string): 'default' | 'info' | 'success' | 'warning
   return ['info', 'success', 'warning', 'danger'].includes(tone)
     ? tone as 'info' | 'success' | 'warning' | 'danger'
     : 'default';
+}
+function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecordFact[] {
+  return mobileFactColumns.value.map((column) => ({
+    key: column,
+    label: columnLabel(column),
+    value: semanticCell(column, columnValue(row, column)).text,
+  }));
 }
 function attachmentLinks(value: unknown) {
   return parseAttachmentReferenceLinks(value);

@@ -397,6 +397,7 @@ try {
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       let collectionSelectionEvidence = null;
       let collectionSummaryEvidence = null;
+      let collectionMobileRecordEvidence = null;
       if (target.captureCollectionSummary === true) {
         const owners = page.locator('[data-semantic-component="CollectionSummaryStrip"]');
         const items = owners.locator('[data-summary-key]');
@@ -427,6 +428,41 @@ try {
               bootSummaryFixtureApplied
               && (!target.summaryFixtureActionId || bootSummaryActionIdentityApplied > 0)
             )),
+        };
+      }
+      if (target.captureCollectionMobileRecords === true && viewport.name === 'mobile') {
+        const rows = await page.locator('[data-semantic-component="CollectionMobileRecordRow"]:visible').evaluateAll((nodes) => nodes.map((node) => {
+          const card = node.querySelector('button.collection-mobile-record-row__card');
+          const selection = node.querySelector('[data-semantic-component="CollectionSelectionControl"]');
+          const selectionRect = selection?.getBoundingClientRect();
+          return {
+            recordKey: node.getAttribute('data-record-key') || '',
+            selectionState: node.getAttribute('data-selection-state') || '',
+            role: node.getAttribute('role') || '',
+            ariaSelected: node.getAttribute('aria-selected') || '',
+            identity: node.querySelector('.collection-mobile-record-row__identity')?.textContent?.trim() || '',
+            status: node.querySelector('.sc-badge')?.textContent?.replace(/^状态：/, '').trim() || '',
+            facts: [...node.querySelectorAll('[data-fact-key]')].map((fact) => ({
+              key: fact.getAttribute('data-fact-key') || '',
+              label: fact.querySelector('small')?.textContent?.trim() || '',
+              value: fact.querySelector('b')?.textContent?.trim() || '',
+            })),
+            openLabel: node.querySelector('.collection-mobile-record-row__open')?.textContent?.replace(/\s+/g, ' ').trim() || '',
+            openAriaLabel: card?.getAttribute('aria-label') || '',
+            selectionWidth: Math.round(selectionRect?.width || 0),
+            selectionHeight: Math.round(selectionRect?.height || 0),
+          };
+        }));
+        collectionMobileRecordEvidence = {
+          ownerCount: rows.length,
+          rows,
+          pass: rows.length > 0 && rows.every((row) => row.recordKey
+            && row.identity
+            && row.openLabel
+            && row.openAriaLabel.includes(row.identity)
+            && row.facts.length > 0
+            && row.facts.every((fact) => fact.key && fact.label && fact.value)
+            && (row.selectionWidth === 0 || (row.selectionWidth >= 44 && row.selectionHeight >= 44))),
         };
       }
       if (target.exerciseCollectionSelection === true) {
@@ -686,7 +722,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, collectionSummaryEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -701,6 +737,7 @@ for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });
   if (item.collectionSummaryEvidence && !item.collectionSummaryEvidence.pass) failures.push({ name: item.name, collectionSummaryEvidence: item.collectionSummaryEvidence });
+  if (item.collectionMobileRecordEvidence && !item.collectionMobileRecordEvidence.pass) failures.push({ name: item.name, collectionMobileRecordEvidence: item.collectionMobileRecordEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
