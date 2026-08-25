@@ -14,6 +14,7 @@ export type GroupedRow = {
   label: string;
   count: number;
   sampleRows: Array<Record<string, unknown>>;
+  aggregates?: Record<string, Record<string, unknown>>;
   domain?: unknown[];
   pageOffset: number;
   pageLimit: number;

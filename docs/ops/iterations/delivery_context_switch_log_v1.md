@@ -6226,3 +6226,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   database records, fixtures and business-model productization remain
   unchanged. The daily-server snapshot remains a read-only comparison input
   and is not copied into the product tree.
+
+## Collection aggregate row convergence v1 — grouped authority closure (2026-08-26)
+
+- Branch / baseline: `feature/p0-collection-aggregate-row-convergence-v1` /
+  `b8dae3d6c260fae12d0aea34a9cc4dd2ba3f356d`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  grouped collection result normalization / `frontend/apps/web` ActionView
+  runtime and shared collection aggregate presentation.
+- Reason: the governed grouped data response already contains aggregate
+  authority, but the generic `grouped_rows` mapper discarded it before the
+  shared footer renderer. The mapper now preserves only object-shaped
+  aggregate payloads; invalid carriers remain absent and fail closed.
+- Why Here / Why Not Elsewhere: this is a generic transport-normalization
+  closure shared by every grouped collection. It does not belong in a payment
+  model, action-specific adapter, Contract schema, permission rule or renderer
+  special case.
+- Blast radius: grouped collection rows may now render the same authoritative
+  aggregate footer as flat collections. Sorting, paging, permissions, record
+  mutation, business models and database state are unchanged.

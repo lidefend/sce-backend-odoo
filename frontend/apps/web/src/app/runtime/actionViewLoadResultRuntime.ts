@@ -13,6 +13,7 @@ export type ActionViewGroupedRow = {
   label: string;
   count: number;
   sampleRows: Array<Record<string, unknown>>;
+  aggregates?: Record<string, Record<string, unknown>>;
   sampleCount?: number;
   isSampled?: boolean;
   domain?: unknown[];
@@ -63,12 +64,16 @@ export function mapActionViewGroupedRows(options: {
       const pageLimit = Math.max(1, Number((item.page_size ?? item.page_limit) || fallbackPageSize));
       const pageOffsetRaw = Number((item.page_applied_offset ?? item.page_offset ?? options.groupPageOffsets[key]) || 0);
       const sampleRows = Array.isArray(item.sample_rows) ? (item.sample_rows as Array<Record<string, unknown>>) : [];
+      const aggregates = item.aggregates && typeof item.aggregates === 'object' && !Array.isArray(item.aggregates)
+        ? (item.aggregates as Record<string, Record<string, unknown>>)
+        : undefined;
       return {
         key,
         label,
         count: totalCount,
         domain: Array.isArray(item.domain) ? item.domain : [],
         sampleRows,
+        aggregates,
         sampleCount: Number.isFinite(Number(item.sample_count)) ? Math.max(0, Math.trunc(Number(item.sample_count))) : sampleRows.length,
         isSampled: typeof item.is_sampled === 'boolean' ? Boolean(item.is_sampled) : sampleRows.length < totalCount,
         pageOffset: options.normalizeGroupPageOffset(pageOffsetRaw, pageLimit, totalCount),
