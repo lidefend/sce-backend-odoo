@@ -177,16 +177,18 @@ workflow:
           capabilities: [relation_search, relation_create, cancel, success_settlement, dirty_preservation, exact_once_mutation]
     phase_9:
       name: industry_component_profiles
-      status: active
+      status: merged
       ownership: P1_construction_industry_standard_product
       branches: [feature/p1-project-structure-components-v1, feature/p1-contract-execution-components-v1, feature/p1-payment-settlement-components-v1]
       rule: P1_supplies_component_profiles_P0_registry_remains_generic
       examples: [wbs_tree, bill_of_quantities, project_progress, contract_performance, payment_execution, settlement_detail, cost_analysis]
-      delivered: [project_structure, contract_execution]
-      active_batch: payment_settlement
+      delivered: [project_structure, contract_execution, payment_settlement]
+      active_batch: none
     phase_10:
       name: business_domain_rollout
-      status: planned
+      status: active
+      delivered: []
+      active_domain: project
       order: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration]
       per_domain_flow: [coverage_scan, gap_classification, contract_configuration, static_projection, one_primary_journey, one_security_counterexample, coverage_report]
       stop_and_split_when: domain_requires_P0_registry_shell_or_presenter_change
@@ -217,7 +219,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_9
-    task: payment_settlement_component_profiles
-    prerequisite: phase_9_contract_execution_merged_and_main_synced
-    do_not_start_in_parallel: [phase_10]
+    phase: phase_10
+    task: project_domain_rollout
+    prerequisite: phase_9_payment_settlement_merged_and_main_synced
+    do_not_start_in_parallel: [phase_10_contract, phase_10_payment]

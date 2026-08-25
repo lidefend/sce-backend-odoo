@@ -1,0 +1,1722 @@
+{
+  "schemaVersion": "frontend_project_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "project",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 30,
+    "model_count": 24,
+    "ready_surface_count": 28,
+    "readable_fallback_count": 0,
+    "structural_form_count": 30,
+    "fail_closed_count": 0,
+    "excluded_count": 1,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_construction_diary",
+      "menuName": "施工日志",
+      "actionXmlid": "smart_construction_core.action_sc_construction_diary",
+      "actionName": "施工日志",
+      "model": "sc.construction.diary",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_diary",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_read",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_read",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_construction_diary_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_construction_diary_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_construction_progress",
+      "menuName": "施工进度",
+      "actionXmlid": "smart_construction_core.action_project_progress_entry",
+      "actionName": "进度计量",
+      "model": "project.progress.entry",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_progress",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_manager",
+              "smart_construction_core.group_sc_cap_cost_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_cost_manager",
+          "smart_construction_core.group_sc_cap_cost_read",
+          "smart_construction_core.group_sc_cap_cost_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_project_progress_entry_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_project_progress_entry_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_customer_partner",
+      "menuName": "客户档案",
+      "actionXmlid": "smart_construction_core.action_sc_customer_partner",
+      "actionName": "客户",
+      "model": "res.partner",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_partner_group_wave1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_customer_partner",
+            "groups": [
+              "smart_construction_core.group_sc_cap_contact_manager"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_contact_manager"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_customer_partner_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_customer_partner_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_material_inbound",
+      "menuName": "材料入库",
+      "actionXmlid": "smart_construction_core.action_sc_material_inbound_handling",
+      "actionName": "入库办理",
+      "model": "sc.material.inbound",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_inbound",
+            "groups": [
+              "smart_construction_core.group_sc_cap_material_manager",
+              "smart_construction_core.group_sc_cap_material_read",
+              "smart_construction_core.group_sc_cap_material_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_material_manager",
+          "smart_construction_core.group_sc_cap_material_read",
+          "smart_construction_core.group_sc_cap_material_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_material_inbound_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_material_inbound_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_material_outbound",
+      "menuName": "材料出库",
+      "actionXmlid": "smart_construction_core.action_sc_material_outbound",
+      "actionName": "出库单",
+      "model": "sc.material.outbound",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_outbound",
+            "groups": [
+              "smart_construction_core.group_sc_cap_material_manager",
+              "smart_construction_core.group_sc_cap_material_read",
+              "smart_construction_core.group_sc_cap_material_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_material_manager",
+          "smart_construction_core.group_sc_cap_material_read",
+          "smart_construction_core.group_sc_cap_material_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_material_outbound_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_material_outbound_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_equipment_shift_v1",
+      "menuName": "机械台班登记",
+      "actionXmlid": "smart_construction_core.action_sc_equipment_usage",
+      "actionName": "机械台班登记",
+      "model": "sc.equipment.usage",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_equipment_cost_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_equipment_shift_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_equipment_usage_shift_formal_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_equipment_usage_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_labor_cost_v1",
+      "menuName": "劳务成本登记",
+      "actionXmlid": "smart_construction_core.action_sc_product_labor_cost_v1",
+      "actionName": "劳务成本登记",
+      "model": "sc.labor.usage",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_labor_cost_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_labor_cost_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_labor_usage_casual_user_confirmed_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_labor_usage_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_labor_deduction_v1",
+      "menuName": "劳务扣款明细",
+      "actionXmlid": "smart_construction_core.action_sc_product_labor_deduction_v1",
+      "actionName": "劳务扣款明细",
+      "model": "sc.labor.deduction",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_labor_cost_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_labor_deduction_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_labor_deduction_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_labor_deduction_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_labor_realname_v1",
+      "menuName": "劳务实名制",
+      "actionXmlid": "smart_construction_core.action_sc_product_labor_realname_v1",
+      "actionName": "劳务实名制",
+      "model": "sc.labor.worker",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_labor_cost_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_labor_realname_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_labor_worker_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_labor_worker_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_material_return_v1",
+      "menuName": "材料退货",
+      "actionXmlid": "smart_construction_core.action_sc_material_supplier_return",
+      "actionName": "材料退货",
+      "model": "sc.material.supplier.return",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_material_return_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_material_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_material_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_material_supplier_return_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_material_supplier_return_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_partner_blacklist_v1",
+      "menuName": "客商黑名单",
+      "actionXmlid": "smart_construction_core.action_sc_product_partner_blacklist_v1",
+      "actionName": "客商黑名单",
+      "model": "res.partner",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_partner_group_wave1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_partner_blacklist_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_contact_manager"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_contact_manager"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_partner_blacklist_tree_v1",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_product_partner_blacklist_form_v1",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_project_edit_v1",
+      "menuName": "项目信息编辑",
+      "actionXmlid": "smart_construction_core.action_sc_product_project_edit_v1",
+      "actionName": "项目信息编辑",
+      "model": "project.project",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_management_group",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_project_edit_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_project_lifecycle_tree_v1",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "project.edit_project",
+          "jsClass": "project_form",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_project_lifecycle_v1",
+      "menuName": "项目启停管理",
+      "actionXmlid": "smart_construction_core.action_sc_product_project_lifecycle_v1",
+      "actionName": "项目启停管理",
+      "model": "project.project",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_management_group",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_project_lifecycle_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_project_lifecycle_tree_v1",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_product_project_lifecycle_form_v1",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_project_payroll_v1",
+      "menuName": "薪资核算清单",
+      "actionXmlid": "smart_construction_core.action_sc_product_project_payroll_v1",
+      "actionName": "薪资核算清单",
+      "model": "sc.hr.payroll.document",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_project_payroll_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_project_payroll_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_hr_payroll_document_formal_manager_salary_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_hr_payroll_document_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
+      "menuName": "薪资发放登记",
+      "actionXmlid": "smart_construction_core.action_sc_product_project_salary_payment_v1",
+      "actionName": "薪资发放登记",
+      "model": "sc.hr.salary.payment",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_project_payroll_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_hr_salary_payment_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_hr_salary_payment_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
+      "menuName": "质量验收",
+      "actionXmlid": "smart_construction_core.action_sc_product_quality_acceptance_v1",
+      "actionName": "质量验收",
+      "model": "sc.quality.acceptance",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_quality_acceptance_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_quality_acceptance_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_site_variation_v1",
+      "menuName": "签证变更",
+      "actionXmlid": "smart_construction_core.action_sc_product_site_variation_v1",
+      "actionName": "签证变更",
+      "model": "sc.site.variation",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_site_variation_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_site_variation_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_site_variation_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+      "menuName": "分包成本登记",
+      "actionXmlid": "smart_construction_core.action_sc_subcontract_register",
+      "actionName": "分包成本登记",
+      "model": "sc.subcontract.register",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_cost_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_subcontract_register_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_subcontract_register_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_variation_v1",
+      "menuName": "分包签证费用",
+      "actionXmlid": "smart_construction_core.action_sc_product_subcontract_variation_v1",
+      "actionName": "分包签证费用",
+      "model": "sc.site.variation",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_cost_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_subcontract_variation_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_site_variation_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_site_variation_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+      "menuName": "班组借/扣款登记",
+      "actionXmlid": "smart_construction_core.action_sc_product_team_loan_deduction_v1",
+      "actionName": "班组借/扣款登记",
+      "model": "sc.team.loan.deduction.workspace",
+      "viewMode": "form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_team_loan_group_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_team_loan_deduction_workspace_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_tender_document_v1",
+      "menuName": "标书管理",
+      "actionXmlid": "smart_construction_core.action_sc_product_tender_document_v1",
+      "actionName": "标书管理",
+      "model": "tender.document",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tender_management_group",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_tender_document_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_tender_document_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_tender_document_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_product_tender_information_v1",
+      "menuName": "招标信息",
+      "actionXmlid": "smart_construction_core.action_sc_product_tender_information_v1",
+      "actionName": "招标信息",
+      "model": "tender.opportunity",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tender_management_group",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_tender_information_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_tender_opportunity_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_tender_opportunity_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_project_documents",
+      "menuName": "工程资料",
+      "actionXmlid": "smart_construction_core.action_sc_project_document",
+      "actionName": "工程资料",
+      "model": "sc.project.document",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_documents",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_project_document_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_project_document_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_project_initiation",
+      "menuName": "新项目立项",
+      "actionXmlid": "smart_construction_core.action_project_initiation",
+      "actionName": "项目立项",
+      "model": "project.project",
+      "viewMode": "form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_management_group",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_initiation",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_project_create_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_project_tender",
+      "menuName": "投标项目",
+      "actionXmlid": "smart_construction_core.action_tender_bid",
+      "actionName": "投标管理",
+      "model": "tender.bid",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tender_management_group",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_tender",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_tender_bid_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_tender_bid_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_project_wbs",
+      "menuName": "执行结构",
+      "actionXmlid": "smart_construction_core.action_exec_structure_wbs",
+      "actionName": "执行结构",
+      "model": "construction.work.breakdown",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_wbs",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_exec_structure_wbs_tree",
+          "jsClass": "smart_hierarchy_browser",
+          "semantic": "hierarchy_browser",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_work_breakdown_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_safety_issue",
+      "menuName": "安全检查",
+      "actionXmlid": "smart_construction_core.action_sc_safety_issue",
+      "actionName": "安全问题闭环",
+      "model": "sc.safety.issue",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_safety_issue",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_read",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_read",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_safety_issue_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_safety_issue_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_supplier_partner",
+      "menuName": "供应商档案",
+      "actionXmlid": "smart_construction_core.action_sc_supplier_partner",
+      "actionName": "供应商",
+      "model": "res.partner",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_partner_group_wave1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_supplier_partner",
+            "groups": [
+              "smart_construction_core.group_sc_cap_contact_manager"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_contact_manager"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_supplier_partner_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_supplier_partner_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_tender_guarantee",
+      "menuName": "投标保证金",
+      "actionXmlid": "smart_construction_core.action_sc_tender_guarantee",
+      "actionName": "投标保证金",
+      "model": "tender.guarantee",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tender_management_group",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tender_guarantee",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_tender_guarantee_formal_payment_deposit_return_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_tender_guarantee_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuXmlid": "smart_construction_core.menu_sc_tender_won",
+      "menuName": "中标管理",
+      "actionXmlid": "smart_construction_core.action_sc_tender_won",
+      "actionName": "中标记录",
+      "model": "tender.bid",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tender_management_group",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_tender_won",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_tender_bid_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_tender_bid_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}

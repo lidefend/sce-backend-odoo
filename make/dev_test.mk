@@ -1348,6 +1348,18 @@ verify.product.menu.catalog: guard.prod.forbid check-compose-project check-compo
 	@python3 scripts/verify/product_menu_catalog_report.py
 	@python3 scripts/verify/product_menu_blueprint_report.py
 
+.PHONY: verify.frontend.professionalization.project_domain.runtime
+verify.frontend.professionalization.project_domain.runtime: guard.prod.forbid check-compose-project check-compose-env
+	@mkdir -p artifacts/frontend-professionalization docs/frontend_productization/domain-rollout
+	@python3 -m py_compile scripts/verify/frontend_project_domain_rollout.py scripts/verify/frontend_project_domain_rollout_report.py scripts/verify/test_frontend_project_domain_rollout.py
+	@python3 -m unittest scripts.verify.test_frontend_project_domain_rollout
+	@$(RUN_ENV) FRONTEND_PROJECT_DOMAIN_ROLLOUT_PATH=/tmp/frontend_project_domain_rollout_v1.json DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_project_domain_rollout.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/frontend_project_domain_rollout_v1.json artifacts/frontend-professionalization/frontend_project_domain_rollout_runtime_v1.json >/dev/null
+	@python3 scripts/verify/frontend_project_domain_rollout_report.py \
+		--input artifacts/frontend-professionalization/frontend_project_domain_rollout_runtime_v1.json \
+		--json-output docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json \
+		--markdown-output docs/frontend_productization/domain-rollout/project-domain-coverage-v1.md
+
 .PHONY: verify.product.menu.governance.m4.runtime
 verify.product.menu.governance.m4.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@install -d -m 0777 artifacts/menu-governance
