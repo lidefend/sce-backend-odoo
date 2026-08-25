@@ -208,13 +208,15 @@ try {
     const bootSummaryFixtureTarget = routes.find((target) => Array.isArray(target.summaryFixture));
     let bootSummaryFixtureApplied = false;
     let bootSummaryItems = [];
+    let bootSummaryRouteHandling = false;
     const bootContractRoutePattern = '**/api/v1/**';
     const bootContractRouteHandler = async (route) => {
       const request = route.request();
-      if (request.method() !== 'POST' || bootSummaryFixtureApplied) {
+      if (request.method() !== 'POST' || bootSummaryFixtureApplied || bootSummaryRouteHandling) {
         await route.continue();
         return;
       }
+      bootSummaryRouteHandling = true;
       const response = await route.fetch();
       try {
         const payload = await response.json();
@@ -223,6 +225,8 @@ try {
         await route.fulfill({ response, json: payload });
       } catch {
         await route.fulfill({ response });
+      } finally {
+        bootSummaryRouteHandling = false;
       }
     };
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
