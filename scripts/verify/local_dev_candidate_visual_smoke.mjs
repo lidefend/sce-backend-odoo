@@ -165,8 +165,48 @@ try {
             .slice(0, 80),
         };
       });
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: page.url(), contractH1Nodes, contractSelections, ...result });
+      const initialFinalUrl = page.url();
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      let mobileOverflowEvidence = null;
+      if (viewport.name === 'mobile' && target.exerciseMobileOverflow === true) {
+        const disclosure = page.locator('.form-header-mobile-actions');
+        await disclosure.waitFor({ state: 'visible', timeout: 15000 });
+        const expectedCount = Number(await disclosure.getAttribute('data-mobile-action-count') || 0);
+        const expectedKeys = String(await disclosure.getAttribute('data-mobile-action-keys') || '').split(',').filter(Boolean);
+        await disclosure.locator('summary').click();
+        const panel = disclosure.locator('.form-header-mobile-actions__panel');
+        await panel.waitFor({ state: 'visible', timeout: 15000 });
+        const buttons = panel.locator('button[data-mobile-action-key]');
+        const actualCount = await buttons.count();
+        const actions = await buttons.evaluateAll((nodes) => nodes.map((node) => ({
+          key: node.getAttribute('data-mobile-action-key') || '',
+          label: node.textContent?.replace(/\s+/g, ' ').trim() || '',
+          disabled: node instanceof HTMLButtonElement ? node.disabled : true,
+          actionKey: node.getAttribute('data-action-key') || '',
+          actionRef: node.getAttribute('data-action-ref') || '',
+        })));
+        await page.screenshot({ path: path.join(outputDir, `mobile-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-overflow-open.png`), fullPage: false });
+        const beforeExit = page.url();
+        const back = panel.locator('button[data-mobile-action-key="back:form.back"]');
+        const backReachable = await back.count() === 1 && !(await back.isDisabled());
+        if (backReachable) {
+          await back.click();
+          await page.waitForURL((url) => url.href !== beforeExit, { timeout: 15000 });
+        }
+        mobileOverflowEvidence = {
+          expectedCount,
+          actualCount,
+          expectedKeys,
+          actualKeys: actions.map((action) => action.key),
+          actions,
+          backReachable,
+          exitUrl: page.url(),
+          pass: expectedCount > 0 && actualCount === expectedCount
+            && JSON.stringify(actions.map((action) => action.key)) === JSON.stringify(expectedKeys)
+            && backReachable && page.url() !== beforeExit,
+        };
+      }
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, mobileOverflowEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -177,6 +217,9 @@ try {
 
 const errors = report.routes.flatMap((item) => item.errors || []);
 const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded || item.h1 !== 1 || item.overflow > 0));
+for (const item of report.routes) {
+  if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
+}
 const primitiveInput = report.routes.find((item) => item.primitiveInputContract)?.primitiveInputContract;
 if (!primitiveInput || primitiveInput.rootCount !== 1 || primitiveInput.inputCount !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {
   failures.push({ primitiveInputContract: primitiveInput || null });

@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { normalizePrimitiveSize, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
+import { normalizePrimitiveSize, resolvePrimitiveControlUpdate, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
 const props = withDefaults(defineProps<{
   modelValue?: string | number;
@@ -51,16 +51,23 @@ const emit = defineEmits<{
   blur: [value: string | number, event: FocusEvent];
 }>();
 
-function eventValue(event: Event): string {
-  return (event.target as HTMLInputElement).value;
+function eventValue(event: Event): string | null {
+  return resolvePrimitiveControlUpdate({
+    value: (event.target as HTMLInputElement).value,
+    disabled: props.disabled,
+    readonly: props.readonly,
+    loading: props.loading,
+  });
 }
 function onInput(event: Event) {
   const value = eventValue(event);
+  if (value === null) return;
   emit('update:modelValue', value);
   emit('input', value, event);
 }
 function onChange(event: Event) {
-  emit('change', eventValue(event), event);
+  const value = eventValue(event);
+  if (value !== null) emit('change', value, event);
 }
 function onFocus(event: FocusEvent) {
   emit('focus', props.modelValue, event);

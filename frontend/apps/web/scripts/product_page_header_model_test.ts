@@ -3,6 +3,7 @@ import { resolveProductPageHeaderModel, type ProductPageHeaderAction } from '../
 import { resolveCanonicalHeaderActionPresentation } from '../src/pages/contractForm/contractFormHeaderCanonicalActions';
 import type { CanonicalFormAction } from '../src/app/presentation/canonicalFormRenderModel';
 import type { CanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
+import { resolveMobileFormActionAuthority } from '../src/pages/contractForm/mobileFormActionSettlement';
 
 const save: ProductPageHeaderAction = { key: 'save', label: '保存', semantic: 'save', enabled: true };
 const submit: ProductPageHeaderAction = { key: 'submit', label: '提交', semantic: 'submit', enabled: true };
@@ -67,4 +68,29 @@ const cleanEditHeader = resolveCanonicalHeaderActionPresentation({
 });
 assert.equal(cleanEditHeader.localSavePrimary, true);
 assert.deepEqual(cleanEditHeader.direct.map((action) => action.actionRef.actionId), ['submit']);
-console.log('[product_page_header_model_test] PASS cases=24');
+const mobileAuthority = resolveMobileFormActionAuthority({
+  showBack: true,
+  showReturn: true,
+  showDraftSave: true,
+  draftSaveDisabled: true,
+  businessDirect: [{ key: 'business.direct', enabled: true }],
+  businessOverflow: [{ key: 'business.disabled', enabled: false }],
+  canonicalDirect: [{ key: 'canonical.direct', enabled: true }],
+  canonicalOverflow: [{ key: 'canonical.overflow', enabled: true }],
+  config: [{ key: 'config.open', enabled: true }],
+  showDiscard: true,
+  busy: false,
+});
+assert.equal(mobileAuthority.count, 9);
+assert.deepEqual(mobileAuthority.keys, [
+  'back:form.back', 'return:form.return-workbench', 'draft:form.save-draft', 'business:business.direct', 'business:business.disabled',
+  'canonical:canonical.direct', 'canonical:canonical.overflow', 'config:config.open', 'discard:form.discard',
+]);
+assert.equal(mobileAuthority.items.find((item) => item.key === 'draft:form.save-draft')?.enabled, false);
+assert.equal(mobileAuthority.items.find((item) => item.key === 'business:business.disabled')?.enabled, false);
+assert.throws(() => resolveMobileFormActionAuthority({
+  showBack: false, showReturn: false, showDraftSave: false, draftSaveDisabled: false,
+  businessDirect: [{ key: 'duplicate', enabled: true }], businessOverflow: [{ key: 'duplicate', enabled: true }],
+  canonicalDirect: [], canonicalOverflow: [], config: [], showDiscard: false, busy: false,
+}), /MOBILE_FORM_ACTION_IDENTITY_DUPLICATE/);
+console.log('[product_page_header_model_test] PASS cases=28');

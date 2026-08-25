@@ -32,7 +32,7 @@
     </SceneButton>
     <details v-if="overflowActions.length" class="canonical-action-bar__overflow" :data-overflow-count="overflowActions.length">
       <summary aria-label="展开更多表单操作">更多操作</summary>
-      <div class="canonical-action-bar__overflow-panel" role="menu">
+      <div class="canonical-action-bar__overflow-panel" aria-label="更多表单操作">
         <SceneButton
           v-for="action in overflowActions"
           :key="action.key"
@@ -48,7 +48,6 @@
           :title="workflowDisabledReason(action) || undefined"
           :data-action-allowed="String(action.actionRef.allowed === true)"
           :data-visible-profiles="action.visibleProfiles.join(',')"
-          role="menuitem"
           @activate="action.enabled && emit('action-ref', action.actionRef)"
         >
           <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-action-bar__icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />

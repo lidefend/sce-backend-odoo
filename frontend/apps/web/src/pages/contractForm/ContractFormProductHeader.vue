@@ -103,18 +103,18 @@
       <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</button>
       <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</button>
       <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy" type="button" @click="$emit('reload')">{{ reloadLabel }}</button>
-      <details v-if="mobileSecondaryActionCount" class="form-header-mobile-actions">
+      <details v-if="mobileActionAuthority.count" class="form-header-mobile-actions" :data-mobile-action-count="mobileActionAuthority.count" :data-mobile-action-keys="mobileActionAuthority.keys.join(',')">
         <summary class="sc-btn sc-btn-secondary sc-btn-sm" aria-label="打开更多页面操作">更多</summary>
-        <div class="form-header-mobile-actions__panel" role="menu">
-          <button v-if="showBack !== false" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" role="menuitem" @click="$emit('back')"><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</button>
-          <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" role="menuitem" @click="$emit('return-workbench')">返回工作台</button>
-          <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" role="menuitem" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
-          <button v-for="action in mobilePresentedDirectActions" :key="`mobile-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" role="menuitem" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-for="action in presentedOverflowActions" :key="`mobile-overflow-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" role="menuitem" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-for="action in mobileCanonicalDirectActions" :key="`mobile-canonical-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" role="menuitem" @click="$emit('canonical-action', action)">{{ action.label }}</button>
-          <button v-for="action in canonicalPresentedOverflowActions" :key="`mobile-canonical-overflow-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" role="menuitem" @click="$emit('canonical-action', action)">{{ action.label }}</button>
-          <button v-for="action in configActions" :key="`mobile-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" role="menuitem" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" role="menuitem" @click="$emit('discard')">{{ discardLabel }}</button>
+        <div class="form-header-mobile-actions__panel" aria-label="更多页面操作">
+          <button v-if="showBack !== false" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="back:form.back" :disabled="busy" type="button" @click="$emit('back')"><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</button>
+          <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="return:form.return-workbench" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
+          <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="draft:form.save-draft" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
+          <button v-for="action in mobilePresentedDirectActions" :key="`mobile-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`business:${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+          <button v-for="action in presentedOverflowActions" :key="`mobile-overflow-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`business:${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+          <button v-for="action in mobileCanonicalDirectActions" :key="`mobile-canonical-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-mobile-action-key="`canonical:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+          <button v-for="action in canonicalPresentedOverflowActions" :key="`mobile-canonical-overflow-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-mobile-action-key="`canonical:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+          <button v-for="action in configActions" :key="`mobile-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`config:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
+          <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="discard:form.discard" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</button>
         </div>
       </details>
     </template>
@@ -130,6 +130,7 @@ import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRe
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { nextBusinessActionLabel } from './nativeSectionNavigation';
 import { resolveWorkflowActionBarAuthority, resolveWorkflowStatusAuthority, workflowDisabledReason } from './professionalWorkflowModel';
+import { resolveMobileFormActionAuthority } from './mobileFormActionSettlement';
 
 const props = defineProps<{
   title: string; subtitle: string; hideTitle: boolean; showHud: boolean; model: string; recordIdDisplay: string;
@@ -182,10 +183,19 @@ const canonicalPresentedOverflowActions = computed(() => [
   ...(props.canonicalLocalSavePrimary ? props.canonicalDirectActions.filter((action) => action.tier === 'primary') : []),
   ...props.canonicalOverflowActions,
 ]);
-const mobileSecondaryActionCount = computed(() => Number(props.showBack !== false) + Number(props.showReturn) + Number(props.showDraftSave)
-  + mobilePresentedDirectActions.value.length + presentedOverflowActions.value.length
-  + mobileCanonicalDirectActions.value.length + canonicalPresentedOverflowActions.value.length
-  + props.configActions.length + Number(props.showDiscard));
+const mobileActionAuthority = computed(() => resolveMobileFormActionAuthority({
+  showBack: props.showBack !== false,
+  showReturn: props.showReturn,
+  showDraftSave: props.showDraftSave,
+  draftSaveDisabled: props.draftSaveDisabled,
+  businessDirect: mobilePresentedDirectActions.value,
+  businessOverflow: presentedOverflowActions.value,
+  canonicalDirect: mobileCanonicalDirectActions.value,
+  canonicalOverflow: canonicalPresentedOverflowActions.value,
+  config: props.configActions,
+  showDiscard: props.showDiscard,
+  busy: props.busy,
+}));
 const canonicalWorkflowAuthority = computed(() => resolveWorkflowActionBarAuthority(
   canonicalPresentedDirectActions.value,
   canonicalPresentedOverflowActions.value,
