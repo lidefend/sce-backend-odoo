@@ -30,9 +30,9 @@
       <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-action-bar__icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
       <span>{{ action.label }}</span>
     </SceneButton>
-    <details v-if="overflowActions.length" class="canonical-action-bar__overflow">
-      <summary>更多操作</summary>
-      <div class="canonical-action-bar__overflow-panel">
+    <details v-if="overflowActions.length" class="canonical-action-bar__overflow" :data-overflow-count="overflowActions.length">
+      <summary aria-label="展开更多表单操作">更多操作</summary>
+      <div class="canonical-action-bar__overflow-panel" role="menu">
         <SceneButton
           v-for="action in overflowActions"
           :key="action.key"
@@ -48,6 +48,7 @@
           :title="workflowDisabledReason(action) || undefined"
           :data-action-allowed="String(action.actionRef.allowed === true)"
           :data-visible-profiles="action.visibleProfiles.join(',')"
+          role="menuitem"
           @activate="action.enabled && emit('action-ref', action.actionRef)"
         >
           <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-action-bar__icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
@@ -90,10 +91,12 @@ const emit = defineEmits<{ 'action-ref': [action: ContractV2ActionRule] }>();
 }
 .canonical-action-bar__icon { inline-size: 1em; margin-inline-end: 6px; text-align: center; }
 .canonical-action-bar__overflow { position: relative; align-self: center; }
-.canonical-action-bar__overflow > summary { cursor: pointer; color: var(--sc-app-text-primary); }
+.canonical-action-bar__overflow > summary { display: inline-flex; min-height: calc(var(--sc-component-button-height-md) * 1px); align-items: center; padding-inline: var(--sc-product-space-2); border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-button-radius); background: var(--sc-app-panel); color: var(--sc-app-text-primary); cursor: pointer; list-style: none; }
+.canonical-action-bar__overflow > summary::-webkit-details-marker { display: none; }
 .canonical-action-bar__overflow-panel {
   position: absolute;
-  z-index: 20;
+  z-index: var(--sc-component-button-overflow-z-index);
+  top: calc(100% + var(--sc-product-space-1));
   right: 0;
   display: grid;
   gap: 6px;
@@ -104,6 +107,7 @@ const emit = defineEmits<{ 'action-ref': [action: ContractV2ActionRule] }>();
   background: var(--sc-app-panel);
   box-shadow: var(--sc-app-shadow-popover);
 }
+.canonical-action-bar__overflow-panel :deep(button) { width: 100%; justify-content: flex-start; }
 @media (max-width: 560px) {
   .canonical-action-bar {
     display: flex;
@@ -128,6 +132,7 @@ const emit = defineEmits<{ 'action-ref': [action: ContractV2ActionRule] }>();
   }
   .canonical-action-bar__overflow-panel {
     position: absolute;
+    top: auto;
     right: 0;
     bottom: calc(100% + 10px);
     width: min(320px, calc(100vw - 24px));
