@@ -259,6 +259,7 @@ try {
     let bootSummaryFixtureApplied = false;
     let bootSummaryItems = [];
     const bootSummaryCarrierPaths = new Set();
+    let bootSummaryRoutesInFlight = 0;
     const bootContractRoutePattern = '**/api/v1/**';
     const bootContractRouteHandler = async (route) => {
       const request = route.request();
@@ -266,24 +267,29 @@ try {
         await route.continue();
         return;
       }
-      const response = await route.fetch();
-      let payload = null;
       try {
-        payload = await response.json();
-        collectSummaryCarrierPaths(payload).forEach((path) => bootSummaryCarrierPaths.add(path));
-      } catch {
-        await route.fulfill({ response });
+        bootSummaryRoutesInFlight += 1;
+        const response = await route.fetch();
+        let payload = null;
+        try {
+          payload = await response.json();
+          collectSummaryCarrierPaths(payload).forEach((path) => bootSummaryCarrierPaths.add(path));
+        } catch {
+          await route.fulfill({ response });
+        }
+        if (!payload) return;
+        const summaryApplied = applyFirstContractSummaryFixture(
+          payload,
+          bootSummaryFixtureTarget.summaryFixture,
+          String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
+        );
+        bootSummaryFixtureApplied = bootSummaryFixtureApplied || summaryApplied;
+        const responseSummaryItems = summarizeContractSummaryItems(payload);
+        if (responseSummaryItems.length) bootSummaryItems = responseSummaryItems;
+        await route.fulfill({ response, json: payload });
+      } finally {
+        bootSummaryRoutesInFlight -= 1;
       }
-      if (!payload) return;
-      const summaryApplied = applyFirstContractSummaryFixture(
-        payload,
-        bootSummaryFixtureTarget.summaryFixture,
-        String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
-      );
-      bootSummaryFixtureApplied = bootSummaryFixtureApplied || summaryApplied;
-      const responseSummaryItems = summarizeContractSummaryItems(payload);
-      if (responseSummaryItems.length) bootSummaryItems = responseSummaryItems;
-      await route.fulfill({ response, json: payload });
     };
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     await loginPage(page);
@@ -335,6 +341,7 @@ try {
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
       if (bootSummaryFixtureTarget === target) {
+        while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
         await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
       }
       const result = await page.evaluate(() => {
