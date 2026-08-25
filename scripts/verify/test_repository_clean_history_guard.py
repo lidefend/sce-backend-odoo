@@ -115,6 +115,21 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("TRUSTED_BASE_INVALID", result.stderr)
 
+        tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
+        unrelated = self.git(
+            "-c",
+            "user.name=Guard Test",
+            "-c",
+            "user.email=guard@example.invalid",
+            "commit-tree",
+            tree,
+            "-m",
+            "unrelated trusted base",
+        ).stdout.strip()
+        result = self.run_guard("--trusted-base", unrelated)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("trusted base must be an ancestor", result.stderr)
+
     def test_trusted_base_authority_change_falls_back_to_full_scan(self) -> None:
         payload = json.loads(self.policy.read_text(encoding="utf-8"))
         payload["forbidden_repository_tokens"].append("retired-product")
