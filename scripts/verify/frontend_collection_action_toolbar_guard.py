@@ -27,6 +27,8 @@ def validate(source: str | None = None, list_source: str | None = None) -> list[
         'import ScInput',
         '<ScInput',
         "'search-input': [value: string]",
+        'var(--sc-semantic-focus-ring)',
+        '@media (prefers-reduced-motion: reduce)',
     )
     for marker in required:
         if marker not in text:
@@ -47,6 +49,9 @@ def validate(source: str | None = None, list_source: str | None = None) -> list[
     for marker in required_list:
         if marker not in list_text:
             failures.append(f"collection batch action bar missing {marker}")
+    list_css = (ROOT / "frontend/apps/web/src/pages/ListPage.css").read_text(encoding="utf-8")
+    if ".batch-bar button:focus-visible" not in list_css or "var(--sc-semantic-focus-ring)" not in list_css:
+        failures.append("collection batch action bar missing token-backed focus visibility")
     if 'v-for="(action, actionIndex) in selectionActions"' in list_text:
         failures.append("collection batch actions must not duplicate overflow actions in the direct row")
     return failures

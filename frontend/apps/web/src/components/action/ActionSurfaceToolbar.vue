@@ -661,6 +661,14 @@ onBeforeUnmount(() => {
   grid-template-areas: 'search sort primary';
 }
 
+.action-toolbar button:focus-visible,
+.action-toolbar :deep(.sc-btn:focus-visible),
+.action-toolbar :deep(.sc-input:focus-visible),
+.action-toolbar select:focus-visible {
+  outline: 2px solid var(--sc-semantic-focus-ring);
+  outline-offset: 2px;
+}
+
 .view-switch { grid-area: view; }
 .native-search { grid-area: search; }
 .sort-switch { grid-area: sort; }
@@ -1125,5 +1133,13 @@ onBeforeUnmount(() => {
   .toolbar-clear-all { display: none; }
   .toolbar-search-submit { width: 44px; min-height: 44px; padding-inline: 0; font-size: 0; justify-content: center; }
   .search-menu-toggle { width: 44px; min-height: 44px; }
+  .search-menu-item,
+  .toolbar-overflow-section button,
+  .toolbar-overflow-create,
+  .custom-search-actions button { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-menu-caret { transition: none; }
 }
 </style>
