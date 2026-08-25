@@ -67,6 +67,7 @@
               :field-config-editable="fieldConfigEditable"
               :field-selection-mode="fieldSelectionMode"
               :selected-field-key="selectedFieldKey"
+              :prefer-readonly-facts="preferReadonlyFacts"
               :columns="nodeColumns(node)"
               @field-change="emit('field-change', $event)"
               @field-action="emit('field-action', $event)"
@@ -137,6 +138,7 @@
             :field-config-editable="fieldConfigEditable"
             :field-selection-mode="fieldSelectionMode"
             :selected-field-key="selectedFieldKey"
+            :prefer-readonly-facts="preferReadonlyFacts"
             :columns="nodeColumns(node)"
             @field-change="emit('field-change', $event)"
             @field-action="emit('field-action', $event)"
@@ -180,6 +182,7 @@
             :field-config-editable="fieldConfigEditable"
             :field-selection-mode="fieldSelectionMode"
             :selected-field-key="selectedFieldKey"
+            :prefer-readonly-facts="preferReadonlyFacts"
             :field-group-title="containerPolicyTitle(node, index)"
             tone="core"
             @field-change="emit('field-change', $event)"
@@ -261,6 +264,7 @@
             :field-config-editable="fieldConfigEditable"
             :field-selection-mode="fieldSelectionMode"
             :selected-field-key="selectedFieldKey"
+            :prefer-readonly-facts="preferReadonlyFacts"
             :columns="nodeColumns(node)"
             @field-change="emit('field-change', $event)"
             @field-action="emit('field-action', $event)"
@@ -304,6 +308,7 @@
         :field-config-editable="fieldConfigEditable"
         :field-selection-mode="fieldSelectionMode"
         :selected-field-key="selectedFieldKey"
+        :prefer-readonly-facts="preferReadonlyFacts"
         tone="core"
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
@@ -415,6 +420,7 @@ const props = withDefaults(defineProps<{
   fieldConfigEditable?: boolean;
   fieldSelectionMode?: boolean;
   selectedFieldKey?: string;
+  preferReadonlyFacts?: boolean;
   columns?: 1 | 2 | 3;
 }>(), {
   columns: 2,
@@ -432,6 +438,7 @@ const props = withDefaults(defineProps<{
   fieldConfigEditable: false,
   fieldSelectionMode: false,
   selectedFieldKey: '',
+  preferReadonlyFacts: false,
 });
 
 const emit = defineEmits<{

@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4040`
+- Scanned files: `4045`
 - Files requiring split plan: `44`
 - Files above warning threshold: `77`
 
@@ -87,9 +87,9 @@ Generated from repository source files. This report is informational during the 
 | 1194 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1189 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
+| 1149 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
-| 1142 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1136 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1129 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
@@ -210,9 +210,9 @@ Generated from repository source files. This report is informational during the 
 | 1194 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1189 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1157 | warning | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
+| 1149 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
-| 1142 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1136 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1129 | warning | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1121 | warning | Python source | `scripts/release/production_backup_restore.py` |

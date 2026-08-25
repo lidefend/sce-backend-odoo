@@ -152,6 +152,7 @@ require(
 )
 require("actionId === 'form.save'" in action_executor, "canonical form.save is not bridged to the unified save executor")
 canonical_node_renderer = (WEB_SRC / "pages/contractForm/CanonicalFormNodeRenderer.vue").read_text(encoding="utf-8")
+native_renderer = (WEB_SRC / "components/template/NativeFormTreeRenderer.vue").read_text(encoding="utf-8")
 require(
     "mode === 'readonly' && action.actionId === 'form.save'" in presenter,
     "iteration one must retain the cb6e276 readonly save boundary",
@@ -289,6 +290,12 @@ require(
     and ":prefer-readonly-facts=\"preferReadonlyFacts\"" in canonical_node_renderer
     and object_task_page.count("prefer-readonly-facts") >= 6,
     "semantic readonly floorplan still renders disabled edit controls instead of business facts",
+)
+require(
+    "preferReadonlyFacts?: boolean" in native_renderer
+    and native_renderer.count(':prefer-readonly-facts="preferReadonlyFacts"') >= 5
+    and form_host.count(':prefer-readonly-facts="renderModel.identity.mode === \'readonly\'"') == 2,
+    "native workspace readonly fields still render disabled edit controls instead of business facts",
 )
 require(
     form_section.index('v-else-if="usesProfessionalMany2many(field) && relationAdapter"')

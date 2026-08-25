@@ -6122,3 +6122,40 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   primary centers now pass the formal runtime coverage audit.
 - Rollback: revert reporting evidence and workflow wiring. Product runtime,
   permissions, roles, fixtures and business data are unaffected.
+
+## Frontend system professionalization — final public metric acceptance (2026-08-25)
+
+- Branch / baseline: `audit/p0-frontend-systemwide-public-metric-acceptance-v1` /
+  `2402c49804a5247ba42ec7c4175279b7de546d7e`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product plus
+  P4 deterministic delivery evidence / systemwide public presentation
+  acceptance / `frontend/apps/web` and governed frontend verifiers.
+- Reason: Phase 0 through Phase 10 and all ten locked primary centers are merged.
+  The final batch proves the public product metrics across collection, task and
+  workspace patterns instead of treating per-domain coverage as final visual
+  acceptance.
+- Product correction: Native workspace readonly rendering did not propagate the
+  existing `preferReadonlyFacts` authority through recursive
+  `NativeFormTreeRenderer` nodes. Two fields consequently appeared as disabled
+  inputs. The generic renderer and its two production roots now propagate the
+  readonly-fact preference; no model, field, action, menu or label special case
+  was added. The existing task renderer behavior remains unchanged.
+- Validation-owner correction: the first probe counted both a canonical group
+  title marker and its nested heading. The metric now counts only canonical
+  `[data-group-title]` identities; increasing waits or weakening the product
+  assertion was not used.
+- Coverage and public metrics: the locked ten primary centers cover 88 of 88
+  runtime surfaces with zero uncovered surfaces or authority gaps. Governed
+  browser evidence covers one reporting collection, one payment task edit and
+  one project workspace readonly surface. Every surface has exactly one H1,
+  one product header and one selected navigation item; primary actions are zero
+  or one. Duplicate fields, duplicate titles, disabled fake-readonly controls,
+  unregistered components, 390px overflow, browser errors, business mutations
+  and explicit-readonly promotion are all zero. Task/workspace modes equal the
+  backend Contract authority.
+- Runtime safety: the before/after business fingerprint is unchanged. The
+  acceptance does not create, save, submit or alter fixtures, roles, ACLs or
+  database configuration.
+- Rollback: revert the generic Native readonly-fact propagation and the final
+  acceptance evidence together. Domain coverage, permissions and business data
+  remain unaffected.
