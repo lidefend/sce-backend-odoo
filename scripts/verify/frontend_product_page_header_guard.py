@@ -45,6 +45,9 @@ def validate() -> list[str]:
     for marker in ('canonicalActionEvidenceAttributes(action)', "'data-action-method'", "'data-action-enabled'", "'data-action-allowed'"):
         if marker not in contract:
             failures.append(f"canonical header action misses evidence marker {marker}")
+    for marker in ('form-header-mobile-actions', 'mobileSecondaryActionCount', 'mobilePresentedDirectActions', 'role="menu"', 'role="menuitem"'):
+        if marker not in contract:
+            failures.append(f"contract header mobile action settlement misses {marker}")
     for marker in ('data-action-ref="form.save"', 'data-action-tier="primary"', ':data-action-enabled="String(!busy)"'):
         if marker not in contract:
             failures.append(f"canonical local save misses primary-action evidence {marker}")
