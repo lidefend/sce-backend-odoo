@@ -1,0 +1,17 @@
+.pagination-footer { display: flex; box-sizing: border-box; align-items: center; justify-content: flex-end; width: 100%; min-height: var(--sc-table-row-height, 44px); border-top: 1px solid var(--sc-app-border); background: var(--sc-app-panel); padding: var(--sc-space-2xs) var(--sc-space-sm); }
+.pagination-actions { display: inline-flex; align-items: center; flex-wrap: nowrap; justify-content: flex-end; gap: 5px; color: var(--sc-app-text-secondary); font-size: 12px; white-space: nowrap; }
+.pagination-total { color: var(--sc-app-text-secondary); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.pagination-size-control, .pagination-size-combo { display: inline-flex; align-items: center; }
+.pagination-size-control { gap: 5px; }
+.pagination-size-combo { position: relative; }
+.pagination-size-label { color: var(--sc-app-text-secondary); font-size: 12px; }
+.pagination-btn { min-height: 32px; padding-inline: var(--sc-space-xs); }
+.pagination-input { width: 52px; min-height: 32px; }
+.pagination-input--size { width: 72px; padding-right: 30px; }
+.pagination-size-select { position: absolute; inset: 1px 1px 1px auto; width: 28px; min-height: 30px; border-left: 1px solid var(--sc-app-info-border); border-radius: 0 5px 5px 0; font-size: 0; }
+.pagination-size-select option { font-size: 12px; color: var(--sc-app-text-primary); }
+.pagination-btn:focus-visible, .pagination-input:focus-visible, .pagination-size-select:focus-visible { outline: 2px solid var(--sc-semantic-focus-ring); outline-offset: 2px; }
+@media (max-width: 900px) { .pagination-actions { flex-wrap: wrap; justify-content: flex-start; white-space: normal; } }
+@media (max-width: 760px) { .pagination-footer { padding: var(--sc-space-xs); } .pagination-actions { width: auto; max-width: 100%; justify-content: flex-end; gap: var(--sc-space-xs); } .pagination-btn { min-height: 44px; } }
+@media (max-width: 520px) { .pagination-footer, .pagination-actions { justify-content: flex-start; } .pagination-actions { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .pagination-footer * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }

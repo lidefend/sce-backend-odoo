@@ -107,7 +107,7 @@ verify.frontend.navigation_shell.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_navigation_shell_guard.py
 	@python3 scripts/verify/frontend_navigation_shell_guard.py
 
-.PHONY: verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit
+.PHONY: verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_navigation_controls.unit
 verify.frontend.product_page_header.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-model-test.mjs >/dev/null
 	@node /tmp/product-page-header-model-test.mjs
@@ -119,6 +119,12 @@ verify.frontend.collection_action_toolbar.unit: guard.prod.forbid
 	@node /tmp/collection-action-settlement-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_collection_action_toolbar_guard.py
 	@python3 scripts/verify/frontend_collection_action_toolbar_guard.py
+
+verify.frontend.collection_navigation_controls.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_pagination_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/collection-pagination-presentation-test.mjs >/dev/null
+	@node /tmp/collection-pagination-presentation-test.mjs
+	@python3 -m unittest scripts/verify/test_frontend_collection_navigation_controls_guard.py
+	@python3 scripts/verify/frontend_collection_navigation_controls_guard.py
 
 .PHONY: verify.frontend.product_page_header.browser
 verify.frontend.product_page_header.browser: guard.prod.forbid
@@ -200,7 +206,7 @@ verify.frontend.hierarchical_worksheet.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts --bundle --platform=node --format=esm --outfile=/tmp/hierarchical-worksheet-interaction-test.mjs >/dev/null
 	@node /tmp/hierarchical-worksheet-interaction-test.mjs
 
-verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.hierarchical_worksheet.unit verify.frontend.professional.extensions.unit
+verify.frontend.quick.gate: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_navigation_controls.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.hierarchical_worksheet.unit verify.frontend.professional.extensions.unit
 
 verify.frontend.release.unit: verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.professional.extensions.unit
 

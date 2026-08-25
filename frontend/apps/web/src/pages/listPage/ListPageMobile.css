@@ -112,27 +112,4 @@
     font-weight: 700;
   }
 
-  .pagination-footer {
-    position: static;
-    justify-content: flex-end;
-    padding: var(--sc-space-xs);
-  }
-
-  .pagination-actions--bottom {
-    width: auto;
-    max-width: 100%;
-    justify-content: flex-end;
-    gap: var(--sc-space-xs);
-  }
-}
-
-@media (max-width: 520px) {
-  .pagination-footer {
-    justify-content: flex-start;
-  }
-
-  .pagination-actions--bottom {
-    width: 100%;
-    justify-content: flex-start;
-  }
 }

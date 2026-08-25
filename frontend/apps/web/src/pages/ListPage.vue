@@ -66,11 +66,20 @@
           </ScButton>
         </template>
       </ScEmptyState>
-      <section class="pagination-footer pagination-footer--count-only">
-        <div class="pagination-actions pagination-actions--bottom">
-          <span class="pagination-total">{{ listRecordCountText }}</span>
-        </div>
-      </section>
+      <CollectionPaginationFooter
+        mode="count"
+        :record-count-text="listRecordCountText"
+        :loading="loading"
+        :can-previous="false"
+        :can-next="false"
+        page-text=""
+        :page-jump-value="pageJumpInput"
+        :page-limit-value="pageLimitInput"
+        :list-limit="listLimit"
+        :total-pages="totalPages"
+        :page-limit-options="pageLimitOptions"
+        :labels="collectionPaginationLabels"
+      />
     </template>
     <template v-else>
       <ListSurfaceHeader
@@ -655,99 +664,27 @@
         </tfoot>
       </ScDataTable>
 
-      <section v-if="showGroupedWindowPagination" class="pagination-footer">
-        <div class="pagination-actions pagination-actions--bottom">
-          <span class="pagination-total">{{ listRecordCountText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canGroupWindowPrev"
-            @click="onGroupWindowPrev?.()"
-          >
-            {{ uiLabel('group_window_prev', '上一组') }}
-          </button>
-          <span>{{ groupWindowPageText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canGroupWindowNext"
-            @click="onGroupWindowNext?.()"
-          >
-            {{ uiLabel('group_window_next', '下一组') }}
-          </button>
-        </div>
-      </section>
-      <section v-else-if="showPagination" class="pagination-footer">
-        <div class="pagination-actions pagination-actions--bottom">
-          <span class="pagination-total">{{ listRecordCountText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canPagePrev"
-            @click="pagePrev"
-          >
-            {{ uiLabel('pagination_prev', '上一页') }}
-          </button>
-          <span>{{ paginationPageText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canPageNext"
-            @click="pageNext"
-          >
-            {{ uiLabel('pagination_next', '下一页') }}
-          </button>
-          <input
-            class="pagination-input"
-            :value="pageJumpInput"
-            :disabled="loading || totalPages <= 1"
-            :aria-label="uiLabel('pagination_page_input', '页码')"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            @input="onPageJumpInput"
-            @keyup.enter="jumpPage"
-          />
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || totalPages <= 1"
-            @click="jumpPage"
-          >
-            {{ uiLabel('pagination_jump', '跳转') }}
-          </button>
-          <label class="pagination-size-control">
-            <span class="pagination-size-label">{{ uiLabel('pagination_page_size', '每页') }}</span>
-            <span class="pagination-size-combo">
-              <input
-                class="pagination-input pagination-input--size"
-                :value="pageLimitInput"
-                :disabled="loading"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                @input="onPageLimitInput"
-                @change="applyPageLimit"
-                @keyup.enter="applyPageLimit"
-              />
-              <select
-                class="pagination-size-select"
-                :value="pageLimitOptions.includes(listLimit) ? String(listLimit) : undefined"
-                :disabled="loading"
-                :aria-label="uiLabel('pagination_page_size_select', '选择每页条数')"
-                @change="onPageLimitSelectChange"
-              >
-                <option v-for="option in pageLimitOptions" :key="`page-limit-${option}`" :value="String(option)">
-                  {{ option }}
-                </option>
-              </select>
-            </span>
-          </label>
-        </div>
-      </section>
-      <section v-else class="pagination-footer pagination-footer--count-only">
-        <div class="pagination-actions pagination-actions--bottom">
-          <span class="pagination-total">{{ listRecordCountText }}</span>
-        </div>
-      </section>
+      <CollectionPaginationFooter
+        :mode="collectionPaginationMode"
+        :record-count-text="listRecordCountText"
+        :loading="loading"
+        :can-previous="showGroupedWindowPagination ? Boolean(canGroupWindowPrev) : canPagePrev"
+        :can-next="showGroupedWindowPagination ? Boolean(canGroupWindowNext) : canPageNext"
+        :page-text="showGroupedWindowPagination ? groupWindowPageText : paginationPageText"
+        :page-jump-value="pageJumpInput"
+        :page-limit-value="pageLimitInput"
+        :list-limit="listLimit"
+        :total-pages="totalPages"
+        :page-limit-options="pageLimitOptions"
+        :labels="collectionPaginationLabels"
+        @previous="showGroupedWindowPagination ? onGroupWindowPrev?.() : pagePrev()"
+        @next="showGroupedWindowPagination ? onGroupWindowNext?.() : pageNext()"
+        @page-jump-input="onPageJumpInput"
+        @page-jump="jumpPage"
+        @page-limit-input="onPageLimitInput"
+        @page-limit-apply="applyPageLimit"
+        @page-limit-select="onPageLimitSelectChange"
+      />
     </section>
 
     </template>
@@ -759,9 +696,11 @@ import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
+import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionBatchActionSettlement } from '../app/presentation/collectionActionSettlement';
+import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { useCollectionBatchOverflow } from '../app/presentation/useCollectionBatchOverflow';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
@@ -1503,6 +1442,22 @@ const paginationPageText = computed(() =>
     total: totalPages.value,
   }),
 );
+const collectionPaginationMode = computed(() => resolveCollectionPaginationMode({
+  groupedWindow: showGroupedWindowPagination.value,
+  paged: showPagination.value,
+}));
+const collectionPaginationLabels = computed(() => ({
+  region: uiLabel('pagination_region', '列表分页'),
+  previous: uiLabel('pagination_prev', '上一页'),
+  next: uiLabel('pagination_next', '下一页'),
+  groupPrevious: uiLabel('group_window_prev', '上一组'),
+  groupNext: uiLabel('group_window_next', '下一组'),
+  pageInput: uiLabel('pagination_page_input', '页码'),
+  jump: uiLabel('pagination_jump', '跳转'),
+  pageSize: uiLabel('pagination_page_size', '每页'),
+  pageSizeInput: uiLabel('pagination_page_size_input', '输入每页条数'),
+  pageSizeSelect: uiLabel('pagination_page_size_select', '选择每页条数'),
+}));
 function isSelected(row: Record<string, unknown>) {
   const id = rowId(row);
   if (!id) return false;
@@ -1546,10 +1501,7 @@ function runSelectionAction(key: string) {
 
 function emitPageOffset(offset: number) {
   if (!props.onPageChange) return;
-  const total = listTotal.value || 0;
-  const maxOffset = total > 0 ? Math.floor((total - 1) / listLimit.value) * listLimit.value : 0;
-  const normalized = Math.min(Math.max(Math.trunc(offset || 0), 0), maxOffset);
-  props.onPageChange(normalized);
+  props.onPageChange(resolveCollectionPageOffset({ requestedOffset: offset, total: listTotal.value, limit: listLimit.value }));
 }
 
 function pagePrev() {
@@ -1560,38 +1512,35 @@ function pageNext() {
   emitPageOffset(listOffset.value + listLimit.value);
 }
 
-function onPageJumpInput(event: Event) {
-  pageJumpInput.value = String((event.target as HTMLInputElement | null)?.value || '');
-}
+function onPageJumpInput(value: string) { pageJumpInput.value = value; }
 
 function jumpPage() {
-  const page = Number(pageJumpInput.value || currentPage.value);
-  if (!Number.isFinite(page)) return;
-  const normalizedPage = Math.min(Math.max(Math.trunc(page), 1), totalPages.value);
-  pageJumpInput.value = String(normalizedPage);
-  emitPageOffset((normalizedPage - 1) * listLimit.value);
+  const target = resolveCollectionPageJump({
+    requestedPage: pageJumpInput.value,
+    currentPage: currentPage.value,
+    totalPages: totalPages.value,
+    limit: listLimit.value,
+    total: listTotal.value,
+  });
+  pageJumpInput.value = String(target.page);
+  emitPageOffset(target.offset);
 }
 
 function applyPageLimitValue(raw: number) {
-  if (!Number.isFinite(raw)) return;
-  const normalized = Math.min(Math.max(Math.trunc(raw), 1), 200);
+  const normalized = resolveCollectionPageLimit(raw, listLimit.value);
   pageLimitInput.value = String(normalized);
   if (normalized === listLimit.value) return;
   observedListLimit.value = normalized;
   props.onPageLimitChange?.(normalized);
 }
 
-function onPageLimitInput(event: Event) {
-  pageLimitInput.value = String((event.target as HTMLInputElement | null)?.value || '');
-}
+function onPageLimitInput(value: string) { pageLimitInput.value = value; }
 
 function applyPageLimit() {
   applyPageLimitValue(Number(pageLimitInput.value || listLimit.value));
 }
 
-function onPageLimitSelectChange(event: Event) {
-  applyPageLimitValue(Number((event.target as HTMLSelectElement | null)?.value || 0));
-}
+function onPageLimitSelectChange(value: string) { applyPageLimitValue(Number(value || 0)); }
 
 function onPlainSearchInput(event: Event) {
   plainSearchDraft.value = String((event.target as HTMLInputElement | null)?.value || '');
