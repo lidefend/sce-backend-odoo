@@ -5801,3 +5801,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Rollback: revert this governance batch. Product runtime and database state are
   unaffected; later component targets can be moved back to the core frontend
   Makefile at the cost of restoring the prior Full-lane latency.
+
+## Native tree presentation semantic projection (2026-08-25)
+
+- Branch / baseline: `fix/p0-native-tree-presentation-semantic-v1` /
+  `3c6c1164a08d03a7055b7e68d2509baf2edb28f0`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  native tree presentation semantic projection / `smart_core` view parser and
+  page contract assembler chain.
+- Reason: the fallback tree parser recognized registered native hierarchy
+  classes, but the normal primary parser omitted the same formal semantic.
+  Successful primary parsing therefore lost collection presentation authority.
+- Why Here / Why Not Elsewhere: native class decoding is a generic contract
+  projection responsibility. Industry addons continue to declare the class and
+  hierarchy bindings; frontend renderers, model names, actions and labels do not
+  infer or repair the missing semantic.
+- Blast radius / validation: only the three already registered native classes
+  are accepted. Unknown classes remain absent/fail closed. Pure parser tests,
+  real ORM PageAssembler integration and the professional Contract V2 backend
+  gate cover the production chain.
+- Rollback: revert this parser utility and its tests. Native hierarchy views
+  return to their prior flat-list fallback; no database repair is required.

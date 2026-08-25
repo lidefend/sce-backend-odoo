@@ -24,6 +24,9 @@ from odoo.addons.smart_core.app_config_engine.services.contract_governance_filte
 )
 from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
 from odoo.addons.smart_core.utils.native_modifier import normalize_native_modifier
+from odoo.addons.smart_core.utils.native_collection_presentation import (
+    native_collection_presentation,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -760,17 +763,11 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
                     root = arch_root
                     if root.get('default_order'):
                         order_default = root.get('default_order')
-                    collection_semantics = {
-                        'smart_hierarchy_browser': 'hierarchy_browser',
-                        'smart_hierarchy_planner': 'hierarchy_planner',
-                        'smart_hierarchical_worksheet': 'hierarchical_worksheet',
-                    }
-                    collection_semantic = collection_semantics.get(root.get('js_class'))
-                    if collection_semantic:
-                        base['collection_presentation'] = {
-                            'semantic': collection_semantic,
-                            'source': 'native_view_derived',
-                        }
+                    collection_presentation = native_collection_presentation(
+                        root.get('js_class')
+                    )
+                    if collection_presentation:
+                        base['collection_presentation'] = collection_presentation
                     native_header_actions = []
                     for button in root.findall('./header/button'):
                         if str(button.get('type') or '').strip() != 'action':
