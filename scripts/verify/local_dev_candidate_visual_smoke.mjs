@@ -218,13 +218,17 @@ try {
       }
       bootSummaryRouteHandling = true;
       const response = await route.fetch();
+      let payload = null;
       try {
-        const payload = await response.json();
+        payload = await response.json();
+      } catch {
+        await route.fulfill({ response });
+      }
+      try {
+        if (!payload) return;
         bootSummaryFixtureApplied = applyFirstContractSummaryFixture(payload, bootSummaryFixtureTarget.summaryFixture);
         bootSummaryItems = summarizeContractSummaryItems(payload);
         await route.fulfill({ response, json: payload });
-      } catch {
-        await route.fulfill({ response });
       } finally {
         bootSummaryRouteHandling = false;
       }
