@@ -455,60 +455,6 @@
   background: var(--sc-app-muted-bg);
 }
 
-.grouped-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.grouped-toolbar span {
-  color: var(--sc-app-text-primary);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.grouped-toolbar-title {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 0;
-}
-
-.grouped-toolbar-title .group-window-info {
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.grouped-toolbar-actions {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.grouped-toolbar-actions select {
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: 999px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-info-text);
-  padding: 2px 10px;
-  font-size: 12px;
-}
-
-.grouped-sort-btn {
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: 999px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-info-text);
-  padding: 2px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
 .group-block {
   border: 1px solid var(--sc-app-info-border);
   border-radius: 10px;

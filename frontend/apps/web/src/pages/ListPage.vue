@@ -149,64 +149,28 @@
       >
         <span v-if="loading" class="refresh-status">{{ uiLabel('refreshing_list', '正在刷新数据') }}</span>
 	        <section v-if="showGroupedRows" class="grouped-table">
-        <header class="grouped-toolbar">
-          <div class="grouped-toolbar-title">
-            <span>{{ uiLabel('grouped_result', '分组结果') }}</span>
-            <span v-if="groupWindowInfoText" class="group-window-info">{{ groupWindowInfoText }}</span>
-          </div>
-          <div class="grouped-toolbar-actions">
-            <button
-              v-if="onGroupWindowPrev"
-              type="button"
-              class="grouped-sort-btn"
-              :disabled="loading || !canGroupWindowPrev"
-              @click="onGroupWindowPrev"
-            >
-              {{ uiLabel('group_window_prev', '上一组') }}
-            </button>
-            <button
-              v-if="onGroupWindowNext"
-              type="button"
-              class="grouped-sort-btn"
-              :disabled="loading || !canGroupWindowNext"
-              @click="onGroupWindowNext"
-            >
-              {{ uiLabel('group_window_next', '下一组') }}
-            </button>
-            <button
-              type="button"
-              class="grouped-sort-btn"
-              :disabled="!groupedRows.length || !hasCollapsedGroups"
-              @click="expandAllGroups"
-            >
-              {{ uiLabel('expand_all', '全部展开') }}
-            </button>
-            <button
-              type="button"
-              class="grouped-sort-btn"
-              :disabled="!groupedRows.length || allGroupsCollapsed"
-              @click="collapseAllGroups"
-            >
-              {{ uiLabel('collapse_all', '全部收起') }}
-            </button>
-            <button type="button" class="grouped-sort-btn" @click="toggleGroupSort">
-              {{ groupSortLabel }}
-            </button>
-            <label v-if="onGroupSampleLimitChange" class="group-sample-limit">
-              <span>{{ uiLabel('group_sample_limit', '每组') }}</span>
-              <select
-                class="group-sample-limit-select"
-                :value="String(effectiveGroupSampleLimit)"
-                :disabled="loading"
-                @change="onGroupSampleLimitSelectChange"
-              >
-                <option v-for="option in groupSampleLimitOptions" :key="`group-sample-limit-${option}`" :value="String(option)">
-                  {{ option }}
-                </option>
-              </select>
-            </label>
-          </div>
-        </header>
+        <CollectionGroupingToolbar
+          :loading="loading"
+          :group-count="groupedRows.length"
+          :window-info="groupWindowInfoText"
+          :has-window-previous="Boolean(onGroupWindowPrev)"
+          :has-window-next="Boolean(onGroupWindowNext)"
+          :can-window-previous="Boolean(canGroupWindowPrev)"
+          :can-window-next="Boolean(canGroupWindowNext)"
+          :has-collapsed-groups="hasCollapsedGroups"
+          :all-groups-collapsed="allGroupsCollapsed"
+          :sort-label="groupSortLabel"
+          :sample-limit-enabled="Boolean(onGroupSampleLimitChange)"
+          :sample-limit="effectiveGroupSampleLimit"
+          :sample-limit-options="groupSampleLimitOptions"
+          :labels="collectionGroupingLabels"
+          @window-previous="onGroupWindowPrev?.()"
+          @window-next="onGroupWindowNext?.()"
+          @expand-all="expandAllGroups"
+          @collapse-all="collapseAllGroups"
+          @toggle-sort="toggleGroupSort"
+          @sample-limit-change="onGroupSampleLimitSelectChange"
+        />
         <article v-for="group in sortedGroupedRows" :key="group.key" class="group-block">
           <header class="group-head">
             <button type="button" class="group-toggle" @click="toggleGroupCollapsed(group.key)">
@@ -697,6 +661,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
+import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionBatchActionSettlement } from '../app/presentation/collectionActionSettlement';
@@ -979,6 +944,15 @@ const groupSortLabel = computed(() =>
     ? uiLabel('group_sort_desc', '按数量降序')
     : uiLabel('group_sort_asc', '按数量升序'),
 );
+const collectionGroupingLabels = computed(() => ({
+  title: uiLabel('grouped_result', '分组结果'),
+  windowPrevious: uiLabel('group_window_prev', '上一组'),
+  windowNext: uiLabel('group_window_next', '下一组'),
+  expandAll: uiLabel('expand_all', '全部展开'),
+  collapseAll: uiLabel('collapse_all', '全部收起'),
+  sort: uiLabel('group_sort', '切换分组排序'),
+  sampleLimit: uiLabel('group_sample_limit', '每组'),
+}));
 const showGroupedWindowPagination = computed(() =>
   showGroupedRows.value
   && Boolean(props.onGroupWindowPrev || props.onGroupWindowNext)
@@ -1179,8 +1153,8 @@ function toggleGroupSort() {
   props.onGroupSortChange(nextDirection);
 }
 
-function onGroupSampleLimitSelectChange(event: Event) {
-  const raw = Number((event.target as HTMLSelectElement).value || 0);
+function onGroupSampleLimitSelectChange(value: string) {
+  const raw = Number(value || 0);
   if (!Number.isFinite(raw) || raw <= 0) return;
   props.onGroupSampleLimitChange?.(Math.trunc(raw));
 }
