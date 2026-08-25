@@ -1,0 +1,212 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "material",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_material_inbound",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_material_inbound",
+    "smart_construction_core.menu_sc_material_outbound",
+    "smart_construction_core.menu_sc_product_material_return_v1"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 3,
+    "model_count": 3,
+    "ready_surface_count": 3,
+    "readable_fallback_count": 0,
+    "structural_form_count": 3,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 493,
+      "menuXmlid": "smart_construction_core.menu_sc_material_inbound",
+      "menuName": "材料入库",
+      "actionId": 546,
+      "actionXmlid": "smart_construction_core.action_sc_material_inbound_handling",
+      "actionName": "入库办理",
+      "model": "sc.material.inbound",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_inbound",
+            "groups": [
+              "smart_construction_core.group_sc_cap_material_manager",
+              "smart_construction_core.group_sc_cap_material_read",
+              "smart_construction_core.group_sc_cap_material_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_material_manager",
+          "smart_construction_core.group_sc_cap_material_read",
+          "smart_construction_core.group_sc_cap_material_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_material_inbound_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_material_inbound_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 494,
+      "menuXmlid": "smart_construction_core.menu_sc_material_outbound",
+      "menuName": "材料出库",
+      "actionId": 547,
+      "actionXmlid": "smart_construction_core.action_sc_material_outbound",
+      "actionName": "出库单",
+      "model": "sc.material.outbound",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_outbound",
+            "groups": [
+              "smart_construction_core.group_sc_cap_material_manager",
+              "smart_construction_core.group_sc_cap_material_read",
+              "smart_construction_core.group_sc_cap_material_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_material_manager",
+          "smart_construction_core.group_sc_cap_material_read",
+          "smart_construction_core.group_sc_cap_material_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_material_outbound_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_material_outbound_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 689,
+      "menuXmlid": "smart_construction_core.menu_sc_product_material_return_v1",
+      "menuName": "材料退货",
+      "actionId": 554,
+      "actionXmlid": "smart_construction_core.action_sc_material_supplier_return",
+      "actionName": "材料退货",
+      "model": "sc.material.supplier.return",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_material_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_material_return_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_material_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_material_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_material_supplier_return_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_material_supplier_return_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}
