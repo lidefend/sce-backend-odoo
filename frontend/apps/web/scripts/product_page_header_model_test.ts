@@ -40,14 +40,31 @@ const taskFloorplan = {
   overflowActions: [saveAction],
 } as CanonicalFormFloorplan;
 const createHeader = resolveCanonicalHeaderActionPresentation({
-  floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'create', rendererActive: true,
+  floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'create', rendererActive: true, dirty: false,
 });
 assert.equal(createHeader.localSavePrimary, true);
 assert.deepEqual(createHeader.direct.map((action) => action.actionRef.actionId), ['submit']);
 assert.deepEqual(createHeader.overflow, []);
 const readonlyHeader = resolveCanonicalHeaderActionPresentation({
-  floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'readonly', rendererActive: true,
+  floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'readonly', rendererActive: true, dirty: false,
 });
 assert.equal(readonlyHeader.localSavePrimary, false);
 assert.deepEqual(readonlyHeader.direct.map((action) => action.actionRef.actionId), ['form.save', 'submit']);
-console.log('[product_page_header_model_test] PASS cases=18');
+const deniedSaveAction = { ...saveAction, enabled: false } as CanonicalFormAction;
+const blockedHeader = resolveCanonicalHeaderActionPresentation({
+  floorplan: { ...taskFloorplan, directActions: [deniedSaveAction] },
+  actions: [deniedSaveAction], renderProfile: 'edit', rendererActive: true, dirty: true,
+});
+assert.equal(blockedHeader.localSavePrimary, false);
+assert.deepEqual(blockedHeader.direct.map((action) => action.actionRef.actionId), ['form.save']);
+const dirtyEditHeader = resolveCanonicalHeaderActionPresentation({
+  floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'edit', rendererActive: true, dirty: true,
+});
+assert.equal(dirtyEditHeader.localSavePrimary, true);
+assert.deepEqual(dirtyEditHeader.direct.map((action) => action.actionRef.actionId), ['submit']);
+const cleanEditHeader = resolveCanonicalHeaderActionPresentation({
+  floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'edit', rendererActive: true, dirty: false,
+});
+assert.equal(cleanEditHeader.localSavePrimary, false);
+assert.deepEqual(cleanEditHeader.direct.map((action) => action.actionRef.actionId), ['form.save', 'submit']);
+console.log('[product_page_header_model_test] PASS cases=24');

@@ -884,16 +884,16 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
       });
     check(Boolean(await returnedPaymentSurface.locator('[data-field-name="date_request"] input').inputValue()),
       'returned payment create date default is missing');
-    const parentCreateResponsePromise = projectPage.waitForResponse((response) => {
-      if (!response.url().includes('/api/v1/intent')) return false;
-      try { return isPaymentCreateBody(JSON.parse(response.request().postData() || '{}')); } catch { return false; }
-    }, { timeout: 30000 });
     const returnedParentSave = await requireUnique(
       projectPage,
       returnedPaymentSurface.locator('[data-action-ref="form.save"][data-action-tier="primary"]'),
       'returned parent payment save action',
       { enabled: true },
     );
+    const parentCreateResponsePromise = projectPage.waitForResponse((response) => {
+      if (!response.url().includes('/api/v1/intent')) return false;
+      try { return isPaymentCreateBody(JSON.parse(response.request().postData() || '{}')); } catch { return false; }
+    }, { timeout: 30000 });
     await returnedParentSave.click();
     const parentCreateResponse = await parentCreateResponsePromise;
     check(parentCreateResponse.status() === 200, 'parent payment create mutation failed', await parentCreateResponse.text());
@@ -1012,7 +1012,7 @@ async function collectWriteFloorplanMetrics(page, surface) {
       !(node instanceof HTMLInputElement && ['checkbox', 'radio'].includes(node.type))
       && !String(node.value || '').trim()
     )).length),
-    enabledPrimary: await surface.locator('[data-object-task-page] [data-action-tier="primary"][data-action-enabled="true"]').count(),
+    enabledPrimary: await surface.locator('[data-product-primary-action][data-action-tier="primary"][data-action-enabled="true"]').count(),
     disabledBusinessActions: await surface.locator('[data-object-task-page] [data-action-ref][data-action-enabled="false"]:visible').count(),
     nativeStructure: await surface.locator('[data-native-contract-structure]').count(),
     overflow: geometry.scrollWidth - geometry.width,
@@ -1201,7 +1201,7 @@ try {
   await page.waitForFunction(() => (
     new URL(window.location.href).searchParams.get('current_business_category_code') === 'finance.payment.apply.pay'
   ), undefined, { timeout: 30000 });
-  check(await page.locator('dialog.intent-confirmation[open]').count() === 0,
+  check(await page.locator('.intent-confirmation[role="dialog"]:visible').count() === 0,
     'internal business category context switch triggered the unsaved-leave confirmation');
   await createSurface.locator('.product-form-loading').waitFor({ state: 'detached', timeout: 45000 });
   await createSurface.locator('[data-contract-form-driver]').waitFor({ timeout: 45000 });
@@ -1299,7 +1299,7 @@ try {
     );
     await variantReadonlySurface.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
     const enabledPrimaryCount = await variantReadonlySurface.locator(
-      '[data-object-task-page] [data-action-tier="primary"][data-action-enabled="true"]',
+      '[data-product-primary-action][data-action-tier="primary"][data-action-enabled="true"]',
     ).count();
     const taskText = (await variantReadonlySurface.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
     stateVariants[kind] = { id: item.id, name: item.name, enabledPrimaryCount, taskText };
@@ -1345,7 +1345,7 @@ try {
       stateVariants[kind].editMetrics = await collectWriteFloorplanMetrics(page, variantEditSurface);
       assertWriteFloorplanMetrics(stateVariants[kind].editMetrics, 'blocked payment edit surface');
       check(stateVariants[kind].editMetrics.enabledPrimary === 0,
-        'blocked payment edit surface exposed a false enabled primary action', stateVariants[kind].editMetrics);
+        'blocked payment clean remediation edit exposed a false enabled primary action', stateVariants[kind].editMetrics);
       check(JSON.stringify(stateVariants[kind].editMetrics.regionFields['core-input']) === JSON.stringify([
         'project_id', 'partner_id', 'business_category_id', 'date_request', 'amount',
       ]), 'blocked payment core-input region must contain only backend-required facts', stateVariants[kind].editMetrics);
@@ -1371,10 +1371,7 @@ try {
     { enabled: true, timeout: 45000 },
   );
   await journeyRow.click();
-  await page.waitForURL((url) => url.pathname === `/r/payment.request/${recordId}`, { timeout: 45000 });
-  await page.goto(`${frontendUrl}/f/payment.request/${recordId}?menu_id=${menuId}&action_id=${actionId}`, {
-    waitUntil: 'domcontentloaded', timeout: 45000,
-  });
+  await page.waitForURL((url) => url.pathname === `/f/payment.request/${recordId}`, { timeout: 45000 });
   const editSurface = await requireUnique(
     page,
     page.locator(
@@ -1409,7 +1406,7 @@ try {
   await note.fill(editedNote);
   const editReturn = await requireUnique(page, editSurface.getByRole('button', { name: /^返回列表$/ }), 'payment edit return action', { enabled: true });
   await editReturn.click();
-  const leaveDialog = await requireUnique(page, page.locator('dialog.intent-confirmation[open]'), 'unsaved leave confirmation');
+  const leaveDialog = await requireUnique(page, page.locator('.intent-confirmation[role="dialog"]:visible'), 'unsaved leave confirmation');
   check(/尚未保存/.test(await leaveDialog.innerText()), 'ordinary unsaved-leave protection did not warn');
   const leaveCancel = await requireUnique(
     page,
@@ -1435,12 +1432,22 @@ try {
   check(writeResponse.status() === 200, 'payment edit save failed', await writeResponse.text());
   await page.waitForFunction(() => {
     const actions = [...document.querySelectorAll(
-      '[data-product-page-mode="form"] [data-action-tier="primary"][data-action-enabled="true"]',
+      '[data-product-page-mode="form"] [data-product-primary-action][data-action-enabled="true"]',
     )].filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
-    return actions.length === 1 && String(actions[0]?.textContent || '').trim() === '提交审批';
-  }, undefined, { timeout: 45000 });
-  const afterSavePrimary = editSurface.locator('[data-action-tier="primary"][data-action-enabled="true"]');
-  check(await afterSavePrimary.count() === 1 && (await afterSavePrimary.innerText()).trim() === '提交审批',
+    return actions.length === 1 && actions[0]?.getAttribute('data-action-ref') === 'action.payment_submit';
+  }, undefined, { timeout: 45000 }).catch(async (error) => {
+    const actionInventory = await editSurface.locator('[data-action-ref]:visible').evaluateAll((nodes) => nodes.map((node) => ({
+      ref: String(node.getAttribute('data-action-ref') || ''),
+      tier: String(node.getAttribute('data-action-tier') || ''),
+      enabled: String(node.getAttribute('data-action-enabled') || ''),
+      text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+    })));
+    const dirtyState = await editSurface.locator('[data-product-page-header]').getAttribute('data-dirty-state');
+    throw new Error(`saved edit primary transition timeout ${JSON.stringify({ dirtyState, actionInventory, cause: String(error) })}`);
+  });
+  const afterSavePrimary = editSurface.locator('[data-product-primary-action][data-action-enabled="true"]');
+  check(await afterSavePrimary.count() === 1
+    && await afterSavePrimary.getAttribute('data-action-ref') === 'action.payment_submit',
     'saved edit did not switch to the backend-authoritative submit action');
   check(Boolean(await afterSavePrimary.getAttribute('data-action-ref'))
     && Boolean(await afterSavePrimary.getAttribute('data-backend-identity')),
@@ -1458,7 +1465,7 @@ try {
     { enabled: true, timeout: 45000 },
   );
   await postSaveRow.click();
-  await page.waitForURL((url) => url.pathname === `/r/payment.request/${recordId}`, { timeout: 45000 });
+  await page.waitForURL((url) => url.pathname === `/f/payment.request/${recordId}`, { timeout: 45000 });
   await page.setViewportSize({ width: 390, height: 844 });
   await waitForViewport(page, 390);
   const readonlyRecordSurface = await requireUnique(
@@ -1471,32 +1478,38 @@ try {
     { timeout: 45000 },
   );
   await readonlyRecordSurface.locator('[data-object-task-page]').waitFor({ timeout: 45000 });
-  check(page.url().includes(`/r/payment.request/${recordId}`), 'list row did not open the actionable payment detail', page.url());
-  const surface = await requireUnique(page, readonlyRecordSurface.locator('[data-mobile-action-surface]'), 'payment mobile action surface');
+  check(page.url().includes(`/f/payment.request/${recordId}`), 'list row did not open the actionable payment form directly', page.url());
+  const surface = await requireUnique(page, readonlyRecordSurface.locator('[data-product-page-header]'), 'payment product page header');
+  await page.waitForFunction(({ recordSelector }) => {
+    const buttons = [...document.querySelectorAll(
+      `${recordSelector} [data-product-page-header] [data-product-primary-action]`
+      + '[data-action-enabled="true"][data-action-ref="action.payment_submit"]',
+    )].filter((node) => node instanceof HTMLButtonElement && node.offsetParent !== null && !node.disabled);
+    return buttons.length === 1;
+  }, {
+    recordSelector: `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${recordId}"]`,
+  }, { timeout: 45000 });
   const primary = await requireUnique(
     page,
-    surface.locator('[data-action-tier="primary"][data-action-enabled="true"]'),
+    surface.locator('[data-product-primary-action][data-action-enabled="true"][data-action-ref="action.payment_submit"]'),
     'submit-ready payment primary action',
     { enabled: true },
   );
   check((await primary.innerText()).trim() === '提交审批', 'unexpected primary action label', await primary.innerText());
   const metrics = await surface.evaluate((node) => {
     const rect = node.getBoundingClientRect();
-    const style = getComputedStyle(node);
     return {
-      position: style.position,
-      bottom: rect.bottom,
-      viewportHeight: innerHeight,
+      visibleWidth: rect.width,
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });
-  check(metrics.position === 'fixed' && Math.abs(metrics.bottom - metrics.viewportHeight) <= 1 && metrics.overflow <= 0,
-    'mobile primary action surface is not fixed and contained', metrics);
+  check(metrics.visibleWidth > 0 && metrics.overflow <= 0,
+    'mobile product page header is not visible and contained', metrics);
   const beforeTaskText = (await readonlyRecordSurface.locator('[data-floorplan-region="current-task"]').innerText()).replace(/\s+/g, ' ').trim();
   await page.screenshot({ path: path.join(outputDir, 'before-submit-390.png') });
 
   await primary.click();
-  const dialog = await requireUnique(page, page.locator('dialog.intent-confirmation[open]'), 'submit confirmation dialog', { timeout: 5000 });
+  const dialog = await requireUnique(page, page.locator('.intent-confirmation[role="dialog"]:visible'), 'submit confirmation dialog', { timeout: 5000 });
   const confirmationText = (await dialog.innerText()).replace(/\s+/g, ' ').trim();
   check(confirmationText.includes('确认提交审批'), 'business confirmation title is missing', confirmationText);
   check(confirmationText.includes('系统将重新读取付款申请及上下游金额状态'), 'authoritative confirmation message is missing', confirmationText);
@@ -1560,7 +1573,7 @@ try {
   }
   const auditRegion = await requireUnique(
     page,
-    submittedRecordSurface.locator('[data-floorplan-region="audit"]'),
+    submittedRecordSurface.locator('section[data-floorplan-region="audit"]'),
     `payment ${recordId} audit region`,
   );
   const auditDisclosure = await requireUnique(
@@ -1571,11 +1584,13 @@ try {
   );
   await auditDisclosure.click();
   await page.waitForFunction(({ recordSelector }) => (
-    document.querySelectorAll(`${recordSelector} [data-floorplan-region="audit"] [data-audit-event]`).length >= 1
+    document.querySelectorAll(
+      `${recordSelector} section[data-floorplan-region="audit"] [data-professional-audit-event]`,
+    ).length >= 1
   ), {
     recordSelector: `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${recordId}"]`,
   }, { timeout: 15000 });
-  const auditEvents = await auditRegion.locator('[data-audit-event]').evaluateAll((nodes) => nodes.map((node) => ({
+  const auditEvents = await auditRegion.locator('[data-professional-audit-event]').evaluateAll((nodes) => nodes.map((node) => ({
     actor: String(node.querySelector('[data-audit-actor]')?.textContent || '').replace(/\s+/g, ' ').trim(),
     time: String(node.querySelector('[data-audit-time]')?.textContent || '').replace(/\s+/g, ' ').trim(),
     event: String(node.querySelector('[data-audit-event-name]')?.textContent || '').replace(/\s+/g, ' ').trim(),

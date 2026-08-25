@@ -6,9 +6,15 @@ export function resolveCanonicalHeaderActionPresentation(input: {
   actions: CanonicalFormAction[];
   renderProfile: 'create' | 'edit' | 'readonly';
   rendererActive: boolean;
+  dirty: boolean;
 }) {
   const visible = input.actions.filter((action) => action.visible);
-  const localSavePrimary = input.rendererActive && ['create', 'edit'].includes(input.renderProfile);
+  const authorizedLocalSave = visible.find((action) => action.actionRef.actionId === 'form.save');
+  const localSavePrimary = Boolean(
+    input.rendererActive
+    && (input.renderProfile === 'create' || (input.renderProfile === 'edit' && input.dirty))
+    && authorizedLocalSave?.enabled,
+  );
   const withoutLocalSave = (actions: CanonicalFormAction[]) => localSavePrimary
     ? actions.filter((action) => action.actionRef.actionId !== 'form.save')
     : actions;

@@ -1190,7 +1190,7 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
   primaryCreateAction: primaryCreateFooterAction.value, primarySubmitAction: primarySubmitAction.value,
   quickSubmitDisabled: isQuickSubmitDisabled.value,
 }));
-const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value }));
+const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value, dirty: hasChanges.value }));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
 const blockedCanonicalPrimary = computed(() => Boolean(
   canonicalProductFloorplan.value?.decisionMode
@@ -1747,6 +1747,7 @@ const {
   resolvePendingInlineRelationCreates, resolvePendingMany2manyTagCreates, retainedRouteIdentity,
   route, router, runContractRuleAction,
   sanitizeUiErrorMessage, saveContractFieldOrder, sceneReadyFormSurface,
+  snapshotOriginalFormValues,
   buildFormRequestContext, selectedFormSettingsFieldGroupTitle, selectedFormSettingsFieldGroupTitleDraft,
   selectedFormSettingsFieldGroupTitleEdit, selectedFormSettingsFieldKey, selectedFormSettingsFieldLabel,
   selectedFormSettingsFieldRow, session, setInlineFieldPolicy,
