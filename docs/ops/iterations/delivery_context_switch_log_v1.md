@@ -5922,3 +5922,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   collaboration roadmap menus remain explicitly out of scope.
 - Rollback: revert the exact form-view binding and collaboration evidence
   wiring. Runtime business records and permissions are unaffected.
+
+## Frontend system professionalization — Phase 10 base configuration (2026-08-25)
+
+- Branch / baseline: `feature/p1-base-configuration-domain-rollout-v1` /
+  `fc5e7b118d66a7bfc7c75dec3309f55a13f2c713`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product / product-configuration entry rollout /
+  `smart_construction_core` formal configuration menus and actions.
+- Reason: the product-configuration center exposes six governed administration
+  surfaces across form configuration, approval policy, field policy, data
+  permission, system settings and numbering rules. They require one formal
+  runtime inventory and a shared-shell acceptance proof without being mixed
+  with the separate platform system-management center.
+- Why Here / Why Not Elsewhere: these are released construction-product
+  configuration entries and capability groups. Existing P0 collection, form,
+  empty-state and navigation-authority mechanisms already render them; no
+  renderer, route, permission or Contract V2 special case is added.
+- Blast radius / validation: six formal actions and six models under
+  `menu_sc_business_config_center`. Runtime coverage proves five ready
+  collection surfaces, six structural forms, zero fallback/fail-closed gaps.
+  The governed browser journey proves the formal form-configuration list has a
+  unique H1/header and professional empty state; an unauthorized finance role
+  is denied, browser errors and mutations are zero, and visible-record identity
+  is unchanged.
+- Rollback: revert the base-configuration evidence and workflow wiring. Product
+  runtime, permissions and business data are unaffected.
