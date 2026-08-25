@@ -23,7 +23,7 @@
     <menuitem id="menu_sc_project_dashboard" name="项目驾驶舱" parent="smart_construction_core.menu_sc_projection_root" action="action_project_dashboard" sequence="10" groups="smart_construction_core.group_sc_cap_project_read" />
     <menuitem id="menu_sc_project_project" name="项目台账" parent="menu_sc_project_center" action="action_sc_project_list" sequence="10" groups="smart_construction_core.group_sc_cap_project_read" />
     <menuitem id="menu_sc_project_management_scene" name="项目驾驶舱" parent="menu_sc_project_center" sequence="11" groups="smart_construction_core.group_sc_cap_project_read" />
-    <menuitem id="menu_sc_project_wbs" name="执行结构" parent="menu_sc_project_center" action="action_exec_structure_entry" sequence="5" groups="smart_construction_core.group_sc_cap_project_read" />
+    <menuitem id="menu_sc_project_wbs" name="执行结构" parent="menu_sc_project_center" action="action_exec_structure_wbs" sequence="5" groups="smart_construction_core.group_sc_cap_project_read" />
     <menuitem id="menu_sc_project_budget_center" name="预算/成本" parent="menu_sc_project_center" action="action_project_budget" sequence="30" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager" />
     <menuitem id="menu_sc_project_contract_overview" name="合同汇总" parent="menu_sc_project_center" action="action_project_contract_overview" sequence="35" groups="smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" />
     <menuitem id="menu_sc_project_tender" name="投标管理" parent="menu_sc_project_center" action="action_tender_bid" sequence="38" groups="smart_construction_core.group_sc_cap_project_read" />

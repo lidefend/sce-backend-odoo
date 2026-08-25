@@ -106,6 +106,25 @@ class ProjectProject(models.Model):
         ctx.setdefault("default_project_id", project_id)
         ctx.setdefault("search_default_project_id", project_id)
         ctx["sc_exec_view"] = "wbs"
+        ctx["hierarchy_scope"] = {
+            "field": "project_id",
+            "context_field": "default_project_id",
+        }
+        ctx["hierarchy_levels"] = [
+            {
+                "field": "project_id",
+                "label_field": "name",
+            },
+            {
+                "field": "parent_id",
+                "code_field": "code",
+                "label_field": "name",
+                "parent_field": "project_id",
+                "self_parent_field": "parent_id",
+                "domain_operator": "child_of",
+                "order": "project_id, parent_path, sequence, id",
+            },
+        ]
         view = self.env.ref("smart_construction_core.view_exec_structure_wbs_tree")
         search_view = self.env.ref("smart_construction_core.view_project_wbs_search")
         return {

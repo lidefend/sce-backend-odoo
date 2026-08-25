@@ -5822,3 +5822,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   gate cover the production chain.
 - Rollback: revert this parser utility and its tests. Native hierarchy views
   return to their prior flat-list fallback; no database repair is required.
+
+## Frontend system professionalization — Phase 9 project structure profiles (2026-08-25)
+
+- Branch / baseline: `feature/p1-project-structure-components-v1` /
+  `3c6c1164a08d03a7055b7e68d2509baf2edb28f0`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product / project structure professional component profiles /
+  `smart_construction_core` using the existing P0 collection presentation
+  authority.
+- Reason: the WBS planning entry already owns a task-oriented hierarchy
+  planner, while the formal execution-structure entry still projected a flat
+  list. The industry layer now declares that entry as a hierarchy browser and
+  supplies its project/WBS relation and exact project scope through the
+  existing generic contract carrier.
+- Why Here / Why Not Elsewhere: project and WBS hierarchy semantics belong to
+  the construction standard. The P0 renderer, registry, route and permission
+  mechanisms remain generic and unchanged; no customer or model branch is
+  added to frontend code.
+- Blast radius / validation: execution-structure tree view, its two governed
+  action records, the project object entry and dedicated ownership tests. No
+  contract schema, database model, ACL, fixture, mutation, contract/payment or
+  settlement behavior is included.
+- Rollback: revert the Phase 9 project-structure profile batch. The entry
+  returns to the native flat list without database repair.
