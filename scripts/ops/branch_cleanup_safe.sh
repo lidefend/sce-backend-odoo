@@ -54,9 +54,10 @@ else
       echo "❌ gh not found; cannot verify merged PR for ${branch}" >&2
       exit 2
     fi
-    pr_count="$(gh pr list --state merged --head "$branch" --json headRefOid,number \
-      --jq --arg sha "$branch_sha" '[.[] | select(.headRefOid == $sha)] | length')" || \
+    pr_json="$(gh pr list --state merged --head "$branch" --json headRefOid,number)" || \
       (echo "❌ gh pr list failed; network/auth required to verify merge for ${branch}" >&2; exit 2)
+    pr_count="$(jq --arg sha "$branch_sha" '[.[] | select(.headRefOid == $sha)] | length' <<<"$pr_json")" || \
+      (echo "❌ merged PR identity parse failed for ${branch}" >&2; exit 2)
     if [[ "$pr_count" -lt 1 ]]; then
       echo "❌ branch not merged into main yet: ${branch}" >&2
       exit 2

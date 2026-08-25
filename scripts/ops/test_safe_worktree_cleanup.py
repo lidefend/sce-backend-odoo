@@ -140,7 +140,8 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         self.assertIn('delete_flag="-D"', source)
         self.assertIn('git branch "${delete_flag}" -- "${branch}"', source)
         self.assertIn('squash_merge_verified=1', source)
-        self.assertIn('--head "$branch" --json headRefOid,number', source)
+        self.assertIn('--head "$branch" --json headRefOid,number)', source)
+        self.assertIn('jq --arg sha "$branch_sha"', source)
         self.assertIn('select(.headRefOid == $sha)', source)
 
 

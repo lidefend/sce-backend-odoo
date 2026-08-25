@@ -68,6 +68,9 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'standard_backend'", text)
         self.assertIn("PROFESSIONAL_MODE == 'fast'", text)
+        self.assertIn("PROFESSIONAL_MODE == 'mainline'", text)
+        self.assertIn("github.event_name != 'push'", text)
+        self.assertIn("github.ref == 'refs/heads/main'", text)
         self.assertIn("make ci.professional.backend", text)
         self.assertNotIn("run: make ci\n", text)
         self.assertIn("steps.risk.outputs.backend_changed == 'true'", text)
@@ -89,6 +92,13 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("python3 scripts/ci/frontend_professional_extension_guard.py", standard_frontend_section)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
+        mainline_section = text.split("- name: Run mainline integrity gate", 1)[1].split(
+            "- name: Run standard backend quality gate", 1
+        )[0]
+        self.assertIn("test_ci_risk_workflow_contract.py", mainline_section)
+        self.assertIn("github_actions_security_guard.py", mainline_section)
+        self.assertIn("ci.generated_reports.guard", mainline_section)
+        self.assertNotIn("ci.professional.backend", mainline_section)
 
         makefile = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
         professional_target = makefile.split("ci.professional.backend:", 1)[1].split("\n", 1)[0]
