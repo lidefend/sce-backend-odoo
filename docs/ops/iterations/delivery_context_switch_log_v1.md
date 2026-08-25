@@ -5896,3 +5896,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Rollback: revert the quality-safety task contracts/action-view bindings and
   the two generic Contract V2 corrections. The entries return to workspace
   presentation; no data repair is required.
+
+## Frontend system professionalization — Phase 10 collaboration (2026-08-25)
+
+- Branch / baseline: `feature/p1-collaboration-domain-rollout-v1` /
+  `75bd796b993b5da7c45f2300d830f7ae5a0c7876`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product / collaboration direct-entry rollout /
+  `smart_construction_core` message-notification action, view and product
+  contract.
+- Reason: the released message-notification entry already owned exact native
+  tree/form views, but its published form contract was action-bound only. The
+  contract now also binds the formal form view, preventing another
+  `mail.notification` form from participating in the product selector.
+- Why Here / Why Not Elsewhere: the message-notification action, view and
+  product contract are construction-standard entry semantics. Existing P0
+  Contract V2, collection, empty-state and authorization mechanisms already
+  render the entry correctly and remain unchanged.
+- Blast radius / validation: one released menu/action/model and its exact form
+  view. Runtime coverage proves one ready action, one structural form and zero
+  gaps/fallbacks. The governed browser journey proves the empty notification
+  list has one H1, one page header and one professional empty state; a finance
+  role is denied, browser errors and mutations are zero, and the visible-record
+  fingerprint is unchanged. Inactive project, supply-chain and BIM
+  collaboration roadmap menus remain explicitly out of scope.
+- Rollback: revert the exact form-view binding and collaboration evidence
+  wiring. Runtime business records and permissions are unaffected.

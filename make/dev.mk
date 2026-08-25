@@ -204,6 +204,11 @@ verify.frontend.professionalization.quality_safety_domain.browser: guard.prod.fo
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/frontend_quality_safety_domain_browser.sh
 
+.PHONY: verify.frontend.professionalization.collaboration_domain.browser
+verify.frontend.professionalization.collaboration_domain.browser: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/frontend_collaboration_domain_browser.sh
+
 verify.local.dev.payment_request.floorplan.submit: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_payment_request_floorplan_submit.sh
