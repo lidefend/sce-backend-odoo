@@ -107,24 +107,17 @@
       >
         <slot name="toolbar"></slot>
         <template #contextual>
-          <section
-            class="batch-bar sc-product-feedback-layer"
-            data-semantic-component="CollectionBatchActionBar"
-            :data-action-count="String(selectionActions.length)"
-            :data-direct-action-keys="selectionDirectActions.map((action) => action.key).join(',')"
-            :data-overflow-action-keys="selectionOverflowActions.map((action) => action.key).join(',')"
-          >
-            <span>{{ uiLabel('selected_count', '已选 {count} 条', { count: selectedCount }) }}</span>
-            <button v-for="action in selectionDirectActions" :key="`selection-action-${action.key}`" type="button" class="batch-action" :data-action-key="action.key" :disabled="loading || !selectedCount || !action.enabled" :title="action.hint || ''" @click="runSelectionAction(action.key)">{{ action.label }}</button>
-            <div v-if="selectionOverflowActions.length" ref="batchOverflowRoot" class="batch-overflow">
-              <button ref="batchOverflowToggle" type="button" class="batch-overflow-toggle" :disabled="loading" :aria-expanded="batchOverflowOpen" aria-controls="collection-batch-overflow" :aria-label="uiLabel('more_batch_actions', '更多批量操作')" :title="uiLabel('more_batch_actions', '更多批量操作')" @click.stop="toggleBatchOverflow"><ScIcon name="menu" :size="18" /></button>
-              <div v-if="batchOverflowOpen" id="collection-batch-overflow" class="batch-overflow-menu" data-collection-batch-layer="overflow" :aria-label="uiLabel('more_batch_actions', '更多批量操作')">
-                <button v-for="action in selectionOverflowActions" :key="`selection-overflow-${action.key}`" type="button" :data-action-key="action.key" :disabled="loading || !selectedCount || !action.enabled" :title="action.hint || ''" @click="runSelectionAction(action.key)">{{ action.label }}</button>
-              </div>
-            </div>
-            <button type="button" class="ghost" :disabled="loading" @click="clearSelection">{{ uiLabel('clear', '取消选择') }}</button>
-            <span v-if="selectedCount > 0 && batchMessage" class="batch-message">{{ batchMessage }}</span>
-          </section>
+          <CollectionBatchActionBar
+            :actions="selectionActions"
+            :selected-count="selectedCount"
+            :selected-count-label="uiLabel('selected_count', '已选 {count} 条', { count: selectedCount })"
+            :more-actions-label="uiLabel('more_batch_actions', '更多批量操作')"
+            :clear-label="uiLabel('clear', '取消选择')"
+            :loading="loading"
+            :message="batchMessage"
+            @action="runSelectionAction"
+            @clear="clearSelection"
+          />
         </template>
       </ListSurfaceHeader>
       <section v-if="enableSummaryStrip && summaryItems.length" class="summary-strip sc-product-summary-strip">
@@ -591,15 +584,14 @@ import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
+import CollectionBatchActionBar from '../components/product-list/CollectionBatchActionBar.vue';
 import CollectionColumnHeaderControl from '../components/product-list/CollectionColumnHeaderControl.vue';
 import CollectionGroupPageControls from '../components/product-list/CollectionGroupPageControls.vue';
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
-import { resolveCollectionBatchActionSettlement } from '../app/presentation/collectionActionSettlement';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
-import { useCollectionBatchOverflow } from '../app/presentation/useCollectionBatchOverflow';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
@@ -628,12 +620,7 @@ import {
   resolveResponsiveListColumns,
 } from './listPage/listColumnVisibility';
 
-type SelectionAction = {
-  key: string;
-  label: string;
-  enabled: boolean;
-  hint?: string;
-};
+import type { CollectionBatchAction as SelectionAction } from '../app/presentation/collectionActionSettlement';
 
 type ColumnOption = {
   name: string;
@@ -776,7 +763,6 @@ const emit = defineEmits<{
 }>();
 const slots = useSlots();
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
-const { batchOverflowRoot, batchOverflowToggle, batchOverflowOpen, toggleBatchOverflow } = useCollectionBatchOverflow();
 function uiLabel(key: string, fallback: string, vars: Record<string, string | number> = {}) {
   const candidate = String(props.uiLabels?.[key] || '').trim();
   const template = candidate || fallback;
@@ -1285,9 +1271,6 @@ const selectedCount = computed(() => (props.selectedIds || []).length);
 const selectionActions = computed(() =>
   Array.isArray(props.selectionActions) ? props.selectionActions : [],
 );
-const batchActionSettlement = computed(() => resolveCollectionBatchActionSettlement(selectionActions.value));
-const selectionDirectActions = computed(() => batchActionSettlement.value.direct);
-const selectionOverflowActions = computed(() => batchActionSettlement.value.overflow);
 const selectableRows = computed(() => pageVisibleRows.value.map((row) => rowId(row)).filter((id): id is number => typeof id === 'number'));
 const showSelectionColumn = computed(() => props.selectionEnabled !== false && !!props.onToggleSelection && !!props.onToggleSelectionAll);
 const showBatchBar = computed(() => showSelectionColumn.value && (selectedCount.value > 0 || Boolean(props.batchMessage)));
@@ -1399,10 +1382,10 @@ function onGroupSelectAllChange(group: { sampleRows?: Array<Record<string, unkno
   props.onToggleSelectionAll(groupSelectableRows(group), selected);
 }
 
-function clearSelection() { batchOverflowOpen.value = false; props.onClearSelection?.(); }
+function clearSelection() { props.onClearSelection?.(); }
 function runSelectionAction(key: string) {
   if (!key || selectedCount.value <= 0) return;
-  batchOverflowOpen.value = false; props.onRunSelectionAction?.(key);
+  props.onRunSelectionAction?.(key);
 }
 
 function emitPageOffset(offset: number) {
