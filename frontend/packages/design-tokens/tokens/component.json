@@ -43,6 +43,11 @@
     "padding_x": "{space.xs}",
     "font_size": "{font.size_sm}"
   },
+  "relation": {
+    "dropdown_z_index": "{z_index.dropdown}",
+    "dropdown_shadow": "{semantic.shadow.popover}",
+    "dropdown_max_height": "260px"
+  },
   "table": {
     "radius": "{radius.md}",
     "cell_padding_x": "{space.sm}",

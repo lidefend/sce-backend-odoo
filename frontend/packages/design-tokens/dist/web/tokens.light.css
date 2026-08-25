@@ -145,6 +145,9 @@
   --sc-component-panel-border-width: 1;
   --sc-component-panel-padding: 16;
   --sc-component-panel-radius: 8px;
+  --sc-component-relation-dropdown-max-height: 260px;
+  --sc-component-relation-dropdown-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+  --sc-component-relation-dropdown-z-index: 1000;
   --sc-component-shell-navigation-item-height: 44;
   --sc-component-shell-navigation-search-icon-z-index: 1;
   --sc-component-shell-page-gutter: 24;

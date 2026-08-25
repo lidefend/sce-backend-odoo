@@ -75,12 +75,12 @@
       </div>
     </div>
     <div v-else class="relation-select-editor">
-      <input
-        class="input relation-search"
+      <ScInput
+        class="relation-search"
         type="text"
-        :value="adapter.relationKeyword(field.name)"
+        :model-value="adapter.relationKeyword(field.name)"
         :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
-        @input="adapter.setRelationKeyword(field.name, ($event.target as HTMLInputElement).value)"
+        @update:model-value="adapter.setRelationKeyword(field.name, $event)"
       />
       <select
         class="input"
@@ -169,26 +169,24 @@
               :checked="Boolean(row.values[column.name])"
               @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).checked)"
             />
-            <select
+            <ScSelect
               v-else-if="column.ttype === 'selection'"
-              class="input"
               :disabled="column.readonly || adapter.busy"
-              :value="String(row.values[column.name] ?? '')"
-              @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLSelectElement).value)"
+              :model-value="String(row.values[column.name] ?? '')"
+              @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
             >
               <option value="">{{ adapter.selectPlaceholder(column.label) }}</option>
               <option v-for="option in column.selection || []" :key="String(option[0])" :value="String(option[0])">
                 {{ String(option[1]) }}
               </option>
-            </select>
-            <input
+            </ScSelect>
+            <ScInput
               v-else
-              class="input"
               :type="adapter.one2manyColumnInputType(column)"
               :disabled="column.readonly || adapter.busy"
-              :value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
+              :model-value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
               :placeholder="column.label"
-              @input="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).value)"
+              @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
             />
           </label>
         </div>
@@ -229,13 +227,12 @@
       <button type="button" class="ghost" :disabled="one2manyPage >= one2manyPageCount" @click="one2manyPage += 1">下一页</button>
     </nav>
   </div>
-  <input
+  <ScInput
   v-else
-    :value="adapter.inputFieldValue(field.name)"
-    class="input"
+    :model-value="adapter.inputFieldValue(field.name)"
     :type="adapter.fieldInputType(field.type)"
     :placeholder="adapter.inputPlaceholder(field.label)"
-    @input="adapter.setTextField(field.name, ($event.target as HTMLInputElement).value)"
+    @update:model-value="adapter.setTextField(field.name, $event)"
   />
 </template>
 
@@ -243,6 +240,8 @@
 import { computed, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScInput from '../design-system/ScInput.vue';
+import ScSelect from '../design-system/ScSelect.vue';
 import type { X2ManyRelationRendererProps } from './relationField.types';
 
 const props = defineProps<X2ManyRelationRendererProps>();
@@ -443,17 +442,17 @@ function tagColorStyle(color: unknown) {
 
 .relation-tag-dropdown {
   position: absolute;
-  z-index: 20;
+  z-index: var(--sc-component-relation-dropdown-z-index);
   top: calc(100% + 2px);
   left: 0;
   right: 0;
   display: none;
-  max-height: 260px;
+  max-height: var(--sc-component-relation-dropdown-max-height);
   overflow: auto;
   border: 1px solid var(--sc-app-border-strong);
   border-radius: 6px;
   background: var(--sc-app-panel);
-  box-shadow: 0 12px 28px var(--sc-app-shadow);
+  box-shadow: var(--sc-component-relation-dropdown-shadow);
 }
 
 .relation-tags-control:focus-within .relation-tag-dropdown {

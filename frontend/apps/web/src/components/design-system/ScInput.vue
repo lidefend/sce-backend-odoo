@@ -31,7 +31,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   readonly?: boolean;
   loading?: boolean;
-  type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password';
+  type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
   placeholder?: string;
   describedBy?: string;
 }>(), {
