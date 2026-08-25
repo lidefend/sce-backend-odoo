@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1278`
+- Total assets: `1279`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `173`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `880`
+- PR dedupe candidates: `881`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 493 |
 | contract | 356 |
-| unit | 226 |
+| unit | 227 |
 | odoo_integration | 102 |
 | e2e | 44 |
 | security | 29 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1099 |
+| pr_candidate | 1100 |
 | integration_candidate | 128 |
 | release_candidate | 42 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 880 |
+| deduplicate_before_required | 881 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 127 |
 | keep_release_only | 42 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1101 |
+| <5m | 1102 |
 | 10-30m | 129 |
 | 30-60m | 44 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 493 |
 | platform owner | 356 |
-| test owner | 227 |
+| test owner | 228 |
 | backend owner | 102 |
 | qa owner | 44 |
 | security owner | 29 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1142 |
+| scripts/verify | 1143 |
 | scripts/ops | 68 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 18 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-188 | governance | `scripts/verify/business_form_interaction_capability_audit.py` | architecture owner |
 | T-ASSET-189 | governance | `scripts/verify/business_form_policy_coverage_audit.py` | architecture owner |
 | T-ASSET-190 | governance | `scripts/verify/business_form_policy_field_hit_audit.py` | architecture owner |
-| ... | ... | 800 more | ... |
+| ... | ... | 801 more | ... |
 
 ## Dedupe Hotspots
 
