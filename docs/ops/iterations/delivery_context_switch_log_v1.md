@@ -5985,3 +5985,31 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - This audit changes no product runtime, Contract, permissions, roles, fixture,
   or database state. Its FAIL status is the evidence-backed remediation input,
   not a CI or product-runtime failure.
+
+## Frontend system professionalization — Phase 10 workbench center (2026-08-25)
+
+- Branch / baseline: `feature/p1-workbench-center-domain-rollout-v1` /
+  `a49c8a029a02430da8557c4689a0d1a66a553df0`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  standard product / formal workbench-center rollout evidence /
+  `smart_construction_core` workspace-center menus and actions.
+- Reason: the locked primary-center graph contains four formal workbench
+  entries. The existing collaboration report covered message notifications;
+  operating metrics, the project dashboard and the task center required one
+  complete center-level authority and presentation proof.
+- Why Here / Why Not Elsewhere: these four menu/action identities are released
+  construction-product entries. Existing P0 navigation, Contract V2,
+  collection and empty-state mechanisms already render them; this batch adds
+  no model, route, renderer, role or permission special case.
+- Blast radius / validation: four exact menu/action pairs across four models.
+  Runtime coverage proves four actions, five ready collection surfaces, four
+  structural forms and zero gaps. The governed task-center journey proves the
+  exact action/menu/model, one H1, one product header and one professional
+  table; anonymous deep-link access returns to login. Browser errors and
+  mutations are zero, and visible workbench identity is unchanged.
+- Systemwide effect: exact covered surfaces increase from 58 to 61 of 88;
+  remaining unqualified surfaces decrease from 30 to 27 with zero runtime
+  authority gaps. Finance, tax, accounting and reporting remain separate
+  batches.
+- Rollback: revert workbench evidence and workflow wiring. Product runtime,
+  permissions, roles, fixtures and business data are unaffected.

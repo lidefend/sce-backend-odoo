@@ -1468,6 +1468,18 @@ verify.frontend.professionalization.administration_domain.runtime: guard.prod.fo
 		--json-output docs/frontend_productization/domain-rollout/administration-domain-coverage-v1.json \
 		--markdown-output docs/frontend_productization/domain-rollout/administration-domain-coverage-v1.md
 
+.PHONY: verify.frontend.professionalization.workbench_center.runtime
+verify.frontend.professionalization.workbench_center.runtime: guard.prod.forbid check-compose-project check-compose-env
+	@mkdir -p artifacts/frontend-professionalization docs/frontend_productization/domain-rollout
+	@python3 -m py_compile scripts/verify/frontend_project_domain_rollout.py scripts/verify/frontend_workbench_center_rollout.py scripts/verify/frontend_project_domain_rollout_report.py scripts/verify/frontend_workbench_center_rollout_report.py scripts/verify/test_frontend_project_domain_rollout.py scripts/verify/test_frontend_workbench_center_rollout.py
+	@python3 -m unittest scripts.verify.test_frontend_project_domain_rollout scripts.verify.test_frontend_workbench_center_rollout
+	@$(RUN_ENV) FRONTEND_WORKBENCH_CENTER_ROLLOUT_PATH=/tmp/frontend_workbench_center_rollout_v1.json DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_workbench_center_rollout.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/frontend_workbench_center_rollout_v1.json artifacts/frontend-professionalization/frontend_workbench_center_rollout_runtime_v1.json >/dev/null
+	@python3 scripts/verify/frontend_workbench_center_rollout_report.py \
+		--input artifacts/frontend-professionalization/frontend_workbench_center_rollout_runtime_v1.json \
+		--json-output docs/frontend_productization/domain-rollout/workbench-center-coverage-v1.json \
+		--markdown-output docs/frontend_productization/domain-rollout/workbench-center-coverage-v1.md
+
 .PHONY: verify.frontend.professionalization.systemwide_coverage.runtime
 verify.frontend.professionalization.systemwide_coverage.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@mkdir -p artifacts/frontend-professionalization docs/frontend_productization/domain-rollout

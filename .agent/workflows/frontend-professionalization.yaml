@@ -187,18 +187,18 @@ workflow:
     phase_10:
       name: business_domain_rollout
       status: active
-      delivered: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration]
-      active_domain: workbench_center_gap_closure
+      delivered: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration, workbench]
+      active_domain: finance_center_gap_closure
       order: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration]
       systemwide_coverage_audit:
         status: gaps_identified
         authority: locked_ten_primary_centers_runtime_menu_action_graph
         runtime_surfaces: 88
-        covered_surfaces: 58
-        uncovered_surfaces: 30
+        covered_surfaces: 61
+        uncovered_surfaces: 27
         runtime_authority_gaps: 0
         excluded_non_product_surfaces: 1
-        remediation_order: [workbench, finance, tax, accounting, reporting]
+        remediation_order: [finance, tax, accounting, reporting]
       per_domain_flow: [coverage_scan, gap_classification, contract_configuration, static_projection, one_primary_journey, one_security_counterexample, coverage_report]
       stop_and_split_when: domain_requires_P0_registry_shell_or_presenter_change
 
@@ -229,6 +229,6 @@ workflow:
 
   next_action:
     phase: phase_10
-    task: workbench_center_gap_closure
-    prerequisite: phase_10_systemwide_coverage_audit_merged_and_main_synced
-    do_not_start_in_parallel: [finance_center_gap_closure, tax_center_gap_closure, accounting_center_gap_closure, reporting_center_gap_closure]
+    task: finance_center_gap_closure
+    prerequisite: phase_10_workbench_center_gap_closure_merged_and_main_synced
+    do_not_start_in_parallel: [tax_center_gap_closure, accounting_center_gap_closure, reporting_center_gap_closure]
