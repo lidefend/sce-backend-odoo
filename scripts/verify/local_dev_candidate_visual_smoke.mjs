@@ -169,7 +169,9 @@ try {
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       let collectionSelectionEvidence = null;
       if (target.exerciseCollectionSelection === true) {
-        const controls = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
+        const controls = viewport.name === 'mobile'
+          ? page.locator('[data-mobile-record-select][data-semantic-component="CollectionSelectionControl"]:visible')
+          : page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
         const controlCount = await controls.count();
         if (controlCount < 1) throw new Error(`${target.name}: collection selection control is missing`);
         const rowControlIndex = viewport.name === 'desktop' && controlCount > 1 ? 1 : 0;
@@ -177,6 +179,7 @@ try {
         const rowInput = rowControl.locator('input[type="checkbox"]');
         const initialRowState = await rowControl.getAttribute('data-selection-state');
         const ariaLabel = await rowInput.getAttribute('aria-label');
+        const touchTarget = await rowControl.boundingBox();
         await rowInput.focus();
         const focusContained = await rowControl.evaluate((node) => node.contains(document.activeElement));
         await rowControl.click();
@@ -210,10 +213,11 @@ try {
           ? await controls.first().getAttribute('data-selection-state')
           : null;
         collectionSelectionEvidence = {
-          controlCount, ariaLabel, focusContained, initialRowState, selectedRowState,
+          controlCount, ariaLabel, touchTarget, focusContained, initialRowState, selectedRowState,
           selectedHeaderState, headerIndeterminate, restoredRowState, restoredHeaderState,
           pass: Boolean(ariaLabel) && focusContained && initialRowState === 'unchecked'
             && selectedRowState === 'checked' && restoredRowState === 'unchecked'
+            && (viewport.name !== 'mobile' || (Number(touchTarget?.width || 0) >= 44 && Number(touchTarget?.height || 0) >= 44))
             && (viewport.name !== 'desktop' || (selectedHeaderState === 'mixed' && headerIndeterminate === true && restoredHeaderState === 'unchecked')),
         };
         if (!collectionSelectionEvidence.pass) throw new Error(`${target.name}: collection selection state contract failed`);

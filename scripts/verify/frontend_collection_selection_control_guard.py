@@ -60,6 +60,7 @@ def validate(list_source: str | None = None, control_source: str | None = None, 
         "selectedHeaderState === 'mixed'",
         'headerIndeterminate === true',
         "restoredHeaderState === 'unchecked'",
+        "Number(touchTarget?.width || 0) >= 44",
         'focusContained',
     )
     for marker in required_visual:
