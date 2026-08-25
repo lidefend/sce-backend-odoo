@@ -451,6 +451,14 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         })
         self.assertEqual(result["column_occurrences"][1]["relation_active_actions"], {"write": True})
 
+    def test_tree_parser_projects_selection_labels_to_field_occurrences(self):
+        result = self.tree_form_parser._parse_tree_view(
+            '<tree><field name="state"/></tree>',
+            {"state": {"type": "selection", "string": "Status", "selection": [("draft", "Draft"), ("won", "Won")]}},
+        )
+
+        self.assertEqual(result["column_occurrences"][0]["selection"], [["draft", "Draft"], ["won", "Won"]])
+
     def test_tree_occurrence_attrs_modifiers_are_canonical_ast(self):
         result = self.tree_form_parser._parse_tree_view(
             """
