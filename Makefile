@@ -267,7 +267,6 @@ include make/runtime_ops.mk make/user_data.mk make/production_blocker.mk make/da
 include make/tenant_boundary.mk
 
 include make/frontend.mk
-include make/frontend_professional_extensions.mk
 include make/codex.mk
 include make/dev_test.mk
 include make/ci.mk make/registry_audit.mk
