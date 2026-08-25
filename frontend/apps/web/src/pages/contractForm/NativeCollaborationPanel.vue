@@ -1,5 +1,12 @@
 <template>
-  <section class="block native-chatter-block">
+  <section
+    class="block native-chatter-block"
+    data-professional-collaboration-component="panel"
+    :data-comment-readiness="capabilityReadiness.comment"
+    :data-attachment-readiness="capabilityReadiness.attachment"
+    :data-activity-readiness="capabilityReadiness.activity"
+    :data-follower-readiness="capabilityReadiness.follower"
+  >
     <h3>{{ title }}</h3>
     <p v-if="unavailableMessage" class="native-chatter-empty">{{ unavailableMessage }}</p>
     <div v-else-if="!readonly" class="chips">
@@ -15,7 +22,7 @@
         {{ action.label }}
       </button>
     </div>
-    <section v-if="!readonly && !unavailableMessage && activeMode" class="native-chatter-compose">
+    <section v-if="!readonly && !unavailableMessage && activeMode" class="native-chatter-compose" data-professional-collaboration-component="composer" :data-composer-mode="activeIsActivity ? 'activity' : 'comment'">
       <template v-if="activeIsActivity">
         <label class="native-chatter-field">
           <span>{{ activityAssigneeLabel }}</span>
@@ -166,7 +173,7 @@ import type { NativeChatterAction } from './types';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 import ProfessionalCollaborationTimeline from './ProfessionalCollaborationTimeline.vue';
-import { visibleCollaborationTimeline } from './professionalCollaborationModel';
+import { collaborationCapabilityReadiness, visibleCollaborationTimeline } from './professionalCollaborationModel';
 
 type PendingNativeAttachment = {
   key: string;
@@ -242,6 +249,11 @@ export type NativeCollaborationPanelListeners = {
 const props = defineProps<NativeCollaborationPanelProps>();
 const visibleTimeline = computed(() => visibleCollaborationTimeline(props.timeline));
 const auditEvents = computed(() => resolveProfessionalAuditEvents(props.timeline));
+const capabilityReadiness = computed(() => collaborationCapabilityReadiness({
+  hasCommentAction: props.actions.some((action) => action.mode !== 'activity' && action.enabled),
+  hasAttachmentAuthority: props.hasAttachments,
+  hasActivityAction: props.actions.some((action) => action.mode === 'activity' && action.enabled),
+}));
 
 
 const emit = defineEmits<{

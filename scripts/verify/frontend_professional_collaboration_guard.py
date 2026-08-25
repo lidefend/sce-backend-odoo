@@ -12,6 +12,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         if marker not in timeline: failures.append(f"collaboration timeline missing {marker}")
     if "<ProfessionalCollaborationTimeline" not in panel or "visibleCollaborationTimeline" not in panel:
         failures.append("native collaboration panel bypasses shared timeline")
+    for marker in ('data-professional-collaboration-component="panel"', 'data-professional-collaboration-component="composer"', ":data-follower-readiness"):
+        if marker not in panel: failures.append(f"collaboration panel missing {marker}")
     if "follower: 'fail_closed'" not in model:
         failures.append("undeclared follower runtime must fail closed")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
