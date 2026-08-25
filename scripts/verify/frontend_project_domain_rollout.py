@@ -112,13 +112,60 @@ def _active_descendant_ids(env, root_id: int) -> list[int]:
     return result
 
 
-def _effective_group_xmlids(menu, action) -> list[str]:
-    groups = action.groups_id
+def _group_xmlids(groups) -> list[str]:
+    return sorted(filter(None, (_xmlid(group) for group in groups)))
+
+
+def _authority_contract(menu, action) -> dict[str, object]:
+    """Preserve the AND-of-layers / OR-within-layer entry authority."""
+    menu_chain: list[dict[str, object]] = []
     current = menu
     while current:
-        groups |= current.groups_id
+        menu_chain.append(
+            {
+                "menu_xmlid": _xmlid(current),
+                "groups": _group_xmlids(current.groups_id),
+            }
+        )
         current = current.parent_id
-    return sorted(filter(None, (_xmlid(group) for group in groups)))
+    menu_chain.reverse()
+    return {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menu_chain": menu_chain,
+        "action_groups": _group_xmlids(action.groups_id),
+    }
+
+
+def _authority_gaps(action_xmlid: str, authority: dict[str, object]) -> list[dict[str, str]]:
+    gaps: list[dict[str, str]] = []
+    action_groups = authority.get("action_groups") or []
+    if not action_groups:
+        gaps.append(
+            {
+                "action_xmlid": action_xmlid,
+                "reason": "FORMAL_ACTION_AUTHORITY_GROUP_MISSING",
+            }
+        )
+    menu_chain = authority.get("menu_chain") or []
+    if not menu_chain:
+        gaps.append(
+            {
+                "action_xmlid": action_xmlid,
+                "reason": "FORMAL_MENU_AUTHORITY_CHAIN_MISSING",
+            }
+        )
+    elif any(not _text(layer.get("menu_xmlid")) for layer in menu_chain):
+        gaps.append(
+            {
+                "action_xmlid": action_xmlid,
+                "reason": "FORMAL_MENU_AUTHORITY_XMLID_MISSING",
+            }
+        )
+    return gaps
+
+
+def _is_formal_owner(action_xmlid: str) -> bool:
+    return action_xmlid.partition(".")[0] == OWNER_MODULE
 
 
 def _resolved_views(env, action, assembly_semantics: dict[str, str]) -> list[dict[str, object]]:
@@ -219,8 +266,7 @@ def collect(env) -> dict[str, object]:
         action = env["ir.actions.act_window"].sudo().browse(action.id).exists()
         menu_xmlid = _xmlid(menu)
         action_xmlid = _xmlid(action)
-        owner_module = action_xmlid.partition(".")[0]
-        if owner_module != OWNER_MODULE:
+        if not _is_formal_owner(action_xmlid):
             excluded.append(
                 {
                     "menu_xmlid": menu_xmlid,
@@ -248,7 +294,7 @@ def collect(env) -> dict[str, object]:
                 }
             )
         views = _resolved_views(env, action, assembly_semantics)
-        groups = _effective_group_xmlids(menu, action)
+        authority = _authority_contract(menu, action)
         row = {
             "menu_xmlid": menu_xmlid,
             "menu_name": _text(menu.name),
@@ -256,7 +302,7 @@ def collect(env) -> dict[str, object]:
             "action_name": _text(action.name),
             "model": action.res_model,
             "view_mode": _text(action.view_mode),
-            "authority_groups": groups,
+            "authority": authority,
             "views": views,
         }
         actions.append(row)
@@ -267,13 +313,7 @@ def collect(env) -> dict[str, object]:
                     "reason": "FORMAL_XMLID_MISSING",
                 }
             )
-        if not groups:
-            gaps.append(
-                {
-                    "action_xmlid": action_xmlid,
-                    "reason": "FORMAL_AUTHORITY_GROUP_MISSING",
-                }
-            )
+        gaps.extend(_authority_gaps(action_xmlid, authority))
         if not views:
             gaps.append(
                 {

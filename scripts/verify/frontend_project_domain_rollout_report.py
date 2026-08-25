@@ -19,7 +19,17 @@ def normalized_snapshot(payload: dict[str, object]) -> dict[str, object]:
                 "actionName": row["action_name"],
                 "model": row["model"],
                 "viewMode": row["view_mode"],
-                "authorityGroups": sorted(row["authority_groups"]),
+                "authority": {
+                    "semantics": row["authority"]["semantics"],
+                    "menuChain": [
+                        {
+                            "menuXmlid": layer["menu_xmlid"],
+                            "groups": sorted(layer["groups"]),
+                        }
+                        for layer in row["authority"]["menu_chain"]
+                    ],
+                    "actionGroups": sorted(row["authority"]["action_groups"]),
+                },
                 "surfaces": [
                     {
                         "viewType": view["view_type"],
@@ -68,7 +78,7 @@ def markdown(snapshot: dict[str, object]) -> str:
         "",
         "## Formal entries",
         "",
-        "| Menu | Action | Model | Views | Authority groups |",
+        "| Menu | Action | Model | Views | Layered authority |",
         "| --- | --- | --- | --- | --- |",
     ]
     for row in snapshot["actions"]:
@@ -82,7 +92,17 @@ def markdown(snapshot: dict[str, object]) -> str:
                 row["actionXmlid"],
                 row["model"],
                 surfaces,
-                ", ".join(f"`{item}`" for item in row["authorityGroups"]),
+                " → ".join(
+                    "`{}`:[{}]".format(
+                        layer["menuXmlid"],
+                        ", ".join(f"`{group}`" for group in layer["groups"]) or "public",
+                    )
+                    for layer in row["authority"]["menuChain"]
+                )
+                + " → action:[{}]".format(
+                    ", ".join(f"`{group}`" for group in row["authority"]["actionGroups"])
+                    or "MISSING"
+                ),
             )
         )
     lines.extend(["", "## Gap classification", ""])
