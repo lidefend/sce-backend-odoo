@@ -31,11 +31,12 @@ class TestFrontendSystemwideCoverageAudit(unittest.TestCase):
         self.assertNotIn("smart_construction_core.menu_sc_config_center", audit.CENTER_ROOTS.values())
 
     def test_consumes_every_delivered_domain_report(self):
-        self.assertEqual(len(audit.DELIVERED_REPORTS), 12)
+        self.assertEqual(len(audit.DELIVERED_REPORTS), 13)
         self.assertIn("administration-domain-coverage-v1.json", audit.DELIVERED_REPORTS)
         self.assertIn("project-domain-coverage-v1.json", audit.DELIVERED_REPORTS)
         self.assertIn("workbench-center-coverage-v1.json", audit.DELIVERED_REPORTS)
         self.assertIn("finance-center-coverage-v1.json", audit.DELIVERED_REPORTS)
+        self.assertIn("tax-center-coverage-v1.json", audit.DELIVERED_REPORTS)
 
     def test_exact_menu_action_identity_is_required(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -48,7 +49,7 @@ class TestFrontendSystemwideCoverageAudit(unittest.TestCase):
                     "actions": [{"menuXmlid": "module.menu", "actionXmlid": "module.action"}],
                 }), encoding="utf-8")
             reports, covered, gaps = audit._load_evidence(root)
-        self.assertEqual(len(reports), 12)
+        self.assertEqual(len(reports), 13)
         self.assertEqual(covered, {("module.menu", "module.action")})
         self.assertEqual(gaps, [])
         self.assertNotIn(("module.other_menu", "module.action"), covered)
@@ -58,7 +59,7 @@ class TestFrontendSystemwideCoverageAudit(unittest.TestCase):
             reports, covered, gaps = audit._load_evidence(Path(directory))
         self.assertEqual(reports, [])
         self.assertEqual(covered, set())
-        self.assertEqual(len(gaps), 12)
+        self.assertEqual(len(gaps), 13)
         self.assertTrue(all(row["reason"] == "DELIVERED_REPORT_MISSING" for row in gaps))
 
     def test_runtime_requires_formal_menu_and_action_owners(self):
