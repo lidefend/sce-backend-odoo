@@ -755,13 +755,14 @@
   </section>
 </template>
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionBatchActionSettlement } from '../app/presentation/collectionActionSettlement';
+import { useCollectionBatchOverflow } from '../app/presentation/useCollectionBatchOverflow';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
@@ -938,9 +939,7 @@ const emit = defineEmits<{
 }>();
 const slots = useSlots();
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
-const batchOverflowRoot = ref<HTMLElement | null>(null);
-const batchOverflowToggle = ref<HTMLButtonElement | null>(null);
-const batchOverflowOpen = ref(false);
+const { batchOverflowRoot, batchOverflowToggle, batchOverflowOpen, toggleBatchOverflow } = useCollectionBatchOverflow();
 function uiLabel(key: string, fallback: string, vars: Record<string, string | number> = {}) {
   const candidate = String(props.uiLabels?.[key] || '').trim();
   const template = candidate || fallback;
@@ -1543,19 +1542,6 @@ function clearSelection() { batchOverflowOpen.value = false; props.onClearSelect
 function runSelectionAction(key: string) {
   if (!key || selectedCount.value <= 0) return;
   batchOverflowOpen.value = false; props.onRunSelectionAction?.(key);
-}
-
-function toggleBatchOverflow() {
-  batchOverflowOpen.value = !batchOverflowOpen.value;
-  if (!batchOverflowOpen.value) return;
-  void nextTick(() => batchOverflowRoot.value?.querySelector<HTMLElement>('.batch-overflow-menu button:not(:disabled)')?.focus());
-}
-
-function closeBatchOverflowOnOutsidePointer(event: PointerEvent) { if (!batchOverflowRoot.value?.contains(event.target as Node)) batchOverflowOpen.value = false; }
-function closeBatchOverflowOnEscape(event: KeyboardEvent) {
-  if (event.key !== 'Escape' || !batchOverflowOpen.value) return;
-  batchOverflowOpen.value = false;
-  batchOverflowToggle.value?.focus();
 }
 
 function emitPageOffset(offset: number) {
@@ -2297,16 +2283,12 @@ watch(tableSurfaceRoot, (current, previous) => {
 }, { flush: 'post' });
 
 onMounted(() => {
-  document.addEventListener('pointerdown', closeBatchOverflowOnOutsidePointer);
-  document.addEventListener('keydown', closeBatchOverflowOnEscape);
   tableSurfaceResizeObserver = new ResizeObserver(syncTableSurfaceWidth);
   syncTableSurfaceWidth();
   if (tableSurfaceRoot.value) tableSurfaceResizeObserver.observe(tableSurfaceRoot.value);
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', closeBatchOverflowOnOutsidePointer);
-  document.removeEventListener('keydown', closeBatchOverflowOnEscape);
   window.removeEventListener('mousemove', onColumnResizeMove);
   tableSurfaceResizeObserver?.disconnect();
 });

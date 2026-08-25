@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify.frontend_collection_action_toolbar_guard import LIST_PAGE, TOOLBAR, validate
+from scripts.verify.frontend_collection_action_toolbar_guard import LIST_PAGE, OVERFLOW_CONTROLLER, TOOLBAR, validate
 
 
 class CollectionActionToolbarGuardTest(unittest.TestCase):
@@ -8,9 +8,10 @@ class CollectionActionToolbarGuardTest(unittest.TestCase):
     def setUpClass(cls):
         cls.source = TOOLBAR.read_text(encoding="utf-8")
         cls.list_source = LIST_PAGE.read_text(encoding="utf-8")
+        cls.overflow_source = OVERFLOW_CONTROLLER.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
-        self.assertEqual(validate(self.source, self.list_source), [])
+        self.assertEqual(validate(self.source, self.list_source, self.overflow_source), [])
 
     def test_missing_escape_listener_fails(self):
         altered = self.source.replace(
@@ -18,6 +19,13 @@ class CollectionActionToolbarGuardTest(unittest.TestCase):
             "document.addEventListener('keyup', handleDocumentKeyDown)",
         )
         self.assertTrue(any("keydown" in item for item in validate(altered, self.list_source)))
+
+    def test_missing_batch_escape_listener_fails(self):
+        altered = self.overflow_source.replace(
+            "document.addEventListener('keydown', closeOnEscape)",
+            "document.addEventListener('keyup', closeOnEscape)",
+        )
+        self.assertTrue(any("overflow controller" in item for item in validate(self.source, self.list_source, altered)))
 
     def test_aria_menu_without_keyboard_model_fails(self):
         altered = self.source.replace(
