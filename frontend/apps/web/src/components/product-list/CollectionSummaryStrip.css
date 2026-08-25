@@ -1,0 +1,88 @@
+.collection-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sc-space-xs);
+}
+
+.collection-summary-strip__item {
+  min-width: 0;
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-radius-md);
+  background: var(--sc-app-panel);
+  padding: var(--sc-space-sm);
+}
+
+.collection-summary-strip__label,
+.collection-summary-strip__value {
+  overflow-wrap: anywhere;
+}
+
+.collection-summary-strip__label {
+  margin: 0;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+
+.collection-summary-strip__value {
+  margin: var(--sc-space-xs) 0 0;
+  color: var(--sc-app-text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.collection-summary-strip__item--danger {
+  border-color: var(--sc-app-danger-border);
+  background: var(--sc-app-danger-bg);
+}
+
+.collection-summary-strip__item--danger .collection-summary-strip__value {
+  color: var(--sc-app-danger-text);
+}
+
+.collection-summary-strip__item--warning {
+  border-color: var(--sc-app-warning-border);
+  background: var(--sc-app-warning-bg);
+}
+
+.collection-summary-strip__item--warning .collection-summary-strip__value {
+  color: var(--sc-app-warning-text);
+}
+
+.collection-summary-strip__item--success {
+  border-color: var(--sc-app-success-border);
+  background: var(--sc-app-success-bg);
+}
+
+.collection-summary-strip__item--success .collection-summary-strip__value {
+  color: var(--sc-app-success-text);
+}
+
+.collection-summary-strip__item--info {
+  border-color: var(--sc-app-info-border);
+  background: var(--sc-app-info-bg);
+}
+
+.collection-summary-strip__item--info .collection-summary-strip__value {
+  color: var(--sc-app-info-text);
+}
+
+@media (max-width: 760px) {
+  .collection-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .collection-summary-strip__item {
+    padding: var(--sc-space-xs);
+  }
+
+  .collection-summary-strip__value {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  .collection-summary-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

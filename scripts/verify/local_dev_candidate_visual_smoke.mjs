@@ -94,6 +94,119 @@ function summarizeContractSelections(payload) {
   return rows.slice(0, 80);
 }
 
+function summarizeContractSummaryItems(payload) {
+  const rows = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value.summary_items)) {
+      value.summary_items.forEach((item) => {
+        if (!item || typeof item !== 'object') return;
+        rows.push({
+          key: String(item.key || ''),
+          label: String(item.label || item.key || ''),
+          value: String(item.value ?? ''),
+          tone: String(item.tone || 'neutral'),
+        });
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return rows;
+}
+
+function applyFirstContractSummaryFixture(payload, fixture, sceneKey) {
+  let applied = false;
+  const visit = (value) => {
+    if (applied || !value || typeof value !== 'object') return;
+    const sceneReady = !Array.isArray(value) && value.scene_ready_contract && typeof value.scene_ready_contract === 'object'
+      ? value.scene_ready_contract
+      : null;
+    if (sceneReady && Array.isArray(sceneReady.scenes) && sceneKey) {
+      const scene = sceneReady.scenes.find((item) => {
+        if (!item || typeof item !== 'object') return false;
+        return String(item.scene?.key || item.page?.scene_key || '').trim() === sceneKey;
+      });
+      if (scene) {
+        const projection = scene.projection && typeof scene.projection === 'object' && !Array.isArray(scene.projection)
+          ? scene.projection
+          : {};
+        scene.projection = { ...projection, summary_items: fixture };
+        applied = true;
+        return;
+      }
+    }
+    if (!Array.isArray(value) && Array.isArray(value.summary_items)) {
+      value.summary_items = fixture;
+      applied = true;
+      return;
+    }
+    if (!Array.isArray(value) && Array.isArray(value.scenes) && sceneKey) {
+      const scene = value.scenes.find((item) => {
+        if (!item || typeof item !== 'object') return false;
+        return String(item.scene?.key || item.page?.scene_key || item.key || item.scene_key || item.code || '').trim() === sceneKey;
+      });
+      if (scene) {
+        const projection = scene.projection && typeof scene.projection === 'object' && !Array.isArray(scene.projection)
+          ? scene.projection
+          : {};
+        scene.projection = { ...projection, summary_items: fixture };
+        applied = true;
+        return;
+      }
+    }
+    if (!Array.isArray(value) && value.projection && typeof value.projection === 'object' && !Array.isArray(value.projection)) {
+      value.projection.summary_items = fixture;
+      applied = true;
+      return;
+    }
+    for (const child of Object.values(value)) visit(child);
+  };
+  visit(payload);
+  return applied;
+}
+
+function normalizeSummaryTone(value) {
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  return ['neutral', 'danger', 'warning', 'success', 'info'].includes(normalized) ? normalized : 'neutral';
+}
+
+function applyActionSceneIdentityFixture(payload, actionId, sceneKey) {
+  let applied = 0;
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    if (Number(value.action_id || 0) === actionId) {
+      value.scene_key = sceneKey;
+      applied += 1;
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return applied;
+}
+
+function collectSummaryCarrierPaths(payload) {
+  const paths = [];
+  const visit = (value, pathParts) => {
+    if (!value || typeof value !== 'object' || paths.length >= 80) return;
+    for (const [key, child] of Object.entries(value)) {
+      const next = [...pathParts, key];
+      if (['scene_ready_contract', 'scenes', 'projection', 'summary_items'].includes(key)) paths.push(next.join('.'));
+      visit(child, next);
+    }
+  };
+  visit(payload, []);
+  return paths;
+}
+
 function summarizeContractAggregates(payload) {
   const rows = [];
   const visit = (value) => {
@@ -160,6 +273,52 @@ try {
       const method = String(body?.params?.method || body.method || '');
       if (/(^|\.)(create|write|unlink|execute_button|upload)(\.|$)/.test(intent) || /^(create|write|unlink|web_save|action_)/.test(method)) report.mutationCount += 1;
     });
+    const bootSummaryFixtureTarget = routes.find((target) => Array.isArray(target.summaryFixture));
+    let bootSummaryFixtureApplied = false;
+    let bootSummaryActionIdentityApplied = 0;
+    let bootSummaryItems = [];
+    const bootSummaryCarrierPaths = new Set();
+    let bootSummaryRoutesInFlight = 0;
+    const bootContractRoutePattern = '**/api/v1/**';
+    const bootContractRouteHandler = async (route) => {
+      const request = route.request();
+      if (request.method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      try {
+        bootSummaryRoutesInFlight += 1;
+        const response = await route.fetch();
+        let payload = null;
+        try {
+          payload = await response.json();
+          collectSummaryCarrierPaths(payload).forEach((path) => bootSummaryCarrierPaths.add(path));
+        } catch {
+          await route.fulfill({ response });
+        }
+        if (!payload) return;
+        const summaryApplied = applyFirstContractSummaryFixture(
+          payload,
+          bootSummaryFixtureTarget.summaryFixture,
+          String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
+        );
+        bootSummaryFixtureApplied = bootSummaryFixtureApplied || summaryApplied;
+        const fixtureActionId = Number(bootSummaryFixtureTarget.summaryFixtureActionId || 0);
+        if (fixtureActionId > 0) {
+          bootSummaryActionIdentityApplied += applyActionSceneIdentityFixture(
+            payload,
+            fixtureActionId,
+            String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
+          );
+        }
+        const responseSummaryItems = summarizeContractSummaryItems(payload);
+        if (responseSummaryItems.length) bootSummaryItems = responseSummaryItems;
+        await route.fulfill({ response, json: payload });
+      } finally {
+        bootSummaryRoutesInFlight -= 1;
+      }
+    };
+    if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     await loginPage(page);
     if (viewport.name === 'desktop') {
       const companyTrigger = page.getByRole('button', { name: '公司空间：切换公司' });
@@ -177,9 +336,11 @@ try {
       await companySearch.fill('');
     }
     for (const target of routes) {
+      const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
       let contractH1Nodes = [];
       let contractSelections = [];
       let contractAggregates = [];
+      let contractSummaryItems = [];
       let listAggregates = [];
       const contractResponse = /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
@@ -195,7 +356,9 @@ try {
         contractH1Nodes = summarizeContractH1(contractPayload);
         contractSelections = summarizeContractSelections(contractPayload);
         contractAggregates = summarizeContractAggregates(contractPayload);
+        contractSummaryItems = summarizeContractSummaryItems(contractPayload);
       }
+      if (summaryFixture && bootSummaryFixtureTarget === target) contractSummaryItems = bootSummaryItems;
       if (listDataResponse) {
         const response = await listDataResponse;
         if (!response.ok()) throw new Error(`list data request failed: ${response.status()} ${target.path}`);
@@ -204,6 +367,10 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (bootSummaryFixtureTarget === target) {
+        while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
+        await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
+      }
       const result = await page.evaluate(() => {
         const root = document.documentElement;
         const style = getComputedStyle(root);
@@ -229,6 +396,39 @@ try {
       const initialFinalUrl = page.url();
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       let collectionSelectionEvidence = null;
+      let collectionSummaryEvidence = null;
+      if (target.captureCollectionSummary === true) {
+        const owners = page.locator('[data-semantic-component="CollectionSummaryStrip"]');
+        const items = owners.locator('[data-summary-key]');
+        const domItems = await items.evaluateAll((nodes) => nodes.map((node) => ({
+          key: node.getAttribute('data-summary-key') || '',
+          label: node.querySelector('.collection-summary-strip__label')?.textContent?.trim() || '',
+          value: node.querySelector('.collection-summary-strip__value')?.textContent?.trim() || '',
+          tone: node.getAttribute('data-summary-tone') || '',
+        })));
+        const expectedItems = contractSummaryItems.map((item) => ({
+          key: item.key,
+          label: item.label,
+          value: item.value,
+          tone: normalizeSummaryTone(item.tone),
+        }));
+        const ownerCount = await owners.count();
+        collectionSummaryEvidence = {
+          authorityItems: contractSummaryItems,
+          expectedItems,
+          ownerCount,
+          domItems,
+          fixtureApplied: summaryFixture ? bootSummaryFixtureApplied : null,
+          actionIdentityFixtureApplied: summaryFixture ? bootSummaryActionIdentityApplied : null,
+          fixtureCarrierPaths: summaryFixture ? [...bootSummaryCarrierPaths] : [],
+          pass: JSON.stringify(domItems) === JSON.stringify(expectedItems)
+            && (contractSummaryItems.length > 0 ? ownerCount === 1 : ownerCount === 0)
+            && (!summaryFixture || (
+              bootSummaryFixtureApplied
+              && (!target.summaryFixtureActionId || bootSummaryActionIdentityApplied > 0)
+            )),
+        };
+      }
       if (target.exerciseCollectionSelection === true) {
         const controls = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
         const controlCount = await controls.count();
@@ -486,7 +686,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, listAggregates, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, collectionSummaryEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -500,6 +700,7 @@ const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded 
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });
+  if (item.collectionSummaryEvidence && !item.collectionSummaryEvidence.pass) failures.push({ name: item.name, collectionSummaryEvidence: item.collectionSummaryEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });

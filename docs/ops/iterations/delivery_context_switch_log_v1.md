@@ -6263,3 +6263,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius: grouped list headers only. Flat collections, grouping queries,
   pagination calculations, permissions, contracts, routes and mutations are
   excluded.
+
+## Collection summary strip convergence v1 (2026-08-26)
+
+- Branch / baseline: `feature/p0-collection-summary-strip-convergence-v1` /
+  `cae03c744c628752b3f5805d25b4e4b9e23091ac`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  collection summary presentation / `frontend/apps/web` shared product-list
+  components.
+- Reason: collection summary metrics already flow from the strict projection
+  contract through the canonical action-page assembler, but `ListPage`
+  rendered their cards, tones and mobile layout inline. One shared component
+  now owns that presentation and exposes stable semantic item identities.
+- Why Here / Why Not Elsewhere: metric values and labels remain authoritative
+  projection data. The shared presentation layer only normalizes the closed
+  visual tone vocabulary, with unknown values falling back to neutral; it does
+  not calculate metrics, infer business meaning or inspect models/actions.
+- Blast radius / evidence: list summary rendering only. A managed read-only
+  action/scene fixture binds action 807 to its formal scene identity and injects
+  two `summary_items` into that scene-ready projection. Desktop and 390px each
+  render exactly one owner with exact key/label/value/tone values; an unknown
+  `critical` tone is safely projected as `neutral`. The unmodified action 807
+  empty-authority counterexample still renders zero owners/items. Both journeys
+  have zero browser errors, overflow and mutations. Contract schemas,
+  permissions, routes, list data and database state are unchanged.

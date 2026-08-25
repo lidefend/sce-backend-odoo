@@ -120,12 +120,12 @@
           />
         </template>
       </ListSurfaceHeader>
-      <section v-if="enableSummaryStrip && summaryItems.length" class="summary-strip sc-product-summary-strip">
-        <article v-for="item in summaryItems" :key="item.key" class="summary-card" :class="`tone-${item.tone || 'neutral'}`">
-          <p class="summary-label">{{ item.label }}</p>
-          <p class="summary-value">{{ item.value }}</p>
-        </article>
-      </section>
+      <CollectionSummaryStrip
+        v-if="enableSummaryStrip || summaryItems.length"
+        class="summary-strip sc-product-summary-strip"
+        :aria-label="uiLabel('list_summary', '列表摘要')"
+        :items="summaryItems"
+      />
       <section
         ref="tableSurfaceRoot"
         class="table sc-product-main-surface"
@@ -477,6 +477,7 @@ import CollectionPaginationFooter from '../components/product-list/CollectionPag
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import CollectionRowCell, { type CollectionRowCellKind } from '../components/product-list/CollectionRowCell.vue';
 import CollectionSelectionControl from '../components/product-list/CollectionSelectionControl.vue';
+import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
