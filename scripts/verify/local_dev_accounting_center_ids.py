@@ -33,4 +33,3 @@ payload = {
     ).hexdigest(),
 }
 print("LOCAL_DEV_ACCOUNTING_CENTER_JSON=%s" % json.dumps(payload, ensure_ascii=True, separators=(",", ":")))
-

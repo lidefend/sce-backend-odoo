@@ -121,4 +121,3 @@ try {
   await browser.close();
 }
 console.log(JSON.stringify({ pass: report.pass, primary: report.primary.result, security: report.security.result }));
-

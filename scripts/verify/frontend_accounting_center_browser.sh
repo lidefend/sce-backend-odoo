@@ -37,4 +37,3 @@ if before["business_fingerprint"] != after["business_fingerprint"]:
 print("[frontend.accounting-center.browser] business fingerprints unchanged")
 PY
 exit "$browser_status"
-
