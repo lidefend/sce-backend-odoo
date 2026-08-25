@@ -79,13 +79,15 @@ export type CollectionAggregateRow = {
   values: Record<string, string>;
 };
 
-defineProps<{
+withDefaults(defineProps<{
   context: 'flat' | 'group';
   layout?: 'table' | 'summary';
   labelColspan: number;
   columns: readonly CollectionAggregateColumn[];
   rows: readonly CollectionAggregateRow[];
-}>();
+}>(), {
+  layout: 'table',
+});
 </script>
 
 <style scoped src="./CollectionAggregateFooter.css"></style>

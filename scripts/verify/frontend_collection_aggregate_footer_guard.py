@@ -25,6 +25,7 @@ def validate(list_source: str | None = None, footer_source: str | None = None, c
         'scope="row"',
         "data-aggregate-layout=\"summary\"",
         "data-aggregate-row-label",
+        "layout: 'table'",
         "rows: readonly CollectionAggregateRow[]",
     ):
         if marker not in footer_text:
