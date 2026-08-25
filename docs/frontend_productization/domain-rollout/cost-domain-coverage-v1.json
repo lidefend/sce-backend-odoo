@@ -1,0 +1,265 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "cost",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_p1_project_budget",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_p1_project_budget",
+    "smart_construction_core.menu_sc_p1_cost_plan",
+    "smart_construction_core.menu_sc_p1_cost_ledger",
+    "smart_construction_core.menu_sc_p1_profit_analysis"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 4,
+    "model_count": 3,
+    "ready_surface_count": 4,
+    "readable_fallback_count": 3,
+    "structural_form_count": 4,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 666,
+      "menuXmlid": "smart_construction_core.menu_sc_p1_cost_ledger",
+      "menuName": "成本归集",
+      "actionId": 523,
+      "actionXmlid": "smart_construction_core.action_project_cost_ledger",
+      "actionName": "成本归集台账",
+      "model": "project.cost.ledger",
+      "viewMode": "tree,form,pivot,graph",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_cost_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_p1_cost_ledger",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_manager",
+              "smart_construction_core.group_sc_cap_cost_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_cost_manager",
+          "smart_construction_core.group_sc_cap_cost_read",
+          "smart_construction_core.group_sc_cap_cost_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_project_cost_ledger_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_project_cost_ledger_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        },
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_project_cost_ledger_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        },
+        {
+          "viewType": "graph",
+          "viewXmlid": "smart_construction_core.view_project_cost_ledger_graph",
+          "jsClass": "",
+          "semantic": "graph",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_GRAPH_PLANNED"
+        }
+      ]
+    },
+    {
+      "menuId": 665,
+      "menuXmlid": "smart_construction_core.menu_sc_p1_cost_plan",
+      "menuName": "成本计划编制",
+      "actionId": 539,
+      "actionXmlid": "smart_construction_core.action_project_cost_plan",
+      "actionName": "成本计划",
+      "model": "project.cost.plan",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_cost_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_p1_cost_plan",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_manager",
+              "smart_construction_core.group_sc_cap_cost_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_cost_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_project_cost_plan_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_project_cost_plan_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 667,
+      "menuXmlid": "smart_construction_core.menu_sc_p1_profit_analysis",
+      "menuName": "项目盈亏分析",
+      "actionId": 522,
+      "actionXmlid": "smart_construction_core.action_project_profit_compare",
+      "actionName": "项目经营利润",
+      "model": "project.profit.compare",
+      "viewMode": "tree,form,pivot",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_cost_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_p1_profit_analysis",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_manager",
+              "smart_construction_core.group_sc_cap_cost_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_cost_manager",
+          "smart_construction_core.group_sc_cap_cost_read",
+          "smart_construction_core.group_sc_cap_cost_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_project_profit_compare_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_project_profit_compare_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        },
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_project_profit_compare_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        }
+      ]
+    },
+    {
+      "menuId": 664,
+      "menuXmlid": "smart_construction_core.menu_sc_p1_project_budget",
+      "menuName": "项目预算",
+      "actionId": 619,
+      "actionXmlid": "smart_construction_core.action_project_budget",
+      "actionName": "目标成本计划",
+      "model": "project.cost.plan",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_cost_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_p1_project_budget",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_manager",
+              "smart_construction_core.group_sc_cap_cost_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_cost_manager",
+          "smart_construction_core.group_sc_cap_cost_read",
+          "smart_construction_core.group_sc_cap_cost_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_project_cost_plan_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_project_cost_plan_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}
