@@ -62,6 +62,7 @@ DELIVERED_REPORTS = (
     "workbench-center-coverage-v1.json",
     "finance-center-coverage-v1.json",
     "tax-center-coverage-v1.json",
+    "accounting-center-coverage-v1.json",
 )
 
 

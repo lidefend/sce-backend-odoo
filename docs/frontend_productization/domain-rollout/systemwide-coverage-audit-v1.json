@@ -10,13 +10,13 @@
   ],
   "summary": {
     "primaryCenterCount": 10,
-    "deliveredReportCount": 13,
+    "deliveredReportCount": 14,
     "runtimeSurfaceCount": 88,
     "excludedSurfaceCount": 1,
-    "coveredSurfaceCount": 79,
-    "uncoveredSurfaceCount": 9,
+    "coveredSurfaceCount": 82,
+    "uncoveredSurfaceCount": 6,
     "runtimeGapCount": 0,
-    "gapCount": 9
+    "gapCount": 6
   },
   "deliveredReports": [
     {
@@ -109,6 +109,13 @@
       "status": "PASS",
       "actionCount": 9,
       "gapCount": 0
+    },
+    {
+      "file": "accounting-center-coverage-v1.json",
+      "domain": "accounting_center",
+      "status": "PASS",
+      "actionCount": 3,
+      "gapCount": 0
     }
   ],
   "centers": [
@@ -158,8 +165,8 @@
       "center": "accounting",
       "rootMenuXmlid": "smart_construction_core.menu_sc_accounting_center",
       "surfaceCount": 3,
-      "coveredCount": 0,
-      "uncoveredCount": 3
+      "coveredCount": 3,
+      "uncoveredCount": 0
     },
     {
       "center": "reporting",
@@ -4451,7 +4458,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "accounting",
@@ -4509,7 +4516,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "accounting",
@@ -4567,7 +4574,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "reporting",
@@ -5825,24 +5832,6 @@
     }
   ],
   "gaps": [
-    {
-      "center": "accounting",
-      "menuXmlid": "smart_construction_core.menu_sc_account_journal_foundation",
-      "actionXmlid": "smart_construction_core.action_sc_account_journal_foundation",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "accounting",
-      "menuXmlid": "smart_construction_core.menu_sc_analytic_account_foundation",
-      "actionXmlid": "smart_construction_core.action_sc_analytic_account_foundation",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "accounting",
-      "menuXmlid": "smart_construction_core.menu_sc_analytic_distribution_foundation",
-      "actionXmlid": "smart_construction_core.action_sc_analytic_distribution_foundation",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
     {
       "center": "reporting",
       "menuXmlid": "smart_construction_core.menu_sc_project_operation_statistics_report",
