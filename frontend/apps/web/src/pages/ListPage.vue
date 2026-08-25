@@ -247,54 +247,28 @@
                   />
                 </th>
                 <th v-if="showRowNumberColumn" class="cell-row-number">{{ uiLabel('row_number', '序号') }}</th>
-                <th
+                <CollectionColumnHeaderControl
                   v-for="col in displayedColumns"
                   :key="`group-col-${group.key}-${col}`"
-                  class="cell-sortable"
-                  :class="[columnDensityClass(col), { 'is-sorted': isSortedColumn(col), 'is-dragging': draggingColumn === col, 'is-sort-disabled': !isColumnSortable(col) }]"
-                  :data-column="col"
-                  :style="columnWidthStyle(col)"
-                  @dragover="onColumnDragOver(col, $event)"
-                  @drop="onColumnDrop(col, $event)"
-                  @dragend="onColumnDragEnd"
-                  @click="toggleColumnSort(col)"
-                  @keydown.enter.prevent="toggleColumnSort(col)"
-                  @keydown.space.prevent="toggleColumnSort(col)"
-                  :tabindex="isColumnSortable(col) ? 0 : -1"
-                  :title="columnSortTitle(col)"
+                  :field="col"
+                  :label="columnLabel(col)"
+                  :sortable="isColumnSortable(col)"
+                  :sorted="isSortedColumn(col)"
+                  :dragging="draggingColumn === col"
+                  :sort-icon="columnSortIcon(col)"
+                  :sort-title="columnSortTitle(col)"
                   :aria-sort="columnAriaSort(col)"
-                >
-                  <button
-                    type="button"
-                    class="column-drag-handle"
-                    :title="uiLabel('column_drag_reorder', '拖动调整列顺序')"
-                    draggable="true"
-                    @click.stop
-                    @keydown.stop
-                    @dragstart.stop="onColumnDragStart(col, $event)"
-                    @dragend.stop="onColumnDragEnd"
-                  ></button>
-                  <button
-                    type="button"
-                    class="column-sort-btn"
-                    :title="columnSortTitle(col)"
-                    :aria-disabled="!isColumnSortable(col)"
-                    draggable="false"
-                    @click.stop="toggleColumnSort(col)"
-                  >
-                    <span>{{ columnLabel(col) }}</span>
-                    <ScIcon v-if="isSortedColumn(col)" class="sort-indicator" :name="columnSortIcon(col)" :size="14" />
-                  </button>
-                  <button
-                    type="button"
-                    class="column-resize-handle"
-                    :title="uiLabel('column_resize', '调整列宽')"
-                    draggable="false"
-                    @click.stop
-                    @dragstart.stop.prevent
-                    @mousedown.stop.prevent="startColumnResize(col, $event)"
-                  ></button>
-                </th>
+                  :drag-label="uiLabel('column_drag_reorder', '拖动调整列顺序')"
+                  :resize-label="uiLabel('column_resize', '调整列宽')"
+                  :density-class="columnDensityClass(col)"
+                  :column-style="columnWidthStyle(col)"
+                  @drag-over="onColumnDragOver(col, $event)"
+                  @drop-column="onColumnDrop(col, $event)"
+                  @drag-end="onColumnDragEnd"
+                  @sort="toggleColumnSort(col)"
+                  @drag-start="onColumnDragStart(col, $event)"
+                  @resize-start="startColumnResize(col, $event)"
+                />
               </tr>
             </thead>
             <tbody>
@@ -481,54 +455,28 @@
               />
             </th>
             <th v-if="showRowNumberColumn" class="cell-row-number">{{ uiLabel('row_number', '序号') }}</th>
-            <th
+            <CollectionColumnHeaderControl
               v-for="col in displayedColumns"
               :key="col"
-              class="cell-sortable"
-              :class="[columnDensityClass(col), { 'is-sorted': isSortedColumn(col), 'is-dragging': draggingColumn === col, 'is-sort-disabled': !isColumnSortable(col) }]"
-              :data-column="col"
-              :style="columnWidthStyle(col)"
-              @dragover="onColumnDragOver(col, $event)"
-              @drop="onColumnDrop(col, $event)"
-              @dragend="onColumnDragEnd"
-              @click="toggleColumnSort(col)"
-              @keydown.enter.prevent="toggleColumnSort(col)"
-              @keydown.space.prevent="toggleColumnSort(col)"
-              :tabindex="isColumnSortable(col) ? 0 : -1"
-              :title="columnSortTitle(col)"
+              :field="col"
+              :label="columnLabel(col)"
+              :sortable="isColumnSortable(col)"
+              :sorted="isSortedColumn(col)"
+              :dragging="draggingColumn === col"
+              :sort-icon="columnSortIcon(col)"
+              :sort-title="columnSortTitle(col)"
               :aria-sort="columnAriaSort(col)"
-            >
-              <button
-                type="button"
-                class="column-drag-handle"
-                :title="uiLabel('column_drag_reorder', '拖动调整列顺序')"
-                draggable="true"
-                @click.stop
-                @keydown.stop
-                @dragstart.stop="onColumnDragStart(col, $event)"
-                @dragend.stop="onColumnDragEnd"
-              ></button>
-              <button
-                type="button"
-                class="column-sort-btn"
-                :title="columnSortTitle(col)"
-                :aria-disabled="!isColumnSortable(col)"
-                draggable="false"
-                @click.stop="toggleColumnSort(col)"
-              >
-                <span>{{ columnLabel(col) }}</span>
-                <ScIcon v-if="isSortedColumn(col)" class="sort-indicator" :name="columnSortIcon(col)" :size="14" />
-              </button>
-              <button
-                type="button"
-                class="column-resize-handle"
-                :title="uiLabel('column_resize', '调整列宽')"
-                draggable="false"
-                @click.stop
-                @dragstart.stop.prevent
-                @mousedown.stop.prevent="startColumnResize(col, $event)"
-              ></button>
-            </th>
+              :drag-label="uiLabel('column_drag_reorder', '拖动调整列顺序')"
+              :resize-label="uiLabel('column_resize', '调整列宽')"
+              :density-class="columnDensityClass(col)"
+              :column-style="columnWidthStyle(col)"
+              @drag-over="onColumnDragOver(col, $event)"
+              @drop-column="onColumnDrop(col, $event)"
+              @drag-end="onColumnDragEnd"
+              @sort="toggleColumnSort(col)"
+              @drag-start="onColumnDragStart(col, $event)"
+              @resize-start="startColumnResize(col, $event)"
+            />
           </tr>
         </thead>
         <tbody>
@@ -660,6 +608,7 @@ import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
+import CollectionColumnHeaderControl from '../components/product-list/CollectionColumnHeaderControl.vue';
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
