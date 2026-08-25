@@ -57,12 +57,12 @@ def normalized_snapshot(payload: dict[str, object]) -> dict[str, object]:
     }
 
 
-def markdown(snapshot: dict[str, object]) -> str:
+def markdown(snapshot: dict[str, object], title: str = "Project Domain Frontend Rollout v1") -> str:
     summary = snapshot["summary"]
     lines = [
-        "# Project Domain Frontend Rollout v1",
+        f"# {title}",
         "",
-        "This report covers the repository formal-product runtime baseline for the project center.",
+        f"This report covers the repository formal-product runtime baseline for the {snapshot.get('domain', 'business')} center.",
         "Demo, customer overlays, and user-specific visibility are deliberately excluded.",
         "",
         "## Summary",
@@ -118,8 +118,8 @@ def markdown(snapshot: dict[str, object]) -> str:
             "",
             "## Acceptance routing",
             "",
-            "- Primary journey: project ledger opens through its formal action/menu and preserves workspace form authority.",
-            "- Security counterexample: a project-read user cannot gain manager-only project lifecycle authority.",
+            f"- Primary journey: a formal {snapshot.get('domain', 'business')} entry preserves its resolved action/menu and form authority.",
+            "- Security counterexample: an unauthorized user cannot gain entry or write authority.",
             "- Any future unregistered `smart_*` view class fails this audit closed.",
             "",
         ]
