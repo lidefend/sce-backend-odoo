@@ -1540,6 +1540,13 @@ verify.frontend.professionalization.systemwide_coverage.runtime: guard.prod.forb
 		--json-output docs/frontend_productization/domain-rollout/systemwide-coverage-audit-v1.json \
 		--markdown-output docs/frontend_productization/domain-rollout/systemwide-coverage-audit-v1.md
 
+.PHONY: verify.frontend.professionalization.systemwide_public_metric.unit
+verify.frontend.professionalization.systemwide_public_metric.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/frontend_systemwide_public_metric_report.py scripts/verify/local_dev_systemwide_public_metric_ids.py scripts/verify/test_frontend_systemwide_public_metric_report.py
+	@python3 -m unittest scripts.verify.test_frontend_systemwide_public_metric_report
+	@bash -n scripts/verify/frontend_systemwide_public_metric_browser.sh
+	@node --check scripts/verify/frontend_systemwide_public_metric_browser.mjs
+
 .PHONY: verify.product.menu.governance.m4.runtime
 verify.product.menu.governance.m4.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@install -d -m 0777 artifacts/menu-governance

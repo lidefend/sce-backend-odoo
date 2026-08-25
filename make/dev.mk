@@ -244,6 +244,19 @@ verify.frontend.professionalization.reporting_center.browser: guard.prod.forbid 
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/frontend_reporting_center_browser.sh
 
+.PHONY: verify.frontend.professionalization.systemwide_public_metric.browser
+verify.frontend.professionalization.systemwide_public_metric.browser: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/frontend_systemwide_public_metric_browser.sh
+
+.PHONY: verify.frontend.professionalization.systemwide_public_metric.acceptance
+verify.frontend.professionalization.systemwide_public_metric.acceptance: guard.prod.forbid verify.frontend.professionalization.systemwide_coverage.runtime verify.frontend.professionalization.systemwide_public_metric.browser
+	@python3 scripts/verify/frontend_systemwide_public_metric_report.py \
+	  --coverage artifacts/frontend-professionalization/frontend_systemwide_coverage_audit_runtime_v1.json \
+	  --browser artifacts/playwright/systemwide-public-metric-acceptance/summary.json \
+	  --json-output docs/frontend_productization/systemwide-public-metric-acceptance-v1.json \
+	  --markdown-output docs/frontend_productization/systemwide-public-metric-acceptance-v1.md
+
 verify.local.dev.payment_request.floorplan.submit: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_payment_request_floorplan_submit.sh

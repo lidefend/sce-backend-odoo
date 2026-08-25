@@ -228,7 +228,21 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: final_acceptance
-    task: systemwide_public_metric_acceptance
-    prerequisite: phase_10_reporting_center_gap_closure_merged_and_main_synced
+    phase: final_delivery
+    task: systemwide_public_metric_acceptance_closeout
+    prerequisite: systemwide_public_metric_acceptance_passed
     do_not_start_in_parallel: []
+    acceptance:
+      status: pass
+      primary_centers: 10
+      covered_runtime_surfaces: 88
+      runtime_surfaces: 88
+      uncovered_surfaces: 0
+      runtime_authority_gaps: 0
+      public_metric_failures: 0
+      browser_errors: 0
+      business_mutations: 0
+      representative_patterns: [collection, task, workspace]
+      evidence:
+        - docs/frontend_productization/systemwide-public-metric-acceptance-v1.json
+        - docs/frontend_productization/systemwide-public-metric-acceptance-v1.md
