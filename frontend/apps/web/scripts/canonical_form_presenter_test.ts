@@ -848,6 +848,19 @@ assert.deepEqual(
   'canonical button status must remain authoritative when the native renderer asks for interaction state',
 );
 
+const duplicateBodyActionSnapshot = structuredClone(bodyActionSnapshot);
+duplicateBodyActionSnapshot.layoutContract.containerTree[0].children.push(structuredClone(
+  duplicateBodyActionSnapshot.layoutContract.containerTree[0].children.at(-1)!,
+));
+const duplicateBodyActionBridge = buildCanonicalNativeFormBridge(
+  presentContractV2Form(createContractV2Store(duplicateBodyActionSnapshot), 'readonly'),
+);
+assert.equal(
+  duplicateBodyActionBridge.primaryNodes[0].children?.filter((node) => node.type === 'button' && node.visible).length,
+  1,
+  'the canonical native bridge must render one visible body occurrence for one backend action identity',
+);
+
 const nativeOccurrenceActionSnapshot = structuredClone(snapshot());
 nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'button.native.submit', containerType: 'button', type: 'button', title: 'Submit Native', span: 24,
@@ -862,6 +875,11 @@ assert.equal(
   nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
   'button:object:action_submit',
   'native snake-case occurrence identity must resolve to the canonical action rule',
+);
+assert.equal(
+  buildCanonicalNativeFormBridge(nativeOccurrenceModel).primaryNodes[0].children?.find((node) => node.type === 'button')?.visible,
+  false,
+  'an action already promoted to the canonical header must not remain visible as a duplicate native body occurrence',
 );
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 

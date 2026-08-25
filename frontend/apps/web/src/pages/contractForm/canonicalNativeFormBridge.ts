@@ -109,6 +109,10 @@ export function buildCanonicalNativeFormBridge(
 ): CanonicalNativeFormBridge {
   const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
   const actionsByIdentity = new Map<string, CanonicalFormAction>();
+  const headerActionIdentities = new Set(
+    renderModel.actionBar.map((action) => action.actionRef.backendIdentity).filter(Boolean),
+  );
+  const renderedBodyActionIdentities = new Set<string>();
 
   function mapNode(node: CanonicalFormNode): CanonicalNativeLayoutNode {
     if (text(node.kind).toLowerCase() === 'field' && node.fields.length === 1) {
@@ -116,12 +120,19 @@ export function buildCanonicalNativeFormBridge(
     }
     const rawKind = text(node.kind).toLowerCase() || 'container';
     const action = node.action;
+    const actionIdentity = text(action?.actionRef.backendIdentity);
     const kind = rawKind === 'button'
       ? 'button'
       : rawKind === 'widget'
         ? 'widget'
         : NATIVE_CONTAINER_KINDS.has(rawKind) ? rawKind : 'container';
-    if (action?.actionRef.backendIdentity) actionsByIdentity.set(action.actionRef.backendIdentity, action);
+    if (actionIdentity) actionsByIdentity.set(actionIdentity, action!);
+    const actionVisible = kind !== 'button' || !actionIdentity
+      ? true
+      : !headerActionIdentities.has(actionIdentity) && !renderedBodyActionIdentities.has(actionIdentity);
+    if (kind === 'button' && actionIdentity && node.visible && actionVisible) {
+      renderedBodyActionIdentities.add(actionIdentity);
+    }
     const mappedChildren = [
       ...node.fields.map((field) => fieldNode(field, fieldSchemas)),
       ...node.children.filter((child) => !isCollaborationNode(child)).map(mapNode),
@@ -141,7 +152,7 @@ export function buildCanonicalNativeFormBridge(
       cols: node.columns,
       columns: node.columns,
       widget: node.nativeWidget,
-      visible: node.visible && (kind !== 'button' || Boolean(action)),
+      visible: node.visible && (kind !== 'button' || Boolean(action)) && actionVisible,
       attributes: {
         ...node.attributes,
         class: text(node.attributes.class),
