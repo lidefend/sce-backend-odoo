@@ -6094,3 +6094,31 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   authority gaps. Reporting remains a separate final domain batch.
 - Rollback: revert accounting evidence and workflow wiring. Product runtime,
   permissions, roles, fixtures and business data are unaffected.
+
+## Frontend system professionalization — Phase 10 reporting center (2026-08-25)
+
+- Branch / baseline: `feature/p1-reporting-center-domain-rollout-v1` /
+  `d15608bfbde245b7e7b2bba87c5ac52d787a3037`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  standard product / formal reporting-center rollout evidence /
+  `smart_construction_core` reporting-center menus and actions.
+- Reason: the locked reporting center exposes six formal project, entity,
+  cost, fund, tax and labor-report entries. This final domain batch qualifies
+  their exact runtime authority and professional presentation states.
+- Why Here / Why Not Elsewhere: the menu/action/view identities are
+  construction-standard reporting semantics. Existing P0 navigation,
+  Contract V2, collection and readable analysis fallback mechanisms render
+  them; no model, route, renderer, role or permission special case is added.
+- Blast radius / validation: six exact menu/action pairs across six models.
+  Runtime coverage proves six ready collection surfaces, four structural
+  forms, nine explicitly readable pivot/graph fallbacks and zero fail-closed
+  or authority gaps. The governed project-report journey proves exact
+  action/menu/model, one H1, one product header and one professional empty
+  state; a project-only role is denied from the data-authority tax report.
+  Browser errors and mutations are zero, and the reporting business identity
+  fingerprint is unchanged.
+- Systemwide effect: exact covered surfaces increase from 82 to 88 of 88;
+  uncovered surfaces and runtime authority gaps are both zero. The locked ten
+  primary centers now pass the formal runtime coverage audit.
+- Rollback: revert reporting evidence and workflow wiring. Product runtime,
+  permissions, roles, fixtures and business data are unaffected.

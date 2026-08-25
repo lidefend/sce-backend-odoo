@@ -186,19 +186,19 @@ workflow:
       active_batch: none
     phase_10:
       name: business_domain_rollout
-      status: active
-      delivered: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration, workbench, finance, tax, accounting]
-      active_domain: reporting_center_gap_closure
+      status: coverage_complete
+      delivered: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration, workbench, finance, tax, accounting, reporting]
+      active_domain: none
       order: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration]
       systemwide_coverage_audit:
-        status: gaps_identified
+        status: pass
         authority: locked_ten_primary_centers_runtime_menu_action_graph
         runtime_surfaces: 88
-        covered_surfaces: 82
-        uncovered_surfaces: 6
+        covered_surfaces: 88
+        uncovered_surfaces: 0
         runtime_authority_gaps: 0
         excluded_non_product_surfaces: 1
-        remediation_order: [reporting]
+        remediation_order: []
       per_domain_flow: [coverage_scan, gap_classification, contract_configuration, static_projection, one_primary_journey, one_security_counterexample, coverage_report]
       stop_and_split_when: domain_requires_P0_registry_shell_or_presenter_change
 
@@ -228,7 +228,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_10
-    task: reporting_center_gap_closure
-    prerequisite: phase_10_accounting_center_gap_closure_merged_and_main_synced
-    do_not_start_in_parallel: [systemwide_public_metric_acceptance]
+    phase: final_acceptance
+    task: systemwide_public_metric_acceptance
+    prerequisite: phase_10_reporting_center_gap_closure_merged_and_main_synced
+    do_not_start_in_parallel: []
