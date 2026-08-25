@@ -378,19 +378,6 @@
     cursor: pointer;
   }
 
-  .mobile-record-list .mobile-record-select input[type='checkbox'] {
-    width: 20px;
-    height: 20px;
-    margin: 0;
-    accent-color: var(--sc-semantic-surface-interactive);
-  }
-
-  .mobile-record-list .mobile-record-select:focus-within {
-    border-radius: var(--sc-product-radius-control);
-    outline: 3px solid var(--sc-app-focus-ring);
-    outline-offset: calc(-1 * var(--sc-space-2xs));
-  }
-
   .mobile-record-list .mobile-record-row:has(.mobile-record-select) .mobile-record-card {
     padding-right: calc(var(--sc-touch-target-min) + var(--sc-space-xs));
   }
@@ -641,11 +628,6 @@ tbody td {
   padding-inline: 6px;
   text-align: center;
   vertical-align: middle;
-}
-
-.cell-select input[type='checkbox'] {
-  display: block;
-  margin: 0 auto;
 }
 
 .cell-row-number {

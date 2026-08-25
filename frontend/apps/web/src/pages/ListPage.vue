@@ -213,12 +213,11 @@
             <thead>
               <tr>
                 <th v-if="showSelectionColumn" class="cell-select">
-                  <input
-                    type="checkbox"
-                    :aria-label="uiLabel('select_group_rows', `选择${group.label}当前页记录`)"
+                  <CollectionSelectionControl
                     :checked="isGroupAllSelected(group)"
+                    :indeterminate="isGroupSomeSelected(group)"
                     :disabled="loading || !groupSelectableRows(group).length"
-                    @click.stop
+                    :label="uiLabel('select_group_rows', `选择${group.label}当前页记录`)"
                     @change="onGroupSelectAllChange(group, $event)"
                   />
                 </th>
@@ -254,12 +253,11 @@
                 @click="handleRowClick(row, $event)"
               >
                 <td v-if="showSelectionColumn" class="cell-select" @click.stop>
-                  <input
+                  <CollectionSelectionControl
                     v-if="rowId(row)"
-                    type="checkbox"
-                    :aria-label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, columnValue(row, mobileIdentityField)).text}`)"
                     :checked="isSelected(row)"
                     :disabled="loading"
+                    :label="rowSelectionLabel(row)"
                     @change="onRowCheckboxChange(row, $event)"
                   />
                 </td>
@@ -327,19 +325,17 @@
           :role="showSelectionColumn ? 'option' : undefined"
           :aria-selected="showSelectionColumn ? isSelected(row) : undefined"
         >
-          <label
+          <CollectionSelectionControl
             v-if="showSelectionColumn"
             class="mobile-record-select"
             data-mobile-record-select
+            size="touch"
+            :checked="isSelected(row)"
+            :disabled="loading || !rowId(row)"
+            :label="rowSelectionLabel(row)"
             @click.stop
-          >
-            <input
-              type="checkbox"
-              :checked="isSelected(row)"
-              :aria-label="`选择第 ${index + 1} 条记录`"
-              @change="onRowCheckboxChange(row, $event)"
-            />
-          </label>
+            @change="onRowCheckboxChange(row, $event)"
+          />
           <ScMobileRecordCard
             class="mobile-record-card"
             as="button"
@@ -380,12 +376,11 @@
         <thead>
           <tr>
             <th v-if="showSelectionColumn" class="cell-select">
-              <input
-                type="checkbox"
-                :aria-label="uiLabel('select_page_rows', '选择当前页记录')"
+              <CollectionSelectionControl
                 :checked="allSelected"
+                :indeterminate="someSelected"
                 :disabled="loading || !selectableRows.length"
-                @click.stop
+                :label="uiLabel('select_page_rows', '选择当前页记录')"
                 @change="onSelectAllChange"
               />
             </th>
@@ -421,12 +416,11 @@
             @click="handleRowClick(row, $event)"
           >
             <td v-if="showSelectionColumn" class="cell-select" @click.stop>
-              <input
+              <CollectionSelectionControl
                 v-if="rowId(row)"
-                type="checkbox"
-                :aria-label="uiLabel('select_record', `选择${semanticCell(mobileIdentityField, columnValue(row, mobileIdentityField)).text}`)"
                 :checked="isSelected(row)"
                 :disabled="loading"
+                :label="rowSelectionLabel(row)"
                 @change="onRowCheckboxChange(row, $event)"
               />
             </td>
@@ -510,6 +504,7 @@ import CollectionGroupPageControls from '../components/product-list/CollectionGr
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import CollectionRowCell, { type CollectionRowCellKind } from '../components/product-list/CollectionRowCell.vue';
+import CollectionSelectionControl from '../components/product-list/CollectionSelectionControl.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
@@ -1224,6 +1219,11 @@ const allSelected = computed(() => {
   if (!rows.length) return false;
   return rows.every((id) => selectedIdSet.value.has(id));
 });
+const someSelected = computed(() => {
+  const rows = selectableRows.value;
+  if (!rows.length || allSelected.value) return false;
+  return rows.some((id) => selectedIdSet.value.has(id));
+});
 const listLimit = computed(() => {
   if (observedListLimit.value > 0) return observedListLimit.value;
   const limit = Number(props.listLimit || 40);
@@ -1321,9 +1321,14 @@ function isGroupAllSelected(group: { sampleRows?: Array<Record<string, unknown>>
   return ids.every((id) => selectedIdSet.value.has(id));
 }
 
-function onGroupSelectAllChange(group: { sampleRows?: Array<Record<string, unknown>> }, event: Event) {
+function isGroupSomeSelected(group: { sampleRows?: Array<Record<string, unknown>> }) {
+  const ids = groupSelectableRows(group);
+  if (!ids.length || isGroupAllSelected(group)) return false;
+  return ids.some((id) => selectedIdSet.value.has(id));
+}
+
+function onGroupSelectAllChange(group: { sampleRows?: Array<Record<string, unknown>> }, selected: boolean) {
   if (!props.onToggleSelectionAll) return;
-  const selected = Boolean((event.target as HTMLInputElement | null)?.checked);
   props.onToggleSelectionAll(groupSelectableRows(group), selected);
 }
 
@@ -1446,14 +1451,12 @@ watch(
   { immediate: true },
 );
 
-function onSelectAllChange(event: Event) {
-  const checked = Boolean((event.target as HTMLInputElement | null)?.checked);
-  onToggleAll(checked);
-}
+function onSelectAllChange(checked: boolean) { onToggleAll(checked); }
 
-function onRowCheckboxChange(row: Record<string, unknown>, event: Event) {
-  const checked = Boolean((event.target as HTMLInputElement | null)?.checked);
-  onToggleRow(row, checked);
+function onRowCheckboxChange(row: Record<string, unknown>, checked: boolean) { onToggleRow(row, checked); }
+
+function rowSelectionLabel(row: Record<string, unknown>) {
+  return uiLabel('select_record', `选择${semanticCell(mobileIdentityField.value, columnValue(row, mobileIdentityField.value)).text}`);
 }
 
 const rowPrimary = computed(() => props.listProfile?.row_primary || '');
