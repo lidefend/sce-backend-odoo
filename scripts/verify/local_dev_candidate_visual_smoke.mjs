@@ -175,6 +175,24 @@ function normalizeSummaryTone(value) {
   return ['neutral', 'danger', 'warning', 'success', 'info'].includes(normalized) ? normalized : 'neutral';
 }
 
+function applyActionSceneIdentityFixture(payload, actionId, sceneKey) {
+  let applied = 0;
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    if (Number(value.action_id || 0) === actionId) {
+      value.scene_key = sceneKey;
+      applied += 1;
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return applied;
+}
+
 function collectSummaryCarrierPaths(payload) {
   const paths = [];
   const visit = (value, pathParts) => {
@@ -257,6 +275,7 @@ try {
     });
     const bootSummaryFixtureTarget = routes.find((target) => Array.isArray(target.summaryFixture));
     let bootSummaryFixtureApplied = false;
+    let bootSummaryActionIdentityApplied = 0;
     let bootSummaryItems = [];
     const bootSummaryCarrierPaths = new Set();
     let bootSummaryRoutesInFlight = 0;
@@ -284,6 +303,14 @@ try {
           String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
         );
         bootSummaryFixtureApplied = bootSummaryFixtureApplied || summaryApplied;
+        const fixtureActionId = Number(bootSummaryFixtureTarget.summaryFixtureActionId || 0);
+        if (fixtureActionId > 0) {
+          bootSummaryActionIdentityApplied += applyActionSceneIdentityFixture(
+            payload,
+            fixtureActionId,
+            String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
+          );
+        }
         const responseSummaryItems = summarizeContractSummaryItems(payload);
         if (responseSummaryItems.length) bootSummaryItems = responseSummaryItems;
         await route.fulfill({ response, json: payload });
@@ -392,10 +419,14 @@ try {
           ownerCount,
           domItems,
           fixtureApplied: summaryFixture ? bootSummaryFixtureApplied : null,
+          actionIdentityFixtureApplied: summaryFixture ? bootSummaryActionIdentityApplied : null,
           fixtureCarrierPaths: summaryFixture ? [...bootSummaryCarrierPaths] : [],
           pass: JSON.stringify(domItems) === JSON.stringify(expectedItems)
             && (contractSummaryItems.length > 0 ? ownerCount === 1 : ownerCount === 0)
-            && (!summaryFixture || bootSummaryFixtureApplied),
+            && (!summaryFixture || (
+              bootSummaryFixtureApplied
+              && (!target.summaryFixtureActionId || bootSummaryActionIdentityApplied > 0)
+            )),
         };
       }
       if (target.exerciseCollectionSelection === true) {
