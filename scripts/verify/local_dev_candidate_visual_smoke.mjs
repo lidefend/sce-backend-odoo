@@ -129,7 +129,7 @@ function applyFirstContractSummaryFixture(payload, fixture, sceneKey) {
     if (sceneReady && Array.isArray(sceneReady.scenes) && sceneKey) {
       const scene = sceneReady.scenes.find((item) => {
         if (!item || typeof item !== 'object') return false;
-        return String(item.key || item.scene_key || item.code || '').trim() === sceneKey;
+        return String(item.scene?.key || item.page?.scene_key || '').trim() === sceneKey;
       });
       if (scene) {
         const projection = scene.projection && typeof scene.projection === 'object' && !Array.isArray(scene.projection)
@@ -148,7 +148,7 @@ function applyFirstContractSummaryFixture(payload, fixture, sceneKey) {
     if (!Array.isArray(value) && Array.isArray(value.scenes) && sceneKey) {
       const scene = value.scenes.find((item) => {
         if (!item || typeof item !== 'object') return false;
-        return String(item.key || item.scene_key || item.code || '').trim() === sceneKey;
+        return String(item.scene?.key || item.page?.scene_key || item.key || item.scene_key || item.code || '').trim() === sceneKey;
       });
       if (scene) {
         const projection = scene.projection && typeof scene.projection === 'object' && !Array.isArray(scene.projection)
