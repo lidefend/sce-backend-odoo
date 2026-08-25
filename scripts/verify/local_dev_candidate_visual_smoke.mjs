@@ -119,7 +119,7 @@ function summarizeContractSummaryItems(payload) {
   return rows;
 }
 
-function applyFirstContractSummaryFixture(payload, fixture) {
+function applyFirstContractSummaryFixture(payload, fixture, sceneKey) {
   let applied = false;
   const visit = (value) => {
     if (applied || !value || typeof value !== 'object') return;
@@ -127,6 +127,20 @@ function applyFirstContractSummaryFixture(payload, fixture) {
       value.summary_items = fixture;
       applied = true;
       return;
+    }
+    if (!Array.isArray(value) && Array.isArray(value.scenes) && sceneKey) {
+      const scene = value.scenes.find((item) => {
+        if (!item || typeof item !== 'object') return false;
+        return String(item.key || item.scene_key || item.code || '').trim() === sceneKey;
+      });
+      if (scene) {
+        const projection = scene.projection && typeof scene.projection === 'object' && !Array.isArray(scene.projection)
+          ? scene.projection
+          : {};
+        scene.projection = { ...projection, summary_items: fixture };
+        applied = true;
+        return;
+      }
     }
     if (!Array.isArray(value) && value.projection && typeof value.projection === 'object' && !Array.isArray(value.projection)) {
       value.projection.summary_items = fixture;
@@ -247,7 +261,11 @@ try {
       }
       try {
         if (!payload) return;
-        bootSummaryFixtureApplied = applyFirstContractSummaryFixture(payload, bootSummaryFixtureTarget.summaryFixture);
+        bootSummaryFixtureApplied = applyFirstContractSummaryFixture(
+          payload,
+          bootSummaryFixtureTarget.summaryFixture,
+          String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
+        );
         bootSummaryItems = summarizeContractSummaryItems(payload);
         await route.fulfill({ response, json: payload });
       } finally {

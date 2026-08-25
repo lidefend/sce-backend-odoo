@@ -65,6 +65,8 @@ def validate(
         "collectSummaryCarrierPaths",
         "fixtureCarrierPaths",
         "applyFirstContractSummaryFixture",
+        "summaryFixtureSceneKey",
+        "scene.projection = { ...projection, summary_items: fixture }",
         "value.projection.summary_items = fixture",
         "normalizeSummaryTone",
         "data-summary-key",
