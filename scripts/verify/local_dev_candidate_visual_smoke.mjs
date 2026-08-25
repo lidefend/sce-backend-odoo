@@ -221,7 +221,52 @@ try {
         const openerRestored = await trigger.evaluate((node) => node === document.activeElement);
         dialogLifecycleEvidence = { focusContained, openerRestored, closedByEscape: true, pass: focusContained && openerRestored };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, mobileOverflowEvidence, dialogLifecycleEvidence, ...result });
+      let collectionToolbarEvidence = null;
+      if (target.exerciseCollectionToolbar === true) {
+        const toolbar = page.locator('[data-semantic-component="CollectionActionToolbar"]');
+        await toolbar.waitFor({ state: 'visible', timeout: 15000 });
+        const searchToggle = toolbar.getByRole('button', { name: /展开搜索菜单/ });
+        await searchToggle.click();
+        const searchLayer = toolbar.locator('[data-collection-toolbar-layer="search"]');
+        await searchLayer.waitFor({ state: 'visible', timeout: 15000 });
+        const searchFocusContained = await searchLayer.evaluate((node) => node.contains(document.activeElement));
+        await page.keyboard.press('Escape');
+        await searchLayer.waitFor({ state: 'hidden', timeout: 15000 });
+        const searchFocusRestored = await searchToggle.evaluate((node) => node === document.activeElement);
+        const rowCheckbox = viewport.name === 'mobile'
+          ? page.locator('[data-mobile-record-select] input[type="checkbox"]').first()
+          : page.locator('.desktop-record-table tbody input[type="checkbox"]').first();
+        await rowCheckbox.check();
+        const batchBar = page.locator('[data-semantic-component="CollectionBatchActionBar"]');
+        await batchBar.waitFor({ state: 'visible', timeout: 15000 });
+        const actionCount = Number(await batchBar.getAttribute('data-action-count') || 0);
+        const directKeys = String(await batchBar.getAttribute('data-direct-action-keys') || '').split(',').filter(Boolean);
+        const overflowKeys = String(await batchBar.getAttribute('data-overflow-action-keys') || '').split(',').filter(Boolean);
+        const projectedKeys = await batchBar.locator('button[data-action-key]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-action-key') || '').filter(Boolean));
+        let batchFocusContained = true;
+        let batchFocusRestored = true;
+        if (overflowKeys.length) {
+          const batchToggle = batchBar.getByRole('button', { name: /更多批量操作/ });
+          await batchToggle.click();
+          const batchLayer = batchBar.locator('[data-collection-batch-layer="overflow"]');
+          await batchLayer.waitFor({ state: 'visible', timeout: 15000 });
+          batchFocusContained = await batchLayer.evaluate((node) => node.contains(document.activeElement));
+          await page.keyboard.press('Escape');
+          await batchLayer.waitFor({ state: 'hidden', timeout: 15000 });
+          batchFocusRestored = await batchToggle.evaluate((node) => node === document.activeElement);
+        }
+        const uniqueKeys = [...new Set([...directKeys, ...overflowKeys])];
+        collectionToolbarEvidence = {
+          actionCount, directKeys, overflowKeys, projectedKeys,
+          searchFocusContained, searchFocusRestored, batchFocusContained, batchFocusRestored,
+          pass: searchFocusContained && searchFocusRestored && batchFocusContained && batchFocusRestored
+            && directKeys.length <= 1
+            && actionCount === directKeys.length + overflowKeys.length
+            && uniqueKeys.length === actionCount
+            && projectedKeys.length === directKeys.length,
+        };
+      }
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -235,6 +280,7 @@ const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded 
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
+  if (item.collectionToolbarEvidence && !item.collectionToolbarEvidence.pass) failures.push({ name: item.name, collectionToolbarEvidence: item.collectionToolbarEvidence });
 }
 const primitiveInput = report.routes.find((item) => item.primitiveInputContract)?.primitiveInputContract;
 if (!primitiveInput || primitiveInput.rootCount !== 1 || primitiveInput.inputCount !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {
