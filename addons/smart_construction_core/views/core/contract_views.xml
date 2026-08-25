@@ -46,7 +46,7 @@
         <field name="name">construction.contract.income.tree</field>
         <field name="model">construction.contract.income</field>
         <field name="arch" type="xml">
-            <tree string="收入合同">
+            <tree string="收入合同" js_class="smart_hierarchical_worksheet">
                 <field name="document_status" string="单据状态" />
                 <field name="date_contract" string="合同订立日期" />
                 <field name="business_category_id" string="业务分类" optional="hide" />
@@ -76,7 +76,7 @@
         <field name="name">construction.contract.expense.tree</field>
         <field name="model">construction.contract.expense</field>
         <field name="arch" type="xml">
-            <tree string="支出合同">
+            <tree string="支出合同" js_class="smart_hierarchical_worksheet">
                 <field name="document_status" />
                 <field name="date_contract" />
                 <field name="business_category_id" optional="hide" />
