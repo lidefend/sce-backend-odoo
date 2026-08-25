@@ -252,11 +252,11 @@ const router = createRouter({
     { path: '/admin/business-config', name: 'business-config', component: () => import('../views/BusinessConfigSurfaceView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/menu-config', name: 'menu-config', component: () => import('../views/MenuConfigView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/form-field-config', name: 'form-field-config', component: () => import('../views/ActionViewShell.vue'), meta: { layout: 'shell' } },
-    { path: '/account/api-keys', name: 'api-key-management', component: () => import('../views/ApiKeyManagementView.vue'), meta: { layout: 'shell' } },
-    { path: '/a/:actionId', name: 'action', component: () => import('../views/ActionViewShell.vue'), meta: { layout: 'shell' } },
-    { path: '/f/:model/:id', name: 'model-form', component: () => import('../pages/ContractFormRoute.vue'), meta: { layout: 'shell' } },
-    { path: '/r/:model/:id', name: 'record', component: () => import('../pages/ContractFormRoute.vue'), meta: { layout: 'shell' } },
-    { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('../views/NotFoundView.vue'), meta: { layout: 'shell' } },
+    { path: '/account/api-keys', name: 'api-key-management', component: () => import('../views/ApiKeyManagementView.vue'), meta: { layout: 'shell', pageHeadingOwner: 'content' } },
+    { path: '/a/:actionId', name: 'action', component: () => import('../views/ActionViewShell.vue'), meta: { layout: 'shell', pageHeadingOwner: 'content' } },
+    { path: '/f/:model/:id', name: 'model-form', component: () => import('../pages/ContractFormRoute.vue'), meta: { layout: 'shell', pageHeadingOwner: 'content' } },
+    { path: '/r/:model/:id', name: 'record', component: () => import('../pages/ContractFormRoute.vue'), meta: { layout: 'shell', pageHeadingOwner: 'content' } },
+    { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('../views/NotFoundView.vue'), meta: { layout: 'shell', pageHeadingOwner: 'content' } },
   ],
 });
 

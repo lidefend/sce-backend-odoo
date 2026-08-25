@@ -613,9 +613,12 @@ const formDesignerKeepsHeadline = computed(() => (
   String(route.name || '') === 'model-form'
   && String(route.query.config_mode || '').trim() === BUSINESS_CONFIG_MODES.lowCode
 ));
+const contentOwnsPageHeading = computed(() => route.meta?.pageHeadingOwner === 'content');
 const showTopbarHeadline = computed(
   () => formDesignerKeepsHeadline.value
-    || (!businessRouteUsesCompactTopbar.value && (!useMinimalTopbar.value || compactRouteKeepsHeadline.value)),
+    || (!contentOwnsPageHeading.value
+      && !businessRouteUsesCompactTopbar.value
+      && (!useMinimalTopbar.value || compactRouteKeepsHeadline.value)),
 );
 const sidebarClass = computed(() =>
   activeLayout.value.sidebar === 'scroll' ? 'sidebar--scroll' : 'sidebar--fixed'

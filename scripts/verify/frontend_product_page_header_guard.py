@@ -95,10 +95,17 @@ def validate() -> list[str]:
         if marker not in native_renderer:
             failures.append(f"native record title responsive treatment is missing {marker}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")
-    for page_route in ("'action'", "'record'", "'model-form'", "'not-found'"):
-        compact_section = app_shell.split("const compactRouteKeepsHeadline", 1)[1].split(");", 1)[0]
-        if page_route in compact_section:
-            failures.append(f"AppShell still owns h1 for page-header route {page_route}")
+    router = source("frontend/apps/web/src/router/index.ts")
+    for page_route in ("api-key-management", "action", "record", "model-form", "not-found"):
+        route_declaration = next(
+            (line for line in router.splitlines() if f"name: '{page_route}'" in line),
+            "",
+        )
+        if "pageHeadingOwner: 'content'" not in route_declaration:
+            failures.append(f"page-header route does not declare content heading authority: {page_route}")
+    for marker in ("contentOwnsPageHeading", "route.meta?.pageHeadingOwner === 'content'", "!contentOwnsPageHeading.value"):
+        if marker not in app_shell:
+            failures.append(f"AppShell does not consume route heading authority: {marker}")
     return failures
 
 
