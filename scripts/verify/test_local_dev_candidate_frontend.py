@@ -141,6 +141,8 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("mobileOverflowEvidence", browser)
         self.assertIn("exerciseDialog", browser)
         self.assertIn("dialogLifecycleEvidence", browser)
+        self.assertIn("exerciseCollectionToolbar", browser)
+        self.assertIn("collectionToolbarEvidence", browser)
         self.assertIn("openerRestored", browser)
         self.assertNotIn("waitForTimeout", browser)
 
