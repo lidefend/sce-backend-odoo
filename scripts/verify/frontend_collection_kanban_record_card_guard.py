@@ -7,13 +7,15 @@ CARD = ROOT / "frontend/apps/web/src/components/product-list/CollectionKanbanRec
 STYLE = ROOT / "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.css"
 LANE = ROOT / "frontend/apps/web/src/components/product-list/CollectionKanbanLane.vue"
 VISUAL = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
+SEMANTICS_BROWSER = ROOT / "scripts/verify/collection_view_semantics_browser.mjs"
 
-def validate(page_source: str | None = None, card_source: str | None = None, style_source: str | None = None, lane_source: str | None = None, visual_source: str | None = None) -> list[str]:
+def validate(page_source: str | None = None, card_source: str | None = None, style_source: str | None = None, lane_source: str | None = None, visual_source: str | None = None, semantics_browser_source: str | None = None) -> list[str]:
     page = page_source if page_source is not None else PAGE.read_text(encoding="utf-8")
     card = card_source if card_source is not None else CARD.read_text(encoding="utf-8")
     style = style_source if style_source is not None else STYLE.read_text(encoding="utf-8")
     lane = lane_source if lane_source is not None else LANE.read_text(encoding="utf-8")
     visual = visual_source if visual_source is not None else VISUAL.read_text(encoding="utf-8")
+    semantics_browser = semantics_browser_source if semantics_browser_source is not None else SEMANTICS_BROWSER.read_text(encoding="utf-8")
     failures: list[str] = []
     if page.count("<CollectionKanbanRecordCard") != 1:
         failures.append("KanbanPage must expose exactly one shared kanban card adapter")
@@ -33,6 +35,10 @@ def validate(page_source: str | None = None, card_source: str | None = None, sty
         if marker not in lane: failures.append(f"shared kanban lane missing {marker}")
     for marker in ('captureCollectionKanban', 'collectionKanbanEvidence', 'CollectionKanbanRecordCard', 'paginationOwnerCount === 1'):
         if marker not in visual: failures.append(f"kanban browser evidence missing {marker}")
+    for marker in ('CollectionKanbanRecordCard', 'CollectionKanbanLane', 'collection-kanban-record-card__fact'):
+        if marker not in semantics_browser: failures.append(f"collection semantics browser missing {marker}")
+    for legacy in ('.card-title', '.meta-row dt', 'explicit_card"] .card'):
+        if legacy in semantics_browser: failures.append(f"collection semantics browser retains legacy selector {legacy}")
     for marker in ('data-semantic-component="CollectionKanbanRecordCard"', ':data-record-key="recordKey"', ':aria-label="openAriaLabel"', '@keydown.enter', '@keydown.space.prevent', 'ScStatusBadge', ':data-fact-key="fact.key"'):
         if marker not in card: failures.append(f"shared kanban card missing {marker}")
     for marker in ('var(--sc-semantic-focus-ring)', 'var(--sc-semantic-shadow-panel)', 'prefers-reduced-motion', '.collection-kanban-record-card__fact'):
