@@ -3,6 +3,10 @@
     ref="toolbarRoot"
     class="action-toolbar"
     :class="{ 'action-toolbar--without-view': !showViewSwitch || viewModes.length <= 1 }"
+    data-semantic-component="CollectionActionToolbar"
+    data-semantic-layer="pattern"
+    :data-open-layer="searchMenuOpen ? 'search' : overflowMenuOpen ? 'overflow' : 'none'"
+    :aria-label="uiLabel('collection_toolbar', '列表操作')"
   >
     <div v-if="showViewSwitch && viewModes.length > 1" class="toolbar-section view-switch">
       <p class="contract-label">{{ viewLabel }}</p>
@@ -13,6 +17,7 @@
           class="contract-chip"
           :class="{ active: currentViewMode === mode }"
           :disabled="loading"
+          :aria-pressed="currentViewMode === mode"
           @click="$emit('switch-view', mode)"
         >
           {{ viewModeLabels[mode] || mode }}
@@ -71,7 +76,7 @@
           @compositionend="$emit('search-composition-end', $event)"
           @input="$emit('search-input', $event)"
           @keydown.enter.prevent="$emit('search-submit')"
-          @keydown.esc="searchMenuOpen = false"
+          @keydown.esc.stop="closeSearchMenuAndRestoreFocus"
         />
         <ScButton
           class="toolbar-search-submit"
@@ -94,12 +99,15 @@
           {{ clearLabel }}
         </ScButton>
         <button
+          ref="searchMenuToggle"
           class="search-menu-toggle"
           type="button"
           :class="{ active: searchMenuOpen }"
           :disabled="loading || !hasSearchMenu"
           :aria-label="uiLabel('search_menu_toggle', '展开搜索菜单')"
-          @click="searchMenuOpen = !searchMenuOpen"
+          :aria-expanded="searchMenuOpen"
+          aria-controls="collection-search-disclosure"
+          @click="toggleSearchMenu"
         >
           <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
         </button>
@@ -114,7 +122,7 @@
           清除全部
         </button>
       </div>
-      <div v-if="searchMenuOpen && hasSearchMenu" class="search-dropdown">
+      <div v-if="searchMenuOpen && hasSearchMenu" id="collection-search-disclosure" class="search-dropdown" data-collection-toolbar-layer="search">
         <section v-if="showFilterColumn" class="search-dropdown-section">
           <p class="search-dropdown-title">{{ filterLabel }}</p>
           <div class="search-dropdown-items">
@@ -249,6 +257,7 @@
           class="contract-chip"
           :class="{ active: option.value === sortValue }"
           :disabled="loading"
+          :aria-pressed="option.value === sortValue"
           @click="$emit('sort', option.value)"
         >
           {{ option.label }}
@@ -258,18 +267,19 @@
 
     <div v-if="hasResponsiveOverflow" class="toolbar-overflow">
       <button
+        ref="overflowMenuToggle"
         class="toolbar-overflow-toggle"
         type="button"
         :disabled="loading"
         :aria-expanded="overflowMenuOpen"
         :aria-label="uiLabel('more_actions', '更多列表操作')"
         :title="uiLabel('more_actions', '更多列表操作')"
-        @click="overflowMenuOpen = !overflowMenuOpen"
-        @keydown.esc="overflowMenuOpen = false"
+        aria-controls="collection-toolbar-overflow"
+        @click="toggleOverflowMenu"
       >
         <ScIcon name="menu" :size="18" />
       </button>
-      <div v-if="overflowMenuOpen" class="toolbar-overflow-menu" :aria-label="uiLabel('more_actions', '更多列表操作')">
+      <div v-if="overflowMenuOpen" id="collection-toolbar-overflow" class="toolbar-overflow-menu" data-collection-toolbar-layer="overflow" :aria-label="uiLabel('more_actions', '更多列表操作')">
         <section v-if="showViewSwitch && viewModes.length > 1" class="toolbar-overflow-section">
           <p>{{ viewLabel }}</p>
           <button
@@ -278,6 +288,7 @@
             type="button"
             :class="{ active: currentViewMode === mode }"
             :disabled="loading"
+            :aria-pressed="currentViewMode === mode"
             @click="selectOverflowView(mode)"
           >
             {{ viewModeLabels[mode] || mode }}
@@ -291,6 +302,7 @@
             type="button"
             :class="{ active: option.value === sortValue }"
             :disabled="loading"
+            :aria-pressed="option.value === sortValue"
             @click="selectOverflowSort(option.value)"
           >
             {{ option.label }}
@@ -319,7 +331,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 
@@ -411,6 +423,8 @@ const favoriteName = ref('');
 const favoriteUseByDefault = ref(false);
 const favoriteShared = ref(false);
 const toolbarRoot = ref<HTMLElement | null>(null);
+const searchMenuToggle = ref<HTMLButtonElement | null>(null);
+const overflowMenuToggle = ref<HTMLButtonElement | null>(null);
 const selectedSymbol = '已选';
 const clearSymbol = '清除';
 
@@ -498,6 +512,28 @@ function createFromOverflow() {
   emit('create');
 }
 
+async function focusOpenLayer(selector: string) {
+  await nextTick();
+  toolbarRoot.value?.querySelector<HTMLElement>(selector)?.focus();
+}
+
+function toggleSearchMenu() {
+  searchMenuOpen.value = !searchMenuOpen.value;
+  overflowMenuOpen.value = false;
+  if (searchMenuOpen.value) void focusOpenLayer('#collection-search-disclosure button:not(:disabled), #collection-search-disclosure select:not(:disabled), #collection-search-disclosure input:not(:disabled)');
+}
+
+function toggleOverflowMenu() {
+  overflowMenuOpen.value = !overflowMenuOpen.value;
+  searchMenuOpen.value = false;
+  if (overflowMenuOpen.value) void focusOpenLayer('#collection-toolbar-overflow button:not(:disabled)');
+}
+
+function closeSearchMenuAndRestoreFocus() {
+  searchMenuOpen.value = false;
+  searchMenuToggle.value?.focus();
+}
+
 function selectFilter(key: string) {
   searchMenuOpen.value = false;
   emit('filter', key);
@@ -575,12 +611,26 @@ function handleDocumentPointerDown(event: PointerEvent) {
   overflowMenuOpen.value = false;
 }
 
+function handleDocumentKeyDown(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return;
+  if (searchMenuOpen.value) {
+    closeSearchMenuAndRestoreFocus();
+    return;
+  }
+  if (overflowMenuOpen.value) {
+    overflowMenuOpen.value = false;
+    overflowMenuToggle.value?.focus();
+  }
+}
+
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown);
+  document.addEventListener('keydown', handleDocumentKeyDown);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  document.removeEventListener('keydown', handleDocumentKeyDown);
 });
 </script>
 
