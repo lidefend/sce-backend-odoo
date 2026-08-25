@@ -96,6 +96,7 @@
             :relation-adapter="relationAdapter"
             :native-action-handler="runNativeCanonicalAction"
             :native-action-state-resolver="nativeBridge.actionStateForNode"
+            :prefer-readonly-facts="renderModel.identity.mode === 'readonly'"
             @field-change="emit('field-change', $event)"
           />
         </main>
@@ -107,6 +108,7 @@
             :relation-adapter="relationAdapter"
             :native-action-handler="runNativeCanonicalAction"
             :native-action-state-resolver="nativeBridge.actionStateForNode"
+            :prefer-readonly-facts="renderModel.identity.mode === 'readonly'"
             @field-change="emit('field-change', $event)"
           />
         </section>
