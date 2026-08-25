@@ -4,15 +4,15 @@
 - Primary centers: **10**
 - Runtime menu/action surfaces: **88**
 - Excluded non-product surfaces: **1**
-- Covered surfaces: **58**
-- Uncovered surfaces: **30**
+- Covered surfaces: **61**
+- Uncovered surfaces: **27**
 - Runtime/authority gaps: **0**
 
 ## Primary-center coverage
 
 | Center | Runtime | Covered | Uncovered |
 |---|---:|---:|---:|
-| workbench | 4 | 1 | 3 |
+| workbench | 4 | 4 | 0 |
 | project | 30 | 30 | 0 |
 | contract | 7 | 7 | 0 |
 | cost | 4 | 4 | 0 |
@@ -25,9 +25,6 @@
 
 ## Uncovered formal runtime surfaces
 
-- `workbench` — `smart_construction_core.menu_sc_operating_metrics_project` → `smart_construction_core.action_sc_operating_metrics_project` (`sc.operating.metrics.project`)
-- `workbench` — `smart_construction_core.menu_sc_project_kanban` → `smart_construction_core.action_project_dashboard` (`project.project`)
-- `workbench` — `smart_construction_core.menu_sc_workbench_my_todo_fact` → `smart_construction_core.action_sc_workbench_task_center` (`sc.workbench.item`)
 - `finance` — `smart_construction_core.menu_sc_receipt_income` → `smart_construction_core.action_sc_receipt_income` (`sc.receipt.income`)
 - `finance` — `smart_construction_core.menu_sc_reimbursement_request` → `smart_construction_core.action_sc_expense_claim_reimbursement_request` (`sc.expense.claim`)
 - `finance` — `smart_construction_core.menu_sc_product_current_account_v1` → `smart_construction_core.action_sc_product_current_account_v1` (`sc.current.account.workspace`)

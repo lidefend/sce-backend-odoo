@@ -59,6 +59,7 @@ DELIVERED_REPORTS = (
     "collaboration-domain-coverage-v1.json",
     "base-configuration-domain-coverage-v1.json",
     "administration-domain-coverage-v1.json",
+    "workbench-center-coverage-v1.json",
 )
 
 
@@ -207,7 +208,7 @@ def collect(env, report_root: Path = REPORT_ROOT) -> dict[str, object]:
     }
     return {
         "schemaVersion": "frontend_systemwide_coverage_audit.v1",
-        "status": "PASS" if not gaps and len(centers) == 10 and len(reports) == 10 else "FAIL",
+        "status": "PASS" if not gaps and len(centers) == 10 and len(reports) == len(DELIVERED_REPORTS) else "FAIL",
         "database": env.cr.dbname,
         "formalProductLayer": "P0_P1_systemwide_frontend",
         "primaryCenterAuthority": "config/product_primary_center_baseline_v1.json",

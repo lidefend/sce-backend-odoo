@@ -1,0 +1,246 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "workbench_center",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_workspace_center",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_workspace_center"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 4,
+    "model_count": 4,
+    "ready_surface_count": 5,
+    "readable_fallback_count": 1,
+    "structural_form_count": 4,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 329,
+      "menuXmlid": "smart_construction_core.menu_sc_operating_metrics_project",
+      "menuName": "数据总览",
+      "actionId": 602,
+      "actionXmlid": "smart_construction_core.action_sc_operating_metrics_project",
+      "actionName": "项目经营统计表",
+      "model": "sc.operating.metrics.project",
+      "viewMode": "tree,form,pivot",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_workspace_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_operating_metrics_project",
+            "groups": [
+              "smart_construction_core.group_sc_cap_cost_read",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_cost_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_operating_metrics_project_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_operating_metrics_project_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        },
+        {
+          "viewType": "pivot",
+          "viewXmlid": "smart_construction_core.view_sc_operating_metrics_project_pivot",
+          "jsClass": "",
+          "semantic": "pivot",
+          "readiness": "readable_fallback",
+          "reason": "RENDERER_PIVOT_PLANNED"
+        }
+      ]
+    },
+    {
+      "menuId": 673,
+      "menuXmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+      "menuName": "消息通知",
+      "actionId": 858,
+      "actionXmlid": "smart_construction_core.action_sc_product_message_notification_v1",
+      "actionName": "消息通知",
+      "model": "mail.notification",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_workspace_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_mail_notification_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_product_mail_notification_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 467,
+      "menuXmlid": "smart_construction_core.menu_sc_project_kanban",
+      "menuName": "项目看板",
+      "actionId": 605,
+      "actionXmlid": "smart_construction_core.action_project_dashboard",
+      "actionName": "项目驾驶舱",
+      "model": "project.project",
+      "viewMode": "kanban,tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_workspace_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_kanban",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "kanban",
+          "viewXmlid": "smart_construction_core.view_project_project_kanban_dashboard",
+          "jsClass": "",
+          "semantic": "workflow_board",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_project_lifecycle_tree_v1",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "project.edit_project",
+          "jsClass": "project_form",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 464,
+      "menuXmlid": "smart_construction_core.menu_sc_workbench_my_todo_fact",
+      "menuName": "待办事项",
+      "actionId": 857,
+      "actionXmlid": "smart_construction_core.action_sc_workbench_task_center",
+      "actionName": "待办事项",
+      "model": "sc.workbench.item",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_workspace_center",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_workbench_my_todo_fact",
+            "groups": [
+              "smart_construction_core.group_sc_internal_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_task_entry_access"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_workbench_item_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_workbench_item_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}

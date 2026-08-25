@@ -10,13 +10,13 @@
   ],
   "summary": {
     "primaryCenterCount": 10,
-    "deliveredReportCount": 10,
+    "deliveredReportCount": 11,
     "runtimeSurfaceCount": 88,
     "excludedSurfaceCount": 1,
-    "coveredSurfaceCount": 58,
-    "uncoveredSurfaceCount": 30,
+    "coveredSurfaceCount": 61,
+    "uncoveredSurfaceCount": 27,
     "runtimeGapCount": 0,
-    "gapCount": 30
+    "gapCount": 27
   },
   "deliveredReports": [
     {
@@ -88,6 +88,13 @@
       "status": "PASS",
       "actionCount": 8,
       "gapCount": 0
+    },
+    {
+      "file": "workbench-center-coverage-v1.json",
+      "domain": "workbench_center",
+      "status": "PASS",
+      "actionCount": 4,
+      "gapCount": 0
     }
   ],
   "centers": [
@@ -95,8 +102,8 @@
       "center": "workbench",
       "rootMenuXmlid": "smart_construction_core.menu_sc_workspace_center",
       "surfaceCount": 4,
-      "coveredCount": 1,
-      "uncoveredCount": 3
+      "coveredCount": 4,
+      "uncoveredCount": 0
     },
     {
       "center": "project",
@@ -228,7 +235,7 @@
           "reason": "RENDERER_PIVOT_PLANNED"
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "workbench",
@@ -293,7 +300,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "workbench",
@@ -349,7 +356,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "workbench",
@@ -5804,24 +5811,6 @@
     }
   ],
   "gaps": [
-    {
-      "center": "workbench",
-      "menuXmlid": "smart_construction_core.menu_sc_operating_metrics_project",
-      "actionXmlid": "smart_construction_core.action_sc_operating_metrics_project",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "workbench",
-      "menuXmlid": "smart_construction_core.menu_sc_project_kanban",
-      "actionXmlid": "smart_construction_core.action_project_dashboard",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "workbench",
-      "menuXmlid": "smart_construction_core.menu_sc_workbench_my_todo_fact",
-      "actionXmlid": "smart_construction_core.action_sc_workbench_task_center",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
     {
       "center": "finance",
       "menuXmlid": "smart_construction_core.menu_sc_receipt_income",
