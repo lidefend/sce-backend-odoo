@@ -187,8 +187,8 @@ workflow:
     phase_10:
       name: business_domain_rollout
       status: active
-      delivered: [project, contract, payment]
-      active_domain: settlement
+      delivered: [project, contract, payment, settlement]
+      active_domain: cost
       order: [project, contract, payment, settlement, cost, material, quality_safety, collaboration, base_configuration, administration]
       per_domain_flow: [coverage_scan, gap_classification, contract_configuration, static_projection, one_primary_journey, one_security_counterexample, coverage_report]
       stop_and_split_when: domain_requires_P0_registry_shell_or_presenter_change
@@ -220,6 +220,6 @@ workflow:
 
   next_action:
     phase: phase_10
-    task: settlement_domain_rollout
-    prerequisite: phase_10_payment_domain_merged_and_main_synced
-    do_not_start_in_parallel: [phase_10_cost, phase_10_material]
+    task: cost_domain_rollout
+    prerequisite: phase_10_settlement_domain_merged_and_main_synced
+    do_not_start_in_parallel: [phase_10_material, phase_10_quality_safety]
