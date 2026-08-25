@@ -550,10 +550,13 @@ candidate.required_checks.dispatch: guard.prod.forbid
 	[ -n "$$pr_number" ] || { echo "[candidate.required_checks.dispatch] BLOCKED exactly_one_open_pr_required"; exit 2; }; \
 	[ "$$live_head" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED pr_head_mismatch"; exit 2; }; \
 	[[ "$$base_sha" =~ ^[0-9a-f]{40}$$ ]] || { echo "[candidate.required_checks.dispatch] BLOCKED invalid_pr_base"; exit 2; }; \
-	for workflow in public_guard.yml professional_quality_gate.yml frontend_release_gate.yml merge_policy_gate.yml; do \
-	  gh workflow run "$$workflow" --ref "$$branch" -f expected_head="$$expected" -f expected_base="$$base_sha"; \
-	done; \
-	echo "[candidate.required_checks.dispatch] PASS branch=$$branch pr=$$pr_number sha=$$expected base=$$base_sha workflows=4"; \
+	gh label view ci:candidate >/dev/null 2>&1 || gh label create ci:candidate --color 1d76db --description "Run exact-head candidate required checks"; \
+	if gh pr view "$$pr_number" --json labels --jq ".labels[].name" | grep -Fxq ci:candidate; then \
+	  gh pr edit "$$pr_number" --remove-label ci:candidate >/dev/null; \
+	fi; \
+	[ "$$(gh pr view "$$pr_number" --json headRefOid --jq .headRefOid)" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED pr_head_changed_before_dispatch"; exit 2; }; \
+	gh pr edit "$$pr_number" --add-label ci:candidate >/dev/null; \
+	echo "[candidate.required_checks.dispatch] PASS branch=$$branch pr=$$pr_number sha=$$expected base=$$base_sha trigger=ci:candidate"; \
 	'
 
 candidate.mirror.gitee: guard.prod.forbid

@@ -50,17 +50,12 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         for workflow in workflows:
             text = self.text(workflow)
-            self.assertIn("types: [opened, reopened, ready_for_review]", text)
+            self.assertIn("types: [opened, reopened, ready_for_review, labeled]", text)
             self.assertNotIn("synchronize", text)
             self.assertIn("workflow_dispatch:", text)
-            self.assertIn("expected_head:", text)
-            self.assertIn("expected_base:", text)
-            self.assertIn("inputs.expected_head", text)
-            self.assertIn("inputs.expected_base", text)
-            self.assertIn(
-                "github.event_name == 'workflow_dispatch' && 'pull_request'",
-                text,
-            )
+            self.assertIn("github.event.label.name == 'ci:candidate'", text)
+            self.assertNotIn("inputs.expected_head", text)
+            self.assertNotIn("inputs.expected_base", text)
 
         makefile = (ROOT / "make/codex.mk").read_text(encoding="utf-8")
         dispatch = makefile.split("candidate.required_checks.dispatch:", 1)[1].split(
@@ -69,10 +64,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("exactly_one_open_pr_required", dispatch)
         self.assertIn("pr_head_mismatch", dispatch)
         self.assertIn("invalid_pr_base", dispatch)
-        self.assertIn('expected_head="$$expected"', dispatch)
-        self.assertIn('expected_base="$$base_sha"', dispatch)
-        for workflow in workflows:
-            self.assertIn(workflow, dispatch)
+        self.assertIn("pr_head_changed_before_dispatch", dispatch)
+        self.assertIn("gh label create ci:candidate", dispatch)
+        self.assertIn("--remove-label ci:candidate", dispatch)
+        self.assertIn("--add-label ci:candidate", dispatch)
 
     def test_frontend_lane_commands_are_explicit(self) -> None:
         text = self.text("frontend_release_gate.yml")
@@ -93,7 +88,6 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("steps.risk.outputs.lane", text)
         self.assertIn("if: needs.classify.outputs.lane != 'FAST'", text)
         self.assertIn("Scan governed product history", text)
-        self.assertIn('"${GITHUB_EVENT_NAME}" = "workflow_dispatch"', text)
         self.assertIn('repository_clean_history_guard.py --trusted-base "${BASE_SHA}"', text)
         self.assertIn("make verify.repository.clean_history", text)
 

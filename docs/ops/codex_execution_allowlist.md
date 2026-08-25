@@ -195,8 +195,8 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   * 用于开放 PR 在后续修复提交完成后，显式冻结并验证唯一 exact-head 候选；
   * 普通 `make pr.push` 只更新远端分支，不再因每个提交自动启动完整候选 CI；
   * 入口必须校验本地、远端和开放 PR head 完全一致，并从 PR 读取完整 base SHA；
-  * 入口只允许触发四个受管 required-check workflow，且将 exact head/base 作为必填输入；
-  * `workflow_dispatch` 必须沿用 PR diff 风险分类，不得被误判为 release validation；
+  * 入口只允许通过重新应用受管 `ci:candidate` 标签触发 PR exact-head required checks；
+  * 标签事件必须沿用 PR diff 风险分类，并生成属于当前 PR head 的 check suite；
   * 新 head 在该入口成功完成前没有 required check，因此不能合并。
 
 > 说明：

@@ -5861,8 +5861,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   once. Later branch pushes do not automatically rerun it. The governed
   `candidate.required_checks.dispatch` entry verifies clean local state, local,
   remote and unique open-PR head equality, captures the exact PR base, then
-  dispatches all four gates with mandatory head/base inputs. Dispatched checks
-  retain PR risk classification instead of being promoted to release mode.
+  reapplies the governed `ci:candidate` label. The resulting PR label event
+  starts all four gates on the current PR head and retains PR risk
+  classification. Direct workflow dispatch remains reserved for release-mode
+  validation and is not used to satisfy protected-main checks.
 - Preserved boundary: a new head has no successful required check and therefore
   cannot merge until explicitly dispatched. Main pushes, release validation,
   fail-closed risk classification and protected-main rules are unchanged.
