@@ -164,9 +164,11 @@ workflow:
           status: merged
           capabilities: [actor, occurred_at, event, result, disclosure, empty_state]
         phase_8c:
-          status: active
+          status: merged
           capabilities: [chatter, attachment, activity, comment, follower]
-        phase_8d: [relation_search, relation_create, cancel, success_settlement, dirty_preservation, exact_once_mutation]
+        phase_8d:
+          status: active
+          capabilities: [relation_search, relation_create, cancel, success_settlement, dirty_preservation, exact_once_mutation]
     phase_9:
       name: industry_component_profiles
       status: planned
@@ -207,7 +209,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_8c
-    task: professional_collaboration_components
-    prerequisite: phase_8b_merged_and_main_synced
-    do_not_start_in_parallel: [phase_8d]
+    phase: phase_8d
+    task: professional_relation_lifecycle
+    prerequisite: phase_8c_merged_and_main_synced
+    do_not_start_in_parallel: [phase_9]

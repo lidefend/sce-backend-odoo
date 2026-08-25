@@ -1,36 +1,15 @@
 import type { Router } from 'vue-router';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import type { ContractAction } from './types';
+import {
+  buildProfessionalRelationCancelledMessage,
+  buildProfessionalRelationCreatedMessage,
+  type ProfessionalRelationCancelledMessage,
+  type ProfessionalRelationCreatedMessage,
+} from './professionalRelationLifecycleModel';
 
-export type RelationCreateDialogMessage = {
-  type: 'sc.relation_record_created.v1';
-  nonce: string;
-  fieldName: string;
-  parentModel: string;
-  relationModel: string;
-  id: number;
-  label: string;
-};
-
-export type RelationCreateDialogCancelMessage = Omit<RelationCreateDialogMessage, 'type' | 'id' | 'label'> & {
-  type: 'sc.relation_record_cancelled.v1';
-};
-
-function resolveRelationCreateDialogContext(params: {
-  query: Record<string, unknown>;
-  relationModel: string;
-}) {
-  if (String(params.query.relation_create_mode || '').trim() !== 'dialog') return null;
-  const nonce = String(params.query.relation_dialog_nonce || '').trim();
-  const fieldName = String(params.query.relation_return_field || '').trim();
-  const parentModel = String(params.query.relation_return_model || '').trim();
-  const relationModel = String(params.relationModel || '').trim();
-  if (!/^[a-zA-Z0-9-]{8,128}$/.test(nonce)
-    || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName)
-    || !/^[a-zA-Z0-9_.]+$/.test(parentModel)
-    || !/^[a-zA-Z0-9_.]+$/.test(relationModel)) return null;
-  return { nonce, fieldName, parentModel, relationModel };
-}
+export type RelationCreateDialogMessage = ProfessionalRelationCreatedMessage;
+export type RelationCreateDialogCancelMessage = ProfessionalRelationCancelledMessage;
 
 export function resolveRelationCreateDialogMessage(params: {
   query: Record<string, unknown>;
@@ -38,23 +17,14 @@ export function resolveRelationCreateDialogMessage(params: {
   relationModel: string;
   label?: string;
 }): RelationCreateDialogMessage | null {
-  const context = resolveRelationCreateDialogContext(params);
-  const id = Number(params.createdId || 0);
-  if (!context || !Number.isFinite(id) || id <= 0) return null;
-  return {
-    type: 'sc.relation_record_created.v1',
-    ...context,
-    id: Math.trunc(id),
-    label: String(params.label || '').trim() || `记录 ${Math.trunc(id)}`,
-  };
+  return buildProfessionalRelationCreatedMessage(params);
 }
 
 export function resolveRelationCreateDialogCancelMessage(params: {
   query: Record<string, unknown>;
   relationModel: string;
 }): RelationCreateDialogCancelMessage | null {
-  const context = resolveRelationCreateDialogContext(params);
-  return context ? { type: 'sc.relation_record_cancelled.v1', ...context } : null;
+  return buildProfessionalRelationCancelledMessage(params);
 }
 
 export async function executeRecordFormReturn(params: {
