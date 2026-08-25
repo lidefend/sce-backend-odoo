@@ -56,6 +56,7 @@
                   tabindex="0"
                   @click="selectEntry(entry)"
                   @dblclick="entry.record && emit('open-record', entry.record)"
+                  @keyup="openRecordFromKeyboard($event, entry.record)"
                 >
                   <td v-for="column in columns" :key="column.field" :class="[`align-${column.align}`, { 'variance-nonzero': isVarianceCell(entry, column) }]">
                     <div v-if="column.field === treeColumn" class="tree-cell" :style="{ paddingLeft: `${entry.node.depth * 18}px` }">
@@ -74,6 +75,13 @@
         <section class="worksheet-detail">
           <nav class="worksheet-tabs" aria-label="detail tabs">
             <button v-for="tab in detailTabs" :key="tab.key" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">{{ tab.label }}</button>
+            <ScButton
+              v-if="selectedRecord"
+              class="worksheet-open-record"
+              variant="secondary"
+              data-semantic-action="record.open"
+              @click="emit('open-record', selectedRecord)"
+            >{{ labels.open || '打开记录' }}</ScButton>
           </nav>
           <div v-if="!selectedRecord" class="worksheet-detail-empty">{{ labels.select_hint }}</div>
           <dl v-else class="worksheet-detail-fields">
@@ -99,6 +107,7 @@ import {
   type WorksheetNode,
   type WorksheetSheetConfig,
 } from '../../app/action_runtime/hierarchicalWorksheetDataSource';
+import { shouldOpenWorksheetRecordFromKeyboard } from '../../app/action_runtime/hierarchicalWorksheetInteraction';
 import ScButton from '../design-system/ScButton.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
 import HierarchyTreeNode from './HierarchyTreeNode.vue';
@@ -113,6 +122,10 @@ type NavigationTreeNode = { key: string; id: number; levelKey?: string; code: st
 
 const props = withDefaults(defineProps<{ config: Dict; preferenceScope?: string }>(), { preferenceScope: 'default' });
 const emit = defineEmits<{ 'open-record': [row: WorksheetDict]; 'open-action': [action: SurfaceAction] }>();
+
+function openRecordFromKeyboard(event: KeyboardEvent, record: WorksheetDict | null): void {
+  if (shouldOpenWorksheetRecordFromKeyboard(event, record)) emit('open-record', record as WorksheetDict);
+}
 const hierarchyConfig = computed(() => props.config.hierarchy as unknown as WorksheetHierarchyConfig);
 const sheetConfig = computed(() => props.config.sheet as unknown as WorksheetSheetConfig);
 const labels = computed(() => props.config.labels as Record<string, string>);
@@ -355,6 +368,7 @@ tr:hover td, tr.selected td { background: var(--sc-app-selected-bg); }
 .worksheet-tabs { display: flex; min-height: 38px; padding: 0 var(--sc-space-sm); border-bottom: 1px solid var(--sc-app-border); }
 .worksheet-tabs button { padding: 0 var(--sc-space-sm); border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--sc-app-text-secondary); }
 .worksheet-tabs button.active { border-bottom-color: var(--sc-app-accent); color: var(--sc-app-text-primary); font-weight: 600; }
+.worksheet-open-record { margin: auto 0 auto auto; }
 .worksheet-detail-empty { padding: var(--sc-space-md); color: var(--sc-app-text-secondary); }
 .worksheet-detail-fields { display: grid; grid-template-columns: max-content minmax(180px, 1fr) max-content minmax(180px, 1fr); gap: var(--sc-space-xs) var(--sc-space-sm); max-height: calc(100% - 38px); margin: 0; padding: var(--sc-space-sm); overflow: auto; }
 .worksheet-detail-fields dt { color: var(--sc-app-text-secondary); }

@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "settlement",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_p1_income_settlement",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_p1_income_settlement",
+    "smart_construction_core.menu_sc_p1_expense_settlement"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 2,
+    "model_count": 1,
+    "ready_surface_count": 2,
+    "readable_fallback_count": 0,
+    "structural_form_count": 2,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 663,
+      "menuXmlid": "smart_construction_core.menu_sc_p1_expense_settlement",
+      "menuName": "支出结算",
+      "actionId": 780,
+      "actionXmlid": "smart_construction_core.action_sc_settlement_order_expense",
+      "actionName": "支出合同结算",
+      "model": "sc.settlement.order",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_contract_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_contract_manager",
+              "smart_construction_core.group_sc_cap_contract_read",
+              "smart_construction_core.group_sc_cap_contract_user",
+              "smart_construction_core.group_sc_cap_purchase_manager"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_p1_expense_settlement",
+            "groups": [
+              "smart_construction_core.group_sc_cap_settlement_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_settlement_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_settlement_order_user_confirmed_tree",
+          "jsClass": "smart_hierarchical_worksheet",
+          "semantic": "hierarchical_worksheet",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_settlement_order_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 662,
+      "menuXmlid": "smart_construction_core.menu_sc_p1_income_settlement",
+      "menuName": "收入结算",
+      "actionId": 779,
+      "actionXmlid": "smart_construction_core.action_sc_settlement_order_income",
+      "actionName": "收入合同结算",
+      "model": "sc.settlement.order",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_contract_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_contract_manager",
+              "smart_construction_core.group_sc_cap_contract_read",
+              "smart_construction_core.group_sc_cap_contract_user",
+              "smart_construction_core.group_sc_cap_purchase_manager"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_p1_income_settlement",
+            "groups": [
+              "smart_construction_core.group_sc_cap_settlement_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_settlement_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_settlement_order_user_confirmed_tree",
+          "jsClass": "smart_hierarchical_worksheet",
+          "semantic": "hierarchical_worksheet",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_settlement_order_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}

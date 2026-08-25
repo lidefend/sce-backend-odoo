@@ -184,6 +184,11 @@ verify.frontend.professionalization.payment_domain.browser: guard.prod.forbid lo
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/frontend_payment_domain_browser.sh
 
+.PHONY: verify.frontend.professionalization.settlement_domain.browser
+verify.frontend.professionalization.settlement_domain.browser: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  bash scripts/verify/frontend_settlement_domain_browser.sh
+
 verify.local.dev.payment_request.floorplan.submit: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_payment_request_floorplan_submit.sh
