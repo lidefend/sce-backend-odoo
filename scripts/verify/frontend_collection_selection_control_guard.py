@@ -5,12 +5,14 @@ ROOT = Path(__file__).resolve().parents[2]
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
 CONTROL = ROOT / "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue"
 CONTROL_CSS = ROOT / "frontend/apps/web/src/components/product-list/CollectionSelectionControl.css"
+VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
 
 
-def validate(list_source: str | None = None, control_source: str | None = None, css_source: str | None = None) -> list[str]:
+def validate(list_source: str | None = None, control_source: str | None = None, css_source: str | None = None, visual_source: str | None = None) -> list[str]:
     list_text = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     control_text = control_source if control_source is not None else CONTROL.read_text(encoding="utf-8")
     css_text = css_source if css_source is not None else CONTROL_CSS.read_text(encoding="utf-8")
+    visual_text = visual_source if visual_source is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
     failures: list[str] = []
     if list_text.count("<CollectionSelectionControl") != 5:
         failures.append("collection list must project exactly five shared selection-control adapters")
@@ -53,6 +55,16 @@ def validate(list_source: str | None = None, control_source: str | None = None, 
     for marker in required_css:
         if marker not in css_text:
             failures.append(f"CollectionSelectionControl CSS missing {marker}")
+    required_visual = (
+        'target.exerciseCollectionSelection === true',
+        "selectedHeaderState === 'mixed'",
+        'headerIndeterminate === true',
+        "restoredHeaderState === 'unchecked'",
+        'focusContained',
+    )
+    for marker in required_visual:
+        if marker not in visual_text:
+            failures.append(f"collection selection browser evidence missing {marker}")
     return failures
 
 

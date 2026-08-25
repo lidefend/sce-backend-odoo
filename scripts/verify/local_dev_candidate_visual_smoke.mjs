@@ -167,6 +167,57 @@ try {
       });
       const initialFinalUrl = page.url();
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      let collectionSelectionEvidence = null;
+      if (target.exerciseCollectionSelection === true) {
+        const controls = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
+        const controlCount = await controls.count();
+        if (controlCount < 1) throw new Error(`${target.name}: collection selection control is missing`);
+        const rowControlIndex = viewport.name === 'desktop' && controlCount > 1 ? 1 : 0;
+        const rowControl = controls.nth(rowControlIndex);
+        const rowInput = rowControl.locator('input[type="checkbox"]');
+        const initialRowState = await rowControl.getAttribute('data-selection-state');
+        const ariaLabel = await rowInput.getAttribute('aria-label');
+        await rowInput.focus();
+        const focusContained = await rowControl.evaluate((node) => node.contains(document.activeElement));
+        await rowControl.click();
+        await page.waitForFunction(
+          ({ label, state }) => [...document.querySelectorAll('[data-semantic-component="CollectionSelectionControl"]')]
+            .some((node) => node instanceof HTMLElement && node.offsetParent !== null
+              && node.querySelector('input')?.getAttribute('aria-label') === label
+              && node.getAttribute('data-selection-state') === state),
+          { label: ariaLabel, state: 'checked' },
+          { timeout: 15000 },
+        );
+        const selectedRowState = await rowControl.getAttribute('data-selection-state');
+        let selectedHeaderState = null;
+        let headerIndeterminate = null;
+        if (viewport.name === 'desktop' && controlCount > 1) {
+          const headerControl = controls.first();
+          selectedHeaderState = await headerControl.getAttribute('data-selection-state');
+          headerIndeterminate = await headerControl.locator('input[type="checkbox"]').evaluate((input) => input.indeterminate);
+        }
+        await rowControl.click();
+        await page.waitForFunction(
+          ({ label, state }) => [...document.querySelectorAll('[data-semantic-component="CollectionSelectionControl"]')]
+            .some((node) => node instanceof HTMLElement && node.offsetParent !== null
+              && node.querySelector('input')?.getAttribute('aria-label') === label
+              && node.getAttribute('data-selection-state') === state),
+          { label: ariaLabel, state: 'unchecked' },
+          { timeout: 15000 },
+        );
+        const restoredRowState = await rowControl.getAttribute('data-selection-state');
+        const restoredHeaderState = viewport.name === 'desktop' && controlCount > 1
+          ? await controls.first().getAttribute('data-selection-state')
+          : null;
+        collectionSelectionEvidence = {
+          controlCount, ariaLabel, focusContained, initialRowState, selectedRowState,
+          selectedHeaderState, headerIndeterminate, restoredRowState, restoredHeaderState,
+          pass: Boolean(ariaLabel) && focusContained && initialRowState === 'unchecked'
+            && selectedRowState === 'checked' && restoredRowState === 'unchecked'
+            && (viewport.name !== 'desktop' || (selectedHeaderState === 'mixed' && headerIndeterminate === true && restoredHeaderState === 'unchecked')),
+        };
+        if (!collectionSelectionEvidence.pass) throw new Error(`${target.name}: collection selection state contract failed`);
+      }
       let mobileOverflowEvidence = null;
       if (viewport.name === 'mobile' && target.exerciseMobileOverflow === true) {
         const disclosure = page.locator('.form-header-mobile-actions');
@@ -296,7 +347,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, collectionSelectionEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -309,6 +360,7 @@ const errors = report.routes.flatMap((item) => item.errors || []);
 const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded || item.h1 !== 1 || item.overflow > 0));
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
+  if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
   if (item.collectionToolbarEvidence && !item.collectionToolbarEvidence.pass) failures.push({ name: item.name, collectionToolbarEvidence: item.collectionToolbarEvidence });
   if (item.collectionNavigationEvidence && !item.collectionNavigationEvidence.pass) failures.push({ name: item.name, collectionNavigationEvidence: item.collectionNavigationEvidence });
