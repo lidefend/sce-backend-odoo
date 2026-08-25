@@ -1,0 +1,37 @@
+.collection-aggregate-footer th,
+.collection-aggregate-footer td {
+  background: var(--sc-app-muted-bg);
+  border-top: 1px solid var(--sc-app-border-strong);
+  color: var(--sc-app-text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.collection-aggregate-row[data-aggregate-scope='total'] th,
+.collection-aggregate-row[data-aggregate-scope='total'] td {
+  background: var(--sc-app-info-bg);
+}
+
+.collection-aggregate-label {
+  color: var(--sc-app-text-primary);
+  padding-inline: 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.collection-aggregate-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.collection-aggregate-number-value {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  text-align: right;
+}

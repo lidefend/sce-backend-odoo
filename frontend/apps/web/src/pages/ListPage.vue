@@ -280,32 +280,12 @@
                 </td>
               </tr>
             </tbody>
-            <tfoot v-if="showGroupAggregateFooter(group)">
-              <tr v-if="showGroupPageAggregateFooter(group)">
-                <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('page', group.sampleRows.length) }}</th>
-                <td
-                  v-for="col in footerValueColumns"
-                  :key="`group-footer-page-${group.key}-${col}`"
-                  :style="columnWidthStyle(col)"
-                  :class="[columnDensityClass(col), { 'footer-number': isAggregateColumn(col) }]"
-                >
-                  <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ groupFooterCellText(col, group, 'page') }}</span>
-                  <template v-else>{{ groupFooterCellText(col, group, 'page') }}</template>
-                </td>
-              </tr>
-              <tr v-if="showGroupTotalAggregateFooter(group)">
-                <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', group.count) }}</th>
-                <td
-                  v-for="col in footerValueColumns"
-                  :key="`group-footer-total-${group.key}-${col}`"
-                  :style="columnWidthStyle(col)"
-                  :class="[columnDensityClass(col), { 'footer-number': isAggregateColumn(col) }]"
-                >
-                  <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ groupFooterCellText(col, group, 'total') }}</span>
-                  <template v-else>{{ groupFooterCellText(col, group, 'total') }}</template>
-                </td>
-              </tr>
-            </tfoot>
+            <CollectionAggregateFooter
+              context="group"
+              :label-colspan="footerLabelColspan"
+              :columns="aggregateFooterColumns"
+              :rows="groupAggregateFooterRows(group)"
+            />
           </ScDataTable>
         </article>
       </section>
@@ -440,32 +420,12 @@
             </td>
           </tr>
         </tbody>
-        <tfoot v-if="showAggregateFooter">
-          <tr v-if="showPageAggregateFooter">
-            <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('page', pageVisibleRows.length) }}</th>
-            <td
-              v-for="col in footerValueColumns"
-              :key="`footer-page-${col}`"
-              :style="columnWidthStyle(col)"
-              :class="[columnDensityClass(col), { 'footer-number': isAggregateColumn(col) }]"
-            >
-              <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ footerCellText(col, 'page', pageVisibleRows.length) }}</span>
-              <template v-else>{{ footerCellText(col, 'page', pageVisibleRows.length) }}</template>
-            </td>
-          </tr>
-          <tr v-if="showTotalAggregateFooter">
-            <th :colspan="footerLabelColspan" class="footer-row-label">{{ footerRowLabel('total', listTotal || pageVisibleRows.length) }}</th>
-            <td
-              v-for="col in footerValueColumns"
-              :key="`footer-total-${col}`"
-              :style="columnWidthStyle(col)"
-              :class="[columnDensityClass(col), { 'footer-number': isAggregateColumn(col) }]"
-            >
-              <span v-if="isAggregateColumn(col)" class="footer-number-value">{{ footerCellText(col, 'total', listTotal || pageVisibleRows.length) }}</span>
-              <template v-else>{{ footerCellText(col, 'total', listTotal || pageVisibleRows.length) }}</template>
-            </td>
-          </tr>
-        </tfoot>
+        <CollectionAggregateFooter
+          context="flat"
+          :label-colspan="footerLabelColspan"
+          :columns="aggregateFooterColumns"
+          :rows="flatAggregateFooterRows"
+        />
       </ScDataTable>
 
       <CollectionPaginationFooter
@@ -501,6 +461,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
 import CollectionBatchActionBar from '../components/product-list/CollectionBatchActionBar.vue';
+import CollectionAggregateFooter, { type CollectionAggregateRow } from '../components/product-list/CollectionAggregateFooter.vue';
 import CollectionColumnHeaderControl from '../components/product-list/CollectionColumnHeaderControl.vue';
 import CollectionGroupPageControls from '../components/product-list/CollectionGroupPageControls.vue';
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
@@ -1618,6 +1579,12 @@ const footerLabelFieldCount = computed(() => displayedColumns.value.length
 const footerValueColumns = computed(() => displayedColumns.value.slice(footerLabelFieldCount.value));
 const footerLabelColspan = computed(() => (showSelectionColumn.value ? 1 : 0)
   + (showRowNumberColumn.value ? 1 : 0) + footerLabelFieldCount.value);
+const aggregateFooterColumns = computed(() => footerValueColumns.value.map((field) => ({
+  key: field,
+  numeric: isAggregateColumn(field),
+  densityClass: columnDensityClass(field),
+  style: columnWidthStyle(field),
+})));
 const mobileIdentityField = computed(() => {
   const preferred = String(rowPrimary.value || '').trim();
   if (preferred && mobileAvailableColumns.value.includes(preferred) && !isStatusLikeColumn(preferred)) return preferred;
@@ -1970,7 +1937,26 @@ const showPageAggregateFooter = computed(() => displayedColumns.value.some((fiel
 const showTotalAggregateFooter = computed(() => displayedColumns.value.some((field) => (
   isAggregateColumn(field) && totalAggregateValue(field) !== null
 )));
-const showAggregateFooter = computed(() => showPageAggregateFooter.value || showTotalAggregateFooter.value);
+const flatAggregateFooterRows = computed<CollectionAggregateRow[]>(() => {
+  const rows: CollectionAggregateRow[] = [];
+  if (showPageAggregateFooter.value) {
+    rows.push({
+      key: 'flat-page',
+      scope: 'page',
+      label: footerRowLabel('page'),
+      values: footerValues('page'),
+    });
+  }
+  if (showTotalAggregateFooter.value) {
+    rows.push({
+      key: 'flat-total',
+      scope: 'total',
+      label: footerRowLabel('total'),
+      values: footerValues('total'),
+    });
+  }
+  return rows;
+});
 
 function totalAggregateValue(field: string) {
   const aggregate = props.listAggregates?.[columnAggregationField(field)] || {};
@@ -1984,14 +1970,20 @@ function pageAggregateValue(field: string) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-function footerCellText(field: string, scope: 'page' | 'total', rowCount: number) {
-  void rowCount;
+function footerCellText(field: string, scope: 'page' | 'total') {
   if (!isAggregateColumn(field)) return '';
   if (scope === 'page') {
     return pageFooterStatsMap.value[field]?.sumText || '--';
   }
   const value = totalAggregateValue(field);
   return value === null ? '--' : formatFooterNumber(value, field);
+}
+
+function footerValues(scope: 'page' | 'total') {
+  return footerValueColumns.value.reduce<Record<string, string>>((values, field) => {
+    values[field] = footerCellText(field, scope);
+    return values;
+  }, {});
 }
 
 function rowsNumericSum(rows: Array<Record<string, unknown>>, field: string) {
@@ -2030,12 +2022,6 @@ function showGroupTotalAggregateFooter(
   return displayedColumns.value.some((field) => isAggregateColumn(field) && groupAggregateValue(group, field) !== null);
 }
 
-function showGroupAggregateFooter(
-  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
-) {
-  return showGroupPageAggregateFooter(group) || showGroupTotalAggregateFooter(group);
-}
-
 function groupFooterCellText(
   field: string,
   group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
@@ -2052,8 +2038,40 @@ function groupFooterCellText(
   return value === null ? '--' : formatFooterNumber(value, field);
 }
 
-function footerRowLabel(scope: 'page' | 'total', rowCount: number) {
-  void rowCount;
+function groupFooterValues(
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+  scope: 'page' | 'total',
+) {
+  return footerValueColumns.value.reduce<Record<string, string>>((values, field) => {
+    values[field] = groupFooterCellText(field, group, scope);
+    return values;
+  }, {});
+}
+
+function groupAggregateFooterRows(
+  group: { key: string; sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+) {
+  const rows: CollectionAggregateRow[] = [];
+  if (showGroupPageAggregateFooter(group)) {
+    rows.push({
+      key: `group-${group.key}-page`,
+      scope: 'page',
+      label: footerRowLabel('page'),
+      values: groupFooterValues(group, 'page'),
+    });
+  }
+  if (showGroupTotalAggregateFooter(group)) {
+    rows.push({
+      key: `group-${group.key}-total`,
+      scope: 'total',
+      label: footerRowLabel('total'),
+      values: groupFooterValues(group, 'total'),
+    });
+  }
+  return rows;
+}
+
+function footerRowLabel(scope: 'page' | 'total') {
   return scope === 'page'
     ? uiLabel('page_footer_current_total', '当页总计')
     : uiLabel('page_footer_total', '总计');
