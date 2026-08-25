@@ -22,130 +22,54 @@
         {{ action.label }}
       </button>
     </div>
-    <section v-if="!readonly && !unavailableMessage && activeMode" class="native-chatter-compose" data-professional-collaboration-component="composer" :data-composer-mode="activeIsActivity ? 'activity' : 'comment'">
-      <template v-if="activeIsActivity">
-        <label class="native-chatter-field">
-          <span>{{ activityAssigneeLabel }}</span>
-          <select
-            class="input"
-            :value="activityAssigneeId || ''"
-            :disabled="posting || usersLoading"
-            @change="emitActivityAssignee"
-          >
-            <option value="">当前用户</option>
-            <option v-for="user in activityAssigneeOptions" :key="`activity-user-${user.id}`" :value="user.id">
-              {{ collaborationUserLabel(user) }}
-            </option>
-          </select>
-        </label>
-        <label class="native-chatter-field">
-          <span>{{ activitySummaryLabel }}</span>
-          <input
-            class="input"
-            type="text"
-            :value="activitySummary"
-            :placeholder="activitySummaryPlaceholder"
-            :disabled="posting"
-            @input="$emit('update:activitySummary', inputValue($event))"
-          />
-        </label>
-        <label class="native-chatter-field">
-          <span>{{ activityDeadlineLabel }}</span>
-          <input
-            class="input"
-            type="date"
-            :value="activityDeadline"
-            :disabled="posting"
-            @input="$emit('update:activityDeadline', inputValue($event))"
-          />
-        </label>
-        <label class="native-chatter-field">
-          <span>{{ activityNoteLabel }}</span>
-          <textarea
-            class="native-chatter-input"
-            :value="activityNote"
-            :placeholder="activityNotePlaceholder"
-            :disabled="posting"
-            @input="$emit('update:activityNote', inputValue($event))"
-          />
-        </label>
-      </template>
-      <template v-else>
-        <label class="native-chatter-field">
-          <span>提醒对象</span>
-          <input
-            class="input"
-            type="text"
-            :value="collaborationUserQuery"
-            :disabled="posting || usersLoading"
-            placeholder="搜索姓名或账号"
-            @input="emitCollaborationUserQuery"
-          />
-        </label>
-        <div v-if="selectedMentionUsers.length" class="native-collab-selected">
-          <button
-            v-for="user in selectedMentionUsers"
-            :key="`mention-selected-${user.id}`"
-            class="chip-btn"
-            type="button"
-            :disabled="posting"
-            @click="$emit('remove-mention-user', user.id)"
-          >
-            @{{ collaborationUserLabel(user) }} x
-          </button>
-        </div>
-        <div v-if="collaborationUserChoices.length" class="native-collab-options">
-          <button
-            v-for="user in collaborationUserChoices.slice(0, 6)"
-            :key="`mention-choice-${user.id}`"
-            class="ghost mini"
-            type="button"
-            :disabled="posting"
-            @click="$emit('select-mention-user', user)"
-          >
-            @{{ collaborationUserLabel(user) }}
-          </button>
-        </div>
-        <textarea
-          class="native-chatter-input"
-          :value="chatterDraft"
-          :placeholder="activePlaceholder"
-          :disabled="posting"
-          @input="$emit('update:chatterDraft', inputValue($event))"
-        />
-      </template>
-      <div class="native-chatter-compose-actions">
-        <button class="primary" type="button" :disabled="submitDisabled" @click="$emit('send-chatter')">
-          {{ posting ? activePostingLabel : activeSubmitLabel }}
-        </button>
-        <button class="ghost" type="button" :disabled="posting" @click="$emit('close-composer')">取消</button>
-      </div>
-    </section>
+    <ProfessionalCollaborationComposer
+      v-if="!readonly && !unavailableMessage && activeMode"
+      :activity="activeIsActivity"
+      :posting="posting"
+      :users-loading="usersLoading"
+      :draft="chatterDraft"
+      :placeholder="activePlaceholder"
+      :submit-label="activeSubmitLabel"
+      :posting-label="activePostingLabel"
+      :submit-disabled="submitDisabled"
+      :collaboration-user-query="collaborationUserQuery"
+      :selected-mention-users="selectedMentionUsers"
+      :collaboration-user-choices="collaborationUserChoices"
+      :activity-assignee-options="activityAssigneeOptions"
+      :activity-assignee-id="activityAssigneeId"
+      :activity-assignee-label="activityAssigneeLabel"
+      :activity-summary="activitySummary"
+      :activity-deadline="activityDeadline"
+      :activity-note="activityNote"
+      :activity-summary-label="activitySummaryLabel"
+      :activity-deadline-label="activityDeadlineLabel"
+      :activity-note-label="activityNoteLabel"
+      :activity-summary-placeholder="activitySummaryPlaceholder"
+      :activity-note-placeholder="activityNotePlaceholder"
+      @update:draft="$emit('update:chatterDraft', $event)"
+      @update:collaboration-user-query="$emit('update:collaborationUserQuery', $event)"
+      @load-users="$emit('load-users', $event)"
+      @select-mention-user="$emit('select-mention-user', $event)"
+      @remove-mention-user="$emit('remove-mention-user', $event)"
+      @select-activity-assignee="$emit('select-activity-assignee', $event)"
+      @update:activity-summary="$emit('update:activitySummary', $event)"
+      @update:activity-deadline="$emit('update:activityDeadline', $event)"
+      @update:activity-note="$emit('update:activityNote', $event)"
+      @submit="$emit('send-chatter')"
+      @cancel="$emit('close-composer')"
+    />
     <p v-if="chatterError" class="validation-error native-chatter-message">{{ chatterError }}</p>
-    <section
-      v-if="!readonly && hasAttachments"
-      class="native-attachment-tools"
-      data-collaboration-capability="attachments"
-    >
-      <label class="chip-btn native-attachment-upload">
-        {{ attachmentUploading ? attachmentUploadingLabel : attachmentUploadLabel }}
-        <input type="file" :disabled="attachmentUploading" @change="$emit('attachment-selected', $event)" />
-      </label>
-      <p v-if="attachmentError" class="validation-error native-chatter-message">{{ attachmentError }}</p>
-    </section>
-    <ul v-if="pendingAttachments.length" class="native-pending-attachments">
-      <li v-for="item in pendingAttachments" :key="item.key">
-        <span>{{ item.name }}</span>
-        <button
-          class="ghost native-attachment-download"
-          type="button"
-          :disabled="attachmentUploading"
-          @click="$emit('remove-pending-attachment', item.key)"
-        >
-          移除
-        </button>
-      </li>
-    </ul>
+    <ProfessionalAttachmentManager
+      :editable="!readonly"
+      :enabled="hasAttachments"
+      :uploading="attachmentUploading"
+      :upload-label="attachmentUploadLabel"
+      :uploading-label="attachmentUploadingLabel"
+      :error="attachmentError"
+      :pending="pendingAttachments"
+      @selected="$emit('attachment-selected', $event)"
+      @remove="$emit('remove-pending-attachment', $event)"
+    />
     <ProfessionalAuditTimeline
       v-if="showAuditTimeline !== false && auditEvents.length"
       :events="auditEvents"
@@ -173,14 +97,9 @@ import type { NativeChatterAction } from './types';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 import ProfessionalCollaborationTimeline from './ProfessionalCollaborationTimeline.vue';
+import ProfessionalCollaborationComposer from './ProfessionalCollaborationComposer.vue';
 import { collaborationCapabilityReadiness, visibleCollaborationTimeline } from './professionalCollaborationModel';
-
-type PendingNativeAttachment = {
-  key: string;
-  name: string;
-  size: number;
-  file: File;
-};
+import ProfessionalAttachmentManager, { type PendingProfessionalAttachment } from './ProfessionalAttachmentManager.vue';
 
 export type NativeCollaborationPanelProps = {
   readonly?: boolean;
@@ -219,7 +138,7 @@ export type NativeCollaborationPanelProps = {
   attachmentUploadingLabel: string;
   attachmentViewLabel: string;
   attachmentError: string;
-  pendingAttachments: PendingNativeAttachment[];
+  pendingAttachments: PendingProfessionalAttachment[];
   timeline: ChatterTimelineEntry[];
   timelineHasMore: boolean;
   timelineLoading: boolean;
@@ -276,27 +195,8 @@ const emit = defineEmits<{
   'load-more-timeline': [];
 }>();
 
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement | HTMLTextAreaElement).value || '');
-}
-
-function emitCollaborationUserQuery(event: Event) {
-  const value = inputValue(event);
-  emit('update:collaborationUserQuery', value);
-  emit('load-users', value);
-}
-
-function emitActivityAssignee(event: Event) {
-  const value = Number((event.target as HTMLSelectElement).value || 0);
-  emit('select-activity-assignee', Number.isFinite(value) && value > 0 ? value : 0);
-}
-
 function forwardActivityUpdate(entry: ChatterTimelineEntry, action: 'done' | 'cancel') {
   emit('update-activity', entry, action);
-}
-
-function collaborationUserLabel(user: CollaborationUserOption) {
-  return String(user.name || user.login || user.email || user.id || '').trim();
 }
 
 </script>

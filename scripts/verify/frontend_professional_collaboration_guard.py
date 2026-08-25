@@ -7,12 +7,18 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     failures: list[str] = []
     panel = read_text("frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue")
     timeline = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue")
+    composer = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue")
+    attachments = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
         if marker not in timeline: failures.append(f"collaboration timeline missing {marker}")
     if "<ProfessionalCollaborationTimeline" not in panel or "visibleCollaborationTimeline" not in panel:
         failures.append("native collaboration panel bypasses shared timeline")
-    for marker in ('data-professional-collaboration-component="panel"', 'data-professional-collaboration-component="composer"', ":data-follower-readiness"):
+    if "<ProfessionalCollaborationComposer" not in panel or 'data-professional-collaboration-component="composer"' not in composer:
+        failures.append("native collaboration panel bypasses shared composer")
+    if "<ProfessionalAttachmentManager" not in panel or 'data-professional-collaboration-component="attachments"' not in attachments:
+        failures.append("native collaboration panel bypasses shared attachment manager")
+    for marker in ('data-professional-collaboration-component="panel"', ":data-follower-readiness"):
         if marker not in panel: failures.append(f"collaboration panel missing {marker}")
     if "follower: 'fail_closed'" not in model:
         failures.append("undeclared follower runtime must fail closed")
