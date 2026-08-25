@@ -65,6 +65,6 @@ assert.deepEqual(dirtyEditHeader.direct.map((action) => action.actionRef.actionI
 const cleanEditHeader = resolveCanonicalHeaderActionPresentation({
   floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'edit', rendererActive: true, dirty: false,
 });
-assert.equal(cleanEditHeader.localSavePrimary, false);
-assert.deepEqual(cleanEditHeader.direct.map((action) => action.actionRef.actionId), ['form.save', 'submit']);
+assert.equal(cleanEditHeader.localSavePrimary, true);
+assert.deepEqual(cleanEditHeader.direct.map((action) => action.actionRef.actionId), ['submit']);
 console.log('[product_page_header_model_test] PASS cases=24');

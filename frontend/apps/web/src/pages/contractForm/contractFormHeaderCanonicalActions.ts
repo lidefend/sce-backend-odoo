@@ -12,7 +12,7 @@ export function resolveCanonicalHeaderActionPresentation(input: {
   const authorizedLocalSave = visible.find((action) => action.actionRef.actionId === 'form.save');
   const localSavePrimary = Boolean(
     input.rendererActive
-    && (input.renderProfile === 'create' || (input.renderProfile === 'edit' && input.dirty))
+    && (input.renderProfile === 'create' || input.renderProfile === 'edit')
     && authorizedLocalSave?.enabled,
   );
   const withoutLocalSave = (actions: CanonicalFormAction[]) => localSavePrimary

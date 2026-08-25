@@ -146,7 +146,6 @@
         />
         <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
           :busy="busy"
-          :dirty="hasChanges"
           :collaboration-panel-listeners="nativeCollaborationPanelListeners"
           :collaboration-panel-props="nativeCollaborationPanelProps"
           :relation-adapter="relationFieldAdapter"
