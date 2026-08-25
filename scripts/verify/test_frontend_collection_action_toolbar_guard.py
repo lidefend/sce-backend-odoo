@@ -44,7 +44,7 @@ class CollectionActionToolbarGuardTest(unittest.TestCase):
 
     def test_parallel_direct_and_overflow_projection_fails(self):
         altered = self.batch_source.replace(
-            'v-for="action in settlement.direct"',
+            'v-for="action in actionLayout.direct"',
             'v-for="(action, actionIndex) in actions"',
         )
         self.assertIn(

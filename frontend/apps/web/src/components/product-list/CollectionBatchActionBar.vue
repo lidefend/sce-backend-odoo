@@ -2,13 +2,13 @@
   <section
     class="batch-bar sc-product-feedback-layer"
     data-semantic-component="CollectionBatchActionBar"
-    :data-action-count="String(settlement.actionKeys.length)"
-    :data-direct-action-keys="settlement.direct.map((action) => action.key).join(',')"
-    :data-overflow-action-keys="settlement.overflow.map((action) => action.key).join(',')"
+    :data-action-count="String(actionLayout.actionKeys.length)"
+    :data-direct-action-keys="actionLayout.direct.map((action) => action.key).join(',')"
+    :data-overflow-action-keys="actionLayout.overflow.map((action) => action.key).join(',')"
   >
     <span>{{ selectedCountLabel }}</span>
     <ScButton
-      v-for="action in settlement.direct"
+      v-for="action in actionLayout.direct"
       :key="`selection-action-${action.key}`"
       class="batch-action"
       size="small"
@@ -19,7 +19,7 @@
     >
       {{ action.label }}
     </ScButton>
-    <div v-if="settlement.overflow.length" ref="batchOverflowRoot" class="batch-overflow">
+    <div v-if="actionLayout.overflow.length" ref="batchOverflowRoot" class="batch-overflow">
       <span ref="batchOverflowToggle" class="batch-overflow-toggle-root">
         <ScButton
           class="batch-overflow-toggle"
@@ -43,7 +43,7 @@
         :aria-label="moreActionsLabel"
       >
         <ScButton
-          v-for="action in settlement.overflow"
+          v-for="action in actionLayout.overflow"
           :key="`selection-overflow-${action.key}`"
           size="small"
           variant="secondary"
@@ -85,7 +85,7 @@ const emit = defineEmits<{
   clear: [];
 }>();
 
-const settlement = computed(() => resolveCollectionBatchActionSettlement(props.actions));
+const actionLayout = computed(() => resolveCollectionBatchActionSettlement(props.actions));
 const { batchOverflowRoot, batchOverflowToggle, batchOverflowOpen, toggleBatchOverflow } = useCollectionBatchOverflow();
 
 function runAction(key: string) {
