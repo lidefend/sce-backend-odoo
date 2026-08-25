@@ -1,0 +1,94 @@
+.collection-mobile-record-row {
+  position: relative;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: var(--sc-app-radius-md);
+}
+
+.collection-mobile-record-row.is-selected {
+  border-color: var(--sc-app-border-strong);
+  background: var(--sc-app-hover-bg);
+}
+
+.collection-mobile-record-row__selection {
+  position: absolute;
+  z-index: 2;
+  top: var(--sc-space-2xs);
+  right: var(--sc-space-2xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sc-touch-target-min);
+  height: var(--sc-touch-target-min);
+  cursor: pointer;
+}
+
+.collection-mobile-record-row:has(.collection-mobile-record-row__selection) .collection-mobile-record-row__card {
+  padding-right: calc(var(--sc-touch-target-min) + var(--sc-space-xs));
+}
+
+.collection-mobile-record-row__card {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-app-radius-md);
+  background: var(--sc-app-panel);
+  color: var(--sc-app-text-primary);
+  box-shadow: 0 4px 12px var(--sc-app-shadow);
+  cursor: pointer;
+}
+
+.collection-mobile-record-row__card:focus-visible {
+  outline: 3px solid var(--sc-app-focus-ring);
+  outline-offset: 2px;
+}
+
+.collection-mobile-record-row__card :deep(.sc-badge) {
+  flex: 0 0 auto;
+  max-width: 42%;
+  white-space: nowrap;
+}
+
+.collection-mobile-record-row__identity {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.collection-mobile-record-row__fact {
+  display: grid;
+  gap: var(--sc-space-2xs);
+  min-width: 0;
+}
+
+.collection-mobile-record-row__fact small {
+  color: var(--sc-app-text-secondary);
+  font-size: 11px;
+}
+
+.collection-mobile-record-row__fact b {
+  color: var(--sc-app-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.collection-mobile-record-row__open {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-space-2xs);
+  justify-self: end;
+  color: var(--sc-app-info-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collection-mobile-record-row,
+  .collection-mobile-record-row__card {
+    transition: none;
+  }
+}
