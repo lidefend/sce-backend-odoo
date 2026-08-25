@@ -220,11 +220,11 @@ def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str
         return "sc.value.duration"
     if normalized == "statusbar":
         return "sc.display.status"
-    if relation == "res.currency":
+    if field_type == "many2one" and relation == "res.currency":
         return "sc.value.currency"
-    if relation == "res.users":
+    if field_type == "many2one" and relation == "res.users":
         return "sc.value.user"
-    if relation == "res.company":
+    if field_type == "many2one" and relation == "res.company":
         return "sc.value.company"
     if field_type == "many2one" or normalized.endswith("many2one"):
         return "sc.relation.many2one"

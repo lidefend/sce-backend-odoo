@@ -247,6 +247,7 @@
         # these stable menu paths and XMLIDs.
         'views/menu_product_contract_completion_v1.xml',
         'views/menu_product_primary_center_candidate_v1.xml',
+        'data/quality_safety_form_productization_contract.xml',
         'data/hr_payroll_form_productization_contract.xml',
         'data/team_loan_deduction_workspace_contract.xml',
         'data/daily_contract_settlement_contract.xml',

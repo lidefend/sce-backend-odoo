@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_sc_safety_issue_form_view_v1" model="ir.actions.act_window.view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="smart_construction_core.view_sc_safety_issue_form"/>
+        <field name="act_window_id" ref="smart_construction_core.action_sc_safety_issue"/>
+    </record>
+
+    <record id="action_sc_product_quality_acceptance_form_view_v1" model="ir.actions.act_window.view">
+        <field name="sequence">20</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="smart_construction_core.view_sc_quality_acceptance_form"/>
+        <field name="act_window_id" ref="smart_construction_core.action_sc_product_quality_acceptance_v1"/>
+    </record>
+
+    <record id="business_config_contract_sc_safety_issue_handling_form_v1" model="ui.business.config.contract">
+        <field name="name">sc_safety_issue_handling_form_v1</field>
+        <field name="model">sc.safety.issue</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_safety_issue"/>
+        <field name="view_id" ref="smart_construction_core.view_sc_safety_issue_form"/>
+        <field name="priority">900</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {
+                    'source': 'smart_construction_core.product_release',
+                    'source_status': 'product_release',
+                    'workflow_authority': 'sc.safety.issue'
+                },
+                'views': {
+                    'form': {
+                        'title': '安全问题办理',
+                        'composition_mode': 'entry_semantic_surface',
+                        'columns': 2,
+                        'sections': [
+                            {'title': '问题识别', 'sequence': 10, 'columns': 2, 'fields': ['state', 'name', 'project_id', 'issue_category', 'issue_level', 'issue_date']},
+                            {'title': '位置与责任', 'sequence': 20, 'columns': 2, 'fields': ['location', 'coordinate', 'responsible_party_id', 'owner_id', 'rechecker_id', 'cc_user_ids']},
+                            {'title': '整改要求', 'sequence': 30, 'columns': 2, 'fields': ['rectification_deadline', 'reminder_before_days', 'closed_date', 'overdue_days', 'is_overdue']},
+                            {'title': '描述与证据', 'sequence': 40, 'columns': 1, 'fields': ['description', 'voice_text', 'attachment_ids', 'photo_batch_ids', 'hazard_source_id']}
+                        ],
+                        'fields': [
+                            {'name': 'state', 'sequence': 10, 'group_title': '问题识别', 'readonly': True},
+                            {'name': 'name', 'sequence': 20, 'group_title': '问题识别'},
+                            {'name': 'project_id', 'sequence': 30, 'group_title': '问题识别'},
+                            {'name': 'issue_category', 'sequence': 40, 'group_title': '问题识别'},
+                            {'name': 'issue_level', 'sequence': 50, 'group_title': '问题识别'},
+                            {'name': 'issue_date', 'sequence': 60, 'group_title': '问题识别'},
+                            {'name': 'location', 'sequence': 70, 'group_title': '位置与责任'},
+                            {'name': 'coordinate', 'sequence': 80, 'group_title': '位置与责任'},
+                            {'name': 'responsible_party_id', 'sequence': 90, 'group_title': '位置与责任'},
+                            {'name': 'owner_id', 'sequence': 100, 'group_title': '位置与责任'},
+                            {'name': 'rechecker_id', 'sequence': 110, 'group_title': '位置与责任'},
+                            {'name': 'cc_user_ids', 'sequence': 120, 'group_title': '位置与责任'},
+                            {'name': 'rectification_deadline', 'sequence': 130, 'group_title': '整改要求'},
+                            {'name': 'reminder_before_days', 'sequence': 140, 'group_title': '整改要求'},
+                            {'name': 'closed_date', 'sequence': 150, 'group_title': '整改要求', 'readonly': True},
+                            {'name': 'overdue_days', 'sequence': 160, 'group_title': '整改要求', 'readonly': True},
+                            {'name': 'is_overdue', 'sequence': 170, 'group_title': '整改要求', 'readonly': True},
+                            {'name': 'description', 'sequence': 180, 'group_title': '描述与证据'},
+                            {'name': 'voice_text', 'sequence': 190, 'group_title': '描述与证据'},
+                            {'name': 'attachment_ids', 'sequence': 200, 'group_title': '描述与证据'},
+                            {'name': 'photo_batch_ids', 'sequence': 210, 'group_title': '描述与证据'},
+                            {'name': 'hazard_source_id', 'sequence': 220, 'group_title': '描述与证据'}
+                        ]
+                    }
+                }
+            }
+        }"/>
+    </record>
+
+    <record id="business_config_contract_sc_quality_acceptance_handling_form_v1" model="ui.business.config.contract">
+        <field name="name">sc_quality_acceptance_handling_form_v1</field>
+        <field name="model">sc.quality.acceptance</field>
+        <field name="view_type">form</field>
+        <field name="action_id" ref="smart_construction_core.action_sc_product_quality_acceptance_v1"/>
+        <field name="view_id" ref="smart_construction_core.view_sc_quality_acceptance_form"/>
+        <field name="priority">900</field>
+        <field name="company_id" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="status">published</field>
+        <field name="version_no">1</field>
+        <field name="contract_json" eval="{
+            'view_orchestration': {
+                'context': {
+                    'source': 'smart_construction_core.product_release',
+                    'source_status': 'product_release',
+                    'workflow_authority': 'sc.quality.acceptance'
+                },
+                'views': {
+                    'form': {
+                        'title': '质量验收办理',
+                        'composition_mode': 'entry_semantic_surface',
+                        'columns': 2,
+                        'sections': [
+                            {'title': '验收对象', 'sequence': 10, 'columns': 2, 'fields': ['state', 'project_id', 'name', 'acceptance_type', 'acceptance_date', 'location']},
+                            {'title': '责任与结果', 'sequence': 20, 'columns': 2, 'fields': ['responsible_id', 'participant_ids', 'result', 'rectification_deadline']},
+                            {'title': '依据与意见', 'sequence': 30, 'columns': 1, 'fields': ['standard', 'conclusion']},
+                            {'title': '问题与资料', 'sequence': 40, 'columns': 1, 'fields': ['issue_ids', 'attachment_ids', 'processing_advisory']}
+                        ],
+                        'fields': [
+                            {'name': 'state', 'sequence': 10, 'group_title': '验收对象', 'readonly': True},
+                            {'name': 'project_id', 'sequence': 20, 'group_title': '验收对象'},
+                            {'name': 'name', 'sequence': 30, 'group_title': '验收对象'},
+                            {'name': 'acceptance_type', 'sequence': 40, 'group_title': '验收对象'},
+                            {'name': 'acceptance_date', 'sequence': 50, 'group_title': '验收对象'},
+                            {'name': 'location', 'sequence': 60, 'group_title': '验收对象'},
+                            {'name': 'responsible_id', 'sequence': 70, 'group_title': '责任与结果'},
+                            {'name': 'participant_ids', 'sequence': 80, 'group_title': '责任与结果'},
+                            {'name': 'result', 'sequence': 90, 'group_title': '责任与结果'},
+                            {'name': 'rectification_deadline', 'sequence': 100, 'group_title': '责任与结果'},
+                            {'name': 'standard', 'sequence': 110, 'group_title': '依据与意见'},
+                            {'name': 'conclusion', 'sequence': 120, 'group_title': '依据与意见'},
+                            {'name': 'issue_ids', 'sequence': 130, 'group_title': '问题与资料'},
+                            {'name': 'attachment_ids', 'sequence': 140, 'group_title': '问题与资料'},
+                            {'name': 'processing_advisory', 'sequence': 150, 'group_title': '问题与资料', 'readonly': True}
+                        ]
+                    }
+                }
+            }
+        }"/>
+    </record>
+</odoo>

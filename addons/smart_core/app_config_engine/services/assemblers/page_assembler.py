@@ -384,6 +384,7 @@ class PageAssembler:
         # 2) 视图契约（多视图）——单次 get_view/解析后复用统一投影结果
         v_versions = []
         view_context = {}
+        resolved_view_ids_by_type = {}
         if isinstance(action, dict) and action.get("id"):
             view_context["contract_action_id"] = action.get("id")
         requested_view_raw = (
@@ -433,7 +434,19 @@ class PageAssembler:
                 if isinstance(view_data, dict):
                     view_data['_fields_snapshot'] = model_fields_snapshot
                     view_projection_sources[vt] = view_data
+                    try:
+                        resolved_view_id = int(view_data.get('_source_view_id') or 0)
+                    except (TypeError, ValueError):
+                        resolved_view_id = 0
+                    if resolved_view_id > 0:
+                        resolved_view_ids_by_type[canonical_vt] = resolved_view_id
                 vcfg = view_config_model._generate_from_fields_view_get(model, vt, view_data=view_data)
+                try:
+                    resolved_view_id = int(vcfg.source_view_id.id or 0)
+                except (AttributeError, TypeError, ValueError):
+                    resolved_view_id = 0
+                if resolved_view_id > 0:
+                    resolved_view_ids_by_type[canonical_vt] = resolved_view_id
                 # app.view.config is platform metadata and ordinary business
                 # users do not read it directly. Keep metadata access elevated,
                 # but bind the environment user to the real requester so
@@ -466,6 +479,12 @@ class PageAssembler:
             v_contract = self._coerce_view_contract_semantics(vt, v_contract)
 
             data["views"][vt] = v_contract
+        if resolved_view_ids_by_type:
+            data["view_ids_by_type"] = resolved_view_ids_by_type
+            if len(canonical_view_types) == 1:
+                active_view_id = resolved_view_ids_by_type.get(canonical_view_types[0])
+                if active_view_id:
+                    data["view_id"] = active_view_id
         versions["view"] = ",".join(v_versions) if v_versions else "1"
 
         # 3) 搜索条件（运行时需要当前用户上下文，因此用 env）
