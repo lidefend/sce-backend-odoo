@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      Phase 9 payment/settlement profiles. The released product actions own
+      entry identity and native views own the visible columns. These profiles
+      only provide generic worksheet organization to the P0 registry.
+    -->
+    <record id="action_sc_payment_execution_actual_outflow" model="ir.actions.act_window">
+        <field name="view_id" ref="smart_construction_core.view_sc_payment_execution_tree"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('smart_construction_core.view_sc_payment_execution_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('smart_construction_core.view_sc_payment_execution_form')})
+        ]"/>
+        <field name="context" eval="{
+            'default_source_kind': 'actual_outflow',
+            'search_default_source_kind_actual_outflow': 1,
+            'search_default_group_project': 1,
+            'hierarchical_worksheet': {
+                'navigation_mode': 'sheet_groups',
+                'navigation_groups': [
+                    {'field': 'project_id', 'label': '项目', 'empty_label': '未归属项目'},
+                    {'field': 'partner_id', 'label': '收款单位', 'empty_label': '未登记收款单位'},
+                    {'field': 'state', 'label': '执行状态', 'empty_label': '未登记状态'},
+                ],
+                'tree_column': 'name',
+                'presentation_mode': 'source_order',
+                'navigation_title': '付款执行工作表',
+                'exclude_fields': ['business_category_id', 'source_kind'],
+                'column_widths': {
+                    'name': 148,
+                    'date_payment': 112,
+                    'project_id': 180,
+                    'partner_id': 160,
+                    'contract_id': 168,
+                    'payment_method': 108,
+                    'planned_amount': 128,
+                    'paid_amount': 128,
+                    'invoice_amount': 128,
+                    'state': 96,
+                },
+                'column_precisions': {
+                    'planned_amount': 2,
+                    'paid_amount': 2,
+                    'invoice_amount': 2,
+                },
+                'tabs': [
+                    {'key': 'execution', 'label': '执行概览', 'fields': ['state', 'date_payment', 'planned_amount', 'paid_amount', 'invoice_amount', 'payment_method', 'document_no']},
+                    {'key': 'basis', 'label': '付款依据', 'fields': ['project_id', 'partner_id', 'contract_id', 'payment_request_id', 'payment_request_partner_id', 'actual_payee_partner_id', 'payment_request_partner_relation']},
+                    {'key': 'accounts', 'label': '收付账户', 'fields': ['payment_account_name', 'payment_bank_name', 'payment_account_no', 'receipt_account_name', 'receipt_bank_name', 'receipt_account_no']},
+                    {'key': 'ownership', 'label': '责任与追溯', 'fields': ['handler_name', 'creator_name', 'created_time', 'push_result', 'kingdee_document_no', 'note']},
+                ],
+                'labels': {
+                    'surface_aria': '付款执行专业工作表',
+                    'all': '全部付款执行',
+                    'select_hint': '请选择付款记录查看执行明细',
+                },
+            },
+        }"/>
+    </record>
+
+    <record id="action_sc_settlement_order_income" model="ir.actions.act_window">
+        <field name="context" eval="{
+            'create': True,
+            'edit': True,
+            'default_settlement_type': 'in',
+            'default_business_category_code': 'settlement.income',
+            'search_default_group_project': 1,
+            'hierarchical_worksheet': {
+                'navigation_mode': 'sheet_groups',
+                'navigation_groups': [
+                    {'field': 'project_id', 'label': '项目', 'empty_label': '未归属项目'},
+                    {'field': 'settlement_unit_id', 'label': '结算单位', 'empty_label': '未登记结算单位'},
+                    {'field': 'state', 'label': '结算状态', 'empty_label': '未登记状态'},
+                ],
+                'tree_column': 'title',
+                'presentation_mode': 'source_order',
+                'navigation_title': '收入结算工作表',
+                'column_widths': {
+                    'state': 96,
+                    'name': 148,
+                    'project_id': 180,
+                    'document_date': 112,
+                    'title': 220,
+                    'settlement_unit_id': 160,
+                    'contract_id': 168,
+                    'settlement_amount': 128,
+                    'paid_amount': 128,
+                    'unpaid_amount': 128,
+                    'remaining_amount': 128,
+                },
+                'column_precisions': {
+                    'settlement_amount': 2,
+                    'paid_amount': 2,
+                    'unpaid_amount': 2,
+                    'requested_fund_amount': 2,
+                    'remaining_amount': 2,
+                },
+                'tabs': [
+                    {'key': 'settlement', 'label': '结算概览', 'fields': ['state', 'name', 'document_date', 'title', 'settlement_amount', 'paid_amount', 'unpaid_amount', 'requested_fund_amount', 'remaining_amount']},
+                    {'key': 'contract', 'label': '合同与单位', 'fields': ['project_id', 'settlement_unit_id', 'contract_id', 'settlement_description']},
+                    {'key': 'ownership', 'label': '责任与附件', 'fields': ['entry_user_id', 'create_date', 'note', 'attachment_ids']},
+                ],
+                'labels': {
+                    'surface_aria': '收入结算专业工作表',
+                    'all': '全部收入结算',
+                    'select_hint': '请选择结算单查看专业明细',
+                },
+            },
+        }"/>
+    </record>
+
+    <record id="action_sc_settlement_order_expense" model="ir.actions.act_window">
+        <field name="context" eval="{
+            'create': True,
+            'edit': True,
+            'default_settlement_type': 'out',
+            'default_business_category_code': 'settlement.expense',
+            'search_default_group_project': 1,
+            'hierarchical_worksheet': {
+                'navigation_mode': 'sheet_groups',
+                'navigation_groups': [
+                    {'field': 'project_id', 'label': '项目', 'empty_label': '未归属项目'},
+                    {'field': 'settlement_unit_id', 'label': '结算单位', 'empty_label': '未登记结算单位'},
+                    {'field': 'state', 'label': '结算状态', 'empty_label': '未登记状态'},
+                ],
+                'tree_column': 'title',
+                'presentation_mode': 'source_order',
+                'navigation_title': '支出结算工作表',
+                'column_widths': {
+                    'state': 96,
+                    'name': 148,
+                    'project_id': 180,
+                    'document_date': 112,
+                    'title': 220,
+                    'settlement_unit_id': 160,
+                    'contract_id': 168,
+                    'settlement_amount': 128,
+                    'paid_amount': 128,
+                    'unpaid_amount': 128,
+                    'remaining_amount': 128,
+                },
+                'column_precisions': {
+                    'settlement_amount': 2,
+                    'paid_amount': 2,
+                    'unpaid_amount': 2,
+                    'requested_fund_amount': 2,
+                    'remaining_amount': 2,
+                },
+                'tabs': [
+                    {'key': 'settlement', 'label': '结算概览', 'fields': ['state', 'name', 'document_date', 'title', 'settlement_amount', 'paid_amount', 'unpaid_amount', 'requested_fund_amount', 'remaining_amount']},
+                    {'key': 'contract', 'label': '合同与单位', 'fields': ['project_id', 'settlement_unit_id', 'contract_id', 'settlement_description']},
+                    {'key': 'ownership', 'label': '责任与附件', 'fields': ['entry_user_id', 'create_date', 'note', 'attachment_ids']},
+                ],
+                'labels': {
+                    'surface_aria': '支出结算专业工作表',
+                    'all': '全部支出结算',
+                    'select_hint': '请选择结算单查看专业明细',
+                },
+            },
+        }"/>
+    </record>
+</odoo>
