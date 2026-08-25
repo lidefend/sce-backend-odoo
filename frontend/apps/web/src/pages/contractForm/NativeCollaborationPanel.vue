@@ -10,17 +10,16 @@
     <h3>{{ title }}</h3>
     <p v-if="unavailableMessage" class="native-chatter-empty">{{ unavailableMessage }}</p>
     <div v-else-if="!readonly" class="chips">
-      <button
+      <ScButton
         v-for="action in actions"
         :key="`chatter-${action.key}`"
-        class="chip-btn"
-        type="button"
+        size="small"
         :disabled="busy || posting || !action.enabled"
         :title="action.hint"
         @click="$emit('open-action', action)"
       >
         {{ action.label }}
-      </button>
+      </ScButton>
     </div>
     <ProfessionalCollaborationComposer
       v-if="!readonly && !unavailableMessage && activeMode"
@@ -100,6 +99,7 @@ import ProfessionalCollaborationTimeline from './ProfessionalCollaborationTimeli
 import ProfessionalCollaborationComposer from './ProfessionalCollaborationComposer.vue';
 import { collaborationCapabilityReadiness, visibleCollaborationTimeline } from './professionalCollaborationModel';
 import ProfessionalAttachmentManager, { type PendingProfessionalAttachment } from './ProfessionalAttachmentManager.vue';
+import ScButton from '../../components/design-system/ScButton.vue';
 
 export type NativeCollaborationPanelProps = {
   readonly?: boolean;
