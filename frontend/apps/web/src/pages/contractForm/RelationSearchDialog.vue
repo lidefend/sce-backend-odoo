@@ -4,6 +4,7 @@
     :title="dialog.title"
     :close-label="dialog.labels.close || '关闭'"
     panel-class="relation-dialog"
+    data-professional-relation-lifecycle="search"
     @close="$emit('close')"
   >
       <div class="relation-dialog-search">
