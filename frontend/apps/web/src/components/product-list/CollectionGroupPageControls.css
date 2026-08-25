@@ -1,0 +1,4 @@
+.group-page { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--sc-space-xs); color: var(--sc-app-text-secondary); font-size: 12px; }
+.group-page__status { min-width: 0; overflow-wrap: anywhere; }
+.group-page__input { width: 64px; min-height: 36px; }
+@media (max-width: 390px) { .group-page { width: 100%; } .group-page :deep(.sc-btn), .group-page__input { min-height: 44px; } }

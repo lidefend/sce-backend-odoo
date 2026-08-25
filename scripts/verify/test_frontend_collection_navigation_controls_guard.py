@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify.frontend_collection_navigation_controls_guard import COLUMN_COMPONENT, COMPONENT, GROUPING_COMPONENT, LIST_PAGE, validate
+from scripts.verify.frontend_collection_navigation_controls_guard import COLUMN_COMPONENT, COMPONENT, GROUPING_COMPONENT, GROUP_PAGE_COMPONENT, LIST_PAGE, validate
 
 
 class CollectionNavigationControlsGuardTest(unittest.TestCase):
@@ -10,9 +10,10 @@ class CollectionNavigationControlsGuardTest(unittest.TestCase):
         cls.list_page = LIST_PAGE.read_text(encoding="utf-8")
         cls.grouping = GROUPING_COMPONENT.read_text(encoding="utf-8")
         cls.column = COLUMN_COMPONENT.read_text(encoding="utf-8")
+        cls.group_page = GROUP_PAGE_COMPONENT.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
-        self.assertEqual(validate(self.component, self.list_page, self.grouping, self.column), [])
+        self.assertEqual(validate(self.component, self.list_page, self.grouping, self.column, self.group_page), [])
 
     def test_missing_semantic_identity_fails(self):
         altered = self.component.replace('data-semantic-component="CollectionPaginationFooter"', '')
@@ -39,6 +40,22 @@ class CollectionNavigationControlsGuardTest(unittest.TestCase):
             any(
                 "collection column header missing" in item
                 for item in validate(self.component, self.list_page, self.grouping, altered)
+            )
+        )
+
+    def test_parallel_group_page_controls_fail(self):
+        altered = self.list_page + '\n<button class="group-page-btn">legacy</button>\n'
+        self.assertIn(
+            "list page retains parallel group page controls DOM",
+            validate(self.component, altered, self.grouping, self.column, self.group_page),
+        )
+
+    def test_missing_group_page_semantic_identity_fails(self):
+        altered = self.group_page.replace('data-semantic-component="CollectionGroupPageControls"', '')
+        self.assertTrue(
+            any(
+                "collection group page controls missing" in item
+                for item in validate(self.component, self.list_page, self.grouping, self.column, altered)
             )
         )
 

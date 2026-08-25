@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[2]
 COMPONENT = ROOT / "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue"
 GROUPING_COMPONENT = ROOT / "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue"
 COLUMN_COMPONENT = ROOT / "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue"
+GROUP_PAGE_COMPONENT = ROOT / "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue"
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
 LIST_STYLE = ROOT / "frontend/apps/web/src/pages/ListPage.css"
 
@@ -14,11 +15,13 @@ def validate(
     list_source: str | None = None,
     grouping_source: str | None = None,
     column_source: str | None = None,
+    group_page_source: str | None = None,
 ) -> list[str]:
     component = component_source if component_source is not None else COMPONENT.read_text(encoding="utf-8")
     list_page = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     grouping = grouping_source if grouping_source is not None else GROUPING_COMPONENT.read_text(encoding="utf-8")
     column = column_source if column_source is not None else COLUMN_COMPONENT.read_text(encoding="utf-8")
+    group_page = group_page_source if group_page_source is not None else GROUP_PAGE_COMPONENT.read_text(encoding="utf-8")
     failures: list[str] = []
     required = (
         'data-semantic-component="CollectionPaginationFooter"',
@@ -83,6 +86,23 @@ def validate(
     legacy_style = LIST_STYLE.read_text(encoding="utf-8")
     if ".column-drag-handle {" in legacy_style or ".column-resize-handle {" in legacy_style:
         failures.append("list page retains parallel column header component styles")
+    group_page_required = (
+        'data-semantic-component="CollectionGroupPageControls"',
+        ':data-group-key="groupKey"',
+        ':aria-label="regionLabel"',
+        'aria-live="polite"',
+        '<ScButton',
+        '<ScInput',
+    )
+    for marker in group_page_required:
+        if marker not in group_page:
+            failures.append(f"collection group page controls missing {marker}")
+    if '<CollectionGroupPageControls' not in list_page:
+        failures.append("list page missing shared group page controls")
+    if 'class="group-page-btn"' in list_page or 'class="group-page-input"' in list_page:
+        failures.append("list page retains parallel group page controls DOM")
+    if ".group-page-btn {" in legacy_style or ".group-page-input {" in legacy_style:
+        failures.append("list page retains parallel group page control styles")
     return failures
 
 
@@ -93,4 +113,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_collection_navigation_controls_guard] PASS modes=3 shared_controls=3")
+    print("[frontend_collection_navigation_controls_guard] PASS modes=3 shared_controls=4")

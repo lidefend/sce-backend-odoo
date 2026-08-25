@@ -178,42 +178,25 @@
             </button>
             <p>{{ group.label }}</p>
             <span>{{ groupCountText(group) }}</span>
-            <div v-if="onGroupPageChange && groupTotalPages(group) > 1" class="group-page">
-              <button
-                type="button"
-                class="group-page-btn"
-                :disabled="Boolean(group.loading) || !canGroupPagePrev(group)"
-                @click="pageGroupPrev(group)"
-              >
-                {{ uiLabel('pagination_prev', '上一页') }}
-              </button>
-              <span>{{ groupPageInfoText(group) }}</span>
-              <button
-                type="button"
-                class="group-page-btn"
-                :disabled="Boolean(group.loading) || !canGroupPageNext(group)"
-                @click="pageGroupNext(group)"
-              >
-                {{ uiLabel('pagination_next', '下一页') }}
-              </button>
-              <input
-                class="group-page-input"
-                :value="groupJumpPageInput[group.key] || String(groupCurrentPage(group))"
-                :disabled="Boolean(group.loading) || groupTotalPages(group) <= 1"
-                :aria-label="uiLabel('group_page_input', `${group.label}页码`)"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                @change="onGroupJumpInputChange(group.key, $event)"
-              />
-              <button
-                type="button"
-                class="group-page-btn"
-                :disabled="Boolean(group.loading) || groupTotalPages(group) <= 1"
-                @click="jumpGroupPage(group)"
-              >
-                {{ uiLabel('pagination_jump', '跳转') }}
-              </button>
-            </div>
+            <CollectionGroupPageControls
+              v-if="onGroupPageChange && groupTotalPages(group) > 1"
+              :group-key="group.key"
+              :region-label="uiLabel('group_pagination_region', `${group.label}分组分页`)"
+              :page-info="groupPageInfoText(group)"
+              :page-input="groupJumpPageInput[group.key] || String(groupCurrentPage(group))"
+              :page-input-label="uiLabel('group_page_input', `${group.label}页码`)"
+              :previous-label="uiLabel('pagination_prev', '上一页')"
+              :next-label="uiLabel('pagination_next', '下一页')"
+              :jump-label="uiLabel('pagination_jump', '跳转')"
+              :total-pages="groupTotalPages(group)"
+              :can-previous="canGroupPagePrev(group)"
+              :can-next="canGroupPageNext(group)"
+              :loading="Boolean(group.loading)"
+              @previous="pageGroupPrev(group)"
+              @next="pageGroupNext(group)"
+              @update:page-input="onGroupJumpInputChange(group.key, $event)"
+              @jump="jumpGroupPage(group)"
+            />
             <button
               v-if="onOpenGroup"
               type="button"
@@ -609,6 +592,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
 import CollectionColumnHeaderControl from '../components/product-list/CollectionColumnHeaderControl.vue';
+import CollectionGroupPageControls from '../components/product-list/CollectionGroupPageControls.vue';
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
@@ -1213,8 +1197,7 @@ function jumpGroupPage(group: { key: string; label: string; count: number; domai
   props.onGroupPageChange({ key: group.key, label: group.label, count: group.count, domain: group.domain, offset, limit });
 }
 
-function onGroupJumpInputChange(groupKey: string, event: Event) {
-  const value = String((event.target as HTMLInputElement | null)?.value || '');
+function onGroupJumpInputChange(groupKey: string, value: string) {
   groupJumpPageInput.value = { ...groupJumpPageInput.value, [groupKey]: value };
 }
 
