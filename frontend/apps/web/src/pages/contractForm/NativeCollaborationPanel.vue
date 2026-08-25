@@ -145,50 +145,17 @@
       declared
       summary="历史审计"
     />
-    <ul v-if="!unavailableMessage && visibleTimeline.length" class="native-chatter-timeline">
-      <li v-for="entry in visibleTimeline" :key="entry.key" class="native-chatter-entry">
-        <span class="native-chatter-type">{{ entry.typeLabel }}</span>
-        <span class="native-chatter-body">{{ entry.type === 'activity' ? entry.title : (entry.body || entry.title) }}</span>
-        <span class="native-chatter-meta">{{ displayTimelineMeta(entry.meta) }}</span>
-        <div v-if="entry.type === 'activity'" class="native-chatter-entry-actions">
-          <button
-            v-if="entry.activity?.can_complete"
-            class="ghost native-chatter-entry-action"
-            type="button"
-            :disabled="isActivityUpdating(entry)"
-            @click="$emit('update-activity', entry, 'done')"
-          >
-            完成
-          </button>
-          <button
-            v-if="entry.activity?.can_cancel"
-            class="ghost native-chatter-entry-action"
-            type="button"
-            :disabled="isActivityUpdating(entry)"
-            @click="$emit('update-activity', entry, 'cancel')"
-          >
-            取消
-          </button>
-        </div>
-        <button
-          v-if="entry.type === 'attachment' && entry.attachment"
-          class="ghost native-attachment-download"
-          type="button"
-          @click="$emit('open-attachment', entry.attachment)"
-        >
-          {{ attachmentViewLabel }}
-        </button>
-      </li>
-    </ul>
-    <button
-      v-if="!unavailableMessage && timelineHasMore"
-      class="ghost native-chatter-load-more"
-      type="button"
-      :disabled="timelineLoading"
-      @click="$emit('load-more-timeline')"
-    >
-      {{ timelineLoading ? '加载中...' : '加载更多' }}
-    </button>
+    <ProfessionalCollaborationTimeline
+      v-if="!unavailableMessage"
+      :entries="visibleTimeline"
+      :activity-updating-ids="activityUpdatingIds"
+      :attachment-view-label="attachmentViewLabel"
+      :timeline-has-more="timelineHasMore"
+      :timeline-loading="timelineLoading"
+      @update-activity="forwardActivityUpdate"
+      @open-attachment="$emit('open-attachment', $event)"
+      @load-more="$emit('load-more-timeline')"
+    />
   </section>
 </template>
 
@@ -198,6 +165,8 @@ import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/ch
 import type { NativeChatterAction } from './types';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import { resolveProfessionalAuditEvents } from './professionalAuditModel';
+import ProfessionalCollaborationTimeline from './ProfessionalCollaborationTimeline.vue';
+import { visibleCollaborationTimeline } from './professionalCollaborationModel';
 
 type PendingNativeAttachment = {
   key: string;
@@ -271,22 +240,9 @@ export type NativeCollaborationPanelListeners = {
 };
 
 const props = defineProps<NativeCollaborationPanelProps>();
-const visibleTimeline = computed(() => props.timeline.filter((entry) => entry.type !== 'audit'));
+const visibleTimeline = computed(() => visibleCollaborationTimeline(props.timeline));
 const auditEvents = computed(() => resolveProfessionalAuditEvents(props.timeline));
 
-function displayTimelineMeta(value: string) {
-  return String(value || '').replace(
-    /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?/g,
-    (raw) => {
-      const parsed = new Date(raw);
-      if (Number.isNaN(parsed.getTime())) return raw;
-      return new Intl.DateTimeFormat('zh-CN', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: false,
-      }).format(parsed);
-    },
-  );
-}
 
 const emit = defineEmits<{
   'open-action': [action: NativeChatterAction];
@@ -323,18 +279,14 @@ function emitActivityAssignee(event: Event) {
   emit('select-activity-assignee', Number.isFinite(value) && value > 0 ? value : 0);
 }
 
+function forwardActivityUpdate(entry: ChatterTimelineEntry, action: 'done' | 'cancel') {
+  emit('update-activity', entry, action);
+}
+
 function collaborationUserLabel(user: CollaborationUserOption) {
   return String(user.name || user.login || user.email || user.id || '').trim();
 }
 
-function activityEntryId(entry: ChatterTimelineEntry) {
-  return Number(entry.activity?.id || entry.id || 0);
-}
-
-function isActivityUpdating(entry: ChatterTimelineEntry) {
-  const id = activityEntryId(entry);
-  return Boolean(id && props.activityUpdatingIds.includes(id));
-}
 </script>
 
 <style scoped src="./NativeCollaborationPanel.css"></style>
