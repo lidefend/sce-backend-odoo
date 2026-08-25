@@ -4,14 +4,18 @@
       <h4>{{ block.title }}</h4>
     </header>
 
-    <div class="metric-grid">
+    <div v-if="metrics.length" class="metric-grid" :data-metric-count="metrics.length">
       <component
         :is="item.actionKey ? 'button' : 'article'"
         v-for="item in metrics"
         :key="item.key"
         class="metric-item"
         :class="`tone-${item.tone || 'neutral'}`"
-        type="button"
+        :type="item.actionKey ? 'button' : undefined"
+        :data-metric-key="item.key"
+        :data-metric-tone="item.tone"
+        :data-interactive="Boolean(item.actionKey)"
+        :aria-label="item.actionKey ? `${item.label}：${item.value}` : undefined"
         @click="item.actionKey ? emitAction(item) : undefined"
       >
         <p class="metric-label">{{ item.label }}</p>
@@ -19,12 +23,16 @@
         <p v-if="item.delta || item.hint" class="metric-meta">{{ item.delta || item.hint }}</p>
       </component>
     </div>
+    <ScEmptyState v-else title="暂无指标" description="当前看板尚未提供可展示的指标数据。" />
   </article>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import ScEmptyState from '../../design-system/ScEmptyState.vue';
+
+const METRIC_TONES = new Set(['neutral', 'success', 'warning', 'danger', 'info']);
 
 type MetricItem = {
   key: string;
@@ -57,7 +65,7 @@ const metrics = computed<MetricItem[]>(() => {
         value: String(row.value ?? '--'),
         delta: String(row.delta || ''),
         hint: String(row.hint || ''),
-        tone: String(row.tone || 'neutral').toLowerCase(),
+        tone: normalizeMetricTone(row.tone),
         actionKey: String(row.action_key || ''),
         raw: row,
       };
@@ -75,6 +83,11 @@ const metrics = computed<MetricItem[]>(() => {
       tone: 'neutral',
     }));
 });
+
+function normalizeMetricTone(value: unknown) {
+  const tone = String(value || 'neutral').trim().toLowerCase();
+  return METRIC_TONES.has(tone) ? tone : 'neutral';
+}
 
 function emitAction(item: MetricItem) {
   const actionKey = String(item.actionKey || '').trim();
@@ -113,6 +126,8 @@ function emitAction(item: MetricItem) {
   min-height: 110px;
   text-align: left;
   color: inherit;
+  font: inherit;
+  overflow: hidden;
 }
 button.metric-item { cursor: pointer; }
 button.metric-item:hover {
@@ -128,6 +143,8 @@ button.metric-item:hover {
   margin: 8px 0 0;
   font-size: 26px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 .metric-meta {
   margin: 8px 0 0;
@@ -139,4 +156,8 @@ button.metric-item:hover {
 .tone-danger { background: var(--sc-app-danger-bg); }
 .tone-info { background: var(--sc-app-info-bg); }
 .tone-neutral { background: var(--sc-app-muted-bg); }
+@container (max-width: 480px) {
+  .metric-grid { grid-template-columns: 1fr; }
+  .metric-item { min-height: 96px; }
+}
 </style>

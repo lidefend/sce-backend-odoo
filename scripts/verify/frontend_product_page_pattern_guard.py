@@ -37,6 +37,10 @@ def validate() -> list[str]:
     action_view = source("frontend/apps/web/src/views/ActionView.vue")
     if '<component :is="viewMode === \'dashboard\' ? DashboardPattern : CollectionPattern">' not in action_view:
         failures.append("ActionView does not select dashboard/collection pattern from formal view mode")
+    metric_row = source("frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue")
+    for marker in ("normalizeMetricTone", ":data-metric-count", ":data-interactive", "<ScEmptyState"):
+        if marker not in metric_row:
+            failures.append(f"dashboard metric block missing deterministic presentation state: {marker}")
     model = source("frontend/apps/web/src/app/presentation/productPagePattern.ts")
     for marker in ("PRODUCT_PAGE_PATTERN_MODE_MISMATCH", "PRODUCT_PAGE_PATTERN_PROFILE_MISMATCH"):
         if marker not in model:
