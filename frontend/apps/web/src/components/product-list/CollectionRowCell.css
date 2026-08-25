@@ -78,6 +78,7 @@
   background: transparent;
   color: var(--sc-app-text-secondary);
   padding: 0 6px;
+  font-size: 17px;
   line-height: 1;
   cursor: pointer;
 }
@@ -91,6 +92,17 @@
 .favorite-toggle:not(:disabled):hover {
   border-color: var(--sc-app-border);
   background: var(--sc-app-hover-bg);
+}
+
+.favorite-toggle.active:not(:disabled):hover {
+  border-color: var(--sc-app-warning-border);
+  background: var(--sc-app-warning-bg);
+  color: var(--sc-app-warning-text);
+}
+
+.favorite-star {
+  width: 16px;
+  text-align: center;
 }
 
 .favorite-toggle:disabled {
