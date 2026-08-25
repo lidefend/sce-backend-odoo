@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-      Phase 9 contract-execution profile.  The native views own the columns;
-      this action context only supplies the generic worksheet organization.
+      Phase 9 contract-execution profile. The released income and expense
+      contract workspaces are the product entry authority; their native views
+      own the columns, while this context only supplies generic worksheet
+      organization. Superseded execution leaves intentionally remain unbound.
     -->
-    <record id="action_construction_contract_income_execution" model="ir.actions.act_window">
+    <record id="action_construction_contract_income" model="ir.actions.act_window">
         <field name="context" eval="{
             'default_type': 'out',
             'default_business_category_code': 'contract.income',
@@ -55,7 +57,7 @@
         }"/>
     </record>
 
-    <record id="action_construction_contract_expense_execution" model="ir.actions.act_window">
+    <record id="action_construction_contract_expense" model="ir.actions.act_window">
         <field name="context" eval="{
             'default_type': 'in',
             'default_business_category_code': 'contract.expense',

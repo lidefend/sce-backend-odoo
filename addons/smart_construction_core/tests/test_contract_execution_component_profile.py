@@ -11,16 +11,16 @@ from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 
 PROFILE_CASES = (
     {
-        "action": "action_construction_contract_income_execution",
-        "menu": "menu_sc_income_contract_execution",
+        "action": "action_construction_contract_income",
+        "menu": "menu_sc_p1_income_contract",
         "view": "view_construction_contract_income_tree",
         "model": "construction.contract.income",
         "tree_column": "subject",
         "navigation_title": "收入合同履约结构",
     },
     {
-        "action": "action_construction_contract_expense_execution",
-        "menu": "menu_sc_expense_contract_execution",
+        "action": "action_construction_contract_expense",
+        "menu": "menu_sc_p1_expense_contract",
         "view": "view_construction_contract_expense_tree",
         "model": "construction.contract.expense",
         "tree_column": "subject",
@@ -31,6 +31,28 @@ PROFILE_CASES = (
 
 @tagged("contract_execution_component_profile", "post_install", "-at_install")
 class TestContractExecutionComponentProfile(TransactionCase):
+    def test_profiles_bind_only_to_released_contract_workspaces(self):
+        self.env["sc.product.policy"].sync_construction_menu_product_policies()
+        policy = self.env["sc.product.policy"].search(
+            [("product_key", "=", "construction.standard")], limit=1
+        )
+        formal_menus = {
+            menu.get("menu_xmlid") or menu.get("page_key") or menu.get("menu_key"): menu
+            for group in (policy.menu_groups or [])
+            if isinstance(group, dict)
+            for menu in (group.get("menus") or [])
+            if isinstance(menu, dict)
+        }
+        for case in PROFILE_CASES:
+            with self.subTest(case=case["menu"]):
+                menu = self.env.ref("smart_construction_core.%s" % case["menu"])
+                action = self.env.ref("smart_construction_core.%s" % case["action"])
+                menu_xmlid = "smart_construction_core.%s" % case["menu"]
+                self.assertTrue(menu.active)
+                self.assertEqual(menu.action, action)
+                self.assertIn(menu_xmlid, formal_menus)
+                self.assertEqual(formal_menus[menu_xmlid].get("action_id"), action.id)
+
     def test_execution_views_declare_registered_worksheet_semantic(self):
         for case in PROFILE_CASES:
             with self.subTest(case=case["view"]):
