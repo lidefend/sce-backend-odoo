@@ -43,6 +43,9 @@ class TestContractExecutionComponentProfile(TransactionCase):
             for menu in (group.get("menus") or [])
             if isinstance(menu, dict)
         }
+        contract_read = self.env.ref(
+            "smart_construction_core.group_sc_cap_contract_read"
+        )
         for case in PROFILE_CASES:
             with self.subTest(case=case["menu"]):
                 menu = self.env.ref("smart_construction_core.%s" % case["menu"])
@@ -50,6 +53,7 @@ class TestContractExecutionComponentProfile(TransactionCase):
                 menu_xmlid = "smart_construction_core.%s" % case["menu"]
                 self.assertTrue(menu.active)
                 self.assertEqual(menu.action, action)
+                self.assertIn(contract_read, action.groups_id)
                 self.assertIn(menu_xmlid, formal_menus)
                 self.assertEqual(formal_menus[menu_xmlid].get("action_id"), action.id)
 
