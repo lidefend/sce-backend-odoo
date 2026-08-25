@@ -15,7 +15,8 @@ def validate() -> list[str]:
     required_component = [
         "data-product-page-header", "data-presentation-mode", "data-render-profile",
         "data-dirty-state", "data-header-variant", "data-workspace-action-bar",
-        ":class=\"{ 'sc-visually-hidden': hideTitle }\"",
+        ":class=\"{ 'sc-visually-hidden': hideTitle }\"", "data-title-visibility",
+        "product-page-header--title-hidden", "product-page-header__status:empty",
     ]
     required_model = [
         "title", "subtitle", "breadcrumb", "presentationMode", "renderProfile", "dirtyState",
