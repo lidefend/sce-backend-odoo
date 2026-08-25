@@ -3,7 +3,7 @@ workflow:
   purpose: governed_systemwide_frontend_professionalization
   formal_product_layer: P0_platform_kernel_product
   program_owner: frontend_platform
-  status: active
+  status: completed
 
   objective: >-
     Establish one professional frontend system from design authority through
@@ -228,9 +228,9 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: final_delivery
-    task: systemwide_public_metric_acceptance_closeout
-    prerequisite: systemwide_public_metric_acceptance_passed
+    phase: user_acceptance
+    task: hand_off_completed_systemwide_frontend_product
+    prerequisite: final_delivery_merged_and_main_exact_head_ci_passed
     do_not_start_in_parallel: []
     acceptance:
       status: pass
