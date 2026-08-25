@@ -1797,5 +1797,4 @@ useFormAuxiliaryWatchersRuntime({
 });
 watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
 </script>
-
 <style scoped src="./contractForm/ContractFormPage.css"></style>
