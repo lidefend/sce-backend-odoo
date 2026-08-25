@@ -101,6 +101,7 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
                 "set -euo pipefail\n"
                 "if [[ \"$1 $2 ${3:-}\" == \"pr merge --help\" ]]; then\n"
                 "  echo '      --match-head-commit SHA'\n"
+                "  for index in $(seq 1 10000); do echo \"merge help padding $index\"; done\n"
                 "elif [[ \"$1 $2\" == \"pr view\" ]]; then\n"
                 "  printf '%s\\n' \"${FAKE_ACTUAL_HEAD:?}\"\n"
                 "elif [[ \"$1 $2\" == \"pr merge\" ]]; then\n"
