@@ -115,8 +115,17 @@
   --sc-component-button-radius: 8px;
   --sc-component-card-padding: 16;
   --sc-component-card-radius: 8px;
+  --sc-component-dialog-header-z-index: 100;
+  --sc-component-dialog-max-height: calc(100dvh - 48px);
+  --sc-component-dialog-motion-duration: 180ms;
   --sc-component-dialog-padding: 16;
   --sc-component-dialog-radius: 8px;
+  --sc-component-dialog-width: 560px;
+  --sc-component-dialog-z-index: 1100;
+  --sc-component-drawer-header-z-index: 100;
+  --sc-component-drawer-motion-duration: 180ms;
+  --sc-component-drawer-width: 420px;
+  --sc-component-drawer-z-index: 1100;
   --sc-component-hierarchy-browser-detail-max-width: 560;
   --sc-component-hierarchy-browser-detail-min-width: 220;
   --sc-component-hierarchy-browser-detail-width: 320;

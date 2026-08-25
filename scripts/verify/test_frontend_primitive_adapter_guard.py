@@ -25,7 +25,12 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         )
         (ui / "primitives.ts").write_text("export { Input } from 'tdesign-vue-next/es/input';\n", encoding="utf-8")
         for name in PRIMITIVES:
-            modal_contract = "<!-- useModalLifecycle role=\"dialog\" aria-modal=\"true\" -->" if name in {"ScDialog", "ScDrawer"} else ""
+            overlay_kind = name.removeprefix("Sc").lower()
+            modal_contract = (
+                f'<!-- useModalLifecycle role="dialog" aria-modal="true" data-overlay-kind="{overlay_kind}" '
+                f'data-state="open" --sc-component-{overlay_kind}-z-index -->'
+                if name in {"ScDialog", "ScDrawer"} else ""
+            )
             state_contract = {
                 "ScButton": '<button :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined"><span class="sc-btn__spinner" /></button>',
                 "ScInput": '<input :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',

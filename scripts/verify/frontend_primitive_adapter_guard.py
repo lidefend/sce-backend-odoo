@@ -51,6 +51,11 @@ def validate(root: Path = ROOT) -> list[str]:
         text = (design / f"{modal}.vue").read_text(encoding="utf-8") if (design / f"{modal}.vue").is_file() else ""
         if "useModalLifecycle" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
             errors.append(f"{modal} must use the shared modal lifecycle and dialog semantics")
+        overlay_kind = modal.removeprefix("Sc").lower()
+        if f'data-overlay-kind="{overlay_kind}"' not in text or 'data-state="open"' not in text:
+            errors.append(f"{modal} must expose deterministic overlay state")
+        if f"--sc-component-{overlay_kind}-z-index" not in text:
+            errors.append(f"{modal} must consume its registered overlay stacking token")
 
     input_text = (design / "ScInput.vue").read_text(encoding="utf-8") if (design / "ScInput.vue").is_file() else ""
     if "<input" not in input_text or ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:

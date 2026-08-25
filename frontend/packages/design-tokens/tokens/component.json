@@ -62,8 +62,19 @@
     "min_height": 560
   },
   "dialog": {
+    "width": "560px",
+    "max_height": "calc(100dvh - 48px)",
+    "z_index": "{z_index.modal}",
+    "header_z_index": "{z_index.sticky}",
+    "motion_duration": "{motion.normal}",
     "radius": "{radius.md}",
     "padding": "{space.md}"
+  },
+  "drawer": {
+    "width": "420px",
+    "z_index": "{z_index.modal}",
+    "header_z_index": "{z_index.sticky}",
+    "motion_duration": "{motion.normal}"
   },
   "badge": {
     "radius": "{radius.pill}",
