@@ -550,7 +550,7 @@ candidate.required_checks.dispatch: guard.prod.forbid
 	[ -n "$$pr_number" ] || { echo "[candidate.required_checks.dispatch] BLOCKED exactly_one_open_pr_required"; exit 2; }; \
 	[ "$$live_head" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED pr_head_mismatch"; exit 2; }; \
 	[[ "$$base_sha" =~ ^[0-9a-f]{40}$$ ]] || { echo "[candidate.required_checks.dispatch] BLOCKED invalid_pr_base"; exit 2; }; \
-	gh label view ci:candidate >/dev/null 2>&1 || gh label create ci:candidate --color 1d76db --description "Run exact-head candidate required checks"; \
+	gh label create ci:candidate --color 1d76db --description "Run exact-head candidate required checks" --force >/dev/null; \
 	if gh pr view "$$pr_number" --json labels --jq ".labels[].name" | grep -Fxq ci:candidate; then \
 	  gh pr edit "$$pr_number" --remove-label ci:candidate >/dev/null; \
 	fi; \

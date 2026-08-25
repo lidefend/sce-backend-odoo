@@ -66,6 +66,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("invalid_pr_base", dispatch)
         self.assertIn("pr_head_changed_before_dispatch", dispatch)
         self.assertIn("gh label create ci:candidate", dispatch)
+        self.assertIn("--force", dispatch)
         self.assertIn("--remove-label ci:candidate", dispatch)
         self.assertIn("--add-label ci:candidate", dispatch)
 
