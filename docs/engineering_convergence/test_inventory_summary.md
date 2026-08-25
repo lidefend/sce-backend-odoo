@@ -4,19 +4,19 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1253`
+- Total assets: `1255`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `173`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `855`
+- PR dedupe candidates: `857`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 484 |
+| governance | 486 |
 | contract | 353 |
 | unit | 214 |
 | odoo_integration | 102 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1074 |
+| pr_candidate | 1076 |
 | integration_candidate | 128 |
 | release_candidate | 42 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 855 |
+| deduplicate_before_required | 857 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 127 |
 | keep_release_only | 42 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1076 |
+| <5m | 1078 |
 | 10-30m | 129 |
 | 30-60m | 44 |
 | unknown | 3 |
@@ -152,7 +152,7 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 484 |
+| architecture owner | 486 |
 | platform owner | 353 |
 | test owner | 215 |
 | backend owner | 102 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1120 |
+| scripts/verify | 1122 |
 | scripts/ops | 68 |
 | frontend/apps/web/scripts | 29 |
 | scripts/ci | 15 |
@@ -276,14 +276,14 @@ Generated from `test_inventory.csv`.
 | T-ASSET-190 | unit | `scripts/verify/business_form_user_perspective_acceptance.py` | test owner |
 | T-ASSET-191 | governance | `scripts/verify/business_list_config_boundary_audit.py` | architecture owner |
 | T-ASSET-193 | governance | `scripts/verify/business_shape_assembly_guard.py` | architecture owner |
-| ... | ... | 775 more | ... |
+| ... | ... | 777 more | ... |
 
 ## Dedupe Hotspots
 
 | Family | Count |
 | --- | ---: |
 | `scripts/verify/construction_core_extension` | 12 |
-| `scripts/verify/test_frontend_professional` | 7 |
+| `scripts/verify/test_frontend_professional` | 8 |
 | `scripts/verify/test_frontend_release` | 7 |
 | `scripts/verify/test_contract_snapshot` | 6 |
 | `scripts/verify/contract_governance_form` | 5 |
@@ -318,7 +318,7 @@ Generated from `test_inventory.csv`.
 | Family | Count | Owner | Gate Decision | Disposition |
 | --- | ---: | --- | --- | --- |
 | `scripts/verify/construction_core_extension` | 12 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
-| `scripts/verify/test_frontend_professional` | 7 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_frontend_professional` | 8 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_release` | 7 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_contract_snapshot` | 6 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/contract_governance_form` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
