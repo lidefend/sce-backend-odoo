@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify.frontend_collection_aggregate_footer_guard import FOOTER, FOOTER_CSS, LIST_PAGE, validate
+from scripts.verify.frontend_collection_aggregate_footer_guard import FOOTER, FOOTER_CSS, LIST_PAGE, VISUAL_SMOKE, validate
 
 
 class CollectionAggregateFooterGuardTest(unittest.TestCase):
@@ -9,6 +9,7 @@ class CollectionAggregateFooterGuardTest(unittest.TestCase):
         cls.list_source = LIST_PAGE.read_text(encoding="utf-8")
         cls.footer_source = FOOTER.read_text(encoding="utf-8")
         cls.css_source = FOOTER_CSS.read_text(encoding="utf-8")
+        cls.visual_source = VISUAL_SMOKE.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
         self.assertEqual(validate(self.list_source, self.footer_source, self.css_source), [])
@@ -36,6 +37,12 @@ class CollectionAggregateFooterGuardTest(unittest.TestCase):
     def test_missing_tabular_numbers_fails(self):
         altered = self.css_source.replace("font-variant-numeric: tabular-nums", "font-variant-numeric: normal")
         self.assertTrue(any("tabular-nums" in item for item in validate(self.list_source, self.footer_source, altered)))
+
+    def test_missing_browser_evidence_fails(self):
+        altered = self.visual_source.replace("misalignedNumericCells", "legacyAlignment")
+        self.assertTrue(any("misalignedNumericCells" in item for item in validate(
+            self.list_source, self.footer_source, self.css_source, altered,
+        )))
 
 
 if __name__ == "__main__":

@@ -220,6 +220,32 @@ try {
         };
         if (!collectionSelectionEvidence.pass) throw new Error(`${target.name}: collection selection state contract failed`);
       }
+      let collectionAggregateEvidence = null;
+      if (target.exerciseCollectionAggregate === true) {
+        const footers = page.locator('[data-semantic-component="CollectionAggregateFooter"]:visible');
+        const footerCount = await footers.count();
+        if (footerCount < 1) throw new Error(`${target.name}: collection aggregate footer is missing`);
+        const contexts = await footers.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-context') || ''));
+        const rows = footers.locator('[data-aggregate-scope]');
+        const rowCount = await rows.count();
+        const scopes = await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-scope') || ''));
+        const rowHeaderCount = await rows.locator('th[scope="row"]').count();
+        const numericCells = rows.locator('.collection-aggregate-number');
+        const numericCellCount = await numericCells.count();
+        const misalignedNumericCells = await numericCells.evaluateAll((nodes) => nodes.filter((node) => getComputedStyle(node).textAlign !== 'right').length);
+        const expectedContext = target.aggregateContext === 'group' ? 'group' : 'flat';
+        collectionAggregateEvidence = {
+          footerCount, contexts, rowCount, scopes, rowHeaderCount, numericCellCount, misalignedNumericCells,
+          pass: footerCount >= 1
+            && contexts.every((context) => context === expectedContext)
+            && rowCount >= footerCount
+            && scopes.every((scope) => scope === 'page' || scope === 'total')
+            && rowHeaderCount === rowCount
+            && numericCellCount > 0
+            && misalignedNumericCells === 0,
+        };
+        if (!collectionAggregateEvidence.pass) throw new Error(`${target.name}: collection aggregate presentation contract failed`);
+      }
       let mobileOverflowEvidence = null;
       if (viewport.name === 'mobile' && target.exerciseMobileOverflow === true) {
         const disclosure = page.locator('.form-header-mobile-actions');
@@ -349,7 +375,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, collectionSelectionEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, collectionSelectionEvidence, collectionAggregateEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -363,6 +389,7 @@ const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded 
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });
+  if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
   if (item.collectionToolbarEvidence && !item.collectionToolbarEvidence.pass) failures.push({ name: item.name, collectionToolbarEvidence: item.collectionToolbarEvidence });
   if (item.collectionNavigationEvidence && !item.collectionNavigationEvidence.pass) failures.push({ name: item.name, collectionNavigationEvidence: item.collectionNavigationEvidence });
