@@ -125,6 +125,14 @@ def _install_odoo_shim():
     )
     native_action_scope_mod = importlib.util.module_from_spec(native_action_scope_spec)
     native_action_scope_spec.loader.exec_module(native_action_scope_mod)
+    native_collection_module_name = "odoo.addons.smart_core.utils.native_collection_presentation"
+    native_collection_path = Path(__file__).resolve().parents[1] / "utils" / "native_collection_presentation.py"
+    native_collection_spec = importlib.util.spec_from_file_location(
+        native_collection_module_name,
+        native_collection_path,
+    )
+    native_collection_mod = importlib.util.module_from_spec(native_collection_spec)
+    native_collection_spec.loader.exec_module(native_collection_mod)
     sys.modules["odoo"] = odoo_mod
     sys.modules["odoo.tools"] = tools_mod
     sys.modules["odoo.tools.safe_eval"] = safe_eval_mod
@@ -134,6 +142,7 @@ def _install_odoo_shim():
     sys.modules[descriptor_module_name] = descriptor_mod
     sys.modules[native_modifier_module_name] = native_modifier_mod
     sys.modules[native_action_scope_module_name] = native_action_scope_mod
+    sys.modules[native_collection_module_name] = native_collection_mod
 
 
 def _load_calendar_mixin():
@@ -384,6 +393,32 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertIs(result["capabilities"]["can_create"], False)
         self.assertIs(result["capabilities"]["can_write"], False)
         self.assertIs(result["capabilities"]["can_delete"], True)
+
+    def test_primary_tree_parser_projects_registered_native_collection_semantics(self):
+        expected = {
+            "smart_hierarchy_browser": "hierarchy_browser",
+            "smart_hierarchy_planner": "hierarchy_planner",
+            "smart_hierarchical_worksheet": "hierarchical_worksheet",
+        }
+
+        for js_class, semantic in expected.items():
+            with self.subTest(js_class=js_class):
+                result = self.tree_form_parser._parse_tree_view(
+                    f'<tree js_class="{js_class}"><field name="name"/></tree>',
+                    {"name": {"type": "char", "string": "Name"}},
+                )
+                self.assertEqual(
+                    result["collection_presentation"],
+                    {"semantic": semantic, "source": "native_view_derived"},
+                )
+
+    def test_primary_tree_parser_does_not_guess_unknown_collection_semantic(self):
+        result = self.tree_form_parser._parse_tree_view(
+            '<tree js_class="customer_special_tree"><field name="name"/></tree>',
+            {"name": {"type": "char", "string": "Name"}},
+        )
+
+        self.assertNotIn("collection_presentation", result)
 
     def test_tree_parser_preserves_duplicate_field_behavior_occurrences(self):
         result = self.tree_form_parser._parse_tree_view(
