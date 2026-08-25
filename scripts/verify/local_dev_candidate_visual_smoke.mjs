@@ -307,6 +307,56 @@ try {
         };
         if (!collectionAggregateEvidence.pass) throw new Error(`${target.name}: collection aggregate presentation contract failed`);
       }
+      let collectionGroupHeaderEvidence = null;
+      if (target.exerciseCollectionGroupHeader === true) {
+        const headers = page.locator('[data-semantic-component="CollectionGroupHeader"]:visible');
+        const headerCount = await headers.count();
+        if (headerCount < 1) throw new Error(`${target.name}: collection group header is missing`);
+        const header = headers.first();
+        const groupKey = await header.getAttribute('data-group-key');
+        const initialState = await header.getAttribute('data-group-state');
+        const toggle = header.locator('.collection-group-header__toggle');
+        const togglePrimitive = await toggle.getAttribute('data-semantic-component');
+        const initialExpanded = await toggle.getAttribute('aria-expanded');
+        const touchTarget = await toggle.boundingBox();
+        await toggle.focus();
+        const focusContained = await header.evaluate((node) => node.contains(document.activeElement));
+        await toggle.click();
+        const toggledState = initialState === 'collapsed' ? 'expanded' : 'collapsed';
+        await page.waitForFunction(
+          ({ key, state }) => [...document.querySelectorAll('[data-semantic-component="CollectionGroupHeader"]')]
+            .some((node) => node.getAttribute('data-group-key') === key && node.getAttribute('data-group-state') === state),
+          { key: groupKey, state: toggledState },
+          { timeout: 15000 },
+        );
+        const toggledExpanded = await toggle.getAttribute('aria-expanded');
+        await toggle.click();
+        await page.waitForFunction(
+          ({ key, state }) => [...document.querySelectorAll('[data-semantic-component="CollectionGroupHeader"]')]
+            .some((node) => node.getAttribute('data-group-key') === key && node.getAttribute('data-group-state') === state),
+          { key: groupKey, state: initialState },
+          { timeout: 15000 },
+        );
+        const restoredExpanded = await toggle.getAttribute('aria-expanded');
+        const openActions = header.locator('.collection-group-header__open');
+        const openActionCount = await openActions.count();
+        const openActionPrimitiveCount = await openActions.evaluateAll((nodes) =>
+          nodes.filter((node) => node.getAttribute('data-semantic-component') === 'ScButton').length,
+        );
+        collectionGroupHeaderEvidence = {
+          headerCount, groupKey, initialState, toggledState, togglePrimitive, initialExpanded,
+          toggledExpanded, restoredExpanded, focusContained, touchTarget, openActionCount, openActionPrimitiveCount,
+          pass: Boolean(groupKey)
+            && (initialState === 'collapsed' || initialState === 'expanded')
+            && togglePrimitive === 'ScButton'
+            && toggledExpanded !== initialExpanded
+            && restoredExpanded === initialExpanded
+            && focusContained
+            && openActionPrimitiveCount === openActionCount
+            && (viewport.name !== 'mobile' || (Number(touchTarget?.width || 0) >= 44 && Number(touchTarget?.height || 0) >= 44)),
+        };
+        if (!collectionGroupHeaderEvidence.pass) throw new Error(`${target.name}: collection group header interaction contract failed`);
+      }
       let mobileOverflowEvidence = null;
       if (viewport.name === 'mobile' && target.exerciseMobileOverflow === true) {
         const disclosure = page.locator('.form-header-mobile-actions');
@@ -436,7 +486,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, listAggregates, collectionSelectionEvidence, collectionAggregateEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, listAggregates, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -451,6 +501,7 @@ for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
+  if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
   if (item.collectionToolbarEvidence && !item.collectionToolbarEvidence.pass) failures.push({ name: item.name, collectionToolbarEvidence: item.collectionToolbarEvidence });
   if (item.collectionNavigationEvidence && !item.collectionNavigationEvidence.pass) failures.push({ name: item.name, collectionNavigationEvidence: item.collectionNavigationEvidence });

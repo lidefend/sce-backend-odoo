@@ -6245,3 +6245,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius: grouped collection rows may now render the same authoritative
   aggregate footer as flat collections. Sorting, paging, permissions, record
   mutation, business models and database state are unchanged.
+
+## Collection group header convergence v1 — topic start (2026-08-26)
+
+- Branch / baseline: `feature/p0-collection-group-header-convergence-v1` /
+  `c68befd8111e7f6d7367503b8444f7062702c5e6`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  grouped collection header presentation / `frontend/apps/web` shared product
+  list components.
+- Reason: after collection navigation, actions, row cells, selection and
+  aggregates converged, the group title/count/toggle/open header remained the
+  final directly rendered control cluster in `ListPage`.
+- Why Here / Why Not Elsewhere: header composition, focus, expanded state and
+  responsive touch geometry are generic frontend presentation concerns. Group
+  data, open authority, pagination state and route behavior remain owned by the
+  existing ActionView/ListPage runtime and are passed through unchanged.
+- Blast radius: grouped list headers only. Flat collections, grouping queries,
+  pagination calculations, permissions, contracts, routes and mutations are
+  excluded.

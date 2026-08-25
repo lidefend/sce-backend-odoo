@@ -165,12 +165,18 @@
           @sample-limit-change="onGroupSampleLimitSelectChange"
         />
         <article v-for="group in sortedGroupedRows" :key="group.key" class="group-block">
-          <header class="group-head">
-            <button type="button" class="group-toggle" @click="toggleGroupCollapsed(group.key)">
-              {{ isGroupCollapsed(group.key) ? uiLabel('group_toggle_expand', '展开') : uiLabel('group_toggle_collapse', '收起') }}
-            </button>
-            <p>{{ group.label }}</p>
-            <span>{{ groupCountText(group) }}</span>
+          <CollectionGroupHeader
+            :group-key="group.key"
+            :label="group.label"
+            :count-text="groupCountText(group)"
+            :collapsed="isGroupCollapsed(group.key)"
+            :toggle-label="isGroupCollapsed(group.key) ? uiLabel('group_toggle_expand', '展开') : uiLabel('group_toggle_collapse', '收起')"
+            :open-enabled="Boolean(onOpenGroup)"
+            :open-label="uiLabel('group_view_all', '查看全部')"
+            @toggle="toggleGroupCollapsed(group.key)"
+            @open="openGroup(group)"
+          >
+            <template #pagination>
             <CollectionGroupPageControls
               v-if="onGroupPageChange && groupTotalPages(group) > 1"
               :group-key="group.key"
@@ -190,15 +196,8 @@
               @update:page-input="onGroupJumpInputChange(group.key, $event)"
               @jump="jumpGroupPage(group)"
             />
-            <button
-              v-if="onOpenGroup"
-              type="button"
-              class="group-open-btn"
-              @click="openGroup(group)"
-            >
-              {{ uiLabel('group_view_all', '查看全部') }}
-            </button>
-          </header>
+            </template>
+          </CollectionGroupHeader>
           <ScDataTable
             v-if="!isGroupCollapsed(group.key)"
             class="group-table"
@@ -472,6 +471,7 @@ import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue'
 import CollectionBatchActionBar from '../components/product-list/CollectionBatchActionBar.vue';
 import CollectionAggregateFooter, { type CollectionAggregateRow } from '../components/product-list/CollectionAggregateFooter.vue';
 import CollectionColumnHeaderControl from '../components/product-list/CollectionColumnHeaderControl.vue';
+import CollectionGroupHeader from '../components/product-list/CollectionGroupHeader.vue';
 import CollectionGroupPageControls from '../components/product-list/CollectionGroupPageControls.vue';
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
