@@ -21,12 +21,18 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("--head", self.workflow)
 
     def test_full_binds_existing_checks_to_the_exact_head(self) -> None:
-        for check in ("public_guard", "professional_authorization", "professional_quality_gate", "frontend_release_gate"):
-            self.assertIn(check, self.workflow)
-        self.assertIn(".head_sha == $sha", self.workflow)
-        self.assertIn("sort_by(.id) | last // empty", self.workflow)
+        for workflow in (
+            "public_guard.yml",
+            "professional_quality_gate.yml",
+            "frontend_release_gate.yml",
+        ):
+            self.assertIn(workflow, self.workflow)
+        self.assertIn("select_authoritative_workflow_run.py", self.workflow)
+        self.assertIn("--workflow-path", self.workflow)
+        self.assertIn("--repository", self.workflow)
+        self.assertIn("--event", self.workflow)
         self.assertNotIn('test "$count" = 1', self.workflow)
-        self.assertIn("full check failed", self.workflow)
+        self.assertIn("full workflow failed", self.workflow)
 
     def test_ruleset_requires_only_the_aggregate_without_bypass(self) -> None:
         self.assertIn('readonly required_checks="merge_policy_gate"', self.ruleset)

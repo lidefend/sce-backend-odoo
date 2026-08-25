@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
   checks: read
+  actions: read
 
 concurrency:
   group: merge-policy-${{ github.event.pull_request.number || github.ref }}
@@ -53,6 +54,7 @@ jobs:
           set -euo pipefail
           python3 scripts/ci/test_ci_risk_classifier.py
           python3 scripts/ci/test_ci_risk_workflow_contract.py
+          python3 scripts/ci/test_select_authoritative_workflow_run.py
           python3 scripts/verify/test_repository_clean_history_guard.py
           python3 scripts/verify/test_github_actions_security_guard.py
           python3 scripts/verify/github_actions_security_guard.py
@@ -67,20 +69,28 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       HEAD_SHA: ${{ needs.classify.outputs.head }}
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.classify.outputs.head }}
+          persist-credentials: false
       - name: Wait for exact-head full checks
         run: |
           set -euo pipefail
-          required=(public_guard professional_authorization professional_quality_gate frontend_release_gate)
+          required=(public_guard.yml professional_quality_gate.yml frontend_release_gate.yml)
           for attempt in $(seq 1 90); do
-            checks="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100")"
             pending=0
-            for check in "${required[@]}"; do
-              latest="$(jq --arg name "$check" --arg sha "$HEAD_SHA" '[.check_runs[] | select(.name == $name and .head_sha == $sha)] | sort_by(.id) | last // empty' <<<"$checks")"
+            for workflow in "${required[@]}"; do
+              runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=${GITHUB_EVENT_NAME}&per_page=100")"
+              latest="$(python3 scripts/ci/select_authoritative_workflow_run.py \
+                --repository "$GITHUB_REPOSITORY" \
+                --workflow-path ".github/workflows/${workflow}" \
+                --head "$HEAD_SHA" \
+                --event "$GITHUB_EVENT_NAME" <<<"$runs")"
               test -n "$latest" || { pending=1; continue; }
               status="$(jq -r '.status' <<<"$latest")"
               conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"
               test "$status" = completed || { pending=1; continue; }
-              test "$conclusion" = success || { echo "full check failed: $check" >&2; exit 1; }
+              test "$conclusion" = success || { echo "full workflow failed: $workflow" >&2; exit 1; }
             done
             test "$pending" = 0 && exit 0
             sleep 20
