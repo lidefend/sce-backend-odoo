@@ -4,8 +4,8 @@
 - Primary centers: **10**
 - Runtime menu/action surfaces: **88**
 - Excluded non-product surfaces: **1**
-- Covered surfaces: **61**
-- Uncovered surfaces: **27**
+- Covered surfaces: **70**
+- Uncovered surfaces: **18**
 - Runtime/authority gaps: **0**
 
 ## Primary-center coverage
@@ -16,7 +16,7 @@
 | project | 30 | 30 | 0 |
 | contract | 7 | 7 | 0 |
 | cost | 4 | 4 | 0 |
-| finance | 11 | 2 | 9 |
+| finance | 11 | 11 | 0 |
 | tax | 9 | 0 | 9 |
 | accounting | 3 | 0 | 3 |
 | reporting | 6 | 0 | 6 |
@@ -25,15 +25,6 @@
 
 ## Uncovered formal runtime surfaces
 
-- `finance` — `smart_construction_core.menu_sc_receipt_income` → `smart_construction_core.action_sc_receipt_income` (`sc.receipt.income`)
-- `finance` — `smart_construction_core.menu_sc_reimbursement_request` → `smart_construction_core.action_sc_expense_claim_reimbursement_request` (`sc.expense.claim`)
-- `finance` — `smart_construction_core.menu_sc_product_current_account_v1` → `smart_construction_core.action_sc_product_current_account_v1` (`sc.current.account.workspace`)
-- `finance` — `smart_construction_core.menu_sc_user_income` → `smart_construction_core.action_sc_receipt_income_user_income` (`sc.receipt.income`)
-- `finance` — `smart_construction_core.menu_sc_company_finance_expense` → `smart_construction_core.action_sc_payment_execution_company_finance_expense` (`sc.payment.execution`)
-- `finance` — `smart_construction_core.menu_sc_deduction_bill` → `smart_construction_core.action_sc_expense_claim_deduction_bill` (`sc.expense.claim`)
-- `finance` — `smart_construction_core.menu_sc_product_company_project_refund_v1` → `smart_construction_core.action_sc_product_company_project_refund_v1` (`sc.company.project.refund.workspace`)
-- `finance` — `smart_construction_core.menu_sc_advance_fund` → `smart_construction_core.action_sc_expense_claim_advance_fund` (`sc.expense.claim`)
-- `finance` — `smart_construction_core.menu_sc_funding_plan_summary` → `smart_construction_core.action_project_funding_baseline_summary` (`project.funding.baseline`)
 - `tax` — `smart_construction_core.menu_sc_tax_certificate_registration_user` → `smart_construction_core.action_sc_tax_certificate_registration_user` (`sc.tax.certificate.registration`)
 - `tax` — `smart_construction_core.menu_sc_invoice_prepaid_tax_user` → `smart_construction_core.action_sc_invoice_prepaid_tax_user` (`sc.invoice.registration`)
 - `tax` — `smart_construction_core.menu_sc_invoice_application_user` → `smart_construction_core.action_sc_invoice_application_user` (`sc.invoice.registration`)

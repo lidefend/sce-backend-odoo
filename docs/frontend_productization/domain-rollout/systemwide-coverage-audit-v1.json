@@ -10,13 +10,13 @@
   ],
   "summary": {
     "primaryCenterCount": 10,
-    "deliveredReportCount": 11,
+    "deliveredReportCount": 12,
     "runtimeSurfaceCount": 88,
     "excludedSurfaceCount": 1,
-    "coveredSurfaceCount": 61,
-    "uncoveredSurfaceCount": 27,
+    "coveredSurfaceCount": 70,
+    "uncoveredSurfaceCount": 18,
     "runtimeGapCount": 0,
-    "gapCount": 27
+    "gapCount": 18
   },
   "deliveredReports": [
     {
@@ -95,6 +95,13 @@
       "status": "PASS",
       "actionCount": 4,
       "gapCount": 0
+    },
+    {
+      "file": "finance-center-coverage-v1.json",
+      "domain": "finance_center",
+      "status": "PASS",
+      "actionCount": 11,
+      "gapCount": 0
     }
   ],
   "centers": [
@@ -130,8 +137,8 @@
       "center": "finance",
       "rootMenuXmlid": "smart_construction_core.menu_sc_finance_center",
       "surfaceCount": 11,
-      "coveredCount": 2,
-      "uncoveredCount": 9
+      "coveredCount": 11,
+      "uncoveredCount": 0
     },
     {
       "center": "tax",
@@ -3124,7 +3131,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "finance",
@@ -3334,7 +3341,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "finance",
@@ -3391,7 +3398,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "finance",
@@ -3461,7 +3468,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "finance",
@@ -3531,7 +3538,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "finance",
@@ -3603,7 +3610,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "finance",
@@ -3660,7 +3667,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "finance",
@@ -3726,7 +3733,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "finance",
@@ -3794,7 +3801,7 @@
           "reason": ""
         }
       ],
-      "coverageStatus": "uncovered"
+      "coverageStatus": "covered"
     },
     {
       "center": "tax",
@@ -5811,60 +5818,6 @@
     }
   ],
   "gaps": [
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_receipt_income",
-      "actionXmlid": "smart_construction_core.action_sc_receipt_income",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_reimbursement_request",
-      "actionXmlid": "smart_construction_core.action_sc_expense_claim_reimbursement_request",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_product_current_account_v1",
-      "actionXmlid": "smart_construction_core.action_sc_product_current_account_v1",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_user_income",
-      "actionXmlid": "smart_construction_core.action_sc_receipt_income_user_income",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_company_finance_expense",
-      "actionXmlid": "smart_construction_core.action_sc_payment_execution_company_finance_expense",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_deduction_bill",
-      "actionXmlid": "smart_construction_core.action_sc_expense_claim_deduction_bill",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
-      "actionXmlid": "smart_construction_core.action_sc_product_company_project_refund_v1",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_advance_fund",
-      "actionXmlid": "smart_construction_core.action_sc_expense_claim_advance_fund",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
-    {
-      "center": "finance",
-      "menuXmlid": "smart_construction_core.menu_sc_funding_plan_summary",
-      "actionXmlid": "smart_construction_core.action_project_funding_baseline_summary",
-      "reason": "FORMAL_RUNTIME_SURFACE_UNQUALIFIED"
-    },
     {
       "center": "tax",
       "menuXmlid": "smart_construction_core.menu_sc_tax_certificate_registration_user",
