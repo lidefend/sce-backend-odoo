@@ -7,6 +7,7 @@ LIST_CSS = ROOT / "frontend/apps/web/src/pages/ListPage.css"
 MOBILE_CSS = ROOT / "frontend/apps/web/src/pages/listPage/ListPageMobile.css"
 ROW = ROOT / "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue"
 ROW_CSS = ROOT / "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.css"
+VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
 
 
 def validate(
@@ -14,6 +15,7 @@ def validate(
     row_source: str | None = None,
     row_css_source: str | None = None,
     legacy_css_source: str | None = None,
+    visual_source: str | None = None,
 ) -> list[str]:
     list_text = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     row_text = row_source if row_source is not None else ROW.read_text(encoding="utf-8")
@@ -21,6 +23,7 @@ def validate(
     legacy_css = legacy_css_source if legacy_css_source is not None else (
         LIST_CSS.read_text(encoding="utf-8") + MOBILE_CSS.read_text(encoding="utf-8")
     )
+    visual_text = visual_source if visual_source is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
     failures: list[str] = []
 
     if list_text.count("<CollectionMobileRecordRow") != 1:
@@ -66,6 +69,16 @@ def validate(
     for stale in (".mobile-record-row", ".mobile-record-fact", ".mobile-record-card__open", ".mobile-record-card__head"):
         if stale in legacy_css:
             failures.append(f"legacy mobile record style remains outside shared owner: {stale}")
+    for marker in (
+        "captureCollectionMobileRecords",
+        "collectionMobileRecordEvidence",
+        "data-semantic-component=\"CollectionMobileRecordRow\"",
+        "row.openAriaLabel.includes(row.identity)",
+        "row.selectionWidth >= 44",
+        "row.facts.every",
+    ):
+        if marker not in visual_text:
+            failures.append(f"mobile record browser evidence missing {marker}")
     return failures
 
 
