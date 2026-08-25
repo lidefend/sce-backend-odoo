@@ -6310,3 +6310,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Desktop remains on the existing table path. Browser errors, overflow and
   business mutations are all zero; contracts, routes, permissions, list data
   and database state are unchanged.
+
+## Kanban collection presentation convergence v1
+
+- Formal Product Layer: P0 platform kernel product.
+- Layer Target: generic contract-driven collection presentation in `frontend/apps/web`.
+- Product result: `KanbanPage` now delegates record cards, workflow lanes, status/fact composition, keyboard-open semantics, and pagination controls to shared semantic owners. Existing collection grouping, field selection, row-open authority, routes, permissions, and business data remain unchanged.
+- Why Here: cards and lanes are generic render details of the action-surface collection contract. They must not be inferred from a model, action, menu, label, or industry profile.
+- Why Not Elsewhere: no backend or industry rule changed; P4 guards only verify the P0 ownership boundary and do not define product semantics.
+- Blast Radius: generic explicit-card and workflow-board collection surfaces only. Table rendering, form presentation, Contract V2, database state, fixtures, and mutations are excluded.
+- Validation: 9 focused ownership tests, collection semantics guard, style-token guard, strict typecheck and governed Frontend Quick/build pass. Exact-head action 859 card mode at desktop and 390px renders one lane owner, six keyboard-open record-card owners, five facts per card, one shared pagination owner, overflow `0`, browser errors `0`, and mutation `0`.

@@ -51,84 +51,48 @@
         :aria-busy="loading || undefined"
       >
         <span v-if="loading" class="refresh-status">正在刷新数据</span>
-        <section v-for="lane in displayLanes" :key="lane.key" class="workflow-lane">
-          <header v-if="workflowBoard" class="workflow-lane-header">
-            <h3>{{ lane.label }}</h3>
-            <span>{{ lane.records.length }}</span>
-          </header>
-          <div class="workflow-lane-cards">
-            <article
+        <CollectionKanbanLane
+          v-for="lane in displayLanes"
+          :key="lane.key"
+          :lane-key="lane.key"
+          :label="lane.label"
+          :record-count="lane.records.length"
+          :show-header="workflowBoard"
+        >
+            <CollectionKanbanRecordCard
               v-for="(row, index) in lane.records"
               :key="String(row.id ?? index)"
-              class="card"
-              :class="`tone-${rowTone(row)}`"
-              @click="handleCard(row)"
-            >
-              <h3 class="card-title">{{ formatValue(row[titleField]) || formatValue(row.name) || formatValue(row.display_name) || row.id }}</h3>
-              <div v-if="statusMetaFields.length" class="status-chips">
-                <span v-for="field in statusMetaFields" :key="`status-${field}`" class="status-chip">
-                  {{ fieldLabel(field) }}: {{ semanticCell(field, row[field]).text }}
-                </span>
-              </div>
-              <dl v-if="primaryMetaFields.length" class="card-meta primary">
-                <div v-for="field in primaryMetaFields" :key="`primary-${field}`" class="meta-row">
-                  <dt>{{ fieldLabel(field) }}</dt>
-                  <dd>{{ semanticCell(field, row[field]).text }}</dd>
-                </div>
-              </dl>
-              <dl class="card-meta">
-                <div v-for="field in secondaryMetaFields" :key="field" class="meta-row">
-                  <dt>{{ fieldLabel(field) }}</dt>
-                  <dd>{{ semanticCell(field, row[field]).text }}</dd>
-                </div>
-              </dl>
-            </article>
-          </div>
-        </section>
+              :record-key="String(row.id ?? index)"
+              :title="rowTitle(row)"
+              :tone="rowTone(row)"
+              :statuses="cardStatuses(row)"
+              :primary-facts="cardFacts(row, primaryMetaFields)"
+              :secondary-facts="cardFacts(row, secondaryMetaFields)"
+              open-label="打开记录"
+              @open="handleCard(row)"
+            />
+        </CollectionKanbanLane>
       </section>
 
-      <section v-if="showPagination" class="pagination-bar">
-        <div class="pagination-actions">
-          <span class="pagination-total">{{ paginationTotalText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canPagePrev"
-            @click="pagePrev"
-          >
-            上一页
-          </button>
-          <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canPageNext"
-            @click="pageNext"
-          >
-            下一页
-          </button>
-          <input
-            class="pagination-input"
-            :value="pageJumpInput"
-            :disabled="loading || totalPages <= 1"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            @input="onPageJumpInput"
-            @keyup.enter="jumpPage"
-          />
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || totalPages <= 1"
-            @click="jumpPage"
-          >
-            跳转
-          </button>
-        </div>
-      </section>
-      <section v-else class="pagination-bar pagination-bar--count-only">
-        <span class="pagination-total">{{ paginationTotalText }}</span>
-      </section>
+      <CollectionPaginationFooter
+        :mode="showPagination ? 'paged' : 'count'"
+        :record-count-text="paginationTotalText"
+        :loading="loading"
+        :can-previous="canPagePrev"
+        :can-next="canPageNext"
+        :page-text="`第 ${currentPage} / ${totalPages} 页`"
+        :page-jump-value="pageJumpInput"
+        page-limit-value=""
+        :list-limit="listLimit"
+        :total-pages="totalPages"
+        :page-limit-options="[]"
+        :show-page-size="false"
+        :labels="paginationLabels"
+        @previous="pagePrev"
+        @next="pageNext"
+        @page-jump-input="pageJumpInput = $event"
+        @page-jump="jumpPage"
+      />
     </template>
   </section>
 </template>
@@ -138,6 +102,9 @@ import { computed, ref, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import PageHeader from '../components/page/PageHeader.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
+import CollectionKanbanRecordCard, { type CollectionKanbanFact, type CollectionKanbanStatus } from '../components/product-list/CollectionKanbanRecordCard.vue';
+import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
+import CollectionKanbanLane from '../components/product-list/CollectionKanbanLane.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { pageModeLabel } from '../app/pageMode';
 import { semanticStatus, semanticValueByField } from '../utils/semantic';
@@ -231,6 +198,10 @@ const secondaryMetaFields = computed(() => {
 });
 
 const modeLabelText = computed(() => pageModeLabel(props.pageMode || 'workspace'));
+const paginationLabels = {
+  region: '卡片分页', previous: '上一页', next: '下一页', groupPrevious: '上一组', groupNext: '下一组',
+  pageInput: '输入页码', jump: '跳转', pageSize: '每页', pageSizeInput: '输入每页条数', pageSizeSelect: '选择每页条数',
+};
 const pageJumpInput = ref('');
 const observedListLimit = ref(0);
 const listLimit = computed(() => {
@@ -270,6 +241,26 @@ function rowTone(row: Record<string, unknown>) {
   return semanticStatus(state).tone;
 }
 
+function rowTitle(row: Record<string, unknown>): string {
+  return formatValue(row[props.titleField]) || formatValue(row.name) || formatValue(row.display_name) || String(row.id ?? '');
+}
+
+function cardFacts(row: Record<string, unknown>, fields: string[]): CollectionKanbanFact[] {
+  return fields.map((field) => ({ key: field, label: fieldLabel(field), value: semanticCell(field, row[field]).text }));
+}
+
+function cardStatuses(row: Record<string, unknown>): CollectionKanbanStatus[] {
+  return statusMetaFields.value.map((field) => {
+    const cell = semanticCell(field, row[field]);
+    return {
+      key: field,
+      label: fieldLabel(field),
+      value: cell.text,
+      semantic: cell.tone === 'neutral' ? 'default' : cell.tone,
+    };
+  });
+}
+
 function fieldLabel(name: string) {
   const labels = props.fieldLabels || {};
   return labels[name] || name;
@@ -293,10 +284,6 @@ function pagePrev() {
 
 function pageNext() {
   emitPageOffset(listOffset.value + listLimit.value);
-}
-
-function onPageJumpInput(event: Event) {
-  pageJumpInput.value = String((event.target as HTMLInputElement | null)?.value || '');
 }
 
 function jumpPage() {
@@ -369,46 +356,13 @@ function formatValue(value: unknown) {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
-.workflow-lane {
-  min-width: 0;
-}
-
-.workflow-lane-cards {
-  display: grid;
-  gap: 16px;
-}
-
-.grid:not(.is-workflow-board) .workflow-lane-cards {
+.grid:not(.is-workflow-board) :deep(.collection-kanban-lane__cards) {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .grid.is-workflow-board {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: start;
-}
-
-.workflow-lane-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-  border-bottom: 2px solid var(--sc-app-border);
-  padding: 8px 4px;
-}
-
-.workflow-lane-header h3 {
-  margin: 0;
-  color: var(--sc-app-text-primary);
-  font-size: 14px;
-}
-
-.workflow-lane-header span {
-  border-radius: 999px;
-  background: var(--sc-app-info-bg);
-  padding: 2px 8px;
-  color: var(--sc-app-info-text);
-  font-size: 12px;
 }
 
 .grid.is-refreshing {
@@ -450,135 +404,4 @@ function formatValue(value: unknown) {
   }
 }
 
-.card {
-  background: var(--sc-app-panel);
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 16px 30px var(--sc-app-shadow);
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 34px var(--sc-app-shadow);
-}
-
-.card.tone-danger { border-color: var(--sc-app-danger-border); background: var(--sc-app-danger-bg); }
-.card.tone-warning { border-color: var(--sc-app-warning-border); background: var(--sc-app-warning-bg); }
-.card.tone-success { border-color: var(--sc-app-success-border); background: var(--sc-app-success-bg); }
-
-.card-title {
-  margin: 0 0 10px;
-  font-size: 16px;
-  color: var(--sc-app-text-primary);
-}
-
-.status-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.status-chip {
-  font-size: 11px;
-  line-height: 1;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: var(--sc-app-info-bg);
-  border: 1px solid var(--sc-app-info-border);
-  color: var(--sc-app-info-text);
-}
-
-.card-meta {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-}
-
-.card-meta.primary {
-  margin-bottom: 10px;
-}
-
-.meta-row {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--sc-app-text-secondary);
-}
-
-.meta-row dt {
-  font-weight: 600;
-  color: var(--sc-app-text-primary);
-}
-
-.meta-row dd {
-  margin: 0;
-  color: var(--sc-app-text-secondary);
-}
-
-.pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
-  background: var(--sc-app-panel);
-  padding: 10px 12px;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
-}
-
-.pagination-bar--count-only {
-  justify-content: flex-end;
-}
-
-.pagination-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pagination-total {
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.pagination-btn {
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: 8px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-info-text);
-  padding: 4px 10px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.pagination-input {
-  width: 60px;
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: 8px;
-  padding: 4px 8px;
-  color: var(--sc-app-text-primary);
-  font-size: 13px;
-}
-
-@media (max-width: 720px) {
-  .pagination-bar,
-  .pagination-actions {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
 </style>

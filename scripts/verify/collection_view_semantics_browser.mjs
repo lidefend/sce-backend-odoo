@@ -107,11 +107,11 @@ try {
   await switchToCard(page);
   await page.waitForURL((url) => url.searchParams.get('view_mode') === 'kanban');
   await ready(page);
-  const cardNames = await page.locator('[data-collection-presentation="explicit_card"] .card-title').allTextContents();
+  const cardNames = await page.locator('[data-collection-presentation="explicit_card"] .collection-kanban-record-card__title').allTextContents();
   const cardSurfaceText = await page.locator('[data-collection-presentation="explicit_card"]').innerText();
   check(!/name\s*[:.]([\s\S]*?)label\s*[:.]|\.type\s*:/i.test(cardSurfaceText), 'card descriptor text leaked into record values');
   pass('card_descriptor_text_leak', { count: 0 });
-  const cardMetaLabels = (await page.locator('[data-collection-presentation="explicit_card"] .meta-row dt').allTextContents()).map((label) => label.trim().toLowerCase());
+  const cardMetaLabels = (await page.locator('[data-collection-presentation="explicit_card"] .collection-kanban-record-card__fact dt').allTextContents()).map((label) => label.trim().toLowerCase());
   const technicalMetaLabels = cardMetaLabels.filter((label) => ['id', 'create_uid', 'create_date', 'write_uid', 'write_date', '__last_update'].includes(label));
   check(technicalMetaLabels.length === 0, `card technical fields leaked: ${technicalMetaLabels.join(',')}`);
   pass('card_technical_field_leak', { count: 0 });
@@ -124,7 +124,7 @@ try {
   pass('query_context_preserved_across_switch');
   report.screenshots.push(await screenshot(page, '1440-ledger-card'));
 
-  const firstCard = page.locator('[data-collection-presentation="explicit_card"] .card').first();
+  const firstCard = page.locator('[data-collection-presentation="explicit_card"] [data-semantic-component="CollectionKanbanRecordCard"]').first();
   check(await firstCard.count(), 'card missing for detail continuity');
   const cardListUrl = page.url();
   await firstCard.click();
@@ -142,7 +142,7 @@ try {
   await page.goto(`${BASE_URL}${listRoute(TARGETS.ledger, '&view_mode=kanban&group_by=lifecycle_state')}`); await ready(page);
   report.grouped_probe = { url: page.url(), buttons: await page.locator('button').allTextContents() };
   check(await page.getByRole('button', { name: '流程看板', exact: true }).count(), 'grouped collection lacks workflow label');
-  check(await page.locator('[data-collection-presentation="workflow_board"] .workflow-lane-header').count() > 0, 'workflow board lacks grouped lanes');
+  check(await page.locator('[data-collection-presentation="workflow_board"] [data-semantic-component="CollectionKanbanLane"] .collection-kanban-lane__header').count() > 0, 'workflow board lacks grouped lanes');
   pass('workflow_board_requires_group_semantics');
   report.screenshots.push(await screenshot(page, '1280-overview-workflow'));
 
