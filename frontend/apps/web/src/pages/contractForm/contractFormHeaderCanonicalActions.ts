@@ -8,9 +8,17 @@ export function resolveCanonicalHeaderActionPresentation(input: {
   rendererActive: boolean;
 }) {
   const visible = input.actions.filter((action) => action.visible);
+  const localSavePrimary = input.rendererActive && ['create', 'edit'].includes(input.renderProfile);
+  const withoutLocalSave = (actions: CanonicalFormAction[]) => localSavePrimary
+    ? actions.filter((action) => action.actionRef.actionId !== 'form.save')
+    : actions;
   return {
-    direct: input.floorplan?.decisionMode ? input.floorplan.directActions : visible.filter((action) => ['primary', 'secondary'].includes(action.tier)),
-    overflow: input.floorplan?.decisionMode ? input.floorplan.overflowActions : visible.filter((action) => ['overflow', 'configuration'].includes(action.tier)),
-    localSavePrimary: input.rendererActive && ['create', 'edit'].includes(input.renderProfile),
+    direct: withoutLocalSave(input.floorplan?.decisionMode
+      ? input.floorplan.directActions
+      : visible.filter((action) => ['primary', 'secondary'].includes(action.tier))),
+    overflow: withoutLocalSave(input.floorplan?.decisionMode
+      ? input.floorplan.overflowActions
+      : visible.filter((action) => ['overflow', 'configuration'].includes(action.tier))),
+    localSavePrimary,
   };
 }
