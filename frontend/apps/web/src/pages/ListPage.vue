@@ -471,6 +471,7 @@ import CollectionSelectionControl from '../components/product-list/CollectionSel
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
+import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
@@ -1959,13 +1960,13 @@ const flatAggregateFooterRows = computed<CollectionAggregateRow[]>(() => {
 });
 
 function totalAggregateValue(field: string) {
-  const aggregate = props.listAggregates?.[columnAggregationField(field)] || {};
+  const aggregate = resolveCollectionAggregateEntry(props.listAggregates, field, columnAggregationField(field));
   const value = aggregate.sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function pageAggregateValue(field: string) {
-  const aggregate = props.listAggregates?.[columnAggregationField(field)] || {};
+  const aggregate = resolveCollectionAggregateEntry(props.listAggregates, field, columnAggregationField(field));
   const value = aggregate.page_sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
@@ -1995,13 +1996,13 @@ function rowsNumericSum(rows: Array<Record<string, unknown>>, field: string) {
 }
 
 function groupAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
-  const aggregate = group.aggregates?.[columnAggregationField(field)] || {};
+  const aggregate = resolveCollectionAggregateEntry(group.aggregates, field, columnAggregationField(field));
   const value = aggregate.sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function groupPageAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
-  const aggregate = group.aggregates?.[columnAggregationField(field)] || {};
+  const aggregate = resolveCollectionAggregateEntry(group.aggregates, field, columnAggregationField(field));
   const value = aggregate.page_sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
