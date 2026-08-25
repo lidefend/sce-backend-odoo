@@ -48,7 +48,7 @@
             <field name="name">sc.payment.execution.tree</field>
             <field name="model">sc.payment.execution</field>
             <field name="arch" type="xml">
-                <tree string="付款登记办理">
+                <tree string="付款登记办理" js_class="smart_hierarchical_worksheet">
                     <field name="name"/>
                     <field name="execution_flow_label"/>
                     <field name="business_category_id" optional="show"/>

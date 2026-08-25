@@ -409,7 +409,7 @@
         <field name="name">sc.settlement.order.user.confirmed.tree</field>
         <field name="model">sc.settlement.order</field>
         <field name="arch" type="xml">
-            <tree string="合同结算" create="true" edit="false" delete="false" default_order="id desc">
+            <tree string="合同结算" create="true" edit="false" delete="false" default_order="id desc" js_class="smart_hierarchical_worksheet">
                 <field name="state" string="单据状态" />
                 <field name="name" string="单据编号" />
                 <field name="project_id" string="项目名称" />
