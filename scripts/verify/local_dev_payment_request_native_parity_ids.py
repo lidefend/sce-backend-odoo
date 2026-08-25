@@ -13,6 +13,7 @@ def xmlid(record):
 
 
 user = env.ref("smart_construction_demo.user_demo_role_finance")
+security_user = env.ref("smart_construction_demo.user_demo_project_read")
 project_create_user = env.ref("smart_construction_demo.sc_demo_user_test_admin")
 menu = env.ref("smart_construction_core.menu_sc_user_payment_apply")
 action = env.ref("smart_construction_core.action_payment_request_user_payment_apply")
@@ -109,6 +110,11 @@ actionable_fingerprint_payload = {
 payload = {
     "database": env.cr.dbname,
     "user": {"id": int(user.id), "login": user.login, "xmlid": xmlid(user)},
+    "security_user": {
+        "id": int(security_user.id),
+        "login": security_user.login,
+        "xmlid": xmlid(security_user),
+    },
     "project_create_user": {
         "id": int(project_create_user.id),
         "login": project_create_user.login,

@@ -110,6 +110,7 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
         self.assertIn("demo_addons", snapshot["excludedScopes"])
         self.assertEqual(snapshot["actions"][0]["menuId"], 10)
         self.assertEqual(snapshot["actions"][0]["actionId"], 20)
+        self.assertEqual(snapshot["rootMenuXmlids"], [runtime.ROOT_MENU_XMLID])
 
     def test_authority_preserves_and_of_layers_and_requires_action_policy(self):
         root_group = self.Record(1, "module.group_root")
@@ -152,6 +153,12 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
 
         env = SimpleNamespace(cr=Cursor())
         self.assertEqual(runtime._active_descendant_ids(env, 9), [11, 12, 13])
+
+    def test_multi_root_contract_requires_a_root_and_preserves_root_actions(self):
+        source = Path(runtime.__file__).read_text(encoding="utf-8")
+        self.assertIn('raise ValueError("at least one formal root menu XMLID is required")', source)
+        self.assertIn("for menu_id in (root.id, *_active_descendant_ids(env, root.id))", source)
+        self.assertIn('"root_menu_xmlids": list(resolved_root_xmlids)', source)
 
     def test_owner_and_anchor_boundaries_are_fail_closed(self):
         self.assertTrue(runtime._is_formal_owner("smart_construction_core.action_x"))

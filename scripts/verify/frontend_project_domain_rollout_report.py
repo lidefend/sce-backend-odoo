@@ -51,6 +51,7 @@ def normalized_snapshot(payload: dict[str, object]) -> dict[str, object]:
         "status": payload["status"],
         "domain": payload["domain"],
         "rootMenuXmlid": payload["root_menu_xmlid"],
+        "rootMenuXmlids": payload.get("root_menu_xmlids") or [payload["root_menu_xmlid"]],
         "ownerModule": payload["owner_module"],
         "excludedScopes": ["demo_addons", "external_customer_addons", "user_specific_visibility"],
         "summary": payload["summary"],
