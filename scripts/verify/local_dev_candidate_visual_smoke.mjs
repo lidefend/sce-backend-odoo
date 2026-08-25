@@ -259,15 +259,13 @@ try {
     let bootSummaryFixtureApplied = false;
     let bootSummaryItems = [];
     const bootSummaryCarrierPaths = new Set();
-    let bootSummaryRouteHandling = false;
     const bootContractRoutePattern = '**/api/v1/**';
     const bootContractRouteHandler = async (route) => {
       const request = route.request();
-      if (request.method() !== 'POST' || bootSummaryRouteHandling) {
+      if (request.method() !== 'POST') {
         await route.continue();
         return;
       }
-      bootSummaryRouteHandling = true;
       const response = await route.fetch();
       let payload = null;
       try {
@@ -276,20 +274,16 @@ try {
       } catch {
         await route.fulfill({ response });
       }
-      try {
-        if (!payload) return;
-        const summaryApplied = applyFirstContractSummaryFixture(
-          payload,
-          bootSummaryFixtureTarget.summaryFixture,
-          String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
-        );
-        bootSummaryFixtureApplied = bootSummaryFixtureApplied || summaryApplied;
-        const responseSummaryItems = summarizeContractSummaryItems(payload);
-        if (responseSummaryItems.length) bootSummaryItems = responseSummaryItems;
-        await route.fulfill({ response, json: payload });
-      } finally {
-        bootSummaryRouteHandling = false;
-      }
+      if (!payload) return;
+      const summaryApplied = applyFirstContractSummaryFixture(
+        payload,
+        bootSummaryFixtureTarget.summaryFixture,
+        String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
+      );
+      bootSummaryFixtureApplied = bootSummaryFixtureApplied || summaryApplied;
+      const responseSummaryItems = summarizeContractSummaryItems(payload);
+      if (responseSummaryItems.length) bootSummaryItems = responseSummaryItems;
+      await route.fulfill({ response, json: payload });
     };
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     await loginPage(page);
@@ -341,7 +335,6 @@ try {
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
       if (bootSummaryFixtureTarget === target) {
-        while (bootSummaryRouteHandling) await new Promise((resolve) => setTimeout(resolve, 10));
         await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
       }
       const result = await page.evaluate(() => {

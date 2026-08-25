@@ -75,7 +75,7 @@ def validate(
     ):
         if marker not in visual_text:
             failures.append(f"collection summary browser evidence missing {marker}")
-    for forbidden in ("applySummarySectionFixture", "bootSummarySectionFixtureApplied"):
+    for forbidden in ("applySummarySectionFixture", "bootSummarySectionFixtureApplied", "bootSummaryRouteHandling"):
         if forbidden in visual_text:
             failures.append(f"collection summary browser fixture must not create parallel section authority: {forbidden}")
     return failures
