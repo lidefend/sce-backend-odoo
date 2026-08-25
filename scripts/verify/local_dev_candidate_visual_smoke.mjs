@@ -123,6 +123,23 @@ function applyFirstContractSummaryFixture(payload, fixture, sceneKey) {
   let applied = false;
   const visit = (value) => {
     if (applied || !value || typeof value !== 'object') return;
+    const sceneReady = !Array.isArray(value) && value.scene_ready_contract && typeof value.scene_ready_contract === 'object'
+      ? value.scene_ready_contract
+      : null;
+    if (sceneReady && Array.isArray(sceneReady.scenes) && sceneKey) {
+      const scene = sceneReady.scenes.find((item) => {
+        if (!item || typeof item !== 'object') return false;
+        return String(item.key || item.scene_key || item.code || '').trim() === sceneKey;
+      });
+      if (scene) {
+        const projection = scene.projection && typeof scene.projection === 'object' && !Array.isArray(scene.projection)
+          ? scene.projection
+          : {};
+        scene.projection = { ...projection, summary_items: fixture };
+        applied = true;
+        return;
+      }
+    }
     if (!Array.isArray(value) && Array.isArray(value.summary_items)) {
       value.summary_items = fixture;
       applied = true;
