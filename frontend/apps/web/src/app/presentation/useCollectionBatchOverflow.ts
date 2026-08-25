@@ -20,7 +20,9 @@ export function useCollectionBatchOverflow() {
   function closeOnEscape(event: KeyboardEvent) {
     if (event.key !== 'Escape' || !batchOverflowOpen.value) return;
     batchOverflowOpen.value = false;
-    batchOverflowToggle.value?.focus();
+    const root = batchOverflowToggle.value;
+    const focusTarget = root?.matches('button') ? root : root?.querySelector<HTMLElement>('button');
+    focusTarget?.focus();
   }
 
   onMounted(() => {

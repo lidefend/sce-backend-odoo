@@ -1,0 +1,7 @@
+.batch-bar { display: flex; align-items: center; flex-wrap: nowrap; gap: var(--sc-toolbar-gap); min-height: 44px; border: 1px solid var(--sc-app-border); border-radius: 0; background: var(--sc-app-muted-bg); padding: 0 var(--sc-space-sm); }
+.batch-overflow { position: relative; display: block; }
+.batch-overflow-menu { position: absolute; z-index: var(--sc-z-overlay); top: calc(100% + var(--sc-space-2xs)); right: 0; display: grid; gap: var(--sc-space-2xs); min-width: 180px; padding: var(--sc-space-xs); border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
+.batch-overflow-menu :deep(.sc-btn) { width: 100%; justify-content: flex-start; text-align: left; }
+.batch-message { min-width: 0; color: var(--sc-app-success-text); font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .batch-bar { padding-inline: var(--sc-space-xs); } }
+@media (max-width: 390px) { .batch-bar { flex-wrap: wrap; } .batch-bar :deep(.sc-btn) { min-height: 44px; } }
