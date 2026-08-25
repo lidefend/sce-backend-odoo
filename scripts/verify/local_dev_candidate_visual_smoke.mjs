@@ -206,7 +206,22 @@ try {
             && backReachable && page.url() !== beforeExit,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, mobileOverflowEvidence, ...result });
+      let dialogLifecycleEvidence = null;
+      if (viewport.name === 'desktop' && target.exerciseDialog === true) {
+        const trigger = page.getByRole('button', { name: /^创建 API Key$/ }).first();
+        await trigger.waitFor({ state: 'visible', timeout: 15000 });
+        await trigger.focus();
+        await trigger.click();
+        const dialog = page.getByRole('dialog', { name: '创建机器 API Key' });
+        await dialog.waitFor({ state: 'visible', timeout: 15000 });
+        const focusContained = await dialog.evaluate((node) => node === document.activeElement || node.contains(document.activeElement));
+        await page.screenshot({ path: path.join(outputDir, `desktop-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-dialog-open.png`), fullPage: false });
+        await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'hidden', timeout: 15000 });
+        const openerRestored = await trigger.evaluate((node) => node === document.activeElement);
+        dialogLifecycleEvidence = { focusContained, openerRestored, closedByEscape: true, pass: focusContained && openerRestored };
+      }
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, mobileOverflowEvidence, dialogLifecycleEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -219,6 +234,7 @@ const errors = report.routes.flatMap((item) => item.errors || []);
 const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded || item.h1 !== 1 || item.overflow > 0));
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
+  if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
 }
 const primitiveInput = report.routes.find((item) => item.primitiveInputContract)?.primitiveInputContract;
 if (!primitiveInput || primitiveInput.rootCount !== 1 || primitiveInput.inputCount !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {

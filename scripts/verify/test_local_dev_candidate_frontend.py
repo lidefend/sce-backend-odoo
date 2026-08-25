@@ -139,6 +139,9 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("data-mobile-action-count", browser)
         self.assertIn('button[data-mobile-action-key="back:form.back"]', browser)
         self.assertIn("mobileOverflowEvidence", browser)
+        self.assertIn("exerciseDialog", browser)
+        self.assertIn("dialogLifecycleEvidence", browser)
+        self.assertIn("openerRestored", browser)
         self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":
