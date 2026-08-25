@@ -63,6 +63,7 @@ def validate(
         "JSON.stringify(domItems) === JSON.stringify(expectedItems)",
         "bootSummaryFixtureApplied",
         "applyFirstContractSummaryFixture",
+        "value.projection.summary_items = fixture",
         "normalizeSummaryTone",
         "data-summary-key",
         "collection-summary-strip__label",

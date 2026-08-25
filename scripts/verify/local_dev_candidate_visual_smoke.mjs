@@ -128,6 +128,11 @@ function applyFirstContractSummaryFixture(payload, fixture) {
       applied = true;
       return;
     }
+    if (!Array.isArray(value) && value.projection && typeof value.projection === 'object' && !Array.isArray(value.projection)) {
+      value.projection.summary_items = fixture;
+      applied = true;
+      return;
+    }
     for (const child of Object.values(value)) visit(child);
   };
   visit(payload);
