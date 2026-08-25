@@ -5,6 +5,7 @@
     data-semantic-layer="primitive"
     :data-size="normalizePrimitiveSize(size)"
     :data-status="status"
+    :data-loading="loading || undefined"
     :value="modelValue"
     :type="type"
     :disabled="disabled || loading"

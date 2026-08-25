@@ -105,8 +105,11 @@
   --sc-component-badge-padding-y: 4;
   --sc-component-badge-radius: 999px;
   --sc-component-button-font-size: 14;
+  --sc-component-button-height-lg: 42;
   --sc-component-button-height-md: 36;
   --sc-component-button-height-sm: 30;
+  --sc-component-button-loading-duration: 240ms;
+  --sc-component-button-overflow-z-index: 1000;
   --sc-component-button-padding-x: 16;
   --sc-component-button-padding-y: 8;
   --sc-component-button-radius: 8px;
@@ -122,10 +125,14 @@
   --sc-component-hierarchy-browser-tree-max-width: 520;
   --sc-component-hierarchy-browser-tree-min-width: 180;
   --sc-component-hierarchy-browser-tree-width: 280;
+  --sc-component-input-disabled-opacity: 0.55;
   --sc-component-input-font-size: 12;
+  --sc-component-input-height-lg: 40;
   --sc-component-input-height-md: 32;
+  --sc-component-input-height-sm: 28;
   --sc-component-input-padding-x: 8;
   --sc-component-input-radius: 8px;
+  --sc-component-input-transition-duration: 120ms;
   --sc-component-panel-border-width: 1;
   --sc-component-panel-padding: 16;
   --sc-component-panel-radius: 8px;

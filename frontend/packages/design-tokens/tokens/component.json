@@ -2,6 +2,9 @@
   "button": {
     "height_sm": 30,
     "height_md": 36,
+    "height_lg": 42,
+    "loading_duration": "{motion.slow}",
+    "overflow_z_index": "{z_index.dropdown}",
     "radius": "{radius.md}",
     "padding_x": "{space.md}",
     "padding_y": "{space.xs}",
@@ -31,7 +34,11 @@
     "page_gutter": 24
   },
   "input": {
+    "height_sm": 28,
     "height_md": 32,
+    "height_lg": 40,
+    "transition_duration": "{motion.fast}",
+    "disabled_opacity": "{opacity.disabled}",
     "radius": "{radius.md}",
     "padding_x": "{space.xs}",
     "font_size": "{font.size_sm}"

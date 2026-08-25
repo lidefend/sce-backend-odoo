@@ -55,6 +55,17 @@ def validate(root: Path = ROOT) -> list[str]:
     input_text = (design / "ScInput.vue").read_text(encoding="utf-8") if (design / "ScInput.vue").is_file() else ""
     if "<input" not in input_text or ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:
         errors.append("ScInput must place accessible state on the native input control")
+    if ':data-loading="loading || undefined"' not in input_text or ':aria-busy="loading || undefined"' not in input_text:
+        errors.append("ScInput must expose loading state on the native input control")
+
+    button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
+    for marker in (':data-loading="loading || undefined"', ':aria-disabled="disabled || loading || undefined"', 'class="sc-btn__spinner"'):
+        if marker not in button_text:
+            errors.append(f"ScButton missing governed interaction-state marker: {marker}")
+
+    select_text = (design / "ScSelect.vue").read_text(encoding="utf-8") if (design / "ScSelect.vue").is_file() else ""
+    if ':data-readonly="readonly || undefined"' not in select_text or ':aria-readonly="readonly || undefined"' not in select_text:
+        errors.append("ScSelect must expose readonly state without inventing write authority")
 
     if not bridge:
         errors.append("missing TDesign primitive bridge")

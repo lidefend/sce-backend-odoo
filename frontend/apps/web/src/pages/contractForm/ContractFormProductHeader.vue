@@ -302,7 +302,7 @@ function canonicalButtonClass(action: CanonicalFormAction) {
 .form-header-mobile-actions { display: none; position: relative; }
 .form-header-mobile-actions > summary { list-style: none; cursor: pointer; }
 .form-header-mobile-actions > summary::-webkit-details-marker { display: none; }
-.form-header-mobile-actions__panel { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; display: grid; width: min(280px, calc(100vw - 24px)); max-height: min(65vh, 460px); gap: 4px; overflow-y: auto; padding: 8px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
+.form-header-mobile-actions__panel { position: absolute; z-index: var(--sc-component-button-overflow-z-index); top: calc(100% + 6px); right: 0; display: grid; width: min(280px, calc(100vw - 24px)); max-height: min(65vh, 460px); gap: 4px; overflow-y: auto; padding: 8px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
 .form-header-mobile-actions__panel .sc-btn { width: 100%; justify-content: flex-start; }
 .native-statusbar--header {
   position: relative;
