@@ -144,6 +144,20 @@ function normalizeSummaryTone(value) {
   return ['neutral', 'danger', 'warning', 'success', 'info'].includes(normalized) ? normalized : 'neutral';
 }
 
+function collectSummaryCarrierPaths(payload) {
+  const paths = [];
+  const visit = (value, pathParts) => {
+    if (!value || typeof value !== 'object' || paths.length >= 80) return;
+    for (const [key, child] of Object.entries(value)) {
+      const next = [...pathParts, key];
+      if (['scene_ready_contract', 'scenes', 'projection', 'summary_items'].includes(key)) paths.push(next.join('.'));
+      visit(child, next);
+    }
+  };
+  visit(payload, []);
+  return paths;
+}
+
 function summarizeContractAggregates(payload) {
   const rows = [];
   const visit = (value) => {
@@ -213,6 +227,7 @@ try {
     const bootSummaryFixtureTarget = routes.find((target) => Array.isArray(target.summaryFixture));
     let bootSummaryFixtureApplied = false;
     let bootSummaryItems = [];
+    const bootSummaryCarrierPaths = new Set();
     let bootSummaryRouteHandling = false;
     const bootContractRoutePattern = '**/api/v1/**';
     const bootContractRouteHandler = async (route) => {
@@ -226,6 +241,7 @@ try {
       let payload = null;
       try {
         payload = await response.json();
+        collectSummaryCarrierPaths(payload).forEach((path) => bootSummaryCarrierPaths.add(path));
       } catch {
         await route.fulfill({ response });
       }
@@ -339,6 +355,7 @@ try {
           ownerCount,
           domItems,
           fixtureApplied: summaryFixture ? bootSummaryFixtureApplied : null,
+          fixtureCarrierPaths: summaryFixture ? [...bootSummaryCarrierPaths] : [],
           pass: JSON.stringify(domItems) === JSON.stringify(expectedItems)
             && (contractSummaryItems.length > 0 ? ownerCount === 1 : ownerCount === 0)
             && (!summaryFixture || bootSummaryFixtureApplied),

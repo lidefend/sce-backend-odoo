@@ -62,6 +62,8 @@ def validate(
         "authorityItems",
         "JSON.stringify(domItems) === JSON.stringify(expectedItems)",
         "bootSummaryFixtureApplied",
+        "collectSummaryCarrierPaths",
+        "fixtureCarrierPaths",
         "applyFirstContractSummaryFixture",
         "value.projection.summary_items = fixture",
         "normalizeSummaryTone",
