@@ -119,6 +119,26 @@ function summarizeContractSummaryItems(payload) {
   return rows;
 }
 
+function applyFirstContractSummaryFixture(payload, fixture) {
+  let applied = false;
+  const visit = (value) => {
+    if (applied || !value || typeof value !== 'object') return;
+    if (!Array.isArray(value) && Array.isArray(value.summary_items)) {
+      value.summary_items = fixture;
+      applied = true;
+      return;
+    }
+    for (const child of Object.values(value)) visit(child);
+  };
+  visit(payload);
+  return applied;
+}
+
+function normalizeSummaryTone(value) {
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  return ['neutral', 'danger', 'warning', 'success', 'info'].includes(normalized) ? normalized : 'neutral';
+}
+
 function summarizeContractAggregates(payload) {
   const rows = [];
   const visit = (value) => {
@@ -202,6 +222,23 @@ try {
       await companySearch.fill('');
     }
     for (const target of routes) {
+      const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
+      let summaryFixtureApplied = false;
+      const contractRoutePattern = '**/api/v1/intent';
+      const contractRouteHandler = async (route) => {
+        const request = route.request();
+        let body = {};
+        try { body = JSON.parse(request.postData() || '{}'); } catch {}
+        if (request.method() !== 'POST' || body.intent !== 'ui.contract.v2') {
+          await route.continue();
+          return;
+        }
+        const response = await route.fetch();
+        const payload = await response.json();
+        summaryFixtureApplied = applyFirstContractSummaryFixture(payload, summaryFixture);
+        await route.fulfill({ response, json: payload });
+      };
+      if (summaryFixture) await page.route(contractRoutePattern, contractRouteHandler);
       let contractH1Nodes = [];
       let contractSelections = [];
       let contractAggregates = [];
@@ -231,6 +268,7 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (summaryFixture) await page.unroute(contractRoutePattern, contractRouteHandler);
       const result = await page.evaluate(() => {
         const root = document.documentElement;
         const style = getComputedStyle(root);
@@ -262,14 +300,26 @@ try {
         const items = owners.locator('[data-summary-key]');
         const domItems = await items.evaluateAll((nodes) => nodes.map((node) => ({
           key: node.getAttribute('data-summary-key') || '',
+          label: node.querySelector('.collection-summary-strip__label')?.textContent?.trim() || '',
+          value: node.querySelector('.collection-summary-strip__value')?.textContent?.trim() || '',
           tone: node.getAttribute('data-summary-tone') || '',
         })));
+        const expectedItems = contractSummaryItems.map((item) => ({
+          key: item.key,
+          label: item.label,
+          value: item.value,
+          tone: normalizeSummaryTone(item.tone),
+        }));
+        const ownerCount = await owners.count();
         collectionSummaryEvidence = {
           authorityItems: contractSummaryItems,
-          ownerCount: await owners.count(),
+          expectedItems,
+          ownerCount,
           domItems,
-          pass: domItems.length === contractSummaryItems.length
-            && (contractSummaryItems.length > 0 ? await owners.count() === 1 : await owners.count() === 0),
+          fixtureApplied: summaryFixture ? summaryFixtureApplied : null,
+          pass: JSON.stringify(domItems) === JSON.stringify(expectedItems)
+            && (contractSummaryItems.length > 0 ? ownerCount === 1 : ownerCount === 0)
+            && (!summaryFixture || summaryFixtureApplied),
         };
       }
       if (target.exerciseCollectionSelection === true) {

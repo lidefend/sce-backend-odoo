@@ -44,6 +44,12 @@ class CollectionSummaryStripGuardTest(unittest.TestCase):
             self.list_source, self.summary_source, self.css_source, altered,
         )))
 
+    def test_count_only_browser_evidence_fails(self):
+        altered = self.visual_source.replace("JSON.stringify(domItems) === JSON.stringify(expectedItems)", "domItems.length === expectedItems.length")
+        self.assertTrue(any("JSON.stringify" in item for item in validate(
+            self.list_source, self.summary_source, self.css_source, altered,
+        )))
+
 
 if __name__ == "__main__":
     unittest.main()

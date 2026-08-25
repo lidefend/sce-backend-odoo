@@ -60,7 +60,13 @@ def validate(
         "captureCollectionSummary",
         "collectionSummaryEvidence",
         "authorityItems",
+        "JSON.stringify(domItems) === JSON.stringify(expectedItems)",
+        "summaryFixtureApplied",
+        "applyFirstContractSummaryFixture",
+        "normalizeSummaryTone",
         "data-summary-key",
+        "collection-summary-strip__label",
+        "collection-summary-strip__value",
     ):
         if marker not in visual_text:
             failures.append(f"collection summary browser evidence missing {marker}")
