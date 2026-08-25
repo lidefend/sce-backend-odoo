@@ -1456,6 +1456,18 @@ verify.frontend.professionalization.base_configuration_domain.runtime: guard.pro
 		--json-output docs/frontend_productization/domain-rollout/base-configuration-domain-coverage-v1.json \
 		--markdown-output docs/frontend_productization/domain-rollout/base-configuration-domain-coverage-v1.md
 
+.PHONY: verify.frontend.professionalization.administration_domain.runtime
+verify.frontend.professionalization.administration_domain.runtime: guard.prod.forbid check-compose-project check-compose-env
+	@mkdir -p artifacts/frontend-professionalization docs/frontend_productization/domain-rollout
+	@python3 -m py_compile scripts/verify/frontend_project_domain_rollout.py scripts/verify/frontend_administration_domain_rollout.py scripts/verify/frontend_project_domain_rollout_report.py scripts/verify/frontend_administration_domain_rollout_report.py scripts/verify/test_frontend_project_domain_rollout.py scripts/verify/test_frontend_administration_domain_rollout.py
+	@python3 -m unittest scripts.verify.test_frontend_project_domain_rollout scripts.verify.test_frontend_administration_domain_rollout
+	@$(RUN_ENV) FRONTEND_ADMINISTRATION_DOMAIN_ROLLOUT_PATH=/tmp/frontend_administration_domain_rollout_v1.json DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_administration_domain_rollout.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/frontend_administration_domain_rollout_v1.json artifacts/frontend-professionalization/frontend_administration_domain_rollout_runtime_v1.json >/dev/null
+	@python3 scripts/verify/frontend_administration_domain_rollout_report.py \
+		--input artifacts/frontend-professionalization/frontend_administration_domain_rollout_runtime_v1.json \
+		--json-output docs/frontend_productization/domain-rollout/administration-domain-coverage-v1.json \
+		--markdown-output docs/frontend_productization/domain-rollout/administration-domain-coverage-v1.md
+
 .PHONY: verify.product.menu.governance.m4.runtime
 verify.product.menu.governance.m4.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@install -d -m 0777 artifacts/menu-governance

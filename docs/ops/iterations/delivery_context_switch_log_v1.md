@@ -5948,3 +5948,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   is unchanged.
 - Rollback: revert the base-configuration evidence and workflow wiring. Product
   runtime, permissions and business data are unaffected.
+## Frontend system professionalization — Phase 10 administration (2026-08-25)
+
+- Branch / baseline: `feature/p1-administration-domain-rollout-v1` /
+  `14fd491c5cff9b8b5fc737813bf791981db90244`.
+- Formal Product Layer: P1 construction-industry standard product.
+- Layer Target: organization-administration domain rollout evidence over the
+  shared P0 Contract V2, registry, page-pattern, and navigation authorities.
+- Scope: the active formal descendants of
+  `smart_construction_core.menu_sc_hr_admin_center`; inactive legacy groups,
+  the platform system-management center, demo readiness, and customer overlays
+  remain explicitly outside this domain batch.
+- Runtime authority: eight exact action XMLIDs are required; missing anchors,
+  fallback components, unregistered components, or unreachable formal actions
+  fail closed through the shared domain collector.
+- Browser evidence: the department list uses its exact menu/action/model
+  identity with one product header and a professional list or empty state;
+  the finance role is denied. Both journeys are read-only and require zero
+  browser errors and zero business mutations.
+- Rollback: revert the administration evidence and workflow wiring. Shared P0
+  product runtime, database state, roles, and fixtures are unaffected.
