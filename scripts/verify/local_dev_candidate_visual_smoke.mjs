@@ -158,6 +158,45 @@ function normalizeSummaryTone(value) {
   return ['neutral', 'danger', 'warning', 'success', 'info'].includes(normalized) ? normalized : 'neutral';
 }
 
+function applySummarySectionFixture(payload) {
+  let applied = false;
+  const visit = (value) => {
+    if (applied || !value || typeof value !== 'object') return;
+    const pages = value.page_contracts?.pages;
+    if (pages && typeof pages === 'object' && !Array.isArray(pages)) {
+      const action = pages.action && typeof pages.action === 'object' && !Array.isArray(pages.action) ? pages.action : {};
+      const orchestration = action.page_orchestration && typeof action.page_orchestration === 'object' && !Array.isArray(action.page_orchestration)
+        ? action.page_orchestration
+        : {};
+      const dataSources = orchestration.data_sources && typeof orchestration.data_sources === 'object' && !Array.isArray(orchestration.data_sources)
+        ? orchestration.data_sources
+        : {};
+      const zones = Array.isArray(orchestration.zones) ? orchestration.zones : [];
+      pages.action = {
+        ...action,
+        page_orchestration: {
+          ...orchestration,
+          data_sources: { ...dataSources, ds_summary_fixture: { source_type: 'static' } },
+          zones: [...zones, {
+            key: 'summary_fixture',
+            blocks: [{
+              section_key: 'summary_strip',
+              data_source: 'ds_summary_fixture',
+              priority: 50,
+              payload: { enabled: true, tag: 'section' },
+            }],
+          }],
+        },
+      };
+      applied = true;
+      return;
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return applied;
+}
+
 function collectSummaryCarrierPaths(payload) {
   const paths = [];
   const visit = (value, pathParts) => {
@@ -240,6 +279,7 @@ try {
     });
     const bootSummaryFixtureTarget = routes.find((target) => Array.isArray(target.summaryFixture));
     let bootSummaryFixtureApplied = false;
+    let bootSummarySectionFixtureApplied = false;
     let bootSummaryItems = [];
     const bootSummaryCarrierPaths = new Set();
     let bootSummaryRouteHandling = false;
@@ -266,6 +306,7 @@ try {
           bootSummaryFixtureTarget.summaryFixture,
           String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
         );
+        bootSummarySectionFixtureApplied = applySummarySectionFixture(payload);
         bootSummaryItems = summarizeContractSummaryItems(payload);
         await route.fulfill({ response, json: payload });
       } finally {
@@ -373,10 +414,11 @@ try {
           ownerCount,
           domItems,
           fixtureApplied: summaryFixture ? bootSummaryFixtureApplied : null,
+          sectionFixtureApplied: summaryFixture ? bootSummarySectionFixtureApplied : null,
           fixtureCarrierPaths: summaryFixture ? [...bootSummaryCarrierPaths] : [],
           pass: JSON.stringify(domItems) === JSON.stringify(expectedItems)
             && (contractSummaryItems.length > 0 ? ownerCount === 1 : ownerCount === 0)
-            && (!summaryFixture || bootSummaryFixtureApplied),
+            && (!summaryFixture || (bootSummaryFixtureApplied && bootSummarySectionFixtureApplied)),
         };
       }
       if (target.exerciseCollectionSelection === true) {
