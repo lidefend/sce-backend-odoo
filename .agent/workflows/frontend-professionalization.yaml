@@ -161,7 +161,7 @@ workflow:
       matrix: [task_create, task_edit, task_readonly, workspace_create, workspace_edit, workspace_readonly]
     phase_8:
       name: workflow_audit_and_collaboration
-      status: active
+      status: merged
       batches:
         phase_8a:
           status: merged
@@ -173,11 +173,11 @@ workflow:
           status: merged
           capabilities: [chatter, attachment, activity, comment, follower]
         phase_8d:
-          status: active
+          status: merged
           capabilities: [relation_search, relation_create, cancel, success_settlement, dirty_preservation, exact_once_mutation]
     phase_9:
       name: industry_component_profiles
-      status: planned
+      status: active
       ownership: P1_construction_industry_standard_product
       branches: [feature/p1-project-structure-components-v1, feature/p1-contract-execution-components-v1, feature/p1-payment-settlement-components-v1]
       rule: P1_supplies_component_profiles_P0_registry_remains_generic
@@ -215,7 +215,7 @@ workflow:
     rule: fix_only_the_owning_layer_then_resume_from_earliest_invalidated_gate
 
   next_action:
-    phase: phase_8d
-    task: professional_relation_lifecycle
-    prerequisite: phase_8c_merged_and_main_synced
-    do_not_start_in_parallel: [phase_9]
+    phase: phase_9
+    task: project_structure_component_profiles
+    prerequisite: phase_8_merged_and_main_synced
+    do_not_start_in_parallel: [phase_9_contract_execution, phase_9_payment_settlement, phase_10]
