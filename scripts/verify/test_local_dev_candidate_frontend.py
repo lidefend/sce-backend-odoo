@@ -143,6 +143,10 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("dialogLifecycleEvidence", browser)
         self.assertIn("exerciseCollectionToolbar", browser)
         self.assertIn("collectionToolbarEvidence", browser)
+        self.assertIn("exerciseCollectionNavigation", browser)
+        self.assertIn("collectionNavigationEvidence", browser)
+        self.assertIn('data-semantic-component=\"CollectionPaginationFooter\"', browser)
+        self.assertIn('data-semantic-component=\"CollectionColumnHeaderControl\"', browser)
         self.assertIn("openerRestored", browser)
         self.assertNotIn("waitForTimeout", browser)
 

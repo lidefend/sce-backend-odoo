@@ -266,7 +266,37 @@ try {
             && projectedKeys.length === directKeys.length,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, ...result });
+      let collectionNavigationEvidence = null;
+      if (target.exerciseCollectionNavigation === true) {
+        const footer = page.locator('[data-semantic-component="CollectionPaginationFooter"]');
+        await footer.waitFor({ state: 'visible', timeout: 15000 });
+        const footerCount = await footer.count();
+        const paginationMode = String(await footer.getAttribute('data-pagination-mode') || '');
+        const columnHeaders = page.locator('[data-semantic-component="CollectionColumnHeaderControl"]');
+        const columnHeaderCount = await columnHeaders.count();
+        const invalidColumnRoots = await columnHeaders.evaluateAll((nodes) => nodes.filter((node) => node.tagName !== 'TH').length);
+        const missingDragLabels = await columnHeaders.locator('.column-drag-handle:not([aria-label])').count();
+        const missingResizeLabels = await columnHeaders.locator('.column-resize-handle:not([aria-label])').count();
+        const groupingToolbarCount = await page.locator('[data-semantic-component="CollectionGroupingToolbar"]').count();
+        const groupPageControlsCount = await page.locator('[data-semantic-component="CollectionGroupPageControls"]').count();
+        collectionNavigationEvidence = {
+          footerCount,
+          paginationMode,
+          columnHeaderCount,
+          invalidColumnRoots,
+          missingDragLabels,
+          missingResizeLabels,
+          groupingToolbarCount,
+          groupPageControlsCount,
+          pass: footerCount === 1
+            && ['count', 'grouped', 'paged'].includes(paginationMode)
+            && columnHeaderCount > 0
+            && invalidColumnRoots === 0
+            && missingDragLabels === 0
+            && missingResizeLabels === 0,
+        };
+      }
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -281,6 +311,7 @@ for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
   if (item.collectionToolbarEvidence && !item.collectionToolbarEvidence.pass) failures.push({ name: item.name, collectionToolbarEvidence: item.collectionToolbarEvidence });
+  if (item.collectionNavigationEvidence && !item.collectionNavigationEvidence.pass) failures.push({ name: item.name, collectionNavigationEvidence: item.collectionNavigationEvidence });
 }
 const primitiveInput = report.routes.find((item) => item.primitiveInputContract)?.primitiveInputContract;
 if (!primitiveInput || primitiveInput.rootCount !== 1 || primitiveInput.inputCount !== 1 || primitiveInput.value !== '__primitive_adapter_probe__') {
