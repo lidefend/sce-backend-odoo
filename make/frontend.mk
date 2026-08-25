@@ -115,6 +115,8 @@ verify.frontend.product_page_header.unit: guard.prod.forbid
 	@python3 scripts/verify/frontend_product_page_header_guard.py
 
 verify.frontend.collection_action_toolbar.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_action_settlement_test.ts --bundle --platform=node --format=esm --outfile=/tmp/collection-action-settlement-test.mjs >/dev/null
+	@node /tmp/collection-action-settlement-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_collection_action_toolbar_guard.py
 	@python3 scripts/verify/frontend_collection_action_toolbar_guard.py
 

@@ -610,7 +610,7 @@
   color: var(--sc-app-text-secondary);
 }
 
-.batch-overflow { position: relative; display: none; }
+.batch-overflow { position: relative; display: block; }
 .batch-overflow-menu { position: absolute; z-index: 90; top: calc(100% + var(--sc-space-2xs)); right: 0; display: grid; gap: var(--sc-space-2xs); min-width: 180px; padding: var(--sc-space-xs); border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
 .batch-overflow-menu button { width: 100%; text-align: left; }
 
@@ -717,8 +717,6 @@
 
 @media (max-width: 760px) {
   .batch-bar { padding-inline: var(--sc-space-xs); }
-  .batch-action--secondary { display: none; }
-  .batch-overflow { display: block; }
   .batch-bar + .table { margin-top: 0; }
 }
 
