@@ -303,7 +303,7 @@ try {
     const bootContractRoutePattern = '**/api/v1/**';
     const bootContractRouteHandler = async (route) => {
       const request = route.request();
-      if (request.method() !== 'POST' || bootSummaryFixtureApplied || bootSummaryRouteHandling) {
+      if (request.method() !== 'POST' || bootSummaryRouteHandling) {
         await route.continue();
         return;
       }
@@ -318,13 +318,16 @@ try {
       }
       try {
         if (!payload) return;
-        bootSummaryFixtureApplied = applyFirstContractSummaryFixture(
+        const summaryApplied = applyFirstContractSummaryFixture(
           payload,
           bootSummaryFixtureTarget.summaryFixture,
           String(bootSummaryFixtureTarget.summaryFixtureSceneKey || '').trim(),
         );
-        bootSummarySectionFixtureApplied = applySummarySectionFixture(payload);
-        bootSummaryItems = summarizeContractSummaryItems(payload);
+        const sectionApplied = applySummarySectionFixture(payload);
+        bootSummaryFixtureApplied = bootSummaryFixtureApplied || summaryApplied;
+        bootSummarySectionFixtureApplied = bootSummarySectionFixtureApplied || sectionApplied;
+        const responseSummaryItems = summarizeContractSummaryItems(payload);
+        if (responseSummaryItems.length) bootSummaryItems = responseSummaryItems;
         await route.fulfill({ response, json: payload });
       } finally {
         bootSummaryRouteHandling = false;
