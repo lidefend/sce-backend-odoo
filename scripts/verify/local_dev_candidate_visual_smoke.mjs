@@ -74,6 +74,26 @@ function summarizeContractH1(payload) {
   return rows.slice(0, 8);
 }
 
+function summarizeContractSelections(payload) {
+  const rows = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value.selection) && value.selection.length) {
+      rows.push({
+        name: String(value.name || value.field || value.fieldCode || ''),
+        selection: value.selection.slice(0, 20),
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return rows.slice(0, 80);
+}
+
 try {
   for (const viewport of [{ name: 'desktop', width: 1440, height: 960 }, { name: 'mobile', width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
@@ -108,6 +128,7 @@ try {
     }
     for (const target of routes) {
       let contractH1Nodes = [];
+      let contractSelections = [];
       const contractResponse = /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
         : null;
@@ -115,7 +136,9 @@ try {
       if (contractResponse) {
         const response = await contractResponse;
         if (!response.ok()) throw new Error(`contract request failed: ${response.status()} ${target.path}`);
-        contractH1Nodes = summarizeContractH1(await response.json());
+        const contractPayload = await response.json();
+        contractH1Nodes = summarizeContractH1(contractPayload);
+        contractSelections = summarizeContractSelections(contractPayload);
       }
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
@@ -142,7 +165,7 @@ try {
             .slice(0, 80),
         };
       });
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: page.url(), contractH1Nodes, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: page.url(), contractH1Nodes, contractSelections, ...result });
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
     }
     report.routes.push({ viewport: viewport.name, errors });
