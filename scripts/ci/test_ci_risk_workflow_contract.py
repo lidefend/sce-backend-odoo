@@ -41,6 +41,34 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("Wait for exact-head full checks", aggregate)
         self.assertNotIn("continue-on-error:", aggregate)
 
+    def test_candidate_checks_run_once_per_explicit_candidate_head(self) -> None:
+        workflows = (
+            "merge_policy_gate.yml",
+            "public_guard.yml",
+            "professional_quality_gate.yml",
+            "frontend_release_gate.yml",
+        )
+        for workflow in workflows:
+            text = self.text(workflow)
+            self.assertIn("types: [opened, reopened, ready_for_review, labeled]", text)
+            self.assertNotIn("synchronize", text)
+            self.assertIn("workflow_dispatch:", text)
+            self.assertIn("github.event.label.name == 'ci:candidate'", text)
+            self.assertNotIn("inputs.expected_head", text)
+            self.assertNotIn("inputs.expected_base", text)
+
+        makefile = (ROOT / "make/codex.mk").read_text(encoding="utf-8")
+        dispatch = makefile.split("candidate.required_checks.dispatch:", 1)[1].split(
+            "candidate.mirror.gitee:", 1
+        )[0]
+        self.assertIn("exactly_one_open_pr_required", dispatch)
+        self.assertIn("pr_head_mismatch", dispatch)
+        self.assertIn("invalid_pr_base", dispatch)
+        self.assertIn("pr_head_changed_before_dispatch", dispatch)
+        self.assertIn("gh label create ci:candidate", dispatch)
+        self.assertIn("--remove-label ci:candidate", dispatch)
+        self.assertIn("--add-label ci:candidate", dispatch)
+
     def test_frontend_lane_commands_are_explicit(self) -> None:
         text = self.text("frontend_release_gate.yml")
         self.assertIn("frontend_mode == 'full'", text)

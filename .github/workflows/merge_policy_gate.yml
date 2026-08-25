@@ -3,8 +3,10 @@ name: merge_policy_gate
 on:
   pull_request:
     branches: [main]
+    types: [opened, reopened, ready_for_review, labeled]
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,6 +18,7 @@ concurrency:
 
 jobs:
   classify:
+    if: github.event.action != 'labeled' || github.event.label.name == 'ci:candidate'
     runs-on: ubuntu-latest
     outputs:
       lane: ${{ steps.risk.outputs.lane }}
@@ -33,7 +36,8 @@ jobs:
           python3 scripts/ci/ci_risk_classifier.py
           --base "${{ github.event.pull_request.base.sha || github.event.before || github.sha }}"
           --head "${{ github.event.pull_request.head.sha || github.sha }}"
-          --event "$GITHUB_EVENT_NAME" --ref "$GITHUB_REF" --github-output "$GITHUB_OUTPUT"
+          --event "$GITHUB_EVENT_NAME"
+          --ref "$GITHUB_REF" --github-output "$GITHUB_OUTPUT"
 
   fast:
     needs: classify

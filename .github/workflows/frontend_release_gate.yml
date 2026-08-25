@@ -3,6 +3,7 @@ name: frontend_release_gate
 on:
   pull_request:
     branches: [main]
+    types: [opened, reopened, ready_for_review, labeled]
   push:
     branches: [main]
   workflow_dispatch:
@@ -19,6 +20,7 @@ jobs:
     name: frontend_release_gate
     if: >-
       github.repository == 'lidefend/sce-backend-odoo' &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') &&
       ((github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'push' &&

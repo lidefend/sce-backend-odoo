@@ -5846,3 +5846,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   settlement behavior is included.
 - Rollback: revert the Phase 9 project-structure profile batch. The entry
   returns to the native flat list without database repair.
+
+## Exact-head candidate CI trigger policy (2026-08-25)
+
+- Branch / baseline: `fix/p4-ci-iteration-efficiency-v1` /
+  `304378ce213de4a6bd5e0877f1d074097dbd938e`.
+- Formal Product Layer / Layer Target / Module: P4 delivery governance /
+  candidate CI trigger authority / GitHub Actions and governed PR Make entry.
+- Reason: every update to an open PR automatically started four workflows,
+  repeated checkout and risk classification, and consumed candidate-level CI
+  during ordinary development feedback. Required checks should validate a
+  frozen exact head, not act as the inner edit loop.
+- Change: PR creation, reopen and ready-for-review still run the candidate gate
+  once. Later branch pushes do not automatically rerun it. The governed
+  `candidate.required_checks.dispatch` entry verifies clean local state, local,
+  remote and unique open-PR head equality, captures the exact PR base, then
+  reapplies the governed `ci:candidate` label. The resulting PR label event
+  starts all four gates on the current PR head and retains PR risk
+  classification. Direct workflow dispatch remains reserved for release-mode
+  validation and is not used to satisfy protected-main checks.
+- Preserved boundary: a new head has no successful required check and therefore
+  cannot merge until explicitly dispatched. Main pushes, release validation,
+  fail-closed risk classification and protected-main rules are unchanged.
+- Rollback: revert this governance batch to restore automatic CI on every PR
+  synchronization. Product runtime and database state are unaffected.
