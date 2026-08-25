@@ -18,6 +18,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("native collaboration panel bypasses shared composer")
     if "<ProfessionalAttachmentManager" not in panel or 'data-professional-collaboration-component="attachments"' not in attachments:
         failures.append("native collaboration panel bypasses shared attachment manager")
+    if "<ScButton" not in attachments:
+        failures.append("attachment settlement bypasses the governed button primitive")
     if "<ScButton" not in panel:
         failures.append("collaboration entry actions bypass the governed button primitive")
     for primitive in ("<ScButton", "<ScInput", "<ScSelect"):
