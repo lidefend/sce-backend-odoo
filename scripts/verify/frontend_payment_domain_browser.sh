@@ -23,8 +23,8 @@ resolve_target() {
 before="$(resolve_target)"
 [[ -n "$before" ]] || { echo "payment domain browser target resolution failed" >&2; exit 1; }
 set +e
-FRONTEND_PAYMENT_DOMAIN_TARGET="$before" FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}" \
-DB_NAME="$DB_NAME" E2E_PASSWORD="$SC_DEMO_USER_PASSWORD" CANDIDATE_HEAD="$(git -C "$ROOT_DIR" rev-parse HEAD)" \
+FRONTEND_PAYMENT_DOMAIN_TARGET="$before" FRONTEND_URL="${FRONTEND_URL:-http://127.0.0.1:${NGINX_PORT}}" \
+DB_NAME="$DB_NAME" E2E_PASSWORD="$SC_DEMO_USER_PASSWORD" CANDIDATE_HEAD="${CANDIDATE_GIT_HEAD:-$(git -C "$ROOT_DIR" rev-parse HEAD)}" \
 node "$ROOT_DIR/scripts/verify/frontend_payment_domain_browser.mjs"
 browser_status=$?
 set -e

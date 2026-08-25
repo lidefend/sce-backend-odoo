@@ -97,8 +97,9 @@ try {
   await driver.waitFor({ timeout: 45000 });
   const formContract = report.primary.contracts.filter((body) => findKey(body, 'viewType') === 'form').at(-1);
   const editableFields = await form.locator(
-    '[data-field-state="edit"] input:not([type="hidden"]):not(:disabled), '
-      + '[data-field-state="edit"] textarea:not(:disabled), [data-field-state="edit"] select:not(:disabled)',
+    '[data-field-state]:not([data-field-state="readonly"]) input:not([type="hidden"]):not(:disabled), '
+      + '[data-field-state]:not([data-field-state="readonly"]) textarea:not(:disabled), '
+      + '[data-field-state]:not([data-field-state="readonly"]) select:not(:disabled)',
   ).count();
   const saveActions = await primaryPage.locator('[data-action-ref="form.save"][data-action-enabled="true"]:visible').count();
   const editTransitions = await form.locator('[data-form-mode-action="edit"]:visible').count();
@@ -145,9 +146,11 @@ try {
   observe(securityPage, report.security);
   await login(securityPage, target.security_user.login);
   await securityPage.goto(`${frontendUrl}/a/${actionId}?menu_id=${menuId}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await securityPage.waitForFunction(() => document.body.innerText.includes('NAVIGATION_AUTHORITY_DENIED'), undefined, { timeout: 45000 });
+  await securityPage.waitForURL((url) => url.pathname === '/access-denied', { timeout: 45000 });
+  const denial = securityPage.locator('[data-semantic-component="ScErrorState"][role="alert"]:visible').first();
+  await denial.waitFor({ timeout: 45000 });
   report.security.result = {
-    url: securityPage.url(), denialVisible: (await securityPage.locator('body').innerText()).includes('NAVIGATION_AUTHORITY_DENIED'),
+    url: securityPage.url(), denialVisible: (await denial.innerText()).includes('访问受限'),
     businessForms: await securityPage.locator('[data-product-page-mode="form"]').count(),
     saveActions: await securityPage.locator('[data-action-ref="form.save"]').count(),
   };
