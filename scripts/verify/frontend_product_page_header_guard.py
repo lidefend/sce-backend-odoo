@@ -89,6 +89,9 @@ def validate() -> list[str]:
     for marker in ("data-action-key", "data-action-ref", "data-backend-identity"):
         if marker not in native_renderer:
             failures.append(f"native action evidence is missing {marker}")
+    for marker in ("line-break: strict", "text-wrap: balance", "font-size: 24px"):
+        if marker not in native_renderer:
+            failures.append(f"native record title responsive treatment is missing {marker}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")
     for page_route in ("'action'", "'record'", "'model-form'", "'not-found'"):
         compact_section = app_shell.split("const compactRouteKeepsHeadline", 1)[1].split(");", 1)[0]
