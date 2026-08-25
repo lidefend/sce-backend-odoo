@@ -30,6 +30,17 @@ async function loginPage(page) {
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
 }
 
+async function waitForStableProductSurface(page) {
+  await page.waitForFunction(() => {
+    const pendingForm = document.querySelector('[data-workspace-primary-content][aria-busy="true"]');
+    const pendingCollection = document.querySelector('.product-loading-shell[aria-busy="true"]');
+    return !pendingForm && !pendingCollection;
+  }, undefined, { timeout: 45000 });
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
+}
+
 try {
   for (const viewport of [{ name: 'desktop', width: 1440, height: 960 }, { name: 'mobile', width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
@@ -66,6 +77,7 @@ try {
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
+      await waitForStableProductSurface(page);
       const result = await page.evaluate(() => {
         const root = document.documentElement;
         const style = getComputedStyle(root);

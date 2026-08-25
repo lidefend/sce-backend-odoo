@@ -123,6 +123,11 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn('E2E_PASSWORD="${SC_DEMO_USER_PASSWORD}"', wrapper)
         self.assertIn("report.mutationCount += 1", browser)
         self.assertIn("--sc-semantic-surface-interactive", browser)
+        self.assertIn("waitForStableProductSurface", browser)
+        self.assertIn('[data-workspace-primary-content][aria-busy="true"]', browser)
+        self.assertIn('.product-loading-shell[aria-busy="true"]', browser)
+        self.assertIn("requestAnimationFrame(() => requestAnimationFrame(resolve))", browser)
+        self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":
     unittest.main()
