@@ -182,6 +182,8 @@ workflow:
       branches: [feature/p1-project-structure-components-v1, feature/p1-contract-execution-components-v1, feature/p1-payment-settlement-components-v1]
       rule: P1_supplies_component_profiles_P0_registry_remains_generic
       examples: [wbs_tree, bill_of_quantities, project_progress, contract_performance, payment_execution, settlement_detail, cost_analysis]
+      delivered: [project_structure, contract_execution]
+      active_batch: payment_settlement
     phase_10:
       name: business_domain_rollout
       status: planned
