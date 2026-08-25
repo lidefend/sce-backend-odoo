@@ -30,7 +30,10 @@ import {
 } from '../src/pages/contractForm/types';
 import { contractActionConfirmationPrompt } from '../src/pages/contractForm/actionContract';
 import { canonicalFormActionIconClass } from '../src/pages/contractForm/canonicalFormActionIcon';
-import { buildCanonicalNativeFormBridge } from '../src/pages/contractForm/canonicalNativeFormBridge';
+import {
+  buildCanonicalNativeFormBridge,
+  resolveCanonicalNativeFieldSchemas,
+} from '../src/pages/contractForm/canonicalNativeFormBridge';
 import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
 import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor';
 import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
@@ -801,6 +804,26 @@ assert.equal(bodyActionNode?.action?.actionRef.backendIdentity, 'window_action:9
 assert.equal(canonicalNodeHasContent(bodyActionNode!), true);
 assert.deepEqual(bodyActionModel.actionBar.map((action) => action.key), ['action_submit']);
 const nativeBridge = buildCanonicalNativeFormBridge(bodyActionModel);
+assert.deepEqual(
+  resolveCanonicalNativeFieldSchemas([
+    {
+      key: 'field.is_favorite', name: 'is_favorite', label: 'Favorite', type: 'boolean', widget: 'boolean_favorite',
+      required: false, readonly: false, inputValue: false,
+    },
+    {
+      key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+      inputValue: 'Canonical record title',
+    },
+  ]),
+  [{
+    key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+    inputValue: 'Canonical record title',
+    favoriteToggle: {
+      name: 'is_favorite', label: 'Favorite', active: false, readonly: false, descriptor: undefined,
+    },
+  }],
+  'canonical native title projection must decorate the textual title with favorite state instead of rendering the boolean as H1',
+);
 assert.deepEqual(
   nativeBridge.subordinateNodes.map((node) => node.type),
   ['notebook', 'container'],

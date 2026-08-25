@@ -41,6 +41,33 @@ function text(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function favoriteActive(value: unknown): boolean {
+  return value === true || value === 1 || value === '1' || String(value ?? '').trim().toLowerCase() === 'true';
+}
+
+export function resolveCanonicalNativeFieldSchemas(
+  schemas: readonly FormSectionFieldSchema[],
+): FormSectionFieldSchema[] {
+  const favorite = schemas.find((field) => field.widget === 'boolean_favorite' || field.name === 'is_favorite');
+  const content = schemas.filter((field) => field !== favorite).map((field) => ({ ...field }));
+  if (!favorite || !content.length) return content;
+  const targetIndex = content.findIndex((field) => field.name === 'name');
+  const textIndex = content.findIndex((field) => ['char', 'text'].includes(text(field.type).toLowerCase()));
+  const index = targetIndex >= 0 ? targetIndex : textIndex >= 0 ? textIndex : 0;
+  const target = content[index];
+  content[index] = {
+    ...target,
+    favoriteToggle: {
+      name: favorite.name,
+      label: favorite.label || favorite.name,
+      active: favoriteActive(favorite.inputValue ?? favorite.value),
+      readonly: favorite.readonly,
+      descriptor: favorite.descriptor,
+    },
+  };
+  return content;
+}
+
 function isCollaborationNode(node: CanonicalFormNode): boolean {
   return ['chatter', 'activity'].includes(text(node.kind).toLowerCase());
 }
@@ -142,10 +169,10 @@ export function buildCanonicalNativeFormBridge(
     primaryNodes: renderModel.zones.primary.map(mapNode),
     subordinateNodes: renderModel.zones.subordinate.filter((node) => !isCollaborationNode(node)).map(mapNode),
     fieldSchemasForNodes(nodes) {
-      return nodes.flatMap((node) => {
+      return resolveCanonicalNativeFieldSchemas(nodes.flatMap((node) => {
         const field = fieldSchemas.get(node);
         return field ? [field] : [];
-      });
+      }));
     },
     actionForPayload(payload) {
       return actionsByIdentity.get(actionIdentity(payload))?.actionRef || null;
