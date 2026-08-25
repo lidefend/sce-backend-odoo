@@ -46,6 +46,12 @@ workflow:
       owns: [base_field_families, workflow_audit_collaboration, industry_component_profiles, business_domain_rollout]
 
   feedback_levels:
+    ci_lane:
+      professional_extension_makefile: make/frontend_professional_extensions.mk
+      ordinary_component_lane: STANDARD
+      ordinary_component_frontend_mode: standard
+      full_release_only_for_release_critical_surfaces: true
+      unknown_scope_fail_closed: true
     development:
       target_duration: 1_to_5_minutes
       loop: [modify_current_responsibility, run_nonzero_targeted_tests, run_relevant_lint_or_typecheck, inspect_one_local_surface, commit_small_responsibility]
