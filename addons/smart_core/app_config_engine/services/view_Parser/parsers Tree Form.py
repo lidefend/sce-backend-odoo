@@ -22,6 +22,9 @@ from odoo.addons.smart_core.utils.native_action_scope import (
     native_expression_references_current_record,
     native_stat_button_requires_record,
 )
+from odoo.addons.smart_core.utils.native_collection_presentation import (
+    native_collection_presentation,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -469,11 +472,15 @@ class _TreeFormParserMixin:
         modifiers = {}
         capabilities = {"inline_edit": False, "can_create": True, "can_delete": True}
         default_order = None
+        collection_presentation = None
 
         try:
             if root is None:
                 root = etree.fromstring(arch.encode('utf-8')) if arch else None
             if root is not None and root.tag in ('tree', 'list'):
+                collection_presentation = native_collection_presentation(
+                    root.get('js_class')
+                )
                 # default_order / editable / create / delete / limit
                 default_order = root.get('default_order')
                 editable = (root.get('editable') or '').strip().lower()  # bottom/top/''/true
@@ -593,6 +600,11 @@ class _TreeFormParserMixin:
             "default_order": default_order,
             # 让服务层不需要再兜底 search
             "search": {"filters": [], "group_by": [], "facets": {"enabled": True}},
+            **(
+                {"collection_presentation": collection_presentation}
+                if collection_presentation
+                else {}
+            ),
         }
 
     def _tree_column_schema(self, name, field_meta, modifiers):
