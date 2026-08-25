@@ -66,11 +66,20 @@
           </ScButton>
         </template>
       </ScEmptyState>
-      <section class="pagination-footer pagination-footer--count-only">
-        <div class="pagination-actions pagination-actions--bottom">
-          <span class="pagination-total">{{ listRecordCountText }}</span>
-        </div>
-      </section>
+      <CollectionPaginationFooter
+        mode="count"
+        :record-count-text="listRecordCountText"
+        :loading="loading"
+        :can-previous="false"
+        :can-next="false"
+        page-text=""
+        :page-jump-value="pageJumpInput"
+        :page-limit-value="pageLimitInput"
+        :list-limit="listLimit"
+        :total-pages="totalPages"
+        :page-limit-options="pageLimitOptions"
+        :labels="collectionPaginationLabels"
+      />
     </template>
     <template v-else>
       <ListSurfaceHeader
@@ -140,64 +149,28 @@
       >
         <span v-if="loading" class="refresh-status">{{ uiLabel('refreshing_list', '正在刷新数据') }}</span>
 	        <section v-if="showGroupedRows" class="grouped-table">
-        <header class="grouped-toolbar">
-          <div class="grouped-toolbar-title">
-            <span>{{ uiLabel('grouped_result', '分组结果') }}</span>
-            <span v-if="groupWindowInfoText" class="group-window-info">{{ groupWindowInfoText }}</span>
-          </div>
-          <div class="grouped-toolbar-actions">
-            <button
-              v-if="onGroupWindowPrev"
-              type="button"
-              class="grouped-sort-btn"
-              :disabled="loading || !canGroupWindowPrev"
-              @click="onGroupWindowPrev"
-            >
-              {{ uiLabel('group_window_prev', '上一组') }}
-            </button>
-            <button
-              v-if="onGroupWindowNext"
-              type="button"
-              class="grouped-sort-btn"
-              :disabled="loading || !canGroupWindowNext"
-              @click="onGroupWindowNext"
-            >
-              {{ uiLabel('group_window_next', '下一组') }}
-            </button>
-            <button
-              type="button"
-              class="grouped-sort-btn"
-              :disabled="!groupedRows.length || !hasCollapsedGroups"
-              @click="expandAllGroups"
-            >
-              {{ uiLabel('expand_all', '全部展开') }}
-            </button>
-            <button
-              type="button"
-              class="grouped-sort-btn"
-              :disabled="!groupedRows.length || allGroupsCollapsed"
-              @click="collapseAllGroups"
-            >
-              {{ uiLabel('collapse_all', '全部收起') }}
-            </button>
-            <button type="button" class="grouped-sort-btn" @click="toggleGroupSort">
-              {{ groupSortLabel }}
-            </button>
-            <label v-if="onGroupSampleLimitChange" class="group-sample-limit">
-              <span>{{ uiLabel('group_sample_limit', '每组') }}</span>
-              <select
-                class="group-sample-limit-select"
-                :value="String(effectiveGroupSampleLimit)"
-                :disabled="loading"
-                @change="onGroupSampleLimitSelectChange"
-              >
-                <option v-for="option in groupSampleLimitOptions" :key="`group-sample-limit-${option}`" :value="String(option)">
-                  {{ option }}
-                </option>
-              </select>
-            </label>
-          </div>
-        </header>
+        <CollectionGroupingToolbar
+          :loading="loading"
+          :group-count="groupedRows.length"
+          :window-info="groupWindowInfoText"
+          :has-window-previous="Boolean(onGroupWindowPrev)"
+          :has-window-next="Boolean(onGroupWindowNext)"
+          :can-window-previous="Boolean(canGroupWindowPrev)"
+          :can-window-next="Boolean(canGroupWindowNext)"
+          :has-collapsed-groups="hasCollapsedGroups"
+          :all-groups-collapsed="allGroupsCollapsed"
+          :sort-label="groupSortLabel"
+          :sample-limit-enabled="Boolean(onGroupSampleLimitChange)"
+          :sample-limit="effectiveGroupSampleLimit"
+          :sample-limit-options="groupSampleLimitOptions"
+          :labels="collectionGroupingLabels"
+          @window-previous="onGroupWindowPrev?.()"
+          @window-next="onGroupWindowNext?.()"
+          @expand-all="expandAllGroups"
+          @collapse-all="collapseAllGroups"
+          @toggle-sort="toggleGroupSort"
+          @sample-limit-change="onGroupSampleLimitSelectChange"
+        />
         <article v-for="group in sortedGroupedRows" :key="group.key" class="group-block">
           <header class="group-head">
             <button type="button" class="group-toggle" @click="toggleGroupCollapsed(group.key)">
@@ -205,42 +178,25 @@
             </button>
             <p>{{ group.label }}</p>
             <span>{{ groupCountText(group) }}</span>
-            <div v-if="onGroupPageChange && groupTotalPages(group) > 1" class="group-page">
-              <button
-                type="button"
-                class="group-page-btn"
-                :disabled="Boolean(group.loading) || !canGroupPagePrev(group)"
-                @click="pageGroupPrev(group)"
-              >
-                {{ uiLabel('pagination_prev', '上一页') }}
-              </button>
-              <span>{{ groupPageInfoText(group) }}</span>
-              <button
-                type="button"
-                class="group-page-btn"
-                :disabled="Boolean(group.loading) || !canGroupPageNext(group)"
-                @click="pageGroupNext(group)"
-              >
-                {{ uiLabel('pagination_next', '下一页') }}
-              </button>
-              <input
-                class="group-page-input"
-                :value="groupJumpPageInput[group.key] || String(groupCurrentPage(group))"
-                :disabled="Boolean(group.loading) || groupTotalPages(group) <= 1"
-                :aria-label="uiLabel('group_page_input', `${group.label}页码`)"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                @change="onGroupJumpInputChange(group.key, $event)"
-              />
-              <button
-                type="button"
-                class="group-page-btn"
-                :disabled="Boolean(group.loading) || groupTotalPages(group) <= 1"
-                @click="jumpGroupPage(group)"
-              >
-                {{ uiLabel('pagination_jump', '跳转') }}
-              </button>
-            </div>
+            <CollectionGroupPageControls
+              v-if="onGroupPageChange && groupTotalPages(group) > 1"
+              :group-key="group.key"
+              :region-label="uiLabel('group_pagination_region', `${group.label}分组分页`)"
+              :page-info="groupPageInfoText(group)"
+              :page-input="groupJumpPageInput[group.key] || String(groupCurrentPage(group))"
+              :page-input-label="uiLabel('group_page_input', `${group.label}页码`)"
+              :previous-label="uiLabel('pagination_prev', '上一页')"
+              :next-label="uiLabel('pagination_next', '下一页')"
+              :jump-label="uiLabel('pagination_jump', '跳转')"
+              :total-pages="groupTotalPages(group)"
+              :can-previous="canGroupPagePrev(group)"
+              :can-next="canGroupPageNext(group)"
+              :loading="Boolean(group.loading)"
+              @previous="pageGroupPrev(group)"
+              @next="pageGroupNext(group)"
+              @update:page-input="onGroupJumpInputChange(group.key, $event)"
+              @jump="jumpGroupPage(group)"
+            />
             <button
               v-if="onOpenGroup"
               type="button"
@@ -274,54 +230,28 @@
                   />
                 </th>
                 <th v-if="showRowNumberColumn" class="cell-row-number">{{ uiLabel('row_number', '序号') }}</th>
-                <th
+                <CollectionColumnHeaderControl
                   v-for="col in displayedColumns"
                   :key="`group-col-${group.key}-${col}`"
-                  class="cell-sortable"
-                  :class="[columnDensityClass(col), { 'is-sorted': isSortedColumn(col), 'is-dragging': draggingColumn === col, 'is-sort-disabled': !isColumnSortable(col) }]"
-                  :data-column="col"
-                  :style="columnWidthStyle(col)"
-                  @dragover="onColumnDragOver(col, $event)"
-                  @drop="onColumnDrop(col, $event)"
-                  @dragend="onColumnDragEnd"
-                  @click="toggleColumnSort(col)"
-                  @keydown.enter.prevent="toggleColumnSort(col)"
-                  @keydown.space.prevent="toggleColumnSort(col)"
-                  :tabindex="isColumnSortable(col) ? 0 : -1"
-                  :title="columnSortTitle(col)"
+                  :field="col"
+                  :label="columnLabel(col)"
+                  :sortable="isColumnSortable(col)"
+                  :sorted="isSortedColumn(col)"
+                  :dragging="draggingColumn === col"
+                  :sort-icon="columnSortIcon(col)"
+                  :sort-title="columnSortTitle(col)"
                   :aria-sort="columnAriaSort(col)"
-                >
-                  <button
-                    type="button"
-                    class="column-drag-handle"
-                    :title="uiLabel('column_drag_reorder', '拖动调整列顺序')"
-                    draggable="true"
-                    @click.stop
-                    @keydown.stop
-                    @dragstart.stop="onColumnDragStart(col, $event)"
-                    @dragend.stop="onColumnDragEnd"
-                  ></button>
-                  <button
-                    type="button"
-                    class="column-sort-btn"
-                    :title="columnSortTitle(col)"
-                    :aria-disabled="!isColumnSortable(col)"
-                    draggable="false"
-                    @click.stop="toggleColumnSort(col)"
-                  >
-                    <span>{{ columnLabel(col) }}</span>
-                    <ScIcon v-if="isSortedColumn(col)" class="sort-indicator" :name="columnSortIcon(col)" :size="14" />
-                  </button>
-                  <button
-                    type="button"
-                    class="column-resize-handle"
-                    :title="uiLabel('column_resize', '调整列宽')"
-                    draggable="false"
-                    @click.stop
-                    @dragstart.stop.prevent
-                    @mousedown.stop.prevent="startColumnResize(col, $event)"
-                  ></button>
-                </th>
+                  :drag-label="uiLabel('column_drag_reorder', '拖动调整列顺序')"
+                  :resize-label="uiLabel('column_resize', '调整列宽')"
+                  :density-class="columnDensityClass(col)"
+                  :column-style="columnWidthStyle(col)"
+                  @drag-over="onColumnDragOver(col, $event)"
+                  @drop-column="onColumnDrop(col, $event)"
+                  @drag-end="onColumnDragEnd"
+                  @sort="toggleColumnSort(col)"
+                  @drag-start="onColumnDragStart(col, $event)"
+                  @resize-start="startColumnResize(col, $event)"
+                />
               </tr>
             </thead>
             <tbody>
@@ -508,54 +438,28 @@
               />
             </th>
             <th v-if="showRowNumberColumn" class="cell-row-number">{{ uiLabel('row_number', '序号') }}</th>
-            <th
+            <CollectionColumnHeaderControl
               v-for="col in displayedColumns"
               :key="col"
-              class="cell-sortable"
-              :class="[columnDensityClass(col), { 'is-sorted': isSortedColumn(col), 'is-dragging': draggingColumn === col, 'is-sort-disabled': !isColumnSortable(col) }]"
-              :data-column="col"
-              :style="columnWidthStyle(col)"
-              @dragover="onColumnDragOver(col, $event)"
-              @drop="onColumnDrop(col, $event)"
-              @dragend="onColumnDragEnd"
-              @click="toggleColumnSort(col)"
-              @keydown.enter.prevent="toggleColumnSort(col)"
-              @keydown.space.prevent="toggleColumnSort(col)"
-              :tabindex="isColumnSortable(col) ? 0 : -1"
-              :title="columnSortTitle(col)"
+              :field="col"
+              :label="columnLabel(col)"
+              :sortable="isColumnSortable(col)"
+              :sorted="isSortedColumn(col)"
+              :dragging="draggingColumn === col"
+              :sort-icon="columnSortIcon(col)"
+              :sort-title="columnSortTitle(col)"
               :aria-sort="columnAriaSort(col)"
-            >
-              <button
-                type="button"
-                class="column-drag-handle"
-                :title="uiLabel('column_drag_reorder', '拖动调整列顺序')"
-                draggable="true"
-                @click.stop
-                @keydown.stop
-                @dragstart.stop="onColumnDragStart(col, $event)"
-                @dragend.stop="onColumnDragEnd"
-              ></button>
-              <button
-                type="button"
-                class="column-sort-btn"
-                :title="columnSortTitle(col)"
-                :aria-disabled="!isColumnSortable(col)"
-                draggable="false"
-                @click.stop="toggleColumnSort(col)"
-              >
-                <span>{{ columnLabel(col) }}</span>
-                <ScIcon v-if="isSortedColumn(col)" class="sort-indicator" :name="columnSortIcon(col)" :size="14" />
-              </button>
-              <button
-                type="button"
-                class="column-resize-handle"
-                :title="uiLabel('column_resize', '调整列宽')"
-                draggable="false"
-                @click.stop
-                @dragstart.stop.prevent
-                @mousedown.stop.prevent="startColumnResize(col, $event)"
-              ></button>
-            </th>
+              :drag-label="uiLabel('column_drag_reorder', '拖动调整列顺序')"
+              :resize-label="uiLabel('column_resize', '调整列宽')"
+              :density-class="columnDensityClass(col)"
+              :column-style="columnWidthStyle(col)"
+              @drag-over="onColumnDragOver(col, $event)"
+              @drop-column="onColumnDrop(col, $event)"
+              @drag-end="onColumnDragEnd"
+              @sort="toggleColumnSort(col)"
+              @drag-start="onColumnDragStart(col, $event)"
+              @resize-start="startColumnResize(col, $event)"
+            />
           </tr>
         </thead>
         <tbody>
@@ -655,99 +559,27 @@
         </tfoot>
       </ScDataTable>
 
-      <section v-if="showGroupedWindowPagination" class="pagination-footer">
-        <div class="pagination-actions pagination-actions--bottom">
-          <span class="pagination-total">{{ listRecordCountText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canGroupWindowPrev"
-            @click="onGroupWindowPrev?.()"
-          >
-            {{ uiLabel('group_window_prev', '上一组') }}
-          </button>
-          <span>{{ groupWindowPageText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canGroupWindowNext"
-            @click="onGroupWindowNext?.()"
-          >
-            {{ uiLabel('group_window_next', '下一组') }}
-          </button>
-        </div>
-      </section>
-      <section v-else-if="showPagination" class="pagination-footer">
-        <div class="pagination-actions pagination-actions--bottom">
-          <span class="pagination-total">{{ listRecordCountText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canPagePrev"
-            @click="pagePrev"
-          >
-            {{ uiLabel('pagination_prev', '上一页') }}
-          </button>
-          <span>{{ paginationPageText }}</span>
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || !canPageNext"
-            @click="pageNext"
-          >
-            {{ uiLabel('pagination_next', '下一页') }}
-          </button>
-          <input
-            class="pagination-input"
-            :value="pageJumpInput"
-            :disabled="loading || totalPages <= 1"
-            :aria-label="uiLabel('pagination_page_input', '页码')"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            @input="onPageJumpInput"
-            @keyup.enter="jumpPage"
-          />
-          <button
-            type="button"
-            class="pagination-btn"
-            :disabled="loading || totalPages <= 1"
-            @click="jumpPage"
-          >
-            {{ uiLabel('pagination_jump', '跳转') }}
-          </button>
-          <label class="pagination-size-control">
-            <span class="pagination-size-label">{{ uiLabel('pagination_page_size', '每页') }}</span>
-            <span class="pagination-size-combo">
-              <input
-                class="pagination-input pagination-input--size"
-                :value="pageLimitInput"
-                :disabled="loading"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                @input="onPageLimitInput"
-                @change="applyPageLimit"
-                @keyup.enter="applyPageLimit"
-              />
-              <select
-                class="pagination-size-select"
-                :value="pageLimitOptions.includes(listLimit) ? String(listLimit) : undefined"
-                :disabled="loading"
-                :aria-label="uiLabel('pagination_page_size_select', '选择每页条数')"
-                @change="onPageLimitSelectChange"
-              >
-                <option v-for="option in pageLimitOptions" :key="`page-limit-${option}`" :value="String(option)">
-                  {{ option }}
-                </option>
-              </select>
-            </span>
-          </label>
-        </div>
-      </section>
-      <section v-else class="pagination-footer pagination-footer--count-only">
-        <div class="pagination-actions pagination-actions--bottom">
-          <span class="pagination-total">{{ listRecordCountText }}</span>
-        </div>
-      </section>
+      <CollectionPaginationFooter
+        :mode="collectionPaginationMode"
+        :record-count-text="listRecordCountText"
+        :loading="loading"
+        :can-previous="showGroupedWindowPagination ? Boolean(canGroupWindowPrev) : canPagePrev"
+        :can-next="showGroupedWindowPagination ? Boolean(canGroupWindowNext) : canPageNext"
+        :page-text="showGroupedWindowPagination ? groupWindowPageText : paginationPageText"
+        :page-jump-value="pageJumpInput"
+        :page-limit-value="pageLimitInput"
+        :list-limit="listLimit"
+        :total-pages="totalPages"
+        :page-limit-options="pageLimitOptions"
+        :labels="collectionPaginationLabels"
+        @previous="showGroupedWindowPagination ? onGroupWindowPrev?.() : pagePrev()"
+        @next="showGroupedWindowPagination ? onGroupWindowNext?.() : pageNext()"
+        @page-jump-input="onPageJumpInput"
+        @page-jump="jumpPage"
+        @page-limit-input="onPageLimitInput"
+        @page-limit-apply="applyPageLimit"
+        @page-limit-select="onPageLimitSelectChange"
+      />
     </section>
 
     </template>
@@ -759,9 +591,14 @@ import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
+import CollectionColumnHeaderControl from '../components/product-list/CollectionColumnHeaderControl.vue';
+import CollectionGroupPageControls from '../components/product-list/CollectionGroupPageControls.vue';
+import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
+import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionBatchActionSettlement } from '../app/presentation/collectionActionSettlement';
+import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { useCollectionBatchOverflow } from '../app/presentation/useCollectionBatchOverflow';
 import ScDataTable from '../components/design-system/ScDataTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
@@ -1040,6 +877,15 @@ const groupSortLabel = computed(() =>
     ? uiLabel('group_sort_desc', '按数量降序')
     : uiLabel('group_sort_asc', '按数量升序'),
 );
+const collectionGroupingLabels = computed(() => ({
+  title: uiLabel('grouped_result', '分组结果'),
+  windowPrevious: uiLabel('group_window_prev', '上一组'),
+  windowNext: uiLabel('group_window_next', '下一组'),
+  expandAll: uiLabel('expand_all', '全部展开'),
+  collapseAll: uiLabel('collapse_all', '全部收起'),
+  sort: uiLabel('group_sort', '切换分组排序'),
+  sampleLimit: uiLabel('group_sample_limit', '每组'),
+}));
 const showGroupedWindowPagination = computed(() =>
   showGroupedRows.value
   && Boolean(props.onGroupWindowPrev || props.onGroupWindowNext)
@@ -1240,8 +1086,8 @@ function toggleGroupSort() {
   props.onGroupSortChange(nextDirection);
 }
 
-function onGroupSampleLimitSelectChange(event: Event) {
-  const raw = Number((event.target as HTMLSelectElement).value || 0);
+function onGroupSampleLimitSelectChange(value: string) {
+  const raw = Number(value || 0);
   if (!Number.isFinite(raw) || raw <= 0) return;
   props.onGroupSampleLimitChange?.(Math.trunc(raw));
 }
@@ -1351,8 +1197,7 @@ function jumpGroupPage(group: { key: string; label: string; count: number; domai
   props.onGroupPageChange({ key: group.key, label: group.label, count: group.count, domain: group.domain, offset, limit });
 }
 
-function onGroupJumpInputChange(groupKey: string, event: Event) {
-  const value = String((event.target as HTMLInputElement | null)?.value || '');
+function onGroupJumpInputChange(groupKey: string, value: string) {
   groupJumpPageInput.value = { ...groupJumpPageInput.value, [groupKey]: value };
 }
 
@@ -1503,6 +1348,22 @@ const paginationPageText = computed(() =>
     total: totalPages.value,
   }),
 );
+const collectionPaginationMode = computed(() => resolveCollectionPaginationMode({
+  groupedWindow: showGroupedWindowPagination.value,
+  paged: showPagination.value,
+}));
+const collectionPaginationLabels = computed(() => ({
+  region: uiLabel('pagination_region', '列表分页'),
+  previous: uiLabel('pagination_prev', '上一页'),
+  next: uiLabel('pagination_next', '下一页'),
+  groupPrevious: uiLabel('group_window_prev', '上一组'),
+  groupNext: uiLabel('group_window_next', '下一组'),
+  pageInput: uiLabel('pagination_page_input', '页码'),
+  jump: uiLabel('pagination_jump', '跳转'),
+  pageSize: uiLabel('pagination_page_size', '每页'),
+  pageSizeInput: uiLabel('pagination_page_size_input', '输入每页条数'),
+  pageSizeSelect: uiLabel('pagination_page_size_select', '选择每页条数'),
+}));
 function isSelected(row: Record<string, unknown>) {
   const id = rowId(row);
   if (!id) return false;
@@ -1546,10 +1407,7 @@ function runSelectionAction(key: string) {
 
 function emitPageOffset(offset: number) {
   if (!props.onPageChange) return;
-  const total = listTotal.value || 0;
-  const maxOffset = total > 0 ? Math.floor((total - 1) / listLimit.value) * listLimit.value : 0;
-  const normalized = Math.min(Math.max(Math.trunc(offset || 0), 0), maxOffset);
-  props.onPageChange(normalized);
+  props.onPageChange(resolveCollectionPageOffset({ requestedOffset: offset, total: listTotal.value, limit: listLimit.value }));
 }
 
 function pagePrev() {
@@ -1560,38 +1418,35 @@ function pageNext() {
   emitPageOffset(listOffset.value + listLimit.value);
 }
 
-function onPageJumpInput(event: Event) {
-  pageJumpInput.value = String((event.target as HTMLInputElement | null)?.value || '');
-}
+function onPageJumpInput(value: string) { pageJumpInput.value = value; }
 
 function jumpPage() {
-  const page = Number(pageJumpInput.value || currentPage.value);
-  if (!Number.isFinite(page)) return;
-  const normalizedPage = Math.min(Math.max(Math.trunc(page), 1), totalPages.value);
-  pageJumpInput.value = String(normalizedPage);
-  emitPageOffset((normalizedPage - 1) * listLimit.value);
+  const target = resolveCollectionPageJump({
+    requestedPage: pageJumpInput.value,
+    currentPage: currentPage.value,
+    totalPages: totalPages.value,
+    limit: listLimit.value,
+    total: listTotal.value,
+  });
+  pageJumpInput.value = String(target.page);
+  emitPageOffset(target.offset);
 }
 
 function applyPageLimitValue(raw: number) {
-  if (!Number.isFinite(raw)) return;
-  const normalized = Math.min(Math.max(Math.trunc(raw), 1), 200);
+  const normalized = resolveCollectionPageLimit(raw, listLimit.value);
   pageLimitInput.value = String(normalized);
   if (normalized === listLimit.value) return;
   observedListLimit.value = normalized;
   props.onPageLimitChange?.(normalized);
 }
 
-function onPageLimitInput(event: Event) {
-  pageLimitInput.value = String((event.target as HTMLInputElement | null)?.value || '');
-}
+function onPageLimitInput(value: string) { pageLimitInput.value = value; }
 
 function applyPageLimit() {
   applyPageLimitValue(Number(pageLimitInput.value || listLimit.value));
 }
 
-function onPageLimitSelectChange(event: Event) {
-  applyPageLimitValue(Number((event.target as HTMLSelectElement | null)?.value || 0));
-}
+function onPageLimitSelectChange(value: string) { applyPageLimitValue(Number(value || 0)); }
 
 function onPlainSearchInput(event: Event) {
   plainSearchDraft.value = String((event.target as HTMLInputElement | null)?.value || '');
