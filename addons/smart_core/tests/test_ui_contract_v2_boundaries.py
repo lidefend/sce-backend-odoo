@@ -174,7 +174,7 @@ def _load_handler():
 
         def dispatch(self, payload):
             captured.setdefault("native_form_payloads", []).append(dict(payload or {}))
-            return {
+            result = {
                 "model": payload.get("model") or "res.partner",
                 "view_type": "form",
                 "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
@@ -184,7 +184,10 @@ def _load_handler():
                     "occurrence_index": 1, "source_position": 0,
                 }]}},
                 "data": {"record": {"id": 42, "name": "ACME"}},
-            }, {"view": "native-form-test"}
+            }
+            if payload.get("action_id") == 949:
+                result["view_ids_by_type"] = {"form": 1503}
+            return result, {"view": "native-form-test"}
 
     _install_module(
         "odoo.addons.smart_core.app_config_engine.services.dispatchers.action_dispatcher",
@@ -263,6 +266,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(data["nativeFormProjection"]["schemaVersion"], "2.0")
         self.assertEqual(data["nativeFormProjection"]["sourceAuthority"]["kind"], "native_form_projection")
         self.assertEqual(meta["source_type"], "native_form_projection")
+
+    def test_native_form_source_preserves_resolved_form_view_identity(self):
+        handler = self.module.UiContractV2Handler(env=object(), su_env=object())
+        data, _meta = handler._dispatch_native_form_source(
+            handler.env,
+            handler.su_env,
+            {"op": "action", "action_id": 949, "view_type": "form"},
+        )
+        self.assertEqual(data["view_id"], 1503)
+        self.assertEqual(data["view_ids_by_type"], {"form": 1503})
 
     def test_final_modifier_dependency_beyond_snapshot_budget_is_hydrated(self):
         class _Field:

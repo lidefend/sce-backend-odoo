@@ -3942,7 +3942,13 @@ class UiContractV2Handler(BaseIntentHandler):
         # contract look like an ungoverned native form.
         resolved_view_id = 0
         try:
-            resolved_view_id = int(data.get("view_id") or direct_params.get("view_id") or 0)
+            resolved_view_ids = data.get("view_ids_by_type") if isinstance(data.get("view_ids_by_type"), dict) else {}
+            resolved_view_id = int(
+                data.get("view_id")
+                or resolved_view_ids.get("form")
+                or direct_params.get("view_id")
+                or 0
+            )
         except (TypeError, ValueError):
             resolved_view_id = 0
         if not resolved_view_id:

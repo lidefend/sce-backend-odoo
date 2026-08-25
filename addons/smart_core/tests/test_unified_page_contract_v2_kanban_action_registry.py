@@ -106,6 +106,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             ({"type": "many2one", "relation": "res.company"}, "select", "sc.value.company"),
             ({"type": "many2one", "relation": "x.related"}, "select", "sc.relation.many2one"),
             ({"type": "many2many", "relation": "x.related"}, "table", "sc.relation.many2many"),
+            ({"type": "many2many", "relation": "res.users"}, "table", "sc.relation.many2many"),
+            ({"type": "many2many", "relation": "res.users"}, "many2many_tags", "sc.select.tags"),
             ({"type": "one2many", "relation": "x.line"}, "table", "sc.relation.table"),
         )
         for descriptor, widget_type, expected in cases:
