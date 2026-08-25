@@ -214,6 +214,7 @@
               <tr>
                 <th v-if="showSelectionColumn" class="cell-select">
                   <CollectionSelectionControl
+                    scope="group"
                     :checked="isGroupAllSelected(group)"
                     :indeterminate="isGroupSomeSelected(group)"
                     :disabled="loading || !groupSelectableRows(group).length"
@@ -377,6 +378,7 @@
           <tr>
             <th v-if="showSelectionColumn" class="cell-select">
               <CollectionSelectionControl
+                scope="page"
                 :checked="allSelected"
                 :indeterminate="someSelected"
                 :disabled="loading || !selectableRows.length"

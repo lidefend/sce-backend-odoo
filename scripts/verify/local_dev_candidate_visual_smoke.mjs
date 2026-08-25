@@ -169,13 +169,11 @@ try {
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       let collectionSelectionEvidence = null;
       if (target.exerciseCollectionSelection === true) {
-        const controls = viewport.name === 'mobile'
-          ? page.locator('[data-mobile-record-select][data-semantic-component="CollectionSelectionControl"]:visible')
-          : page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
+        const controls = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
         const controlCount = await controls.count();
         if (controlCount < 1) throw new Error(`${target.name}: collection selection control is missing`);
-        const rowControlIndex = viewport.name === 'desktop' && controlCount > 1 ? 1 : 0;
-        const rowControl = controls.nth(rowControlIndex);
+        const rowControl = page.locator('[data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]:visible').first();
+        if (await rowControl.count() !== 1) throw new Error(`${target.name}: collection row selection control is missing`);
         const rowInput = rowControl.locator('input[type="checkbox"]');
         const initialRowState = await rowControl.getAttribute('data-selection-state');
         const ariaLabel = await rowInput.getAttribute('aria-label');
@@ -194,8 +192,8 @@ try {
         const selectedRowState = await rowControl.getAttribute('data-selection-state');
         let selectedHeaderState = null;
         let headerIndeterminate = null;
-        if (viewport.name === 'desktop' && controlCount > 1) {
-          const headerControl = controls.first();
+        const headerControl = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible:not([data-selection-scope="row"])').first();
+        if (viewport.name === 'desktop' && await headerControl.count() === 1) {
           selectedHeaderState = await headerControl.getAttribute('data-selection-state');
           headerIndeterminate = await headerControl.locator('input[type="checkbox"]').evaluate((input) => input.indeterminate);
         }
@@ -209,8 +207,8 @@ try {
           { timeout: 15000 },
         );
         const restoredRowState = await rowControl.getAttribute('data-selection-state');
-        const restoredHeaderState = viewport.name === 'desktop' && controlCount > 1
-          ? await controls.first().getAttribute('data-selection-state')
+        const restoredHeaderState = viewport.name === 'desktop' && await headerControl.count() === 1
+          ? await headerControl.getAttribute('data-selection-state')
           : null;
         collectionSelectionEvidence = {
           controlCount, ariaLabel, touchTarget, focusContained, initialRowState, selectedRowState,

@@ -86,3 +86,10 @@
 @media (prefers-reduced-motion: reduce) {
   .collection-selection-control__indicator { transition: none; }
 }
+
+@media (max-width: 768px) {
+  .collection-selection-control {
+    width: var(--sc-touch-target-min);
+    height: var(--sc-touch-target-min);
+  }
+}

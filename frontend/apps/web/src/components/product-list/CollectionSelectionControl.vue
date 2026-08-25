@@ -5,6 +5,7 @@
     data-semantic-component="CollectionSelectionControl"
     :data-selection-state="presentation.state"
     :data-selection-interactive="presentation.interactive"
+    :data-selection-scope="scope"
     @click.stop
   >
     <input
@@ -29,10 +30,12 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   label: string;
   size?: 'table' | 'touch';
+  scope?: 'row' | 'page' | 'group';
 }>(), {
   indeterminate: false,
   disabled: false,
   size: 'table',
+  scope: 'row',
 });
 
 const emit = defineEmits<{ change: [checked: boolean] }>();
