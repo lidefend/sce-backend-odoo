@@ -30,6 +30,70 @@ async function loginPage(page) {
   await page.locator('.layout-shell').waitFor({ timeout: 45000 });
 }
 
+async function waitForStableProductSurface(page) {
+  await page.waitForFunction(() => {
+    const pendingForm = document.querySelector('[data-workspace-primary-content][aria-busy="true"]');
+    const pendingCollection = document.querySelector('.product-loading-shell[aria-busy="true"]');
+    return !pendingForm && !pendingCollection;
+  }, undefined, { timeout: 45000 });
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
+}
+
+function isContractV2Response(response) {
+  if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
+  try {
+    return JSON.parse(response.request().postData() || '{}').intent === 'ui.contract.v2';
+  } catch {
+    return false;
+  }
+}
+
+function summarizeContractH1(payload) {
+  const rows = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    const type = String(value.type || value.kind || '').toLowerCase();
+    if (type === 'h1') {
+      const children = ['children', 'nodes', 'items'].flatMap((key) => Array.isArray(value[key]) ? value[key] : []);
+      rows.push({
+        label: String(value.string || value.label || value.title || ''),
+        fields: children
+          .filter((child) => child && typeof child === 'object' && String(child.type || child.kind || '').toLowerCase() === 'field')
+          .map((child) => String(child.name || child.field || '')).filter(Boolean),
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return rows.slice(0, 8);
+}
+
+function summarizeContractSelections(payload) {
+  const rows = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value.selection) && value.selection.length) {
+      rows.push({
+        name: String(value.name || value.field || value.fieldCode || ''),
+        selection: value.selection.slice(0, 20),
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return rows.slice(0, 80);
+}
+
 try {
   for (const viewport of [{ name: 'desktop', width: 1440, height: 960 }, { name: 'mobile', width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
@@ -63,9 +127,22 @@ try {
       await companySearch.fill('');
     }
     for (const target of routes) {
+      let contractH1Nodes = [];
+      let contractSelections = [];
+      const contractResponse = /^\/(?:a|r|f)\//.test(target.path)
+        ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
+        : null;
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      if (contractResponse) {
+        const response = await contractResponse;
+        if (!response.ok()) throw new Error(`contract request failed: ${response.status()} ${target.path}`);
+        const contractPayload = await response.json();
+        contractH1Nodes = summarizeContractH1(contractPayload);
+        contractSelections = summarizeContractSelections(contractPayload);
+      }
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
+      await waitForStableProductSurface(page);
       const result = await page.evaluate(() => {
         const root = document.documentElement;
         const style = getComputedStyle(root);
@@ -75,9 +152,20 @@ try {
           primaryActions: document.querySelectorAll('[data-primary-action]:not([hidden]), .sc-btn-primary:not([hidden])').length,
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
+          nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
+          visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
+            .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
+            .map((element) => ({
+              label: element.textContent?.replace(/\s+/g, ' ').trim() || '',
+              actionKey: element.getAttribute('data-action-key') || '',
+              actionRef: element.getAttribute('data-action-ref') || '',
+              backendIdentity: element.getAttribute('data-backend-identity') || '',
+            }))
+            .filter((entry) => entry.label)
+            .slice(0, 80),
         };
       });
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: page.url(), ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: page.url(), contractH1Nodes, contractSelections, ...result });
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
     }
     report.routes.push({ viewport: viewport.name, errors });

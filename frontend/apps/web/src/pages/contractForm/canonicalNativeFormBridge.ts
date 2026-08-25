@@ -41,6 +41,33 @@ function text(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function favoriteActive(value: unknown): boolean {
+  return value === true || value === 1 || value === '1' || String(value ?? '').trim().toLowerCase() === 'true';
+}
+
+export function resolveCanonicalNativeFieldSchemas(
+  schemas: readonly FormSectionFieldSchema[],
+): FormSectionFieldSchema[] {
+  const favorite = schemas.find((field) => field.widget === 'boolean_favorite' || field.name === 'is_favorite');
+  const content = schemas.filter((field) => field !== favorite).map((field) => ({ ...field }));
+  if (!favorite || !content.length) return content;
+  const targetIndex = content.findIndex((field) => field.name === 'name');
+  const textIndex = content.findIndex((field) => ['char', 'text'].includes(text(field.type).toLowerCase()));
+  const index = targetIndex >= 0 ? targetIndex : textIndex >= 0 ? textIndex : 0;
+  const target = content[index];
+  content[index] = {
+    ...target,
+    favoriteToggle: {
+      name: favorite.name,
+      label: favorite.label || favorite.name,
+      active: favoriteActive(favorite.inputValue ?? favorite.value),
+      readonly: favorite.readonly,
+      descriptor: favorite.descriptor,
+    },
+  };
+  return content;
+}
+
 function isCollaborationNode(node: CanonicalFormNode): boolean {
   return ['chatter', 'activity'].includes(text(node.kind).toLowerCase());
 }
@@ -82,6 +109,10 @@ export function buildCanonicalNativeFormBridge(
 ): CanonicalNativeFormBridge {
   const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
   const actionsByIdentity = new Map<string, CanonicalFormAction>();
+  const headerActionIdentities = new Set(
+    renderModel.actionBar.map((action) => action.actionRef.backendIdentity).filter(Boolean),
+  );
+  const renderedBodyActionIdentities = new Set<string>();
 
   function mapNode(node: CanonicalFormNode): CanonicalNativeLayoutNode {
     if (text(node.kind).toLowerCase() === 'field' && node.fields.length === 1) {
@@ -89,12 +120,19 @@ export function buildCanonicalNativeFormBridge(
     }
     const rawKind = text(node.kind).toLowerCase() || 'container';
     const action = node.action;
+    const actionIdentity = text(action?.actionRef.backendIdentity);
     const kind = rawKind === 'button'
       ? 'button'
       : rawKind === 'widget'
         ? 'widget'
         : NATIVE_CONTAINER_KINDS.has(rawKind) ? rawKind : 'container';
-    if (action?.actionRef.backendIdentity) actionsByIdentity.set(action.actionRef.backendIdentity, action);
+    if (actionIdentity) actionsByIdentity.set(actionIdentity, action!);
+    const actionVisible = kind !== 'button' || !actionIdentity
+      ? true
+      : !headerActionIdentities.has(actionIdentity) && !renderedBodyActionIdentities.has(actionIdentity);
+    if (kind === 'button' && actionIdentity && node.visible && actionVisible) {
+      renderedBodyActionIdentities.add(actionIdentity);
+    }
     const mappedChildren = [
       ...node.fields.map((field) => fieldNode(field, fieldSchemas)),
       ...node.children.filter((child) => !isCollaborationNode(child)).map(mapNode),
@@ -114,7 +152,7 @@ export function buildCanonicalNativeFormBridge(
       cols: node.columns,
       columns: node.columns,
       widget: node.nativeWidget,
-      visible: node.visible && (kind !== 'button' || Boolean(action)),
+      visible: node.visible && (kind !== 'button' || Boolean(action)) && actionVisible,
       attributes: {
         ...node.attributes,
         class: text(node.attributes.class),
@@ -142,10 +180,10 @@ export function buildCanonicalNativeFormBridge(
     primaryNodes: renderModel.zones.primary.map(mapNode),
     subordinateNodes: renderModel.zones.subordinate.filter((node) => !isCollaborationNode(node)).map(mapNode),
     fieldSchemasForNodes(nodes) {
-      return nodes.flatMap((node) => {
+      return resolveCanonicalNativeFieldSchemas(nodes.flatMap((node) => {
         const field = fieldSchemas.get(node);
         return field ? [field] : [];
-      });
+      }));
     },
     actionForPayload(payload) {
       return actionsByIdentity.get(actionIdentity(payload))?.actionRef || null;

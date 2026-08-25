@@ -512,6 +512,13 @@ class _TreeFormParserMixin:
                         "attributes": dict(el.attrib or {}),
                         "modifiers": occurrence_modifiers,
                     }
+                    selection = (field_info or {}).get("selection")
+                    if isinstance(selection, (list, tuple)):
+                        occurrence["selection"] = [
+                            [item[0], item[1]]
+                            for item in selection
+                            if isinstance(item, (list, tuple)) and len(item) >= 2
+                        ]
                     if occurrence["field_type"] == "monetary":
                         occurrence["currency_field"] = str(
                             (field_info or {}).get("currency_field") or "currency_id"

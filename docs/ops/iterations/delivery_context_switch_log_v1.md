@@ -6175,3 +6175,54 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `main` equals `origin/main`, and no product worktree remains. The program is
   complete and the next authority point is user acceptance, not another
   frontend productization write batch.
+
+## Product rendering detail convergence v1 — topic start (2026-08-26)
+
+- Branch / baseline: `feature/p0-product-rendering-detail-convergence-v1` /
+  `fcd76d2078c54e41a8598c5ebefb21020f62b8fd`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  canonical frontend rendering detail and interaction presentation /
+  `frontend/apps/web` Product Shell, page patterns and design tokens.
+- Reason: the completed Contract V2, Presenter, Registry and task/workspace
+  boundaries provide the correct product authority, while the daily-server
+  predecessor retains useful navigation density, focus feedback, toolbar
+  hierarchy and data-surface detailing. This topic ports those presentation
+  qualities into the current canonical components.
+- Why Here / Why Not Elsewhere: density, spacing, state feedback and responsive
+  composition belong to the generic frontend presentation layer. Legacy
+  Contract adapters, client-side permission decisions, route inference and
+  model-specific UI code are explicitly not restored.
+- Initial blast radius: `ProductSideNavigation`/`MenuTree`, collection surface
+  composition and workspace form presentation, with token-backed values and
+  existing semantic DOM identities retained. Contract V2, schemas, routing,
+  permissions, databases, fixtures and business-model semantics are excluded.
+- Reference snapshot: the daily-server frontend was copied read-only to
+  `/home/lidefend/workspace/sce-daily-frontend-snapshot-20260826`; environment
+  files, dependencies and built artifacts were excluded. The snapshot is an
+  analysis input only and is not a product-code authority.
+
+## Product rendering detail convergence v1 — candidate closeout (2026-08-26)
+
+- Candidate head before this evidence-only closeout: `093b9a1ab1053d360f37bc60518b1fe6f1b923e1`.
+- Delivered presentation changes: token-backed side-navigation focus and
+  density, distinct collection/task/workspace/dashboard geometry, canonical
+  Page Header hierarchy, authoritative native record titles, and canonical
+  backend action identities with duplicate occurrences removed by identity.
+- Delivered native detail closure: selection metadata is projected from the
+  effective native tree field descriptor into column occurrences, merged with
+  `columns_schema` by the generic frontend projection, and rendered as the
+  authorized display label. Unknown values remain visible as their raw value;
+  no model, field-name, action, menu or translated-label special case exists.
+- Static verification: navigation, Page Header, page-pattern, collection and
+  canonical-form units/guards pass; strict TypeScript passes; the governed
+  Frontend Quick and development static build pass.
+- Runtime verification: the payment list, payment task form and project
+  workspace pass at 1440px and 390px with one H1, one Page Header, no overflow,
+  zero browser errors and zero business mutations. The workspace retains its
+  authoritative record title, has no duplicate visible backend action identity,
+  and displays selection labels such as `中标` and `已提交` rather than storage
+  codes.
+- Review boundary: Contract schema, route semantics, permission decisions,
+  database records, fixtures and business-model productization remain
+  unchanged. The daily-server snapshot remains a read-only comparison input
+  and is not copied into the product tree.

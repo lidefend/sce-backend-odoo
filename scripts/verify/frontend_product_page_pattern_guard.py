@@ -18,9 +18,18 @@ def validate() -> list[str]:
     }
     for filename, (key, mode) in patterns.items():
         body = source(f"frontend/apps/web/src/components/product-page-patterns/{filename}")
-        for marker in (f'data-product-page-pattern="{key}"', f'data-presentation-mode="{mode}"', "<slot />"):
+        for marker in (
+            f'data-product-page-pattern="{key}"', f'data-presentation-mode="{mode}"', "<slot />",
+            "align-content: start", "container-type: inline-size",
+        ):
             if marker not in body:
                 failures.append(f"{filename} missing {marker}")
+    if "var(--sc-product-workspace-stack-gap)" not in source("frontend/apps/web/src/components/product-page-patterns/CollectionPattern.vue"):
+        failures.append("collection pattern must retain compact continuous-surface density")
+    if "var(--sc-content-form-max)" not in source("frontend/apps/web/src/components/product-page-patterns/TaskFormPattern.vue"):
+        failures.append("task pattern must retain the focused form width authority")
+    if "var(--sc-content-record-max)" not in source("frontend/apps/web/src/components/product-page-patterns/WorkspaceFormPattern.vue"):
+        failures.append("workspace pattern must retain the professional record width authority")
     driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     for marker in ('<TaskFormPattern v-if="renderModel.identity.presentationMode === \'task\'"', '<WorkspaceFormPattern v-else', ':render-profile="renderModel.identity.mode"'):
         if marker not in driver:

@@ -206,6 +206,7 @@
             <button
               v-for="(buttonNode, buttonIndex) in visibleActionButtons(node)"
               :key="nodeKey(buttonNode, buttonIndex)"
+              v-bind="nativeActionEvidenceAttributes(buttonNode)"
               type="button"
               :class="nativeActionButtonClass(buttonNode)"
               :disabled="nativeActionDisabled(buttonNode)"
@@ -228,6 +229,7 @@
                 <button
                   v-for="(buttonNode, buttonIndex) in overflowActionButtons(node)"
                   :key="`more-${nodeKey(buttonNode, buttonIndex)}`"
+                  v-bind="nativeActionEvidenceAttributes(buttonNode)"
                   type="button"
                   class="native-action-more-item"
                   role="menuitem"
@@ -330,6 +332,7 @@
 
       <div v-else-if="nodeType(node) === 'button'" :class="nativeActionsClass(node)">
         <button
+          v-bind="nativeActionEvidenceAttributes(node)"
           type="button"
           :class="nativeActionButtonClass(node)"
           :disabled="nativeActionDisabled(node)"
@@ -714,6 +717,15 @@ function nativeActionDisabled(node: NativeFormLayoutNode) {
 
 function nativeActionTitle(node: NativeFormLayoutNode) {
   return String(nativeActionState(node).title || '').trim();
+}
+
+function nativeActionEvidenceAttributes(node: NativeFormLayoutNode) {
+  const action = nodeAction(node);
+  return {
+    'data-action-key': String(action.actionKey || action.key || '').trim() || undefined,
+    'data-action-ref': String(action.actionId || action.actionRef || '').trim() || undefined,
+    'data-backend-identity': String(action.backendIdentity || '').trim() || undefined,
+  };
 }
 
 function widgetName(node: NativeFormLayoutNode) {

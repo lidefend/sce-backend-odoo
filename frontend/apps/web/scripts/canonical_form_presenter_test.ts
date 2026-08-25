@@ -30,7 +30,10 @@ import {
 } from '../src/pages/contractForm/types';
 import { contractActionConfirmationPrompt } from '../src/pages/contractForm/actionContract';
 import { canonicalFormActionIconClass } from '../src/pages/contractForm/canonicalFormActionIcon';
-import { buildCanonicalNativeFormBridge } from '../src/pages/contractForm/canonicalNativeFormBridge';
+import {
+  buildCanonicalNativeFormBridge,
+  resolveCanonicalNativeFieldSchemas,
+} from '../src/pages/contractForm/canonicalNativeFormBridge';
 import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtils';
 import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor';
 import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
@@ -802,6 +805,26 @@ assert.equal(canonicalNodeHasContent(bodyActionNode!), true);
 assert.deepEqual(bodyActionModel.actionBar.map((action) => action.key), ['action_submit']);
 const nativeBridge = buildCanonicalNativeFormBridge(bodyActionModel);
 assert.deepEqual(
+  resolveCanonicalNativeFieldSchemas([
+    {
+      key: 'field.is_favorite', name: 'is_favorite', label: 'Favorite', type: 'boolean', widget: 'boolean_favorite',
+      required: false, readonly: false, inputValue: false,
+    },
+    {
+      key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+      inputValue: 'Canonical record title',
+    },
+  ]),
+  [{
+    key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+    inputValue: 'Canonical record title',
+    favoriteToggle: {
+      name: 'is_favorite', label: 'Favorite', active: false, readonly: false, descriptor: undefined,
+    },
+  }],
+  'canonical native title projection must decorate the textual title with favorite state instead of rendering the boolean as H1',
+);
+assert.deepEqual(
   nativeBridge.subordinateNodes.map((node) => node.type),
   ['notebook', 'container'],
   'canonical native bridge must keep notebook/attachment structure while collaboration stays in its governed panel',
@@ -825,6 +848,19 @@ assert.deepEqual(
   'canonical button status must remain authoritative when the native renderer asks for interaction state',
 );
 
+const duplicateBodyActionSnapshot = structuredClone(bodyActionSnapshot);
+duplicateBodyActionSnapshot.layoutContract.containerTree[0].children.push(structuredClone(
+  duplicateBodyActionSnapshot.layoutContract.containerTree[0].children.at(-1)!,
+));
+const duplicateBodyActionBridge = buildCanonicalNativeFormBridge(
+  presentContractV2Form(createContractV2Store(duplicateBodyActionSnapshot), 'readonly'),
+);
+assert.equal(
+  duplicateBodyActionBridge.primaryNodes[0].children?.filter((node) => node.type === 'button' && node.visible).length,
+  1,
+  'the canonical native bridge must render one visible body occurrence for one backend action identity',
+);
+
 const nativeOccurrenceActionSnapshot = structuredClone(snapshot());
 nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'button.native.submit', containerType: 'button', type: 'button', title: 'Submit Native', span: 24,
@@ -839,6 +875,11 @@ assert.equal(
   nativeOccurrenceModel.zones.primary[0].children.find((node) => node.nodeId === 'button.native.submit')?.action?.actionRef.backendIdentity,
   'button:object:action_submit',
   'native snake-case occurrence identity must resolve to the canonical action rule',
+);
+assert.equal(
+  buildCanonicalNativeFormBridge(nativeOccurrenceModel).primaryNodes[0].children?.find((node) => node.type === 'button')?.visible,
+  false,
+  'an action already promoted to the canonical header must not remain visible as a duplicate native body occurrence',
 );
 assert.deepEqual(presentContractV2Form(store, 'edit'), model, 'presenter must be deterministic');
 

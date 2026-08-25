@@ -11,5 +11,12 @@ resolveProductPagePatternModel({ key: 'dashboard', presentationMode: 'dashboard'
 </script>
 
 <style scoped>
-.product-page-pattern--dashboard { display:grid; gap:var(--sc-page-section-gap); min-width:0; }
+.product-page-pattern--dashboard {
+  display: grid;
+  align-content: start;
+  gap: var(--sc-page-section-gap);
+  min-width: 0;
+  width: 100%;
+  container-type: inline-size;
+}
 </style>

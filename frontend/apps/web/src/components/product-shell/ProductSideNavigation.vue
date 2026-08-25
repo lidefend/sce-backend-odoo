@@ -52,7 +52,8 @@ const emit = defineEmits<{
 <style scoped>
 .product-side-navigation {
   display: grid;
-  gap: var(--sc-space-3, 12px);
+  grid-template-rows: max-content minmax(0, 1fr);
+  gap: var(--sc-nav-row-gap);
   min-height: 0;
 }
 
@@ -72,11 +73,35 @@ const emit = defineEmits<{
 
 .product-side-navigation__search :deep(.sc-input) {
   width: 100%;
+  min-height: 38px;
   padding-left: 34px;
+  border-color: var(--sc-app-border);
+  border-radius: var(--sc-component-input-radius);
+  background: color-mix(in srgb, var(--sc-app-panel) 86%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 6%, transparent);
+  transition:
+    border-color var(--sc-motion-fast) ease,
+    box-shadow var(--sc-motion-fast) ease,
+    background-color var(--sc-motion-fast) ease;
+}
+
+.product-side-navigation__search :deep(.sc-input:hover) {
+  border-color: var(--sc-app-border-strong);
+  background: var(--sc-app-panel);
+}
+
+.product-side-navigation__search :deep(.sc-input:focus) {
+  border-color: var(--sc-semantic-surface-interactive);
+  outline: 3px solid var(--sc-app-focus-ring);
+  outline-offset: 0;
+  background: var(--sc-app-panel);
 }
 
 .product-side-navigation__tree {
   min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .sr-only {
