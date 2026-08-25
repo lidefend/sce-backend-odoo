@@ -524,6 +524,10 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
   if (value === false || value === null || value === undefined) return '';
   if (ttype === 'date') return toDateInputValue(value);
   if (ttype === 'datetime') return toDatetimeInputValue(value);
+  if (ttype === 'selection') {
+    const option = (column.selection || []).find(([key]) => String(key) === String(value));
+    if (option) return String(option[1]);
+  }
   return String(value ?? '');
 }
 

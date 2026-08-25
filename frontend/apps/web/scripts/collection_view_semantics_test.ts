@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   collectOne2manyDraftValidationFromRows,
+  one2manyColumnDisplayValue,
   one2manyColumnsFromSubview,
   one2manyRowActionsFromSubview,
   resolveOne2manyRowColumnBehavior,
@@ -98,6 +99,12 @@ assert.deepEqual(inlineOccurrenceColumns.map((column) => ({
   { key: '/form/field[1]/tree[1]/field[2]', name: 'partner_id', label: 'Delivery Partner', readonly: true },
 ]);
 assert.equal(one2manyColumnsFromSubview({ tree: { columns: [], column_occurrences: inlineNativeSubview.tree.column_occurrences } }, () => null).length, 0);
+const selectionColumn = {
+  name: 'state', label: '状态', ttype: 'selection', required: false,
+  selection: [['draft', '草稿'], ['won', '已中标']] as Array<[string, string]>,
+};
+assert.equal(one2manyColumnDisplayValue(selectionColumn, 'won'), '已中标');
+assert.equal(one2manyColumnDisplayValue(selectionColumn, 'unknown'), 'unknown');
 const dynamicColumn = {
   name: 'note', label: '说明', ttype: 'char', required: false,
   modifiers: {
