@@ -24,6 +24,8 @@ class MergePolicyGateContractTests(unittest.TestCase):
         for check in ("public_guard", "professional_authorization", "professional_quality_gate", "frontend_release_gate"):
             self.assertIn(check, self.workflow)
         self.assertIn(".head_sha == $sha", self.workflow)
+        self.assertIn("sort_by(.id) | last // empty", self.workflow)
+        self.assertNotIn('test "$count" = 1', self.workflow)
         self.assertIn("full check failed", self.workflow)
 
     def test_ruleset_requires_only_the_aggregate_without_bypass(self) -> None:

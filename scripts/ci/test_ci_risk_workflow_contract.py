@@ -39,6 +39,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("name: merge_policy_gate", aggregate)
         self.assertIn("needs: [fast, full]", aggregate)
         self.assertIn("Wait for exact-head full checks", aggregate)
+        self.assertIn("sort_by(.id) | last // empty", aggregate)
+        self.assertNotIn('test "$count" = 1', aggregate)
         self.assertNotIn("continue-on-error:", aggregate)
 
     def test_candidate_checks_run_once_per_explicit_candidate_head(self) -> None:

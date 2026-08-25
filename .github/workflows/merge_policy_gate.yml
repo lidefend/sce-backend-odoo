@@ -75,11 +75,10 @@ jobs:
             checks="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100")"
             pending=0
             for check in "${required[@]}"; do
-              matches="$(jq --arg name "$check" --arg sha "$HEAD_SHA" '[.check_runs[] | select(.name == $name and .head_sha == $sha)]' <<<"$checks")"
-              count="$(jq 'length' <<<"$matches")"
-              test "$count" = 1 || { pending=1; continue; }
-              status="$(jq -r '.[0].status' <<<"$matches")"
-              conclusion="$(jq -r '.[0].conclusion // empty' <<<"$matches")"
+              latest="$(jq --arg name "$check" --arg sha "$HEAD_SHA" '[.check_runs[] | select(.name == $name and .head_sha == $sha)] | sort_by(.id) | last // empty' <<<"$checks")"
+              test -n "$latest" || { pending=1; continue; }
+              status="$(jq -r '.status' <<<"$latest")"
+              conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"
               test "$status" = completed || { pending=1; continue; }
               test "$conclusion" = success || { echo "full check failed: $check" >&2; exit 1; }
             done
