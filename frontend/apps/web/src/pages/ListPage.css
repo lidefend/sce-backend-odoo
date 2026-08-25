@@ -404,36 +404,6 @@
   font-size: 13px;
 }
 
-.summary-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-}
-
-.summary-card {
-  border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
-  background: var(--sc-app-panel);
-  padding: 10px;
-}
-
-.summary-label {
-  margin: 0;
-  font-size: 12px;
-  color: var(--sc-app-text-secondary);
-}
-
-.summary-value {
-  margin: 6px 0 0;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.summary-card.tone-danger { background: var(--sc-app-danger-bg); border-color: var(--sc-app-danger-border); color: var(--sc-app-danger-text); }
-.summary-card.tone-warning { background: var(--sc-app-warning-bg); border-color: var(--sc-app-warning-border); color: var(--sc-app-warning-text); }
-.summary-card.tone-success { background: var(--sc-app-success-bg); border-color: var(--sc-app-success-border); color: var(--sc-app-success-text); }
-.summary-card.tone-info { background: var(--sc-app-info-bg); border-color: var(--sc-app-info-border); color: var(--sc-app-info-text); }
-
 .grouped-table {
   display: grid;
   gap: 12px;
