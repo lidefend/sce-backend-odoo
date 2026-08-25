@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "quality_safety",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_safety_issue",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_safety_issue",
+    "smart_construction_core.menu_sc_product_quality_acceptance_v1"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 2,
+    "model_count": 2,
+    "ready_surface_count": 2,
+    "readable_fallback_count": 0,
+    "structural_form_count": 2,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 684,
+      "menuXmlid": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
+      "menuName": "质量验收",
+      "actionId": 865,
+      "actionXmlid": "smart_construction_core.action_sc_product_quality_acceptance_v1",
+      "actionName": "质量验收",
+      "model": "sc.quality.acceptance",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_quality_acceptance_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_quality_acceptance_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 525,
+      "menuXmlid": "smart_construction_core.menu_sc_safety_issue",
+      "menuName": "安全检查",
+      "actionId": 680,
+      "actionXmlid": "smart_construction_core.action_sc_safety_issue",
+      "actionName": "安全问题闭环",
+      "model": "sc.safety.issue",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_project_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_construction_management_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_safety_issue",
+            "groups": [
+              "smart_construction_core.group_sc_cap_project_manager",
+              "smart_construction_core.group_sc_cap_project_read",
+              "smart_construction_core.group_sc_cap_project_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_project_manager",
+          "smart_construction_core.group_sc_cap_project_read",
+          "smart_construction_core.group_sc_cap_project_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_safety_issue_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_safety_issue_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}

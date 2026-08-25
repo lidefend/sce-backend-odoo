@@ -5870,3 +5870,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   fail-closed risk classification and protected-main rules are unchanged.
 - Rollback: revert this governance batch to restore automatic CI on every PR
   synchronization. Product runtime and database state are unaffected.
+
+## Frontend system professionalization — Phase 10 quality and safety (2026-08-25)
+
+- Branch / baseline: `feature/p1-quality-safety-domain-rollout-v1` /
+  `d8e1f3f5f646a70b423fc983192fe619457499f2`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard product plus one P0 identity-carrier correction / quality-safety
+  direct-entry rollout / `smart_construction_core` and `smart_core` Contract V2
+  native view projection.
+- Reason: the current safety-issue and quality-acceptance entries require
+  explicit task presentation. Their action/view identities were previously
+  implicit, so the later form-structure selector could see only an unscoped
+  generated workspace contract. The action-bound native form identity is now
+  explicit and preserved through the generic source carrier.
+- Why Here / Why Not Elsewhere: construction task sections and exact actions
+  belong to P1. Preserving an already resolved native view identity and mapping
+  x2many user relations to relation components are generic P0 responsibilities;
+  the frontend does not infer model, label, action or permission semantics.
+- Blast radius / validation: two quality-safety actions and form views, generic
+  native view identity propagation, and generic many2many component selection.
+  The governed journey proves first-route edit, task presentation, one save
+  action, no readonly transition, finance-role denial, zero browser errors,
+  zero mutations and unchanged business fingerprint.
+- Rollback: revert the quality-safety task contracts/action-view bindings and
+  the two generic Contract V2 corrections. The entries return to workspace
+  presentation; no data repair is required.
