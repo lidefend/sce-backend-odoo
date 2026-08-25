@@ -114,7 +114,9 @@ def markdown(snapshot: dict[str, object], title: str = "Project Domain Frontend 
             for item in snapshot["gaps"]
         )
     else:
-        lines.append("No P0/P1 frontend rollout gaps were detected for the formal project-center entries.")
+        lines.append(
+            f"No P0/P1 frontend rollout gaps were detected for the formal {snapshot.get('domain', 'business')}-center entries."
+        )
     lines.extend(
         [
             "",

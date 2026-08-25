@@ -86,10 +86,13 @@ class TestFrontendContractDomainRollout(unittest.TestCase):
         }
         snapshot = reporter.normalized_snapshot(payload)
         self.assertNotIn("database", snapshot)
+        rendered = reporter.markdown(snapshot, "Contract Domain Frontend Rollout v1")
         self.assertIn(
             "# Contract Domain Frontend Rollout v1",
-            reporter.markdown(snapshot, "Contract Domain Frontend Rollout v1"),
+            rendered,
         )
+        self.assertIn("formal contract-center entries", rendered)
+        self.assertNotIn("project-center", rendered)
 
 
 if __name__ == "__main__":

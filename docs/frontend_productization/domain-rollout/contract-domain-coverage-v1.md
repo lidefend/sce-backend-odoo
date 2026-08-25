@@ -28,7 +28,7 @@ Demo, customer overlays, and user-specific visibility are deliberately excluded.
 
 ## Gap classification
 
-No P0/P1 frontend rollout gaps were detected for the formal project-center entries.
+No P0/P1 frontend rollout gaps were detected for the formal contract-center entries.
 
 ## Acceptance routing
 
