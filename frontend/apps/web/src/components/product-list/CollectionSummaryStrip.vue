@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-export type CollectionSummaryTone = 'neutral' | 'danger' | 'warning' | 'success' | 'info';
+import { resolveCollectionSummaryTone } from '../../app/presentation/collectionSummaryPresentation';
 
 export type CollectionSummaryItem = {
   key: string;
@@ -34,14 +34,7 @@ defineProps<{
   items: readonly CollectionSummaryItem[];
 }>();
 
-const allowedTones = new Set<CollectionSummaryTone>(['neutral', 'danger', 'warning', 'success', 'info']);
-
-function resolveTone(value: string | undefined): CollectionSummaryTone {
-  const normalized = String(value || '').trim();
-  return allowedTones.has(normalized as CollectionSummaryTone)
-    ? normalized as CollectionSummaryTone
-    : 'neutral';
-}
+const resolveTone = resolveCollectionSummaryTone;
 </script>
 
 <style scoped src="./CollectionSummaryStrip.css"></style>
