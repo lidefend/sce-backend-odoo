@@ -61,7 +61,7 @@ def validate(
         "collectionSummaryEvidence",
         "authorityItems",
         "JSON.stringify(domItems) === JSON.stringify(expectedItems)",
-        "summaryFixtureApplied",
+        "bootSummaryFixtureApplied",
         "applyFirstContractSummaryFixture",
         "normalizeSummaryTone",
         "data-summary-key",

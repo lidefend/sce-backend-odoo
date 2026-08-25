@@ -205,7 +205,27 @@ try {
       const method = String(body?.params?.method || body.method || '');
       if (/(^|\.)(create|write|unlink|execute_button|upload)(\.|$)/.test(intent) || /^(create|write|unlink|web_save|action_)/.test(method)) report.mutationCount += 1;
     });
+    const bootSummaryFixtureTarget = routes.find((target) => Array.isArray(target.summaryFixture));
+    let bootSummaryFixtureApplied = false;
+    let bootSummaryItems = [];
+    const bootContractRoutePattern = '**/api/v1/intent';
+    const bootContractRouteHandler = async (route) => {
+      const request = route.request();
+      let body = {};
+      try { body = JSON.parse(request.postData() || '{}'); } catch {}
+      if (request.method() !== 'POST' || body.intent !== 'system.init') {
+        await route.continue();
+        return;
+      }
+      const response = await route.fetch();
+      const payload = await response.json();
+      bootSummaryFixtureApplied = applyFirstContractSummaryFixture(payload, bootSummaryFixtureTarget.summaryFixture);
+      bootSummaryItems = summarizeContractSummaryItems(payload);
+      await route.fulfill({ response, json: payload });
+    };
+    if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     await loginPage(page);
+    if (bootSummaryFixtureTarget) await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
     if (viewport.name === 'desktop') {
       const companyTrigger = page.getByRole('button', { name: '公司空间：切换公司' });
       await companyTrigger.click();
@@ -223,22 +243,6 @@ try {
     }
     for (const target of routes) {
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
-      let summaryFixtureApplied = false;
-      const contractRoutePattern = '**/api/v1/intent';
-      const contractRouteHandler = async (route) => {
-        const request = route.request();
-        let body = {};
-        try { body = JSON.parse(request.postData() || '{}'); } catch {}
-        if (request.method() !== 'POST' || body.intent !== 'ui.contract.v2') {
-          await route.continue();
-          return;
-        }
-        const response = await route.fetch();
-        const payload = await response.json();
-        summaryFixtureApplied = applyFirstContractSummaryFixture(payload, summaryFixture);
-        await route.fulfill({ response, json: payload });
-      };
-      if (summaryFixture) await page.route(contractRoutePattern, contractRouteHandler);
       let contractH1Nodes = [];
       let contractSelections = [];
       let contractAggregates = [];
@@ -260,6 +264,7 @@ try {
         contractAggregates = summarizeContractAggregates(contractPayload);
         contractSummaryItems = summarizeContractSummaryItems(contractPayload);
       }
+      if (summaryFixture && bootSummaryFixtureTarget === target) contractSummaryItems = bootSummaryItems;
       if (listDataResponse) {
         const response = await listDataResponse;
         if (!response.ok()) throw new Error(`list data request failed: ${response.status()} ${target.path}`);
@@ -268,7 +273,6 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
-      if (summaryFixture) await page.unroute(contractRoutePattern, contractRouteHandler);
       const result = await page.evaluate(() => {
         const root = document.documentElement;
         const style = getComputedStyle(root);
@@ -316,10 +320,10 @@ try {
           expectedItems,
           ownerCount,
           domItems,
-          fixtureApplied: summaryFixture ? summaryFixtureApplied : null,
+          fixtureApplied: summaryFixture ? bootSummaryFixtureApplied : null,
           pass: JSON.stringify(domItems) === JSON.stringify(expectedItems)
             && (contractSummaryItems.length > 0 ? ownerCount === 1 : ownerCount === 0)
-            && (!summaryFixture || summaryFixtureApplied),
+            && (!summaryFixture || bootSummaryFixtureApplied),
         };
       }
       if (target.exerciseCollectionSelection === true) {
