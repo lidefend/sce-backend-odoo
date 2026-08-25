@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4049`
+- Scanned files: `4050`
 - Files requiring split plan: `44`
 - Files above warning threshold: `77`
 
@@ -30,7 +30,7 @@ Generated from repository source files. This report is informational during the 
 | 2464 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2442 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2418 | Python source | `addons/smart_core/delivery/menu_service.py` |
-| 2317 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2299 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2171 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2167 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2076 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
@@ -161,7 +161,7 @@ Generated from repository source files. This report is informational during the 
 | 2464 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2442 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 2418 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
-| 2317 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2299 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2171 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2167 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2076 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
