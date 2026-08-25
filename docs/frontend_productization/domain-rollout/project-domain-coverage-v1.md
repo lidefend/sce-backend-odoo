@@ -55,6 +55,6 @@ No P0/P1 frontend rollout gaps were detected for the formal project-center entri
 
 ## Acceptance routing
 
-- Primary journey: project ledger opens through its formal action/menu and preserves workspace form authority.
-- Security counterexample: a project-read user cannot gain manager-only project lifecycle authority.
+- Primary journey: a formal project entry preserves its resolved action/menu and form authority.
+- Security counterexample: an unauthorized user cannot gain entry or write authority.
 - Any future unregistered `smart_*` view class fails this audit closed.

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "frontend_project_domain_rollout.v1",
+  "schemaVersion": "frontend_domain_rollout.v1",
   "status": "PASS",
   "domain": "project",
   "rootMenuXmlid": "smart_construction_core.menu_sc_project_center",
