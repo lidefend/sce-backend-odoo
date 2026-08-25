@@ -42,6 +42,18 @@ function one2manyColumnLabel(value: unknown, fallback: string) {
   return fallback === 'display_name' || fallback === 'name' ? '名称' : fallback;
 }
 
+function one2manySelectionOptions(value: unknown): Array<[string, string]> | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const options = value.flatMap((item): Array<[string, string]> => {
+    if (Array.isArray(item) && item.length >= 2) return [[String(item[0]), String(item[1])]];
+    if (!item || typeof item !== 'object') return [];
+    const row = item as Record<string, unknown>;
+    if (row.value === undefined || row.label === undefined) return [];
+    return [[String(row.value), String(row.label)]];
+  });
+  return options.length ? options : undefined;
+}
+
 export function one2manyColumnsFromSubview(
   subview: unknown,
   resolveDescriptor: (column: string) => FieldDescriptor | null | undefined,
@@ -54,7 +66,8 @@ export function one2manyColumnsFromSubview(
     : {};
   const occurrences = treeRecord.column_occurrences;
   const businessColumns = Array.isArray(treeRecord.columns) ? treeRecord.columns : [];
-  const businessColumnsByName = new Map(businessColumns.flatMap((item) => {
+  const schemaColumns = Array.isArray(treeRecord.columns_schema) ? treeRecord.columns_schema : [];
+  const businessColumnsByName = new Map([...businessColumns, ...schemaColumns].flatMap((item) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
     const row = item as Record<string, unknown>;
     const name = String(row.name || '').trim();
@@ -78,11 +91,11 @@ export function one2manyColumnsFromSubview(
         const ttype = fieldType(descriptor) || 'char';
         out.push({
           name: normalized,
-          label: one2manyColumnLabel(descriptor?.string, normalized),
-          ttype,
-          required: Boolean(descriptor?.required),
-          readonly: Boolean(descriptor?.readonly),
-          selection: Array.isArray(descriptor?.selection) ? descriptor?.selection : undefined,
+          label: one2manyColumnLabel(businessColumnsByName.get(normalized)?.label || businessColumnsByName.get(normalized)?.string || descriptor?.string, normalized),
+          ttype: String(businessColumnsByName.get(normalized)?.ttype || businessColumnsByName.get(normalized)?.type || ttype),
+          required: Boolean(businessColumnsByName.get(normalized)?.required ?? descriptor?.required),
+          readonly: Boolean(businessColumnsByName.get(normalized)?.readonly ?? descriptor?.readonly),
+          selection: one2manySelectionOptions(businessColumnsByName.get(normalized)?.selection || descriptor?.selection),
         });
         return;
       }
@@ -121,9 +134,7 @@ export function one2manyColumnsFromSubview(
         occurrenceIndex: occurrenceIndex > 0 ? occurrenceIndex : undefined,
         modifiers: Object.keys(modifiers).length ? modifiers : undefined,
         relationActiveActions: Object.keys(relationActions).length ? relationActions : undefined,
-        selection: Array.isArray(row.selection)
-          ? row.selection as Array<[string, string]>
-          : (Array.isArray(descriptor?.selection) ? descriptor?.selection : undefined),
+        selection: one2manySelectionOptions(row.selection || businessColumn.selection || descriptor?.selection),
       });
     });
   }

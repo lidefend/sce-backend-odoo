@@ -105,6 +105,17 @@ const selectionColumn = {
 };
 assert.equal(one2manyColumnDisplayValue(selectionColumn, 'won'), '已中标');
 assert.equal(one2manyColumnDisplayValue(selectionColumn, 'unknown'), 'unknown');
+const schemaSelectionColumns = one2manyColumnsFromSubview({ tree: {
+  columns: ['state'],
+  columns_schema: [{ name: 'state', label: '状态', type: 'selection', selection: [
+    { value: 'submitted', label: '已提交' }, { value: 'won', label: '中标' },
+  ] }],
+} }, () => null);
+assert.deepEqual(schemaSelectionColumns[0], {
+  name: 'state', label: '状态', ttype: 'selection', required: false, readonly: false,
+  selection: [['submitted', '已提交'], ['won', '中标']],
+});
+assert.equal(one2manyColumnDisplayValue(schemaSelectionColumns[0], 'submitted'), '已提交');
 const dynamicColumn = {
   name: 'note', label: '说明', ttype: 'char', required: false,
   modifiers: {
