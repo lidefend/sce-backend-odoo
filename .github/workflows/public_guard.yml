@@ -70,6 +70,8 @@ jobs:
           scripts/ci/test_ci_risk_classifier.py
           scripts/ci/test_ci_risk_workflow_contract.py
           scripts/ci/test_merge_policy_gate.py
+          scripts/ci/select_authoritative_workflow_run.py
+          scripts/ci/test_select_authoritative_workflow_run.py
           scripts/ci/frontend_professional_extension_guard.py
           scripts/ci/test_frontend_professional_extension_guard.py
           scripts/release/frontend_release_evidence.py
@@ -84,6 +86,7 @@ jobs:
           python3 scripts/ci/test_ci_risk_classifier.py
           python3 scripts/ci/test_ci_risk_workflow_contract.py
           python3 scripts/ci/test_merge_policy_gate.py
+          python3 scripts/ci/test_select_authoritative_workflow_run.py
           python3 scripts/ci/test_frontend_professional_extension_guard.py
           python3 scripts/ci/frontend_professional_extension_guard.py
           python3 scripts/verify/test_frontend_release_evidence_bundle.py

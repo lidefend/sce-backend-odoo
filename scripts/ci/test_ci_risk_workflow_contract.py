@@ -39,6 +39,9 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("name: merge_policy_gate", aggregate)
         self.assertIn("needs: [fast, full]", aggregate)
         self.assertIn("Wait for exact-head full checks", aggregate)
+        self.assertIn("select_authoritative_workflow_run.py", aggregate)
+        self.assertIn("actions/workflows/${workflow}/runs", aggregate)
+        self.assertNotIn('test "$count" = 1', aggregate)
         self.assertNotIn("continue-on-error:", aggregate)
 
     def test_candidate_checks_run_once_per_explicit_candidate_head(self) -> None:
@@ -66,6 +69,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("invalid_pr_base", dispatch)
         self.assertIn("pr_head_changed_before_dispatch", dispatch)
         self.assertIn("gh label create ci:candidate", dispatch)
+        self.assertIn("--force", dispatch)
         self.assertIn("--remove-label ci:candidate", dispatch)
         self.assertIn("--add-label ci:candidate", dispatch)
 
