@@ -130,6 +130,9 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("isContractV2Response", browser)
         self.assertIn("response.request().postData()", browser)
         self.assertIn("response.ok()", browser)
+        self.assertIn("summarizeContractH1", browser)
+        self.assertIn("contractH1Nodes", browser)
+        self.assertIn("nativeTitle", browser)
         self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":
