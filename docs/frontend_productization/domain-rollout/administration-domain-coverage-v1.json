@@ -1,0 +1,458 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "administration",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_hr_admin_center"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 8,
+    "model_count": 6,
+    "ready_surface_count": 8,
+    "readable_fallback_count": 0,
+    "structural_form_count": 8,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 355,
+      "menuXmlid": "smart_construction_core.menu_sc_certificate_registration",
+      "menuName": "证书管理",
+      "actionId": 664,
+      "actionXmlid": "smart_construction_core.action_sc_certificate_registration",
+      "actionName": "证照登记",
+      "model": "sc.document.admin.document",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_certificate_registration",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin",
+          "smart_construction_core.group_sc_cap_business_initiator"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_policy_document_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_document_admin_document_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 426,
+      "menuXmlid": "smart_construction_core.menu_sc_organization_department",
+      "menuName": "部门管理",
+      "actionId": 731,
+      "actionXmlid": "smart_construction_core.action_sc_organization_department",
+      "actionName": "组织架构",
+      "model": "hr.department",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_organization_department",
+            "groups": [
+              "smart_construction_core.group_sc_cap_data_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_data_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_organization_department_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_organization_department_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 671,
+      "menuXmlid": "smart_construction_core.menu_sc_payroll_management",
+      "menuName": "工资薪酬",
+      "actionId": 856,
+      "actionXmlid": "smart_construction_core.action_sc_payroll_management",
+      "actionName": "工资薪酬",
+      "model": "sc.hr.payroll.document",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_payroll_management",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin",
+          "smart_construction_core.group_sc_cap_business_initiator"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_hr_payroll_document_formal_manager_salary_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_hr_payroll_document_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 703,
+      "menuXmlid": "smart_construction_core.menu_sc_product_job_management_v1",
+      "menuName": "岗位管理",
+      "actionId": 881,
+      "actionXmlid": "smart_construction_core.action_sc_product_job_management_v1",
+      "actionName": "岗位管理",
+      "model": "hr.job",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_job_management_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_product_job_tree_v1",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_product_job_form_v1",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 705,
+      "menuXmlid": "smart_construction_core.menu_sc_product_office_asset_v1",
+      "menuName": "办公资产",
+      "actionId": 883,
+      "actionXmlid": "smart_construction_core.action_sc_product_office_asset_v1",
+      "actionName": "办公资产",
+      "model": "sc.office.asset",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_office_asset_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_office_asset_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_office_asset_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 706,
+      "menuXmlid": "smart_construction_core.menu_sc_product_policy_document_v1",
+      "menuName": "制度文件",
+      "actionId": 860,
+      "actionXmlid": "smart_construction_core.action_sc_product_policy_document_v1",
+      "actionName": "制度文件",
+      "model": "sc.document.admin.document",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_policy_document_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_policy_document_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_document_admin_document_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 704,
+      "menuXmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
+      "menuName": "社保公积",
+      "actionId": 882,
+      "actionXmlid": "smart_construction_core.action_sc_product_social_fund_v1",
+      "actionName": "社保公积",
+      "model": "sc.hr.payroll.document",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_hr_payroll_document_formal_manager_salary_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_hr_payroll_document_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 429,
+      "menuXmlid": "smart_construction_core.menu_sc_runtime_user_management",
+      "menuName": "人员档案",
+      "actionId": 734,
+      "actionXmlid": "smart_construction_core.action_sc_runtime_user_management",
+      "actionName": "用户账号与权限",
+      "model": "res.users",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_hr_admin_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_construction_core.group_sc_cap_business_initiator"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_runtime_user_management",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_config_admin",
+              "smart_core.group_smart_core_admin"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_config_admin",
+          "smart_core.group_smart_core_admin"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_runtime_user_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_runtime_user_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}
