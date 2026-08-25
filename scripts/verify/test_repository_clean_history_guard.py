@@ -37,7 +37,7 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.write("README.md", "clean product\n")
-        self.commit("initial clean root")
+        self.base = self.commit("initial clean root")
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
@@ -93,6 +93,58 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         result = self.run_guard()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("reachable_scan=public_refs", result.stdout)
+
+    def test_trusted_base_scans_only_candidate_delta(self) -> None:
+        self.write("frontend/change.ts", "export const clean = true;\n")
+        self.commit("add clean candidate delta")
+        result = self.run_guard("--trusted-base", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("reachable_scan=trusted_base_incremental", result.stdout)
+
+    def test_trusted_base_rejects_new_secret_material(self) -> None:
+        self.write("frontend/unsafe.ts", "token = 'ghp_" + "A" * 36 + "'\n")
+        self.commit("add unsafe candidate delta")
+        result = self.run_guard("--trusted-base", self.base)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SECRET_MATERIAL", result.stderr)
+
+    def test_trusted_base_rejects_invalid_or_unavailable_identity(self) -> None:
+        for value in ("abc123", "f" * 40):
+            with self.subTest(value=value):
+                result = self.run_guard("--trusted-base", value)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("TRUSTED_BASE_INVALID", result.stderr)
+
+        tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
+        unrelated = self.git(
+            "-c",
+            "user.name=Guard Test",
+            "-c",
+            "user.email=guard@example.invalid",
+            "commit-tree",
+            tree,
+            "-m",
+            "unrelated trusted base",
+        ).stdout.strip()
+        result = self.run_guard("--trusted-base", unrelated)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("trusted base must be an ancestor", result.stderr)
+
+    def test_trusted_base_authority_change_falls_back_to_full_scan(self) -> None:
+        payload = json.loads(self.policy.read_text(encoding="utf-8"))
+        payload["forbidden_repository_tokens"].append("retired-product")
+        self.policy.write_text(json.dumps(payload) + "\n", encoding="utf-8")
+        self.commit("change history policy authority")
+        result = self.run_guard("--trusted-base", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("reachable_scan=public_refs_authority_fallback", result.stdout)
+
+    def test_trusted_base_checks_changed_path_when_blob_is_reused(self) -> None:
+        self.git("mv", "README.md", ".env.prod")
+        self.commit("reuse base blob under forbidden path")
+        result = self.run_guard("--trusted-base", self.base)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("TRACKED_RUNTIME_ENV_FILE", result.stderr)
 
     def test_detached_head_without_public_refs_remains_authoritative(self) -> None:
         candidate = self.git("rev-parse", "HEAD").stdout.strip()

@@ -43,6 +43,7 @@ echo "[branch.cleanup.feature] checking merged into main: ${branch}"
 git fetch origin main >/dev/null 2>&1 || true
 branch_sha="$(git rev-parse "${branch}")"
 main_sha="$(git rev-parse origin/main 2>/dev/null || git rev-parse main)"
+squash_merge_verified=0
 if git merge-base --is-ancestor "$branch_sha" "$main_sha"; then
   echo "[branch.cleanup.feature] merge-base check: ok"
 else
@@ -53,18 +54,20 @@ else
       echo "❌ gh not found; cannot verify merged PR for ${branch}" >&2
       exit 2
     fi
-    pr_count="$(gh pr list --state merged --search "head:${branch}" --json number --jq 'length')" || \
+    pr_count="$(gh pr list --state merged --head "$branch" --json headRefOid,number \
+      --jq --arg sha "$branch_sha" '[.[] | select(.headRefOid == $sha)] | length')" || \
       (echo "❌ gh pr list failed; network/auth required to verify merge for ${branch}" >&2; exit 2)
     if [[ "$pr_count" -lt 1 ]]; then
       echo "❌ branch not merged into main yet: ${branch}" >&2
       exit 2
     fi
-    echo "[branch.cleanup.feature] merged PR detected for ${branch}"
+    squash_merge_verified=1
+    echo "[branch.cleanup.feature] exact-head squash PR detected for ${branch}"
   fi
 fi
 
 delete_flag="-d"
-if [[ "${CLEANUP_FORCE:-0}" == "1" ]]; then
+if [[ "${CLEANUP_FORCE:-0}" == "1" || "$squash_merge_verified" == "1" ]]; then
   delete_flag="-D"
 fi
 echo "[branch.cleanup.feature] deleting local: ${branch} flag=${delete_flag}"
