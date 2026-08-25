@@ -218,6 +218,6 @@ workflow:
 
   next_action:
     phase: phase_9
-    task: contract_execution_component_profiles
-    prerequisite: phase_9_project_structure_merged_and_main_synced
-    do_not_start_in_parallel: [phase_9_payment_settlement, phase_10]
+    task: payment_settlement_component_profiles
+    prerequisite: phase_9_contract_execution_merged_and_main_synced
+    do_not_start_in_parallel: [phase_10]
