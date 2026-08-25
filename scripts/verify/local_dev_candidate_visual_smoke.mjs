@@ -130,6 +130,16 @@ try {
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
+          visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
+            .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
+            .map((element) => ({
+              label: element.textContent?.replace(/\s+/g, ' ').trim() || '',
+              actionKey: element.getAttribute('data-action-key') || '',
+              actionRef: element.getAttribute('data-action-ref') || '',
+              backendIdentity: element.getAttribute('data-backend-identity') || '',
+            }))
+            .filter((entry) => entry.label)
+            .slice(0, 80),
         };
       });
       report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: page.url(), contractH1Nodes, ...result });
