@@ -358,7 +358,6 @@ import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
 import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
 import { config } from '../config';
-import { BUSINESS_CONFIG_MODES } from '../app/businessConfigBoundaries';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
 import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore.js';
@@ -609,16 +608,11 @@ const compactRouteKeepsHeadline = computed(() => [
   'menu',
   'access-denied',
 ].includes(String(route.name || '')));
-const formDesignerKeepsHeadline = computed(() => (
-  String(route.name || '') === 'model-form'
-  && String(route.query.config_mode || '').trim() === BUSINESS_CONFIG_MODES.lowCode
-));
 const contentOwnsPageHeading = computed(() => route.meta?.pageHeadingOwner === 'content');
 const showTopbarHeadline = computed(
-  () => formDesignerKeepsHeadline.value
-    || (!contentOwnsPageHeading.value
-      && !businessRouteUsesCompactTopbar.value
-      && (!useMinimalTopbar.value || compactRouteKeepsHeadline.value)),
+  () => !contentOwnsPageHeading.value
+    && !businessRouteUsesCompactTopbar.value
+    && (!useMinimalTopbar.value || compactRouteKeepsHeadline.value),
 );
 const sidebarClass = computed(() =>
   activeLayout.value.sidebar === 'scroll' ? 'sidebar--scroll' : 'sidebar--fixed'

@@ -106,6 +106,8 @@ def validate() -> list[str]:
     for marker in ("contentOwnsPageHeading", "route.meta?.pageHeadingOwner === 'content'", "!contentOwnsPageHeading.value"):
         if marker not in app_shell:
             failures.append(f"AppShell does not consume route heading authority: {marker}")
+    if "formDesignerKeepsHeadline" in app_shell or "BUSINESS_CONFIG_MODES.lowCode" in app_shell:
+        failures.append("AppShell must not override content heading authority for low-code form routes")
     return failures
 
 
