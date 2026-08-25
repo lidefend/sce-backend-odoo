@@ -1,0 +1,157 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "payment",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_user_payment_apply",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_user_payment_apply",
+    "smart_construction_core.menu_sc_payment_execution"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 2,
+    "model_count": 2,
+    "ready_surface_count": 2,
+    "readable_fallback_count": 0,
+    "structural_form_count": 2,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 338,
+      "menuXmlid": "smart_construction_core.menu_sc_payment_execution",
+      "menuName": "实付登记",
+      "actionId": 835,
+      "actionXmlid": "smart_construction_core.action_sc_payment_execution_actual_outflow",
+      "actionName": "实付登记",
+      "model": "sc.payment.execution",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_finance_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user",
+              "smart_construction_core.group_sc_cap_settlement_manager",
+              "smart_construction_core.group_sc_cap_settlement_read",
+              "smart_construction_core.group_sc_cap_settlement_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_payment_execution",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_initiator",
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_sc_payment_execution_tree",
+          "jsClass": "smart_hierarchical_worksheet",
+          "semantic": "hierarchical_worksheet",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_sc_payment_execution_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 558,
+      "menuXmlid": "smart_construction_core.menu_sc_user_payment_apply",
+      "menuName": "付款申请",
+      "actionId": 807,
+      "actionXmlid": "smart_construction_core.action_payment_request_user_payment_apply",
+      "actionName": "付款申请",
+      "model": "payment.request",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_finance_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user",
+              "smart_construction_core.group_sc_cap_settlement_manager",
+              "smart_construction_core.group_sc_cap_settlement_read",
+              "smart_construction_core.group_sc_cap_settlement_user"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_user_payment_apply",
+            "groups": [
+              "smart_construction_core.group_sc_cap_business_initiator",
+              "smart_construction_core.group_sc_cap_finance_manager",
+              "smart_construction_core.group_sc_cap_finance_read",
+              "smart_construction_core.group_sc_cap_finance_user"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_business_initiator",
+          "smart_construction_core.group_sc_cap_finance_manager",
+          "smart_construction_core.group_sc_cap_finance_read",
+          "smart_construction_core.group_sc_cap_finance_user"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "smart_construction_core.view_payment_request_formal_payment_apply_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "smart_construction_core.view_payment_request_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}

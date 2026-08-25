@@ -256,17 +256,34 @@ def collect_domain(
     env,
     *,
     domain_key: str,
-    root_menu_xmlid: str,
+    root_menu_xmlid: str | None = None,
+    root_menu_xmlids: tuple[str, ...] = (),
     owner_module: str,
     expected_anchors: set[str],
 ) -> dict[str, object]:
-    root = env.ref(root_menu_xmlid)
+    resolved_root_xmlids = tuple(
+        dict.fromkeys(
+            item
+            for item in ((root_menu_xmlid,) if root_menu_xmlid else ()) + root_menu_xmlids
+            if item
+        )
+    )
+    if not resolved_root_xmlids:
+        raise ValueError("at least one formal root menu XMLID is required")
+    roots = [env.ref(xmlid) for xmlid in resolved_root_xmlids]
     Menu = env["ir.ui.menu"].sudo().with_context(active_test=False)
     actions: list[dict[str, object]] = []
     excluded: list[dict[str, str]] = []
     gaps: list[dict[str, str]] = []
 
-    for menu in Menu.browse(_active_descendant_ids(env, root.id)):
+    menu_ids = list(
+        dict.fromkeys(
+            menu_id
+            for root in roots
+            for menu_id in (root.id, *_active_descendant_ids(env, root.id))
+        )
+    )
+    for menu in Menu.browse(menu_ids):
         action = menu.action
         if not action or action._name != "ir.actions.act_window":
             continue
@@ -368,7 +385,8 @@ def collect_domain(
         "status": "PASS" if not gaps and actions else "FAIL",
         "domain": domain_key,
         "database": env.cr.dbname,
-        "root_menu_xmlid": root_menu_xmlid,
+        "root_menu_xmlid": root_menu_xmlid or resolved_root_xmlids[0],
+        "root_menu_xmlids": list(resolved_root_xmlids),
         "owner_module": owner_module,
         "summary": summary,
         "actions": actions,
