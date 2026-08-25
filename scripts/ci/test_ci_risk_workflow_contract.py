@@ -83,7 +83,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             "- name: Run standard frontend quality gate", 1
         )[1].split("- name: Clean isolated runner state", 1)[0]
         self.assertIn("if: env.PROFESSIONAL_MODE == 'standard_frontend'", standard_frontend_section)
-        self.assertIn("make verify.contract.lint verify.guard.registry", standard_frontend_section)
+        self.assertNotIn("verify.contract.lint", standard_frontend_section)
+        self.assertNotIn("verify.guard.registry", standard_frontend_section)
         self.assertIn("python3 scripts/ci/frontend_professional_extension_guard.py", standard_frontend_section)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
