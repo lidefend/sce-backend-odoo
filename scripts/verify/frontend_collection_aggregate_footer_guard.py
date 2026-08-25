@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
+FOOTER = ROOT / "frontend/apps/web/src/components/product-list/CollectionAggregateFooter.vue"
+FOOTER_CSS = ROOT / "frontend/apps/web/src/components/product-list/CollectionAggregateFooter.css"
+
+
+def validate(list_source: str | None = None, footer_source: str | None = None, css_source: str | None = None) -> list[str]:
+    list_text = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
+    footer_text = footer_source if footer_source is not None else FOOTER.read_text(encoding="utf-8")
+    css_text = css_source if css_source is not None else FOOTER_CSS.read_text(encoding="utf-8")
+    failures: list[str] = []
+
+    for marker in (
+        'data-semantic-component="CollectionAggregateFooter"',
+        ':data-aggregate-context="context"',
+        ':data-aggregate-scope="row.scope"',
+        ':data-aggregate-field="column.key"',
+        'scope="row"',
+        "rows: readonly CollectionAggregateRow[]",
+    ):
+        if marker not in footer_text:
+            failures.append(f"collection aggregate footer missing {marker}")
+
+    if list_text.count('<CollectionAggregateFooter') != 2:
+        failures.append("collection list must expose exactly flat and grouped aggregate adapters")
+    if '<tfoot' in list_text or 'footer-number-value' in list_text or 'footer-row-label' in list_text:
+        failures.append("collection list retains parallel aggregate footer presentation")
+    for marker in (
+        'context="flat"',
+        'context="group"',
+        ':columns="aggregateFooterColumns"',
+        ':rows="flatAggregateFooterRows"',
+        ':rows="groupAggregateFooterRows(group)"',
+    ):
+        if marker not in list_text:
+            failures.append(f"collection aggregate adapter missing {marker}")
+
+    for marker in (
+        "var(--sc-app-muted-bg)",
+        "var(--sc-app-info-bg)",
+        "var(--sc-app-border-strong)",
+        "font-variant-numeric: tabular-nums",
+        "[data-aggregate-scope='total']",
+    ):
+        if marker not in css_text:
+            failures.append(f"collection aggregate footer styles missing {marker}")
+    return failures
+
+
+if __name__ == "__main__":
+    errors = validate()
+    if errors:
+        print("[frontend_collection_aggregate_footer_guard] FAIL")
+        for error in errors:
+            print(f"- {error}")
+        raise SystemExit(1)
+    print("[frontend_collection_aggregate_footer_guard] PASS owners=1 adapters=2 scopes=page,total")
