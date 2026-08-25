@@ -398,6 +398,7 @@ try {
       let collectionSelectionEvidence = null;
       let collectionSummaryEvidence = null;
       let collectionMobileRecordEvidence = null;
+      let collectionKanbanEvidence = null;
       if (target.captureCollectionSummary === true) {
         const owners = page.locator('[data-semantic-component="CollectionSummaryStrip"]');
         const items = owners.locator('[data-summary-key]');
@@ -463,6 +464,28 @@ try {
             && row.facts.length > 0
             && row.facts.every((fact) => fact.key && fact.label && fact.value)
             && (row.selectionWidth === 0 || (row.selectionWidth >= 44 && row.selectionHeight >= 44))),
+        };
+      }
+      if (target.captureCollectionKanban === true) {
+        const lanes = await page.locator('[data-semantic-component="CollectionKanbanLane"]:visible').evaluateAll((nodes) => nodes.map((node) => ({
+          key: node.getAttribute('data-lane-key') || '',
+          label: node.querySelector('.collection-kanban-lane__header h3')?.textContent?.trim() || '',
+          cardCount: node.querySelectorAll('[data-semantic-component="CollectionKanbanRecordCard"]').length,
+        })));
+        const cards = await page.locator('[data-semantic-component="CollectionKanbanRecordCard"]:visible').evaluateAll((nodes) => nodes.map((node) => ({
+          recordKey: node.getAttribute('data-record-key') || '',
+          role: node.getAttribute('role') || '',
+          tabIndex: node.getAttribute('tabindex') || '',
+          title: node.querySelector('.collection-kanban-record-card__title')?.textContent?.trim() || '',
+          openAriaLabel: node.getAttribute('aria-label') || '',
+          factCount: node.querySelectorAll('[data-fact-key]').length,
+        })));
+        const paginationOwnerCount = await page.locator('[data-semantic-component="CollectionPaginationFooter"]:visible').count();
+        collectionKanbanEvidence = {
+          lanes, cards, paginationOwnerCount,
+          pass: lanes.length > 0 && cards.length > 0 && paginationOwnerCount === 1
+            && lanes.every((lane) => lane.key && lane.cardCount > 0)
+            && cards.every((card) => card.recordKey && card.title && card.role === 'button' && card.tabIndex === '0' && card.openAriaLabel.includes(card.title)),
         };
       }
       if (target.exerciseCollectionSelection === true) {
@@ -722,7 +745,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -738,6 +761,7 @@ for (const item of report.routes) {
   if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });
   if (item.collectionSummaryEvidence && !item.collectionSummaryEvidence.pass) failures.push({ name: item.name, collectionSummaryEvidence: item.collectionSummaryEvidence });
   if (item.collectionMobileRecordEvidence && !item.collectionMobileRecordEvidence.pass) failures.push({ name: item.name, collectionMobileRecordEvidence: item.collectionMobileRecordEvidence });
+  if (item.collectionKanbanEvidence && !item.collectionKanbanEvidence.pass) failures.push({ name: item.name, collectionKanbanEvidence: item.collectionKanbanEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });
