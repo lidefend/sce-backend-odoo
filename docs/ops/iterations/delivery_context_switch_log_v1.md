@@ -6013,3 +6013,31 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   batches.
 - Rollback: revert workbench evidence and workflow wiring. Product runtime,
   permissions, roles, fixtures and business data are unaffected.
+
+## Frontend system professionalization — Phase 10 finance center (2026-08-25)
+
+- Branch / baseline: `feature/p1-finance-center-domain-rollout-v1` /
+  `25d51517649cf036b435535fc4dae17f885dc967`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  standard product / formal finance-center rollout evidence /
+  `smart_construction_core` finance-center menus and actions.
+- Reason: the locked finance center exposes eleven formal entries across
+  receipts, payment requests and execution, expense claims, current accounts,
+  refunds and funding plans. Two identities had prior payment-domain evidence;
+  this batch supplies one complete center authority and presentation proof.
+- Why Here / Why Not Elsewhere: the menu/action/view identities and capability
+  groups are construction-standard finance semantics. Existing P0 navigation,
+  Contract V2, collection and page-pattern mechanisms already render them;
+  no model, route, renderer or permission special case is introduced.
+- Blast radius / validation: eleven exact menu/action pairs across seven
+  models. Runtime coverage proves nine ready collection surfaces, eleven
+  structural forms and zero fallback/fail-closed gaps. The governed receipt
+  list journey proves exact action/menu/model, one H1, one product header and
+  one professional table; a non-finance role is denied by navigation
+  authority. Browser errors and mutations are zero, and visible receipt
+  identity is unchanged.
+- Systemwide effect: exact covered surfaces increase from 61 to 70 of 88;
+  remaining unqualified surfaces decrease from 27 to 18 with zero runtime
+  authority gaps. Tax, accounting and reporting remain separate batches.
+- Rollback: revert finance evidence and workflow wiring. Product runtime,
+  permissions, roles, fixtures and business data are unaffected.
