@@ -211,17 +211,19 @@ try {
     const bootContractRoutePattern = '**/api/v1/intent';
     const bootContractRouteHandler = async (route) => {
       const request = route.request();
-      let body = {};
-      try { body = JSON.parse(request.postData() || '{}'); } catch {}
-      if (request.method() !== 'POST' || body.intent !== 'system.init') {
+      if (request.method() !== 'POST' || bootSummaryFixtureApplied) {
         await route.continue();
         return;
       }
       const response = await route.fetch();
-      const payload = await response.json();
-      bootSummaryFixtureApplied = applyFirstContractSummaryFixture(payload, bootSummaryFixtureTarget.summaryFixture);
-      bootSummaryItems = summarizeContractSummaryItems(payload);
-      await route.fulfill({ response, json: payload });
+      try {
+        const payload = await response.json();
+        bootSummaryFixtureApplied = applyFirstContractSummaryFixture(payload, bootSummaryFixtureTarget.summaryFixture);
+        bootSummaryItems = summarizeContractSummaryItems(payload);
+        await route.fulfill({ response, json: payload });
+      } catch {
+        await route.fulfill({ response });
+      }
     };
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     await loginPage(page);
