@@ -50,6 +50,16 @@ def validate(root: Path = ROOT) -> list[str]:
 
     if "<ProductSideNavigation" not in shell or ':nodes="filteredNavigation"' not in shell:
         errors.append("AppShell must render ProductSideNavigation from the canonical filtered model")
+
+    side_navigation = (root / "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue").read_text(encoding="utf-8")
+    for marker in (
+        "grid-template-rows: max-content minmax(0, 1fr)",
+        "var(--sc-nav-row-gap)",
+        "var(--sc-app-focus-ring)",
+        "overscroll-behavior: contain",
+    ):
+        if marker not in side_navigation:
+            errors.append(f"ProductSideNavigation must retain canonical rendering detail: {marker}")
     if (component_root / "PrimaryNavigation.vue").exists() or "<PrimaryNavigation" in shell:
         errors.append("legacy PrimaryNavigation must not remain as a parallel shell authority")
     if "session.navigationModel?.nodes" not in shell:

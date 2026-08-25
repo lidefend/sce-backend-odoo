@@ -6175,3 +6175,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `main` equals `origin/main`, and no product worktree remains. The program is
   complete and the next authority point is user acceptance, not another
   frontend productization write batch.
+
+## Product rendering detail convergence v1 — topic start (2026-08-26)
+
+- Branch / baseline: `feature/p0-product-rendering-detail-convergence-v1` /
+  `fcd76d2078c54e41a8598c5ebefb21020f62b8fd`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  canonical frontend rendering detail and interaction presentation /
+  `frontend/apps/web` Product Shell, page patterns and design tokens.
+- Reason: the completed Contract V2, Presenter, Registry and task/workspace
+  boundaries provide the correct product authority, while the daily-server
+  predecessor retains useful navigation density, focus feedback, toolbar
+  hierarchy and data-surface detailing. This topic ports those presentation
+  qualities into the current canonical components.
+- Why Here / Why Not Elsewhere: density, spacing, state feedback and responsive
+  composition belong to the generic frontend presentation layer. Legacy
+  Contract adapters, client-side permission decisions, route inference and
+  model-specific UI code are explicitly not restored.
+- Initial blast radius: `ProductSideNavigation`/`MenuTree`, collection surface
+  composition and workspace form presentation, with token-backed values and
+  existing semantic DOM identities retained. Contract V2, schemas, routing,
+  permissions, databases, fixtures and business-model semantics are excluded.
+- Reference snapshot: the daily-server frontend was copied read-only to
+  `/home/lidefend/workspace/sce-daily-frontend-snapshot-20260826`; environment
+  files, dependencies and built artifacts were excluded. The snapshot is an
+  analysis input only and is not a product-code authority.
