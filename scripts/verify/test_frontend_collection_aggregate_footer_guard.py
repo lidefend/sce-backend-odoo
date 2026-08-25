@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify.frontend_collection_aggregate_footer_guard import FOOTER, FOOTER_CSS, LIST_PAGE, VISUAL_SMOKE, validate
+from scripts.verify.frontend_collection_aggregate_footer_guard import FOOTER, FOOTER_CSS, LIST_PAGE, PRESENTATION, VISUAL_SMOKE, validate
 
 
 class CollectionAggregateFooterGuardTest(unittest.TestCase):
@@ -10,6 +10,7 @@ class CollectionAggregateFooterGuardTest(unittest.TestCase):
         cls.footer_source = FOOTER.read_text(encoding="utf-8")
         cls.css_source = FOOTER_CSS.read_text(encoding="utf-8")
         cls.visual_source = VISUAL_SMOKE.read_text(encoding="utf-8")
+        cls.presentation_source = PRESENTATION.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
         self.assertEqual(validate(self.list_source, self.footer_source, self.css_source), [])
@@ -42,6 +43,12 @@ class CollectionAggregateFooterGuardTest(unittest.TestCase):
         altered = self.visual_source.replace("misalignedNumericCells", "legacyAlignment")
         self.assertTrue(any("misalignedNumericCells" in item for item in validate(
             self.list_source, self.footer_source, self.css_source, altered,
+        )))
+
+    def test_missing_display_field_authority_fails(self):
+        altered = self.presentation_source.replace("aggregates[displayKey]", "aggregates[sourceKey]")
+        self.assertTrue(any("displayKey" in item for item in validate(
+            self.list_source, self.footer_source, self.css_source, self.visual_source, altered,
         )))
 
 

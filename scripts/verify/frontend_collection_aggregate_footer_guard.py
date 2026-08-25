@@ -3,16 +3,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
+PRESENTATION = ROOT / "frontend/apps/web/src/app/presentation/collectionAggregatePresentation.ts"
 FOOTER = ROOT / "frontend/apps/web/src/components/product-list/CollectionAggregateFooter.vue"
 FOOTER_CSS = ROOT / "frontend/apps/web/src/components/product-list/CollectionAggregateFooter.css"
 VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
 
 
-def validate(list_source: str | None = None, footer_source: str | None = None, css_source: str | None = None, visual_source: str | None = None) -> list[str]:
+def validate(list_source: str | None = None, footer_source: str | None = None, css_source: str | None = None, visual_source: str | None = None, presentation_source: str | None = None) -> list[str]:
     list_text = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     footer_text = footer_source if footer_source is not None else FOOTER.read_text(encoding="utf-8")
     css_text = css_source if css_source is not None else FOOTER_CSS.read_text(encoding="utf-8")
     visual_text = visual_source if visual_source is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
+    presentation_text = presentation_source if presentation_source is not None else PRESENTATION.read_text(encoding="utf-8")
     failures: list[str] = []
 
     for marker in (
@@ -61,6 +63,15 @@ def validate(list_source: str | None = None, footer_source: str | None = None, c
     ):
         if marker not in visual_text:
             failures.append(f"collection aggregate browser evidence missing {marker}")
+    for marker in (
+        "resolveCollectionAggregateEntry",
+        "aggregates[displayKey]",
+        "aggregates[sourceKey]",
+    ):
+        if marker not in presentation_text:
+            failures.append(f"collection aggregate authority resolver missing {marker}")
+    if list_text.count("resolveCollectionAggregateEntry(") != 4:
+        failures.append("flat and grouped page/total aggregates must share one authority resolver")
     return failures
 
 
