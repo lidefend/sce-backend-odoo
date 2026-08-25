@@ -86,6 +86,10 @@ try {
   await list.waitFor({ timeout: 45000 });
   const row = list.locator('tbody tr').filter({ hasText: String(target.record.name || '') }).first();
   await row.waitFor({ timeout: 45000 });
+  const navigationSequence = [];
+  primaryPage.on('framenavigated', (frame) => {
+    if (frame === primaryPage.mainFrame()) navigationSequence.push(frame.url());
+  });
   await row.click();
   await primaryPage.waitForURL((url) => (
     url.pathname === `/f/payment.request/${recordId}`
@@ -120,9 +124,14 @@ try {
       inputCount: node.querySelectorAll('input, textarea, select').length,
     }))),
   };
+  const businessNavigationSequence = navigationSequence.filter((value) => {
+    const pathname = new URL(value).pathname;
+    return pathname.startsWith('/r/payment.request/') || pathname.startsWith('/f/payment.request/');
+  });
   await primaryPage.screenshot({ path: path.join(outputDir, 'payment-first-edit-diagnostic.png'), fullPage: true });
   report.primary.result = {
-    firstUrl: primaryPage.url(), modelRights: findKey(formContract, 'modelRights'),
+    firstUrl: primaryPage.url(), navigationSequence, businessNavigationSequence,
+    modelRights: findKey(formContract, 'modelRights'),
     effectiveRecordCapabilities: findKey(formContract, 'effectiveRecordCapabilities'),
     effectiveRenderProfile: findKey(formContract, 'effectiveRenderProfile'),
     presentationMode: findKey(formContract, 'presentationMode'), editableFields, saveActions, editTransitions, h1, headers,
@@ -132,6 +141,12 @@ try {
   check(findKey(formContract, 'modelRights')?.write === true, 'payment model write authority is not true', report.primary.result);
   check(findKey(formContract, 'effectiveRecordCapabilities')?.write === true, 'payment record is not writable', report.primary.result);
   check(findKey(formContract, 'effectiveRenderProfile') === 'edit', 'payment form did not resolve edit profile', report.primary.result);
+  check(findKey(formContract, 'presentationMode') === 'task', 'payment handling form did not resolve task presentation', report.primary.result);
+  check(businessNavigationSequence.length > 0
+    && new URL(businessNavigationSequence[0]).pathname === `/f/payment.request/${recordId}`,
+  'payment handling did not use /f as its first business route', report.primary.result);
+  check(!businessNavigationSequence.some((value) => new URL(value).pathname.startsWith('/r/payment.request/')),
+    'payment handling passed through a readonly business route', report.primary.result);
   check(editableFields > 0, 'payment form has no editable business fields', report.primary.result);
   check(saveActions === 1, 'payment form must expose exactly one save action', report.primary.result);
   check(editTransitions === 0, 'payment form exposed a readonly-to-edit transition', report.primary.result);

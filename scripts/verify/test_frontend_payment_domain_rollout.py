@@ -25,6 +25,14 @@ reporter = load_module(
 
 
 class TestFrontendPaymentDomainRollout(unittest.TestCase):
+    def test_browser_verifier_requires_task_and_first_business_route_edit(self):
+        source = (ROOT / "scripts/verify/frontend_payment_domain_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("presentationMode') === 'task'", source)
+        self.assertIn("businessNavigationSequence[0]", source)
+        self.assertIn("passed through a readonly business route", source)
+
     def test_payment_domain_uses_current_formal_multi_root_authority(self):
         self.assertEqual(runtime.DOMAIN_KEY, "payment")
         self.assertEqual(
