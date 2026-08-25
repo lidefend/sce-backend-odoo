@@ -94,6 +94,31 @@ function summarizeContractSelections(payload) {
   return rows.slice(0, 80);
 }
 
+function summarizeContractSummaryItems(payload) {
+  const rows = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value.summary_items)) {
+      value.summary_items.forEach((item) => {
+        if (!item || typeof item !== 'object') return;
+        rows.push({
+          key: String(item.key || ''),
+          label: String(item.label || item.key || ''),
+          value: String(item.value ?? ''),
+          tone: String(item.tone || 'neutral'),
+        });
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return rows;
+}
+
 function summarizeContractAggregates(payload) {
   const rows = [];
   const visit = (value) => {
@@ -180,6 +205,7 @@ try {
       let contractH1Nodes = [];
       let contractSelections = [];
       let contractAggregates = [];
+      let contractSummaryItems = [];
       let listAggregates = [];
       const contractResponse = /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
@@ -195,6 +221,7 @@ try {
         contractH1Nodes = summarizeContractH1(contractPayload);
         contractSelections = summarizeContractSelections(contractPayload);
         contractAggregates = summarizeContractAggregates(contractPayload);
+        contractSummaryItems = summarizeContractSummaryItems(contractPayload);
       }
       if (listDataResponse) {
         const response = await listDataResponse;
@@ -229,6 +256,22 @@ try {
       const initialFinalUrl = page.url();
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       let collectionSelectionEvidence = null;
+      let collectionSummaryEvidence = null;
+      if (target.captureCollectionSummary === true) {
+        const owners = page.locator('[data-semantic-component="CollectionSummaryStrip"]');
+        const items = owners.locator('[data-summary-key]');
+        const domItems = await items.evaluateAll((nodes) => nodes.map((node) => ({
+          key: node.getAttribute('data-summary-key') || '',
+          tone: node.getAttribute('data-summary-tone') || '',
+        })));
+        collectionSummaryEvidence = {
+          authorityItems: contractSummaryItems,
+          ownerCount: await owners.count(),
+          domItems,
+          pass: domItems.length === contractSummaryItems.length
+            && (contractSummaryItems.length > 0 ? await owners.count() === 1 : await owners.count() === 0),
+        };
+      }
       if (target.exerciseCollectionSelection === true) {
         const controls = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
         const controlCount = await controls.count();
@@ -486,7 +529,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, listAggregates, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, collectionSummaryEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -500,6 +543,7 @@ const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded 
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });
+  if (item.collectionSummaryEvidence && !item.collectionSummaryEvidence.pass) failures.push({ name: item.name, collectionSummaryEvidence: item.collectionSummaryEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });

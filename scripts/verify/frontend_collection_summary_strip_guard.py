@@ -5,16 +5,19 @@ ROOT = Path(__file__).resolve().parents[2]
 LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
 SUMMARY = ROOT / "frontend/apps/web/src/components/product-list/CollectionSummaryStrip.vue"
 SUMMARY_CSS = ROOT / "frontend/apps/web/src/components/product-list/CollectionSummaryStrip.css"
+VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
 
 
 def validate(
     list_source: str | None = None,
     summary_source: str | None = None,
     css_source: str | None = None,
+    visual_source: str | None = None,
 ) -> list[str]:
     list_text = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     summary_text = summary_source if summary_source is not None else SUMMARY.read_text(encoding="utf-8")
     css_text = css_source if css_source is not None else SUMMARY_CSS.read_text(encoding="utf-8")
+    visual_text = visual_source if visual_source is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
     failures: list[str] = []
 
     for marker in (
@@ -52,6 +55,15 @@ def validate(
     ):
         if marker not in css_text:
             failures.append(f"collection summary strip styles missing {marker}")
+    for marker in (
+        "summarizeContractSummaryItems",
+        "captureCollectionSummary",
+        "collectionSummaryEvidence",
+        "authorityItems",
+        "data-summary-key",
+    ):
+        if marker not in visual_text:
+            failures.append(f"collection summary browser evidence missing {marker}")
     return failures
 
 

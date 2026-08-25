@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify.frontend_collection_summary_strip_guard import LIST_PAGE, SUMMARY, SUMMARY_CSS, validate
+from scripts.verify.frontend_collection_summary_strip_guard import LIST_PAGE, SUMMARY, SUMMARY_CSS, VISUAL_SMOKE, validate
 
 
 class CollectionSummaryStripGuardTest(unittest.TestCase):
@@ -9,6 +9,7 @@ class CollectionSummaryStripGuardTest(unittest.TestCase):
         cls.list_source = LIST_PAGE.read_text(encoding="utf-8")
         cls.summary_source = SUMMARY.read_text(encoding="utf-8")
         cls.css_source = SUMMARY_CSS.read_text(encoding="utf-8")
+        cls.visual_source = VISUAL_SMOKE.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
         self.assertEqual(validate(self.list_source, self.summary_source, self.css_source), [])
@@ -36,6 +37,12 @@ class CollectionSummaryStripGuardTest(unittest.TestCase):
     def test_mobile_single_column_fails(self):
         altered = self.css_source.replace("max-width: 420px", "max-width: 320px")
         self.assertTrue(any("420px" in item for item in validate(self.list_source, self.summary_source, altered)))
+
+    def test_missing_browser_authority_evidence_fails(self):
+        altered = self.visual_source.replace("authorityItems", "legacyItems")
+        self.assertTrue(any("authorityItems" in item for item in validate(
+            self.list_source, self.summary_source, self.css_source, altered,
+        )))
 
 
 if __name__ == "__main__":
