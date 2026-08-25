@@ -11,5 +11,12 @@ resolveProductPagePatternModel({ key: 'collection', presentationMode: 'collectio
 </script>
 
 <style scoped>
-.product-page-pattern--collection { display:grid; gap:var(--sc-page-section-gap); min-width:0; }
+.product-page-pattern--collection {
+  display: grid;
+  align-content: start;
+  gap: var(--sc-product-workspace-stack-gap);
+  min-width: 0;
+  width: 100%;
+  container-type: inline-size;
+}
 </style>

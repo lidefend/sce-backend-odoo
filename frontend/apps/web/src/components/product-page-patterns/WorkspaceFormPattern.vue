@@ -14,5 +14,13 @@ const model = computed(() => resolveProductPagePatternModel({ key: 'workspace-fo
 </script>
 
 <style scoped>
-.product-page-pattern--workspace { display:grid; gap:var(--sc-page-section-gap); min-width:0; }
+.product-page-pattern--workspace {
+  display: grid;
+  align-content: start;
+  gap: var(--sc-page-section-gap);
+  min-width: 0;
+  width: min(100%, var(--sc-content-record-max));
+  margin-inline: auto;
+  container-type: inline-size;
+}
 </style>
