@@ -121,7 +121,7 @@
         </template>
       </ListSurfaceHeader>
       <CollectionSummaryStrip
-        v-if="enableSummaryStrip"
+        v-if="enableSummaryStrip || summaryItems.length"
         class="summary-strip sc-product-summary-strip"
         :aria-label="uiLabel('list_summary', '列表摘要')"
         :items="summaryItems"
