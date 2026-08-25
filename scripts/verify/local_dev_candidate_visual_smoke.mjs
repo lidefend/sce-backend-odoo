@@ -235,7 +235,6 @@ try {
     };
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     await loginPage(page);
-    if (bootSummaryFixtureTarget) await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
     if (viewport.name === 'desktop') {
       const companyTrigger = page.getByRole('button', { name: '公司空间：切换公司' });
       await companyTrigger.click();
@@ -283,6 +282,10 @@ try {
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
+      if (bootSummaryFixtureTarget === target) {
+        while (bootSummaryRouteHandling) await new Promise((resolve) => setTimeout(resolve, 10));
+        await page.unroute(bootContractRoutePattern, bootContractRouteHandler);
+      }
       const result = await page.evaluate(() => {
         const root = document.documentElement;
         const style = getComputedStyle(root);
