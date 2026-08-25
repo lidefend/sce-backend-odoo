@@ -208,7 +208,7 @@ try {
     const bootSummaryFixtureTarget = routes.find((target) => Array.isArray(target.summaryFixture));
     let bootSummaryFixtureApplied = false;
     let bootSummaryItems = [];
-    const bootContractRoutePattern = '**/api/v1/intent';
+    const bootContractRoutePattern = '**/api/v1/**';
     const bootContractRouteHandler = async (route) => {
       const request = route.request();
       if (request.method() !== 'POST' || bootSummaryFixtureApplied) {
