@@ -6067,3 +6067,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   authority gaps. Accounting and reporting remain separate batches.
 - Rollback: revert tax evidence and workflow wiring. Product runtime,
   permissions, roles, fixtures and business data are unaffected.
+
+## Frontend system professionalization — Phase 10 accounting center (2026-08-25)
+
+- Branch / baseline: `feature/p1-accounting-center-domain-rollout-v1` /
+  `2958d30d8b55912975beb06a5898e5fc41b9617e`.
+- Formal Product Layer / Layer Target / Module: P1 construction-industry
+  standard product / formal accounting-center rollout evidence /
+  `smart_construction_core` accounting-center menus and actions.
+- Reason: the locked accounting center exposes three formal entries for
+  journals, analytic accounts and analytic distribution models. They require
+  one complete center authority and professional presentation proof.
+- Why Here / Why Not Elsewhere: these menu/action/view identities and
+  accounting capability groups are construction-standard semantics. Existing
+  P0 navigation, Contract V2 and collection mechanisms already render them;
+  no model, route, renderer, role or permission special case is introduced.
+- Blast radius / validation: three exact menu/action pairs across three
+  models. Runtime coverage proves three ready collection surfaces, three
+  structural forms and zero fallback/fail-closed gaps. The governed journal
+  journey proves exact action/menu/model, one H1, one product header and one
+  professional table; a finance-only role is denied by navigation authority.
+  Browser errors and mutations are zero, and visible journal identity is
+  unchanged.
+- Systemwide effect: exact covered surfaces increase from 79 to 82 of 88;
+  remaining unqualified surfaces decrease from 9 to 6 with zero runtime
+  authority gaps. Reporting remains a separate final domain batch.
+- Rollback: revert accounting evidence and workflow wiring. Product runtime,
+  permissions, roles, fixtures and business data are unaffected.

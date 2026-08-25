@@ -1,0 +1,184 @@
+{
+  "schemaVersion": "frontend_domain_rollout.v1",
+  "status": "PASS",
+  "domain": "accounting_center",
+  "rootMenuXmlid": "smart_construction_core.menu_sc_accounting_center",
+  "rootMenuXmlids": [
+    "smart_construction_core.menu_sc_accounting_center"
+  ],
+  "ownerModule": "smart_construction_core",
+  "excludedScopes": [
+    "demo_addons",
+    "external_customer_addons",
+    "user_specific_visibility"
+  ],
+  "summary": {
+    "action_count": 3,
+    "model_count": 3,
+    "ready_surface_count": 3,
+    "readable_fallback_count": 0,
+    "structural_form_count": 3,
+    "fail_closed_count": 0,
+    "excluded_count": 0,
+    "gap_count": 0
+  },
+  "actions": [
+    {
+      "menuId": 668,
+      "menuXmlid": "smart_construction_core.menu_sc_account_journal_foundation",
+      "menuName": "日记账",
+      "actionId": 853,
+      "actionXmlid": "smart_construction_core.action_sc_account_journal_foundation",
+      "actionName": "日记账",
+      "model": "account.journal",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_accounting_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_accounting_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_account_journal_foundation",
+            "groups": [
+              "smart_construction_core.group_sc_cap_accounting_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_accounting_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "account.view_account_journal_tree",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "account.view_account_journal_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 669,
+      "menuXmlid": "smart_construction_core.menu_sc_analytic_account_foundation",
+      "menuName": "分析账户",
+      "actionId": 854,
+      "actionXmlid": "smart_construction_core.action_sc_analytic_account_foundation",
+      "actionName": "分析账户",
+      "model": "account.analytic.account",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_accounting_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_accounting_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_analytic_account_foundation",
+            "groups": [
+              "smart_construction_core.group_sc_cap_accounting_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_accounting_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "analytic.view_account_analytic_account_list",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "analytic.view_account_analytic_account_form",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    },
+    {
+      "menuId": 670,
+      "menuXmlid": "smart_construction_core.menu_sc_analytic_distribution_foundation",
+      "menuName": "分析分配模型",
+      "actionId": 855,
+      "actionXmlid": "smart_construction_core.action_sc_analytic_distribution_foundation",
+      "actionName": "分析分配模型",
+      "model": "account.analytic.distribution.model",
+      "viewMode": "tree,form",
+      "authority": {
+        "semantics": "all_restricted_layers_must_match_one_group",
+        "menuChain": [
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_root",
+            "groups": []
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_accounting_center",
+            "groups": [
+              "smart_construction_core.group_sc_cap_accounting_read"
+            ]
+          },
+          {
+            "menuXmlid": "smart_construction_core.menu_sc_analytic_distribution_foundation",
+            "groups": [
+              "smart_construction_core.group_sc_cap_accounting_read"
+            ]
+          }
+        ],
+        "actionGroups": [
+          "smart_construction_core.group_sc_cap_accounting_read"
+        ]
+      },
+      "surfaces": [
+        {
+          "viewType": "tree",
+          "viewXmlid": "analytic.account_analytic_distribution_model_tree_view",
+          "jsClass": "",
+          "semantic": "table",
+          "readiness": "ready",
+          "reason": ""
+        },
+        {
+          "viewType": "form",
+          "viewXmlid": "analytic.account_analytic_distribution_model_form_view",
+          "jsClass": "",
+          "semantic": "form_structure",
+          "readiness": "structural",
+          "reason": ""
+        }
+      ]
+    }
+  ],
+  "gaps": []
+}
