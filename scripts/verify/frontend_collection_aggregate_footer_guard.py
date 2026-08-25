@@ -52,6 +52,9 @@ def validate(list_source: str | None = None, footer_source: str | None = None, c
     for marker in (
         "exerciseCollectionAggregate",
         "collectionAggregateEvidence",
+        "captureCollectionAggregate",
+        "contractAggregates",
+        "listAggregates",
         "data-aggregate-context",
         "data-aggregate-scope",
         "misalignedNumericCells",

@@ -94,6 +94,56 @@ function summarizeContractSelections(payload) {
   return rows.slice(0, 80);
 }
 
+function summarizeContractAggregates(payload) {
+  const rows = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    if (String(value.aggregate || '').toLowerCase() === 'sum') {
+      rows.push({
+        name: String(value.name || value.field || ''),
+        valueField: String(value.value_field || value.valueField || ''),
+        aggregationField: String(value.aggregation_field || value.aggregationField || ''),
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return rows.slice(0, 40);
+}
+
+function summarizeListAggregates(payload) {
+  const rows = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    if (value.aggregates && typeof value.aggregates === 'object' && !Array.isArray(value.aggregates)) {
+      for (const [field, aggregate] of Object.entries(value.aggregates)) {
+        rows.push({ field, aggregate });
+      }
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload);
+  return rows.slice(0, 40);
+}
+
+function isApiDataListResponse(response) {
+  if (!response.url().includes('/api/v1/intent') || response.request().method() !== 'POST') return false;
+  try {
+    const body = JSON.parse(response.request().postData() || '{}');
+    return body.intent === 'api.data' && body?.params?.op === 'list';
+  } catch {
+    return false;
+  }
+}
+
 try {
   for (const viewport of [{ name: 'desktop', width: 1440, height: 960 }, { name: 'mobile', width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, locale: 'zh-CN' });
@@ -129,8 +179,13 @@ try {
     for (const target of routes) {
       let contractH1Nodes = [];
       let contractSelections = [];
+      let contractAggregates = [];
+      let listAggregates = [];
       const contractResponse = /^\/(?:a|r|f)\//.test(target.path)
         ? page.waitForResponse(isContractV2Response, { timeout: 45000 })
+        : null;
+      const listDataResponse = target.captureCollectionAggregate === true
+        ? page.waitForResponse(isApiDataListResponse, { timeout: 45000 })
         : null;
       await page.goto(`${baseUrl}${target.path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       if (contractResponse) {
@@ -139,6 +194,12 @@ try {
         const contractPayload = await response.json();
         contractH1Nodes = summarizeContractH1(contractPayload);
         contractSelections = summarizeContractSelections(contractPayload);
+        contractAggregates = summarizeContractAggregates(contractPayload);
+      }
+      if (listDataResponse) {
+        const response = await listDataResponse;
+        if (!response.ok()) throw new Error(`list data request failed: ${response.status()} ${target.path}`);
+        listAggregates = summarizeListAggregates(await response.json());
       }
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
       await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
@@ -375,7 +436,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, collectionSelectionEvidence, collectionAggregateEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, listAggregates, collectionSelectionEvidence, collectionAggregateEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
