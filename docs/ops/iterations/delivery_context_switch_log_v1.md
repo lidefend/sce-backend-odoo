@@ -6279,8 +6279,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   projection data. The shared presentation layer only normalizes the closed
   visual tone vocabulary, with unknown values falling back to neutral; it does
   not calculate metrics, infer business meaning or inspect models/actions.
-- Blast radius / evidence: list summary rendering only. The action 807 runtime
-  sample currently carries zero `summary_items`; desktop and 390px evidence
-  proves the empty authority remains zero DOM owners/items, with no browser
-  errors, overflow or mutations. Contract, permissions, routes, list data and
-  database state are unchanged.
+- Blast radius / evidence: list summary rendering only. A managed read-only
+  action/scene fixture binds action 807 to its formal scene identity and injects
+  two `summary_items` into that scene-ready projection. Desktop and 390px each
+  render exactly one owner with exact key/label/value/tone values; an unknown
+  `critical` tone is safely projected as `neutral`. The unmodified action 807
+  empty-authority counterexample still renders zero owners/items. Both journeys
+  have zero browser errors, overflow and mutations. Contract schemas,
+  permissions, routes, list data and database state are unchanged.
