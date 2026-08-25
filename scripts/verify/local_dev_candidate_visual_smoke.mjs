@@ -290,7 +290,7 @@ try {
         const rows = footers.locator('[data-aggregate-scope]');
         const rowCount = await rows.count();
         const scopes = await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-scope') || ''));
-        const rowHeaderCount = await rows.locator('th[scope="row"]').count();
+        const rowHeaderCount = await rows.locator('th[scope="row"], [data-aggregate-row-label]').count();
         const numericCells = rows.locator('.collection-aggregate-number');
         const numericCellCount = await numericCells.count();
         const misalignedNumericCells = await numericCells.evaluateAll((nodes) => nodes.filter((node) => getComputedStyle(node).textAlign !== 'right').length);

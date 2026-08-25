@@ -28,8 +28,12 @@ class CollectionAggregateFooterGuardTest(unittest.TestCase):
         self.assertTrue(any("aggregate-scope" in item for item in validate(self.list_source, altered, self.css_source)))
 
     def test_missing_row_header_semantics_fails(self):
-        altered = self.footer_source.replace('scope="row"', '')
+        altered = self.footer_source.replace('scope="row"', '').replace('data-aggregate-row-label', '')
         self.assertTrue(any('scope="row"' in item for item in validate(self.list_source, altered, self.css_source)))
+
+    def test_missing_mobile_summary_adapter_fails(self):
+        altered = self.list_source.replace('layout="summary"', 'layout="table"')
+        self.assertTrue(any('layout="summary"' in item for item in validate(altered, self.footer_source, self.css_source)))
 
     def test_missing_total_tone_fails(self):
         altered = self.css_source.replace("[data-aggregate-scope='total']", ".legacy-total")

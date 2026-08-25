@@ -23,18 +23,21 @@ def validate(list_source: str | None = None, footer_source: str | None = None, c
         ':data-aggregate-scope="row.scope"',
         ':data-aggregate-field="column.key"',
         'scope="row"',
+        "data-aggregate-layout=\"summary\"",
+        "data-aggregate-row-label",
         "rows: readonly CollectionAggregateRow[]",
     ):
         if marker not in footer_text:
             failures.append(f"collection aggregate footer missing {marker}")
 
-    if list_text.count('<CollectionAggregateFooter') != 2:
-        failures.append("collection list must expose exactly flat and grouped aggregate adapters")
+    if list_text.count('<CollectionAggregateFooter') != 3:
+        failures.append("collection list must expose flat table, flat mobile and grouped aggregate adapters")
     if '<tfoot' in list_text or 'footer-number-value' in list_text or 'footer-row-label' in list_text:
         failures.append("collection list retains parallel aggregate footer presentation")
     for marker in (
         'context="flat"',
         'context="group"',
+        'layout="summary"',
         ':columns="aggregateFooterColumns"',
         ':rows="flatAggregateFooterRows"',
         ':rows="groupAggregateFooterRows(group)"',
@@ -82,4 +85,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_collection_aggregate_footer_guard] PASS owners=1 adapters=2 scopes=page,total")
+    print("[frontend_collection_aggregate_footer_guard] PASS owners=1 adapters=3 layouts=table,summary scopes=page,total")

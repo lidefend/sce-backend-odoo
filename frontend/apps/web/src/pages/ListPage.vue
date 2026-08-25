@@ -343,6 +343,15 @@
           </ScMobileRecordCard>
         </article>
       </section>
+      <CollectionAggregateFooter
+        v-if="!showGroupedRows"
+        class="mobile-aggregate-summary"
+        context="flat"
+        layout="summary"
+        :label-colspan="footerLabelColspan"
+        :columns="aggregateFooterColumns"
+        :rows="flatAggregateFooterRows"
+      />
       <ScDataTable
         v-if="!showGroupedRows"
         class="flat-table desktop-record-table"
@@ -1582,6 +1591,7 @@ const footerLabelColspan = computed(() => (showSelectionColumn.value ? 1 : 0)
   + (showRowNumberColumn.value ? 1 : 0) + footerLabelFieldCount.value);
 const aggregateFooterColumns = computed(() => footerValueColumns.value.map((field) => ({
   key: field,
+  label: columnLabel(field),
   numeric: isAggregateColumn(field),
   densityClass: columnDensityClass(field),
   style: columnWidthStyle(field),
