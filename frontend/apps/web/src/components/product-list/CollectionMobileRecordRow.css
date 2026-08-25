@@ -12,7 +12,7 @@
 
 .collection-mobile-record-row__selection {
   position: absolute;
-  z-index: 2;
+  z-index: var(--sc-z-content-raised);
   top: var(--sc-space-2xs);
   right: var(--sc-space-2xs);
   display: inline-flex;
