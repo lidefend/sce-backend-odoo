@@ -22,6 +22,8 @@
     :min="min"
     :max="max"
     :step="step"
+    :minlength="minLength"
+    :maxlength="maxLength"
     @update:model-value="onTDesignInput"
     @change="onTDesignChange"
     @focus="onTDesignFocus"
@@ -45,6 +47,8 @@
     :min="min"
     :max="max"
     :step="step"
+    :minlength="minLength"
+    :maxlength="maxLength"
     :placeholder="placeholder"
     :autocomplete="autocomplete"
     :aria-busy="loading || undefined"
@@ -82,6 +86,8 @@ const props = withDefaults(defineProps<{
   min?: string | number;
   max?: string | number;
   step?: string | number;
+  minLength?: number;
+  maxLength?: number;
 }>(), {
   modelValue: '',
   size: 'medium',
@@ -93,6 +99,8 @@ const props = withDefaults(defineProps<{
   min: undefined,
   max: undefined,
   step: undefined,
+  minLength: undefined,
+  maxLength: undefined,
 });
 
 const emit = defineEmits<{
@@ -116,6 +124,8 @@ const nativeProjection = computed(() => ({
     max: props.max,
     step: props.step,
     autocomplete: props.autocomplete,
+    minlength: props.minLength,
+    maxlength: props.maxLength,
   },
 }));
 
