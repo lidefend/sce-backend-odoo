@@ -106,9 +106,9 @@
               <span>{{ recordContextOptionLabel(option) }}</span>
               <small v-if="option.code">{{ option.code }}</small>
             </button>
-            <p v-if="recordContextSearching" class="record-context-empty">搜索中...</p>
-            <p v-else-if="recordContextError" class="record-context-empty">{{ recordContextError }}</p>
-            <p v-else-if="!recordContextOptions.length" class="record-context-empty">{{ recordContextEmptyText }}</p>
+            <ScInlineState v-if="recordContextSearching" class="record-context-empty" state="loading" label="搜索中..." />
+            <ScInlineState v-else-if="recordContextError" class="record-context-empty" state="error" :label="recordContextError" />
+            <ScInlineState v-else-if="!recordContextOptions.length" class="record-context-empty" state="empty" :label="recordContextEmptyText" />
           </div>
         </section>
 
