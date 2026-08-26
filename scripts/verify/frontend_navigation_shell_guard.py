@@ -28,6 +28,7 @@ def read(root: Path, relative: str) -> str:
 def validate(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     shell = read(root, "frontend/apps/web/src/layouts/AppShell.vue")
+    shell_style = read(root, "frontend/apps/web/src/layouts/AppShell.css")
     tree = read(root, "frontend/apps/web/src/components/MenuTree.vue")
     session = read(root, "frontend/apps/web/src/stores/session.ts")
     canonical = read(root, "frontend/apps/web/src/app/canonicalNavigation.ts")
@@ -60,6 +61,17 @@ def validate(root: Path = ROOT) -> list[str]:
     ):
         if marker not in side_navigation:
             errors.append(f"ProductSideNavigation must retain canonical rendering detail: {marker}")
+    for marker in (
+        ".shell :deep(.sidebar)",
+        "height: 100vh",
+        "overflow: hidden",
+        ".product-side-navigation__tree",
+        "overflow: auto",
+    ):
+        if marker not in (shell_style + "\n" + side_navigation):
+            errors.append(f"navigation shell lost bounded scroll ownership: {marker}")
+    if re.search(r"(?m)^\.sidebar\s*\{", shell_style):
+        errors.append("navigation drawer root styling bypasses the child-component deep boundary")
     if (component_root / "PrimaryNavigation.vue").exists() or "<PrimaryNavigation" in shell:
         errors.append("legacy PrimaryNavigation must not remain as a parallel shell authority")
     if "session.navigationModel?.nodes" not in shell:

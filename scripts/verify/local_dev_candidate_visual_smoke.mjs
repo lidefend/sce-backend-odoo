@@ -409,7 +409,8 @@ try {
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
-          primaryActions: document.querySelectorAll('[data-primary-action]:not([hidden]), .sc-btn-primary:not([hidden])').length,
+          primaryActions: [...document.querySelectorAll('[data-product-primary-action]')]
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null).length,
           presentationModes: [...new Set([...document.querySelectorAll('[data-product-page-pattern][data-presentation-mode]')].map((node) => node.getAttribute('data-presentation-mode')).filter(Boolean))],
           nativeStructureCount: document.querySelectorAll('[data-native-contract-structure]').length,
           nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] [role="tab"], [data-native-contract-structure] [data-container-kind="page"]').length,
@@ -443,6 +444,37 @@ try {
         };
       });
       const initialFinalUrl = page.url();
+      let sidebarScrollEvidence = null;
+      if (target.exerciseSidebarScroll === true && viewport.name === 'desktop') {
+        for (let round = 0; round < 6; round += 1) {
+          const collapsed = page.locator('#primary-sidebar button[aria-expanded="false"]:visible');
+          const count = await collapsed.count();
+          if (!count) break;
+          for (let index = count - 1; index >= 0; index -= 1) await collapsed.nth(index).click();
+        }
+        sidebarScrollEvidence = await page.evaluate(() => {
+          const sidebar = document.querySelector('#primary-sidebar');
+          const owner = document.querySelector('#primary-sidebar .product-side-navigation__tree');
+          if (!(sidebar instanceof HTMLElement) || !(owner instanceof HTMLElement)) return { pass: false, reason: 'scroll_owner_missing' };
+          const sidebarStyle = getComputedStyle(sidebar);
+          const ownerStyle = getComputedStyle(owner);
+          owner.scrollTop = owner.scrollHeight;
+          return {
+            viewportHeight: window.innerHeight,
+            sidebarHeight: sidebar.clientHeight,
+            sidebarDisplay: sidebarStyle.display,
+            ownerClientHeight: owner.clientHeight,
+            ownerScrollHeight: owner.scrollHeight,
+            ownerScrollTop: owner.scrollTop,
+            ownerOverflowY: ownerStyle.overflowY,
+            pass: sidebar.clientHeight <= window.innerHeight
+              && sidebarStyle.display === 'grid'
+              && ownerStyle.overflowY === 'auto'
+              && owner.scrollHeight > owner.clientHeight
+              && owner.scrollTop > 0,
+          };
+        });
+      }
       let nativeActionPresentationEvidence = null;
       if (target.exerciseNativeActionOverflow === true) {
         const smartActions = page.locator('[data-semantic-component="NativeSmartAction"]:visible');
@@ -986,7 +1018,7 @@ try {
           return { points, resizeHandles };
         })
         : null;
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, verticalLineEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, sidebarScrollEvidence, verticalLineEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -1019,6 +1051,7 @@ for (const item of report.routes) {
   if (item.path && item.expectedNativeNotebookPageCount !== null && item.nativeNotebookPageCount !== item.expectedNativeNotebookPageCount) {
     failures.push({ name: item.name, expectedNativeNotebookPageCount: item.expectedNativeNotebookPageCount, actualNativeNotebookPageCount: item.nativeNotebookPageCount });
   }
+  if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
 }
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });

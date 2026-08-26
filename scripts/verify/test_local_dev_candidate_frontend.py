@@ -153,6 +153,8 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("expectedPrimaryActions", browser)
         self.assertIn("expectedPresentationMode", browser)
         self.assertIn("expectedNativeNotebookPageCount", browser)
+        self.assertIn("exerciseSidebarScroll", browser)
+        self.assertIn("sidebarScrollEvidence", browser)
         self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":

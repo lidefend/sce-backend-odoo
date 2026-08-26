@@ -10,6 +10,7 @@ from scripts.verify.frontend_navigation_shell_guard import COMPONENTS, ROOT, val
 
 PATHS = (
     "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/src/layouts/AppShell.css",
     "frontend/apps/web/src/components/MenuTree.vue",
     "frontend/apps/web/src/stores/session.ts",
     "frontend/apps/web/src/app/canonicalNavigation.ts",
@@ -67,6 +68,13 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path = root / "addons/smart_core/handlers/system_init.py"
         path.write_text(path.read_text().replace("project_canonical_navigation(", "removed_projection("), encoding="utf-8")
         self.assertTrue(any("filter authority" in error for error in validate(root)))
+
+    def test_sidebar_child_root_must_keep_bounded_scroll_style(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/layouts/AppShell.css"
+        path.write_text(path.read_text().replace(".shell :deep(.sidebar)", ".sidebar"), encoding="utf-8")
+        self.assertTrue(any("deep boundary" in error for error in validate(root)))
 
 
 if __name__ == "__main__":

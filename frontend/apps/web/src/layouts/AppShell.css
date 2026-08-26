@@ -23,7 +23,7 @@
   padding: 8px 14px 14px;
 }
 
-.sidebar {
+.shell :deep(.sidebar) {
   box-sizing: border-box;
   padding: 0;
   display: grid;
@@ -47,7 +47,7 @@
   padding: 12px 14px;
 }
 
-.sidebar--scroll {
+.shell :deep(.sidebar--scroll) {
   overflow: hidden;
 }
 
@@ -262,7 +262,7 @@
 }
 
 .mobile-sidebar-close,
-.mobile-sidebar-backdrop {
+.shell :deep(.mobile-sidebar-backdrop) {
   display: none;
 }
 
@@ -1015,7 +1015,7 @@
     min-height: 100vh;
     overflow: hidden;
   }
-  .sidebar {
+  .shell :deep(.sidebar) {
     display: flex;
     position: fixed;
     z-index: 90;
@@ -1029,10 +1029,10 @@
     transform: translateX(-104%);
     transition: transform 180ms ease;
   }
-  .shell--mobile-sidebar-open .sidebar {
+  .shell--mobile-sidebar-open :deep(.sidebar) {
     transform: translateX(0);
   }
-  .mobile-sidebar-backdrop {
+  .shell :deep(.mobile-sidebar-backdrop) {
     display: block;
     position: fixed;
     z-index: 80;
@@ -1185,7 +1185,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .sidebar {
+  .shell :deep(.sidebar) {
     grid-template-columns: 48px minmax(0, 1fr);
     border-right-color: var(--sc-app-border);
     background:
