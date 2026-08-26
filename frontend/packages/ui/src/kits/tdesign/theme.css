@@ -299,7 +299,7 @@
 .sc-btn[data-appearance='relation-tag'] {
   min-height: var(--sc-component-relation-tag-height);
   border: 0;
-  border-radius: var(--sc-base-radius-xs);
+  border-radius: var(--sc-component-tag-radius);
   padding: var(--sc-component-relation-tag-padding-y) var(--sc-component-relation-tag-padding-x);
   background: var(--tag-bg, var(--sc-app-muted-bg));
   color: var(--sc-app-text-primary);
@@ -318,13 +318,13 @@
 .sc-btn[data-appearance='surface-tile'] small { color: var(--sc-app-text-secondary); }
 .sc-btn[data-appearance='outline-action'] {
   border: var(--sc-component-panel-border-width) solid var(--sc-app-border);
-  border-radius: var(--sc-base-radius-lg);
+  border-radius: var(--sc-component-button-radius);
   background: transparent;
   color: var(--sc-app-text-primary);
 }
 .sc-icon-button[data-appearance='outline-action'] { border: var(--sc-component-panel-border-width) solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); color: var(--sc-app-text-primary); }
 .sc-icon-button[data-appearance='column-handle'] { border: 0; background: transparent; color: var(--sc-app-text-muted); }
-.sc-icon-button[data-appearance='column-handle']::before { content: ""; position: absolute; top: 50%; left: var(--sc-component-table-column-handle-left); width: var(--sc-component-table-column-handle-width); height: var(--sc-component-table-column-handle-height); border-radius: var(--sc-base-radius-pill); background: radial-gradient(circle, var(--sc-app-text-secondary) var(--sc-component-table-column-handle-dot), transparent var(--sc-component-table-column-handle-clearance)) 0 0 / var(--sc-component-table-column-handle-pattern-x) var(--sc-component-table-column-handle-pattern-y) repeat-y; opacity: .45; transform: translateY(-50%); }
+.sc-icon-button[data-appearance='column-handle']::before { content: ""; position: absolute; top: 50%; left: var(--sc-component-table-column-handle-left); width: var(--sc-component-table-column-handle-width); height: var(--sc-component-table-column-handle-height); border-radius: var(--sc-component-badge-radius); background: radial-gradient(circle, var(--sc-app-text-secondary) var(--sc-component-table-column-handle-dot), transparent var(--sc-component-table-column-handle-clearance)) 0 0 / var(--sc-component-table-column-handle-pattern-x) var(--sc-component-table-column-handle-pattern-y) repeat-y; opacity: .45; transform: translateY(-50%); }
 .sc-icon-button[data-appearance='column-handle']:hover::before { background: radial-gradient(circle, var(--sc-app-info-text) var(--sc-component-table-column-handle-dot), transparent var(--sc-component-table-column-handle-clearance)) 0 0 / var(--sc-component-table-column-handle-pattern-x) var(--sc-component-table-column-handle-pattern-y) repeat-y; opacity: 1; }
 .sc-icon-button[data-appearance='activity-rail'] { width: var(--sc-component-shell-activity-item-size); height: var(--sc-component-shell-activity-item-size); border: 0; border-radius: var(--sc-component-shell-activity-item-radius); display: grid; place-items: center; background: transparent; color: var(--sc-app-text-secondary); transition: background-color var(--sc-motion-fast) ease, color var(--sc-motion-fast) ease; }
 .sc-icon-button[data-appearance='activity-rail']:hover:not(:disabled) { background: var(--sc-app-hover-bg); color: var(--sc-app-text-primary); }
