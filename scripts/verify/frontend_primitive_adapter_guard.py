@@ -15,7 +15,7 @@ OWNERSHIP = ROOT / "docs/frontend_productization/rendering-detail/rendering-surf
 
 PRIMITIVES = (
     "ScButton", "ScIconButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInputGroup", "ScLayout", "ScAside", "ScHeader", "ScContent", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
-    "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
+    "ScBadge", "ScStatusBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
     "ScActionBar", "ScAutoComplete", "ScNumberInput", "ScDatePicker", "ScUpload", "ScForm", "ScFormItem",
     "ScCard", "ScCollapse", "ScDisclosure", "ScProgress", "ScSkeleton", "ScDescriptions", "ScList", "ScTimeline",
     "ScSteps", "ScPagination", "ScSwitch", "ScTimePicker", "ScPopconfirm",
@@ -191,6 +191,16 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScTabs must delegate tab navigation and panels through the TDesign list driver")
     if "label: tabLabel(item)" not in tabs_text or "return (render: typeof h) => render('span'" not in tabs_text:
         errors.append("ScTabs must project the formal label prop as measurable semantic content")
+
+    status_badge_text = (design / "ScStatusBadge.vue").read_text(encoding="utf-8") if (design / "ScStatusBadge.vue").is_file() else ""
+    for marker in (
+        ':data-semantic-status="semantic"',
+        ".sc-status-badge[data-semantic-status='info']",
+        "color: var(--sc-app-info-text)",
+        "background-color: var(--sc-app-info-bg)",
+    ):
+        if marker not in status_badge_text:
+            errors.append(f"ScStatusBadge missing accessible semantic status projection: {marker}")
 
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
     if "<TDesignTextarea" not in textarea_text or "v-native-control-projection" not in textarea_text:

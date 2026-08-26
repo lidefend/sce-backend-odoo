@@ -825,7 +825,7 @@
     },
     {
       "category": "workflow",
-      "digest": "10c10e3b952ee3c4abc57ffddf3ee512b29fca91e19be9f68327b705f4bf5f7f",
+      "digest": "778827e169df9c72a3fc1f8b5b6a3cf446bc2aec05ab92c36fe05c72bd9a3a1c",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScStatusBadge.vue",
       "referenceNativeStyleSelectors": [],
@@ -2513,7 +2513,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "e39c561fdddbbbaa82264b9c3f58b39464cebc5587a0fc474da8914f83ed8154",
+  "currentInputDigest": "040a967c7e6dd6c2a1155d5e97f502ae96c220a2d487043e6ab541edd0cd3c09",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
