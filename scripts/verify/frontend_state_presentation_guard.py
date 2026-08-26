@@ -33,7 +33,7 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         if marker not in status:
             failures.append(f"status accessibility state missing: {marker}")
     tabs = values["tabs"]
-    for marker in ('role="tablist"', 'role="presentation"', 'role="tab"', ':aria-selected=', ':tabindex=', 'aria-keyshortcuts="Delete"', '@keydown="activateFromKeyboard'):
+    for marker in ('role="tablist"', 'role="presentation"', 'role="tab"', ':aria-selected=', ':tabindex=', 'aria-keyshortcuts="Delete"', '@keydown="activateFromKeyboard', "else emit('focus-exit')"):
         if marker not in tabs:
             failures.append(f"activity tabs accessibility contract missing: {marker}")
     if '<button class="activity-tab-close"' in tabs:

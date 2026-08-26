@@ -47,6 +47,9 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
     def test_activity_tabs_require_delete_shortcut(self):
         self.assertTrue(any("Delete" in error for error in validate(self.altered("tabs", 'aria-keyshortcuts="Delete"'))))
 
+    def test_activity_tabs_require_empty_set_focus_exit(self):
+        self.assertTrue(any("focus-exit" in error for error in validate(self.altered("tabs", "else emit('focus-exit')"))))
+
     def test_activity_tablist_rejects_nested_close_button(self):
         sources = self.altered("tabs", '<span\n          class="activity-tab-close"', '<button class="activity-tab-close"')
         self.assertTrue(any("non-tab close button" in error for error in validate(sources)))

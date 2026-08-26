@@ -28,7 +28,7 @@ const server = await createServer({
         import TodoList from '/src/components/page/blocks/BlockTodoList.vue';
         import RecordTable from '/src/components/page/blocks/BlockRecordTable.vue';
         import '/src/styles/design-system.css';
-        const state = reactive({ mode: 'loading', opened: '', retries: 0, activeTab: 'one', closedTabs: [], dashboardActions: [] });
+        const state = reactive({ mode: 'loading', opened: '', retries: 0, activeTab: 'one', closedTabs: [], focusExits: 0, dashboardActions: [] });
         window.stateDashboard = state;
         const labels = { eyebrow: '动态', countSuffix: '条', loading: '正在加载', unavailable: '动态不可用', record: '记录', emptyTitle: '暂无动态', emptyHint: '当前范围没有动态' };
         const model = () => state.mode === 'error'
@@ -36,12 +36,24 @@ const server = await createServer({
           : { ok: true, reasonCode: '', fields: [], requestedFields: [], records: state.mode === 'records' ? [{ id: 7 }] : [], templateNames: [], templateNodes: [], sourceAuthority: {} };
         const block = (key, title) => ({ key, title, actions: [{ key: 'refresh', label: '刷新' }], payload: {} });
         const onAction = (payload) => state.dashboardActions.push(payload.actionKey);
-        const pages = [
+        const pages = reactive([
           { key: 'one', title: '第一个页面', route: '/one', kind: 'custom', created_at: 1, last_active_at: 1 },
           { key: 'two', title: '第二个页面', route: '/two', kind: 'custom', created_at: 2, last_active_at: 2 },
-        ];
+        ]);
+        const closePage = (page) => {
+          const index = pages.findIndex((item) => item.key === page.key);
+          if (index < 0) return;
+          pages.splice(index, 1);
+          state.closedTabs.push(page.key);
+          if (state.activeTab === page.key) state.activeTab = pages[Math.min(index, pages.length - 1)]?.key || '';
+        };
+        const focusExit = () => {
+          state.focusExits += 1;
+          document.querySelector('#activity-focus-exit')?.focus();
+        };
         const app = createApp({ render() { return h('main', [
-          h(ActivityPageTabs, { pages, activeKey: state.activeTab, onActivate: (page) => { state.activeTab = page.key; }, onClose: (page) => { state.closedTabs.push(page.key); } }),
+          h('button', { id: 'activity-focus-exit', tabindex: -1 }, '活动页签关闭后焦点'),
+          h(ActivityPageTabs, { pages, activeKey: state.activeTab, onActivate: (page) => { state.activeTab = page.key; }, onClose: closePage, onFocusExit: focusExit }),
           h(ActivityPage, { title: '业务动态', loading: state.mode === 'loading', model: model(), labels, onOpenRecord: (record) => { state.opened = String(record.id); } }),
           h(StatusPanel, { title: '加载失败', message: '请重试', variant: 'error', onRetry: async () => { state.retries += 1; } }),
           h(DashboardPattern, {}, { default: () => [
@@ -90,6 +102,13 @@ try {
   const focusedTab = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
   const tablistUnexpectedButtonCount = await page.locator('[role="tablist"] button:not([role="tab"])').count();
   await page.locator('[role="tab"][aria-selected="true"]').press('Delete');
+  const settledTab = page.locator('[role="tab"][aria-selected="true"]');
+  await settledTab.waitFor();
+  const settledTabText = await settledTab.textContent();
+  const settledTabFocused = await settledTab.evaluate((node) => document.activeElement === node);
+  await settledTab.press('Delete');
+  await page.locator('#activity-focus-exit').waitFor();
+  const emptyTabFocusSettled = await page.locator('#activity-focus-exit').evaluate((node) => document.activeElement === node);
 
   const retry = page.locator('.sc-state-panel [data-semantic-component="ScButton"]').filter({ hasText: '重试' });
   await retry.click();
@@ -102,11 +121,12 @@ try {
 
   const pass = loading && error && empty && focusVisible && state.opened === '7' && state.retries === 1
     && selectedTab?.includes('第二个页面') && focusedTab === '第二个页面'
-    && tablistUnexpectedButtonCount === 0 && state.closedTabs.includes('two')
+    && tablistUnexpectedButtonCount === 0 && settledTabText?.includes('第一个页面') && settledTabFocused
+    && state.closedTabs.includes('two') && state.closedTabs.includes('one') && state.focusExits === 1 && emptyTabFocusSettled
     && dashboardEmptyCount === 2 && dashboardEmptyHeadingCount === 2 && dashboardUnexpectedH2Count === 0
     && state.dashboardActions.includes('open_todo')
     && !overflow && errors.length === 0;
-  console.log(JSON.stringify({ pass, loading, error, empty, focusVisible, selectedTab, focusedTab, tablistUnexpectedButtonCount, dashboardEmptyCount, dashboardEmptyHeadingCount, dashboardUnexpectedH2Count, state, overflow, errors }, null, 2));
+  console.log(JSON.stringify({ pass, loading, error, empty, focusVisible, selectedTab, focusedTab, tablistUnexpectedButtonCount, settledTabText, settledTabFocused, emptyTabFocusSettled, dashboardEmptyCount, dashboardEmptyHeadingCount, dashboardUnexpectedH2Count, state, overflow, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();

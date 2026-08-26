@@ -31,13 +31,18 @@ import type { ActivityPage } from '../../stores/session';
 import { resolveActivityTabKeyboardIndex } from './activityPageTabKeyboard';
 
 const props = withDefaults(defineProps<{pages:ActivityPage[];activeKey:string;label?:string;closeLabel?:string}>(),{label:'活动页面',closeLabel:'关闭'});
-const emit = defineEmits<{activate:[page:ActivityPage];close:[page:ActivityPage]}>();
+const emit = defineEmits<{activate:[page:ActivityPage];close:[page:ActivityPage];'focus-exit':[]}>();
 const tablistRef = ref<HTMLElement | null>(null);
 
 function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
   if (event.key === 'Delete') {
     event.preventDefault();
     emit('close', page);
+    void nextTick(() => {
+      const selectedTab = tablistRef.value?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]');
+      if (selectedTab) selectedTab.focus();
+      else emit('focus-exit');
+    });
     return;
   }
   const currentIndex = props.pages.findIndex((item) => item.key === page.key);

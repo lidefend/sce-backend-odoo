@@ -289,6 +289,7 @@
         :active-key="activeActivityPageKey"
         @activate="activateActivityPage"
         @close="closeActivityPage"
+        @focus-exit="focusMainContent"
       />
 
       <StatusPanel
@@ -318,7 +319,7 @@
         :on-retry="refreshInit"
       />
 
-      <main v-else id="main-content" class="router-host" tabindex="-1">
+      <main v-else id="main-content" ref="mainContentRef" class="router-host" tabindex="-1">
         <slot />
       </main>
 
@@ -1374,6 +1375,11 @@ const filteredNavigation = computed(() => filterNavigationNodes(visibleNavigatio
 const isConfigurationRoute = computed(() => route.path.startsWith('/admin/'));
 const activityPages = computed(() => (isConfigurationRoute.value ? [] : session.activityPages));
 const activeActivityPageKey = computed(() => (isConfigurationRoute.value ? '' : session.activeActivityPageKey));
+const mainContentRef = ref<HTMLElement | null>(null);
+
+function focusMainContent() {
+  void nextTick(() => mainContentRef.value?.focus());
+}
 
 function buildMenuSelectionQuery(): LocationQueryRaw {
   const next: LocationQueryRaw = {};
