@@ -1,4 +1,4 @@
-import { nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue';
+import { nextTick, onBeforeUnmount, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
 import { resolveModalKeyboardAction } from './modalKeyboard';
 
 const FOCUSABLE = [
@@ -13,6 +13,14 @@ const FOCUSABLE = [
 let bodyLockDepth = 0;
 let savedBodyOverflow = '';
 let savedBodyPaddingRight = '';
+
+type ModalSurface = HTMLElement | ComponentPublicInstance | null;
+
+function resolveSurfaceElement(surface: ModalSurface): HTMLElement | null {
+  if (surface instanceof HTMLElement) return surface;
+  const root = surface?.$el;
+  return root instanceof HTMLElement ? root : null;
+}
 
 function lockBodyScroll() {
   if (bodyLockDepth === 0) {
@@ -34,7 +42,7 @@ function unlockBodyScroll() {
 
 export function useModalLifecycle(options: {
   open: () => boolean;
-  surface: Ref<HTMLElement | null>;
+  surface: Ref<ModalSurface>;
   close: () => void;
   closeOnEscape?: () => boolean;
 }) {
@@ -43,12 +51,13 @@ export function useModalLifecycle(options: {
   let focusGeneration = 0;
 
   function focusInitial() {
-    const initial = options.surface.value?.querySelector<HTMLElement>('[autofocus], [data-dialog-primary]');
-    (initial || options.surface.value)?.focus();
+    const surface = resolveSurfaceElement(options.surface.value);
+    const initial = surface?.querySelector<HTMLElement>('[autofocus], [data-dialog-primary]');
+    (initial || surface)?.focus();
   }
 
   function focusInitialWhenVisible(generation: number, attempt = 0) {
-    const surface = options.surface.value;
+    const surface = resolveSurfaceElement(options.surface.value);
     if (generation !== focusGeneration || !options.open() || !surface || attempt > 120) return;
     if (surface.contains(document.activeElement)) return;
     if (surface.getClientRects().length > 0) {
@@ -81,8 +90,9 @@ export function useModalLifecycle(options: {
   }
 
   function onKeydown(event: KeyboardEvent) {
-    const focusable = options.surface.value
-      ? Array.from(options.surface.value.querySelectorAll<HTMLElement>(FOCUSABLE))
+    const surface = resolveSurfaceElement(options.surface.value);
+    const focusable = surface
+      ? Array.from(surface.querySelectorAll<HTMLElement>(FOCUSABLE))
         .filter((element) => element.getClientRects().length > 0 && element.getAttribute('aria-hidden') !== 'true')
       : [];
     const activeIndex = focusable.findIndex((element) => element === document.activeElement);
@@ -91,7 +101,7 @@ export function useModalLifecycle(options: {
       shiftKey: event.shiftKey,
       focusableCount: focusable.length,
       activeIndex,
-      surfaceActive: document.activeElement === options.surface.value,
+      surfaceActive: document.activeElement === surface,
     });
     if (action === 'close') {
       if (options.closeOnEscape && !options.closeOnEscape()) return;
@@ -102,7 +112,7 @@ export function useModalLifecycle(options: {
     }
     if (action === 'focus-surface') {
       event.preventDefault();
-      options.surface.value?.focus();
+      surface?.focus();
       return;
     }
     if (action === 'focus-last') {
@@ -124,7 +134,7 @@ export function useModalLifecycle(options: {
       lockBodyScroll();
       locked = true;
     }
-    if (!surface) return;
+    if (!resolveSurfaceElement(surface)) return;
     await nextTick();
     focusGeneration += 1;
     focusInitialWhenVisible(focusGeneration);
