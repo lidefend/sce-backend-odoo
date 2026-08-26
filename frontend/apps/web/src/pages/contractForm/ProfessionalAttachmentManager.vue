@@ -31,7 +31,7 @@ import ScFileField from '../../components/design-system/ScFileField.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 export type PendingProfessionalAttachment = { key: string; name: string; size: number; file: File };
 defineProps<{ editable: boolean; enabled: boolean; uploading: boolean; uploadLabel: string; uploadingLabel: string; error: string; pending: PendingProfessionalAttachment[] }>();
-const emit = defineEmits<{ selected: [event: Event]; remove: [key: string] }>();
+const emit = defineEmits<{ selected: [file: File | null]; remove: [key: string] }>();
 </script>
 
 <style scoped src="./NativeCollaborationPanel.css"></style>

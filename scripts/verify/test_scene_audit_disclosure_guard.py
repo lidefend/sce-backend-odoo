@@ -9,10 +9,9 @@ from scripts.verify.scene_audit_disclosure_guard import audit_disclosure_is_gove
 
 def component(attributes: str) -> str:
     return f'''<template>
-  <details {attributes}>
-    <summary>Audit</summary>
+  <ScDisclosure {attributes} title="Audit">
     <div data-audit-content />
-  </details>
+  </ScDisclosure>
 </template>
 <script setup lang="ts"></script>
 '''
@@ -47,9 +46,9 @@ class SceneAuditDisclosureGuardTests(unittest.TestCase):
 
     def test_comments_and_unrelated_strings_cannot_fake_compliance(self) -> None:
         source = '''<template><section /></template>
-<!-- <details v-if="auditNodes.length || auditEvents.length" data-floorplan-region="audit"> -->
+<!-- <ScDisclosure v-if="auditNodes.length || auditEvents.length" data-floorplan-region="audit"> -->
 <script setup lang="ts">
-const unrelated = '<details v-if="auditNodes.length || auditEvents.length" data-floorplan-region="audit">';
+const unrelated = '<ScDisclosure v-if="auditNodes.length || auditEvents.length" data-floorplan-region="audit">';
 </script>
 '''
         self.assertFalse(audit_disclosure_is_governed(source))
@@ -58,7 +57,7 @@ const unrelated = '<details v-if="auditNodes.length || auditEvents.length" data-
         self.assertFalse(audit_disclosure_is_governed('<template><section /></template>'))
         valid = component('v-if="auditNodes.length || auditEvents.length" data-floorplan-region="audit"')
         self.assertFalse(audit_disclosure_is_governed(valid.replace('</template>', (
-            '<details v-if="auditNodes.length || auditEvents.length" data-floorplan-region="audit" />'
+            '<ScDisclosure v-if="auditNodes.length || auditEvents.length" data-floorplan-region="audit" />'
             '</template>'
         ))))
 

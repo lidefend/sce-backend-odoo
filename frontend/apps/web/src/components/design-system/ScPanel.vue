@@ -1,3 +1,3 @@
-<template><component :is="as" :class="['sc-panel', `sc-design-panel--${tone}`]"><slot /></component></template>
-<script setup lang="ts">withDefaults(defineProps<{ as?: string; tone?: 'default'|'subtle'|'raised' }>(), { as: 'section', tone: 'default' });</script>
-<style scoped>.sc-panel{padding:calc(var(--sc-component-panel-padding) * 1px)}.sc-design-panel--subtle{background:var(--sc-app-subtle-bg);box-shadow:none}.sc-design-panel--raised{box-shadow:var(--sc-app-shadow-popover)}</style>
+<template><component :is="as" :class="['sc-panel-host', `sc-design-panel--${tone}`]"><TDesignCard data-semantic-component="ScPanel" data-semantic-driver="tdesign-card" data-semantic-layer="primitive" :bordered="tone !== 'subtle'"><slot /></TDesignCard></component></template>
+<script setup lang="ts">import { TDesignCard } from './tdesignPrimitiveBridge'; withDefaults(defineProps<{as?:string;tone?:'default'|'subtle'|'raised'}>(),{as:'section',tone:'default'});</script>
+<style scoped>.sc-panel-host :deep(.t-card__body){padding:calc(var(--sc-component-panel-padding) * 1px)}.sc-design-panel--subtle :deep(.t-card){background:var(--sc-app-subtle-bg);box-shadow:none}.sc-design-panel--raised :deep(.t-card){box-shadow:var(--sc-app-shadow-popover)}</style>

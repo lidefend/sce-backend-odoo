@@ -1,4 +1,5 @@
 export const SC_PRIMITIVE_KEYS = [
+  'ScActionBar',
   'ScButton',
   'ScCheckbox',
   'ScRadioGroup',
@@ -18,6 +19,25 @@ export const SC_PRIMITIVE_KEYS = [
   'ScLoading',
   'ScEmptyState',
   'ScErrorState',
+  'ScAutoComplete',
+  'ScNumberInput',
+  'ScSwitch',
+  'ScDatePicker',
+  'ScTimePicker',
+  'ScUpload',
+  'ScForm',
+  'ScFormItem',
+  'ScCard',
+  'ScCollapse',
+  'ScDisclosure',
+  'ScProgress',
+  'ScSkeleton',
+  'ScDescriptions',
+  'ScList',
+  'ScTimeline',
+  'ScSteps',
+  'ScPagination',
+  'ScPopconfirm',
 ] as const;
 
 export type ScPrimitiveKey = (typeof SC_PRIMITIVE_KEYS)[number];

@@ -22,6 +22,7 @@
       </li>
     </ul>
     <ScInlineState v-if="truncated" state="info" :label="`Showing first ${rows.length} records.`" />
+    <IntentConfirmationDialog ref="confirmationRef" />
 
     <div v-if="editorVisible" class="relational-editor">
       <div class="editor-card">
@@ -48,6 +49,7 @@ import { useRoute, useRouter } from 'vue-router';
 import ScButton from '../design-system/ScButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
+import IntentConfirmationDialog from '../business/IntentConfirmationDialog.vue';
 import { useEditTx } from '../../composables/useEditTx';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import {
@@ -79,6 +81,7 @@ const saving = ref(false);
 const editorError = ref('');
 const editTx = useEditTx();
 const editTxState = computed(() => editTx.state.value);
+const confirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 
 const headerLabel = computed(() => (props.model ? props.model : 'Related'));
 const countLabel = computed(() => `${props.ids.length} items`);
@@ -197,7 +200,7 @@ async function saveRow() {
 
 async function removeRow(row: { id: number }) {
   if (!props.model) return;
-  if (!confirm('Delete this related record?')) return;
+  if (!await confirmationRef.value?.confirm({ actionLabel: '删除关联记录', message: '删除后该关联记录将立即不可用，请确认是否继续。' })) return;
   try {
     await editTx.save(async () => {
       return unlinkRelationRendererRecord({ model: props.model, ids: [row.id] });

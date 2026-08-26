@@ -83,6 +83,8 @@
         :page-limit-value="pageLimitInput"
         :list-limit="listLimit"
         :total-pages="totalPages"
+        :current-page="currentPage"
+        :total-records="listRecordTotal"
         :page-limit-options="pageLimitOptions"
         :labels="collectionPaginationLabels"
       />
@@ -129,7 +131,7 @@
       <CollectionSummaryStrip
         v-if="enableSummaryStrip || summaryItems.length"
         class="summary-strip sc-product-summary-strip"
-        :aria-label="uiLabel('list_summary', '列表摘要')"
+        :ariaLabel="uiLabel('list_summary', '列表摘要')"
         :items="summaryItems"
       />
       <section
@@ -267,6 +269,8 @@
         :page-limit-value="pageLimitInput"
         :list-limit="listLimit"
         :total-pages="totalPages"
+        :current-page="currentPage"
+        :total-records="listRecordTotal"
         :page-limit-options="pageLimitOptions"
         :labels="collectionPaginationLabels"
         @previous="showGroupedWindowPagination ? onGroupWindowPrev?.() : pagePrev()"
@@ -276,10 +280,12 @@
         @page-limit-input="onPageLimitInput"
         @page-limit-apply="applyPageLimit"
         @page-limit-select="onPageLimitSelectChange"
+        @page-select="selectPage"
       />
     </section>
 
     </template>
+    <ScInlineState v-if="attachmentPreviewError" state="error" :label="attachmentPreviewError" />
     <AttachmentViewer ref="attachmentViewerRef" />
   </section>
 </template>
@@ -287,6 +293,7 @@
 import { computed, h, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
+import ScInlineState from '../components/design-system/ScInlineState.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
 import CollectionBatchActionBar from '../components/product-list/CollectionBatchActionBar.vue';
 import CollectionAggregateFooter, { type CollectionAggregateRow } from '../components/product-list/CollectionAggregateFooter.vue';
@@ -470,6 +477,7 @@ const emit = defineEmits<{
 }>();
 const slots = useSlots();
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
+const attachmentPreviewError = ref('');
 function uiLabel(key: string, fallback: string, vars: Record<string, string | number> = {}) {
   const candidate = String(props.uiLabels?.[key] || '').trim();
   const template = candidate || fallback;
@@ -693,6 +701,7 @@ function attachmentLinks(value: unknown) {
   return parseAttachmentReferenceLinks(value);
 }
 async function previewAttachmentLink(link: { name: string; url: string }, row: Record<string, unknown>) {
+  attachmentPreviewError.value = '';
   try {
     const context = {
       model: props.model,
@@ -705,7 +714,7 @@ async function previewAttachmentLink(link: { name: string; url: string }, row: R
     }
     openExternalAttachmentUrl(link.url);
   } catch (err) {
-    window.alert(err instanceof Error ? err.message : '附件打开失败');
+    attachmentPreviewError.value = err instanceof Error ? err.message : '附件打开失败';
   }
 }
 function isAttachmentCountCell(field: string, value: unknown) {
@@ -714,6 +723,7 @@ function isAttachmentCountCell(field: string, value: unknown) {
   return label === '附件' && /^附件\([1-9]\d*\)$/.test(text);
 }
 async function previewRecordAttachmentCount(row: Record<string, unknown>, value: unknown) {
+  attachmentPreviewError.value = '';
   const text = String(normalizeCellRawValue(value) ?? '').trim() || '附件';
   try {
     await attachmentViewerRef.value?.open({
@@ -721,7 +731,7 @@ async function previewRecordAttachmentCount(row: Record<string, unknown>, value:
       res_id: Number(row.id || 0) || undefined,
     }, text);
   } catch (err) {
-    window.alert(err instanceof Error ? err.message : '附件打开失败');
+    attachmentPreviewError.value = err instanceof Error ? err.message : '附件打开失败';
   }
 }
 
@@ -1161,6 +1171,10 @@ function jumpPage() {
   });
   pageJumpInput.value = String(target.page);
   emitPageOffset(target.offset);
+}
+function selectPage(page: number) {
+  const normalizedPage = Math.min(Math.max(Math.trunc(page), 1), totalPages.value);
+  emitPageOffset((normalizedPage - 1) * listLimit.value);
 }
 
 function applyPageLimitValue(raw: number) {

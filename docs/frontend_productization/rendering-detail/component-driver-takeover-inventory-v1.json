@@ -1,0 +1,1267 @@
+{
+  "authority": {
+    "library": "tdesign-vue-next",
+    "lockedVersion": "1.20.5",
+    "publicEntrypoint": "tdesign-vue-next/es/<component>"
+  },
+  "completionRule": "missing=0, bridge_only=0, adapter_unconsumed=0, directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0",
+  "components": [
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "affix",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScErrorState",
+        "ScInlineState"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScErrorState"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScErrorState.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScInlineState"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScInlineState.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignAlert"
+      ],
+      "officialComponent": "alert",
+      "productionConsumerCount": 33,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "anchor",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScAutoComplete",
+        "ScRelationField"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScAutoComplete"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScAutoComplete.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScRelationField"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScRelationField.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignAutoComplete"
+      ],
+      "officialComponent": "auto-complete",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "avatar",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "back-top",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScBadge"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScBadge"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScBadge.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignBadge"
+      ],
+      "officialComponent": "badge",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "breadcrumb",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScButton",
+        "ScIconButton",
+        "ScTooltip"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScButton",
+            "ScTooltip"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScButton.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScIconButton"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScIconButton.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignButton"
+      ],
+      "officialComponent": "button",
+      "productionConsumerCount": 338,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "calendar",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScCard",
+        "ScPanel"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScCard"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScCard.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScPanel"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScPanel.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignCard"
+      ],
+      "officialComponent": "card",
+      "productionConsumerCount": 5,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "cascader",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScCheckbox"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScCheckbox"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScCheckbox.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignCheckbox"
+      ],
+      "officialComponent": "checkbox",
+      "productionConsumerCount": 10,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScCollapse",
+        "ScDisclosure"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScCollapse"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScCollapse.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScDisclosure"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDisclosure.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScDisclosure"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDisclosure.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignCollapse",
+        "TDesignCollapsePanel"
+      ],
+      "officialComponent": "collapse",
+      "productionConsumerCount": 4,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "color-picker",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "comment",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScDateField",
+        "ScDatePicker"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScDateField"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDateField.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScDatePicker"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDatePicker.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignDatePicker"
+      ],
+      "officialComponent": "date-picker",
+      "productionConsumerCount": 3,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScDescriptions"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScDescriptions"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDescriptions.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScDescriptions"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDescriptions.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignDescriptions",
+        "TDesignDescriptionsItem"
+      ],
+      "officialComponent": "descriptions",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScDialog",
+        "ScIcon",
+        "ScIconButton"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScDialog",
+            "ScIcon",
+            "ScIconButton"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDialog.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignDialog"
+      ],
+      "officialComponent": "dialog",
+      "productionConsumerCount": 65,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "divider",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScDrawer",
+        "ScIcon",
+        "ScIconButton"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScDrawer",
+            "ScIcon",
+            "ScIconButton"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDrawer.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignDrawer"
+      ],
+      "officialComponent": "drawer",
+      "productionConsumerCount": 55,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScDropdown"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScDropdown"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScDropdown.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignDropdown"
+      ],
+      "officialComponent": "dropdown",
+      "productionConsumerCount": 4,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScEmptyState"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScEmptyState"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScEmptyState.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignEmpty"
+      ],
+      "officialComponent": "empty",
+      "productionConsumerCount": 18,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScForm",
+        "ScFormField",
+        "ScFormItem"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScForm"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScForm.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScFormField"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScFormField.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScFormItem"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScFormItem.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignForm",
+        "TDesignFormItem"
+      ],
+      "officialComponent": "form",
+      "productionConsumerCount": 3,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "grid",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "guide",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "icon",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "image",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "image-viewer",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScInput"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScInput"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScInput.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignInput",
+        "TDesignInputNumber"
+      ],
+      "officialComponent": "input",
+      "productionConsumerCount": 39,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "input-adornment",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScNumberInput"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScNumberInput"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScNumberInput.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignInputNumber"
+      ],
+      "officialComponent": "input-number",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "layout",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "link",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScList"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScList"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScList.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScList"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScList.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignList",
+        "TDesignListItem"
+      ],
+      "officialComponent": "list",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScInlineState",
+        "ScLoading"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScInlineState"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScInlineState.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScLoading"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScLoading.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignLoading"
+      ],
+      "officialComponent": "loading",
+      "productionConsumerCount": 29,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "MenuTree",
+        "ScIcon"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "MenuTree"
+          ],
+          "source": "frontend/apps/web/src/components/MenuTree.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScIcon"
+          ],
+          "source": "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScIcon"
+          ],
+          "source": "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignMenu",
+        "TDesignMenuItem"
+      ],
+      "officialComponent": "menu",
+      "productionConsumerCount": 42,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "message",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "notification",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScPagination"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScPagination"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScPagination.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignPagination"
+      ],
+      "officialComponent": "pagination",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScPopconfirm"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScPopconfirm"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScPopconfirm.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignPopconfirm"
+      ],
+      "officialComponent": "popconfirm",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "Destructive business actions use the governed confirmation-dialog authority; a local popconfirm must not bypass it.",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "popup",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScProgress"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScProgress"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScProgress.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignProgress"
+      ],
+      "officialComponent": "progress",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "qrcode",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScRadio"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScRadio"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScRadio.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignRadio",
+        "TDesignRadioGroup"
+      ],
+      "officialComponent": "radio",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "range-input",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "rate",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScSelect"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScSelect"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScSelect.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignSelect"
+      ],
+      "officialComponent": "select",
+      "productionConsumerCount": 20,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "select-input",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScSkeleton"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScSkeleton"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScSkeleton.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignSkeleton"
+      ],
+      "officialComponent": "skeleton",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "slider",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScActionBar"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScActionBar"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScActionBar.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignSpace"
+      ],
+      "officialComponent": "space",
+      "productionConsumerCount": 3,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "statistic",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScSteps"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScSteps"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScSteps.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScSteps"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScSteps.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignSteps"
+      ],
+      "officialComponent": "steps",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "sticky-tool",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "swiper",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScSwitch"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScSwitch"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScSwitch.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignSwitch"
+      ],
+      "officialComponent": "switch",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "Contract V2 exposes persisted boolean form values, represented by checkbox; it has no immediate-setting toggle semantic.",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScTable"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScTable"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScTable.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignTable",
+        "TDesignTableRowAttributes",
+        "TDesignTableRowData"
+      ],
+      "officialComponent": "table",
+      "productionConsumerCount": 18,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScTabs"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScTabs"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScTabs.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignTabs"
+      ],
+      "officialComponent": "tabs",
+      "productionConsumerCount": 2,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScStatusBadge"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScStatusBadge"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScStatusBadge.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignTag"
+      ],
+      "officialComponent": "tag",
+      "productionConsumerCount": 12,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "tag-input",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScTextarea"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScTextarea"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScTextarea.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignTextarea"
+      ],
+      "officialComponent": "textarea",
+      "productionConsumerCount": 5,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScTimePicker"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScTimePicker"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScTimePicker.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignTimePicker"
+      ],
+      "officialComponent": "time-picker",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "Contract V2 exposes date and datetime fields, represented by DatePicker; it has no standalone time-only field type.",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScTimeline"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScTimeline"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScTimeline.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScTimeline"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScTimeline.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignTimeline",
+        "TDesignTimelineItem"
+      ],
+      "officialComponent": "timeline",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [
+        "ScTooltip"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScTooltip"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScTooltip.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignTooltip"
+      ],
+      "officialComponent": "tooltip",
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "transfer",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "tree",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "tree-select",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "typography",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    },
+    {
+      "adapterKeys": [
+        "ScButton",
+        "ScFileField",
+        "ScUpload"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScButton",
+            "ScFileField"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScFileField.vue"
+        },
+        {
+          "semanticAdapters": [
+            "ScUpload"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScUpload.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignUpload"
+      ],
+      "officialComponent": "upload",
+      "productionConsumerCount": 326,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
+    },
+    {
+      "adapterKeys": [],
+      "adapterSources": [],
+      "bridgeExports": [],
+      "officialComponent": "watermark",
+      "productionConsumerCount": 0,
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "not required by current formal product semantics",
+      "status": "not_required"
+    }
+  ],
+  "directLibraryImportBypasses": [],
+  "inputDigest": "32b0141d29736c7306301a993b23d3cdab4ade328e49548758c1e73936716db7",
+  "rawBehaviorSurfaces": [],
+  "schemaVersion": "frontend-component-driver-takeover/v1",
+  "scope": "repository P0/P1 frontend production sources",
+  "summary": {
+    "adapter_present": 33,
+    "adapter_unconsumed": 0,
+    "bridge_only": 0,
+    "directLibraryImportBypasses": 0,
+    "missing": 0,
+    "not_required": 38,
+    "officialComponents": 71,
+    "requiredDrivers": 33,
+    "unassessedRawBehaviorSurfaces": 0
+  }
+}

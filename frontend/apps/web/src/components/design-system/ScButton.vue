@@ -1,4 +1,5 @@
 <template>
+  <ScTooltip :content="hint" :disabled="!hint">
   <TDesignButton
     ref="buttonRef"
     data-semantic-component="ScButton"
@@ -19,11 +20,13 @@
     <span class="sc-btn__content"><slot /></span>
     <span v-if="loading" class="sc-visually-hidden">{{ loadingLabel }}</span>
   </TDesignButton>
+  </ScTooltip>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, useAttrs } from 'vue';
 import { TDesignButton } from './tdesignPrimitiveBridge';
+import ScTooltip from './ScTooltip.vue';
 import { tdesignButtonPresentation, type ScButtonVariant, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
 const props = withDefaults(defineProps<{
@@ -43,6 +46,8 @@ const props = withDefaults(defineProps<{
 });
 
 const presentation = computed(() => tdesignButtonPresentation(props.variant, props.status));
+const attrs = useAttrs();
+const hint = computed(() => typeof attrs.title === 'string' ? attrs.title : '');
 const buttonRef = ref<{ $el?: HTMLElement } | null>(null);
 
 defineExpose({

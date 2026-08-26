@@ -91,6 +91,8 @@
         page-limit-value=""
         :list-limit="listLimit"
         :total-pages="totalPages"
+        :current-page="currentPage"
+        :total-records="listTotal ?? records.length"
         :page-limit-options="[]"
         :show-page-size="false"
         :labels="paginationLabels"
@@ -98,6 +100,7 @@
         @next="pageNext"
         @page-jump-input="pageJumpInput = $event"
         @page-jump="jumpPage"
+        @page-select="selectPage"
       />
     </template>
   </section>
@@ -308,6 +311,10 @@ function jumpPage() {
   if (!Number.isFinite(page)) return;
   const normalizedPage = Math.min(Math.max(Math.trunc(page), 1), totalPages.value);
   pageJumpInput.value = String(normalizedPage);
+  emitPageOffset((normalizedPage - 1) * listLimit.value);
+}
+function selectPage(page: number) {
+  const normalizedPage = Math.min(Math.max(Math.trunc(page), 1), totalPages.value);
   emitPageOffset((normalizedPage - 1) * listLimit.value);
 }
 

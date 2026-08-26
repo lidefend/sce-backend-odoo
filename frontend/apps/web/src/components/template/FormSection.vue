@@ -683,9 +683,7 @@ function emitFieldChange(field: FormSectionFieldSchema, value: string | number |
   emit('field-change', toContractFormDriverFieldChange(field, value));
 }
 
-function emitBinaryFieldChange(field: FormSectionFieldSchema, event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
+function emitBinaryFieldChange(field: FormSectionFieldSchema, file: File | null) {
   if (!file) {
     emitFieldChange(field, null);
     return;

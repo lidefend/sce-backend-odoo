@@ -1,0 +1,2 @@
+<template><TDesignFormItem v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScFormItem') }" :label="label" :name="name"><slot /></TDesignFormItem></template>
+<script setup lang="ts">import { TDesignFormItem } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); defineProps<{label?:string; name?:string}>();</script>

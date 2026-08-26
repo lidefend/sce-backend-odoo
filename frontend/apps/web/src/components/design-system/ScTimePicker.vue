@@ -1,0 +1,2 @@
+<template><TDesignTimePicker v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScTimePicker') }" :value="modelValue" :disabled="disabled" :readonly="readonly" @change="emit('update:modelValue', String($event ?? ''))" /></template>
+<script setup lang="ts">import { TDesignTimePicker } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); defineProps<{modelValue?:string; disabled?:boolean; readonly?:boolean}>(); const emit=defineEmits<{ 'update:modelValue':[value:string] }>();</script>

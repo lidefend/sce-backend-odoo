@@ -656,6 +656,7 @@
     </template>
     </ActionSurfaceRendererHost>
     </component>
+    <IntentConfirmationDialog ref="batchConfirmationRef" />
   </ScPage>
 </template>
 <script setup lang="ts">
@@ -667,6 +668,7 @@ import ScButton from '../components/design-system/ScButton.vue';
 import ScDialog from '../components/design-system/ScDialog.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
+import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import CollectionPattern from '../components/product-page-patterns/CollectionPattern.vue';
 import CollectionFilterChip from '../components/product-list/CollectionFilterChip.vue';
@@ -1092,6 +1094,7 @@ const {
 const headerActions = computed(() => pageGlobalActions.value);
 const advancedFields = ref<string[]>([]);
 const batchBusy = ref(false);
+const batchConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 const {
   isUiBusy,
   isBusyDisabled,
@@ -1907,7 +1910,7 @@ async function runBatchPolicyAction(action: 'archive' | 'activate' | 'delete') {
     return;
   }
   if (action === 'delete') {
-    if (!confirm(toolbarUiLabel('batch_confirm_delete', `确认删除选中的 ${selected.length} 条记录？`))) {
+    if (!await batchConfirmationRef.value?.confirm({ actionLabel: '批量删除', message: toolbarUiLabel('batch_confirm_delete', `确认删除选中的 ${selected.length} 条记录？`) })) {
       return;
     }
     const seed = resolveBatchDeleteExecutionSeed({

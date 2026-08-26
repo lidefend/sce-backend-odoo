@@ -19,7 +19,7 @@ class FormHeaderActionPrimitivesGuardTests(unittest.TestCase):
 
     def test_status_step_cannot_regress_to_private_button(self):
         def read_text(path: str) -> str:
-            return (ROOT / path).read_text(encoding="utf-8").replace("<ScButton\n                type=\"button\"\n                class=\"native-statusbar-step\"", "<button\n                type=\"button\"\n                class=\"native-statusbar-step\"", 1)
+            return (ROOT / path).read_text(encoding="utf-8").replace("<ScSteps", "<ol", 1)
 
         self.assertTrue(any("status step" in error for error in validate(read_text)))
 

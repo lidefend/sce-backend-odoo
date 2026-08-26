@@ -10,7 +10,7 @@
           <span>{{ item.label }}</span>
           <strong>{{ item.value }}{{ item.unit }}</strong>
         </div>
-        <div v-if="item.kind === 'rate'" class="progress-track"><div class="progress-fill" :style="{ width: `${item.value}%` }" /></div>
+        <ScProgress v-if="item.kind === 'rate'" class="progress-track" :percentage="item.value" status="active" />
       </article>
     </div>
     <ScEmptyState v-if="!rows.length" density="compact" :heading-level="5" title="当前暂无进度数据" />
@@ -21,6 +21,7 @@
 import { computed } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
+import ScProgress from '../../design-system/ScProgress.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -72,6 +73,5 @@ const summaryText = computed(() => {
 .progress-item { border: 1px solid var(--sc-app-border); border-radius: 8px; padding: 10px; background: var(--sc-app-info-bg); min-height: 66px; }
 .progress-item.kind-count { background: var(--sc-app-warning-bg); border-color: var(--sc-app-warning-border); }
 .progress-line { display: flex; justify-content: space-between; font-size: 13px; }
-.progress-track { margin-top: 8px; width: 100%; height: 9px; background: var(--sc-app-muted-bg); border-radius: 999px; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--sc-semantic-surface-interactive); }
+.progress-track { margin-top: 8px; width: 100%; }
 </style>

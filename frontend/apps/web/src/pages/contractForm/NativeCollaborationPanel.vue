@@ -159,7 +159,7 @@ export type NativeCollaborationPanelListeners = {
   'update:activityNote': (value: string) => void;
   'send-chatter': () => void;
   'close-composer': () => void;
-  'attachment-selected': (event: Event) => void;
+  'attachment-selected': (file: File | null) => void;
   'remove-pending-attachment': (key: string) => void;
   'update-activity': (entry: ChatterTimelineEntry, action: 'done' | 'cancel') => void;
   'open-attachment': (attachment: NonNullable<ChatterTimelineEntry['attachment']>) => void;
@@ -189,7 +189,7 @@ const emit = defineEmits<{
   'update:activityNote': [value: string];
   'send-chatter': [];
   'close-composer': [];
-  'attachment-selected': [event: Event];
+  'attachment-selected': [file: File | null];
   'remove-pending-attachment': [key: string];
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];

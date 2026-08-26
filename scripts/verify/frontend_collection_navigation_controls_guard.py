@@ -29,8 +29,9 @@ def validate(
         ':aria-label="labels.region"',
         'aria-live="polite"',
         '<ScButton',
-        '<ScInput',
-        '<ScSelect',
+        '<ScPagination',
+        '@update:current=',
+        '@update:page-size=',
         "mode === 'grouped'",
         "mode === 'paged'",
     )

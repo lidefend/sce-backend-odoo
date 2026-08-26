@@ -1,22 +1,2 @@
-<template>
-  <ScField
-    v-bind="semanticPrimitiveIdentity('ScFormField')"
-    :data-state="invalid || error ? 'error' : 'default'"
-    :data-required="required || undefined"
-    :label="label"
-    :field-key="fieldKey"
-    :required="required"
-    :invalid="invalid"
-    :help="help"
-    :error="error"
-  >
-    <template #default="slotProps"><slot v-bind="slotProps" /></template>
-  </ScField>
-</template>
-
-<script setup lang="ts">
-import ScField from './ScField.vue';
-import { semanticPrimitiveIdentity } from './primitiveAdapter';
-
-defineProps<{ label: string; fieldKey: string; required?: boolean; invalid?: boolean; help?: string; error?: string }>();
-</script>
+<template><TDesignFormItem v-bind="semanticPrimitiveIdentity('ScFormField')" :data-state="invalid || error ? 'error' : 'default'" :data-required="required || undefined" :label="label" :name="fieldKey" :help="help" :status="invalid || error ? 'error' : undefined" :tips="error"><slot :control-id="controlId" :described-by="describedBy" /></TDesignFormItem></template>
+<script setup lang="ts">import { computed,useId } from 'vue'; import { TDesignFormItem } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; const props=defineProps<{label:string;fieldKey:string;required?:boolean;invalid?:boolean;help?:string;error?:string}>(); const suffix=useId(); const controlId=computed(()=>`sc-field-${props.fieldKey.replace(/[^A-Za-z0-9_-]/g,'-')}-${suffix}`); const describedBy=computed(()=>undefined);</script>

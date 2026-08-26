@@ -31,8 +31,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, type ComputedRef } from 'vue';
 import { TDesignTable } from './tdesignPrimitiveBridge';
+import type { TDesignTableRowAttributes, TDesignTableRowData } from './tdesignPrimitiveBridge';
 import { normalizePrimitiveSize, semanticPrimitiveIdentity, type ScPrimitiveSize } from './primitiveAdapter';
 
 const props = withDefaults(defineProps<{
@@ -72,7 +73,7 @@ function projectRowAttributes(attributes: Record<string, unknown> | undefined): 
 }
 const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
   ? (context: unknown) => projectRowAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
-  : projectRowAttributes(props.rowAttributes));
+  : projectRowAttributes(props.rowAttributes)) as unknown as ComputedRef<TDesignTableRowAttributes<TDesignTableRowData>>;
 const emit = defineEmits<{
   rowClick: [context: unknown];
   rowDblclick: [context: unknown];

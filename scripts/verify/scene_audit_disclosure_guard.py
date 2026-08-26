@@ -7,7 +7,7 @@ import re
 
 
 _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-_DETAILS = re.compile(r"<details\b(?P<attributes>[^>]*)>", re.IGNORECASE | re.DOTALL)
+_DISCLOSURE = re.compile(r"<ScDisclosure\b(?P<attributes>[^>]*)>", re.IGNORECASE | re.DOTALL)
 _AUDIT_REGION = re.compile(
     r"\bdata-floorplan-region\s*=\s*(['\"])audit\1",
     re.IGNORECASE,
@@ -32,10 +32,10 @@ def _has_exact_content_condition(attributes: str) -> bool:
 
 
 def audit_disclosure_is_governed(source: str) -> bool:
-    """Require one content-backed, initially collapsed audit details element."""
+    """Require one content-backed, initially collapsed governed disclosure."""
     matches = [
         match.group("attributes")
-        for match in _DETAILS.finditer(_template_source(source))
+        for match in _DISCLOSURE.finditer(_template_source(source))
         if _AUDIT_REGION.search(match.group("attributes"))
     ]
     if len(matches) != 1:

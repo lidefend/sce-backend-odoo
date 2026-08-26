@@ -1,0 +1,2 @@
+<template><TDesignSwitch v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScSwitch') }" :value="modelValue" :disabled="disabled" @change="emit('update:modelValue', Boolean($event))"><slot /></TDesignSwitch></template>
+<script setup lang="ts">import { TDesignSwitch } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); defineProps<{modelValue?:boolean; disabled?:boolean}>(); const emit=defineEmits<{ 'update:modelValue':[value:boolean] }>();</script>

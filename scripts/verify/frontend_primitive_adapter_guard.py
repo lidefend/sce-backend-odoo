@@ -15,6 +15,9 @@ UI_THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
 PRIMITIVES = (
     "ScButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
+    "ScActionBar", "ScAutoComplete", "ScNumberInput", "ScDatePicker", "ScUpload", "ScForm", "ScFormItem",
+    "ScCard", "ScCollapse", "ScDisclosure", "ScProgress", "ScSkeleton", "ScDescriptions", "ScList", "ScTimeline",
+    "ScSteps", "ScPagination", "ScSwitch", "ScTimePicker", "ScPopconfirm",
 )
 FORBIDDEN_PRIVATE_TDESIGN = re.compile(r"tdesign-vue-next/(?:lib|cjs|src)/")
 FORBIDDEN_BUSINESS_IDENTITY = re.compile(

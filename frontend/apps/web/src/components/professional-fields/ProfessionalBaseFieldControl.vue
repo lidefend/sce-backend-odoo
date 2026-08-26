@@ -61,8 +61,15 @@
       :rows="4"
       @update:model-value="emitValue"
     />
-    <ScInput
-      v-else
+    <ScNumberInput
+      v-else-if="field.type === 'integer' || field.type === 'float'"
+      :model-value="numericValue"
+      :decimal-places="field.type === 'integer' ? 0 : undefined"
+      :status="field.invalid ? 'error' : 'default'"
+      :placeholder="placeholder"
+      @update:model-value="emitValue($event ?? null)"
+    />
+    <ScInput v-else
       :id="controlId"
       :model-value="String(field.inputValue ?? '')"
       :type="field.type === 'integer' || field.type === 'float' ? 'number' : 'text'"
@@ -80,6 +87,7 @@ import { computed } from 'vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScNumberInput from '../design-system/ScNumberInput.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScTextarea from '../design-system/ScTextarea.vue';
 import { formatDisplayValue } from '../../utils/display';
@@ -119,6 +127,11 @@ const readonlyText = computed(() => formatDisplayValue(
   { emptyText: '-' },
 ));
 const readonlyHtml = computed(() => sanitizeReadonlyHtml(props.field.value));
+const numericValue = computed(() => {
+  if (props.field.inputValue === '' || props.field.inputValue === null || typeof props.field.inputValue === 'undefined') return undefined;
+  const value = Number(props.field.inputValue);
+  return Number.isFinite(value) ? value : undefined;
+});
 
 function emitValue(value: string | number | boolean | null) {
   emit('update:value', value);

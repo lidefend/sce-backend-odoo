@@ -43,9 +43,9 @@
             <ScStatusBadge :value="item.state.key" :label="item.state.label" :semantic="statusSemantic(item.state.key)" />
           </div>
           <h3>{{ item.record.label }}</h3>
-          <dl>
-            <div v-for="fact in item.facts" :key="fact.key"><dt>{{ fact.label }}</dt><dd><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact)" :label="fact.label" /><template v-else>{{ formatFact(fact) }}</template></dd></div>
-          </dl>
+          <ScDescriptions :column="2" :items="item.facts.map((fact) => ({ ...fact, key: fact.key, label: fact.label }))">
+            <template #item="{ item: fact }"><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact as ProductMyWorkFact)" :label="fact.label" /><template v-else>{{ formatFact(fact as ProductMyWorkFact) }}</template></template>
+          </ScDescriptions>
         </div>
         <ScActionBar class="work-card__actions" :label="`${item.record.label}操作`">
           <ScButton variant="ghost" @click="openItem(item)">打开详情</ScButton>
@@ -64,16 +64,14 @@
             :disabled="busy"
             @click="beginAction(item, action)"
           >{{ action.label }}</ScButton>
-          <details v-if="overflowActions(item).length" class="more-actions">
-            <summary>更多操作</summary>
-            <ScButton
-              v-for="action in overflowActions(item)"
-              :key="action.key"
-              variant="ghost"
-              :disabled="busy"
-              @click="beginAction(item, action)"
-            >{{ action.label }}</ScButton>
-          </details>
+          <ScDropdown
+            v-if="overflowActions(item).length"
+            class="more-actions"
+            :items="overflowActions(item).map((action) => ({ value: action.key, label: action.label, disabled: busy }))"
+            @select="(selected) => selectOverflowAction(item, selected.value)"
+          >
+            <template #trigger><ScButton variant="ghost" :disabled="busy">更多操作</ScButton></template>
+          </ScDropdown>
         </ScActionBar>
       </ScPanel>
     </ScSection>
@@ -105,6 +103,8 @@ import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWor
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScDialog from '../design-system/ScDialog.vue';
+import ScDescriptions from '../design-system/ScDescriptions.vue';
+import ScDropdown, { type ScDropdownItem } from '../design-system/ScDropdown.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScField from '../design-system/ScField.vue';
 import ScMoney from '../design-system/ScMoney.vue';
@@ -131,6 +131,11 @@ const pendingAction = ref<ProductMyWorkAction | null>(null);
 const dialogOpen = ref(false);
 const reasonRef = ref<{ focus: () => void } | null>(null);
 let actionTrigger: HTMLElement | null = null;
+
+function selectOverflowAction(item: ProductMyWorkItem, value: ScDropdownItem['value']) {
+  const action = overflowActions(item).find((candidate) => candidate.key === String(value));
+  if (action) beginAction(item, action);
+}
 
 const visibleSections = computed(() => {
   const selected = props.workspace.sections.find((row) => row.key === activeSection.value);

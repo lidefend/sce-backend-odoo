@@ -1,7 +1,6 @@
 <template>
   <article class="block block-accordion-group">
-    <details open>
-      <summary>{{ block.title || '详情' }}</summary>
+    <ScDisclosure :title="block.title || '详情'" open>
       <div class="accordion-content">
         <ScEmptyState v-if="rows.length === 0" density="compact" :heading-level="5" title="暂无数据" />
         <article v-for="item in rows" :key="item.key" class="accordion-item">
@@ -9,7 +8,7 @@
           <p class="accordion-desc">{{ item.description }}</p>
         </article>
       </div>
-    </details>
+    </ScDisclosure>
   </article>
 </template>
 
@@ -17,6 +16,7 @@
 import { computed } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
+import ScDisclosure from '../../design-system/ScDisclosure.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -46,7 +46,6 @@ const rows = computed(() => {
 
 <style scoped>
 .block { border: 1px solid var(--sc-app-border); border-radius: 8px; background: var(--sc-app-panel); padding: 10px; height: 100%; }
-summary { cursor: pointer; font-weight: 600; }
 .accordion-content { margin-top: 8px; display: grid; gap: 8px; }
 .accordion-item { border: 1px solid var(--sc-app-border); border-radius: 8px; padding: 8px; background: var(--sc-app-muted-bg); }
 .accordion-title { margin: 0; font-size: 13px; font-weight: 600; }
