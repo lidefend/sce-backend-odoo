@@ -31,7 +31,7 @@ const props = withDefaults(defineProps<{ modelValue: string | number; items?: Sc
 const slots = useSlots();
 const emit = defineEmits<{ 'update:modelValue': [value: string | number]; change: [value: string | number] }>();
 function tabLabel(item: ScTabItem) {
-  return h('span', { class: item.labelClass, ...item.labelAttributes }, item.label);
+  return (render: typeof h) => render('span', { class: item.labelClass, ...item.labelAttributes }, item.label);
 }
 const tdesignItems = computed(() => props.items.map((item) => ({
   value: item.value,

@@ -71,7 +71,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
-                "ScTabs": "<TDesignTabs :list=\"items.length ? tdesignItems : undefined\" />\nlabel: tabLabel(item)\nreturn h('span', {}, item.label)",
+                "ScTabs": "<TDesignTabs :list=\"items.length ? tdesignItems : undefined\" />\nlabel: tabLabel(item)\nreturn (render: typeof h) => render('span', {}, item.label)",
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
                 "ScInlineState": '<div :data-state="state" :aria-busy="state === \'loading\' || undefined" />',
                 "ScEmptyState": '<TDesignEmpty data-state="empty" role="status" />',
