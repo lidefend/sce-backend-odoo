@@ -6415,3 +6415,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   primary variant mapping. Product Page Header, professional workflow,
   primitive adapter, style-system, delivery-hardening and strict typecheck
   gates pass.
+
+## Collection toolbar action-control convergence v1
+
+- Branch / baseline: `feature/p0-collection-toolbar-action-controls-v1` /
+  `1fbffbf230aa618bbe5eb8a199bdce87cf70cffc`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  collection toolbar command and custom-filter control presentation /
+  `frontend/apps/web`.
+- Product result: generic clear, apply, cancel, save and responsive create
+  commands use `ScButton`; custom-filter values and selectors use `ScInput`
+  and `ScSelect`. View, sort, filter, group and saved-filter chips, disclosure
+  toggles and the favorite checkbox remain native stateful controls.
+- Authority boundary: search, filter, sort, group, favorite and create emits,
+  loading/disabled rules, disclosure focus restoration and active-state ARIA
+  remain unchanged. No Contract, route, permission, list data or mutation
+  behavior is modified.
+- Evidence: the collection toolbar guard now distinguishes registered generic
+  actions from stateful native controls and includes negative regressions for
+  legacy buttons, unregistered custom-filter selects and mechanical chip
+  migration. Ten guard cases, production guard, component ESLint and the Vite
+  production build pass.
