@@ -6366,3 +6366,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius: `ContractPromptActionForm` presentation only. Contract schema,
   action execution, confirmation policy, routes, permissions, fixtures,
   database state and business mutations are excluded.
+- Required-field compatibility: `ScInput` and `ScSelect` now project the formal
+  required flag to the native control as well as ARIA. A Chromium constraint
+  test proves two empty required controls emit zero submits, while completed
+  controls emit exactly one; label association and field/option order remain
+  intact.
