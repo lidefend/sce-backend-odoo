@@ -7,7 +7,7 @@
     @change="onChange"
   >
     <slot>
-      <TDesignTabPanel v-for="item in items" :key="item.value" :value="item.value" :disabled="disabled || item.disabled">
+      <TDesignTabPanel v-for="item in items" :key="item.value" :value="item.value" :label="item.label" :disabled="disabled || item.disabled">
         <template #label>
           <span :class="item.labelClass" v-bind="item.labelAttributes">{{ item.label }}</span>
         </template>

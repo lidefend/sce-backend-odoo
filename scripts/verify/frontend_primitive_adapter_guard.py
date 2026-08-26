@@ -181,6 +181,12 @@ def validate(root: Path = ROOT) -> list[str]:
     if "TDesignInputAdornment" not in bridge or "TDesignInputAdornment" not in ui_primitives:
         errors.append("ScInputGroup must consume the public project TDesign InputAdornment authority")
 
+    tabs_text = (design / "ScTabs.vue").read_text(encoding="utf-8") if (design / "ScTabs.vue").is_file() else ""
+    if "<TDesignTabs" not in tabs_text or "<TDesignTabPanel" not in tabs_text:
+        errors.append("ScTabs must delegate tab navigation and panels to the TDesign driver")
+    if ':label="item.label"' not in tabs_text:
+        errors.append("ScTabs must project the formal label prop for TDesign tab measurement")
+
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
     if "<TDesignTextarea" not in textarea_text or "v-native-control-projection" not in textarea_text:
         errors.append("ScTextarea must use the TDesign driver and native accessibility projection")
