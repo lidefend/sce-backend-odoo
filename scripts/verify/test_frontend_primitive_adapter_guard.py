@@ -161,6 +161,13 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         source.write_text(source.read_text(encoding="utf-8").replace("label: tabLabel(item)", "label: item.label"), encoding="utf-8")
         self.assertTrue(any("formal label prop" in error for error in validate(root)))
 
+    def test_business_surface_cannot_bypass_primitive_adapter(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/views/ExampleView.vue"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text('<template><button type="button">Save</button></template>\n', encoding="utf-8")
+        self.assertTrue(any("bypasses the professional primitive adapter" in error for error in validate(root)))
+
     def test_interaction_state_markers_are_required(self) -> None:
         root = self.make_root()
         source = root / "frontend/apps/web/src/components/design-system/ScButton.vue"
