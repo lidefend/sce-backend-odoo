@@ -15,6 +15,7 @@
     :disabled="disabled || loading"
     :readonly="readonly"
     :placeholder="placeholder"
+    :autocomplete="autocomplete"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
     :aria-invalid="status === 'error' || undefined"
@@ -45,6 +46,7 @@
     :max="max"
     :step="step"
     :placeholder="placeholder"
+    :autocomplete="autocomplete"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
     :aria-invalid="status === 'error' || undefined"
@@ -76,6 +78,7 @@ const props = withDefaults(defineProps<{
   type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
   placeholder?: string;
   describedBy?: string;
+  autocomplete?: string;
   min?: string | number;
   max?: string | number;
   step?: string | number;
@@ -86,6 +89,7 @@ const props = withDefaults(defineProps<{
   type: 'text',
   placeholder: undefined,
   describedBy: undefined,
+  autocomplete: undefined,
   min: undefined,
   max: undefined,
   step: undefined,
@@ -111,6 +115,7 @@ const nativeProjection = computed(() => ({
     min: props.min,
     max: props.max,
     step: props.step,
+    autocomplete: props.autocomplete,
   },
 }));
 

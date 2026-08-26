@@ -13,15 +13,17 @@
 
       <section class="auth-panel">
         <section v-if="headerActions.length" class="page-actions">
-          <button
+          <ScButton
             v-for="action in headerActions"
             :key="`login-header-${action.key}`"
             class="ghost sc-btn sc-btn-ghost sc-btn-sm"
+            variant="ghost"
+            size="small"
             :disabled="loading"
             @click="executeHeaderAction(action.key)"
           >
             {{ action.label || action.key }}
-          </button>
+          </ScButton>
         </section>
 
         <section
@@ -43,7 +45,7 @@
           >
             <label class="sc-form-label">
               {{ pageText('username_label', '账号') }}
-              <input
+              <ScInput
                 id="login-username"
                 v-model="username"
                 class="sc-input"
@@ -51,13 +53,13 @@
                 :placeholder="pageText('username_placeholder', '请输入账号')"
                 :disabled="loading"
                 required
-                :aria-invalid="Boolean(error)"
-                :aria-describedby="error ? 'login-error' : undefined"
+                :status="error ? 'error' : 'default'"
+                :described-by="error ? 'login-error' : undefined"
               />
             </label>
             <label class="sc-form-label">
               {{ pageText('password_label', '密码') }}
-              <input
+              <ScInput
                 id="login-password"
                 v-model="password"
                 class="sc-input"
@@ -66,13 +68,13 @@
                 :placeholder="pageText('password_placeholder', '请输入密码')"
                 :disabled="loading"
                 required
-                :aria-invalid="Boolean(error)"
-                :aria-describedby="error ? 'login-error' : undefined"
+                :status="error ? 'error' : 'default'"
+                :described-by="error ? 'login-error' : undefined"
               />
             </label>
             <label class="sc-form-label">
               {{ pageText('db_label', '数据库') }}
-              <input
+              <ScInput
                 v-model="dbName"
                 class="sc-input"
                 autocomplete="off"
@@ -89,19 +91,20 @@
             >
               {{ error }}
             </p>
-            <button class="submit sc-btn sc-btn-primary" type="submit" :disabled="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</button>
+            <ScButton class="submit" variant="primary" type="submit" :disabled="loading" :loading="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</ScButton>
           </form>
           <nav v-if="authEntryActions.length" class="auth-entry-links" aria-label="账号帮助">
-            <button
+            <ScButton
               v-for="action in authEntryActions"
               :key="`login-auth-${action.key}`"
               class="auth-entry-link"
               type="button"
+              variant="ghost"
               :disabled="loading"
               @click="executeHeaderAction(action.key)"
             >
               {{ action.label || action.key }}
-            </button>
+            </ScButton>
           </nav>
         </section>
       </section>
@@ -123,6 +126,8 @@ import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { isConfiguredDbPinned, isPlatformAdminEntryRuntime, resolveConfiguredDb } from '../services/dbContext';
 import { config } from '../config';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
+import ScButton from '../components/design-system/ScButton.vue';
+import ScInput from '../components/design-system/ScInput.vue';
 
 const router = useRouter();
 const route = useRoute();

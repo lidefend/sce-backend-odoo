@@ -34,18 +34,19 @@
             </ScButton>
           </div>
           <div v-if="conversations.length" class="global-message__conversation-list sc-list">
-            <button
+            <ScButton
               v-for="conversation in conversations"
               :key="conversation.key"
               class="global-message__conversation sc-list-item"
               type="button"
+              variant="ghost"
               :class="{ active: conversation.key === activeConversationKey && !composeMode }"
               @click="selectConversation(conversation)"
             >
               <span class="global-message__conversation-title">{{ conversation.title || '未命名会话' }}</span>
               <small>{{ conversation.latest_message?.body || '暂无消息' }}</small>
               <span v-if="conversation.unread_count" class="global-message__dot sc-badge sc-badge-danger">{{ conversation.unread_count }}</span>
-            </button>
+            </ScButton>
           </div>
           <ScInlineState
             v-else
@@ -78,28 +79,30 @@
             </label>
             <p class="global-message__compose-hint sc-muted">{{ composeHint }}</p>
             <div v-if="selectedUsers.length" class="global-message__chips">
-              <button
+              <ScButton
                 v-for="user in selectedUsers"
                 :key="`global-msg-selected-${user.id}`"
                 class="sc-tag"
                 type="button"
+                variant="ghost"
                 @click="removeUser(user.id)"
               >
                 {{ user.name }} <ScIcon name="close" :size="14" />
-              </button>
+              </ScButton>
             </div>
             <div v-if="userOptions.length" class="global-message__options sc-list">
-              <button
+              <ScButton
                 v-for="user in userOptions"
                 :key="`global-msg-user-${user.id}`"
                 class="sc-list-item"
                 type="button"
+                variant="ghost"
                 :disabled="isSelected(user.id)"
                 @click="selectUser(user)"
               >
                 <strong>{{ user.name }}</strong>
                 <small>{{ user.login || user.email || '内部用户' }}</small>
-              </button>
+              </ScButton>
             </div>
           </div>
 
