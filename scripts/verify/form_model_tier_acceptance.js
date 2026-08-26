@@ -141,7 +141,7 @@ async function domSummary(page) {
       input_count: document.querySelectorAll('.template-layout-shell input, .template-layout-shell textarea, .template-layout-shell select').length,
       field_count: document.querySelectorAll('.template-layout-shell .field').length,
       readonly_count: document.querySelectorAll('.readonly-value, .readonly-field, .form-readonly, .native-readonly').length,
-      tabs: Array.from(document.querySelectorAll('button.native-tab')).map((node) => clean(node.textContent)).filter(Boolean),
+      tabs: Array.from(document.querySelectorAll('.native-tab')).map((node) => clean(node.textContent)).filter(Boolean),
       statusbar_count: document.querySelectorAll('.native-statusbar-step').length,
       smart_button_count: document.querySelectorAll('button.native-action-btn--smart').length,
       body_action_count: document.querySelectorAll('button.native-action-btn:not(.native-action-btn--smart)').length,

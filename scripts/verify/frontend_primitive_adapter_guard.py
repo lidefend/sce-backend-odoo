@@ -12,7 +12,7 @@ BRIDGE = DESIGN_SYSTEM / "tdesignPrimitiveBridge.ts"
 UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
 
 PRIMITIVES = (
-    "ScButton", "ScCheckbox", "ScRadioGroup", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
+    "ScButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
 )
 FORBIDDEN_PRIVATE_TDESIGN = re.compile(r"tdesign-vue-next/(?:lib|cjs|src)/")
@@ -105,6 +105,11 @@ def validate(root: Path = ROOT) -> list[str]:
         if marker not in radio_text:
             errors.append(f"ScRadioGroup missing governed selection marker: {marker}")
 
+    radio_item_text = (design / "ScRadio.vue").read_text(encoding="utf-8") if (design / "ScRadio.vue").is_file() else ""
+    for marker in ('<TDesignRadio', "semanticPrimitiveIdentity('ScRadio')", ':checked="checked"', ':aria-required="required || undefined"'):
+        if marker not in radio_item_text:
+            errors.append(f"ScRadio missing governed selection marker: {marker}")
+
     select_text = (design / "ScSelect.vue").read_text(encoding="utf-8") if (design / "ScSelect.vue").is_file() else ""
     if ':data-readonly="readonly || undefined"' not in select_text or ':aria-readonly="readonly || undefined"' not in select_text:
         errors.append("ScSelect must expose readonly state without inventing write authority")
@@ -133,7 +138,7 @@ def validate(root: Path = ROOT) -> list[str]:
     else:
         if "@sc/ui/primitives" not in bridge or "tdesign-vue-next" in bridge:
             errors.append("web primitive bridge must consume the project UI authority")
-        for driver in ("TDesignAlert", "TDesignButton", "TDesignCheckbox", "TDesignRadioGroup", "TDesignDialog", "TDesignDrawer", "TDesignEmpty", "TDesignInput", "TDesignSelect", "TDesignTextarea"):
+        for driver in ("TDesignAlert", "TDesignButton", "TDesignCheckbox", "TDesignRadioGroup", "TDesignRadio", "TDesignDialog", "TDesignDrawer", "TDesignEmpty", "TDesignInput", "TDesignSelect", "TDesignTextarea"):
             if driver not in bridge or driver not in ui_primitives:
                 errors.append(f"missing public project primitive driver: {driver}")
         for path in design.glob("*.vue"):

@@ -148,7 +148,7 @@ async function domSurface(page) {
         active: node.classList.contains('native-statusbar-step--active'),
         disabled: node.hasAttribute('disabled'),
       })),
-      tabs: Array.from(document.querySelectorAll('button.native-tab')).map((node) => clean(node.textContent)).filter(Boolean),
+      tabs: Array.from(document.querySelectorAll('.native-tab')).map((node) => clean(node.textContent)).filter(Boolean),
       smart_buttons: Array.from(document.querySelectorAll('button.native-action-btn--smart')).map((node) => clean(node.textContent)).filter(Boolean),
       chatter_buttons: Array.from(document.querySelectorAll('.native-chatter-block button.chip-btn')).map((node) => clean(node.textContent)).filter(Boolean),
       attachment_upload: Boolean(document.querySelector('.native-attachment-upload input[type="file"]')),

@@ -52,13 +52,13 @@
           @keydown.space.prevent="$emit('select-row', row)"
           @keydown.enter.prevent="$emit('confirm', row)"
         >
-          <input
-            type="radio"
+          <ScRadio
             name="relation-search-select-mobile"
+            :value="row.id"
             :checked="dialog.selectedId === row.id"
-            :aria-label="relationSearchPrimaryText(row)"
+            :label="relationSearchPrimaryText(row)"
             tabindex="-1"
-            @change="$emit('select-row', row)"
+            @change="$event && $emit('select-row', row)"
           />
           <span class="relation-dialog-result-content">
             <span class="relation-dialog-result-head">
@@ -110,6 +110,7 @@ import ScDialog from '../../components/design-system/ScDialog.vue';
 import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScLoading from '../../components/design-system/ScLoading.vue';
+import ScRadio from '../../components/design-system/ScRadio.vue';
 import type { RelationOption, RelationSearchColumn, RelationSearchRow, RelationUiLabels } from './types';
 
 export type RelationSearchDialogState = {

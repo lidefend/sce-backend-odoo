@@ -27,7 +27,7 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
         self.assertTrue(any("emitNativeAction(node)" in error for error in validate(altered, self.smart_action, self.overflow_menu)))
 
     def test_notebook_tab_semantic_identity_is_preserved(self):
-        altered = self.source.replace('class="native-tab"', 'class="generic-command"', 1)
+        altered = self.source.replace("labelClass: `native-tab${", "labelClass: `generic-command${", 1)
         self.assertTrue(any("notebook tabs" in error for error in validate(altered, self.smart_action, self.overflow_menu)))
 
     def test_title_favorite_cannot_regress_to_private_button(self):

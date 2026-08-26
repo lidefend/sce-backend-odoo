@@ -17,6 +17,7 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
     required = (
         "import ScButton from '../design-system/ScButton.vue'",
         "import ScInput from '../design-system/ScInput.vue'",
+        "import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue'",
         '<ScInput\n            v-if="fieldConfigEditable && isEditableGroupNode(node)"',
         'v-if="!isSmartButtonNode(buttonNode)"',
         'class="native-action-btn"',
@@ -26,12 +27,16 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         'v-else-if="nodeType(node) === \'button\'"',
         'v-if="!isSmartButtonNode(node)"',
         '@click.stop.prevent="emitNativeAction(node)"',
+        '<ScTabs',
+        ':items="notebookTabItems(node)"',
     )
     for marker in required:
         if marker not in text:
             failures.append(f"native ordinary action lost governed presentation: {marker}")
     if "function nativeActionButtonClass" in text:
         failures.append("native form must not retain a parallel ordinary-button class resolver")
+    if any(marker in text for marker in ("<button", "<input", "<select", "<textarea")):
+        failures.append("native form retains a raw interactive control outside the primitive adapters")
     private_appearance = (
         ".native-action-btn {\n  display:",
         ".native-action-btn {\n  border:",
@@ -46,7 +51,7 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
     for event in ('@click.stop.prevent="emitNativeAction(buttonNode)"', '@click.stop.prevent="emitNativeAction(node)"'):
         if text.count(event) != 2:
             failures.append(f"native form changed action event authority: {event}")
-    if 'class="native-tab"' not in text:
+    if "labelClass: `native-tab${" not in text:
         failures.append("stateful notebook tabs must retain their semantic identity")
     if "import ScIconButton from '../design-system/ScIconButton.vue'" not in text or '<ScIconButton\n              v-if="titleFieldForNode(node)?.favoriteToggle"' not in text:
         failures.append("native title favorite must consume the shared icon-button primitive")

@@ -7,7 +7,10 @@
     @change="onChange"
   >
     <slot>
-      <TDesignTabPanel v-for="item in items" :key="item.value" :value="item.value" :label="item.label" :disabled="disabled || item.disabled">
+      <TDesignTabPanel v-for="item in items" :key="item.value" :value="item.value" :disabled="disabled || item.disabled">
+        <template #label>
+          <span :class="item.labelClass" v-bind="item.labelAttributes">{{ item.label }}</span>
+        </template>
         <slot name="panel" :item="item" />
       </TDesignTabPanel>
     </slot>
@@ -22,6 +25,8 @@ export interface ScTabItem {
   value: string | number;
   label: string;
   disabled?: boolean;
+  labelClass?: string;
+  labelAttributes?: Record<string, string | number | boolean | undefined>;
 }
 
 const props = withDefaults(defineProps<{ modelValue: string | number; items?: ScTabItem[]; size?: ScPrimitiveSize; disabled?: boolean }>(), {

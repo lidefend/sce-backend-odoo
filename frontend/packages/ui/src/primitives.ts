@@ -5,6 +5,7 @@ export { Input as TDesignInput } from 'tdesign-vue-next/es/input';
 export { Button as TDesignButton } from 'tdesign-vue-next/es/button';
 export { Checkbox as TDesignCheckbox } from 'tdesign-vue-next/es/checkbox';
 export { RadioGroup as TDesignRadioGroup } from 'tdesign-vue-next/es/radio';
+export { Radio as TDesignRadio } from 'tdesign-vue-next/es/radio';
 export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';
 export { Select as TDesignSelect } from 'tdesign-vue-next/es/select';
 export { Tabs as TDesignTabs, TabPanel as TDesignTabPanel } from 'tdesign-vue-next/es/tabs';

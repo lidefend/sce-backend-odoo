@@ -3,6 +3,7 @@ export {
   TDesignButton,
   TDesignCheckbox,
   TDesignRadioGroup,
+  TDesignRadio,
   TDesignDropdown,
   TDesignEmpty,
   TDesignAlert,

@@ -38,21 +38,17 @@
         <p v-if="nodeText(node)" class="native-static-text">{{ nodeText(node) }}</p>
 
         <template v-if="nodeType(node) === 'notebook'">
-          <div class="native-tabs">
-            <button
-              v-for="(page, pageIndex) in notebookPages(node)"
-              :key="nodeKey(page, pageIndex)"
-              type="button"
-              class="native-tab"
-              :class="{ 'native-tab--active': pageIndex === activePageIndex }"
-              @click="activePageIndex = pageIndex"
-            >
-              {{ containerTitle(page) || `页签 ${pageIndex + 1}` }}
-            </button>
-          </div>
-          <div class="native-tab-panel">
+          <ScTabs
+            class="native-tabs"
+            :model-value="activePageIndex"
+            :items="notebookTabItems(node)"
+            size="small"
+            @update:model-value="activePageIndex = Number($event)"
+          >
+            <template #panel="{ item }">
+          <div v-if="Number(item.value) === activePageIndex" class="native-tab-panel">
             <NativeFormTreeRenderer
-              :nodes="activeNotebookChildren(node)"
+              :nodes="notebookPageChildren(node, activePageIndex)"
               :field-schemas-for-nodes="fieldSchemasForNodes"
               :is-node-visible="isNodeVisible"
               :button-label-resolver="buttonLabelResolver"
@@ -94,6 +90,8 @@
               </template>
             </NativeFormTreeRenderer>
           </div>
+            </template>
+          </ScTabs>
         </template>
 
         <template v-else-if="nodeType(node) === 'h1' && titleFieldForNode(node)">
@@ -371,6 +369,7 @@ import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import type {
   FormSectionFieldAction,
@@ -609,9 +608,21 @@ function notebookPages(node: NativeFormLayoutNode) {
   return pages.length ? pages : rawChildren(node).filter((child) => isNodeRenderable(child));
 }
 
-function activeNotebookChildren(node: NativeFormLayoutNode) {
-  const page = notebookPages(node)[activePageIndex.value] || notebookPages(node)[0];
+function notebookPageChildren(node: NativeFormLayoutNode, pageIndex: number) {
+  const page = notebookPages(node)[pageIndex] || notebookPages(node)[0];
   return page ? rawChildren(page) : [];
+}
+
+function notebookTabItems(node: NativeFormLayoutNode): ScTabItem[] {
+  return notebookPages(node).map((page, pageIndex) => {
+    const label = containerTitle(page) || `页签 ${pageIndex + 1}`;
+    return {
+      value: pageIndex,
+      label,
+      labelClass: `native-tab${pageIndex === activePageIndex.value ? ' native-tab--active' : ''}`,
+      labelAttributes: { 'data-section-tab': label },
+    };
+  });
 }
 
 function fieldSectionTitle(node?: NativeFormLayoutNode, index = 0) {
@@ -917,31 +928,15 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-tabs {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
   max-width: 100%;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-muted-bg);
-  border-radius: 8px 8px 0 0;
-  padding: 6px 6px 0;
+  min-width: 0;
 }
 
 .native-tab {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  padding: 8px 10px;
-  font-size: 13px;
-  cursor: pointer;
   white-space: nowrap;
 }
 
 .native-tab--active {
-  color: var(--sc-app-text-primary);
-  border-bottom-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-app-panel);
   font-weight: 600;
 }
 
