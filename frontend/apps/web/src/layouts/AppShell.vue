@@ -349,7 +349,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue';
-import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
+import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router';
 import ProductSideNavigation from '../components/product-shell/ProductSideNavigation.vue';
 import ProductAppShell from '../components/product-shell/ProductAppShell.vue';
 import ProductMobileNavigationDrawer from '../components/product-shell/ProductMobileNavigationDrawer.vue';
@@ -1428,7 +1428,7 @@ function handleSelect(node: CanonicalNavigationNode) {
       query: menuQuery,
       menuId: selection.menuId,
       actionId: selection.actionId,
-    })).catch(() => {});
+    }) as RouteLocationRaw).catch(() => {});
     return;
   }
   if (selection.targetKind === 'scene' && selection.sceneKey) {

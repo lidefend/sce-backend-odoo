@@ -508,8 +508,8 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     ? null
     : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
   const nativeLocator = optionalString(raw, 'nativeLocator');
-  const occurrenceIndex = raw.occurrenceIndex;
-  const sourcePosition = raw.sourcePosition;
+  const occurrenceIndex = typeof raw.occurrenceIndex === 'number' ? raw.occurrenceIndex : undefined;
+  const sourcePosition = typeof raw.sourcePosition === 'number' ? raw.sourcePosition : undefined;
   if (occurrenceIndex !== undefined && (
     typeof occurrenceIndex !== 'number' || !Number.isInteger(occurrenceIndex) || occurrenceIndex < 1
   )) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
@@ -602,8 +602,8 @@ function decodeContainer(
   const fieldCode = asString(raw.fieldCode || raw.name);
   const widgetId = asString(raw.widgetId);
   const nativeLocator = asString(raw.nativeLocator);
-  const occurrenceIndex = raw.occurrenceIndex;
-  const sourcePosition = raw.sourcePosition;
+  const occurrenceIndex = typeof raw.occurrenceIndex === 'number' ? raw.occurrenceIndex : undefined;
+  const sourcePosition = typeof raw.sourcePosition === 'number' ? raw.sourcePosition : undefined;
   if (nestedNativeNode && containerType.toLowerCase() === 'field' && widgetId.includes('.occ.')) {
     if (!nativeLocator) issues.push({ path: `${path}.nativeLocator`, message: 'form field occurrence requires nativeLocator' });
     if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });

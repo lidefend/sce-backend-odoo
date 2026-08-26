@@ -7,6 +7,8 @@ import type {
   ContractV2FieldDescriptor,
   ContractV2FieldDescriptorMap,
   ContractV2FormFieldDescriptor,
+  ContractV2FormStructureRoleName,
+  ContractV2FormStructureRole,
   ContractV2FormStructureContract,
   ContractV2NormalizedStore,
   ContractV2Snapshot,
@@ -311,7 +313,18 @@ export function resolveContractV2FieldDescriptorMap(
     const relationEntry = asDict(config.relationEntry || descriptor.relation_entry);
     const widgetOptions = asDict(config.widgetOptions || descriptor.widget_options);
     const subview = asDict(config.subview || descriptor.subview);
-    const formStructureRole = asDict(widget.formStructureRole || config.formStructureRole || descriptor.formStructureRole);
+    const formStructureRoleCandidate = asDict(widget.formStructureRole || config.formStructureRole || descriptor.formStructureRole);
+    const roleName = asText(formStructureRoleCandidate.role);
+    const canonicalRoles = new Set<ContractV2FormStructureRoleName>(['summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit']);
+    const formStructureRole: ContractV2FormStructureRole | undefined = (
+      canonicalRoles.has(roleName as ContractV2FormStructureRoleName)
+      && asText(formStructureRoleCandidate.slot)
+      && asText(formStructureRoleCandidate.group)
+    ) ? {
+        role: roleName as ContractV2FormStructureRoleName,
+        slot: asText(formStructureRoleCandidate.slot),
+        group: asText(formStructureRoleCandidate.group),
+      } : undefined;
     out[code] = {
       fieldCode: code,
       label: asText(widget.label || descriptor.string) || code,
@@ -335,7 +348,7 @@ export function resolveContractV2FieldDescriptorMap(
       ...(asText(config.semanticType) ? { semanticType: asText(config.semanticType) } : {}),
       ...(asText(config.surfaceRole) ? { surfaceRole: asText(config.surfaceRole) } : {}),
       ...(typeof config.technical === 'boolean' ? { technical: config.technical } : {}),
-      ...(Object.keys(formStructureRole).length ? { formStructureRole } : {}),
+      ...(formStructureRole ? { formStructureRole } : {}),
     };
   });
   return out;

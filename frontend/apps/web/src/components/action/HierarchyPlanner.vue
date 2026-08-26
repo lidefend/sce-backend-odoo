@@ -252,7 +252,7 @@ function plannerRowAttributes(context: unknown): Record<string, unknown> {
 }
 function selectPlannerRow(context: unknown) { const entry = plannerEntry(context); if (entry) selectEntry(entry); }
 function openPlannerRow(context: unknown) { const entry = plannerEntry(context); if (entry) openRecord(entry.record); }
-function onSearchInput(event: Event): void { keyword.value = String((event.target as HTMLInputElement | null)?.value || ''); }
+function onSearchInput(value: string): void { keyword.value = value; }
 function selectEntry(entry: OutlineEntry): void { selectedRecord.value = entry.record; }
 function openRecord(record: Dict): void { if (Number(record.id || 0)) emit('open-record', record); }
 function openSelected(): void { if (selectedRecord.value) openRecord(selectedRecord.value); }

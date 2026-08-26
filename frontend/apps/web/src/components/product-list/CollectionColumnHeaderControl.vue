@@ -35,7 +35,7 @@ defineProps<{
   sortable: boolean;
   sorted: boolean;
   dragging: boolean;
-  sortIcon: string;
+  sortIcon: 'chevron-down' | 'chevron-up';
   sortTitle: string;
   ariaSort?: 'none' | 'ascending' | 'descending';
   dragLabel: string;

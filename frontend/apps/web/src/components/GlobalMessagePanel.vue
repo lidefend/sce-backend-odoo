@@ -130,7 +130,7 @@
           <footer class="global-message__composer">
             <ScTextarea
               v-model="body"
-              rows="3"
+              :rows="3"
               placeholder="输入沟通内容"
               :disabled="!composeMode && !activeConversation"
               @keydown.ctrl.enter.prevent="send"

@@ -9,7 +9,7 @@
     :hover="hover"
     :stripe="stripe"
     :row-class-name="rowClassName"
-    :row-attributes="rowAttributes"
+    :row-attributes="tdesignRowAttributes"
     :keyboard-row-hover="keyboardRowHover"
     :disable-data-page="disableDataPage"
     :table-content-width="tableContentWidth"
@@ -31,10 +31,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { TDesignTable } from './tdesignPrimitiveBridge';
 import { normalizePrimitiveSize, semanticPrimitiveIdentity, type ScPrimitiveSize } from './primitiveAdapter';
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   data?: Record<string, unknown>[];
   columns?: Record<string, unknown>[];
   rowKey?: string;
@@ -63,6 +64,12 @@ withDefaults(defineProps<{
   selectedRowKeys: () => [],
   footData: () => [],
 });
+function stringAttributes(attributes: Record<string, unknown> | undefined): Record<string, string> {
+  return Object.fromEntries(Object.entries(attributes || {}).map(([name, value]) => [name, String(value ?? '')]));
+}
+const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
+  ? (context: unknown) => stringAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
+  : stringAttributes(props.rowAttributes));
 const emit = defineEmits<{
   rowClick: [context: unknown];
   rowDblclick: [context: unknown];

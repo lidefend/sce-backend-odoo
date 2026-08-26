@@ -336,7 +336,7 @@ function expandAll() {
   sheetExpandedKeys.value = keys;
 }
 function collapseAll() { sheetExpandedKeys.value = new Set(); }
-function onSearchInput(event: Event) { keyword.value = String((event.target as HTMLInputElement | null)?.value || ''); }
+function onSearchInput(value: string) { keyword.value = value; }
 function storageKey() { return `sc:hierarchical-worksheet:${props.preferenceScope}:layout`; }
 function persistLayout() { window.localStorage.setItem(storageKey(), JSON.stringify({ navigationWidth: navigationWidth.value, detailHeight: detailHeight.value })); }
 function restoreLayout() {

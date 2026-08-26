@@ -154,6 +154,7 @@ interface WorkbenchTile {
     menu_id?: number;
     model?: string;
     record_id?: number;
+    record_entry?: unknown;
   };
 }
 

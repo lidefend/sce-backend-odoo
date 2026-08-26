@@ -68,7 +68,7 @@ export type CollectionAggregateColumn = {
   key: string;
   label?: string;
   numeric: boolean;
-  densityClass?: string;
+  densityClass?: string | Record<string, boolean>;
   style?: Record<string, string>;
 };
 

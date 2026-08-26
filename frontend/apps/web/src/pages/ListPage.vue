@@ -129,7 +129,7 @@
       <CollectionSummaryStrip
         v-if="enableSummaryStrip || summaryItems.length"
         class="summary-strip sc-product-summary-strip"
-        :aria-label="uiLabel('list_summary', '列表摘要')"
+        :ariaLabel="uiLabel('list_summary', '列表摘要')"
         :items="summaryItems"
       />
       <section

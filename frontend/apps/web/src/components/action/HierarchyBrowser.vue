@@ -206,7 +206,7 @@ async function loadRows(nextOffset = 0): Promise<void> {
   finally { if (requestEpoch === rowsRequestEpoch) loading.value = false; }
 }
 function selectAll(): void { selectedNode.value = null; void loadRows(0); }
-function onSearchInput(event: Event): void { keyword.value = String((event.target as HTMLInputElement | null)?.value || ''); }
+function onSearchInput(value: string): void { keyword.value = value; }
 function clearSearch(): void { keyword.value = ''; void loadRows(0); }
 function selectNode(node: TreeNode): void { selectedNode.value = node; void loadRows(0); }
 function toggleNode(node: TreeNode): void { const next = new Set(expandedKeys.value); if (next.has(node.key)) next.delete(node.key); else next.add(node.key); expandedKeys.value = next; }

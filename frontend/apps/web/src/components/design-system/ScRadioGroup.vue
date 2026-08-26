@@ -31,7 +31,7 @@ export interface ScRadioOption {
 
 const props = withDefaults(defineProps<{
   modelValue?: string | number | boolean;
-  options?: readonly ScRadioOption[];
+  options?: ScRadioOption[];
   name?: string;
   label: string;
   direction?: 'horizontal' | 'vertical';
