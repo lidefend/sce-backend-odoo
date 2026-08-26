@@ -293,8 +293,8 @@ def validate(root: Path = ROOT) -> list[str]:
         ".sc-select[data-size='medium'] .t-input",
         ".sc-textarea .t-textarea__inner",
         ".sc-btn.t-button",
-        ".sc-btn.t-button.sc-btn-primary",
-        ".sc-btn.t-button.sc-btn-primary:hover:not(:disabled)",
+        ".sc-btn.t-button.sc-btn-primary[data-status='default']",
+        ".sc-btn.t-button.sc-btn-primary[data-status='default']:hover:not(:disabled)",
         "background-color: var(--sc-semantic-surface-interactive)",
         "background-color: var(--sc-semantic-surface-interactive-hover)",
         "color: var(--sc-semantic-text-on-interactive)",
@@ -307,6 +307,8 @@ def validate(root: Path = ROOT) -> list[str]:
         for marker in visual_projection_markers:
             if marker not in ui_theme:
                 errors.append(f"TDesign visual projection bridge missing marker: {marker}")
+        if ".sc-btn.t-button.sc-btn-primary {" in ui_theme or ".sc-btn.t-button.sc-btn-primary:hover" in ui_theme:
+            errors.append("primary button visual projection must preserve non-default status themes")
         if FORBIDDEN_BUSINESS_IDENTITY.search(ui_theme):
             errors.append("TDesign visual projection bridge contains business-specific identity")
 

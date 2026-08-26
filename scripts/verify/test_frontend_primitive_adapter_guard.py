@@ -50,9 +50,9 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             ".sc-select[data-size='medium'] .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
             ".sc-textarea .t-textarea__inner { min-height: calc(var(--sc-component-input-height-md) * 2px); }\n"
             ".sc-btn.t-button { height: calc(var(--sc-component-button-height-md) * 1px); }\n"
-            ".sc-btn.t-button.sc-btn-primary { border-color: var(--sc-semantic-surface-interactive); "
+            ".sc-btn.t-button.sc-btn-primary[data-status='default'] { border-color: var(--sc-semantic-surface-interactive); "
             "background-color: var(--sc-semantic-surface-interactive); color: var(--sc-semantic-text-on-interactive); }\n"
-            ".sc-btn.t-button.sc-btn-primary:hover:not(:disabled) { "
+            ".sc-btn.t-button.sc-btn-primary[data-status='default']:hover:not(:disabled) { "
             "background-color: var(--sc-semantic-surface-interactive-hover); "
             "color: var(--sc-semantic-text-on-interactive); }\n",
             encoding="utf-8",
@@ -196,6 +196,16 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("surface-interactive-hover" in error for error in validate(root)))
+
+    def test_primary_projection_cannot_override_status_theme(self) -> None:
+        root = self.make_root()
+        theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+        theme.write_text(
+            theme.read_text(encoding="utf-8")
+            + "\n.sc-btn.t-button.sc-btn-primary { background-color: var(--sc-semantic-surface-interactive); }\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any("preserve non-default status themes" in error for error in validate(root)))
 
     def test_business_identity_in_visual_projection_fails(self) -> None:
         root = self.make_root()
