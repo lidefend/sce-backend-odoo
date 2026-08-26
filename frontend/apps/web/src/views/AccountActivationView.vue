@@ -10,21 +10,22 @@
           id="activation-code"
           ref="codeInput"
           v-model="activationCode"
+          size="large"
           autocomplete="one-time-code"
           spellcheck="false"
           required
           :disabled="busy"
         />
-        <ScButton type="submit" variant="primary" :disabled="busy || !activationCode.trim()" :loading="busy">{{ busy ? '正在验证…' : '继续' }}</ScButton>
+        <ScButton type="submit" variant="primary" size="large" :disabled="busy || !activationCode.trim()" :loading="busy">{{ busy ? '正在验证…' : '继续' }}</ScButton>
       </form>
 
       <form v-else-if="stage === 'password'" @submit.prevent="finishActivation">
         <p class="hint">密码至少12位，并同时包含字母和数字。</p>
         <label for="activation-password">正式密码</label>
-        <ScInput id="activation-password" v-model="password" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
+        <ScInput id="activation-password" v-model="password" size="large" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
         <label for="activation-password-confirm">确认正式密码</label>
-        <ScInput id="activation-password-confirm" v-model="confirmPassword" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
-        <ScButton type="submit" variant="primary" :disabled="busy || !password || !confirmPassword" :loading="busy">{{ busy ? '正在设置…' : '设置正式密码' }}</ScButton>
+        <ScInput id="activation-password-confirm" v-model="confirmPassword" size="large" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
+        <ScButton type="submit" variant="primary" size="large" :disabled="busy || !password || !confirmPassword" :loading="busy">{{ busy ? '正在设置…' : '设置正式密码' }}</ScButton>
       </form>
 
       <section v-else class="success" role="status">
