@@ -1,5 +1,5 @@
 <template>
-  <section :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]" data-component="FormSection">
+  <section :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]" data-component="FormSection" data-semantic-component="FormSection" :data-state="allFieldsReadonly ? 'readonly' : 'editable'">
     <div v-if="showHead" class="template-form-section-head">
       <h3 v-if="title" class="template-form-section-title">{{ title }}</h3>
       <slot name="action" />

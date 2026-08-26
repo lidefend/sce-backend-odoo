@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!isHidden" class="view-field">
+  <div v-if="!isHidden" class="view-field" data-semantic-component="ViewFieldRenderer" :data-state="canEdit ? 'editable' : 'readonly'">
     <label class="view-label">{{ label }}</label>
     <div class="view-value">
       <ViewRelationalRenderer

@@ -1,5 +1,5 @@
 <template>
-  <div class="relational">
+  <div class="relational" data-semantic-component="ViewRelationalRenderer" :data-state="loading ? 'loading' : error ? 'error' : rows.length ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <div class="relational-header">
       <span class="relational-title">{{ headerLabel }}</span>
       <div class="relational-actions">
@@ -7,9 +7,9 @@
         <ScButton v-if="canEdit" class="relational-add" type="button" variant="primary" size="small" @click="startCreate">Add line</ScButton>
       </div>
     </div>
-    <div v-if="loading" class="relational-meta">Loading related records…</div>
-    <div v-else-if="error" class="relational-meta">{{ error }}</div>
-    <div v-else-if="!rows.length" class="relational-meta">No related records.</div>
+    <ScInlineState v-if="loading" state="loading" label="Loading related records…" />
+    <ScInlineState v-else-if="error" state="error" :label="error" />
+    <ScInlineState v-else-if="!rows.length" state="empty" label="No related records." />
     <ul v-else class="relational-list">
       <li v-for="row in rows" :key="String(row.id)" class="relational-item">
         <ScButton class="relational-link" type="button" variant="ghost" size="small" @click="openRecord(row.id)">
@@ -21,7 +21,7 @@
         </div>
       </li>
     </ul>
-    <div v-if="truncated" class="relational-meta">Showing first {{ rows.length }} records.</div>
+    <ScInlineState v-if="truncated" state="info" :label="`Showing first ${rows.length} records.`" />
 
     <div v-if="editorVisible" class="relational-editor">
       <div class="editor-card">
@@ -36,7 +36,7 @@
           </ScButton>
           <ScButton class="relational-cancel" type="button" variant="ghost" @click="cancelEdit">Cancel</ScButton>
         </div>
-        <div v-if="editorError" class="relational-meta">{{ editorError }}</div>
+        <ScInlineState v-if="editorError" state="error" :label="editorError" />
       </div>
     </div>
   </div>
@@ -47,6 +47,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ScButton from '../design-system/ScButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 import { useEditTx } from '../../composables/useEditTx';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import {

@@ -1,6 +1,6 @@
 /* eslint-disable vue/no-dupe-keys */
 <template>
-  <div class="native-form-tree">
+  <div class="native-form-tree" data-semantic-component="NativeFormTreeRenderer" :data-state="visibleNodes.length ? 'ready' : 'empty'">
     <template v-for="(node, index) in visibleNodes" :key="nodeKey(node, index)">
       <section
         v-if="isContainerNode(node)"
