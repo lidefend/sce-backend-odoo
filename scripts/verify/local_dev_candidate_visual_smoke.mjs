@@ -394,6 +394,39 @@ try {
         };
       });
       const initialFinalUrl = page.url();
+      let nativeActionPresentationEvidence = null;
+      if (target.exerciseNativeActionOverflow === true) {
+        const smartActions = page.locator('[data-semantic-component="NativeSmartAction"]:visible');
+        const overflow = page.locator('[data-semantic-component="NativeActionOverflowMenu"]:visible').first();
+        const trigger = overflow.locator('[aria-haspopup="menu"]');
+        const smartActionCount = await smartActions.count();
+        const overflowCount = await page.locator('[data-semantic-component="NativeActionOverflowMenu"]:visible').count();
+        if (smartActionCount < 1 || overflowCount < 1 || await trigger.count() !== 1) {
+          throw new Error(`${target.name}: governed native smart action overflow is missing`);
+        }
+        const initialExpanded = await trigger.getAttribute('aria-expanded');
+        await trigger.click();
+        const menu = overflow.locator('[role="menu"]');
+        await menu.waitFor({ state: 'visible', timeout: 15000 });
+        const menuId = await menu.getAttribute('id');
+        const controls = await trigger.getAttribute('aria-controls');
+        const menuItemCount = await menu.locator('[role="menuitem"]').count();
+        await trigger.press('Escape');
+        await menu.waitFor({ state: 'hidden', timeout: 15000 });
+        const restoredExpanded = await trigger.getAttribute('aria-expanded');
+        const focusRestored = await trigger.evaluate((node) => node === document.activeElement);
+        nativeActionPresentationEvidence = {
+          smartActionCount, overflowCount, initialExpanded, menuId, controls, menuItemCount,
+          restoredExpanded, focusRestored,
+          pass: initialExpanded === 'false'
+            && Boolean(menuId)
+            && controls === menuId
+            && menuItemCount > 0
+            && restoredExpanded === 'false'
+            && focusRestored,
+        };
+        if (!nativeActionPresentationEvidence.pass) throw new Error(`${target.name}: native action disclosure semantics failed`);
+      }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
@@ -855,7 +888,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();

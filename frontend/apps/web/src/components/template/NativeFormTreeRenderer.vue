@@ -12,13 +12,14 @@
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
       >
         <header v-if="containerTitle(node)" class="native-container-head">
-          <input
+          <ScInput
             v-if="fieldConfigEditable && isEditableGroupNode(node)"
             class="native-container-title-editor"
             type="text"
-            :value="containerTitle(node)"
+            size="small"
+            :model-value="containerTitle(node)"
             :aria-label="`${containerTitle(node)}区域名称`"
-            @change="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
+            @change="emitGroupRename(node, $event)"
             @keydown.enter.prevent="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
           />
           <h3 v-else>{{ containerTitle(node) }}</h3>
@@ -203,45 +204,43 @@
             </template>
           </FormSection>
           <div v-if="buttonChildren(node).length" :class="nativeActionsClass(node)">
-            <button
-              v-for="(buttonNode, buttonIndex) in visibleActionButtons(node)"
-              :key="nodeKey(buttonNode, buttonIndex)"
-              v-bind="nativeActionEvidenceAttributes(buttonNode)"
-              type="button"
-              :class="nativeActionButtonClass(buttonNode)"
-              :disabled="nativeActionDisabled(buttonNode)"
-              :title="nativeActionTitle(buttonNode)"
-              @click.stop.prevent="emitNativeAction(buttonNode)"
-            >
-              <span v-if="buttonIcon(buttonNode)" :class="['native-action-icon', buttonIcon(buttonNode)]" aria-hidden="true" />
-              <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
-            </button>
-            <div v-if="overflowActionButtons(node).length" class="native-action-more">
-              <button
+            <template v-for="(buttonNode, buttonIndex) in visibleActionButtons(node)" :key="nodeKey(buttonNode, buttonIndex)">
+              <ScButton
+                v-if="!isSmartButtonNode(buttonNode)"
+                v-bind="nativeActionEvidenceAttributes(buttonNode)"
                 type="button"
-                class="native-action-btn native-action-btn--smart native-action-btn--more"
-                :aria-expanded="isMoreOpen(node)"
-                @click="toggleMore(node)"
+                class="native-action-btn"
+                size="small"
+                variant="secondary"
+                :disabled="nativeActionDisabled(buttonNode)"
+                :title="nativeActionTitle(buttonNode)"
+                @click.stop.prevent="emitNativeAction(buttonNode)"
               >
-                <span class="native-action-label">更多</span>
-              </button>
-              <div v-if="isMoreOpen(node)" class="native-action-more-menu" role="menu">
-                <button
-                  v-for="(buttonNode, buttonIndex) in overflowActionButtons(node)"
-                  :key="`more-${nodeKey(buttonNode, buttonIndex)}`"
-                  v-bind="nativeActionEvidenceAttributes(buttonNode)"
-                  type="button"
-                  class="native-action-more-item"
-                  role="menuitem"
-                  :disabled="nativeActionDisabled(buttonNode)"
-                  :title="nativeActionTitle(buttonNode)"
-                  @click.stop.prevent="emitNativeAction(buttonNode); closeMore(node)"
-                >
-                  <span v-if="buttonIcon(buttonNode)" :class="['native-action-icon', buttonIcon(buttonNode)]" aria-hidden="true" />
-                  <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
-                </button>
-              </div>
-            </div>
+                <span v-if="buttonIcon(buttonNode)" :class="['native-action-icon', buttonIcon(buttonNode)]" aria-hidden="true" />
+                <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
+              </ScButton>
+              <NativeSmartAction
+                v-else
+                v-bind="nativeActionEvidenceAttributes(buttonNode)"
+                :label="buttonLabel(buttonNode)"
+                :icon="buttonIcon(buttonNode)"
+                :disabled="nativeActionDisabled(buttonNode)"
+                :title="nativeActionTitle(buttonNode)"
+                @click.stop.prevent="emitNativeAction(buttonNode)"
+              />
+            </template>
+            <NativeActionOverflowMenu
+              v-if="overflowActionButtons(node).length"
+              :actions="overflowActionButtons(node)"
+              :identity="nodeKey(node, index)"
+              :key-resolver="overflowActionKey"
+              :evidence-resolver="nativeActionEvidenceAttributes"
+              :label-resolver="buttonLabel"
+              :icon-resolver="buttonIcon"
+              :disabled-resolver="nativeActionDisabled"
+              :title-resolver="nativeActionTitle"
+              @select="emitNativeAction"
+            />
           </div>
           <template v-for="(widgetNode, widgetIndex) in widgetChildren(node)" :key="nodeKey(widgetNode, widgetIndex)">
             <div v-if="widgetName(widgetNode) === 'web_ribbon'" class="native-ribbon" :class="widgetClass(widgetNode)">
@@ -331,17 +330,29 @@
       </FormSection>
 
       <div v-else-if="nodeType(node) === 'button'" :class="nativeActionsClass(node)">
-        <button
+        <ScButton
+          v-if="!isSmartButtonNode(node)"
           v-bind="nativeActionEvidenceAttributes(node)"
           type="button"
-          :class="nativeActionButtonClass(node)"
+          class="native-action-btn"
+          size="small"
+          variant="secondary"
           :disabled="nativeActionDisabled(node)"
           :title="nativeActionTitle(node)"
           @click.stop.prevent="emitNativeAction(node)"
         >
           <span v-if="buttonIcon(node)" :class="['native-action-icon', buttonIcon(node)]" aria-hidden="true" />
           <span class="native-action-label">{{ buttonLabel(node) }}</span>
-        </button>
+        </ScButton>
+        <NativeSmartAction
+          v-else
+          v-bind="nativeActionEvidenceAttributes(node)"
+          :label="buttonLabel(node)"
+          :icon="buttonIcon(node)"
+          :disabled="nativeActionDisabled(node)"
+          :title="nativeActionTitle(node)"
+          @click.stop.prevent="emitNativeAction(node)"
+        />
       </div>
 
       <div v-else-if="nodeType(node) === 'widget' && widgetName(node) === 'web_ribbon'" class="native-ribbon" :class="widgetClass(node)">
@@ -356,7 +367,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
+import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
+import NativeSmartAction from './NativeSmartAction.vue';
+import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScInput from '../design-system/ScInput.vue';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import type {
   FormSectionFieldAction,
@@ -463,7 +478,6 @@ const emit = defineEmits<{
 }>();
 
 const activePageIndex = ref(0);
-const openMoreKeys = ref<Record<string, boolean>>({});
 const SMART_BUTTON_DIRECT_LIMIT = 4;
 const visibleNodes = computed(() => (props.nodes || []).filter((node) => isNodeRenderable(node)));
 
@@ -703,10 +717,6 @@ function nativeActionsClass(node: NativeFormLayoutNode) {
   return ['native-actions', { 'native-actions--smart': smart }];
 }
 
-function nativeActionButtonClass(node: NativeFormLayoutNode) {
-  return ['native-action-btn', { 'native-action-btn--smart': isSmartButtonNode(node) }];
-}
-
 function nativeActionState(node: NativeFormLayoutNode) {
   return props.nativeActionStateResolver?.(node as Record<string, unknown>) || {};
 }
@@ -786,29 +796,8 @@ function emitNativeAction(node: NativeFormLayoutNode) {
   emit('native-action', action);
 }
 
-function moreKey(node: NativeFormLayoutNode) {
-  return nodeKey(node, 0);
-}
-
-function isMoreOpen(node: NativeFormLayoutNode) {
-  return Boolean(openMoreKeys.value[moreKey(node)]);
-}
-
-function toggleMore(node: NativeFormLayoutNode) {
-  const key = moreKey(node);
-  openMoreKeys.value = {
-    ...openMoreKeys.value,
-    [key]: !openMoreKeys.value[key],
-  };
-}
-
-function closeMore(node: NativeFormLayoutNode) {
-  const key = moreKey(node);
-  if (!openMoreKeys.value[key]) return;
-  openMoreKeys.value = {
-    ...openMoreKeys.value,
-    [key]: false,
-  };
+function overflowActionKey(node: Record<string, unknown>, index: number) {
+  return `more-${nodeKey(node as NativeFormLayoutNode, index)}`;
 }
 </script>
 
@@ -897,13 +886,6 @@ function closeMore(node: NativeFormLayoutNode) {
 .native-container-title-editor {
   min-width: 140px;
   max-width: 260px;
-  height: 30px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 5px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 4px 8px;
-  font-size: 14px;
   font-weight: 600;
 }
 
@@ -992,84 +974,10 @@ function closeMore(node: NativeFormLayoutNode) {
 }
 
 .native-action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   gap: 6px;
-  min-height: calc(var(--sc-component-button-height-sm) * 1px);
-  border: 1px solid var(--sc-app-border);
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  padding: 4px 9px;
-  border-radius: var(--sc-component-button-radius);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  cursor: pointer;
   min-width: 0;
   max-width: 100%;
   white-space: nowrap;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
-}
-
-.native-action-btn--smart {
-  justify-content: flex-start;
-  min-height: 60px;
-  border: 0;
-  border-radius: 0;
-  padding: 12px 14px;
-  color: var(--sc-app-text-primary);
-  background: var(--sc-app-panel);
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.native-action-more {
-  position: relative;
-  display: inline-flex;
-  min-width: 0;
-  width: 100%;
-}
-
-.native-action-btn--more {
-  width: 100%;
-  justify-content: center;
-}
-
-.native-action-more-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 12;
-  min-width: 160px;
-  max-width: min(280px, 80vw);
-  display: grid;
-  gap: 2px;
-  padding: 6px;
-  background: var(--sc-app-panel);
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 6px;
-  box-shadow: var(--sc-semantic-shadow-modal);
-}
-
-.native-action-more-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  padding: 8px 10px;
-  border-radius: 5px;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  min-width: 0;
-}
-
-.native-action-more-item:hover {
-  background: var(--sc-app-hover-bg);
 }
 
 .native-action-icon {
@@ -1084,26 +992,6 @@ function closeMore(node: NativeFormLayoutNode) {
   overflow-wrap: anywhere;
   line-height: 1.25;
   font-weight: inherit;
-}
-
-.native-action-btn:hover {
-  background: var(--sc-app-hover-bg);
-}
-
-.native-action-btn:focus-visible {
-  border-color: var(--sc-semantic-surface-interactive);
-  box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
-  outline: none;
-}
-
-.native-action-btn:disabled {
-  cursor: not-allowed;
-  opacity: var(--sc-base-opacity-disabled);
-}
-
-.native-action-btn--smart:hover {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
 }
 
 .native-title-row {
