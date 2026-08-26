@@ -611,18 +611,19 @@ try {
         if (controlCount < 1) throw new Error(`${target.name}: collection selection adapter is missing`);
         const rowControl = mobileDriver
           ? page.locator('[data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]:visible').first()
-          : table.locator('tbody input[type="checkbox"]').first();
+          : table.locator('tbody .t-checkbox').first();
         if (await rowControl.count() !== 1) throw new Error(`${target.name}: collection row selection adapter is missing`);
         const rowInput = mobileDriver ? rowControl.locator('input[type="checkbox"]') : rowControl;
+        const effectiveInput = mobileDriver ? rowInput : rowControl.locator('input[type="checkbox"]');
         const stateOf = async (input) => await input.isChecked() ? 'checked' : 'unchecked';
-        const initialRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(rowInput);
-        const ariaLabel = await rowInput.getAttribute('aria-label') || await rowControl.getAttribute('title') || '';
-        const touchTarget = await (mobileDriver ? rowControl : rowInput).boundingBox();
-        await rowInput.focus();
-        const focusContained = await rowInput.evaluate((node) => node === document.activeElement || node.parentElement?.contains(document.activeElement));
-        await rowInput.click({ force: true });
-        await page.waitForFunction((input) => input instanceof HTMLInputElement && input.checked, await rowInput.elementHandle(), { timeout: 15000 });
-        const selectedRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(rowInput);
+        const initialRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(effectiveInput);
+        const ariaLabel = await effectiveInput.getAttribute('aria-label') || await rowControl.getAttribute('aria-label') || await rowControl.getAttribute('title') || '';
+        const touchTarget = await rowControl.boundingBox();
+        await effectiveInput.focus();
+        const focusContained = await rowControl.evaluate((node) => node.contains(document.activeElement));
+        await rowControl.click();
+        await page.waitForFunction((input) => input instanceof HTMLInputElement && input.checked, await effectiveInput.elementHandle(), { timeout: 15000 });
+        const selectedRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(effectiveInput);
         let selectedHeaderState = null;
         let headerIndeterminate = null;
         const headerControl = mobileDriver
@@ -632,9 +633,9 @@ try {
           selectedHeaderState = await headerControl.evaluate((input) => input.indeterminate ? 'mixed' : input.checked ? 'checked' : 'unchecked');
           headerIndeterminate = await headerControl.evaluate((input) => input.indeterminate);
         }
-        await rowInput.click({ force: true });
-        await page.waitForFunction((input) => input instanceof HTMLInputElement && !input.checked, await rowInput.elementHandle(), { timeout: 15000 });
-        const restoredRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(rowInput);
+        await rowControl.click();
+        await page.waitForFunction((input) => input instanceof HTMLInputElement && !input.checked, await effectiveInput.elementHandle(), { timeout: 15000 });
+        const restoredRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(effectiveInput);
         const restoredHeaderState = viewport.name === 'desktop' && await headerControl.count() === 1
           ? await headerControl.evaluate((input) => input.indeterminate ? 'mixed' : input.checked ? 'checked' : 'unchecked')
           : null;
