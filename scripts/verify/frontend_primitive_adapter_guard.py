@@ -182,9 +182,9 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInputGroup must consume the public project TDesign InputAdornment authority")
 
     tabs_text = (design / "ScTabs.vue").read_text(encoding="utf-8") if (design / "ScTabs.vue").is_file() else ""
-    if "<TDesignTabs" not in tabs_text or "<TDesignTabPanel" not in tabs_text:
-        errors.append("ScTabs must delegate tab navigation and panels to the TDesign driver")
-    if ':label="tabLabel(item)"' not in tabs_text or "return h('span'" not in tabs_text:
+    if "<TDesignTabs" not in tabs_text or ':list="items.length ? tdesignItems : undefined"' not in tabs_text:
+        errors.append("ScTabs must delegate tab navigation and panels through the TDesign list driver")
+    if "label: tabLabel(item)" not in tabs_text or "return h('span'" not in tabs_text:
         errors.append("ScTabs must project the formal label prop as measurable semantic content")
 
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
