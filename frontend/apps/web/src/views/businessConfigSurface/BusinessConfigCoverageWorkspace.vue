@@ -1,5 +1,5 @@
 <template>
-<section v-if="coverageScan" class="scan-panel">
+<ScCard v-if="coverageScan" appearance="main-surface" class="scan-panel">
   <div class="scan-toolbar">
     <label class="page-search">
       <span>页面搜索</span>
@@ -105,7 +105,7 @@
       <div v-else class="empty-state">当前没有匹配的业务页面，可调整搜索条件或取消“只看需处理”。</div>
     </aside>
 
-    <section v-if="(!loading || surface) && (currentModel || visibleConfigSections.length)" class="page-config-panel" aria-label="已选页面配置">
+    <ScCard v-if="(!loading || surface) && (currentModel || visibleConfigSections.length)" appearance="main-surface" class="page-config-panel" aria-label="已选页面配置">
       <div class="selected-page-overview">
         <div>
           <span>正在配置</span>
@@ -223,7 +223,7 @@
           </div>
         </ScCard>
       </div>
-    </section>
+    </ScCard>
     <aside v-if="surface" class="workbench-status-rail" aria-label="交付状态" data-lowcode-delivery-readiness="low_code_delivery_readiness.v1">
       <div class="delivery-readiness-head">
         <div>
@@ -254,7 +254,7 @@
       </div>
     </aside>
   </div>
-</section>
+</ScCard>
 </template>
 
 <script setup lang="ts">

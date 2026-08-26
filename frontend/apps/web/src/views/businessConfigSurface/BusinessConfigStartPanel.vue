@@ -1,5 +1,5 @@
 <template>
-  <section class="workbench-start sc-product-main-surface" data-lowcode-workbench-ia="start">
+  <ScCard appearance="main-surface" class="workbench-start sc-product-main-surface" data-lowcode-workbench-ia="start">
     <div class="workbench-start-main">
       <div class="workbench-start-lead">
         <div class="workbench-start-copy">
@@ -135,7 +135,7 @@
       </div>
       <div v-if="!visibleDeliveryReadinessItems.length" class="workbench-status-empty">状态读取中</div>
     </aside>
-  </section>
+  </ScCard>
 </template>
 
 <script setup lang="ts">
