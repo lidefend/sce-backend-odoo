@@ -76,8 +76,8 @@ KNOWN_GOVERNED_COMPOSITES = {
     "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue",
 }
 
-NEXT_BATCH_GAPS = set(OWNERSHIP["owners"]["p0-inline-full-state-completion-v1"]["sources"])
-NEXT_BATCH_BINDINGS = {
+BATCH_BINDINGS = {
+    "p0-inline-full-state-completion-v1": {
     "frontend/apps/web/src/layouts/AppShell.vue": {"scinlinestate": {"states": {"loading", "error", "empty"}, "minimum": 4}},
     "frontend/apps/web/src/components/GlobalMessagePanel.vue": {"scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
     "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue": {"scerrorstate": {"minimum": 1}},
@@ -86,7 +86,30 @@ NEXT_BATCH_BINDINGS = {
     "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue": {"scinlinestate": {"states": {"empty", "error", "info"}, "minimum": 4}},
     "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue": {"scinlinestate": {"states": {"empty", "error"}, "minimum": 2}},
     "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue": {"scinlinestate": {"states": {"loading", "empty"}, "minimum": 1}},
+    },
+    "p0-collection-state-control-completion-v1": {
+        "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue": {"section": {"attrs": {"data-semantic-component": "CollectionBatchActionBar", ":data-state": "loading ? 'loading' : selectedCount ? 'ready' : 'empty'"}}},
+        "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue": {"nav": {"attrs": {"data-semantic-component": "CollectionGroupPageControls", ":data-state": "loading ? 'loading' : 'ready'"}}},
+        "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue": {"header": {"attrs": {"data-semantic-component": "CollectionGroupingToolbar"}}},
+        "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue": {"article": {"attrs": {"data-semantic-component": "CollectionKanbanRecordCard", ":aria-disabled": "disabled || undefined"}}},
+        "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue": {"article": {"attrs": {"data-semantic-component": "CollectionMobileRecordRow", ":data-state": "selectionDisabled ? 'selection-disabled' : 'ready'"}}},
+        "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue": {"nav": {"attrs": {"data-semantic-component": "CollectionPaginationFooter", ":data-state": "loading ? 'loading' : 'ready'"}}},
+        "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue": {"productlistheader": {"attrs": {"data-list-surface-header": ""}}},
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue": {"section": {"attrs": {"data-semantic-component": "ProductListHeader", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue": {"section": {"attrs": {"data-semantic-component": "ProductLoadingSkeleton", "data-state": "loading"}}},
+        "frontend/apps/web/src/pages/KanbanPage.vue": {"section": {"attrs": {"data-semantic-component": "KanbanPage", ":data-collection-state": "status"}}},
+        "frontend/apps/web/src/pages/ListPage.vue": {"section": {"attrs": {"data-semantic-component": "ListPage", ":data-list-status": "status"}}},
+        "frontend/apps/web/src/pages/ModelListPage.vue": {"main": {"attrs": {"data-semantic-component": "ModelListCompatibilityRedirect", "data-state": "redirecting"}}},
+        "frontend/apps/web/src/views/ActionView.vue": {"scpage": {"attrs": {"data-semantic-component": "ActionView", ":data-collection-state": "status"}}},
+    },
 }
+OWNED_BINDINGS = {
+    source: (batch, requirements)
+    for batch, bindings in BATCH_BINDINGS.items()
+    for source, requirements in bindings.items()
+}
+NEXT_BATCH_GAPS = set(BATCH_BINDINGS["p0-inline-full-state-completion-v1"])
+NEXT_BATCH_BINDINGS = BATCH_BINDINGS["p0-inline-full-state-completion-v1"]
 COMPONENT_IMPORTS = {
     "scinlinestate": "ScInlineState",
     "scerrorstate": "ScErrorState",
@@ -130,15 +153,15 @@ def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]
     imports = set(re.findall(r"import\s+([A-Za-z_$][\w$]*)\s+from\s+['\"][^'\"]*design-system/[^'\"]+['\"]", script))
     failures: list[str] = []
     for tag, rule in requirements.items():
-        expected_import = COMPONENT_IMPORTS[tag]
-        if expected_import not in imports:
+        expected_import = rule.get("import") or COMPONENT_IMPORTS.get(tag)
+        if expected_import and expected_import not in imports:
             failures.append(f"missing design-system import {expected_import}")
         nodes = [attrs for node_tag, attrs in parser.elements if node_tag == tag]
         if len(nodes) < rule.get("minimum", 1):
-            failures.append(f"{expected_import} template nodes {len(nodes)} < {rule.get('minimum', 1)}")
+            failures.append(f"{expected_import or tag} template nodes {len(nodes)} < {rule.get('minimum', 1)}")
         for name, value in rule.get("attrs", {}).items():
             if not any(attrs.get(name) == value for attrs in nodes):
-                failures.append(f"{expected_import} missing template attribute {name}={value}")
+                failures.append(f"{expected_import or tag} missing template attribute {name}={value}")
         states = set()
         for attrs in nodes:
             if "state" in attrs:
@@ -147,7 +170,7 @@ def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]
             states.update(re.findall(r"['\"](info|loading|empty|error)['\"]", expression))
         missing_states = set(rule.get("states", set())) - states
         if missing_states:
-            failures.append(f"{expected_import} missing states {','.join(sorted(missing_states))}")
+            failures.append(f"{expected_import or tag} missing states {','.join(sorted(missing_states))}")
     return failures
 
 
@@ -182,8 +205,9 @@ def classify(source: str, text: str) -> tuple[str, str]:
         return "deliberate_native_composite", DELIBERATE_NATIVE_COMPOSITES[source]
     if source in KNOWN_GOVERNED_COMPOSITES:
         return "governed_composite", "state/dashboard or overlay guard owns this composite"
-    if source in NEXT_BATCH_GAPS:
-        failures = component_binding_failures(text, NEXT_BATCH_BINDINGS[source])
+    if source in OWNED_BINDINGS:
+        _, requirements = OWNED_BINDINGS[source]
+        failures = component_binding_failures(text, requirements)
         if not failures:
             return "governed_composite", "formal ownership and parsed SFC component bindings are present"
         return "gap", f"declared P0 inline/full-state completion target; invalid bindings: {'; '.join(failures)}"
@@ -215,7 +239,7 @@ def build_inventory() -> dict[str, Any]:
             "stateTypes": state_types,
             "rawControls": raw_controls,
             "governedStatePrimitives": governed_primitives,
-            "targetBatch": "p0-inline-full-state-completion-v1" if source in NEXT_BATCH_GAPS else None,
+            "targetBatch": OWNED_BINDINGS[source][0] if source in OWNED_BINDINGS else None,
         })
     counts = Counter(item["status"] for item in surfaces)
     return {
@@ -235,9 +259,9 @@ def build_inventory() -> dict[str, Any]:
         ],
         "summary": {"surfaceCount": len(surfaces), **{key: counts.get(key, 0) for key in sorted(STATUS_VALUES)}},
         "nextBatch": {
-            "key": "p0-inline-full-state-completion-v1",
-            "targetSurfaceCount": len(NEXT_BATCH_GAPS),
-            "targetSources": sorted(NEXT_BATCH_GAPS),
+            "key": "p0-collection-state-control-completion-v1",
+            "targetSurfaceCount": len(BATCH_BINDINGS["p0-collection-state-control-completion-v1"]),
+            "targetSources": sorted(BATCH_BINDINGS["p0-collection-state-control-completion-v1"]),
             "commitBudget": {"minimum": 12, "maximum": 20},
         },
         "surfaces": surfaces,

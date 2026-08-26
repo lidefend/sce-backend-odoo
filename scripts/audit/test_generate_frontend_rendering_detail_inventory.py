@@ -35,6 +35,24 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], "p0-inline-full-state-completion-v1")
 
+    def test_collection_batch_sources_have_machine_proven_completion(self) -> None:
+        batch = "p0-collection-state-control-completion-v1"
+        sources = INVENTORY.BATCH_BINDINGS[batch]
+        self.assertEqual(len(sources), 13)
+        self.assertEqual(self.report["nextBatch"]["key"], batch)
+        for source in sources:
+            self.assertIn(source, self.by_source)
+            self.assertEqual(self.by_source[source]["status"], "governed_composite")
+            self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
+    def test_collection_ownership_without_semantic_binding_fails_closed(self) -> None:
+        source = "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue"
+        fake = """<template><nav :data-state=\"loading ? 'loading' : 'ready'\"></nav></template>
+<script setup lang=\"ts\"></script>"""
+        status, reason = INVENTORY.classify(source, fake)
+        self.assertEqual(status, "gap")
+        self.assertIn("data-semantic-component", reason)
+
     def test_next_batch_missing_marker_fails_closed(self) -> None:
         source = "frontend/apps/web/src/components/page/BlockRenderer.vue"
         status, reason = INVENTORY.classify(source, "<ScErrorState />")
