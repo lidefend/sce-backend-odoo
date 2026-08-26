@@ -64,12 +64,15 @@ const props = withDefaults(defineProps<{
   selectedRowKeys: () => [],
   footData: () => [],
 });
-function stringAttributes(attributes: Record<string, unknown> | undefined): Record<string, string> {
-  return Object.fromEntries(Object.entries(attributes || {}).map(([name, value]) => [name, String(value ?? '')]));
+function projectRowAttributes(attributes: Record<string, unknown> | undefined): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(attributes || {}).map(([name, value]) => [
+    name,
+    /^on[A-Z]/.test(name) && typeof value === 'function' ? value : String(value ?? ''),
+  ]));
 }
 const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
-  ? (context: unknown) => stringAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
-  : stringAttributes(props.rowAttributes));
+  ? (context: unknown) => projectRowAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
+  : projectRowAttributes(props.rowAttributes));
 const emit = defineEmits<{
   rowClick: [context: unknown];
   rowDblclick: [context: unknown];
