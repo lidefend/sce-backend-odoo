@@ -1,7 +1,7 @@
 <template>
   <TDesignDialog :visible="open" :header="false" :footer="false" :close-btn="false"
     :close-on-esc-keydown="dismissible" :close-on-overlay-click="dismissible && closeOnBackdrop"
-    :confirm-loading="busy" :width="size === 'wide' ? 'var(--sc-component-dialog-wide-width)' : 'var(--sc-component-dialog-width)'"
+    :confirm-loading="busy" :dialog-style="{ width: size === 'wide' ? 'var(--sc-component-dialog-wide-width)' : 'var(--sc-component-dialog-width)' }"
     :dialog-class-name="['sc-dialog', panelClass].filter(Boolean).join(' ')" :z-index="dialogZIndex" @close="emit('close')">
     <section v-bind="$attrs" role="dialog" aria-modal="true" :aria-labelledby="titleId" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
       data-semantic-component="ScDialog" data-semantic-driver="tdesign-dialog" data-semantic-layer="primitive"
