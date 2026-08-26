@@ -11,9 +11,13 @@
     :row-class-name="rowClassName"
     :row-attributes="rowAttributes"
     :keyboard-row-hover="keyboardRowHover"
+    :selected-row-keys="selectedRowKeys"
+    :row-selection-type="rowSelectionType"
+    :select-on-row-click="selectOnRowClick"
     :aria-label="label"
     @row-click="emit('rowClick', $event)"
     @row-dblclick="emit('rowDblclick', $event)"
+    @select-change="onSelectChange"
   >
     <template v-for="(_, name) in $slots" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps ?? {}" />
@@ -36,6 +40,9 @@ withDefaults(defineProps<{
   rowClassName?: string | ((context: unknown) => unknown);
   rowAttributes?: Record<string, unknown> | ((context: unknown) => Record<string, unknown>);
   keyboardRowHover?: boolean;
+  selectedRowKeys?: Array<string | number>;
+  rowSelectionType?: 'single' | 'multiple';
+  selectOnRowClick?: boolean;
   label: string;
 }>(), {
   data: () => [],
@@ -44,6 +51,12 @@ withDefaults(defineProps<{
   size: 'medium',
   hover: true,
   keyboardRowHover: true,
+  selectedRowKeys: () => [],
 });
-const emit = defineEmits<{ rowClick: [context: unknown]; rowDblclick: [context: unknown] }>();
+const emit = defineEmits<{
+  rowClick: [context: unknown];
+  rowDblclick: [context: unknown];
+  selectChange: [keys: Array<string | number>, context: unknown];
+}>();
+function onSelectChange(keys: Array<string | number>, context: unknown) { emit('selectChange', keys, context); }
 </script>
