@@ -113,16 +113,18 @@
         >
           <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
         </button>
-        <button
+        <ScButton
           v-if="hasStructuredConditions"
           class="toolbar-clear-all"
           type="button"
+          variant="ghost"
+          size="small"
           :disabled="loading"
           :aria-label="`已应用 ${activeConditionCount} 项查询条件，清除全部`"
           @click="$emit('clear-all')"
         >
           清除全部
-        </button>
+        </ScButton>
       </div>
       <div v-if="searchMenuOpen && hasSearchMenu" id="collection-search-disclosure" class="search-dropdown" data-collection-toolbar-layer="search">
         <section v-if="showFilterColumn" class="search-dropdown-section">
@@ -151,25 +153,25 @@
               <span>{{ customFilterLabel }}</span>
             </button>
             <div v-if="customFilterEnabled && customFilterOpen" class="custom-search-panel">
-              <select v-model="customFilterField">
+              <ScSelect v-model="customFilterField" size="small">
                 <option value="">{{ uiLabel('select_field', '选择字段') }}</option>
                 <option v-for="field in customFilterFields" :key="field.field" :value="field.field">{{ field.label }}</option>
-              </select>
-              <select v-model="customFilterOperator">
+              </ScSelect>
+              <ScSelect v-model="customFilterOperator" size="small">
                 <option v-for="operator in activeCustomFilterOperators" :key="operator.value" :value="operator.value">{{ operator.label }}</option>
-              </select>
-              <select v-if="activeCustomFilterField?.type === 'selection'" v-model="customFilterValue">
+              </ScSelect>
+              <ScSelect v-if="activeCustomFilterField?.type === 'selection'" v-model="customFilterValue" size="small">
                 <option value="">{{ uiLabel('select_value', '选择值') }}</option>
                 <option v-for="choice in activeCustomFilterChoices" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
-              </select>
-              <select v-else-if="activeCustomFilterField?.type === 'boolean'" v-model="customFilterValue">
+              </ScSelect>
+              <ScSelect v-else-if="activeCustomFilterField?.type === 'boolean'" v-model="customFilterValue" size="small">
                 <option value="true">{{ uiLabel('boolean_true', '是') }}</option>
                 <option value="false">{{ uiLabel('boolean_false', '否') }}</option>
-              </select>
-              <input v-else v-model="customFilterValue" :type="customFilterInputType" :placeholder="uiLabel('input_value', '输入值')" />
+              </ScSelect>
+              <ScInput v-else v-model="customFilterValue" size="small" :type="customFilterInputType" :placeholder="uiLabel('input_value', '输入值')" />
               <div class="custom-search-actions">
-                <button type="button" :disabled="!canApplyCustomFilter || loading" @click="applyCustomFilter">{{ uiLabel('add', '添加') }}</button>
-                <button type="button" :disabled="loading" @click="resetCustomFilter">{{ uiLabel('cancel', '取消') }}</button>
+                <ScButton type="button" variant="primary" size="small" :disabled="!canApplyCustomFilter || loading" @click="applyCustomFilter">{{ uiLabel('add', '添加') }}</ScButton>
+                <ScButton type="button" variant="ghost" size="small" :disabled="loading" @click="resetCustomFilter">{{ uiLabel('cancel', '取消') }}</ScButton>
               </div>
             </div>
           </div>
@@ -231,7 +233,7 @@
               <span>{{ favoriteSaveLabel }}</span>
             </button>
             <div v-if="favoriteSaveEnabled && favoriteSaveOpen" class="custom-search-panel">
-              <input v-model="favoriteName" :placeholder="uiLabel('favorite_name', '收藏名称')" />
+              <ScInput v-model="favoriteName" size="small" :placeholder="uiLabel('favorite_name', '收藏名称')" />
               <label class="custom-search-check">
                 <input v-model="favoriteUseByDefault" type="checkbox" />
                 <span>{{ uiLabel('favorite_use_by_default', '设为默认筛选') }}</span>
@@ -241,8 +243,8 @@
                 <span>{{ uiLabel('favorite_shared', '共享给所有用户') }}</span>
               </label>
               <div class="custom-search-actions">
-                <button type="button" :disabled="!favoriteName.trim() || loading" @click="saveFavorite">{{ uiLabel('save', '保存') }}</button>
-                <button type="button" :disabled="loading" @click="favoriteSaveOpen = false">{{ uiLabel('cancel', '取消') }}</button>
+                <ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading" @click="saveFavorite">{{ uiLabel('save', '保存') }}</ScButton>
+                <ScButton type="button" variant="ghost" size="small" :disabled="loading" @click="favoriteSaveOpen = false">{{ uiLabel('cancel', '取消') }}</ScButton>
               </div>
             </div>
           </div>
@@ -310,16 +312,18 @@
             {{ option.label }}
           </button>
         </section>
-        <button
+        <ScButton
           v-if="canCreateRecord"
           class="toolbar-overflow-create"
           type="button"
+          variant="primary"
+          size="small"
           :disabled="loading"
           @click="createFromOverflow"
         >
           <ScIcon name="plus" :size="16" />
           {{ createLabel }}
-        </button>
+        </ScButton>
       </div>
     </div>
 
@@ -337,6 +341,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScSelect from '../design-system/ScSelect.vue';
 
 type SearchChip = { key: string; label: string };
 type CustomOperator = { value: string; label: string; needs_value?: boolean };

@@ -42,6 +42,27 @@ class CollectionActionToolbarGuardTest(unittest.TestCase):
             validate(altered, self.list_source, self.overflow_source, self.batch_source),
         )
 
+    def test_generic_toolbar_action_cannot_regress_to_legacy_button(self):
+        altered = self.source.replace(
+            '<ScButton type="button" variant="primary" size="small" :disabled="!canApplyCustomFilter || loading"',
+            '<button type="button" :disabled="!canApplyCustomFilter || loading"',
+        )
+        self.assertIn(
+            "collection toolbar retains a generic legacy action control",
+            validate(altered, self.list_source, self.overflow_source, self.batch_source),
+        )
+
+    def test_custom_filter_select_must_use_registered_primitive(self):
+        altered = self.source.replace(
+            '<ScSelect v-model="customFilterField" size="small">',
+            '<select v-model="customFilterField">',
+        )
+        self.assertTrue(any("customFilterField" in item for item in validate(altered, self.list_source)))
+
+    def test_stateful_view_chip_cannot_be_erased_by_mechanical_migration(self):
+        altered = self.source.replace('class="contract-chip"', 'class="generic-action"')
+        self.assertTrue(any("stateful native control" in item for item in validate(altered, self.list_source)))
+
     def test_parallel_direct_and_overflow_projection_fails(self):
         altered = self.batch_source.replace(
             'v-for="action in actionLayout.direct"',
