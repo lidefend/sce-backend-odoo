@@ -12,7 +12,7 @@
         empty-label=""
         @change="emit('selected', $event)"
       />
-      <p v-if="error" class="validation-error native-chatter-message">{{ error }}</p>
+      <ScInlineState v-if="error" class="validation-error native-chatter-message" state="error" :label="error" />
     </section>
     <ul v-if="pending.length" class="native-pending-attachments">
       <li v-for="item in pending" :key="item.key">
@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScFileField from '../../components/design-system/ScFileField.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 export type PendingProfessionalAttachment = { key: string; name: string; size: number; file: File };
 defineProps<{ editable: boolean; enabled: boolean; uploading: boolean; uploadLabel: string; uploadingLabel: string; error: string; pending: PendingProfessionalAttachment[] }>();
 const emit = defineEmits<{ selected: [event: Event]; remove: [key: string] }>();
