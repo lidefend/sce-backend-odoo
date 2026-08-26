@@ -374,6 +374,20 @@ try {
       const result = await page.evaluate(() => {
         const root = document.documentElement;
         const style = getComputedStyle(root);
+        const primitiveDrivers = [
+          ['ScButton', '.t-button'],
+          ['ScInput', '.t-input'],
+          ['ScTextarea', '.t-textarea'],
+          ['ScSelect', '.t-select'],
+          ['ScCheckbox', '.t-checkbox'],
+        ].map(([component, driverSelector]) => {
+          const nodes = [...document.querySelectorAll(`[data-semantic-component="${component}"][data-primitive-driver="tdesign"], [data-semantic-component="${component}"]:not([data-primitive-driver])`)];
+          return {
+            component,
+            count: nodes.length,
+            missingDriverCount: nodes.filter((node) => !node.matches(driverSelector) && !node.querySelector(driverSelector)).length,
+          };
+        });
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -381,6 +395,11 @@ try {
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
+          primitiveDriverEvidence: {
+            drivers: primitiveDrivers,
+            specializedInputCount: document.querySelectorAll('[data-semantic-component="ScInput"][data-primitive-driver="browser-specialized"]').length,
+            pass: primitiveDrivers.every((entry) => entry.missingDriverCount === 0),
+          },
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
             .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
             .map((element) => ({
@@ -899,6 +918,11 @@ try {
 
 const errors = report.routes.flatMap((item) => item.errors || []);
 const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded || item.h1 !== 1 || item.overflow > 0));
+for (const item of report.routes) {
+  if (item.path && item.primitiveDriverEvidence && !item.primitiveDriverEvidence.pass) {
+    failures.push({ name: item.name, primitiveDriverEvidence: item.primitiveDriverEvidence });
+  }
+}
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });
