@@ -22,9 +22,13 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("attachment settlement bypasses the governed button primitive")
     if "<ScButton" not in panel:
         failures.append("collaboration entry actions bypass the governed button primitive")
-    for primitive in ("<ScButton", "<ScInput", "<ScSelect"):
+    for primitive in ("<ScButton", "<ScInput", "<ScTextarea", "<ScSelect"):
         if primitive not in composer:
             failures.append(f"collaboration composer bypasses governed primitive {primitive}")
+    if "<textarea" in composer:
+        failures.append("collaboration composer retains a raw textarea bypass")
+    if "<ScFileField" not in attachments or 'type="file"' in attachments:
+        failures.append("attachment input bypasses the governed file primitive")
     if "<ScButton" not in timeline or ':loading="timelineLoading"' not in timeline:
         failures.append("collaboration timeline does not expose governed loading actions")
     for marker in ('data-professional-collaboration-component="panel"', ":data-follower-readiness"):

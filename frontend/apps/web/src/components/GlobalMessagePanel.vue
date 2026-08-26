@@ -1,8 +1,8 @@
 <template>
   <div class="global-message">
-    <button
+    <ScButton
       class="global-message__trigger sc-btn sc-btn-sm"
-      type="button"
+      size="small"
       title="消息"
       aria-label="消息"
       :class="{ active: open }"
@@ -11,28 +11,27 @@
       <ScIcon name="bell" :size="16" />
       <span class="global-message__label">消息</span>
       <span v-if="unreadCount" class="global-message__badge sc-badge sc-badge-danger">{{ unreadCount }}</span>
-    </button>
+    </ScButton>
 
-    <div v-if="open" class="global-message__backdrop" @click="close"></div>
-    <aside v-if="open" class="global-message__panel sc-dialog" @click.stop>
-      <header class="global-message__header">
-        <div>
-          <h2>消息</h2>
-          <p>站内沟通与协作提醒</p>
-        </div>
-        <div class="global-message__header-actions">
-          <button class="sc-btn sc-btn-primary sc-btn-sm" type="button" @click="startNewConversation">新建</button>
-          <button class="global-message__icon sc-btn sc-btn-sm sc-btn-ghost" type="button" aria-label="关闭消息" @click="close"><ScIcon name="close" :size="16" /></button>
-        </div>
-      </header>
-
+    <ScDrawer
+      :open="open"
+      title="消息"
+      description="站内沟通与协作提醒"
+      size="wide"
+      panel-class="global-message__panel"
+      close-label="关闭消息"
+      @close="close"
+    >
+      <template #header-actions>
+        <ScButton data-dialog-primary size="small" variant="primary" type="button" @click="startNewConversation">新建</ScButton>
+      </template>
       <main class="global-message__workspace">
         <section class="global-message__conversations sc-panel-flat">
           <div class="global-message__section-head">
             <span>最近会话</span>
-            <button class="sc-btn sc-btn-sm sc-btn-ghost" type="button" :disabled="loadingConversations" @click="loadConversations">
+            <ScButton size="small" variant="ghost" :disabled="loadingConversations" :loading="loadingConversations" loading-label="刷新中" @click="loadConversations">
               {{ loadingConversations ? '刷新中...' : '刷新' }}
-            </button>
+            </ScButton>
           </div>
           <div v-if="conversations.length" class="global-message__conversation-list sc-list">
             <button
@@ -62,7 +61,7 @@
           <div v-if="composeMode" class="global-message__recipient-box">
             <label class="global-message__field">
               <span>接收人</span>
-              <input
+              <ScInput
                 ref="recipientInputRef"
                 v-model="userQuery"
                 class="sc-search"
@@ -118,31 +117,34 @@
           </div>
 
           <footer class="global-message__composer">
-            <textarea
+            <ScTextarea
               v-model="body"
-              class="sc-input"
               rows="3"
               placeholder="输入沟通内容"
               :disabled="!composeMode && !activeConversation"
               @keydown.ctrl.enter.prevent="send"
               @keydown.meta.enter.prevent="send"
-            ></textarea>
+            />
             <div class="global-message__composer-actions">
               <p v-if="error" class="global-message__error sc-alert sc-alert-danger">{{ error }}</p>
-              <button class="sc-btn sc-btn-primary sc-btn-sm" type="button" :disabled="sending" @click="send">
+              <ScButton size="small" variant="primary" :disabled="sending" :loading="sending" loading-label="发送中" @click="send">
                 {{ sending ? '发送中...' : '发送' }}
-              </button>
+              </ScButton>
             </div>
           </footer>
         </section>
       </main>
-    </aside>
+    </ScDrawer>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import ScButton from './design-system/ScButton.vue';
+import ScDrawer from './design-system/ScDrawer.vue';
 import ScIcon from './design-system/ScIcon.vue';
+import ScInput from './design-system/ScInput.vue';
+import ScTextarea from './design-system/ScTextarea.vue';
 import { searchCollaborationUsers, type CollaborationUserOption } from '../api/chatter';
 import {
   fetchGlobalConversations,
@@ -168,7 +170,7 @@ const selectedUsers = ref<CollaborationUserOption[]>([]);
 const conversations = ref<GlobalMessageConversation[]>([]);
 const messages = ref<GlobalMessageItem[]>([]);
 const activeConversationKey = ref('');
-const recipientInputRef = ref<HTMLInputElement | null>(null);
+const recipientInputRef = ref<{ focus: () => void } | null>(null);
 const composeNonce = ref(0);
 let userSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -461,29 +463,14 @@ onUnmounted(() => {
   margin-left: 4px;
 }
 
-.global-message__backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  background: var(--sc-app-overlay);
-}
-
-.global-message__panel {
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  z-index: 91;
+:deep(.global-message__panel) {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   width: min(620px, calc(100vw - 16px));
-  height: calc(100vh - 16px);
+  height: 100dvh;
   padding: 0;
-  border-radius: var(--sc-component-dialog-radius);
-  border-right: none;
 }
 
-.global-message__header,
-.global-message__header-actions,
 .global-message__section-head,
 .global-message__thread-head,
 .global-message__meta,
@@ -494,34 +481,20 @@ onUnmounted(() => {
   gap: 10px;
 }
 
-.global-message__header {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--sc-app-border);
-}
-
-.global-message__header h2,
-.global-message__header p,
 .global-message__thread-head h3,
 .global-message__thread-head p {
   margin: 0;
 }
 
-.global-message__header h2,
 .global-message__thread-head h3 {
   font-size: 15px;
   line-height: 1.25;
 }
 
-.global-message__header p,
 .global-message__thread-head p {
   margin-top: 4px;
   font-size: 12px;
   color: var(--sc-app-text-secondary);
-}
-
-.global-message__icon {
-  width: 30px;
-  height: 30px;
 }
 
 .global-message__workspace {
@@ -735,11 +708,9 @@ onUnmounted(() => {
 }
 
 @media (max-width: 720px) {
-  .global-message__panel {
-    top: 0;
-    right: 0;
+  :deep(.global-message__panel) {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     border-radius: 0;
   }
 

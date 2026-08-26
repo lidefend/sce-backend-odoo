@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "overlay-lifecycle-coverage/v1",
+  "formalProductLayer": "P0 platform kernel product",
+  "layerTarget": "frontend overlay presentation and modal lifecycle",
+  "reference": {
+    "kind": "read-only daily frontend snapshot",
+    "path": "/home/lidefend/workspace/sce-daily-frontend-snapshot-20260826",
+    "authority": "presentation reference only; not Contract, permission, route or business authority"
+  },
+  "canonicalSurfaces": [
+    "ScDialog",
+    "ScDrawer",
+    "ProductMobileNavigationDrawer"
+  ],
+  "convergedConsumers": [
+    {
+      "surface": "ActionView business category picker",
+      "primitive": "ScDialog",
+      "preservedAuthority": "existing category options and create navigation"
+    },
+    {
+      "surface": "AttachmentViewer",
+      "primitive": "ScDialog",
+      "preservedAuthority": "existing file preview and download runtime"
+    },
+    {
+      "surface": "GlobalMessagePanel",
+      "primitive": "ScDrawer",
+      "preservedAuthority": "existing collaboration queries and mutations"
+    }
+  ],
+  "lifecycleInvariants": [
+    "initial focus",
+    "tab containment",
+    "escape policy",
+    "backdrop policy",
+    "nested scroll lock",
+    "opener focus restoration",
+    "zero-focusable settlement",
+    "reduced motion"
+  ],
+  "formalGaps": [],
+  "excludedScopes": [
+    "Contract V2",
+    "permissions",
+    "routes",
+    "business action execution",
+    "message and attachment APIs",
+    "task/workspace authority"
+  ]
+}

@@ -1,14 +1,13 @@
 <template>
-  <input
-    ref="inputRef"
-    class="sc-input"
-    data-semantic-component="ScInput"
+  <textarea
+    class="sc-input sc-textarea"
+    data-semantic-component="ScTextarea"
     data-semantic-layer="primitive"
     :data-size="normalizePrimitiveSize(size)"
     :data-status="status"
     :data-loading="loading || undefined"
     :value="modelValue"
-    :type="type"
+    :rows="rows"
     :disabled="disabled || loading"
     :readonly="readonly"
     :required="required"
@@ -24,27 +23,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import { normalizePrimitiveSize, resolvePrimitiveControlUpdate, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
-const inputRef = ref<HTMLInputElement | null>(null);
-
 const props = withDefaults(defineProps<{
-  modelValue?: string | number;
+  modelValue?: string;
+  rows?: number;
   size?: ScPrimitiveSize;
   status?: ScPrimitiveStatus;
   disabled?: boolean;
   readonly?: boolean;
   required?: boolean;
   loading?: boolean;
-  type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
   placeholder?: string;
   describedBy?: string;
 }>(), {
   modelValue: '',
+  rows: 3,
   size: 'medium',
   status: 'default',
-  type: 'text',
   placeholder: undefined,
   describedBy: undefined,
 });
@@ -53,36 +49,44 @@ const emit = defineEmits<{
   'update:modelValue': [value: string];
   input: [value: string, event: Event];
   change: [value: string, event: Event];
-  focus: [value: string | number, event: FocusEvent];
-  blur: [value: string | number, event: FocusEvent];
+  focus: [value: string, event: FocusEvent];
+  blur: [value: string, event: FocusEvent];
 }>();
 
 function eventValue(event: Event): string | null {
   return resolvePrimitiveControlUpdate({
-    value: (event.target as HTMLInputElement).value,
+    value: (event.target as HTMLTextAreaElement).value,
     disabled: props.disabled,
     readonly: props.readonly,
     loading: props.loading,
   });
 }
+
 function onInput(event: Event) {
   const value = eventValue(event);
   if (value === null) return;
   emit('update:modelValue', value);
   emit('input', value, event);
 }
+
 function onChange(event: Event) {
   const value = eventValue(event);
   if (value !== null) emit('change', value, event);
 }
+
 function onFocus(event: FocusEvent) {
   emit('focus', props.modelValue, event);
 }
+
 function onBlur(event: FocusEvent) {
   emit('blur', props.modelValue, event);
 }
-
-defineExpose({
-  focus: () => inputRef.value?.focus(),
-});
 </script>
+
+<style scoped>
+.sc-textarea {
+  min-height: calc(var(--sc-component-input-height-md) * 2px);
+  padding-block: var(--sc-space-sm);
+  resize: vertical;
+}
+</style>

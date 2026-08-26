@@ -24,7 +24,7 @@
       </label>
       <label class="native-chatter-field">
         <span>{{ activityNoteLabel }}</span>
-        <textarea class="native-chatter-input" :data-loading="posting || undefined" :aria-busy="posting || undefined" :value="activityNote" :placeholder="activityNotePlaceholder" :disabled="posting" @input="emit('update:activityNote', inputValue($event))" />
+        <ScTextarea class="native-chatter-input" :model-value="activityNote" :placeholder="activityNotePlaceholder" :disabled="posting" :loading="posting" @update:model-value="emit('update:activityNote', $event)" />
       </label>
     </template>
     <template v-else>
@@ -42,7 +42,7 @@
           @{{ collaborationUserLabel(user) }}
         </ScButton>
       </div>
-      <textarea class="native-chatter-input" :data-loading="posting || undefined" :aria-busy="posting || undefined" :value="draft" :placeholder="placeholder" :disabled="posting" @input="emit('update:draft', inputValue($event))" />
+      <ScTextarea class="native-chatter-input" :model-value="draft" :placeholder="placeholder" :disabled="posting" :loading="posting" @update:model-value="emit('update:draft', $event)" />
     </template>
     <div class="native-chatter-compose-actions">
       <ScButton variant="primary" :disabled="submitDisabled" :loading="posting" :loading-label="postingLabel" @click="emit('submit')">{{ posting ? postingLabel : submitLabel }}</ScButton>
@@ -56,6 +56,7 @@ import type { CollaborationUserOption } from '../../api/chatter';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScTextarea from '../../components/design-system/ScTextarea.vue';
 
 defineProps<{
   activity: boolean;
@@ -95,10 +96,6 @@ const emit = defineEmits<{
   submit: [];
   cancel: [];
 }>();
-
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement | HTMLTextAreaElement).value || '');
-}
 
 function emitCollaborationUserQuery(value: string) {
   emit('update:collaborationUserQuery', value);

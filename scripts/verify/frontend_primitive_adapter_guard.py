@@ -12,7 +12,7 @@ BRIDGE = DESIGN_SYSTEM / "tdesignPrimitiveBridge.ts"
 UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
 
 PRIMITIVES = (
-    "ScButton", "ScInput", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
+    "ScButton", "ScInput", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
 )
 FORBIDDEN_PRIVATE_TDESIGN = re.compile(r"tdesign-vue-next/(?:lib|cjs|src)/")
@@ -62,6 +62,12 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInput must place accessible state on the native input control")
     if ':data-loading="loading || undefined"' not in input_text or ':aria-busy="loading || undefined"' not in input_text:
         errors.append("ScInput must expose loading state on the native input control")
+
+    textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
+    if "<textarea" not in textarea_text or ':aria-describedby="describedBy"' not in textarea_text or ':aria-invalid=' not in textarea_text:
+        errors.append("ScTextarea must place accessible state on the native textarea control")
+    if ':data-loading="loading || undefined"' not in textarea_text or ':aria-busy="loading || undefined"' not in textarea_text:
+        errors.append("ScTextarea must expose loading state on the native textarea control")
 
     button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
     for marker in (':data-loading="loading || undefined"', ':aria-disabled="disabled || loading || undefined"', 'class="sc-btn__spinner"'):

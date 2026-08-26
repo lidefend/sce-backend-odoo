@@ -1,43 +1,40 @@
 <template>
-  <Teleport to="body">
-    <div v-if="visible" class="attachment-viewer-backdrop" data-semantic-overlay="attachment-viewer" data-state="open" @click.self="close" @keydown="onKeydown">
-      <section ref="viewerRef" class="attachment-viewer" role="dialog" aria-modal="true" aria-label="附件查看" :aria-busy="loading || undefined" tabindex="-1">
-        <header class="attachment-viewer-header">
-          <div class="attachment-viewer-title">
-            <h3>{{ displayName }}</h3>
-            <p v-if="statusText">{{ statusText }}</p>
-          </div>
-          <div class="attachment-viewer-actions">
-            <ScButton variant="ghost" :disabled="!canDownload" @click="downloadCurrent">下载</ScButton>
-            <ScButton variant="ghost" @click="close">关闭</ScButton>
-          </div>
-        </header>
-
-        <div class="attachment-viewer-body">
-          <ScLoading v-if="loading" class="attachment-viewer-state" label="附件加载中" />
-          <ScErrorState v-else-if="errorMessage" class="attachment-viewer-state" title="附件打开失败" :description="errorMessage" />
-          <iframe
-            v-else-if="previewUrl"
-            class="attachment-viewer-frame"
-            :src="previewUrl"
-            :title="displayName"
-          />
-          <div v-else class="attachment-viewer-state">
-            <strong>{{ displayName }}</strong>
-            <span>{{ unsupportedText }}</span>
-          </div>
-        </div>
-      </section>
+  <ScDialog
+    :open="visible"
+    :title="displayName"
+    :description="statusText"
+    size="wide"
+    panel-class="attachment-viewer"
+    :busy="loading"
+    close-label="关闭附件"
+    @close="close"
+  >
+    <template #header-actions>
+      <ScButton variant="ghost" :disabled="!canDownload" @click="downloadCurrent">下载</ScButton>
+    </template>
+    <div class="attachment-viewer-body" data-semantic-component="AttachmentViewerBody">
+      <ScLoading v-if="loading" class="attachment-viewer-state" label="附件加载中" />
+      <ScErrorState v-else-if="errorMessage" class="attachment-viewer-state" title="附件打开失败" :description="errorMessage" />
+      <iframe
+        v-else-if="previewUrl"
+        class="attachment-viewer-frame"
+        :src="previewUrl"
+        :title="displayName"
+      />
+      <div v-else class="attachment-viewer-state">
+        <strong>{{ displayName }}</strong>
+        <span>{{ unsupportedText }}</span>
+      </div>
     </div>
-  </Teleport>
+  </ScDialog>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { downloadFile } from '../../api/files';
 import type { FileDownloadRequest, FileDownloadResponse } from '@sc/schema';
-import { useModalLifecycle } from '../../composables/useModalLifecycle';
 import ScButton from '../design-system/ScButton.vue';
+import ScDialog from '../design-system/ScDialog.vue';
 import ScErrorState from '../design-system/ScErrorState.vue';
 import ScLoading from '../design-system/ScLoading.vue';
 
@@ -50,7 +47,6 @@ const errorMessage = ref('');
 const payload = ref<FileDownloadResponse | null>(null);
 const fallbackName = ref('');
 const previewUrl = ref('');
-const viewerRef = ref<HTMLElement | null>(null);
 
 const displayName = computed(() => payload.value?.name || fallbackName.value || '附件');
 const mimetype = computed(() => payload.value?.mimetype || 'application/octet-stream');
@@ -121,8 +117,6 @@ function close() {
   resetPayload();
 }
 
-const { onKeydown } = useModalLifecycle({ open: () => visible.value, surface: viewerRef, close });
-
 function downloadBlob(blob: Blob, name: string) {
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -152,64 +146,12 @@ defineExpose({ open, close });
 </script>
 
 <style scoped>
-.attachment-viewer-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--sc-component-dialog-z-index);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: var(--sc-app-overlay);
-}
-
-.attachment-viewer {
+:deep(.attachment-viewer) {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  width: min(1040px, 100%);
   height: min(760px, calc(100dvh - 48px));
   min-height: 420px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  box-shadow: var(--sc-app-shadow-modal);
   overflow: hidden;
-}
-
-.attachment-viewer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--sc-app-border);
-}
-
-.attachment-viewer-title {
-  min-width: 0;
-}
-
-.attachment-viewer-title h3 {
-  margin: 0;
-  color: var(--sc-app-text-primary);
-  font-size: 14px;
-  font-weight: 650;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.attachment-viewer-title p {
-  margin: 4px 0 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-
-.attachment-viewer-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: none;
 }
 
 .attachment-viewer-body {
@@ -248,20 +190,11 @@ defineExpose({ open, close });
 }
 
 @media (max-width: 720px) {
-  .attachment-viewer-backdrop {
-    padding: 0;
-  }
-
-  .attachment-viewer {
+  :deep(.attachment-viewer) {
     width: 100%;
-    height: 100dvh;
-    min-height: 100dvh;
+    height: calc(100dvh - var(--sc-product-space-4));
+    min-height: 0;
     border-radius: 0;
-  }
-
-  .attachment-viewer-header {
-    align-items: flex-start;
-    flex-direction: column;
   }
 }
 </style>
