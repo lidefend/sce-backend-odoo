@@ -1,85 +1,44 @@
-.relation-dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: var(--sc-semantic-backdrop);
-}
-
 :deep(.relation-dialog) {
-  width: min(920px, 100%);
+  width: min(var(--sc-component-dialog-wide-width), 100%);
   box-sizing: border-box;
-  max-height: min(760px, calc(100vh - 48px));
+  max-height: var(--sc-component-dialog-max-height);
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-radius: 8px;
+  border-radius: var(--sc-component-dialog-radius);
   background: var(--sc-app-panel);
   border: 1px solid var(--sc-app-border);
-  box-shadow: 0 18px 50px var(--sc-app-shadow);
+  box-shadow: var(--sc-product-shadow-overlay);
   overflow: hidden;
 }
 
 :deep(.relation-dialog > header) {
-  min-height: 50px;
-  padding: 12px 16px;
+  min-height: var(--sc-product-toolbar-height);
+  padding: var(--sc-product-space-2) var(--sc-product-space-3);
   border-bottom: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
   box-sizing: border-box;
 }
 
-.relation-dialog-head,
 .relation-dialog-search,
 .relation-dialog-footer {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.relation-dialog-head {
-  justify-content: space-between;
-  min-height: 50px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-}
-
-.relation-dialog-head h3 {
-  margin: 0;
-  font-size: 16px;
-  color: var(--sc-app-text-primary);
-  font-weight: 600;
-}
-
-.relation-dialog-close {
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.relation-dialog-close:hover:not(:disabled) {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
+  gap: var(--sc-product-space-2);
 }
 
 .relation-dialog-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
-  flex-wrap: wrap;
-  padding: 12px 16px;
+  padding: var(--sc-product-space-2) var(--sc-product-space-3);
   border-bottom: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
 }
 
-.relation-dialog-search .input {
-  flex: 1 1 auto;
+.relation-dialog-search__input {
+  width: auto;
+  min-width: 0;
 }
 
 .relation-dialog-table-wrap {
@@ -88,6 +47,10 @@
   min-height: 160px;
   border: 0;
   border-radius: 0;
+}
+
+.relation-dialog-table-wrap :deep(.t-loading) {
+  min-height: inherit;
 }
 
 .relation-dialog-mobile-results {
@@ -99,13 +62,13 @@
   min-width: 720px;
   border-collapse: collapse;
   background: var(--sc-app-panel);
-  font-size: 13px;
+  font-size: var(--sc-product-text-sm);
 }
 
 .relation-dialog-table th,
 .relation-dialog-table td {
   border-bottom: 1px solid var(--sc-app-border);
-  padding: 8px 10px;
+  padding: var(--sc-product-space-2);
   text-align: left;
   vertical-align: middle;
   color: var(--sc-app-text-primary);
@@ -126,8 +89,15 @@
   cursor: pointer;
 }
 
-.relation-dialog-table tbody tr:hover {
+.relation-dialog-table tbody tr:hover,
+.relation-dialog-table tbody tr:focus-visible {
   background: var(--sc-app-hover-bg);
+}
+
+.relation-dialog-table tbody tr:focus-visible,
+.relation-dialog-result-card:focus-visible {
+  outline: 2px solid var(--sc-semantic-focus-ring);
+  outline-offset: -2px;
 }
 
 .relation-dialog-table tbody .relation-dialog-row--active {
@@ -140,70 +110,39 @@
   text-align: center !important;
 }
 
-.relation-dialog-empty {
-  margin: 12px;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
-}
-
 .relation-dialog-footer {
-  min-height: 54px;
-  padding: 10px 16px;
+  min-height: var(--sc-product-toolbar-height);
+  padding: var(--sc-product-space-2) var(--sc-product-space-3);
   border-top: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
 }
 
 .relation-dialog-count {
   color: var(--sc-app-text-secondary);
-  font-size: 12px;
+  font-size: var(--sc-product-text-sm);
 }
 
 .relation-dialog-footer-spacer {
   flex: 1 1 auto;
 }
 
-.chip-btn {
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  cursor: pointer;
-  max-width: 100%;
-  white-space: normal;
-  overflow-wrap: anywhere;
+.relation-dialog-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sc-toolbar-gap);
 }
 
 .validation-error {
   grid-column: 1 / -1;
   margin: 0;
   color: var(--sc-app-danger-text);
-  font-size: 12px;
-}
-
-.ghost,
-.primary {
-  border-radius: 6px;
-  padding: 8px 10px;
-  border: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  font-weight: 500;
-}
-
-.primary {
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-  border-color: var(--sc-semantic-surface-interactive);
-}
-
-.ghost {
-  color: var(--sc-app-text-secondary);
+  font-size: var(--sc-product-text-sm);
 }
 
 @media (max-width: 860px) {
   .relation-dialog-backdrop {
-    padding: 12px;
+    padding: var(--sc-product-space-2);
   }
 
   .relation-dialog-search,
@@ -226,9 +165,9 @@
     display: grid;
     flex: 1 1 auto;
     min-height: 0;
-    gap: 8px;
+    gap: var(--sc-product-space-2);
     max-height: min(42vh, 340px);
-    padding: 10px 12px;
+    padding: var(--sc-product-space-2);
     overflow-y: auto;
   }
 
@@ -236,10 +175,10 @@
     display: grid;
     grid-template-columns: 22px minmax(0, 1fr);
     align-items: start;
-    gap: 8px;
-    padding: 11px;
+    gap: var(--sc-product-space-2);
+    padding: var(--sc-product-space-2);
     border: 1px solid var(--sc-app-border);
-    border-radius: 7px;
+    border-radius: var(--sc-component-card-radius);
     background: var(--sc-app-panel);
     cursor: pointer;
   }
@@ -262,44 +201,44 @@
   }
 
   .relation-dialog-result-content {
-    gap: 8px;
+    gap: var(--sc-product-space-2);
   }
 
   .relation-dialog-result-head {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
-    gap: 8px;
+    gap: var(--sc-product-space-2);
   }
 
   .relation-dialog-result-head strong {
     color: var(--sc-app-text-primary);
-    font-size: 14px;
+    font-size: var(--sc-product-text-body);
     line-height: 1.4;
     overflow-wrap: anywhere;
   }
 
   .relation-dialog-result-head > span {
     color: var(--sc-app-info-text);
-    font-size: 11px;
+    font-size: var(--sc-product-text-sm);
   }
 
   .relation-dialog-result-facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px 12px;
+    gap: var(--sc-product-space-1) var(--sc-product-space-2);
   }
 
   .relation-dialog-result-facts > span {
-    gap: 2px;
+    gap: var(--sc-product-space-1);
   }
 
   .relation-dialog-result-facts small {
     color: var(--sc-app-text-muted);
-    font-size: 10px;
+    font-size: var(--sc-product-text-sm);
   }
 
   .relation-dialog-result-facts em {
     color: var(--sc-app-text-secondary);
-    font-size: 12px;
+    font-size: var(--sc-product-text-sm);
     font-style: normal;
     overflow-wrap: anywhere;
   }
@@ -307,4 +246,6 @@
   .relation-dialog-footer { flex-direction: row; flex-wrap: wrap; }
   .relation-dialog-footer-spacer { display: none; }
   .relation-dialog-count { flex: 1 0 100%; }
+  .relation-dialog-footer-actions { width: 100%; }
+  .relation-dialog-footer-actions :deep(.sc-btn-primary) { flex: 1 1 auto; }
 }

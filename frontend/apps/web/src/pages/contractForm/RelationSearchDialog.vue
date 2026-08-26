@@ -7,24 +7,27 @@
     data-professional-relation-lifecycle="search"
     @close="$emit('close')"
   >
-      <div class="relation-dialog-search">
-        <input
+      <div class="relation-dialog-search" role="search">
+        <ScInput
           ref="searchInputRef"
-          class="input"
-          type="text"
+          class="relation-dialog-search__input"
+          type="search"
           autofocus
-          :value="dialog.keyword"
+          :model-value="dialog.keyword"
           :placeholder="dialog.labels.search_placeholder || '输入名称搜索'"
-          @input="$emit('keyword-change', inputValue($event))"
+          :loading="dialog.loading"
+          :aria-label="dialog.labels.search_placeholder || '输入名称搜索'"
+          @update:model-value="$emit('keyword-change', String($event))"
           @keydown.enter.prevent="$emit('search')"
         />
         <ScButton :disabled="dialog.loading" @click="$emit('search')">
           {{ dialog.labels.search || '搜索' }}
         </ScButton>
       </div>
-      <p v-if="dialog.error" class="validation-error">{{ dialog.error }}</p>
+      <p v-if="dialog.error" class="validation-error" role="alert">{{ dialog.error }}</p>
       <div class="relation-dialog-table-wrap">
-        <ScDataTable class="relation-dialog-table">
+        <ScLoading :loading="dialog.loading" :label="dialog.labels.loading || '正在加载关系记录'">
+        <ScDataTable class="relation-dialog-table" :aria-busy="dialog.loading || undefined">
           <thead>
             <tr>
               <th class="relation-dialog-select-col"></th>
@@ -33,19 +36,29 @@
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="listbox" :aria-label="dialog.title">
             <tr
               v-for="row in dialog.rows"
               :key="`rel-${row.id}`"
               :class="{ 'relation-dialog-row--active': dialog.selectedId === row.id }"
+              data-semantic-component="RelationSearchResult"
+              data-semantic-layout="table-row"
+              :data-record-id="row.id"
+              role="option"
+              tabindex="0"
+              :aria-selected="dialog.selectedId === row.id"
               @click="$emit('select-row', row)"
               @dblclick="$emit('confirm', row)"
+              @keydown.space.prevent="$emit('select-row', row)"
+              @keydown.enter.prevent="$emit('confirm', row)"
             >
               <td class="relation-dialog-select-col">
                 <input
                   type="radio"
                   name="relation-search-select"
                   :checked="dialog.selectedId === row.id"
+                  :aria-label="relationSearchPrimaryText(row)"
+                  tabindex="-1"
                   @change="$emit('select-row', row)"
                 />
               </td>
@@ -55,20 +68,31 @@
             </tr>
           </tbody>
         </ScDataTable>
+        </ScLoading>
         <ScEmptyState v-if="!dialog.loading && !dialog.rows.length" :title="dialog.labels.empty || '未找到匹配记录'" />
       </div>
-      <div class="relation-dialog-mobile-results" aria-label="关系搜索结果">
+      <div class="relation-dialog-mobile-results" role="listbox" :aria-label="dialog.title" :aria-busy="dialog.loading || undefined">
         <label
           v-for="row in dialog.rows"
           :key="`rel-card-${row.id}`"
           class="relation-dialog-result-card"
           :class="{ 'relation-dialog-result-card--active': dialog.selectedId === row.id }"
+          data-semantic-component="RelationSearchResult"
+          data-semantic-layout="mobile-card"
+          :data-record-id="row.id"
+          role="option"
+          tabindex="0"
+          :aria-selected="dialog.selectedId === row.id"
           @dblclick="$emit('confirm', row)"
+          @keydown.space.prevent="$emit('select-row', row)"
+          @keydown.enter.prevent="$emit('confirm', row)"
         >
           <input
             type="radio"
             name="relation-search-select-mobile"
             :checked="dialog.selectedId === row.id"
+            :aria-label="relationSearchPrimaryText(row)"
+            tabindex="-1"
             @change="$emit('select-row', row)"
           />
           <span class="relation-dialog-result-content">
@@ -89,24 +113,26 @@
       <footer class="relation-dialog-footer">
         <span class="relation-dialog-count">{{ recordCountLabel }}</span>
         <span class="relation-dialog-footer-spacer"></span>
-        <ScButton
-          variant="primary"
-          :disabled="busy || dialog.loading || !dialog.selectedId"
-          @click="$emit('confirm')"
-        >
-          {{ dialog.labels.select || '选择' }}
-        </ScButton>
-        <ScButton
-          v-if="dialog.createMode !== 'none'"
-          variant="ghost"
-          :disabled="busy || dialog.loading"
-          @click="$emit('create')"
-        >
-          {{ dialog.labels.create || '新建' }}
-        </ScButton>
-        <ScButton variant="ghost" :disabled="busy" @click="$emit('close')">
-          {{ dialog.labels.cancel || '取消' }}
-        </ScButton>
+        <span class="relation-dialog-footer-actions">
+          <ScButton variant="ghost" :disabled="busy" @click="$emit('close')">
+            {{ dialog.labels.cancel || '取消' }}
+          </ScButton>
+          <ScButton
+            v-if="dialog.createMode !== 'none'"
+            variant="secondary"
+            :disabled="busy || dialog.loading"
+            @click="$emit('create')"
+          >
+            {{ dialog.labels.create || '新建' }}
+          </ScButton>
+          <ScButton
+            variant="primary"
+            :disabled="busy || dialog.loading || !dialog.selectedId"
+            @click="$emit('confirm')"
+          >
+            {{ dialog.labels.select || '选择' }}
+          </ScButton>
+        </span>
       </footer>
   </ScDialog>
 </template>
@@ -117,6 +143,8 @@ import ScButton from '../../components/design-system/ScButton.vue';
 import ScDataTable from '../../components/design-system/ScDataTable.vue';
 import ScDialog from '../../components/design-system/ScDialog.vue';
 import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
+import ScInput from '../../components/design-system/ScInput.vue';
+import ScLoading from '../../components/design-system/ScLoading.vue';
 import type { RelationOption, RelationSearchColumn, RelationSearchRow, RelationUiLabels } from './types';
 
 export type RelationSearchDialogState = {
@@ -149,20 +177,16 @@ defineEmits<{
   'keyword-change': [keyword: string];
 }>();
 
-const searchInputRef = ref<HTMLInputElement | null>(null);
+const searchInputRef = ref<{ $el?: HTMLInputElement } | null>(null);
 
 watch(
   () => props.dialog.open,
   async (open) => {
     if (!open) return;
     await nextTick();
-    searchInputRef.value?.focus();
+    searchInputRef.value?.$el?.focus();
   },
 );
-
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement).value || '');
-}
 
 function relationSearchCell(row: RelationSearchRow, columnName: string) {
   const value = row.values[columnName];

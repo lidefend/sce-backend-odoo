@@ -6320,3 +6320,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Why Not Elsewhere: no backend or industry rule changed; P4 guards only verify the P0 ownership boundary and do not define product semantics.
 - Blast Radius: generic explicit-card and workflow-board collection surfaces only. Table rendering, form presentation, Contract V2, database state, fixtures, and mutations are excluded.
 - Validation: 9 focused ownership tests, collection semantics guard, style-token guard, strict typecheck and governed Frontend Quick/build pass. Exact-head action 859 card mode at desktop and 390px renders one lane owner, six keyboard-open record-card owners, five facts per card, one shared pagination owner, overflow `0`, browser errors `0`, and mutation `0`.
+
+## Relation search dialog presentation convergence v1
+
+- Branch / baseline: `feature/p0-relation-search-dialog-presentation-v1` /
+  `86f4cace67762834600924fd492c4f2d3a7293da`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  generic relation search and selection presentation / `frontend/apps/web`
+  contract-form relation lifecycle.
+- Product result: the relation search surface now consumes `ScInput`,
+  `ScLoading`, `ScDataTable`, `ScEmptyState`, `ScButton` and `ScDialog`; desktop
+  rows and mobile cards expose the same option, record and selection semantics,
+  with Space selection, Enter confirmation, focus visibility and one ordered
+  footer action group. The wide table dialog uses the registered
+  `component.dialog.wide_width` token instead of a page-local width authority.
+- Why Here / Why Not Elsewhere: relation query rows, create mode, selected id,
+  confirm/create/close settlement and labels remain supplied by the existing
+  Contract V2 relation lifecycle. This batch owns only generic presentation
+  and does not add a model, field, action, menu, label or permission special
+  case.
+- Blast radius / evidence: relation search dialogs only. On exact-head payment
+  request action 807, desktop renders a 920px table-row option and 390px renders
+  a 334px mobile-card option. Both have one semantic listbox, one ScInput search
+  control, one enabled primary selection action, keyboard selection, browser
+  errors `0`, overflow `0` and mutation `0`. Project action 859 has no field
+  declaring search-more and is correctly recorded as not applicable rather
+  than modified to manufacture a fixture.
