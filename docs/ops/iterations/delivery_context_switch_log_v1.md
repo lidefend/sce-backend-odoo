@@ -6454,3 +6454,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   projections from retained stateful controls, with negative cases for legacy
   regressions, primary-action loss, dialog-close drift and parallel actions.
   Six guard cases, the production guard and Vite production build pass.
+
+## Relational action primitives convergence v1
+
+- Branch / baseline: `feature/p0-relational-action-primitives-v1` /
+  `54a4838b1fbb3b94f804f462daae1e137ee6c11c`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  relation and detail-collection command presentation / `frontend/apps/web`.
+- Product result: related-record navigation, add, edit, delete, save and cancel
+  commands, plus x2many create, remove, restore and pagination commands, use
+  `ScButton`; the simple relation editor also uses `ScInput` for its name field.
+- Authority boundary: relation tag selection, candidate choices, native
+  checkbox state and notebook controls remain native stateful controls. Model,
+  record, route, capability, transaction and mutation authority are unchanged.
+- Evidence: the dedicated guard distinguishes twelve governed commands from
+  retained stateful relation controls and rejects legacy commands, destructive
+  variant drift, native editor-input regression and parallel action paths. Six
+  guard cases, existing relation/detail guards and strict typecheck pass.

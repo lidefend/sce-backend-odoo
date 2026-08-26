@@ -61,15 +61,17 @@
             >
               {{ adapter.relationInlineCreateLabel(field.name) }}
             </div>
-            <button
+            <ScButton
               v-if="adapter.relationCreateMode(field.name) === 'page'"
               type="button"
               class="relation-tag-action"
+              variant="secondary"
+              size="small"
               @mousedown.prevent
               @click="adapter.openRelationCreate(field.name)"
             >
               {{ adapter.relationCreateLabel(field.name) }}
-            </button>
+            </ScButton>
           </div>
         </div>
       </div>
@@ -129,15 +131,17 @@
     </div>
     <template v-else>
     <div class="o2m-toolbar">
-      <button
+      <ScButton
         v-if="adapter.one2manyCanCreate(field.name)"
-        class="chip-btn"
+        class="o2m-create"
         type="button"
+        variant="primary"
+        size="small"
         :disabled="adapter.busy"
         @click="adapter.addOne2manyRow(field.name)"
       >
         {{ adapter.one2manyCreateLabel(field.name, field.label) }}
-      </button>
+      </ScButton>
       <span v-if="adapter.one2manySummary(field.name)" class="o2m-summary">{{ adapter.one2manySummary(field.name) }}</span>
     </div>
     <div v-if="adapter.one2manyColumns(field.name).length" class="o2m-header">
@@ -190,13 +194,15 @@
             />
           </label>
         </div>
-        <button
-          class="ghost o2m-row-remove"
+        <ScButton
+          class="o2m-row-remove"
           type="button"
+          variant="danger"
+          size="small"
           :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
           :disabled="adapter.busy"
           @click="adapter.removeOne2manyRow(field.name, row.key)"
-        >移除本条</button>
+        >移除本条</ScButton>
         <p v-if="adapter.showOne2manyErrors && adapter.one2manyRowErrors(field.name, row.key).length" class="o2m-row-error">
           {{ adapter.one2manyRowErrors(field.name, row.key).join('；') }}
         </p>
@@ -208,23 +214,25 @@
     <div v-if="adapter.removedOne2manyRows(field.name).length" class="o2m-removed">
       <p class="meta">已移除 {{ adapter.removedOne2manyRows(field.name).length }} 行</p>
       <div class="chips">
-        <button
+        <ScButton
           v-for="row in adapter.removedOne2manyRows(field.name)"
           :key="`rm-${row.key}`"
-          class="chip-btn"
+          class="o2m-row-restore"
           type="button"
+          variant="ghost"
+          size="small"
           :disabled="adapter.busy"
           @click="adapter.restoreOne2manyRow(field.name, row.key)"
         >
           撤销移除 · {{ adapter.one2manyRowLabel(field.name, row) }} · 待删除
-        </button>
+        </ScButton>
       </div>
     </div>
     </template>
     <nav v-if="one2manyPageCount > 1" class="o2m-pagination" aria-label="明细分页" data-detail-collection-pagination>
-      <button type="button" class="ghost" :disabled="one2manyPage <= 1" @click="one2manyPage -= 1">上一页</button>
+      <ScButton type="button" class="o2m-page-action" variant="ghost" size="small" :disabled="one2manyPage <= 1" @click="one2manyPage -= 1">上一页</ScButton>
       <span>第 {{ one2manyPage }} / {{ one2manyPageCount }} 页</span>
-      <button type="button" class="ghost" :disabled="one2manyPage >= one2manyPageCount" @click="one2manyPage += 1">下一页</button>
+      <ScButton type="button" class="o2m-page-action" variant="ghost" size="small" :disabled="one2manyPage >= one2manyPageCount" @click="one2manyPage += 1">下一页</ScButton>
     </nav>
   </div>
   <ScInput
@@ -239,6 +247,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
+import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScSelect from '../design-system/ScSelect.vue';
@@ -460,7 +469,6 @@ function tagColorStyle(color: unknown) {
 }
 
 .relation-tag-option,
-.relation-tag-action,
 .relation-tag-hint {
   display: flex;
   align-items: center;
@@ -487,16 +495,13 @@ function tagColorStyle(color: unknown) {
 }
 
 .relation-tag-action {
-  color: var(--sc-semantic-surface-interactive);
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .relation-tag-hint {
   color: var(--sc-app-text-secondary);
   cursor: default;
-}
-
-.relation-tag-action:hover {
-  background: var(--sc-app-hover-bg);
 }
 
 .relation-tag-swatch {
@@ -569,16 +574,6 @@ function tagColorStyle(color: unknown) {
 
 .relation-tag:hover {
   background: var(--sc-app-info-bg);
-}
-
-.chip-btn {
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  cursor: pointer;
 }
 
 .meta {
@@ -765,8 +760,9 @@ select.input {
     white-space: nowrap;
   }
 
-  .o2m-toolbar .chip-btn,
-  .o2m-removed .chip-btn {
+  .o2m-create,
+  .o2m-row-restore,
+  .o2m-page-action {
     min-height: 44px;
   }
 
@@ -783,12 +779,4 @@ select.input {
   }
 }
 
-.ghost {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  font-weight: 500;
-  color: var(--sc-semantic-text-muted);
-}
 </style>
