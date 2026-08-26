@@ -12,3 +12,7 @@ export { Badge as TDesignBadge } from 'tdesign-vue-next/es/badge';
 export { Tooltip as TDesignTooltip } from 'tdesign-vue-next/es/tooltip';
 export { Dropdown as TDesignDropdown } from 'tdesign-vue-next/es/dropdown';
 export { Loading as TDesignLoading } from 'tdesign-vue-next/es/loading';
+export { Empty as TDesignEmpty } from 'tdesign-vue-next/es/empty';
+export { Alert as TDesignAlert } from 'tdesign-vue-next/es/alert';
+export { Dialog as TDesignDialog } from 'tdesign-vue-next/es/dialog';
+export { Drawer as TDesignDrawer } from 'tdesign-vue-next/es/drawer';

@@ -21,21 +21,25 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         (design / "tdesignPrimitiveBridge.ts").write_text(
-            "export { TDesignButton, TDesignCheckbox, TDesignInput, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
+            "export { TDesignAlert, TDesignButton, TDesignCheckbox, TDesignDialog, TDesignDrawer, TDesignEmpty, TDesignInput, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
         )
         (ui / "primitives.ts").write_text(
+            "export { Alert as TDesignAlert } from 'tdesign-vue-next/es/alert';\n"
             "export { Button as TDesignButton } from 'tdesign-vue-next/es/button';\n"
             "export { Checkbox as TDesignCheckbox } from 'tdesign-vue-next/es/checkbox';\n"
             "export { Input as TDesignInput } from 'tdesign-vue-next/es/input';\n"
             "export { Select as TDesignSelect } from 'tdesign-vue-next/es/select';\n"
-            "export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';\n",
+            "export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';\n"
+            "export { Dialog as TDesignDialog } from 'tdesign-vue-next/es/dialog';\n"
+            "export { Drawer as TDesignDrawer } from 'tdesign-vue-next/es/drawer';\n"
+            "export { Empty as TDesignEmpty } from 'tdesign-vue-next/es/empty';\n",
             encoding="utf-8",
         )
         for name in PRIMITIVES:
             overlay_kind = name.removeprefix("Sc").lower()
             modal_contract = (
-                f'<!-- useModalLifecycle role="dialog" aria-modal="true" data-overlay-kind="{overlay_kind}" '
-                f'data-state="open" --sc-component-{overlay_kind}-z-index -->'
+                f'<TDesign{name.removeprefix("Sc")} role="dialog" aria-modal="true" data-overlay-kind="{overlay_kind}" '
+                f'data-state="open" /><!-- --sc-component-{overlay_kind}-z-index -->'
                 if name in {"ScDialog", "ScDrawer"} else ""
             )
             state_contract = {
@@ -46,8 +50,8 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
                 "ScInlineState": '<div :data-state="state" :aria-busy="state === \'loading\' || undefined" />',
-                "ScEmptyState": '<section data-state="empty" role="status" />',
-                "ScErrorState": '<section data-state="error" role="alert" />',
+                "ScEmptyState": '<TDesignEmpty data-state="empty" role="status" />',
+                "ScErrorState": '<TDesignAlert data-state="error" role="alert" />',
                 "ScFormField": '<label :data-state="state" :data-required="required" />',
             }.get(name, "")
             (design / f"{name}.vue").write_text(
@@ -87,14 +91,14 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         )
         self.assertTrue(any("business-specific" in error for error in validate(root)))
 
-    def test_modal_without_shared_lifecycle_fails(self) -> None:
+    def test_modal_without_tdesign_driver_fails(self) -> None:
         root = self.make_root()
         source = root / "frontend/apps/web/src/components/design-system/ScDrawer.vue"
         source.write_text(
             '<template><aside data-semantic-component="ScDrawer" data-semantic-layer="primitive" /></template>\n',
             encoding="utf-8",
         )
-        self.assertTrue(any("shared modal lifecycle" in error for error in validate(root)))
+        self.assertTrue(any("TDesign overlay driver" in error for error in validate(root)))
 
     def test_input_without_native_accessibility_fails(self) -> None:
         root = self.make_root()

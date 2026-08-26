@@ -49,8 +49,9 @@ def validate(root: Path = ROOT) -> list[str]:
 
     for modal in ("ScDialog", "ScDrawer"):
         text = (design / f"{modal}.vue").read_text(encoding="utf-8") if (design / f"{modal}.vue").is_file() else ""
-        if "useModalLifecycle" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
-            errors.append(f"{modal} must use the shared modal lifecycle and dialog semantics")
+        driver = f"TDesign{modal.removeprefix('Sc')}"
+        if f"<{driver}" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
+            errors.append(f"{modal} must use its TDesign overlay driver and preserve dialog semantics")
         overlay_kind = modal.removeprefix("Sc").lower()
         if f'data-overlay-kind="{overlay_kind}"' not in text or 'data-state="open"' not in text:
             errors.append(f"{modal} must expose deterministic overlay state")
@@ -117,13 +118,17 @@ def validate(root: Path = ROOT) -> list[str]:
         for marker in markers:
             if marker not in text:
                 errors.append(f"{component} missing deterministic state marker: {marker}")
+    if "<TDesignEmpty" not in (design / "ScEmptyState.vue").read_text(encoding="utf-8"):
+        errors.append("ScEmptyState must use the TDesign empty-state driver")
+    if "<TDesignAlert" not in (design / "ScErrorState.vue").read_text(encoding="utf-8"):
+        errors.append("ScErrorState must use the TDesign alert driver")
 
     if not bridge:
         errors.append("missing TDesign primitive bridge")
     else:
         if "@sc/ui/primitives" not in bridge or "tdesign-vue-next" in bridge:
             errors.append("web primitive bridge must consume the project UI authority")
-        for driver in ("TDesignButton", "TDesignCheckbox", "TDesignInput", "TDesignSelect", "TDesignTextarea"):
+        for driver in ("TDesignAlert", "TDesignButton", "TDesignCheckbox", "TDesignDialog", "TDesignDrawer", "TDesignEmpty", "TDesignInput", "TDesignSelect", "TDesignTextarea"):
             if driver not in bridge or driver not in ui_primitives:
                 errors.append(f"missing public project primitive driver: {driver}")
         for path in design.glob("*.vue"):
