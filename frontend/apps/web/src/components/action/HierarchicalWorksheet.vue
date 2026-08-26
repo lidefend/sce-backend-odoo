@@ -20,7 +20,7 @@
     <div class="worksheet-layout" :style="layoutStyle">
       <aside class="worksheet-navigation">
         <h3>{{ navigationTitle }}</h3>
-        <button class="navigation-all" :class="{ active: !selectedNavigationNode }" @click="selectNavigation(null)">{{ labels.all }}</button>
+        <ScButton class="navigation-all" variant="ghost" size="small" :class="{ active: !selectedNavigationNode }" @click="selectNavigation(null)">{{ labels.all }}</ScButton>
         <HierarchyTreeNode
           v-for="node in navigationRoots"
           :key="node.key"
@@ -62,7 +62,7 @@
         <div class="worksheet-resizer worksheet-resizer-detail" role="separator" aria-orientation="horizontal" :aria-label="labels.resize_detail" tabindex="0" @pointerdown="startDetailResize" />
         <section class="worksheet-detail">
           <nav class="worksheet-tabs" aria-label="detail tabs">
-            <button v-for="tab in detailTabs" :key="tab.key" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">{{ tab.label }}</button>
+            <ScButton v-for="tab in detailTabs" :key="tab.key" variant="ghost" size="small" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">{{ tab.label }}</ScButton>
             <ScButton
               v-if="selectedRecord"
               class="worksheet-open-record"

@@ -1,14 +1,16 @@
 <template>
   <main class="page sc-page sc-page-frame sc-content-layout--record-grid sc-product-workspace-stack" data-product-page-mode="workspace" data-workspace-frame="business" data-content-layout-mode="record-grid" data-semantic-component="PlaceholderView" data-state="ready">
     <section v-if="headerActions.length" class="page-actions">
-      <button
+      <ScButton
         v-for="action in headerActions"
         :key="`placeholder-header-${action.key}`"
         class="ghost"
+        variant="ghost"
+        size="small"
         @click="executeHeaderAction(action.key)"
       >
         {{ action.label || action.key }}
-      </button>
+      </ScButton>
     </section>
     <section
       v-if="pageSectionEnabled('card', true) && pageSectionTagIs('card', 'section')"
@@ -26,6 +28,7 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePageContract } from '../app/pageContract';
+import ScButton from '../components/design-system/ScButton.vue';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 
 const route = useRoute();

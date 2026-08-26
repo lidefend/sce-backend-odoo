@@ -15,66 +15,76 @@
       </header>
 
       <div v-if="block.kind === 'header_bar'" class="scene-block__body scene-block__body--actions">
-        <button
+        <ScButton
           v-for="action in block.actions || []"
           :key="`${block.key}-${action.key}`"
           type="button"
+          variant="secondary"
+          size="small"
           class="scene-block__button"
           @click="emitAction(block, action)"
         >
           {{ actionDisplayLabel(action) }}
-        </button>
+        </ScButton>
       </div>
 
       <div v-else-if="block.kind === 'toolbar'" class="scene-block__body scene-block__body--toolbar">
         <div v-if="toolbarText(block, 'quick_filters')" class="scene-block__chips">
-          <button
+          <ScButton
             v-for="item in toolbarItems(block, 'quick_filters')"
             :key="`${block.key}-${String(item.key || item.label || '')}`"
             class="scene-block__chip"
+            variant="ghost"
+            size="small"
             type="button"
             @click="emitToolbarFilterAction(block, item)"
           >
             {{ recordDisplayLabel(item) }}
-          </button>
+          </ScButton>
         </div>
         <div v-if="toolbarItems(block, 'view_modes').length" class="scene-block__chips">
-          <button
+          <ScButton
             v-for="item in toolbarItems(block, 'view_modes')"
             :key="`${block.key}-view-${String(item.key || item.label || '')}`"
             class="scene-block__chip scene-block__chip--secondary"
+            variant="ghost"
+            size="small"
             type="button"
             @click="emitToolbarViewModeAction(block, item)"
           >
             {{ recordDisplayLabel(item) }}
-          </button>
+          </ScButton>
         </div>
       </div>
 
       <div v-else-if="block.kind === 'statusbar'" class="scene-block__body scene-block__body--meta">
         <div v-if="statusbarStates(block).length" class="scene-block__chips">
-          <button
+          <ScButton
             v-for="item in statusbarStates(block)"
             :key="`${block.key}-state-${item.value}`"
             type="button"
+            variant="ghost"
+            size="small"
             class="scene-block__chip scene-block__chip--status"
             @click="emitStatusbarAction(block, item)"
           >
             {{ item.label }}
-          </button>
+          </ScButton>
         </div>
       </div>
 
       <div v-else-if="block.kind === 'primary_actions' || block.kind === 'smart_actions'" class="scene-block__body scene-block__body--actions">
-        <button
+        <ScButton
           v-for="action in block.actions || []"
           :key="`${block.key}-${action.key}`"
           type="button"
+          variant="secondary"
+          size="small"
           class="scene-block__button"
           @click="emitAction(block, action)"
         >
           {{ actionDisplayLabel(action) }}
-        </button>
+        </ScButton>
       </div>
 
       <div v-else-if="block.kind === 'body' || block.kind === 'list_view' || block.kind === 'kanban_board'" class="scene-block__body">
@@ -133,6 +143,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import ScButton from '../design-system/ScButton.vue';
 
 type SceneBlockAction = {
   key?: string;

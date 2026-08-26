@@ -22,7 +22,7 @@
     <div ref="layoutElement" class="hierarchy-layout" :class="{ resizing: resizingSide }" :style="layoutGridStyle">
       <aside class="hierarchy-tree">
         <h3>{{ config.tree_title }}</h3>
-        <button class="tree-all" :class="{ active: !selectedNode }" @click="selectAll">{{ labels.all }}</button>
+        <ScButton class="tree-all" variant="ghost" size="small" :class="{ active: !selectedNode }" @click="selectAll">{{ labels.all }}</ScButton>
         <HierarchyTreeNode
           v-for="node in rootNodes"
           :key="node.key"

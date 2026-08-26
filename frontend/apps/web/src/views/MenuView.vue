@@ -1,15 +1,17 @@
 <template>
   <section class="menu-view" data-semantic-component="MenuView" :data-state="loading ? 'loading' : 'ready'" :aria-busy="loading || undefined">
     <section v-if="headerActions.length" class="menu-actions">
-      <button
+      <ScButton
         v-for="action in headerActions"
         :key="`menu-header-${action.key}`"
         class="ghost"
+        variant="ghost"
+        size="small"
         :disabled="loading"
         @click="executeHeaderAction(action.key)"
       >
         {{ action.label || action.key }}
-      </button>
+      </ScButton>
     </section>
     <StatusPanel
       v-if="pageSectionEnabled('status_loading', true) && pageSectionTagIs('status_loading', 'section') && loading"
@@ -40,6 +42,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useSessionStore } from '../stores/session';
 import { resolveMenuAction } from '../app/resolvers/menuResolver';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import { ErrorCodes } from '../app/error_codes';
 import { evaluateCapabilityPolicy } from '../app/capabilityPolicy';
 import { buildBusinessEntryNavQuery, pickContractNavQuery } from '../app/navigationContext';

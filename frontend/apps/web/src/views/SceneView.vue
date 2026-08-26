@@ -6,30 +6,34 @@
       :class="{ 'scene-top-controls--compact': compactSceneControls }"
     >
       <section v-if="headerActions.length" class="scene-actions" :class="{ 'scene-actions--compact': compactSceneControls }">
-        <button
+        <ScButton
           v-for="action in headerActions"
           :key="`scene-header-${action.key}`"
           class="ghost"
+          variant="ghost"
+          size="small"
           :disabled="status === 'loading' || action.disabled"
           :title="action.disabledReason || ''"
           @click="executeHeaderAction(action.key)"
         >
           {{ action.label || action.key }}
-        </button>
+        </ScButton>
       </section>
       <section v-if="sceneViewSwitchOptions.length > 1" class="scene-view-switch" :class="{ 'scene-view-switch--compact': compactSceneControls }">
         <p v-if="!compactSceneControls" class="scene-view-switch__label">{{ pageText('scene_view_switch_label', '视图切换') }}</p>
         <div class="scene-view-switch__chips">
-          <button
+          <ScButton
             v-for="item in sceneViewSwitchOptions"
             :key="`scene-view-switch-${item.key}`"
             class="scene-view-switch__chip"
+            variant="ghost"
+            size="small"
             :class="{ active: item.active }"
             :disabled="item.active || status === 'loading'"
             @click="openSiblingScene(item.key)"
           >
             {{ item.label }}
-          </button>
+          </ScButton>
         </div>
       </section>
     </section>
@@ -107,17 +111,19 @@
             <span>{{ group.items.length }}</span>
           </header>
           <div class="handling-group__items">
-            <button
+            <ScButton
               v-for="item in group.items"
               :key="item.key"
               type="button"
+              variant="ghost"
+              size="small"
               class="handling-item"
               :disabled="!isHandlingEntryActionable(item)"
               :title="item.business_category_code"
               @click="openHandlingEntry(item)"
             >
               <span>{{ item.label }}</span>
-            </button>
+            </ScButton>
           </div>
         </article>
       </div>
@@ -134,15 +140,17 @@
         <h3 class="scene-delivery__title">{{ productDeliverySurface.title }}</h3>
         <p class="scene-delivery__message">{{ productDeliverySurface.message }}</p>
       </div>
-      <button
+      <ScButton
         v-if="productDeliverySurface.actionLabel"
         class="ghost scene-delivery__cta"
         type="button"
+        variant="ghost"
+        size="small"
             :disabled="productDeliverySurface.actionDisabled || isLoading"
         @click="openProductDeliveryTarget()"
       >
         {{ productDeliverySurface.actionLabel }}
-      </button>
+      </ScButton>
     </section>
     <StatusPanel
       v-if="status === 'idle' && !sceneContractEntryIntent && runtimeDiagnosticMessage"
@@ -163,6 +171,7 @@ import SceneContractBlockGridView from './SceneContractBlockGridView.vue';
 import SceneBlocksRenderer from '../components/scene/SceneBlocksRenderer.vue';
 import ContractFormPage from '../pages/ContractFormPage.vue';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import { getSceneByKey, resolveSceneLayout } from '../app/resolvers/sceneRegistry';
 import { useSessionStore } from '../stores/session';
 import { evaluateCapabilityPolicy } from '../app/capabilityPolicy';
