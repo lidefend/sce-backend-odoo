@@ -1,13 +1,11 @@
 <template>
-  <section
+  <ScErrorState
     v-if="error || !renderModel"
     class="sc-form-driver-error"
-    role="alert"
     data-contract-form-driver-error
-  >
-    <strong>页面契约无法渲染</strong>
-    <span>{{ error || 'CANONICAL_FORM_RENDER_MODEL_MISSING' }}</span>
-  </section>
+    title="页面契约无法渲染"
+    :description="error || 'CANONICAL_FORM_RENDER_MODEL_MISSING'"
+  />
   <section
     v-else
     class="sc-form-driver-host"
@@ -48,10 +46,7 @@
         @field-change="emit('field-change', $event)"
       >
         <template v-if="floorplan.blockedActions.length" #blocking>
-          <section class="canonical-form-blocking-notice" role="status" data-canonical-blocking-notice>
-            <strong>当前操作暂不可用</strong>
-            <span v-for="action in floorplan.blockedActions" :key="action.key">{{ action.label }}暂不可执行</span>
-          </section>
+          <ScInlineState class="canonical-form-blocking-notice" state="info" :label="blockedActionMessage" data-canonical-blocking-notice />
         </template>
         <template v-if="hasCollaboration" #collaboration>
           <NativeCollaborationPanel
@@ -61,7 +56,7 @@
             :show-audit-timeline="false"
             v-on="collaborationPanelListeners"
           />
-          <p v-else class="canonical-form-activity-empty">暂无活动记录</p>
+          <ScInlineState v-else class="canonical-form-activity-empty" state="empty" label="暂无活动记录" />
         </template>
         <template v-if="showProductActions && !actionsInHeader" #actions>
           <nav class="canonical-product-edit-actions" aria-label="表单业务动作" data-canonical-action-bar>
@@ -139,6 +134,8 @@ import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalAuditEvent, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
 import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
+import ScErrorState from '../../components/design-system/ScErrorState.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
@@ -193,6 +190,7 @@ const emptyFloorplan: CanonicalFormFloorplan = {
   effectivePrimaryKey: '', decisionMode: false,
 };
 const floorplan = computed(() => props.renderModel ? composeCanonicalFormFloorplan(props.renderModel) : emptyFloorplan);
+const blockedActionMessage = computed(() => `当前操作暂不可用：${floorplan.value.blockedActions.map((action) => `${action.label}暂不可执行`).join('；')}`);
 const productWriteMode = computed(() => Boolean(
   floorplan.value.decisionMode && props.renderModel && props.renderModel.identity.mode !== 'readonly',
 ));
@@ -257,13 +255,7 @@ function changeKit(event: Event) {
 
 <style scoped>
 .sc-form-driver-error {
-  display: grid;
-  gap: 6px;
-  padding: 20px;
-  border: 1px solid var(--sc-app-danger-border);
-  border-radius: 8px;
-  background: var(--sc-app-danger-bg);
-  color: var(--sc-app-danger-text);
+  margin: var(--sc-product-space-4);
 }
 .canonical-product-edit-actions {
   display: flex;
@@ -279,15 +271,13 @@ function changeKit(event: Event) {
 .sc-form-driver-host { min-width: 0; }
 .canonical-form-action-icon { inline-size: 1em; text-align: center; }
 .canonical-form-blocking-notice {
-  display: grid;
-  gap: 4px;
   padding: 12px 16px;
   border: 1px solid var(--sc-app-warning-border);
   border-radius: 10px;
   background: var(--sc-app-warning-bg);
   color: var(--sc-app-warning-text);
 }
-.canonical-form-activity-empty { margin: 0; color: var(--sc-app-text-secondary); }
+.canonical-form-activity-empty { margin: 0; }
 .canonical-form-action-bar {
   display: flex;
   flex-wrap: wrap;

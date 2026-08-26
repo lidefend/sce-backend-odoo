@@ -12,7 +12,7 @@ BRIDGE = DESIGN_SYSTEM / "tdesignPrimitiveBridge.ts"
 UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
 
 PRIMITIVES = (
-    "ScButton", "ScInput", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
+    "ScButton", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
 )
 FORBIDDEN_PRIVATE_TDESIGN = re.compile(r"tdesign-vue-next/(?:lib|cjs|src)/")
@@ -80,6 +80,7 @@ def validate(root: Path = ROOT) -> list[str]:
 
     state_contracts = {
         "ScLoading": ('data-state', 'aria-busy'),
+        "ScInlineState": (':data-state="state"', ':aria-busy="state === \'loading\' || undefined"'),
         "ScEmptyState": ('data-state="empty"', 'role="status"'),
         "ScErrorState": ('data-state="error"', 'role="alert"'),
         "ScFormField": (':data-state=', ':data-required='),

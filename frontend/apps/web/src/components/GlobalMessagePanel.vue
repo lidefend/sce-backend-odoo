@@ -47,7 +47,12 @@
               <span v-if="conversation.unread_count" class="global-message__dot sc-badge sc-badge-danger">{{ conversation.unread_count }}</span>
             </button>
           </div>
-          <p v-else class="global-message__empty sc-empty">{{ loadingConversations ? '会话加载中...' : '暂无会话' }}</p>
+          <ScInlineState
+            v-else
+            class="global-message__empty"
+            :state="loadingConversations ? 'loading' : 'empty'"
+            :label="loadingConversations ? '会话加载中...' : '暂无会话'"
+          />
         </section>
 
         <section class="global-message__thread">
@@ -111,9 +116,12 @@
               </div>
               <p>{{ item.body }}</p>
             </article>
-            <p v-if="!messages.length" class="global-message__empty sc-empty">
-              {{ loadingMessages ? '消息加载中...' : composeMode ? '发送后将自动形成会话' : '请选择左侧会话' }}
-            </p>
+            <ScInlineState
+              v-if="!messages.length"
+              class="global-message__empty"
+              :state="loadingMessages ? 'loading' : 'empty'"
+              :label="loadingMessages ? '消息加载中...' : composeMode ? '发送后将自动形成会话' : '请选择左侧会话'"
+            />
           </div>
 
           <footer class="global-message__composer">
@@ -126,7 +134,7 @@
               @keydown.meta.enter.prevent="send"
             />
             <div class="global-message__composer-actions">
-              <p v-if="error" class="global-message__error sc-alert sc-alert-danger">{{ error }}</p>
+              <ScInlineState v-if="error" class="global-message__error" state="error" :label="error" />
               <ScButton size="small" variant="primary" :disabled="sending" :loading="sending" loading-label="发送中" @click="send">
                 {{ sending ? '发送中...' : '发送' }}
               </ScButton>
@@ -144,6 +152,7 @@ import ScButton from './design-system/ScButton.vue';
 import ScDrawer from './design-system/ScDrawer.vue';
 import ScIcon from './design-system/ScIcon.vue';
 import ScInput from './design-system/ScInput.vue';
+import ScInlineState from './design-system/ScInlineState.vue';
 import ScTextarea from './design-system/ScTextarea.vue';
 import { searchCollaborationUsers, type CollaborationUserOption } from '../api/chatter';
 import {

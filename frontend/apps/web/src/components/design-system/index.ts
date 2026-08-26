@@ -17,6 +17,7 @@ export { default as ScIconButton } from './ScIconButton.vue';
 export { default as ScIcon } from './ScIcon.vue';
 export { default as ScMobileRecordCard } from './ScMobileRecordCard.vue';
 export { default as ScInput } from './ScInput.vue';
+export { default as ScInlineState } from './ScInlineState.vue';
 export { default as ScTextarea } from './ScTextarea.vue';
 export { default as ScLoading } from './ScLoading.vue';
 export { default as ScMoney } from './ScMoney.vue';

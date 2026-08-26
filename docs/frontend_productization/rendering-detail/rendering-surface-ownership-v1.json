@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "rendering-surface-ownership/v1",
+  "owners": {
+    "p0-inline-full-state-completion-v1": {
+      "formalProductLayer": "P0",
+      "sources": [
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/components/GlobalMessagePanel.vue",
+        "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue",
+        "frontend/apps/web/src/components/page/BlockRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
+        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue"
+      ]
+    },
+    "p3-low-code-administration": {
+      "formalProductLayer": "P3",
+      "sources": [
+        "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue",
+        "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue",
+        "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+        "frontend/apps/web/src/views/MenuConfigView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/src/views/SceneHealthView.vue",
+        "frontend/apps/web/src/views/ScenePackagesView.vue",
+        "frontend/apps/web/src/views/UsageAnalyticsView.vue"
+      ],
+      "prefixes": [
+        "frontend/apps/web/src/views/businessConfigSurface/"
+      ]
+    }
+  }
+}

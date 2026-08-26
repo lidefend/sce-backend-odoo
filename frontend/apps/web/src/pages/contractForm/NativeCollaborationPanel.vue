@@ -8,7 +8,7 @@
     :data-follower-readiness="capabilityReadiness.follower"
   >
     <h3>{{ title }}</h3>
-    <p v-if="unavailableMessage" class="native-chatter-empty">{{ unavailableMessage }}</p>
+    <ScInlineState v-if="unavailableMessage" class="native-chatter-empty" state="empty" :label="unavailableMessage" />
     <div v-else-if="!readonly" class="chips">
       <ScButton
         v-for="action in actions"
@@ -57,7 +57,7 @@
       @submit="$emit('send-chatter')"
       @cancel="$emit('close-composer')"
     />
-    <p v-if="chatterError" class="validation-error native-chatter-message">{{ chatterError }}</p>
+    <ScInlineState v-if="chatterError" class="validation-error native-chatter-message" state="error" :label="chatterError" />
     <ProfessionalAttachmentManager
       :editable="!readonly"
       :enabled="hasAttachments"
@@ -100,6 +100,7 @@ import ProfessionalCollaborationComposer from './ProfessionalCollaborationCompos
 import { collaborationCapabilityReadiness, visibleCollaborationTimeline } from './professionalCollaborationModel';
 import ProfessionalAttachmentManager, { type PendingProfessionalAttachment } from './ProfessionalAttachmentManager.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 
 export type NativeCollaborationPanelProps = {
   readonly?: boolean;

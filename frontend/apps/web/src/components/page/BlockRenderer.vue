@@ -12,14 +12,19 @@
       @action="onAction"
     />
   </div>
-  <article v-else class="block-fallback">
-    <p class="block-fallback-title">当前内容暂不可用</p>
-    <p class="block-fallback-meta">请稍后重试或联系管理员。</p>
-  </article>
+  <ScErrorState
+    v-else
+    class="block-fallback"
+    density="compact"
+    :heading-level="5"
+    title="当前内容暂不可用"
+    description="请稍后重试或联系管理员。"
+  />
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import ScErrorState from '../design-system/ScErrorState.vue';
 import { resolveBlockComponent } from '../../app/pageBlockRegistry';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../app/pageOrchestration';
 
@@ -51,19 +56,6 @@ function onAction(payload: PageBlockActionEvent) {
   height: 100%;
 }
 .block-fallback {
-  border: 1px dashed var(--sc-app-border-strong);
-  border-radius: 10px;
-  background: var(--sc-app-muted-bg);
-  padding: 10px;
-}
-.block-fallback-title {
-  margin: 0;
-  font-size: 13px;
-  color: var(--sc-app-text-secondary);
-}
-.block-fallback-meta {
-  margin: 4px 0 0;
-  color: var(--sc-semantic-text-muted);
-  font-size: 12px;
+  min-height: 0;
 }
 </style>

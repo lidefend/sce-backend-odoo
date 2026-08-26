@@ -1,6 +1,7 @@
 export const SC_PRIMITIVE_KEYS = [
   'ScButton',
   'ScInput',
+  'ScInlineState',
   'ScTextarea',
   'ScSelect',
   'ScDialog',

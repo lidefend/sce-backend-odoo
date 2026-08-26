@@ -10,10 +10,12 @@
         v-if="!adapter.selectedRelationOptions(field.name).length && adapter.relationIds(field.name).length"
         class="relation-readonly-summary"
       >已关联 {{ adapter.relationIds(field.name).length }} 条</span>
-      <span
+      <ScInlineState
         v-else-if="!adapter.selectedRelationOptions(field.name).length"
         class="relation-readonly-empty"
-      >暂无记录</span>
+        state="empty"
+        label="暂无记录"
+      />
     </div>
     <div v-else-if="isMany2manyTags(field)" class="relation-tag-picker">
       <div class="relation-tags-control">
@@ -125,9 +127,7 @@
           </dl>
         </article>
       </div>
-      <p v-else class="relation-readonly-empty" data-readonly-relation-empty>
-        暂无记录
-      </p>
+      <ScInlineState v-else class="relation-readonly-empty" state="empty" label="暂无记录" data-readonly-relation-empty />
     </div>
     <template v-else>
     <div class="o2m-toolbar">
@@ -203,12 +203,18 @@
           :disabled="adapter.busy"
           @click="adapter.removeOne2manyRow(field.name, row.key)"
         >移除本条</ScButton>
-        <p v-if="adapter.showOne2manyErrors && adapter.one2manyRowErrors(field.name, row.key).length" class="o2m-row-error">
-          {{ adapter.one2manyRowErrors(field.name, row.key).join('；') }}
-        </p>
-        <p v-if="adapter.one2manyRowHints(field.name, row).length" class="o2m-row-hint">
-          {{ adapter.one2manyRowHints(field.name, row).join('；') }}
-        </p>
+        <ScInlineState
+          v-if="adapter.showOne2manyErrors && adapter.one2manyRowErrors(field.name, row.key).length"
+          class="o2m-row-error"
+          state="error"
+          :label="adapter.one2manyRowErrors(field.name, row.key).join('；')"
+        />
+        <ScInlineState
+          v-if="adapter.one2manyRowHints(field.name, row).length"
+          class="o2m-row-hint"
+          state="info"
+          :label="adapter.one2manyRowHints(field.name, row).join('；')"
+        />
       </div>
     </div>
     <div v-if="adapter.removedOne2manyRows(field.name).length" class="o2m-removed">
@@ -250,6 +256,7 @@ import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import type { X2ManyRelationRendererProps } from './relationField.types';
 
