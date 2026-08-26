@@ -1,9 +1,9 @@
 <template>
-  <div ref="root" class="native-action-overflow" data-semantic-component="NativeActionOverflowMenu" @keydown.esc.stop.prevent="close(true)">
+  <div ref="root" class="native-action-overflow native-action-more" data-semantic-component="NativeActionOverflowMenu" @keydown.esc.stop.prevent="close(true)">
     <ScButton
       ref="trigger"
       type="button"
-      class="native-action-overflow__trigger"
+      class="native-action-overflow__trigger native-action-btn native-action-btn--smart native-action-btn--more"
       size="small"
       variant="ghost"
       aria-haspopup="menu"
@@ -13,13 +13,13 @@
     >
       {{ label }}
     </ScButton>
-    <div v-if="open" :id="menuId" class="native-action-overflow__menu" role="menu">
+    <div v-if="open" :id="menuId" class="native-action-overflow__menu native-action-more-menu" role="menu">
       <ScButton
         v-for="(action, index) in actions"
         :key="keyResolver(action, index)"
         v-bind="evidenceResolver(action)"
         type="button"
-        class="native-action-overflow__item"
+        class="native-action-overflow__item native-action-more-item"
         size="small"
         variant="ghost"
         role="menuitem"

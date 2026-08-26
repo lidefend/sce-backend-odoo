@@ -6471,3 +6471,15 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   retained stateful relation controls and rejects legacy commands, destructive
   variant drift, native editor-input regression and parallel action paths. Six
   guard cases, existing relation/detail guards and strict typecheck pass.
+
+## 2026-08-26 — Native structured form action presentation v1
+
+- Branch: `feature/p0-native-form-action-presentation-v1`
+- Baseline: `1ff4113229a38202a569e9a0cb68f8adde5c68c6`
+- Formal Product Layer: P0 platform kernel product
+- Layer Target: frontend Native structured form action presentation
+- Module: `frontend/apps/web`
+- Reason: distinguish ordinary actions, smart action cards and overflow
+  disclosure while preserving backend action authority and execution semantics.
+- Excluded: Contract, permissions, routes, task Floorplan, business models and
+  database state.

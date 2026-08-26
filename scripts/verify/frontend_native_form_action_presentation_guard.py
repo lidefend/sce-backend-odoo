@@ -51,7 +51,8 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         ':label="buttonLabel(node)"',
         'data-semantic-component="NativeSmartAction"',
         'data-semantic-role="smart-action"',
-        'class="native-smart-action"',
+        'class="native-smart-action native-action-btn native-action-btn--smart"',
+        'native-action-btn--smart',
     )
     combined = f"{text}\n{smart}"
     for marker in smart_required:
@@ -66,6 +67,7 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         '<NativeActionOverflowMenu',
         '@select="emitNativeAction"',
         'data-semantic-component="NativeActionOverflowMenu"',
+        'native-action-more-menu',
         'aria-haspopup="menu"',
         ':aria-expanded="open"',
         ':aria-controls="menuId"',

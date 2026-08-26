@@ -3,7 +3,7 @@
     data-semantic-component="NativeSmartAction"
     data-semantic-role="smart-action"
     type="button"
-    class="native-smart-action"
+    class="native-smart-action native-action-btn native-action-btn--smart"
     :disabled="disabled"
     :title="title"
   >
