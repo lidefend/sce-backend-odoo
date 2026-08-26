@@ -7,7 +7,7 @@ export { Checkbox as TDesignCheckbox } from 'tdesign-vue-next/es/checkbox';
 export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';
 export { Select as TDesignSelect } from 'tdesign-vue-next/es/select';
 export { Tabs as TDesignTabs, TabPanel as TDesignTabPanel } from 'tdesign-vue-next/es/tabs';
-export { Table as TDesignTable } from 'tdesign-vue-next/es/table';
+export { PrimaryTable as TDesignTable } from 'tdesign-vue-next/es/table';
 export { Badge as TDesignBadge } from 'tdesign-vue-next/es/badge';
 export { Tooltip as TDesignTooltip } from 'tdesign-vue-next/es/tooltip';
 export { Dropdown as TDesignDropdown } from 'tdesign-vue-next/es/dropdown';
