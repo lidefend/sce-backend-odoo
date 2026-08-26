@@ -47,7 +47,12 @@
               <span v-if="conversation.unread_count" class="global-message__dot sc-badge sc-badge-danger">{{ conversation.unread_count }}</span>
             </button>
           </div>
-          <p v-else class="global-message__empty sc-empty">{{ loadingConversations ? '会话加载中...' : '暂无会话' }}</p>
+          <ScInlineState
+            v-else
+            class="global-message__empty"
+            :state="loadingConversations ? 'loading' : 'empty'"
+            :label="loadingConversations ? '会话加载中...' : '暂无会话'"
+          />
         </section>
 
         <section class="global-message__thread">
@@ -144,6 +149,7 @@ import ScButton from './design-system/ScButton.vue';
 import ScDrawer from './design-system/ScDrawer.vue';
 import ScIcon from './design-system/ScIcon.vue';
 import ScInput from './design-system/ScInput.vue';
+import ScInlineState from './design-system/ScInlineState.vue';
 import ScTextarea from './design-system/ScTextarea.vue';
 import { searchCollaborationUsers, type CollaborationUserOption } from '../api/chatter';
 import {
