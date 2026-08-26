@@ -232,7 +232,7 @@
         >
           {{ btn.label }}
         </ScButton>
-        <button
+        <ScButton
           v-if="vm.actions.overflowGroups.length"
           class="contract-chip ghost"
           :disabled="isBusyDisabled()"
@@ -243,7 +243,7 @@
               ? t('chip_more_actions_collapse', '收起更多操作')
               : `${t('chip_more_actions_expand', '更多操作')} (${vm.actions.overflowGroups.length})`
           }}
-        </button>
+        </ScButton>
       </div>
       <div v-if="showMoreContractActions && vm.actions.overflowGroups.length" class="contract-groups">
         <section
@@ -637,16 +637,17 @@
       @close="closeBusinessCategoryCreatePicker"
     >
       <div class="business-category-picker-list" data-semantic-component="BusinessCategoryPickerOptions">
-        <button
+        <ScButton
           v-for="(option, optionIndex) in businessCategoryCreateOptions"
           :key="option.code"
           class="business-category-picker-option"
           type="button"
           :data-dialog-primary="optionIndex === 0 ? '' : undefined"
+          variant="secondary"
           @click="openCreateRecordWithBusinessCategory(option.code)"
         >
           <span>{{ option.label }}</span>
-        </button>
+        </ScButton>
       </div>
     </ScDialog>
     </template>
