@@ -2,14 +2,16 @@
   <nav class="product-side-navigation" aria-label="业务导航" data-semantic-component="ProductSideNavigation">
     <label class="product-side-navigation__search">
       <span class="sr-only">搜索菜单</span>
-      <ScIcon name="search" :size="16" />
       <ScInput
         :model-value="search"
         type="search"
         placeholder="搜索菜单..."
         aria-label="搜索菜单"
+        clearable
         @update:model-value="emit('update:search', String($event))"
-      />
+      >
+        <template #prefix><ScIcon name="search" :size="16" /></template>
+      </ScInput>
     </label>
     <div class="product-side-navigation__tree">
       <MenuTree
@@ -63,18 +65,9 @@ const emit = defineEmits<{
   align-items: center;
 }
 
-.product-side-navigation__search > .sc-icon {
-  position: absolute;
-  z-index: var(--sc-component-shell-navigation-search-icon-z-index);
-  left: 11px;
-  color: var(--sc-app-text-muted);
-  pointer-events: none;
-}
-
 .product-side-navigation__search :deep(.sc-input) {
   width: 100%;
   min-height: 38px;
-  padding-left: 34px;
   border-color: var(--sc-app-border);
   border-radius: var(--sc-component-input-radius);
   background: color-mix(in srgb, var(--sc-app-panel) 86%, transparent);
@@ -83,6 +76,10 @@ const emit = defineEmits<{
     border-color var(--sc-motion-fast) ease,
     box-shadow var(--sc-motion-fast) ease,
     background-color var(--sc-motion-fast) ease;
+}
+
+.product-side-navigation__search :deep(.t-input__prefix-icon) {
+  color: var(--sc-app-text-muted);
 }
 
 .product-side-navigation__search :deep(.sc-input:hover) {

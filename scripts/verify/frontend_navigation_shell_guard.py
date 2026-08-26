@@ -61,9 +61,13 @@ def validate(root: Path = ROOT) -> list[str]:
         "var(--sc-nav-row-gap)",
         "var(--sc-app-focus-ring)",
         "overscroll-behavior: contain",
+        "<template #prefix><ScIcon name=\"search\"",
+        "clearable",
     ):
         if marker not in side_navigation:
             errors.append(f"ProductSideNavigation must retain canonical rendering detail: {marker}")
+    if "product-side-navigation__search > .sc-icon" in side_navigation or "padding-left: 34px" in side_navigation:
+        errors.append("navigation search must use the ScInput prefix adapter instead of manual icon positioning")
     for marker in (
         ".shell :deep(.sidebar)",
         "grid-template-columns: minmax(0, 1fr)",

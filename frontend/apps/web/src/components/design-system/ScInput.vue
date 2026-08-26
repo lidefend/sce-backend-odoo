@@ -17,6 +17,7 @@
     :disabled="disabled || loading"
     :readonly="readonly"
     :placeholder="placeholder"
+    :clearable="clearable"
     :autocomplete="autocomplete"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
@@ -30,7 +31,10 @@
     @change="onTDesignChange"
     @focus="onTDesignFocus"
     @blur="onTDesignBlur"
-  />
+  >
+    <template v-if="$slots.prefix" #prefixIcon><slot name="prefix" /></template>
+    <template v-if="$slots.suffix" #suffixIcon><slot name="suffix" /></template>
+  </TDesignInput>
   <input
     v-else
     ref="inputRef"
@@ -92,6 +96,7 @@ const props = withDefaults(defineProps<{
   step?: string | number;
   minLength?: number;
   maxLength?: number;
+  clearable?: boolean;
 }>(), {
   modelValue: '',
   size: 'medium',
@@ -105,6 +110,7 @@ const props = withDefaults(defineProps<{
   step: undefined,
   minLength: undefined,
   maxLength: undefined,
+  clearable: false,
 });
 
 const emit = defineEmits<{

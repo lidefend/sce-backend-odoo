@@ -117,6 +117,19 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         )
         self.assertTrue(any("ScButton content adapter" in error for error in validate(root)))
 
+    def test_navigation_search_must_use_the_input_prefix_adapter(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue"
+        path.write_text(
+            path.read_text().replace(
+                '<template #prefix><ScIcon name="search" :size="16" /></template>',
+                '',
+            ).replace("        clearable\n", ""),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("canonical rendering detail" in error for error in validate(root)))
+
 
 if __name__ == "__main__":
     unittest.main()
