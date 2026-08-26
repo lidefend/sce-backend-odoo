@@ -6371,3 +6371,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   test proves two empty required controls emit zero submits, while completed
   controls emit exactly one; label association and field/option order remain
   intact.
+
+## Low-code field creation dialog presentation convergence v1
+
+- Branch / baseline: `feature/p3-low-code-field-dialog-presentation-v1` /
+  `f500e2bd11c36ae0676d3cc42b0d9637c414618c`.
+- Formal Product Layer / Layer Target / Module: P3 low-code configuration
+  product / generic field-authoring dialog presentation / `frontend/apps/web`.
+- Product result: the field title and type controls now use `ScFormField`,
+  `ScInput` and `ScSelect`, while cancellation and creation use one ordered
+  `ScButton` action group with exactly one primary action. Legacy prompt,
+  pill-button and private native-control styling has been removed.
+- Authority boundary: the eight formal field types, field order, autofocus,
+  required constraints and `submit` / `close` / value-update events are
+  preserved. Field creation, contract publication, permissions and database
+  mutation remain owned by the existing P3 runtime and are unchanged.
+- Evidence: six source guard cases and a Vite-mounted production-component
+  Chromium check prove initial focus reaches the title input, empty required
+  input submits zero times, completed input submits exactly once, close and
+  value-update emits remain exact, label associations and field-type order
+  remain exact, and the action group contains one create and one cancel action.
+  Frontend Quick, strict typecheck, development build, style-system and
+  delivery-hardening guards pass.

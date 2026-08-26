@@ -8,35 +8,57 @@
   >
     <form
       class="low-code-field-create-form"
+      data-semantic-component="LowCodeFieldCreateForm"
       @submit.prevent="$emit('submit')"
     >
-      <label class="contract-mode-prompt-field">
-        <span>字段标题</span>
-        <input autofocus :value="dialog.label" required :disabled="busy" @input="$emit('update:label', inputValue($event))" />
-      </label>
-      <label class="contract-mode-prompt-field">
-        <span>字段类型</span>
-        <select :value="dialog.ttype" required :disabled="busy" @change="$emit('update:ttype', inputValue($event))">
-          <option value="char">单行文本</option>
-          <option value="text">多行文本</option>
-          <option value="integer">整数</option>
-          <option value="float">小数</option>
-          <option value="boolean">是/否</option>
-          <option value="date">日期</option>
-          <option value="datetime">日期时间</option>
-          <option value="html">富文本</option>
-        </select>
-      </label>
-      <footer class="low-code-field-create-actions">
-        <button type="submit" class="chip-btn" :disabled="busy">创建字段</button>
-        <button type="button" class="ghost" :disabled="busy" @click="$emit('close')">取消</button>
+      <ScFormField label="字段标题" field-key="low-code-field-label" required>
+        <template #default="{ controlId, describedBy }">
+          <ScInput
+            :id="controlId"
+            autofocus
+            :model-value="dialog.label"
+            required
+            :disabled="busy"
+            :described-by="describedBy"
+            @update:model-value="$emit('update:label', $event)"
+          />
+        </template>
+      </ScFormField>
+      <ScFormField label="字段类型" field-key="low-code-field-type" required>
+        <template #default="{ controlId, describedBy }">
+          <ScSelect
+            :id="controlId"
+            :model-value="dialog.ttype"
+            required
+            :disabled="busy"
+            :described-by="describedBy"
+            @update:model-value="$emit('update:ttype', $event)"
+          >
+            <option value="char">单行文本</option>
+            <option value="text">多行文本</option>
+            <option value="integer">整数</option>
+            <option value="float">小数</option>
+            <option value="boolean">是/否</option>
+            <option value="date">日期</option>
+            <option value="datetime">日期时间</option>
+            <option value="html">富文本</option>
+          </ScSelect>
+        </template>
+      </ScFormField>
+      <footer class="low-code-field-create-actions" data-semantic-component="LowCodeFieldCreateActions">
+        <ScButton type="button" variant="ghost" :disabled="busy" @click="$emit('close')">取消</ScButton>
+        <ScButton type="submit" variant="primary" :disabled="busy">创建字段</ScButton>
       </footer>
     </form>
   </ScDialog>
 </template>
 
 <script setup lang="ts">
+import ScButton from '../../components/design-system/ScButton.vue';
 import ScDialog from '../../components/design-system/ScDialog.vue';
+import ScFormField from '../../components/design-system/ScFormField.vue';
+import ScInput from '../../components/design-system/ScInput.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
 
 export type LowCodeFieldCreateDialogState = {
   open: boolean;
@@ -59,9 +81,6 @@ defineEmits<{
   'update:ttype': [value: string];
 }>();
 
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement | HTMLSelectElement).value || '');
-}
 </script>
 
 <style scoped src="./LowCodeFieldCreateDialog.css"></style>
