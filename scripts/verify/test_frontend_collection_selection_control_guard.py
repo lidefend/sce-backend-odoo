@@ -19,9 +19,25 @@ class CollectionSelectionControlGuardTest(unittest.TestCase):
         altered = self.list_source + '\n<input type="checkbox" />\n'
         self.assertIn("ListPage retains parallel native checkbox DOM", validate(altered, self.control_source, self.css_source))
 
-    def test_missing_adapter_fails(self):
-        altered = self.list_source.replace("<CollectionSelectionControl", "<LegacySelectionControl", 1)
-        self.assertTrue(any("exactly five" in item for item in validate(altered, self.control_source, self.css_source)))
+    def test_missing_desktop_adapter_fails(self):
+        altered = self.list_source.replace(':columns="collectionTableColumns(group.key)"', ':columns="legacyColumns"', 1)
+        self.assertTrue(any("exactly two" in item for item in validate(altered, self.control_source, self.css_source)))
+
+    def test_missing_tdesign_multiple_selection_fails(self):
+        altered = self.list_source.replace("type: 'multiple'", "type: 'single'", 1)
+        self.assertTrue(any("type: 'multiple'" in item for item in validate(altered, self.control_source, self.css_source)))
+
+    def test_missing_selected_key_authority_fails(self):
+        altered = self.list_source.replace(':selected-row-keys="selectedIds || []"', ':selected-row-keys="[]"', 1)
+        self.assertTrue(any("selected-row-keys" in item for item in validate(altered, self.control_source, self.css_source)))
+
+    def test_missing_selection_event_adapter_fails(self):
+        altered = self.list_source.replace('@select-change="onTableSelectionChange($event, records)"', '@select-change="noop"', 1)
+        self.assertTrue(any("onTableSelectionChange" in item for item in validate(altered, self.control_source, self.css_source)))
+
+    def test_missing_mobile_touch_adapter_fails(self):
+        altered = self.mobile_row_source.replace("<CollectionSelectionControl", "<LegacySelectionControl", 1)
+        self.assertTrue(any("mobile row" in item for item in validate(self.list_source, self.control_source, self.css_source, self.visual_source, altered)))
 
     def test_missing_indeterminate_property_fails(self):
         altered = self.control_source.replace("inputRef.value.indeterminate = props.indeterminate", "void props.indeterminate")

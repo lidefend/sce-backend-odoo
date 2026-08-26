@@ -21,7 +21,7 @@ REQUIRED_PRODUCT_COMPONENTS = {
     "ScButton.vue", "ScIconButton.vue", "ScStatusBadge.vue", "ScMoney.vue",
     "ScField.vue", "ScSelect.vue", "ScRelationField.vue", "ScDateField.vue",
     "ScErrorSummary.vue", "ScEmptyState.vue", "ScErrorState.vue", "ScDialog.vue",
-    "ScDrawer.vue", "ScActionBar.vue", "ScDataTable.vue", "ScMobileRecordCard.vue",
+    "ScDrawer.vue", "ScActionBar.vue", "ScMobileRecordCard.vue",
     "ScRelationshipFlow.vue", "ScAuditTrail.vue", "ScInput.vue", "ScTabs.vue",
     "ScTable.vue", "ScBadge.vue", "ScTooltip.vue", "ScDropdown.vue",
     "ScFormField.vue", "ScLoading.vue",
@@ -29,7 +29,7 @@ REQUIRED_PRODUCT_COMPONENTS = {
 
 REQUIRED_PRODUCT_CONSUMERS = {
     "ScActionBar": "components/business/MyWorkApprovalWorkspace.vue",
-    "ScDataTable": "pages/ListPage.vue",
+    "ScTable": "pages/ListPage.vue",
     "ScDateField": "components/template/FormSection.vue",
     "ScDialog": "pages/contractForm/RelationSearchDialog.vue",
     "ScEmptyState": "pages/ListPage.vue",

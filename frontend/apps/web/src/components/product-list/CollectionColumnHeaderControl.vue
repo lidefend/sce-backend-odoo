@@ -1,5 +1,5 @@
 <template>
-  <th
+  <div
     class="cell-sortable"
     data-semantic-component="CollectionColumnHeaderControl"
     :class="[densityClass, { 'is-sorted': sorted, 'is-dragging': dragging, 'is-sort-disabled': !sortable }]"
@@ -21,7 +21,7 @@
       <ScIcon v-if="sorted" class="sort-indicator" :name="sortIcon" :size="14" />
     </button>
     <button type="button" class="column-resize-handle" :title="resizeLabel" :aria-label="resizeLabel" draggable="false" @click.stop @dragstart.stop.prevent @mousedown.stop.prevent="$emit('resize-start', $event)" />
-  </th>
+  </div>
 </template>
 
 <script setup lang="ts">

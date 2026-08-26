@@ -68,7 +68,7 @@ def validate(
         failures.append("list page retains parallel grouping toolbar DOM")
     column_required = (
         'data-semantic-component="CollectionColumnHeaderControl"',
-        '<th',
+        '<div',
         'class="column-drag-handle"',
         ':aria-label="dragLabel"',
         'class="column-resize-handle"',
@@ -79,8 +79,8 @@ def validate(
     for marker in column_required:
         if marker not in column:
             failures.append(f"collection column header missing {marker}")
-    if list_page.count('<CollectionColumnHeaderControl') != 2:
-        failures.append("list page must use the shared column header for flat and grouped tables")
+    if list_page.count('h(CollectionColumnHeaderControl') != 1 or 'title: () => collectionHeader(field)' not in list_page:
+        failures.append("list page must use one shared TDesign column-header adapter for flat and grouped tables")
     if '<th\n              v-for="col in displayedColumns"' in list_page:
         failures.append("list page retains parallel column header DOM")
     legacy_style = LIST_STYLE.read_text(encoding="utf-8")

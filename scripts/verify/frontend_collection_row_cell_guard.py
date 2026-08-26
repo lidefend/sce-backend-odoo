@@ -12,17 +12,17 @@ def validate(list_source: str | None = None, cell_source: str | None = None, css
     cell_text = cell_source if cell_source is not None else ROW_CELL.read_text(encoding="utf-8")
     css_text = css_source if css_source is not None else ROW_CELL_CSS.read_text(encoding="utf-8")
     failures: list[str] = []
-    if list_text.count("<CollectionRowCell") != 2:
-        failures.append("flat and grouped collection rows must share exactly two CollectionRowCell adapters")
+    if list_text.count("h(CollectionRowCell") != 1 or list_text.count(":columns=\"collectionTableColumns(") != 2:
+        failures.append("flat and grouped collection rows must share one TDesign column cell adapter")
     required_list = (
-        'v-bind="collectionRowCellProps(row, col)"',
-        '@toggle-favorite="toggleRecordFavorite(row, col)"',
-        '@open-record="handleRow(row)"',
-        '@open-attachment="previewAttachmentLink($event, row)"',
-        '@open-attachment-count="previewRecordAttachmentCount(row, columnValue(row, col))"',
+        "...collectionRowCellProps(row, field)",
+        "onToggleFavorite: () => toggleRecordFavorite(row, field)",
+        "onOpenRecord: () => handleRow(row)",
+        "onOpenAttachment: (link:",
+        "onOpenAttachmentCount: () => previewRecordAttachmentCount(row, columnValue(row, field))",
     )
     for marker in required_list:
-        if list_text.count(marker) != 2:
+        if marker not in list_text:
             failures.append(f"collection row adapters missing shared event contract {marker}")
     forbidden_list = (
         'class="favorite-toggle"',
@@ -61,4 +61,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_collection_row_cell_guard] PASS owners=1 adapters=2")
+    print("[frontend_collection_row_cell_guard] PASS owners=1 adapters=tdesign-columns-flat,group")

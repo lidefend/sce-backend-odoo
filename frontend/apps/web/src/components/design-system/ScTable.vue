@@ -13,6 +13,7 @@
     :keyboard-row-hover="keyboardRowHover"
     :disable-data-page="disableDataPage"
     :table-content-width="tableContentWidth"
+    :foot-data="footData"
     :selected-row-keys="selectedRowKeys"
     :row-selection-type="rowSelectionType"
     :select-on-row-click="selectOnRowClick"
@@ -46,6 +47,7 @@ withDefaults(defineProps<{
   keyboardRowHover?: boolean;
   disableDataPage?: boolean;
   tableContentWidth?: string;
+  footData?: Record<string, unknown>[];
   selectedRowKeys?: Array<string | number>;
   rowSelectionType?: 'single' | 'multiple';
   selectOnRowClick?: boolean;
@@ -59,6 +61,7 @@ withDefaults(defineProps<{
   keyboardRowHover: true,
   disableDataPage: true,
   selectedRowKeys: () => [],
+  footData: () => [],
 });
 const emit = defineEmits<{
   rowClick: [context: unknown];

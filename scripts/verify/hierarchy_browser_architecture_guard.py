@@ -30,7 +30,7 @@ def main() -> int:
         for needle, label in (
             ("ProductListHeader", "standard ProductListHeader"),
             ("ScButton", "standard ScButton"),
-            ("ScDataTable", "standard ScDataTable"),
+            ("ScTable", "standard ScTable adapter"),
             ("ScEmptyState", "standard ScEmptyState"),
             ("hierarchyCollectionDataSource", "action-runtime hierarchy data source"),
             ("executeHierarchyCommand", "contract command runtime"),
