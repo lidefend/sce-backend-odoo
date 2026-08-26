@@ -745,7 +745,8 @@ try {
         const rowCheckbox = viewport.name === 'mobile'
           ? page.locator('[data-mobile-record-select] input[type="checkbox"]').first()
           : page.locator('.desktop-record-table tbody input[type="checkbox"]').first();
-        await rowCheckbox.check();
+        await rowCheckbox.locator('xpath=..').click();
+        if (!(await rowCheckbox.isChecked())) throw new Error('collection row selection control did not settle checked');
         const batchBar = page.locator('[data-semantic-component="CollectionBatchActionBar"]');
         await batchBar.waitFor({ state: 'visible', timeout: 15000 });
         const actionCount = Number(await batchBar.getAttribute('data-action-count') || 0);
