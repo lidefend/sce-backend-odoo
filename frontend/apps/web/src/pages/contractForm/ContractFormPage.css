@@ -889,7 +889,7 @@
   font-size: 12px;
 }
 
-.contract-mode-prompt {
+.action-prompt-form {
   grid-column: 1 / -1;
   border-top: 1px solid var(--sc-app-border);
 }

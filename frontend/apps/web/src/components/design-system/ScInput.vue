@@ -10,6 +10,7 @@
     :type="type"
     :disabled="disabled || loading"
     :readonly="readonly"
+    :required="required"
     :placeholder="placeholder"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
@@ -30,6 +31,7 @@ const props = withDefaults(defineProps<{
   status?: ScPrimitiveStatus;
   disabled?: boolean;
   readonly?: boolean;
+  required?: boolean;
   loading?: boolean;
   type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
   placeholder?: string;
