@@ -120,6 +120,7 @@
   --sc-component-dialog-motion-duration: 180ms;
   --sc-component-dialog-padding: 16;
   --sc-component-dialog-radius: 8px;
+  --sc-component-dialog-wide-width: 920px;
   --sc-component-dialog-width: 560px;
   --sc-component-dialog-z-index: 1100;
   --sc-component-drawer-header-z-index: 100;
