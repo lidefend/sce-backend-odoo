@@ -5,12 +5,14 @@ ROOT = Path(__file__).resolve().parents[2]
 RENDERER = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
 SMART_ACTION = ROOT / "frontend/apps/web/src/components/template/NativeSmartAction.vue"
 OVERFLOW_MENU = ROOT / "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue"
+VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
 
 
-def validate(source: str | None = None, smart_action: str | None = None, overflow_menu: str | None = None) -> list[str]:
+def validate(source: str | None = None, smart_action: str | None = None, overflow_menu: str | None = None, visual_smoke: str | None = None) -> list[str]:
     text = source if source is not None else RENDERER.read_text(encoding="utf-8")
     smart = smart_action if smart_action is not None else SMART_ACTION.read_text(encoding="utf-8")
     overflow = overflow_menu if overflow_menu is not None else OVERFLOW_MENU.read_text(encoding="utf-8")
+    smoke = visual_smoke if visual_smoke is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
     failures: list[str] = []
     required = (
         "import ScButton from '../design-system/ScButton.vue'",
@@ -83,6 +85,15 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
     for private_state in ("openMoreKeys", "toggleMore(", "closeMore(", ".native-action-more-menu"):
         if private_state in text:
             failures.append(f"native renderer retained private overflow implementation: {private_state}")
+    for evidence in (
+        "exerciseNativeActionOverflow",
+        'data-semantic-component="NativeSmartAction"',
+        'data-semantic-component="NativeActionOverflowMenu"',
+        "focusRestored",
+        "menuItemCount > 0",
+    ):
+        if evidence not in smoke:
+            failures.append(f"governed visual smoke lost native action evidence: {evidence}")
     return failures
 
 

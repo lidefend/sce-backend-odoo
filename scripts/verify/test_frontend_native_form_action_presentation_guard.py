@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify.frontend_native_form_action_presentation_guard import OVERFLOW_MENU, RENDERER, SMART_ACTION, validate
+from scripts.verify.frontend_native_form_action_presentation_guard import OVERFLOW_MENU, RENDERER, SMART_ACTION, VISUAL_SMOKE, validate
 
 
 class NativeFormActionPresentationGuardTest(unittest.TestCase):
@@ -9,9 +9,10 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
         cls.source = RENDERER.read_text(encoding="utf-8")
         cls.smart_action = SMART_ACTION.read_text(encoding="utf-8")
         cls.overflow_menu = OVERFLOW_MENU.read_text(encoding="utf-8")
+        cls.visual_smoke = VISUAL_SMOKE.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
-        self.assertEqual(validate(self.source, self.smart_action, self.overflow_menu), [])
+        self.assertEqual(validate(self.source, self.smart_action, self.overflow_menu, self.visual_smoke), [])
 
     def test_ordinary_action_cannot_regress_to_private_button(self):
         altered = self.source.replace("<ScButton\n                v-if=\"!isSmartButtonNode(buttonNode)\"", "<button\n                v-if=\"!isSmartButtonNode(buttonNode)\"", 1)
@@ -44,6 +45,10 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
     def test_overflow_state_cannot_return_to_renderer(self):
         altered = f"{self.source}\nconst openMoreKeys = ref({{}});"
         self.assertTrue(any("private overflow" in error for error in validate(altered, self.smart_action, self.overflow_menu)))
+
+    def test_visual_smoke_must_prove_focus_settlement(self):
+        altered = self.visual_smoke.replace("focusRestored", "focusDropped")
+        self.assertTrue(any("visual smoke" in error for error in validate(self.source, self.smart_action, self.overflow_menu, altered)))
 
 
 if __name__ == "__main__":
