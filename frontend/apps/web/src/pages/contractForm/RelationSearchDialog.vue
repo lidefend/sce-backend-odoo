@@ -30,7 +30,6 @@
         <ScTable class="relation-dialog-table" :aria-busy="dialog.loading || undefined"
           :label="dialog.title" :data="relationTableRows" :columns="relationTableColumns" row-key="id" size="small"
           role="listbox"
-          :row-class-name="relationRowClassName" :row-attributes="relationRowAttributes"
           @row-click="onTableSelect" @row-dblclick="onTableConfirm" />
         </ScLoading>
         <ScEmptyState v-if="!dialog.loading && !dialog.rows.length" :title="dialog.labels.empty || '未找到匹配记录'" />
@@ -153,26 +152,6 @@ function tableRow(context: unknown): RelationSearchRow | null {
   if (!context || typeof context !== 'object') return null;
   const row = (context as { row?: unknown }).row;
   return row && typeof row === 'object' && 'id' in row ? row as RelationSearchRow : null;
-}
-function relationRowClassName(context: unknown) {
-  const row = tableRow(context);
-  return row?.id === props.dialog.selectedId ? 'relation-dialog-row--active' : '';
-}
-function relationRowAttributes(context: unknown): Record<string, unknown> {
-  const row = tableRow(context);
-  return {
-    'data-semantic-component': 'RelationSearchResult',
-    'data-semantic-layout': 'table-row',
-    'data-record-id': row?.id,
-    role: 'option',
-    tabindex: 0,
-    'aria-selected': row?.id === props.dialog.selectedId,
-    onKeydown: (event: KeyboardEvent) => {
-      if (!row) return;
-      if (event.key === ' ') { event.preventDefault(); emit('select-row', row); }
-      if (event.key === 'Enter') { event.preventDefault(); emit('confirm', row); }
-    },
-  };
 }
 function onTableSelect(context: unknown) { const row = tableRow(context); if (row) emit('select-row', row); }
 function onTableConfirm(context: unknown) {
