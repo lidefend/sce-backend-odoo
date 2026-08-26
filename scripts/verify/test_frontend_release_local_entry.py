@@ -185,6 +185,18 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         self.assertIn('data-form-menu-id="${target.menu_id}"', helper)
         self.assertNotIn("新建付款申请", source)
 
+    def test_delivery_hardening_company_switch_uses_visible_context_authority(self) -> None:
+        source = (
+            ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs"
+        ).read_text(encoding="utf-8")
+        helper = source.split("async function selectCompany(", 1)[1].split(
+            "async function navigateSpa(", 1
+        )[0]
+        self.assertIn('data-semantic-component="WorkspaceContextIndicator"', helper)
+        self.assertIn("workspace context indicator identity is not unique", helper)
+        self.assertIn("name: /^切换公司：/", helper)
+        self.assertIn("company switch trigger identity is not unique", helper)
+
     def test_release_probes_fixture_and_http_credentials_before_frontend(self) -> None:
         fixture = (ROOT / "scripts/test/frontend_productization_fixture.sh").read_text(
             encoding="utf-8"

@@ -200,12 +200,12 @@
         </div>
         <div class="topbar-actions">
           <WorkspaceContextIndicator
-            v-if="showRecordContext && (mobileViewport || sidebarHidden)"
             :company-label="currentCompanyLabel || '全部公司'"
             :record-subject="recordContextSubject"
             :record-label="currentRecordContextLabel"
             :record-action-label="switchRecordContextLabel"
             :record-icon="recordContextIcon"
+            :show-record="showRecordContext"
             @company="openWorkspacePanel('company')"
             @record="openWorkspacePanel('record')"
           />

@@ -55,6 +55,13 @@ def validate(root: Path = ROOT) -> list[str]:
 
     if "<ProductSideNavigation" not in shell or ':nodes="filteredNavigation"' not in shell:
         errors.append("AppShell must render ProductSideNavigation from the canonical filtered model")
+    context_indicator = read(root, "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue")
+    context_projection = shell.split("<WorkspaceContextIndicator", 1)[-1].split("/>", 1)[0]
+    if ':show-record="showRecordContext"' not in context_projection or "v-if=" in context_projection:
+        errors.append("AppShell must keep the company context authority visible while gating only record context")
+    for marker in ('v-if="showRecord"', "@company=\"openWorkspacePanel('company')\""):
+        if marker not in context_indicator + context_projection:
+            errors.append(f"workspace context authority missing capability split: {marker}")
 
     side_navigation = (root / "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue").read_text(encoding="utf-8")
     for marker in (

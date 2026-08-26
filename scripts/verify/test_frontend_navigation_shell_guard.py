@@ -105,6 +105,19 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path.write_text(source, encoding="utf-8")
         self.assertTrue(any("single-column" in error for error in validate(root)))
 
+    def test_company_context_must_remain_visible_after_activity_rail_retirement(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/layouts/AppShell.vue"
+        path.write_text(
+            path.read_text().replace(
+                "          <WorkspaceContextIndicator\n",
+                '          <WorkspaceContextIndicator\n            v-if="showRecordContext"\n',
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("company context authority visible" in error for error in validate(root)))
+
     def test_published_apps_must_target_the_sc_button_content_adapter(self):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)

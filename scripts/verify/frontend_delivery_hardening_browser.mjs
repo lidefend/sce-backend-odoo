@@ -429,7 +429,13 @@ async function open(page, route) {
   await waitBusiness(page);
 }
 async function selectCompany(page, label) {
-  await page.getByRole('button', { name: '公司空间：切换公司', exact: true }).click();
+  const contextIndicator = page.locator('[data-semantic-component="WorkspaceContextIndicator"]:visible');
+  await contextIndicator.waitFor({ state: 'visible', timeout: 30000 });
+  check(await contextIndicator.count() === 1, 'workspace context indicator identity is not unique');
+  const companyTrigger = contextIndicator.getByRole('button', { name: /^切换公司：/ });
+  await companyTrigger.waitFor({ state: 'visible', timeout: 30000 });
+  check(await companyTrigger.count() === 1, 'company switch trigger identity is not unique');
+  await companyTrigger.click();
   const companyPanel = page.locator('.workspace-scope-panel').filter({
     has: page.getByRole('heading', { name: '公司空间', exact: true }),
   });
