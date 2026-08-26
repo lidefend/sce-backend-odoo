@@ -1,14 +1,14 @@
 <template>
   <form
     v-if="visible"
-    class="contract-mode-prompt"
+    class="action-prompt-form"
     data-semantic-component="ContractPromptActionForm"
     @submit.prevent="$emit('submit')"
   >
     <ScFormField
       v-for="field in fields"
       :key="`contract-prompt-${field.name}`"
-      class="contract-mode-prompt-field"
+      class="action-prompt-form-field"
       :field-key="field.name"
       :label="field.label"
       :required="field.required"
@@ -37,7 +37,7 @@
         />
       </template>
     </ScFormField>
-    <div class="contract-mode-prompt-actions" data-semantic-component="ContractPromptActionBar">
+    <div class="action-prompt-form-actions" data-semantic-component="ContractPromptActionBar">
       <ScButton type="button" variant="ghost" :disabled="busy" @click="$emit('cancel')">取消</ScButton>
       <ScButton type="submit" variant="primary" :disabled="busy">确定</ScButton>
     </div>

@@ -1,4 +1,4 @@
-.contract-mode-prompt {
+.action-prompt-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   align-items: end;
@@ -6,15 +6,15 @@
   padding-block-start: var(--sc-product-space-3);
 }
 
-.contract-mode-prompt-field {
+.action-prompt-form-field {
   min-width: 0;
 }
 
-.contract-mode-prompt-field :deep(.sc-input) {
+.action-prompt-form-field :deep(.sc-input) {
   width: 100%;
 }
 
-.contract-mode-prompt-actions {
+.action-prompt-form-actions {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -23,11 +23,11 @@
 }
 
 @media (max-width: 640px) {
-  .contract-mode-prompt {
+  .action-prompt-form {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .contract-mode-prompt-actions :deep(.sc-btn) {
+  .action-prompt-form-actions :deep(.sc-btn) {
     flex: 1 1 0;
   }
 }
