@@ -408,6 +408,26 @@ try {
               rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
             };
           });
+        const publishedApps = [...document.querySelectorAll('.published-apps__list .published-app')]
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+          .map((node) => {
+            const content = node.querySelector('.sc-btn__content');
+            const mark = node.querySelector('.published-app__mark');
+            const label = node.querySelector('.published-app__label');
+            const contentStyle = content ? getComputedStyle(content) : null;
+            const markRect = mark?.getBoundingClientRect();
+            const labelRect = label?.getBoundingClientRect();
+            return {
+              label: label?.textContent?.trim() || '',
+              contentDisplay: contentStyle?.display || '',
+              contentColumns: contentStyle?.gridTemplateColumns || '',
+              labelWidth: Math.round(labelRect?.width || 0),
+              ordered: Boolean(markRect && labelRect && labelRect.left >= markRect.right),
+            };
+          });
+        const navigationSearch = document.querySelector('.product-side-navigation__search [data-semantic-component="ScInput"]');
+        const navigationSearchPrefix = navigationSearch?.querySelector('.t-input__prefix-icon');
+        const navigationSearchInput = navigationSearch?.querySelector('input');
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -432,6 +452,15 @@ try {
               semantic: document.activeElement.getAttribute('data-semantic-component') || '',
             } : null,
             pass: overlayResidues.length === 0,
+          },
+          shellAdapterEvidence: {
+            publishedApps,
+            navigationSearchCount: navigationSearch ? 1 : 0,
+            navigationSearchPrefixCount: navigationSearchPrefix ? 1 : 0,
+            navigationSearchInputCount: navigationSearchInput ? 1 : 0,
+            pass: publishedApps.length > 0
+              && publishedApps.every((entry) => entry.label && entry.contentDisplay === 'grid' && entry.contentColumns !== 'none' && entry.labelWidth >= 32 && entry.ordered)
+              && Boolean(navigationSearch && navigationSearchPrefix && navigationSearchInput),
           },
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
             .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
@@ -461,6 +490,8 @@ try {
           const scrollOwner = menuOwner instanceof HTMLElement ? menuOwner : owner;
           const scrollOwnerStyle = getComputedStyle(scrollOwner);
           scrollOwner.scrollTop = scrollOwner.scrollHeight;
+          const observedScrollTop = scrollOwner.scrollTop;
+          scrollOwner.scrollTop = 0;
           return {
             viewportHeight: window.innerHeight,
             sidebarHeight: sidebar.clientHeight,
@@ -472,14 +503,14 @@ try {
             scrollOwnerClass: scrollOwner.className,
             scrollOwnerClientHeight: scrollOwner.clientHeight,
             scrollOwnerScrollHeight: scrollOwner.scrollHeight,
-            scrollOwnerScrollTop: scrollOwner.scrollTop,
+            scrollOwnerScrollTop: observedScrollTop,
             scrollOwnerOverflowY: scrollOwnerStyle.overflowY,
             pass: sidebar.clientHeight <= window.innerHeight
               && sidebarStyle.display === 'grid'
               && ownerStyle.overflowY === 'auto'
               && ['auto', 'scroll'].includes(scrollOwnerStyle.overflowY)
               && scrollOwner.scrollHeight > scrollOwner.clientHeight
-              && scrollOwner.scrollTop > 0,
+              && observedScrollTop > 0,
           };
         });
       }
@@ -1043,6 +1074,9 @@ for (const item of report.routes) {
   }
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
+  }
+  if (item.path && item.shellAdapterEvidence && routes.find((target) => target.name === item.name)?.exerciseShellAdapterProjection === true && !item.shellAdapterEvidence.pass) {
+    failures.push({ name: item.name, shellAdapterEvidence: item.shellAdapterEvidence });
   }
   if (item.path && item.expectedPageHeaders !== null && item.pageHeaders !== item.expectedPageHeaders) {
     failures.push({ name: item.name, expectedPageHeaders: item.expectedPageHeaders, actualPageHeaders: item.pageHeaders });
