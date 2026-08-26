@@ -123,19 +123,9 @@ defineEmits<{
 .product-list-header__search { grid-area: main; display: flex; gap: var(--sc-toolbar-gap); align-items: center; min-width: 320px; }
 .product-list-header__search label { min-width: 0; flex: 1; }
 .product-list-header__search :deep(.sc-btn) { min-height: 40px; }
-.product-list-header__search input {
+.product-list-header__search :deep(.sc-input) {
   width: 100%;
   min-height: 40px;
-  padding: 0 var(--sc-space-sm);
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: var(--sc-component-input-radius);
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-}
-.product-list-header__search input:focus {
-  border-color: var(--sc-semantic-surface-interactive);
-  outline: 3px solid var(--sc-app-focus-ring);
-  outline-offset: 0;
 }
 .product-list-header__tools--aligned {
   grid-template-areas: 'leading divider-left search divider-right actions';
@@ -167,6 +157,6 @@ defineEmits<{
 @media (max-width: 760px) {
   .product-list-header__tools { gap: var(--sc-toolbar-gap); }
   .product-list-header__search { min-width: 0; }
-  .product-list-header__search :deep(button) { min-width: 44px; min-height: 44px; }
+  .product-list-header__search :deep(.sc-btn) { min-width: 44px; min-height: 44px; }
 }
 </style>

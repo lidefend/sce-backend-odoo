@@ -968,7 +968,9 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   color: var(--sc-app-danger-text);
 }
 
-.field :is(input, select, textarea)[aria-invalid='true'] {
+.field :deep(.sc-input[aria-invalid='true']),
+.field :deep(.sc-select[aria-invalid='true']),
+.field :deep(.sc-textarea[aria-invalid='true']) {
   border-color: var(--sc-app-danger-border);
 }
 
@@ -1059,8 +1061,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   grid-column: 1 / -1;
 }
 
-.field--large .input,
-.field--large textarea.input {
+.field--large .input {
   min-height: 92px;
 }
 
@@ -1396,21 +1397,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .field[data-field-type='date'] :deep(.contract-readonly-value),
 .field[data-field-type='datetime'] :deep(.contract-readonly-value) {
   font-variant-numeric: tabular-nums;
-}
-
-textarea.input {
-  min-height: 104px;
-  height: auto;
-  resize: vertical;
-}
-
-select.input {
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--sc-app-text-secondary) 50%), linear-gradient(135deg, var(--sc-app-text-secondary) 50%, transparent 50%);
-  background-position: calc(100% - 16px) calc(50% - 2px), calc(100% - 11px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  padding-right: 30px;
 }
 
 .native-radio-group {

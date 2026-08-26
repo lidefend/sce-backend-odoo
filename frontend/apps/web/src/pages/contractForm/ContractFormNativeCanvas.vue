@@ -377,7 +377,7 @@ const emit = defineEmits<{
 
 .form-section-nav-mobile { display: none; }
 
-.form-section-nav button {
+.form-section-nav :deep(.sc-btn) {
   flex: 0 0 auto;
   position: relative;
   min-height: 28px;
@@ -392,17 +392,17 @@ const emit = defineEmits<{
   white-space: nowrap;
 }
 
-.form-section-nav button:hover {
+.form-section-nav :deep(.sc-btn:hover) {
   background: var(--sc-app-hover-bg);
   color: var(--sc-app-text-primary);
 }
 
-.form-section-nav button:focus-visible {
+.form-section-nav :deep(.sc-btn:focus-visible) {
   outline: 2px solid var(--sc-semantic-surface-interactive);
   outline-offset: -2px;
 }
 
-.form-section-nav button.is-active {
+.form-section-nav :deep(.sc-btn.is-active) {
   background: var(--sc-navigation-active-bg);
   color: var(--sc-app-selected-text);
   font-weight: 650;
@@ -473,7 +473,7 @@ const emit = defineEmits<{
     font-size: 11px;
     font-weight: 600;
   }
-  .form-section-nav-mobile select {
+  .form-section-nav-mobile :deep(.sc-select) {
     width: 100%;
     min-width: 0;
     min-height: 34px;

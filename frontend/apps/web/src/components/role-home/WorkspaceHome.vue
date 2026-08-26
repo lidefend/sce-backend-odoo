@@ -167,7 +167,7 @@ const {
   font-size: 17px;
 }
 
-.role-home-surface button {
+.role-home-surface :deep(.sc-btn) {
   min-height: 32px;
   border: 1px solid var(--sc-app-border-strong);
   border-radius: 4px;
@@ -176,13 +176,13 @@ const {
   cursor: pointer;
 }
 
-.role-home-surface button:hover {
+.role-home-surface :deep(.sc-btn:hover) {
   border-color: var(--sc-app-border-strong);
   background: var(--sc-app-hover-bg);
   color: var(--sc-app-text-primary);
 }
 
-.role-home-surface button:focus-visible {
+.role-home-surface :deep(.sc-btn:focus-visible) {
   outline: 2px solid var(--sc-app-focus-ring);
   outline-offset: 2px;
 }
@@ -202,8 +202,8 @@ const {
   border-radius: 4px;
 }
 
-.role-home-surface__task-list button,
-.role-home-surface__section-heading button {
+.role-home-surface__task-list :deep(.sc-btn),
+.role-home-surface__section-heading :deep(.sc-btn) {
   flex: none;
   padding: 0 var(--sc-space-3, 12px);
 }
@@ -255,7 +255,7 @@ const {
   margin-top: var(--sc-space-2, 8px);
 }
 
-.role-home-surface__link-list--quick button {
+.role-home-surface__link-list--quick :deep(.sc-btn) {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) 18px;
   align-items: center;
@@ -267,7 +267,7 @@ const {
   transition: transform var(--sc-motion-fast, 120ms) ease, border-color var(--sc-motion-fast, 120ms) ease;
 }
 
-.role-home-surface__link-list--quick button > .sc-icon:first-child {
+.role-home-surface__link-list--quick :deep(.sc-btn > .sc-btn__content > .sc-icon:first-child) {
   width: 32px;
   height: 32px;
   padding: 7px;
@@ -276,17 +276,17 @@ const {
   color: var(--sc-text-link);
 }
 
-.role-home-surface__link-list--quick button > span {
+.role-home-surface__link-list--quick :deep(.sc-btn > .sc-btn__content > span) {
   display: grid;
   gap: 2px;
 }
 
-.role-home-surface__link-list button small {
+.role-home-surface__link-list :deep(.sc-btn small) {
   color: var(--sc-app-text-secondary);
   font-size: 12px;
 }
 
-.role-home-surface__link-list--recent button {
+.role-home-surface__link-list--recent :deep(.sc-btn) {
   display: block;
   width: 100%;
   min-width: 0;
@@ -297,7 +297,7 @@ const {
   white-space: normal;
 }
 
-.role-home-surface__link-list button:hover {
+.role-home-surface__link-list :deep(.sc-btn:hover) {
   transform: translateY(-1px);
   border-left-color: var(--sc-app-border-strong);
 }
@@ -333,7 +333,7 @@ const {
     flex-direction: column;
   }
 
-  .role-home-surface button {
+  .role-home-surface :deep(.sc-btn) {
     min-height: 44px;
   }
 }

@@ -611,8 +611,8 @@ onUnmounted(() => {
   color: var(--sc-app-text-secondary);
 }
 
-.global-message__field input,
-.global-message__composer textarea {
+.global-message__field :deep(.sc-input),
+.global-message__composer :deep(.sc-textarea) {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
@@ -632,7 +632,7 @@ onUnmounted(() => {
   overflow: auto;
 }
 
-.global-message__options button {
+.global-message__options :deep(.sc-btn) {
   display: grid;
   gap: 2px;
   width: 100%;
@@ -642,11 +642,11 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-.global-message__options button:hover:not(:disabled) {
+.global-message__options :deep(.sc-btn:hover:not(:disabled)) {
   background: var(--sc-app-hover-bg);
 }
 
-.global-message__options button:disabled {
+.global-message__options :deep(.sc-btn:disabled) {
   opacity: 0.45;
   cursor: default;
 }
@@ -702,7 +702,7 @@ onUnmounted(() => {
   border-top: 1px solid var(--sc-app-border);
 }
 
-.global-message__composer textarea {
+.global-message__composer :deep(.sc-textarea) {
   resize: vertical;
   min-height: 56px;
 }

@@ -672,10 +672,9 @@ onBeforeUnmount(() => {
   grid-template-areas: 'search sort primary';
 }
 
-.action-toolbar button:focus-visible,
 .action-toolbar :deep(.sc-btn:focus-visible),
 .action-toolbar :deep(.sc-input:focus-visible),
-.action-toolbar select:focus-visible {
+.action-toolbar :deep(.sc-select:focus-visible) {
   outline: 2px solid var(--sc-semantic-focus-ring);
   outline-offset: 2px;
 }
@@ -710,7 +709,7 @@ onBeforeUnmount(() => {
   gap: 4px;
 }
 
-.view-switch button {
+.view-switch :deep(.sc-btn) {
   min-height: calc(var(--sc-component-button-height-md) * 1px);
   border-radius: var(--sc-component-button-radius);
   padding-inline: calc(var(--sc-component-button-padding-x) * 1px);
@@ -749,7 +748,7 @@ onBeforeUnmount(() => {
   padding: 3px 3px 3px 8px;
 }
 
-.native-searchbox input {
+.native-searchbox :deep(.sc-input) {
   flex: 1 1 110px;
   min-width: 72px;
   height: 28px;
@@ -760,7 +759,7 @@ onBeforeUnmount(() => {
   padding: 2px 4px;
 }
 
-.native-searchbox input:focus {
+.native-searchbox :deep(.sc-input:focus-within) {
   outline: none;
 }
 
@@ -937,7 +936,7 @@ onBeforeUnmount(() => {
   gap: 6px;
 }
 
-.custom-search-actions button {
+.custom-search-actions :deep(.sc-btn) {
   border: 1px solid var(--sc-app-border-strong);
   border-radius: 6px;
   background: var(--sc-app-input-bg);
@@ -947,7 +946,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.custom-search-actions button:first-child {
+.custom-search-actions :deep(.sc-btn:first-child) {
   border-color: var(--sc-semantic-surface-interactive);
   background: var(--sc-semantic-surface-interactive);
   color: var(--sc-semantic-text-on-interactive);
@@ -1021,11 +1020,11 @@ onBeforeUnmount(() => {
 .toolbar-overflow-menu { position: absolute; z-index: 90; top: calc(100% + var(--sc-space-2xs)); right: 0; display: grid; gap: var(--sc-space-xs); min-width: 220px; max-height: min(420px, 70vh); overflow: auto; padding: var(--sc-space-xs); border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
 .toolbar-overflow-section { display: grid; gap: var(--sc-space-2xs); }
 .toolbar-overflow-section p { margin: 0; color: var(--sc-app-text-secondary); font-size: 12px; font-weight: 700; }
-.toolbar-overflow-section button,
+.toolbar-overflow-section :deep(.sc-btn),
 .toolbar-overflow-create { display: flex; align-items: center; gap: var(--sc-space-xs); width: 100%; min-height: 44px; padding: var(--sc-space-xs); border: 1px solid transparent; border-radius: var(--sc-product-radius-control); background: var(--sc-app-panel); color: var(--sc-app-text-primary); text-align: left; cursor: pointer; }
-.toolbar-overflow-section button:hover,
+.toolbar-overflow-section :deep(.sc-btn:hover),
 .toolbar-overflow-create:hover { border-color: var(--sc-app-border); background: var(--sc-app-muted-bg); }
-.toolbar-overflow-section button.active {
+.toolbar-overflow-section :deep(.sc-btn.active) {
   border-color: var(--sc-app-selected-border);
   background: var(--sc-app-selected-bg);
   color: var(--sc-app-selected-text);
@@ -1124,9 +1123,9 @@ onBeforeUnmount(() => {
   .toolbar-search-submit { width: 44px; min-height: 44px; padding-inline: 0; font-size: 0; justify-content: center; }
   .search-menu-toggle { width: 44px; min-height: 44px; }
   .search-menu-item,
-  .toolbar-overflow-section button,
+  .toolbar-overflow-section :deep(.sc-btn),
   .toolbar-overflow-create,
-  .custom-search-actions button { min-height: 44px; }
+  .custom-search-actions :deep(.sc-btn) { min-height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

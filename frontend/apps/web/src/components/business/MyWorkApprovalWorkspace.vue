@@ -273,7 +273,7 @@ async function confirmAction() {
 .product-work__counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); }
 .product-work__filters label { display: grid; gap: 6px; color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
-.product-work__filters input, .product-work__filters select { min-height: var(--sc-product-control-height); padding: 0 12px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-control); background: var(--sc-app-panel); color: var(--sc-app-text-primary); }
+.product-work__filters :deep(.sc-input), .product-work__filters :deep(.sc-select) { width: 100%; min-height: var(--sc-product-control-height); }
 .count-card { display: flex; justify-content: space-between; align-items: center; min-height: 72px; padding: var(--sc-product-space-2); background: var(--sc-app-panel); color: inherit; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); }
 .count-card strong { font-size: 24px; }
 .count-card.active { border-color: var(--sc-semantic-surface-interactive); box-shadow: 0 0 0 3px var(--sc-app-focus-ring); }
@@ -299,7 +299,7 @@ async function confirmAction() {
 .feedback.error { background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
 :deep(.intent-dialog) { width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--sc-app-text-primary); }
 :deep(.intent-dialog label) { display: grid; gap: 6px; }
-:deep(.intent-dialog textarea) { width: 100%; box-sizing: border-box; }
+:deep(.intent-dialog .sc-textarea) { width: 100%; box-sizing: border-box; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 @media (max-width: 640px) {
   .product-work { gap: 14px; }
@@ -316,6 +316,6 @@ async function confirmAction() {
   .work-card dt { font-size: 11px; }
   .work-card dd { font-size: 13px; }
   .work-card__actions { width: 100%; }
-  .work-card__actions button { flex: 1 1 auto; }
+  .work-card__actions :deep(.sc-btn) { flex: 1 1 auto; }
 }
 </style>

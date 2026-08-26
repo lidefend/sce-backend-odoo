@@ -135,14 +135,8 @@
     },
     {
       "category": "other",
-      "digest": "0b8bc9eac70b4c88ecb8d64dc2665c62bd78ecd78e89bec8726d4d8d20d6865a",
-      "nativeStyleSelectors": [
-        ".global-message__composer textarea",
-        ".global-message__field input, .global-message__composer textarea",
-        ".global-message__options button",
-        ".global-message__options button:disabled",
-        ".global-message__options button:hover:not(:disabled)"
-      ],
+      "digest": "d05bcfb717df769fb31544e61654a4aa0fa79de2eecbe135e0adfc52d3e855fb",
+      "nativeStyleSelectors": [],
       "path": "components/GlobalMessagePanel.vue",
       "referenceNativeStyleSelectors": [
         ".global-message__composer textarea",
@@ -207,19 +201,8 @@
     },
     {
       "category": "other",
-      "digest": "4e6c38773b83b138a796e717b3bfff744b07bc81295c0c0df54eeb1c9fd9f478",
-      "nativeStyleSelectors": [
-        ".action-toolbar button:focus-visible, .action-toolbar :deep(.sc-btn:focus-visible), .action-toolbar :deep(.sc-input:focus-visible), .action-toolbar select:focus-visible",
-        ".custom-search-actions button",
-        ".custom-search-actions button:first-child",
-        ".native-searchbox input",
-        ".native-searchbox input:focus",
-        ".search-menu-item, .toolbar-overflow-section button, .toolbar-overflow-create, .custom-search-actions button",
-        ".toolbar-overflow-section button, .toolbar-overflow-create",
-        ".toolbar-overflow-section button.active",
-        ".toolbar-overflow-section button:hover, .toolbar-overflow-create:hover",
-        ".view-switch button"
-      ],
+      "digest": "56e82064635226768ea89f284e110583b1c14b744bbf07023a33ab47af16f2ad",
+      "nativeStyleSelectors": [],
       "path": "components/action/ActionSurfaceToolbar.vue",
       "referenceNativeStyleSelectors": [
         ".custom-search-actions button",
@@ -249,11 +232,8 @@
     },
     {
       "category": "other",
-      "digest": "b94e48b2847eda9b5dbe658abf571e72ec56b921b7e7f728baaa50e35c2baf8d",
-      "nativeStyleSelectors": [
-        ".worksheet-tabs button",
-        ".worksheet-tabs button.active"
-      ],
+      "digest": "ce5eb83802e662e081ae360acc235e04df902bcc84a8ce9979ed3a4f8ce7bdeb",
+      "nativeStyleSelectors": [],
       "path": "components/action/HierarchicalWorksheet.vue",
       "referenceNativeStyleSelectors": [
         ".worksheet-tabs button",
@@ -362,11 +342,8 @@
     },
     {
       "category": "other",
-      "digest": "62360f5d47bbbeb2b34ff58cbd1172d1265c6a084b05acec4ef1b87ab93e1463",
-      "nativeStyleSelectors": [
-        ".product-work__filters input, .product-work__filters select",
-        ".work-card__actions button"
-      ],
+      "digest": "e67f98f00d2419ace16411068faefc948ee964541868bab742b84b9eccade1e9",
+      "nativeStyleSelectors": [],
       "path": "components/business/MyWorkApprovalWorkspace.vue",
       "referenceNativeStyleSelectors": [
         ".intent-dialog textarea",
@@ -741,12 +718,8 @@
     },
     {
       "category": "dashboard",
-      "digest": "fe332264f57ff65e56ac04c6f1d5fd18dc2d5cd23e0f7c286b1aa3f030b36590",
-      "nativeStyleSelectors": [
-        "button.metric-item",
-        "button.metric-item:focus-visible",
-        "button.metric-item:hover"
-      ],
+      "digest": "df1a8d6457066f28c31e1a86177909be6d13200a86e761e1398dad676238b688",
+      "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockMetricRow.vue",
       "referenceNativeStyleSelectors": [
         "button.metric-item",
@@ -1005,11 +978,8 @@
     },
     {
       "category": "collection",
-      "digest": "a22c38f0742c0170f7481a410df5affe8f90e3f4f64ad49749bc76bb3ac97475",
-      "nativeStyleSelectors": [
-        ".product-list-header__search input",
-        ".product-list-header__search input:focus"
-      ],
+      "digest": "e3a5dbcf72fcc66a43c5518f2ae9f748a4aa76542dcbd41c77c3df4fe67b2cbd",
+      "nativeStyleSelectors": [],
       "path": "components/product-list/ProductListHeader.vue",
       "referenceNativeStyleSelectors": [
         ".product-list-header__search input",
@@ -1254,19 +1224,8 @@
     },
     {
       "category": "dashboard",
-      "digest": "12be1fe19a4a065211608f3e485f86c6f7cfa9d32383f6acc91e91f48b2faa1b",
-      "nativeStyleSelectors": [
-        ".role-home-surface button",
-        ".role-home-surface button:focus-visible",
-        ".role-home-surface button:hover",
-        ".role-home-surface__link-list button small",
-        ".role-home-surface__link-list button:hover",
-        ".role-home-surface__link-list--quick button",
-        ".role-home-surface__link-list--quick button > .sc-icon:first-child",
-        ".role-home-surface__link-list--quick button > span",
-        ".role-home-surface__link-list--recent button",
-        ".role-home-surface__task-list button, .role-home-surface__section-heading button"
-      ],
+      "digest": "aa3412c13538929d878072358cc4748d3081fde12f98685bb908f1fcc08f071f",
+      "nativeStyleSelectors": [],
       "path": "components/role-home/WorkspaceHome.vue",
       "referenceNativeStyleSelectors": [
         ".role-home-surface button",
@@ -1304,13 +1263,8 @@
     },
     {
       "category": "form-fields",
-      "digest": "6ebfd536a2973652ce3d4667d23e1061105c843db645f664bf90f0c43f212d5c",
-      "nativeStyleSelectors": [
-        ".field :is(input, select, textarea)[aria-invalid='true']",
-        ".field--large .input, .field--large textarea.input",
-        "select.input",
-        "textarea.input"
-      ],
+      "digest": "3e14250c938fda7eeebffae0cdc9dd02e694754e6ee4ddf5c193275a2e0daab7",
+      "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
         ".field :is(input, select, textarea)[aria-invalid='true']",
@@ -1581,10 +1535,8 @@
     },
     {
       "category": "form-fields",
-      "digest": "2453c91732b728e3aa2f4749f4a136c6882bac086dcbd1e4335ee854aec55513",
-      "nativeStyleSelectors": [
-        ".sc-form-driver-chooser select"
-      ],
+      "digest": "2c2f2f1e8868f5a9abbffcab4dd1b13c1908fe6181c6c72061748a0d69dcd68f",
+      "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
         ".sc-form-driver-chooser select"
@@ -1601,14 +1553,8 @@
     },
     {
       "category": "form-fields",
-      "digest": "48b746007e3721877a1fe75c614c02fd3af3c10ec8ec6d49fc16b7c67c040a4b",
-      "nativeStyleSelectors": [
-        ".form-section-nav button",
-        ".form-section-nav button.is-active",
-        ".form-section-nav button:focus-visible",
-        ".form-section-nav button:hover",
-        ".form-section-nav-mobile select"
-      ],
+      "digest": "2fd47b704ec026a39a3b7375b1f04ae8d92731a5c5729068bd46a14cbcc70fb7",
+      "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormNativeCanvas.vue",
       "referenceNativeStyleSelectors": [
         ".form-section-nav button",
@@ -2057,7 +2003,7 @@
       ]
     }
   ],
-  "currentInputDigest": "122c7299ac5b2334906ff79c2627e00f0ca0efcc4eaae7764879ca2426031499",
+  "currentInputDigest": "22bb00e12b54792559b9bcb271b1b2e74c6acfb96ef12b2368171660802676de",
   "excludedScopes": [
     "runtime permissions",
     "Contract authority",
@@ -2079,188 +2025,7 @@
     "responsive.390-no-overflow-and-action-settlement"
   ],
   "referenceInputDigest": "9065801740ce27219e7d0bb92998350fdd3b16e2948288c186d8798a353c74aa",
-  "scAdapterWithNativeSelectorCandidates": [
-    {
-      "category": "other",
-      "digest": "0b8bc9eac70b4c88ecb8d64dc2665c62bd78ecd78e89bec8726d4d8d20d6865a",
-      "nativeStyleSelectors": [
-        ".global-message__composer textarea",
-        ".global-message__field input, .global-message__composer textarea",
-        ".global-message__options button",
-        ".global-message__options button:disabled",
-        ".global-message__options button:hover:not(:disabled)"
-      ],
-      "path": "components/GlobalMessagePanel.vue",
-      "scComponents": [
-        "ScButton",
-        "ScDrawer",
-        "ScIcon",
-        "ScInlineState",
-        "ScInput",
-        "ScTextarea"
-      ]
-    },
-    {
-      "category": "other",
-      "digest": "4e6c38773b83b138a796e717b3bfff744b07bc81295c0c0df54eeb1c9fd9f478",
-      "nativeStyleSelectors": [
-        ".action-toolbar button:focus-visible, .action-toolbar :deep(.sc-btn:focus-visible), .action-toolbar :deep(.sc-input:focus-visible), .action-toolbar select:focus-visible",
-        ".custom-search-actions button",
-        ".custom-search-actions button:first-child",
-        ".native-searchbox input",
-        ".native-searchbox input:focus",
-        ".search-menu-item, .toolbar-overflow-section button, .toolbar-overflow-create, .custom-search-actions button",
-        ".toolbar-overflow-section button, .toolbar-overflow-create",
-        ".toolbar-overflow-section button.active",
-        ".toolbar-overflow-section button:hover, .toolbar-overflow-create:hover",
-        ".view-switch button"
-      ],
-      "path": "components/action/ActionSurfaceToolbar.vue",
-      "scComponents": [
-        "ScButton",
-        "ScCheckbox",
-        "ScIcon",
-        "ScIconButton",
-        "ScInput",
-        "ScSelect"
-      ]
-    },
-    {
-      "category": "other",
-      "digest": "b94e48b2847eda9b5dbe658abf571e72ec56b921b7e7f728baaa50e35c2baf8d",
-      "nativeStyleSelectors": [
-        ".worksheet-tabs button",
-        ".worksheet-tabs button.active"
-      ],
-      "path": "components/action/HierarchicalWorksheet.vue",
-      "scComponents": [
-        "ScButton",
-        "ScTable"
-      ]
-    },
-    {
-      "category": "other",
-      "digest": "62360f5d47bbbeb2b34ff58cbd1172d1265c6a084b05acec4ef1b87ab93e1463",
-      "nativeStyleSelectors": [
-        ".product-work__filters input, .product-work__filters select",
-        ".work-card__actions button"
-      ],
-      "path": "components/business/MyWorkApprovalWorkspace.vue",
-      "scComponents": [
-        "ScActionBar",
-        "ScButton",
-        "ScDialog",
-        "ScEmptyState",
-        "ScField",
-        "ScInput",
-        "ScMoney",
-        "ScPanel",
-        "ScSection",
-        "ScSelect",
-        "ScStatusBadge",
-        "ScTextarea"
-      ]
-    },
-    {
-      "category": "dashboard",
-      "digest": "fe332264f57ff65e56ac04c6f1d5fd18dc2d5cd23e0f7c286b1aa3f030b36590",
-      "nativeStyleSelectors": [
-        "button.metric-item",
-        "button.metric-item:focus-visible",
-        "button.metric-item:hover"
-      ],
-      "path": "components/page/blocks/BlockMetricRow.vue",
-      "scComponents": [
-        "ScEmptyState"
-      ]
-    },
-    {
-      "category": "collection",
-      "digest": "a22c38f0742c0170f7481a410df5affe8f90e3f4f64ad49749bc76bb3ac97475",
-      "nativeStyleSelectors": [
-        ".product-list-header__search input",
-        ".product-list-header__search input:focus"
-      ],
-      "path": "components/product-list/ProductListHeader.vue",
-      "scComponents": [
-        "ScActionBar",
-        "ScButton",
-        "ScInput"
-      ]
-    },
-    {
-      "category": "dashboard",
-      "digest": "12be1fe19a4a065211608f3e485f86c6f7cfa9d32383f6acc91e91f48b2faa1b",
-      "nativeStyleSelectors": [
-        ".role-home-surface button",
-        ".role-home-surface button:focus-visible",
-        ".role-home-surface button:hover",
-        ".role-home-surface__link-list button small",
-        ".role-home-surface__link-list button:hover",
-        ".role-home-surface__link-list--quick button",
-        ".role-home-surface__link-list--quick button > .sc-icon:first-child",
-        ".role-home-surface__link-list--quick button > span",
-        ".role-home-surface__link-list--recent button",
-        ".role-home-surface__task-list button, .role-home-surface__section-heading button"
-      ],
-      "path": "components/role-home/WorkspaceHome.vue",
-      "scComponents": [
-        "ScButton",
-        "ScIcon",
-        "ScInlineState"
-      ]
-    },
-    {
-      "category": "form-fields",
-      "digest": "6ebfd536a2973652ce3d4667d23e1061105c843db645f664bf90f0c43f212d5c",
-      "nativeStyleSelectors": [
-        ".field :is(input, select, textarea)[aria-invalid='true']",
-        ".field--large .input, .field--large textarea.input",
-        "select.input",
-        "textarea.input"
-      ],
-      "path": "components/template/FormSection.vue",
-      "scComponents": [
-        "ScButton",
-        "ScDateField",
-        "ScFileField",
-        "ScIcon",
-        "ScIconButton",
-        "ScInput",
-        "ScRadioGroup",
-        "ScRelationField"
-      ]
-    },
-    {
-      "category": "form-fields",
-      "digest": "2453c91732b728e3aa2f4749f4a136c6882bac086dcbd1e4335ee854aec55513",
-      "nativeStyleSelectors": [
-        ".sc-form-driver-chooser select"
-      ],
-      "path": "pages/contractForm/ContractFormDriverHost.vue",
-      "scComponents": [
-        "ScErrorState",
-        "ScInlineState",
-        "ScSelect"
-      ]
-    },
-    {
-      "category": "form-fields",
-      "digest": "48b746007e3721877a1fe75c614c02fd3af3c10ec8ec6d49fc16b7c67c040a4b",
-      "nativeStyleSelectors": [
-        ".form-section-nav button",
-        ".form-section-nav button.is-active",
-        ".form-section-nav button:focus-visible",
-        ".form-section-nav button:hover",
-        ".form-section-nav-mobile select"
-      ],
-      "path": "pages/contractForm/ContractFormNativeCanvas.vue",
-      "scComponents": [
-        "ScButton",
-        "ScSelect"
-      ]
-    }
-  ],
+  "scAdapterWithNativeSelectorCandidates": [],
   "schemaVersion": "frontend.visual-projection.inventory.v1",
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
@@ -2270,7 +2035,7 @@
     "openFormalVisualGapCount": 12,
     "projectedAdapterCount": 17,
     "referenceSourceCount": 132,
-    "scAdapterWithNativeSelectorCandidateCount": 10,
+    "scAdapterWithNativeSelectorCandidateCount": 0,
     "unassessedAdapterCount": 0
   }
 }
