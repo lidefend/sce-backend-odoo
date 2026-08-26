@@ -42,6 +42,7 @@
       "formalProductLayer": "P0",
       "sources": [
         "frontend/apps/web/src/components/MenuTree.vue",
+        "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
         "frontend/apps/web/src/components/action/HierarchyPlanner.vue",

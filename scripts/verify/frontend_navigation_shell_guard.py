@@ -30,6 +30,9 @@ def validate(root: Path = ROOT) -> list[str]:
     shell = read(root, "frontend/apps/web/src/layouts/AppShell.vue")
     shell_style = read(root, "frontend/apps/web/src/layouts/AppShell.css")
     tree = read(root, "frontend/apps/web/src/components/MenuTree.vue")
+    menu_node = read(root, "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue")
+    primitive_bridge = read(root, "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts")
+    ui_primitives = read(root, "frontend/packages/ui/src/primitives.ts")
     session = read(root, "frontend/apps/web/src/stores/session.ts")
     canonical = read(root, "frontend/apps/web/src/app/canonicalNavigation.ts")
     menu_service = read(root, "addons/smart_core/delivery/menu_service.py")
@@ -87,11 +90,19 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("canonical menu selection must retain the immutable authority snapshot chain")
 
     for forbidden in ("useSessionStore", "evaluateCapabilityPolicy", "capabilityTooltip", "console.info"):
-        if forbidden in tree:
+        if forbidden in tree + menu_node:
             errors.append(f"MenuTree must remain presentation-only: {forbidden}")
-    for required in ("expandedKeys", "emit('toggle'", "node.disabledReason", ".parentChain"):
+    for required in ("TDesignMenu", 'data-semantic-driver="tdesign-menu"', "expandedKeys", "emit('toggle'", ".parentChain"):
         if required not in tree:
             errors.append(f"MenuTree missing canonical interaction token: {required}")
+    for required in ("TDesignSubmenu", "TDesignMenuItem", "node.disabledReason", 'data-navigation-node="canonical"'):
+        if required not in menu_node:
+            errors.append(f"canonical navigation adapter missing standard menu projection: {required}")
+    if re.search(r"<(?:ul|li|button|ScButton)\b", tree + menu_node):
+        errors.append("canonical navigation must not retain a hand-built menu interaction tree")
+    for required in ("TDesignMenu", "TDesignSubmenu", "TDesignMenuItem"):
+        if required not in primitive_bridge or required not in ui_primitives:
+            errors.append(f"standard navigation driver is not exported through the project bridge: {required}")
 
     canonical_required = (
         "CANONICAL_NAVIGATION_CARRIER_MISSING",

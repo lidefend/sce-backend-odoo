@@ -12,6 +12,9 @@ PATHS = (
     "frontend/apps/web/src/layouts/AppShell.vue",
     "frontend/apps/web/src/layouts/AppShell.css",
     "frontend/apps/web/src/components/MenuTree.vue",
+    "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
+    "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+    "frontend/packages/ui/src/primitives.ts",
     "frontend/apps/web/src/stores/session.ts",
     "frontend/apps/web/src/app/canonicalNavigation.ts",
     "addons/smart_core/delivery/menu_service.py",
@@ -47,6 +50,20 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path = root / "frontend/apps/web/src/components/MenuTree.vue"
         path.write_text(path.read_text() + "\n// useSessionStore\n", encoding="utf-8")
         self.assertTrue(any("presentation-only" in error for error in validate(root)))
+
+    def test_hand_built_menu_tree_fails(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/MenuTree.vue"
+        path.write_text(path.read_text() + "\n<template><ul><li><button>legacy</button></li></ul></template>\n", encoding="utf-8")
+        self.assertTrue(any("hand-built menu" in error for error in validate(root)))
+
+    def test_missing_standard_menu_driver_fails(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts"
+        path.write_text(path.read_text().replace("TDesignSubmenu,", ""), encoding="utf-8")
+        self.assertTrue(any("project bridge: TDesignSubmenu" in error for error in validate(root)))
 
     def test_parallel_navigation_component_fails(self):
         temporary, root = self.fixture()

@@ -98,7 +98,7 @@ try {
       const enabledPrimary = primary.filter((node) => !(node instanceof HTMLButtonElement) || !node.disabled);
       const fakeReadonly = [...patternNode?.querySelectorAll('input:disabled, textarea:disabled, select:disabled') || []]
         .filter(visible);
-      const selectedNav = document.querySelectorAll(`#primary-sidebar [data-navigation-menu-id="${menuId}"] > .node > button[aria-current="page"]`).length;
+      const selectedNav = document.querySelectorAll(`#primary-sidebar [data-navigation-menu-id="${menuId}"][aria-current="page"]`).length;
       return {
         url: location.href,
         h1: document.querySelectorAll('h1').length,

@@ -172,7 +172,7 @@
     },
     {
       "category": "shell",
-      "digest": "03a65139832e59d873211d15309a1ea985bccdc1b9ed37df35d1508ba5ff7716",
+      "digest": "36157f38d1e7e10ddc2687a4893f371682692031e66f1fd825a16a74829e880c",
       "nativeStyleSelectors": [],
       "path": "components/MenuTree.vue",
       "referenceNativeStyleSelectors": [],
@@ -180,10 +180,7 @@
       "referenceScComponents": [
         "ScIcon"
       ],
-      "scComponents": [
-        "ScButton",
-        "ScIcon"
-      ]
+      "scComponents": []
     },
     {
       "category": "workflow",
@@ -1098,6 +1095,18 @@
     },
     {
       "category": "shell",
+      "digest": "01635c06bf70481b228d2b7834c8213f933be7d68db22d544daedbb70c85e473",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/CanonicalNavigationMenuNode.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "shell",
       "digest": "a266b2b3ddcc20c2305deecef8f3e1371fe7205061b20c4d81eae0d38e60176a",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/NavigationBreadcrumb.vue",
@@ -2003,7 +2012,7 @@
       ]
     }
   ],
-  "currentInputDigest": "0834a8ff0f833d1fc744ecd31e1a26234a5c51697b60731b1d2b74b32459a626",
+  "currentInputDigest": "6ee2a2552808cdd5f778d87d661faedc84ae6ecc8dc9281387360676d34ec75a",
   "excludedScopes": [
     "runtime permissions",
     "Contract authority",
@@ -2159,8 +2168,8 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 17,
-    "changedSourceCount": 136,
-    "currentSourceCount": 178,
+    "changedSourceCount": 137,
+    "currentSourceCount": 179,
     "openFormalVisualGapCount": 0,
     "projectedAdapterCount": 17,
     "referenceSourceCount": 132,

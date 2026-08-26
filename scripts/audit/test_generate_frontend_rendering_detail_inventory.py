@@ -48,7 +48,7 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_navigation_hierarchy_sources_have_machine_proven_completion(self) -> None:
         batch = "p0-navigation-hierarchy-composite-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
-        self.assertEqual(len(sources), 9)
+        self.assertEqual(len(sources), 10)
         for source in sources:
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)

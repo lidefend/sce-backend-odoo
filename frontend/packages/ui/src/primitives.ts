@@ -19,3 +19,4 @@ export { Alert as TDesignAlert } from 'tdesign-vue-next/es/alert';
 export { Dialog as TDesignDialog } from 'tdesign-vue-next/es/dialog';
 export { Drawer as TDesignDrawer } from 'tdesign-vue-next/es/drawer';
 export { Tag as TDesignTag } from 'tdesign-vue-next/es/tag';
+export { Menu as TDesignMenu, Submenu as TDesignSubmenu, MenuItem as TDesignMenuItem } from 'tdesign-vue-next/es/menu';
