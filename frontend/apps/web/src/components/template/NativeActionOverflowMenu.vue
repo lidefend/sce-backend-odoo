@@ -1,5 +1,5 @@
 <template>
-  <div ref="root" class="native-action-overflow native-action-more" data-semantic-component="NativeActionOverflowMenu" @keydown.esc.stop.prevent="close(true)">
+  <div ref="root" class="native-action-overflow native-action-more" data-semantic-component="NativeActionOverflowMenu">
     <ScButton
       ref="trigger"
       type="button"
@@ -10,10 +10,19 @@
       :aria-expanded="open"
       :aria-controls="menuId"
       @click="toggle"
+      @keydown.down.stop.prevent="openMenu('first')"
+      @keydown.up.stop.prevent="openMenu('last')"
     >
       {{ label }}
     </ScButton>
-    <div v-if="open" :id="menuId" class="native-action-overflow__menu native-action-more-menu" role="menu">
+    <div
+      v-if="open"
+      :id="menuId"
+      ref="menu"
+      class="native-action-overflow__menu native-action-more-menu"
+      role="menu"
+      @keydown="onMenuKeydown"
+    >
       <ScButton
         v-for="(action, index) in actions"
         :key="keyResolver(action, index)"
@@ -23,6 +32,7 @@
         size="small"
         variant="ghost"
         role="menuitem"
+        tabindex="-1"
         :disabled="disabledResolver(action)"
         :title="titleResolver(action)"
         @click.stop.prevent="select(action)"
@@ -35,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 
 type OverflowAction = Record<string, unknown>;
@@ -54,12 +64,26 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ (event: 'select', action: OverflowAction): void }>();
 const root = ref<HTMLElement | null>(null);
+const menu = ref<HTMLElement | null>(null);
 const trigger = ref<{ $el?: HTMLElement } | null>(null);
 const open = ref(false);
-const menuId = computed(() => `native-action-overflow-${props.identity.replace(/[^a-zA-Z0-9_-]/g, '-')}`);
+const instanceId = useId().replace(/[^a-zA-Z0-9_-]/g, '-');
+const menuId = computed(() => `native-action-overflow-${instanceId}-${props.identity.replace(/[^a-zA-Z0-9_-]/g, '-')}`);
+
+function enabledItems(): HTMLButtonElement[] {
+  return Array.from(menu.value?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') || []);
+}
+
+async function openMenu(position: 'first' | 'last' = 'first') {
+  open.value = true;
+  await nextTick();
+  const items = enabledItems();
+  items[position === 'last' ? items.length - 1 : 0]?.focus();
+}
 
 function toggle() {
-  open.value = !open.value;
+  if (open.value) close(true);
+  else void openMenu();
 }
 
 function close(restoreFocus = false) {
@@ -70,7 +94,29 @@ function close(restoreFocus = false) {
 
 function select(action: OverflowAction) {
   emit('select', action);
-  close();
+  close(true);
+}
+
+function onMenuKeydown(event: KeyboardEvent) {
+  const items = enabledItems();
+  if (!items.length) return;
+  const current = items.indexOf(document.activeElement as HTMLButtonElement);
+  let target = current;
+  if (event.key === 'ArrowDown') target = (current + 1 + items.length) % items.length;
+  else if (event.key === 'ArrowUp') target = (current - 1 + items.length) % items.length;
+  else if (event.key === 'Home') target = 0;
+  else if (event.key === 'End') target = items.length - 1;
+  else if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    close(true);
+    return;
+  } else if (event.key === 'Tab') {
+    close();
+    return;
+  } else return;
+  event.preventDefault();
+  items[target]?.focus();
 }
 
 function onDocumentPointerDown(event: PointerEvent) {

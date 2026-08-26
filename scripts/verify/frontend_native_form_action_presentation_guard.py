@@ -79,7 +79,15 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         ':aria-controls="menuId"',
         'role="menu"',
         'role="menuitem"',
-        '@keydown.esc.stop.prevent="close(true)"',
+        '@keydown.down.stop.prevent="openMenu(\'first\')"',
+        '@keydown.up.stop.prevent="openMenu(\'last\')"',
+        '@keydown="onMenuKeydown"',
+        "const instanceId = useId()",
+        "event.key === 'ArrowDown'",
+        "event.key === 'ArrowUp'",
+        "event.key === 'Home'",
+        "event.key === 'End'",
+        "event.key === 'Escape'",
         "document.addEventListener('pointerdown', onDocumentPointerDown)",
     )
     combined = f"{text}\n{overflow}"

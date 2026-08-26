@@ -39,7 +39,15 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
         self.assertTrue(any("smart action" in error for error in validate(self.source, altered, self.overflow_menu)))
 
     def test_overflow_requires_escape_settlement(self):
-        altered = self.overflow_menu.replace('@keydown.esc.stop.prevent="close(true)"', '')
+        altered = self.overflow_menu.replace("event.key === 'Escape'", "event.key === 'Dismiss'")
+        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
+
+    def test_overflow_requires_complete_keyboard_navigation(self):
+        altered = self.overflow_menu.replace("event.key === 'Home'", "event.key === 'Start'")
+        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
+
+    def test_overflow_requires_unique_instance_identity(self):
+        altered = self.overflow_menu.replace("const instanceId = useId()", "const instanceId = props.identity")
         self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
 
     def test_overflow_state_cannot_return_to_renderer(self):
