@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import copy
+import hashlib
 import unittest
 from pathlib import Path
 
@@ -132,9 +133,19 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         self.assertEqual(self.by_source[low_code]["status"], "p3_out_of_scope")
 
     def test_report_binds_generator_and_all_vue_inputs(self) -> None:
+        self.assertNotIn("sourceCommit", self.report)
+        self.assertRegex(self.report["sourceIdentity"], r"^[0-9a-f]{64}$")
         self.assertRegex(self.report["generatorDigest"], r"^[0-9a-f]{64}$")
         self.assertRegex(self.report["inputDigest"], r"^[0-9a-f]{64}$")
         self.assertRegex(self.report["ownershipDigest"], r"^[0-9a-f]{64}$")
+        expected_identity = hashlib.sha256(
+            (
+                f"{self.report['generatorDigest']}:"
+                f"{self.report['ownershipDigest']}:"
+                f"{self.report['inputDigest']}"
+            ).encode("utf-8")
+        ).hexdigest()
+        self.assertEqual(self.report["sourceIdentity"], expected_identity)
         self.assertGreater(self.report["summary"]["surfaceCount"], 0)
         self.assertEqual(self.report["completionPolicy"]["formalP0P1UntreatedGapTarget"], 0)
 
