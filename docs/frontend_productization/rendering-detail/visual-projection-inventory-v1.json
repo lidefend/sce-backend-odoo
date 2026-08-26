@@ -390,7 +390,7 @@
     },
     {
       "category": "other",
-      "digest": "1e5c2293ec5043d90368b273e45b3daab7ab14d6d7e601e58cf8ab5a3dd5e9ab",
+      "digest": "ee016367fdbc1b7fb4a9baebd02610c8481a5f553641d6f782bc3d2664d993f7",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -410,7 +410,7 @@
     },
     {
       "category": "overlay",
-      "digest": "c77b026fdf18922e3555767a7f2a7fd7d81a5f23241f19709ae58277e5f0fdb1",
+      "digest": "f61878d19a61a14d5e87590d7ddd11a52ac2271b9061fd7ab054071deafb2a48",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDialog.vue",
       "referenceNativeStyleSelectors": [],
@@ -426,7 +426,7 @@
     },
     {
       "category": "overlay",
-      "digest": "bfb9f3538e5d87892f784983e69e81c2f015bcf956f1f2958c722253bdb5e830",
+      "digest": "046d0f63e4835852e8b4a22fdce38f666d54586788124dc982953510ac019a69",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDrawer.vue",
       "referenceNativeStyleSelectors": [],
@@ -494,7 +494,7 @@
     },
     {
       "category": "other",
-      "digest": "d3a55dce8df8371fda517afb9f538be554459ab96cedc1ea574c0d75bf712cb2",
+      "digest": "dccfe6d72a9c865f762d1f803588e09f08ead5cdf549956c780a415a11d19cbb",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScIconButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -514,7 +514,7 @@
     },
     {
       "category": "other",
-      "digest": "523b0e736765d46cc934f472b972fa3a604fd958bf681a43c53d53bff3a6e635",
+      "digest": "042bd4bb7955af8553df95d07f45ddbded8a5cd364a55244e9d81aecb5be40b3",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInput.vue",
       "referenceNativeStyleSelectors": [],
@@ -584,7 +584,7 @@
     },
     {
       "category": "other",
-      "digest": "01af99498ce72876ce0a60936789fdc622734d5d8f866c0f4169ef009fc8bb32",
+      "digest": "e707e1b8794e6b3be7f89468ad26be5e8582aeb2b5194a261694672843029f69",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScTable.vue",
       "referenceNativeStyleSelectors": [],
@@ -1454,7 +1454,7 @@
     },
     {
       "category": "collection",
-      "digest": "7bf08263aaa140307b637ca0f9251c3c6c361d23934e0841f1b608a6ae70188a",
+      "digest": "d4b18f5c7e3cecd46e75ec4edd881da79676a6b059e58ffd5c07bf11c43523ab",
       "nativeStyleSelectors": [],
       "path": "pages/KanbanPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -1790,7 +1790,7 @@
     },
     {
       "category": "collection",
-      "digest": "9ac1501e3d29521fc84620551a53d0266aa63e8493dd0cbbfc97086fbc94f6d1",
+      "digest": "5d60bc89dfe681a655d2f73e3bb55b39e821f7bf6bdfd0f744b023fd169b2e1e",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2003,27 +2003,14 @@
       ]
     }
   ],
-  "currentInputDigest": "22bb00e12b54792559b9bcb271b1b2e74c6acfb96ef12b2368171660802676de",
+  "currentInputDigest": "466d512d09c578e8421d91be67359f40cc3a014ebf75c69f4382f6294762fcc5",
   "excludedScopes": [
     "runtime permissions",
     "Contract authority",
     "database data",
     "customer addons"
   ],
-  "openFormalVisualGaps": [
-    "collection.query-filter-view-toolbar-hierarchy",
-    "collection.authoritative-status-tone",
-    "shell.context-and-navigation-density",
-    "form.task-field-hierarchy",
-    "form.workspace-native-structure-density",
-    "relations-x2many.lifecycle-and-table-detail",
-    "workflow.action-status-disabled-reason",
-    "overlay.dialog-drawer-focus-density",
-    "collaboration.chatter-activity-attachment",
-    "states.loading-empty-error-disabled-focus",
-    "dashboard.metric-risk-todo-drilldown",
-    "responsive.390-no-overflow-and-action-settlement"
-  ],
+  "openFormalVisualGaps": [],
   "referenceInputDigest": "9065801740ce27219e7d0bb92998350fdd3b16e2948288c186d8798a353c74aa",
   "scAdapterWithNativeSelectorCandidates": [],
   "schemaVersion": "frontend.visual-projection.inventory.v1",
@@ -2032,7 +2019,7 @@
     "adapterCount": 17,
     "changedSourceCount": 136,
     "currentSourceCount": 178,
-    "openFormalVisualGapCount": 12,
+    "openFormalVisualGapCount": 0,
     "projectedAdapterCount": 17,
     "referenceSourceCount": 132,
     "scAdapterWithNativeSelectorCandidateCount": 0,
