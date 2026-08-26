@@ -54,6 +54,7 @@
     "cell_padding_x": "{space.sm}",
     "cell_padding_y": "{space.xs}",
     "header_height": 40,
+    "header_z_index": 1,
     "row_height": 44,
     "row_height_compact": 36
   },

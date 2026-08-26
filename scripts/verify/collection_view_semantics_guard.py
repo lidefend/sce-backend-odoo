@@ -56,11 +56,13 @@ assert "p.get('view_type') or info.get('view_mode')" in dispatcher
 # Loading, table and explicit-card states keep one shared top command baseline.
 loading_skeleton = (ROOT / "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue").read_text(encoding="utf-8")
 assert "sc-visually-hidden" in loading_skeleton
-assert "loading-search" in loading_skeleton
-assert "loading-utilities" in loading_skeleton
-assert "min-height: var(--sc-product-list-toolbar-height)" in loading_skeleton
-assert "min-height: calc(var(--sc-product-toolbar-height) * 2 + 2px)" in loading_skeleton
-assert "row-gap: 0" in loading_skeleton
+assert 'data-semantic-component="ProductLoadingSkeleton"' in loading_skeleton
+assert "<ScSkeleton" in loading_skeleton
+assert ':row-col="mode === \'kanban\' ? kanbanSkeleton : listSkeleton"' in loading_skeleton
+assert "const listSkeleton" in loading_skeleton
+assert "const kanbanSkeleton" in loading_skeleton
+assert "loading-search" not in loading_skeleton
+assert "loading-utilities" not in loading_skeleton
 assert "loading-title" not in loading_skeleton
 assert "loading-secondary-toolbar" not in loading_skeleton
 

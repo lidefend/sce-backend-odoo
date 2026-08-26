@@ -422,7 +422,7 @@
 [data-semantic-component='ScTable'][data-appearance='flush'] .t-table { width: 100%; border-collapse: collapse; font-size: var(--sc-product-text-body); }
 [data-semantic-component='ScTable'][data-appearance='flush'] th,
 [data-semantic-component='ScTable'][data-appearance='flush'] td { height: var(--sc-product-table-row-height); padding: calc(var(--sc-component-table-cell-padding-y) * 1px) calc(var(--sc-component-table-cell-padding-x) * 1px); border-bottom: 1px solid var(--sc-table-divider); text-align: left; white-space: nowrap; }
-[data-semantic-component='ScTable'][data-appearance='flush'] th { position: sticky; top: 0; z-index: 1; height: calc(var(--sc-component-table-header-height) * 1px); background: var(--sc-table-header-bg); color: var(--sc-app-text-secondary); }
+[data-semantic-component='ScTable'][data-appearance='flush'] th { position: sticky; top: 0; z-index: var(--sc-component-table-header-z-index); height: calc(var(--sc-component-table-header-height) * 1px); background: var(--sc-table-header-bg); color: var(--sc-app-text-secondary); }
 [data-semantic-component='ScTable'][data-appearance='flush'] tbody tr:hover { background: var(--sc-app-hover-bg); }
 [data-semantic-component='ScTable'][data-appearance='flush'] tbody tr.selected { background: var(--sc-app-selected-bg); }
 [data-semantic-component='ScTable'][data-appearance='flush'] tbody tr[aria-selected='true'] { background: var(--sc-app-selected-bg); color: var(--sc-app-selected-text); }
