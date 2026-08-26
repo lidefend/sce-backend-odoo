@@ -907,7 +907,7 @@ try {
       const verticalLineEvidence = target.captureVerticalLineEvidence === true
         ? await page.evaluate(() => {
           const x = Math.round(window.innerWidth * 0.568);
-          return [10, 100, 300, 700].map((y) => ({
+          const points = [10, 100, 300, 700].map((y) => ({
             x, y,
             stack: document.elementsFromPoint(x, y).slice(0, 8).map((node) => {
               const style = getComputedStyle(node);
@@ -925,6 +925,19 @@ try {
               };
             }),
           }));
+          const resizeHandles = [...document.querySelectorAll('.column-resize-handle')].map((node) => {
+            const rect = node.getBoundingClientRect();
+            const pseudo = getComputedStyle(node, '::after');
+            return {
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+              hovered: node.matches(':hover'),
+              focused: node === document.activeElement,
+              afterBackground: pseudo.backgroundColor,
+              afterHeight: pseudo.height,
+              afterTop: pseudo.top,
+            };
+          });
+          return { points, resizeHandles };
         })
         : null;
       report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, verticalLineEvidence, ...result });
