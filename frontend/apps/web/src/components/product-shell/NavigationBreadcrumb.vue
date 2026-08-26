@@ -5,10 +5,12 @@
     aria-label="页面路径"
     data-semantic-component="NavigationBreadcrumb"
   >
-    <button
+    <ScButton
       v-for="(item, index) in items"
       :key="`${item.label}-${index}`"
       type="button"
+      variant="ghost"
+      size="small"
       class="navigation-breadcrumb__item"
       :class="{ active: index === items.length - 1 }"
       :disabled="!item.to"
@@ -16,12 +18,13 @@
       @click="item.to && emit('navigate', item.to)"
     >
       {{ item.label }}
-    </button>
+    </ScButton>
   </nav>
 </template>
 
 <script setup lang="ts">
 import type { PageBreadcrumb } from '../../app/pageIdentity';
+import ScButton from '../design-system/ScButton.vue';
 
 withDefaults(defineProps<{ items: PageBreadcrumb[]; minimal?: boolean; compact?: boolean }>(), {
   minimal: false,

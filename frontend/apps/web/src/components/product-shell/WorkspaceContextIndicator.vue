@@ -4,19 +4,20 @@
     :aria-label="`当前公司和${recordSubject}`"
     data-semantic-component="WorkspaceContextIndicator"
   >
-    <button type="button" :title="`切换公司：${companyLabel}`" :aria-label="`切换公司：${companyLabel}`" @click="emit('company')">
+    <ScButton class="workspace-context-indicator__button" variant="ghost" size="small" type="button" :title="`切换公司：${companyLabel}`" :aria-label="`切换公司：${companyLabel}`" @click="emit('company')">
       <ScIcon name="building" :size="16" />
       <span class="workspace-context-indicator__label">{{ companyLabel }}</span>
-    </button>
-    <button type="button" :title="`${recordActionLabel}：${recordLabel}`" :aria-label="`${recordActionLabel}：${recordLabel}`" @click="emit('record')">
+    </ScButton>
+    <ScButton class="workspace-context-indicator__button" variant="ghost" size="small" type="button" :title="`${recordActionLabel}：${recordLabel}`" :aria-label="`${recordActionLabel}：${recordLabel}`" @click="emit('record')">
       <ScIcon :name="recordIcon" :size="16" />
       <span class="workspace-context-indicator__label">{{ recordLabel }}</span>
-    </button>
+    </ScButton>
   </div>
 </template>
 
 <script setup lang="ts">
 import ScIcon from '../design-system/ScIcon.vue';
+import ScButton from '../design-system/ScButton.vue';
 
 withDefaults(defineProps<{
   companyLabel?: string;
@@ -41,7 +42,7 @@ const emit = defineEmits<{ (event: 'company'): void; (event: 'record'): void }>(
   font-size: 12px;
 }
 
-.workspace-context-indicator button {
+.workspace-context-indicator__button {
   min-width: 0;
   max-width: 180px;
   min-height: 32px;
@@ -61,7 +62,7 @@ const emit = defineEmits<{ (event: 'company'): void; (event: 'record'): void }>(
   cursor: pointer;
 }
 
-.workspace-context-indicator button:hover {
+.workspace-context-indicator__button:hover {
   color: var(--sc-app-accent);
 }
 
@@ -75,7 +76,7 @@ const emit = defineEmits<{ (event: 'company'): void; (event: 'record'): void }>(
     white-space: nowrap;
   }
 
-  .workspace-context-indicator button {
+  .workspace-context-indicator__button {
     width: 32px;
     min-width: 32px;
     padding: 0;

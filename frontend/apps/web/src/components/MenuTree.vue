@@ -24,8 +24,10 @@
         <span class="node-icon" aria-hidden="true">
           <ScIcon :name="nodeIcon(node)" :size="level === 0 ? 16 : 14" />
         </span>
-        <button
+        <ScButton
           class="label"
+          variant="ghost"
+          size="small"
           :disabled="isBlocked(node)"
           :title="blockedTitle(node) || nodeLabel(node)"
           :aria-current="activeMenuId === node.menuId ? 'page' : undefined"
@@ -33,17 +35,19 @@
         >
           <span class="label-text" :title="nodeLabel(node)">{{ nodeLabel(node) }}</span>
           <span v-if="nodeBadge(node)" class="label-badge">{{ nodeBadge(node) }}</span>
-        </button>
-        <button
+        </ScButton>
+        <ScButton
           v-if="node.children.length"
           class="toggle"
+          variant="ghost"
+          size="small"
           :aria-label="`${expanded.has(node.key) ? '收起' : '展开'}${node.label}`"
           :aria-expanded="expanded.has(node.key)"
           :title="`${expanded.has(node.key) ? '收起' : '展开'}${node.label}`"
           @click="emit('toggle', node.key)"
         >
           <ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expanded.has(node.key) }" />
-        </button>
+        </ScButton>
         <span v-else class="toggle-spacer" aria-hidden="true"></span>
       </div>
       <transition name="expand">
@@ -68,6 +72,7 @@
 import { computed, watchEffect } from 'vue';
 import type { CanonicalNavigationNode } from '@sc/schema';
 import ScIcon from './design-system/ScIcon.vue';
+import ScButton from './design-system/ScButton.vue';
 
 const props = withDefaults(defineProps<{ nodes: CanonicalNavigationNode[]; activeMenuId?: number; expandedKeys?: string[]; level?: number; searchActive?: boolean }>(), {
   activeMenuId: undefined,

@@ -12,10 +12,11 @@
   >
     <slot />
   </aside>
-  <button
+  <ScButton
     v-if="mobile && visible"
     class="mobile-sidebar-backdrop"
     type="button"
+    variant="ghost"
     aria-label="关闭导航遮罩"
     @click="emit('close')"
   />
@@ -24,6 +25,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useModalLifecycle } from '../../composables/useModalLifecycle';
+import ScButton from '../design-system/ScButton.vue';
 
 defineOptions({ inheritAttrs: false });
 
