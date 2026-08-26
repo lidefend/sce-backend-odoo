@@ -31,6 +31,13 @@ class ContractPromptActionPresentationGuardTests(unittest.TestCase):
 
         self.assertTrue(any("exactly one primary" in item for item in validate(read_text)))
 
+    def test_native_required_projection_fails(self):
+        def read_text(path: str) -> str:
+            value = (ROOT / path).read_text(encoding="utf-8")
+            return value.replace(':required="required"', ':aria-required="required"') if path.endswith("ScInput.vue") else value
+
+        self.assertTrue(any("native control" in item for item in validate(read_text)))
+
     def test_primitive_token_consumption_fails(self):
         def read_text(path: str) -> str:
             value = (ROOT / path).read_text(encoding="utf-8")

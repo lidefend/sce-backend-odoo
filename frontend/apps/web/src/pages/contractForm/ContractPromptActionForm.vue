@@ -31,8 +31,8 @@
           :id="controlId"
           :model-value="String(values[field.name] || '')"
           :disabled="busy"
+          :required="field.required"
           :described-by="describedBy"
-          :aria-required="field.required || undefined"
           @update:model-value="$emit('value-change', { fieldName: field.name, value: $event })"
         />
       </template>
