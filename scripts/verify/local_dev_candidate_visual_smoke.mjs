@@ -448,19 +448,19 @@ try {
       const initialFinalUrl = page.url();
       let sidebarScrollEvidence = null;
       if (target.exerciseSidebarScroll === true && viewport.name === 'desktop') {
-        for (let round = 0; round < 6; round += 1) {
-          const collapsed = page.locator('#primary-sidebar button[aria-expanded="false"]:visible');
-          const count = await collapsed.count();
-          if (!count) break;
-          for (let index = count - 1; index >= 0; index -= 1) await collapsed.nth(index).click();
-        }
+        const originalViewport = page.viewportSize();
+        await page.setViewportSize({ width: originalViewport?.width || 1440, height: Math.min(originalViewport?.height || 960, 600) });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         sidebarScrollEvidence = await page.evaluate(() => {
           const sidebar = document.querySelector('#primary-sidebar');
           const owner = document.querySelector('#primary-sidebar .product-side-navigation__tree');
           if (!(sidebar instanceof HTMLElement) || !(owner instanceof HTMLElement)) return { pass: false, reason: 'scroll_owner_missing' };
           const sidebarStyle = getComputedStyle(sidebar);
           const ownerStyle = getComputedStyle(owner);
-          owner.scrollTop = owner.scrollHeight;
+          const menuOwner = owner.querySelector('.t-menu--scroll');
+          const scrollOwner = menuOwner instanceof HTMLElement ? menuOwner : owner;
+          const scrollOwnerStyle = getComputedStyle(scrollOwner);
+          scrollOwner.scrollTop = scrollOwner.scrollHeight;
           return {
             viewportHeight: window.innerHeight,
             sidebarHeight: sidebar.clientHeight,
@@ -469,11 +469,17 @@ try {
             ownerScrollHeight: owner.scrollHeight,
             ownerScrollTop: owner.scrollTop,
             ownerOverflowY: ownerStyle.overflowY,
+            scrollOwnerClass: scrollOwner.className,
+            scrollOwnerClientHeight: scrollOwner.clientHeight,
+            scrollOwnerScrollHeight: scrollOwner.scrollHeight,
+            scrollOwnerScrollTop: scrollOwner.scrollTop,
+            scrollOwnerOverflowY: scrollOwnerStyle.overflowY,
             pass: sidebar.clientHeight <= window.innerHeight
               && sidebarStyle.display === 'grid'
               && ownerStyle.overflowY === 'auto'
-              && owner.scrollHeight > owner.clientHeight
-              && owner.scrollTop > 0,
+              && ['auto', 'scroll'].includes(scrollOwnerStyle.overflowY)
+              && scrollOwner.scrollHeight > scrollOwner.clientHeight
+              && scrollOwner.scrollTop > 0,
           };
         });
       }
