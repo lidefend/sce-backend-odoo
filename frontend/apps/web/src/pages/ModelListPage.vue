@@ -1,5 +1,5 @@
 <template>
-  <main class="page sc-page sc-page-frame sc-content-layout--data-grid sc-product-workspace-stack" data-product-page-mode="list" data-workspace-frame="business" data-content-layout-mode="data-grid">
+  <main class="page sc-page sc-page-frame sc-content-layout--data-grid sc-product-workspace-stack" data-product-page-mode="list" data-workspace-frame="business" data-content-layout-mode="data-grid" data-semantic-component="ModelListCompatibilityRedirect" data-state="redirecting">
     <StatusPanel
       title="Legacy List Route"
       message="This route has been redirected to contract-driven ActionView."

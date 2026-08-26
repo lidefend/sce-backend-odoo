@@ -1,5 +1,11 @@
 <template>
-  <section class="page sc-page sc-product-workspace-stack" data-product-page-mode="list">
+  <section
+    class="page sc-page sc-product-workspace-stack"
+    data-product-page-mode="list"
+    data-semantic-component="KanbanPage"
+    :data-collection-state="status"
+    :aria-busy="loading || undefined"
+  >
     <PageHeader
       v-if="status === 'error'"
       :title="title"

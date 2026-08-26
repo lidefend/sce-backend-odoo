@@ -1,5 +1,11 @@
 <template>
-  <section class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :data-list-status="status">
+  <section
+    class="page sc-page sc-product-workspace-stack"
+    data-product-page-mode="list"
+    data-semantic-component="ListPage"
+    :data-list-status="status"
+    :aria-busy="loading || undefined"
+  >
     <ScPageHeader
       v-if="status === 'error'"
       :title="title"

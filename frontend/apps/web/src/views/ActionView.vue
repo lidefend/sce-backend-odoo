@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 <template>
-  <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :content-layout="actionContentLayoutMode">
+  <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" data-semantic-component="ActionView" :data-collection-state="status" :aria-busy="status === 'loading' || undefined" :content-layout="actionContentLayoutMode">
     <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
       <template v-if="vm.header.actions.length" #actions>
         <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
