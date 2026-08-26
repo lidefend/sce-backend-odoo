@@ -116,9 +116,12 @@
               </div>
               <p>{{ item.body }}</p>
             </article>
-            <p v-if="!messages.length" class="global-message__empty sc-empty">
-              {{ loadingMessages ? '消息加载中...' : composeMode ? '发送后将自动形成会话' : '请选择左侧会话' }}
-            </p>
+            <ScInlineState
+              v-if="!messages.length"
+              class="global-message__empty"
+              :state="loadingMessages ? 'loading' : 'empty'"
+              :label="loadingMessages ? '消息加载中...' : composeMode ? '发送后将自动形成会话' : '请选择左侧会话'"
+            />
           </div>
 
           <footer class="global-message__composer">
@@ -131,7 +134,7 @@
               @keydown.meta.enter.prevent="send"
             />
             <div class="global-message__composer-actions">
-              <p v-if="error" class="global-message__error sc-alert sc-alert-danger">{{ error }}</p>
+              <ScInlineState v-if="error" class="global-message__error" state="error" :label="error" />
               <ScButton size="small" variant="primary" :disabled="sending" :loading="sending" loading-label="发送中" @click="send">
                 {{ sending ? '发送中...' : '发送' }}
               </ScButton>
