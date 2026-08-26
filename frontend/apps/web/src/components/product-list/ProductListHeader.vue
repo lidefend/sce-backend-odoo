@@ -3,6 +3,9 @@
     class="product-list-query-bar sc-product-page-toolbar"
     :class="{ 'product-list-query-bar--without-search': !showSearch }"
     data-list-query-action-bar
+    data-semantic-component="ProductListHeader"
+    :data-state="loading ? 'loading' : 'ready'"
+    :aria-busy="loading || undefined"
     aria-label="列表查询与操作"
   >
     <ScActionBar

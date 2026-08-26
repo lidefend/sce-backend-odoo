@@ -1,6 +1,7 @@
 <template>
   <ProductListHeader
     v-if="!contextual"
+    data-list-surface-header
     :loading="loading"
     :show-search="showSearch"
     :search-value="searchValue"
@@ -59,7 +60,13 @@
       </div>
     </template>
   </ProductListHeader>
-  <div v-else class="list-surface-contextual-toolbar" aria-label="批量操作">
+  <div
+    v-else
+    class="list-surface-contextual-toolbar"
+    data-semantic-component="ListSurfaceHeader"
+    data-state="contextual"
+    aria-label="批量操作"
+  >
     <slot name="contextual" />
   </div>
 </template>

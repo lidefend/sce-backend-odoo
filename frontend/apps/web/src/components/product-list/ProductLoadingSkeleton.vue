@@ -3,6 +3,9 @@
     class="product-loading-shell"
     :class="`mode-${mode}`"
     role="status"
+    data-semantic-component="ProductLoadingSkeleton"
+    data-state="loading"
+    :data-mode="mode"
     aria-live="polite"
     aria-busy="true"
   >
