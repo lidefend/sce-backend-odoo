@@ -45,6 +45,15 @@ class ContractPromptActionPresentationGuardTests(unittest.TestCase):
 
         self.assertTrue(any("primitive design tokens" in item for item in validate(read_text)))
 
+    def test_parent_page_grid_integration_fails(self):
+        def read_text(path: str) -> str:
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ContractFormPage.css"):
+                return value.replace(".action-prompt-form {", ".legacy-prompt-form {")
+            return value
+
+        self.assertTrue(any("parent page grid integration" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

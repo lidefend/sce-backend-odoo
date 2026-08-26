@@ -7,6 +7,7 @@ from typing import Callable
 ROOT = Path(__file__).resolve().parents[2]
 VUE = "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.vue"
 CSS = "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.css"
+PAGE_CSS = "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
 
 
 def _read(relative: str) -> str:
@@ -16,6 +17,7 @@ def _read(relative: str) -> str:
 def validate(read_text: Callable[[str], str] = _read) -> list[str]:
     vue = read_text(VUE)
     css = read_text(CSS)
+    page_css = read_text(PAGE_CSS)
     errors: list[str] = []
     for component in ("ScFormField", "ScInput", "ScSelect", "ScButton"):
         if f"<{component}" not in vue:
@@ -45,6 +47,10 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         errors.append("prompt presentation must expose exactly one primary action")
     if "grid-template-columns" not in css or "@media (max-width: 640px)" not in css:
         errors.append("prompt presentation must retain responsive field/action layout")
+    if ".action-prompt-form {" not in page_css or "grid-column: 1 / -1;" not in page_css:
+        errors.append("prompt presentation must retain parent page grid integration")
+    if ".contract-mode-prompt {" in page_css:
+        errors.append("prompt presentation parent page must use the model-neutral selector")
     if "--sc-space-" in css or "--sc-color-" in css:
         errors.append("prompt presentation directly consumes primitive design tokens")
     return errors
