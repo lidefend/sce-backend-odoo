@@ -98,26 +98,24 @@
 
         <template v-else-if="nodeType(node) === 'h1' && titleFieldForNode(node)">
           <div class="native-title-row">
-            <button
+            <ScIconButton
               v-if="titleFieldForNode(node)?.favoriteToggle"
-              type="button"
               class="native-title-favorite"
               :class="{ 'native-title-favorite--active': titleFieldForNode(node)?.favoriteToggle?.active }"
-              :aria-label="titleFieldForNode(node)?.favoriteToggle?.label"
               :aria-pressed="titleFieldForNode(node)?.favoriteToggle?.active"
-              :title="titleFieldForNode(node)?.favoriteToggle?.label"
+              :label="titleFieldForNode(node)?.favoriteToggle?.label || '切换收藏'"
               :disabled="titleFieldForNode(node)?.favoriteToggle?.readonly"
               @click="emitTitleFavoriteToggle(titleFieldForNode(node))"
             >
               <ScIcon :name="titleFieldForNode(node)?.favoriteToggle?.active ? 'star' : 'star-outline'" :size="18" />
-            </button>
-            <input
+            </ScIconButton>
+            <ScInput
               v-if="!titleFieldForNode(node)?.readonly"
               class="native-title-input"
               type="text"
-              :value="titleFieldValue(titleFieldForNode(node))"
+              :model-value="titleFieldValue(titleFieldForNode(node))"
               :aria-label="titleFieldForNode(node)?.label"
-              @input="emitTitleFieldChange(titleFieldForNode(node), ($event.target as HTMLInputElement).value)"
+              @update:model-value="emitTitleFieldChange(titleFieldForNode(node), $event)"
             />
             <h2 v-else class="native-title-text">{{ titleFieldValue(titleFieldForNode(node)) || titleFieldForNode(node)?.label }}</h2>
           </div>
@@ -371,6 +369,7 @@ import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import type {

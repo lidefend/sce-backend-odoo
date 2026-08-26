@@ -15,10 +15,10 @@ def _read(relative: str) -> str:
 def validate(read_text: Callable[[str], str] = _read) -> list[str]:
     source = read_text(HEADER)
     errors: list[str] = []
-    if "import ScButton" not in source or source.count("<ScButton") != 24:
+    if "import ScButton" not in source or source.count("<ScButton") != 25:
         errors.append("form header actions must consume the shared ScButton primitive")
-    if source.count("<button") != 1 or 'class="native-statusbar-step"' not in source:
-        errors.append("only the semantic workflow status step may remain a native button")
+    if source.count("<button") != 0 or '<ScButton\n                type="button"\n                class="native-statusbar-step"' not in source:
+        errors.append("workflow status steps must consume the shared ScButton primitive")
     for event in (
         "@click=\"$emit('back')\"",
         "@click=\"$emit('continue-processing')\"",
@@ -54,7 +54,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
-    print("[frontend_form_header_action_primitives_guard] PASS sc_buttons=24 native_status_steps=1")
+    print("[frontend_form_header_action_primitives_guard] PASS sc_buttons=25 raw_buttons=0")
     return 0
 
 

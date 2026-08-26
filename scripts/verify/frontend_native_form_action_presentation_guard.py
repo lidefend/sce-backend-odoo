@@ -46,12 +46,18 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
     for event in ('@click.stop.prevent="emitNativeAction(buttonNode)"', '@click.stop.prevent="emitNativeAction(node)"'):
         if text.count(event) != 2:
             failures.append(f"native form changed action event authority: {event}")
-    if 'class="native-tab"' not in text or 'class="native-title-favorite"' not in text:
-        failures.append("stateful tab and favorite controls must remain native semantic controls")
+    if 'class="native-tab"' not in text:
+        failures.append("stateful notebook tabs must retain their semantic identity")
+    if "import ScIconButton from '../design-system/ScIconButton.vue'" not in text or '<ScIconButton\n              v-if="titleFieldForNode(node)?.favoriteToggle"' not in text:
+        failures.append("native title favorite must consume the shared icon-button primitive")
+    if '<ScInput\n              v-if="!titleFieldForNode(node)?.readonly"' not in text:
+        failures.append("native editable title must consume the shared input primitive")
     if ".native-container-title-editor {\n  min-width: 140px;\n  max-width: 260px;\n  height:" in text:
         failures.append("native group title editor overrides shared ScInput appearance")
     smart_required = (
         "import NativeSmartAction from './NativeSmartAction.vue'",
+        "import ScButton from '../design-system/ScButton.vue'",
+        '<ScButton',
         '<NativeSmartAction',
         ':label="buttonLabel(buttonNode)"',
         ':label="buttonLabel(node)"',
