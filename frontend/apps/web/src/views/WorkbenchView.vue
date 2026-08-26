@@ -1,12 +1,14 @@
 <template>
   <PageRenderer
     v-if="useUnifiedWorkbenchRenderer"
+    data-semantic-component="WorkbenchView"
+    data-state="unified"
     :contract="workbenchOrchestrationContract"
     :datasets="workbenchOrchestrationDatasets"
     @action="handleWorkbenchBlockAction"
   />
 
-  <section v-else class="workbench">
+  <section v-else class="workbench" data-semantic-component="WorkbenchView" data-state="fallback">
     <header v-if="pageSectionEnabled('header', true) && pageSectionTagIs('header', 'header')" class="header" :style="pageSectionStyle('header')">
       <div>
         <p v-if="showHud" class="diagnostic">{{ pageText('diagnostic_hint', '诊断页仅用于排查，不作为正式产品界面。') }}</p>
@@ -14,18 +16,19 @@
         <p class="meta">{{ pageText('header_subtitle', '我们已为你保留可继续操作的入口。') }}</p>
         <p v-if="hasContext" class="context-line">
           {{ pageText('context_prefix', '推荐上下文：') }}{{ workspaceContextSummary }}
-          <button class="ghost mini" @click="clearWorkspaceContext">{{ pageText('action_clear_context', '清除') }}</button>
+          <ScButton class="ghost mini" variant="ghost" size="small" @click="clearWorkspaceContext">{{ pageText('action_clear_context', '清除') }}</ScButton>
         </p>
       </div>
       <div class="actions">
-        <button
+        <ScButton
           v-for="action in headerActions"
           :key="action.key"
           class="ghost"
+          variant="ghost"
           @click="executeWorkbenchAction(action.key)"
         >
           {{ action.label }}
-        </button>
+        </ScButton>
       </div>
     </header>
 
@@ -38,10 +41,11 @@
     />
 
     <section v-if="pageSectionEnabled('tiles', true) && pageSectionTagIs('tiles', 'section') && showTiles" class="tiles" :style="pageSectionStyle('tiles')">
-      <button
+      <ScButton
         v-for="tile in tiles"
         :key="tile.key || tile.title"
         class="tile"
+        variant="ghost"
         :class="{ disabled: tile.policy.state !== 'enabled' }"
         :title="tile.tooltip"
         type="button"
@@ -52,7 +56,7 @@
           <div class="tile-title">{{ tile.title || tile.key }}</div>
           <div class="tile-subtitle">{{ tile.subtitle || '' }}</div>
         </div>
-      </button>
+      </ScButton>
     </section>
 
     <div v-if="pageSectionEnabled('hud_details', true) && pageSectionTagIs('hud_details', 'div') && showHud" class="details" :style="pageSectionStyle('hud_details')">
@@ -100,7 +104,7 @@
         <span class="label">{{ pageText('hud_label_trace_id', '追踪 ID') }}</span>
         <span class="value">
           {{ lastTraceId || pageText('hud_value_na', 'N/A') }}
-          <button v-if="lastTraceId" class="ghost mini" @click="copyTrace">{{ pageText('action_copy', '复制') }}</button>
+          <ScButton v-if="lastTraceId" class="ghost mini" variant="ghost" size="small" @click="copyTrace">{{ pageText('action_copy', '复制') }}</ScButton>
         </span>
       </div>
       <div v-if="showHud" class="detail">
@@ -118,6 +122,7 @@
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import { ErrorCodes } from '../app/error_codes';
 import { useSessionStore } from '../stores/session';
 import { isHudEnabled } from '../config/debug';
