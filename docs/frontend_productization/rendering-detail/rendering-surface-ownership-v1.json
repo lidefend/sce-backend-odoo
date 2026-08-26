@@ -34,6 +34,20 @@
         "frontend/apps/web/src/components/GroupSummaryBar.vue"
       ]
     },
+    "p0-navigation-hierarchy-composite-completion-v1": {
+      "formalProductLayer": "P0",
+      "sources": [
+        "frontend/apps/web/src/components/MenuTree.vue",
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+        "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
+        "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
+        "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
+        "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue",
+        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+        "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
+        "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue"
+      ]
+    },
     "p3-low-code-administration": {
       "formalProductLayer": "P3",
       "sources": [

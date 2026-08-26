@@ -104,6 +104,17 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/views/ActionView.vue": {"scpage": {"attrs": {"data-semantic-component": "ActionView", ":data-collection-state": "status"}}},
         "frontend/apps/web/src/components/GroupSummaryBar.vue": {"section": {"attrs": {"data-semantic-component": "GroupSummaryBar"}}},
     },
+    "p0-navigation-hierarchy-composite-completion-v1": {
+        "frontend/apps/web/src/components/MenuTree.vue": {"ul": {"attrs": {"data-semantic-component": "MenuTree", ":data-state": "nodes.length ? 'ready' : 'empty'"}}},
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue": {"section": {"attrs": {"data-semantic-component": "HierarchicalWorksheet", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/components/action/HierarchyBrowser.vue": {"section": {"attrs": {"data-semantic-component": "HierarchyBrowser", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/components/action/HierarchyPlanner.vue": {"section": {"attrs": {"data-semantic-component": "HierarchyPlanner", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/components/action/HierarchyTreeNode.vue": {"div": {"attrs": {"data-semantic-component": "HierarchyTreeNode", ":data-state": "node.children.length ? 'branch' : 'leaf'"}}},
+        "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue": {"nav": {"attrs": {"data-semantic-component": "NavigationBreadcrumb"}}},
+        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue": {"aside": {"attrs": {"data-semantic-component": "ProductMobileNavigationDrawer"}}},
+        "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue": {"nav": {"attrs": {"data-semantic-component": "ProductSideNavigation"}}},
+        "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue": {"div": {"attrs": {"data-semantic-component": "WorkspaceContextIndicator"}}},
+    },
 }
 OWNED_BINDINGS = {
     source: (batch, requirements)
@@ -261,9 +272,9 @@ def build_inventory() -> dict[str, Any]:
         ],
         "summary": {"surfaceCount": len(surfaces), **{key: counts.get(key, 0) for key in sorted(STATUS_VALUES)}},
         "nextBatch": {
-            "key": "p0-collection-state-control-completion-v1",
-            "targetSurfaceCount": len(BATCH_BINDINGS["p0-collection-state-control-completion-v1"]),
-            "targetSources": sorted(BATCH_BINDINGS["p0-collection-state-control-completion-v1"]),
+            "key": "p0-navigation-hierarchy-composite-completion-v1",
+            "targetSurfaceCount": len(BATCH_BINDINGS["p0-navigation-hierarchy-composite-completion-v1"]),
+            "targetSources": sorted(BATCH_BINDINGS["p0-navigation-hierarchy-composite-completion-v1"]),
             "commitBudget": {"minimum": 12, "maximum": 20},
         },
         "surfaces": surfaces,
