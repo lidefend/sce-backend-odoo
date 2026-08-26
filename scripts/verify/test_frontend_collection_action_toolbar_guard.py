@@ -54,8 +54,8 @@ class CollectionActionToolbarGuardTest(unittest.TestCase):
 
     def test_custom_filter_select_must_use_registered_primitive(self):
         altered = self.source.replace(
-            '<ScSelect v-model="customFilterField" size="small">',
-            '<select v-model="customFilterField">',
+            '<ScSelect v-model="customFilterField" size="small" :placeholder=',
+            '<select v-model="customFilterField" :placeholder=',
         )
         self.assertTrue(any("customFilterField" in item for item in validate(altered, self.list_source)))
 

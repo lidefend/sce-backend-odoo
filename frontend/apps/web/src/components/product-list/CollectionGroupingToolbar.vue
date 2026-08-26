@@ -12,9 +12,7 @@
       <ScButton class="grouped-sort-btn" size="small" :aria-label="labels.sort" @click="$emit('toggle-sort')">{{ sortLabel }}</ScButton>
       <label v-if="sampleLimitEnabled" class="group-sample-limit">
         <span>{{ labels.sampleLimit }}</span>
-        <ScSelect class="group-sample-limit-select" size="small" :model-value="String(sampleLimit)" :disabled="loading" :aria-label="labels.sampleLimit" @change="(value) => $emit('sample-limit-change', value)">
-          <option v-for="option in sampleLimitOptions" :key="`group-sample-limit-${option}`" :value="String(option)">{{ option }}</option>
-        </ScSelect>
+        <ScSelect class="group-sample-limit-select" size="small" :model-value="String(sampleLimit)" :disabled="loading" :aria-label="labels.sampleLimit" :options="sampleLimitOptions.map((option) => ({ value: String(option), label: String(option) }))" @change="(value) => $emit('sample-limit-change', value)" />
       </label>
     </div>
   </header>

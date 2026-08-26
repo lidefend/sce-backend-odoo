@@ -1,5 +1,9 @@
+import './kits/tdesign/theme.css';
 import 'tdesign-vue-next/es/input/style/index.css';
 import 'tdesign-vue-next/es/button/style/index.css';
+import 'tdesign-vue-next/es/checkbox/style/index.css';
+import 'tdesign-vue-next/es/textarea/style/index.css';
+import 'tdesign-vue-next/es/select/style/index.css';
 import 'tdesign-vue-next/es/tabs/style/index.css';
 import 'tdesign-vue-next/es/table/style/index.css';
 import 'tdesign-vue-next/es/badge/style/index.css';
@@ -9,6 +13,9 @@ import 'tdesign-vue-next/es/loading/style/index.css';
 
 export { Input as TDesignInput } from 'tdesign-vue-next/es/input';
 export { Button as TDesignButton } from 'tdesign-vue-next/es/button';
+export { Checkbox as TDesignCheckbox } from 'tdesign-vue-next/es/checkbox';
+export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';
+export { Select as TDesignSelect } from 'tdesign-vue-next/es/select';
 export { Tabs as TDesignTabs, TabPanel as TDesignTabPanel } from 'tdesign-vue-next/es/tabs';
 export { Table as TDesignTable } from 'tdesign-vue-next/es/table';
 export { Badge as TDesignBadge } from 'tdesign-vue-next/es/badge';

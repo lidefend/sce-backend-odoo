@@ -18,9 +18,7 @@
     </div>
     <label class="config-status-filter">
       <span>配置状态</span>
-      <ScSelect :model-value="configStatusFilter" @update:model-value="$emit('update:configStatusFilter', $event as ConfigStatusFilter)">
-        <option v-for="option in configStatusOptions" :key="option.key" :value="option.key">{{ option.label }}</option>
-      </ScSelect>
+      <ScSelect :model-value="configStatusFilter" :options="configStatusOptions.map((option) => ({ value: option.key, label: option.label }))" @update:model-value="$emit('update:configStatusFilter', $event as ConfigStatusFilter)" />
     </label>
     <label v-if="advancedPanelOpen" class="scan-toggle">
       <input :checked="showOnlyIssues" type="checkbox" @change="$emit('update:showOnlyIssues', ($event.target as HTMLInputElement).checked)" />

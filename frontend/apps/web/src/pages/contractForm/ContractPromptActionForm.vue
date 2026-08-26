@@ -21,11 +21,9 @@
           :required="field.required"
           :disabled="busy"
           :described-by="describedBy"
+          :options="field.options.map((option) => ({ value: option.value, label: option.label }))"
           @update:model-value="$emit('value-change', { fieldName: field.name, value: $event })"
-        >
-          <option value=""></option>
-          <option v-for="option in field.options" :key="option.value" :value="option.value">{{ option.label }}</option>
-        </ScSelect>
+        />
         <ScInput
           v-else
           :id="controlId"

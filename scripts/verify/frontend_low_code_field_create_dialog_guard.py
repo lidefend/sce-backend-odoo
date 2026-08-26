@@ -40,7 +40,10 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         errors.append("field create dialog must preserve required and autofocus semantics")
     if vue.count('variant="primary"') != 1:
         errors.append("field create dialog must expose exactly one primary action")
-    options = ('value="char"', 'value="text"', 'value="integer"', 'value="float"', 'value="boolean"', 'value="date"', 'value="datetime"', 'value="html"')
+    options = (
+        "{ value: 'char',", "{ value: 'text',", "{ value: 'integer',", "{ value: 'float',",
+        "{ value: 'boolean',", "{ value: 'date',", "{ value: 'datetime',", "{ value: 'html',",
+    )
     if any(vue.count(option) != 1 for option in options):
         errors.append("field create dialog changed the formal field type options")
     if "@media (max-width: 480px)" not in css:

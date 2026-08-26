@@ -27,9 +27,7 @@
         <input :id="controlId" v-model.trim="searchText" type="search" :aria-describedby="describedBy" :placeholder="workspace.presentation.search_placeholder" />
       </ScField>
       <ScField v-slot="{ controlId, describedBy }" label="排序方式" field-key="my-work-sort">
-        <ScSelect :id="controlId" v-model="sortMode" :described-by="describedBy">
-          <option v-for="option in workspace.presentation.sort_options" :key="option.key" :value="option.key">{{ option.label }}</option>
-        </ScSelect>
+        <ScSelect :id="controlId" v-model="sortMode" :described-by="describedBy" :options="workspace.presentation.sort_options.map((option) => ({ value: option.key, label: option.label }))" />
       </ScField>
       <ScButton v-if="searchText" variant="ghost" @click="searchText = ''">清除查找</ScButton>
     </section>

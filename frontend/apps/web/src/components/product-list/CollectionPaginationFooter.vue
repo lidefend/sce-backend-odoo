@@ -61,11 +61,10 @@
               :model-value="pageLimitOptions.includes(listLimit) ? String(listLimit) : ''"
               :disabled="loading"
               :aria-label="labels.pageSizeSelect"
+              :placeholder="labels.pageSizeSelect"
+              :options="pageLimitOptions.map((option) => ({ value: String(option), label: String(option) }))"
               @change="(value) => $emit('page-limit-select', value)"
-            >
-              <option value="" disabled>{{ labels.pageSizeSelect }}</option>
-              <option v-for="option in pageLimitOptions" :key="`page-limit-${option}`" :value="String(option)">{{ option }}</option>
-            </ScSelect>
+            />
           </span>
         </label>
       </template>

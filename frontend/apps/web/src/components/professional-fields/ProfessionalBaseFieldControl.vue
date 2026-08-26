@@ -39,13 +39,10 @@
       :required="field.required"
       :invalid="field.invalid"
       :described-by="describedBy"
+      :placeholder="placeholder"
+      :options="(field.selectionOptions || []).map((option) => ({ value: option.value, label: option.label }))"
       @update:model-value="emitValue"
-    >
-      <option v-if="!field.required" value="">{{ placeholder }}</option>
-      <option v-for="option in field.selectionOptions || []" :key="`${field.name}-${option.value}`" :value="option.value">
-        {{ option.label }}
-      </option>
-    </ScSelect>
+    />
     <ScDateField
       v-else-if="field.type === 'date' || field.type === 'datetime'"
       :id="controlId"

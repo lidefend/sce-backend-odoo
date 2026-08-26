@@ -3,6 +3,29 @@
  * authority. Keeping this bridge inside the driver prevents vendor variables
  * from leaking into the scene contract or page components.
  */
+:root {
+  --td-brand-color: var(--sc-semantic-surface-interactive);
+  --td-brand-color-hover: var(--sc-semantic-surface-interactive-hover);
+  --td-brand-color-active: var(--sc-semantic-surface-interactive-hover);
+  --td-brand-color-focus: var(--sc-semantic-focus-ring);
+  --td-brand-color-light: var(--sc-semantic-surface-selected);
+  --td-success-color: var(--sc-semantic-state-success-text);
+  --td-warning-color: var(--sc-semantic-state-warning-text);
+  --td-error-color: var(--sc-semantic-state-danger-text);
+  --td-bg-color-page: var(--sc-semantic-surface-page);
+  --td-bg-color-container: var(--sc-semantic-surface-panel);
+  --td-bg-color-secondarycontainer: var(--sc-semantic-surface-subtle);
+  --td-text-color-primary: var(--sc-semantic-text-primary);
+  --td-text-color-secondary: var(--sc-semantic-text-secondary);
+  --td-text-color-disabled: var(--sc-semantic-text-disabled);
+  --td-border-level-1-color: var(--sc-semantic-border-default);
+  --td-component-stroke: var(--sc-semantic-border-strong);
+  --td-radius-default: var(--sc-component-input-radius);
+  --td-radius-medium: var(--sc-component-panel-radius);
+  --td-font-family: inherit;
+  --td-font-family-medium: inherit;
+}
+
 .scene-ui-provider[data-scene-ui-kit='tdesign-modern'] {
   --td-brand-color: var(--sc-scene-brand);
   --td-brand-color-hover: var(--sc-scene-brand-hover, var(--sc-bridge-tdesign-brand-hover));

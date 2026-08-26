@@ -9,12 +9,13 @@
     <template v-if="activity">
       <label class="native-chatter-field">
         <span>{{ activityAssigneeLabel }}</span>
-        <ScSelect :model-value="activityAssigneeId || ''" :disabled="posting || usersLoading" @update:model-value="emitActivityAssignee">
-          <option value="">当前用户</option>
-          <option v-for="user in activityAssigneeOptions" :key="`activity-user-${user.id}`" :value="user.id">
-            {{ collaborationUserLabel(user) }}
-          </option>
-        </ScSelect>
+        <ScSelect
+          :model-value="activityAssigneeId || ''"
+          :disabled="posting || usersLoading"
+          placeholder="当前用户"
+          :options="activityAssigneeOptions.map((user) => ({ value: user.id, label: collaborationUserLabel(user) }))"
+          @update:model-value="emitActivityAssignee"
+        />
       </label>
       <label class="native-chatter-field">
         <span>{{ activitySummaryLabel }}</span>

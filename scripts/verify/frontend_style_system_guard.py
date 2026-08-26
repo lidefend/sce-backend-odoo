@@ -150,7 +150,7 @@ def _check_style_bootstrap(errors: list[str]) -> None:
         ".sc-action-group",
         ".sc-form-label",
         ".sc-btn",
-        ".sc-btn-primary",
+        ".sc-input[data-primitive-driver='tdesign']",
         ".sc-tag",
         ".sc-badge",
         ".sc-alert",

@@ -177,13 +177,10 @@
               v-else-if="column.ttype === 'selection'"
               :disabled="column.readonly || adapter.busy"
               :model-value="String(row.values[column.name] ?? '')"
+              :placeholder="adapter.selectPlaceholder(column.label)"
+              :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
               @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
-            >
-              <option value="">{{ adapter.selectPlaceholder(column.label) }}</option>
-              <option v-for="option in column.selection || []" :key="String(option[0])" :value="String(option[0])">
-                {{ String(option[1]) }}
-              </option>
-            </ScSelect>
+            />
             <ScInput
               v-else
               :type="adapter.one2manyColumnInputType(column)"

@@ -58,14 +58,18 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"{modal} must consume its registered overlay stacking token")
 
     input_text = (design / "ScInput.vue").read_text(encoding="utf-8") if (design / "ScInput.vue").is_file() else ""
-    if "<input" not in input_text or ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:
-        errors.append("ScInput must place accessible state on the native input control")
+    if "<TDesignInput" not in input_text or "v-native-control-projection" not in input_text or 'data-primitive-driver="browser-specialized"' not in input_text:
+        errors.append("ScInput must use the TDesign driver with an explicit browser-specialized fallback")
+    if ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:
+        errors.append("ScInput must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in input_text or ':aria-busy="loading || undefined"' not in input_text:
         errors.append("ScInput must expose loading state on the native input control")
 
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
-    if "<textarea" not in textarea_text or ':aria-describedby="describedBy"' not in textarea_text or ':aria-invalid=' not in textarea_text:
-        errors.append("ScTextarea must place accessible state on the native textarea control")
+    if "<TDesignTextarea" not in textarea_text or "v-native-control-projection" not in textarea_text:
+        errors.append("ScTextarea must use the TDesign driver and native accessibility projection")
+    if ':aria-describedby="describedBy"' not in textarea_text or ':aria-invalid=' not in textarea_text:
+        errors.append("ScTextarea must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in textarea_text or ':aria-busy="loading || undefined"' not in textarea_text:
         errors.append("ScTextarea must expose loading state on the native textarea control")
 
@@ -84,12 +88,13 @@ def validate(root: Path = ROOT) -> list[str]:
 
     checkbox_text = (design / "ScCheckbox.vue").read_text(encoding="utf-8") if (design / "ScCheckbox.vue").is_file() else ""
     for marker in (
-        'type="checkbox"',
+        '<TDesignCheckbox',
+        'v-native-control-projection',
         ':data-checked="checked || undefined"',
         ':data-indeterminate="indeterminate || undefined"',
         ':data-disabled="disabled || undefined"',
-        ':aria-checked="indeterminate ? \'mixed\' : checked"',
-        ':aria-label="label"',
+        "'aria-checked': props.indeterminate ? 'mixed' : String(props.checked)",
+        "'aria-label': props.label",
     ):
         if marker not in checkbox_text:
             errors.append(f"ScCheckbox missing governed selection marker: {marker}")
@@ -97,6 +102,8 @@ def validate(root: Path = ROOT) -> list[str]:
     select_text = (design / "ScSelect.vue").read_text(encoding="utf-8") if (design / "ScSelect.vue").is_file() else ""
     if ':data-readonly="readonly || undefined"' not in select_text or ':aria-readonly="readonly || undefined"' not in select_text:
         errors.append("ScSelect must expose readonly state without inventing write authority")
+    if "<TDesignSelect" not in select_text or ':options="tdesignOptions"' not in select_text or "v-native-control-projection" not in select_text:
+        errors.append("ScSelect must use the TDesign option driver and native accessibility projection")
 
     state_contracts = {
         "ScLoading": ('data-state', 'aria-busy'),
@@ -116,6 +123,9 @@ def validate(root: Path = ROOT) -> list[str]:
     else:
         if "@sc/ui/primitives" not in bridge or "tdesign-vue-next" in bridge:
             errors.append("web primitive bridge must consume the project UI authority")
+        for driver in ("TDesignButton", "TDesignCheckbox", "TDesignInput", "TDesignSelect", "TDesignTextarea"):
+            if driver not in bridge or driver not in ui_primitives:
+                errors.append(f"missing public project primitive driver: {driver}")
         for path in design.glob("*.vue"):
             text = path.read_text(encoding="utf-8")
             if "tdesign-vue-next" in text:

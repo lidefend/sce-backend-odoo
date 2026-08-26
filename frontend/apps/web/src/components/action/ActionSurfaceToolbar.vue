@@ -153,21 +153,10 @@
               <span>{{ customFilterLabel }}</span>
             </button>
             <div v-if="customFilterEnabled && customFilterOpen" class="custom-search-panel">
-              <ScSelect v-model="customFilterField" size="small">
-                <option value="">{{ uiLabel('select_field', '选择字段') }}</option>
-                <option v-for="field in customFilterFields" :key="field.field" :value="field.field">{{ field.label }}</option>
-              </ScSelect>
-              <ScSelect v-model="customFilterOperator" size="small">
-                <option v-for="operator in activeCustomFilterOperators" :key="operator.value" :value="operator.value">{{ operator.label }}</option>
-              </ScSelect>
-              <ScSelect v-if="activeCustomFilterField?.type === 'selection'" v-model="customFilterValue" size="small">
-                <option value="">{{ uiLabel('select_value', '选择值') }}</option>
-                <option v-for="choice in activeCustomFilterChoices" :key="choice.value" :value="choice.value">{{ choice.label }}</option>
-              </ScSelect>
-              <ScSelect v-else-if="activeCustomFilterField?.type === 'boolean'" v-model="customFilterValue" size="small">
-                <option value="true">{{ uiLabel('boolean_true', '是') }}</option>
-                <option value="false">{{ uiLabel('boolean_false', '否') }}</option>
-              </ScSelect>
+              <ScSelect v-model="customFilterField" size="small" :placeholder="uiLabel('select_field', '选择字段')" :options="customFilterFields.map((field) => ({ value: field.field, label: field.label }))" />
+              <ScSelect v-model="customFilterOperator" size="small" :options="activeCustomFilterOperators.map((operator) => ({ value: operator.value, label: operator.label }))" />
+              <ScSelect v-if="activeCustomFilterField?.type === 'selection'" v-model="customFilterValue" size="small" :placeholder="uiLabel('select_value', '选择值')" :options="activeCustomFilterChoices.map((choice) => ({ value: choice.value, label: choice.label }))" />
+              <ScSelect v-else-if="activeCustomFilterField?.type === 'boolean'" v-model="customFilterValue" size="small" :options="[{ value: 'true', label: uiLabel('boolean_true', '是') }, { value: 'false', label: uiLabel('boolean_false', '否') }]" />
               <ScInput v-else v-model="customFilterValue" size="small" :type="customFilterInputType" :placeholder="uiLabel('input_value', '输入值')" />
               <div class="custom-search-actions">
                 <ScButton type="button" variant="primary" size="small" :disabled="!canApplyCustomFilter || loading" @click="applyCustomFilter">{{ uiLabel('add', '添加') }}</ScButton>

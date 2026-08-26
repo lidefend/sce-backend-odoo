@@ -1,5 +1,6 @@
 /* Token v1 page-pattern aliases. They retain legacy computed values without owning primitives. */
 :root {
+  --sc-product-list-inline-start: var(--sc-page-padding);
   --sc-product-space-1: var(--sc-space-xs);
   --sc-product-space-2: var(--sc-space-md);
   --sc-product-space-3: var(--sc-space-lg);

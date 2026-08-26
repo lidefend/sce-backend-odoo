@@ -21,11 +21,14 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         (design / "tdesignPrimitiveBridge.ts").write_text(
-            "export { TDesignButton, TDesignInput } from '@sc/ui/primitives';\n", encoding="utf-8"
+            "export { TDesignButton, TDesignCheckbox, TDesignInput, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
         )
         (ui / "primitives.ts").write_text(
             "export { Button as TDesignButton } from 'tdesign-vue-next/es/button';\n"
-            "export { Input as TDesignInput } from 'tdesign-vue-next/es/input';\n",
+            "export { Checkbox as TDesignCheckbox } from 'tdesign-vue-next/es/checkbox';\n"
+            "export { Input as TDesignInput } from 'tdesign-vue-next/es/input';\n"
+            "export { Select as TDesignSelect } from 'tdesign-vue-next/es/select';\n"
+            "export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';\n",
             encoding="utf-8",
         )
         for name in PRIMITIVES:
@@ -37,10 +40,10 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             )
             state_contract = {
                 "ScButton": '<TDesignButton :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation -->',
-                "ScCheckbox": '<label :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined"><input type="checkbox" :aria-checked="indeterminate ? \'mixed\' : checked" :aria-label="label" /></label>',
-                "ScInput": '<input :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
-                "ScTextarea": '<textarea :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
-                "ScSelect": '<select :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
+                "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label -->',
+                "ScInput": '<TDesignInput v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input data-primitive-driver="browser-specialized" />',
+                "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
+                "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
                 "ScInlineState": '<div :data-state="state" :aria-busy="state === \'loading\' || undefined" />',
                 "ScEmptyState": '<section data-state="empty" role="status" />',
