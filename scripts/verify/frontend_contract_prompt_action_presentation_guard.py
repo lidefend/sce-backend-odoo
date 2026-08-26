@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Callable
 
@@ -47,7 +48,8 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         errors.append("prompt presentation must expose exactly one primary action")
     if "grid-template-columns" not in css or "@media (max-width: 640px)" not in css:
         errors.append("prompt presentation must retain responsive field/action layout")
-    if ".action-prompt-form {" not in page_css or "grid-column: 1 / -1;" not in page_css:
+    parent_rule = re.search(r"\.action-prompt-form\s*\{(?P<body>[^}]*)\}", page_css)
+    if not parent_rule or "grid-column: 1 / -1;" not in parent_rule.group("body"):
         errors.append("prompt presentation must retain parent page grid integration")
     if ".contract-mode-prompt {" in page_css:
         errors.append("prompt presentation parent page must use the model-neutral selector")

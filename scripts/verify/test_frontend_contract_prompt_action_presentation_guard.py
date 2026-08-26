@@ -54,6 +54,16 @@ class ContractPromptActionPresentationGuardTests(unittest.TestCase):
 
         self.assertTrue(any("parent page grid integration" in item for item in validate(read_text)))
 
+    def test_parent_page_grid_column_removal_fails(self):
+        def read_text(path: str) -> str:
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ContractFormPage.css"):
+                prompt_rule = ".action-prompt-form {\n  grid-column: 1 / -1;"
+                return value.replace(prompt_rule, ".action-prompt-form {")
+            return value
+
+        self.assertTrue(any("parent page grid integration" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()
