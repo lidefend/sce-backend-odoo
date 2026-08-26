@@ -43,9 +43,9 @@ const props = withDefaults(defineProps<{
 });
 
 const presentation = computed(() => tdesignButtonPresentation(props.variant, props.status));
-const buttonRef = ref<{ $el?: HTMLButtonElement; focus?: () => void } | null>(null);
+const buttonRef = ref<{ $el?: HTMLButtonElement } | null>(null);
 
 defineExpose({
-  focus: () => buttonRef.value?.focus?.() ?? buttonRef.value?.$el?.focus(),
+  focus: () => buttonRef.value?.$el?.focus(),
 });
 </script>

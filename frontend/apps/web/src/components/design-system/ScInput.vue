@@ -72,7 +72,7 @@ import { nativeControlProjection } from './nativeControlProjection';
 import { normalizePrimitiveSize, resolvePrimitiveControlUpdate, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
 const inputRef = ref<HTMLInputElement | null>(null);
-const tdesignInputRef = ref<{ $el?: HTMLElement; focus?: () => void } | null>(null);
+const tdesignInputRef = ref<{ $el?: HTMLElement } | null>(null);
 const vNativeControlProjection = nativeControlProjection;
 
 const props = withDefaults(defineProps<{
@@ -182,7 +182,6 @@ function onTDesignBlur(value: string | number, context: { e?: FocusEvent }) {
 defineExpose({
   focus: () => {
     if (!usesTDesignDriver.value) return inputRef.value?.focus();
-    if (typeof tdesignInputRef.value?.focus === 'function') return tdesignInputRef.value.focus();
     return tdesignInputRef.value?.$el?.querySelector<HTMLInputElement>('input')?.focus();
   },
 });
