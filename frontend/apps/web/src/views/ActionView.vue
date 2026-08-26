@@ -217,12 +217,9 @@
     <section v-if="isSectionVisible('quick_actions', { defaultEnabled: pageSectionEnabled('quick_actions', false), tag: 'section', vmVisible: vm.sections.quickActions && Boolean(vm.actions.primary.length || vm.actions.overflowGroups.length) })" class="contract-block" :style="getSectionStyle('quick_actions')">
       <p class="contract-label">{{ t('label.quick_actions', '快捷操作') }}</p>
       <div class="contract-chips">
-        <ScButton
-          v-for="btn in vm.actions.primary"
+        <ScButton v-for="btn in vm.actions.primary"
           :key="`contract-action-${btn.key}`"
-          variant="secondary"
-          size="small"
-          type="button"
+          variant="secondary" size="small" type="button"
           :disabled="isContractActionDisabled({ enabled: btn.enabled })"
           :title="btn.hint"
           @click="runContractAction(btn)"
@@ -250,12 +247,9 @@
         >
           <p class="contract-group-label">{{ group.label }}</p>
           <div class="contract-chips">
-            <ScButton
-              v-for="btn in group.actions"
+            <ScButton v-for="btn in group.actions"
               :key="`contract-group-action-${group.key}-${btn.key}`"
-              variant="secondary"
-              size="small"
-              type="button"
+              variant="secondary" size="small" type="button"
               :disabled="isContractActionDisabled({ enabled: btn.enabled })"
               :title="btn.hint"
               @click="runContractAction(btn)"
