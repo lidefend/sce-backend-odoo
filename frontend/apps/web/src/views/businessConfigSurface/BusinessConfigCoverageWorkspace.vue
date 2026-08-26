@@ -3,7 +3,7 @@
   <div class="scan-toolbar">
     <label class="page-search">
       <span>页面搜索</span>
-      <input :value="pageSearch" type="search" placeholder="输入页面名称" @input="$emit('update:pageSearch', ($event.target as HTMLInputElement).value)" />
+      <ScInput :model-value="pageSearch" type="search" placeholder="输入页面名称" @update:model-value="$emit('update:pageSearch', $event)" />
     </label>
     <div class="page-type-tabs" role="group" aria-label="页面类型筛选">
       <ScButton
@@ -20,10 +20,7 @@
       <span>配置状态</span>
       <ScSelect :model-value="configStatusFilter" :options="configStatusOptions.map((option) => ({ value: option.key, label: option.label }))" @update:model-value="$emit('update:configStatusFilter', $event as ConfigStatusFilter)" />
     </label>
-    <label v-if="advancedPanelOpen" class="scan-toggle">
-      <input :checked="showOnlyIssues" type="checkbox" @change="$emit('update:showOnlyIssues', ($event.target as HTMLInputElement).checked)" />
-      <span>只看需处理</span>
-    </label>
+    <ScCheckbox v-if="advancedPanelOpen" class="scan-toggle" :checked="showOnlyIssues" @update:checked="$emit('update:showOnlyIssues', $event)">只看需处理</ScCheckbox>
     <ScButton v-if="advancedPanelOpen" variant="ghost" @click="$emit('copyCoverageSummary')">
       复制配置摘要
     </ScButton>
@@ -273,6 +270,8 @@ import ScButton from '../../components/design-system/ScButton.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
 import ScStatusBadge from '../../components/design-system/ScStatusBadge.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScInput from '../../components/design-system/ScInput.vue';
+import ScCheckbox from '../../components/design-system/ScCheckbox.vue';
 
 type SurfaceSection = BusinessConfigSurfacePayload['sections'][number];
 type DeliveryItem = NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number];
