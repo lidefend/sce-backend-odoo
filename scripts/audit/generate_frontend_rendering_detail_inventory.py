@@ -93,6 +93,17 @@ NEXT_BATCH_GAPS = {
     "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
 }
 
+NEXT_BATCH_COMPLETION_MARKERS = {
+    "frontend/apps/web/src/layouts/AppShell.vue": ("ScInlineState", 'state="loading"', 'state="error"', 'state="empty"'),
+    "frontend/apps/web/src/components/GlobalMessagePanel.vue": ("ScInlineState", "loadingConversations ? 'loading' : 'empty'", "loadingMessages ? 'loading' : 'empty'", 'state="error"'),
+    "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue": ("ScErrorState", "ACTION_SURFACE_RENDERER_NOT_REGISTERED"),
+    "frontend/apps/web/src/components/page/BlockRenderer.vue": ("ScErrorState", 'density="compact"', ':heading-level="5"'),
+    "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue": ("ScErrorState", "ScInlineState", "blockedActionMessage", "data-contract-form-driver-error"),
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue": ("ScInlineState", 'state="empty"', 'state="error"', "data-readonly-relation-empty"),
+    "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue": ("ScInlineState", 'state="empty"', 'state="error"'),
+    "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue": ("ScInlineState", "timelineLoading ? 'loading' : 'empty'"),
+}
+
 
 def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
@@ -126,7 +137,10 @@ def classify(source: str, text: str) -> tuple[str, str]:
     if source in KNOWN_GOVERNED_COMPOSITES:
         return "governed_composite", "state/dashboard or overlay guard owns this composite"
     if source in NEXT_BATCH_GAPS:
-        return "gap", "declared P0 inline/full-state completion target"
+        missing = [marker for marker in NEXT_BATCH_COMPLETION_MARKERS[source] if marker not in text]
+        if not missing:
+            return "governed_composite", "P0 inline/full-state completion markers are present"
+        return "gap", f"declared P0 inline/full-state completion target; missing markers: {', '.join(missing)}"
     if "data-professional-" in text and any(name in text for name in GOVERNED_STATE_PRIMITIVES):
         return "governed_composite", "professional semantic marker and governed state primitive are both present"
     return "gap", "relevant state or native interaction has no explicit professionalization ownership declaration"

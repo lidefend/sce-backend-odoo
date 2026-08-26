@@ -28,12 +28,18 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         status, _ = INVENTORY.classify("frontend/apps/web/src/components/UnknownSurface.vue", "loading <button>")
         self.assertEqual(status, "gap")
 
-    def test_next_batch_sources_are_real_declared_gaps(self) -> None:
+    def test_next_batch_sources_have_machine_proven_completion(self) -> None:
         self.assertGreaterEqual(len(INVENTORY.NEXT_BATCH_GAPS), 8)
         for source in INVENTORY.NEXT_BATCH_GAPS:
             self.assertIn(source, self.by_source)
-            self.assertEqual(self.by_source[source]["status"], "gap")
+            self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], "p0-inline-full-state-completion-v1")
+
+    def test_next_batch_missing_marker_fails_closed(self) -> None:
+        source = "frontend/apps/web/src/components/page/BlockRenderer.vue"
+        status, reason = INVENTORY.classify(source, "<ScErrorState />")
+        self.assertEqual(status, "gap")
+        self.assertIn("missing markers", reason)
 
     def test_native_composites_require_explicit_reason(self) -> None:
         for source, reason in INVENTORY.DELIBERATE_NATIVE_COMPOSITES.items():

@@ -1,8 +1,8 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
   "sourceCommit": "c63c2dea9fdb7d2385e0d23a8276dc0cd033838e",
-  "generatorDigest": "7ea2e54cd1d7a6bf068dd2c0133c44806fbaf35b6c53e25fb4ea7ffafb37c4bd",
-  "inputDigest": "2d4aa80a1386b86cccd1591f1db4465245dd108d076325b6e6b7f24589aa8ff2",
+  "generatorDigest": "5619a6dc153dab4b26c8d92cef33f58cbeddd34f88e3945c861bedb462931de9",
+  "inputDigest": "0624a9e8110f3772b5ae1c8f28472ddb61fa1d32790ebf520bbd7ee55e3bf5c4",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -19,11 +19,11 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 134,
+    "surfaceCount": 135,
     "deliberate_native_composite": 6,
-    "gap": 72,
-    "governed_composite": 15,
-    "governed_primitive": 24,
+    "gap": 64,
+    "governed_composite": 23,
+    "governed_primitive": 25,
     "p3_out_of_scope": 17
   },
   "nextBatch": {
@@ -60,8 +60,8 @@
     {
       "source": "frontend/apps/web/src/components/GlobalMessagePanel.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "declared P0 inline/full-state completion target",
+      "status": "governed_composite",
+      "reason": "P0 inline/full-state completion markers are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -211,13 +211,15 @@
     {
       "source": "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "declared P0 inline/full-state completion target",
+      "status": "governed_composite",
+      "reason": "P0 inline/full-state completion markers are present",
       "stateTypes": [
         "error"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScErrorState"
+      ],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
@@ -469,6 +471,20 @@
       "targetBatch": null
     },
     {
+      "source": "frontend/apps/web/src/components/design-system/ScInlineState.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
       "source": "frontend/apps/web/src/components/design-system/ScInput.vue",
       "formalProductLayer": "P0",
       "status": "governed_primitive",
@@ -596,13 +612,15 @@
     {
       "source": "frontend/apps/web/src/components/page/BlockRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "declared P0 inline/full-state completion target",
+      "status": "governed_composite",
+      "reason": "P0 inline/full-state completion markers are present",
       "stateTypes": [
         "error"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScErrorState"
+      ],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
@@ -1165,8 +1183,8 @@
     {
       "source": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "declared P0 inline/full-state completion target",
+      "status": "governed_composite",
+      "reason": "P0 inline/full-state completion markers are present",
       "stateTypes": [
         "empty",
         "error",
@@ -1223,8 +1241,8 @@
     {
       "source": "frontend/apps/web/src/layouts/AppShell.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "declared P0 inline/full-state completion target",
+      "status": "governed_composite",
+      "reason": "P0 inline/full-state completion markers are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1364,8 +1382,8 @@
     {
       "source": "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "declared P0 inline/full-state completion target",
+      "status": "governed_composite",
+      "reason": "P0 inline/full-state completion markers are present",
       "stateTypes": [
         "empty",
         "error",
@@ -1374,7 +1392,9 @@
       "rawControls": {
         "select": 1
       },
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScErrorState"
+      ],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
@@ -1469,8 +1489,8 @@
     {
       "source": "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "declared P0 inline/full-state completion target",
+      "status": "governed_composite",
+      "reason": "P0 inline/full-state completion markers are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1526,10 +1546,11 @@
     {
       "source": "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "declared P0 inline/full-state completion target",
+      "status": "governed_composite",
+      "reason": "P0 inline/full-state completion markers are present",
       "stateTypes": [
         "loading",
+        "empty",
         "disabled"
       ],
       "rawControls": {},
