@@ -6346,3 +6346,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   errors `0`, overflow `0` and mutation `0`. Project action 859 has no field
   declaring search-more and is correctly recorded as not applicable rather
   than modified to manufacture a fixture.
+
+## Contract prompt action presentation convergence v1
+
+- Branch / baseline: `feature/p0-contract-prompt-action-presentation-v1` /
+  `da1b284e588d4ca9eca964c8c924e8fbdcfbf21e`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  generic Contract action prompt presentation / `frontend/apps/web`
+  contract-form support surface.
+- Product result: prompt fields now use the shared `ScFormField`, `ScInput` and
+  `ScSelect` primitives, while cancellation and confirmation use one ordered
+  `ScButton` action bar with exactly one primary action. The layout has a
+  responsive grid and stable semantic owners without changing field order,
+  option values or emitted action/value events.
+- Why Here / Why Not Elsewhere: the prompt is a generic renderer for formal
+  action parameters. Field definitions and transaction ownership remain in the
+  existing Contract/runtime chain; no model, action, menu, role, label or
+  permission semantics are inferred in the frontend.
+- Blast radius: `ContractPromptActionForm` presentation only. Contract schema,
+  action execution, confirmation policy, routes, permissions, fixtures,
+  database state and business mutations are excluded.
