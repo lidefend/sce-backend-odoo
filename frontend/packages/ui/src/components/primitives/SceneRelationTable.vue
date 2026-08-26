@@ -81,6 +81,7 @@ watchEffect(() => {
 
       <component
         :is="driverTable"
+        class="scene-tdesign-table"
         v-else-if="componentModel === 'vue' && driverTable"
         :data="tdesignRows"
         :columns="tdesignColumns"
@@ -198,7 +199,7 @@ watchEffect(() => {
 }
 
 .scene-ui5-table,
-.scene-relation-table :deep(.t-table) {
+.scene-tdesign-table {
   width: 100%;
 }
 

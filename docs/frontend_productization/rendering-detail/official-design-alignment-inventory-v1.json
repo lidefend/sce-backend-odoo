@@ -1,0 +1,848 @@
+{
+  "authority": {
+    "library": "tdesign-vue-next",
+    "lockedVersion": "1.20.5",
+    "officialCustomizationRule": "inherit official defaults; customize only through installed public CSS variables; internal vendor selectors require removal",
+    "officialStylesheet": "frontend/node_modules/.pnpm/tdesign-vue-next@1.20.5_vue@3.5.27_typescript@5.9.3_/node_modules/tdesign-vue-next/es/style/index.css",
+    "projectThemeBridge": "frontend/packages/ui/src/kits/tdesign/theme.css"
+  },
+  "completionRule": "unknownProjectTokenOverrideCount=0; internalVendorSelectorGapCount=0; visualLiteralGapCount=0; orphanedProductAppearanceVariantCount=0",
+  "excludedScopes": [
+    "Contract V2",
+    "permissions",
+    "routes",
+    "task/workspace authority",
+    "P3 low-code designer styling"
+  ],
+  "inputDigest": "16a1e62244be82c9696beffb54af472ddd2c02f36afe102d1cfe40de6d51f87c",
+  "internalVendorSelectorGaps": [],
+  "productAppearanceVariants": [
+    {
+      "appearance": "account-context",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='account-context'], .sc-btn[data-appearance='account-context-compact']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "account-context-compact",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='account-context'], .sc-btn[data-appearance='account-context-compact']",
+        ".sc-btn[data-appearance='account-context-compact']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "activity-rail",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "selectors": [
+        ".sc-icon-button[data-appearance='activity-rail']",
+        ".sc-icon-button[data-appearance='activity-rail'].active",
+        ".sc-icon-button[data-appearance='activity-rail']:disabled",
+        ".sc-icon-button[data-appearance='activity-rail']:hover:not(:disabled)"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "auth-link",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+        "frontend/apps/web/src/views/LoginView.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='auth-link']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "breadcrumb-item",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='breadcrumb-item']",
+        ".sc-btn[data-appearance='breadcrumb-item'].active",
+        ".sc-btn[data-appearance='breadcrumb-item']:not(:last-child)::after"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "collection",
+      "consumers": [
+        "frontend/apps/web/src/app/presentation/productPageHeader.ts",
+        "frontend/apps/web/src/app/presentation/productPagePattern.ts",
+        "frontend/apps/web/src/components/design-system/ScPageHeader.vue",
+        "frontend/apps/web/src/components/design-system/ScTable.vue",
+        "frontend/apps/web/src/components/page/PageHeader.vue",
+        "frontend/apps/web/src/components/product-page-patterns/CollectionPattern.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts",
+        "frontend/apps/web/src/views/ActionView.vue"
+      ],
+      "selectors": [
+        "[data-semantic-component='ScTable'][data-appearance='collection'] .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] .cell-row-number, [data-semantic-component='ScTable'][data-appearance='collection'] tbody .column-layout-identity",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] .column-layout-identity",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] tbody tr.row-tone-danger td",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] tfoot tr:nth-child(2) :is(.cell-select,.cell-row-number)",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] thead .column-layout-identity, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-row-number"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "column-handle",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
+        "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue"
+      ],
+      "selectors": [
+        ".sc-icon-button[data-appearance='column-handle']",
+        ".sc-icon-button[data-appearance='column-handle']::before",
+        ".sc-icon-button[data-appearance='column-handle']:hover::before"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "context-action",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue",
+        "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='context-action']",
+        ".sc-btn[data-appearance='context-action']:hover"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "dashboard-action",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='dashboard-action']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "dashboard-quick-link",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='dashboard-quick-link']",
+        ".sc-btn[data-appearance='dashboard-quick-link'] > .sc-btn__content > .sc-icon:first-child",
+        ".sc-btn[data-appearance='dashboard-quick-link'] > .sc-btn__content > span",
+        ".sc-btn[data-appearance='dashboard-quick-link'] small, .sc-btn[data-appearance='dashboard-recent-link'] small",
+        ".sc-btn[data-appearance='dashboard-quick-link']:hover"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "dashboard-recent-link",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='dashboard-quick-link'] small, .sc-btn[data-appearance='dashboard-recent-link'] small",
+        ".sc-btn[data-appearance='dashboard-recent-link']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "favorite-toggle",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='favorite-toggle'], .sc-icon-button[data-appearance='favorite-toggle']",
+        ".sc-btn[data-appearance='favorite-toggle']:hover:not(:disabled), .sc-icon-button[data-appearance='favorite-toggle']:hover:not(:disabled)",
+        ".sc-btn[data-appearance='favorite-toggle'][aria-pressed='true'], .sc-icon-button[data-appearance='favorite-toggle'][aria-pressed='true']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "flush",
+      "consumers": [
+        "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
+        "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
+        "frontend/apps/web/src/components/design-system/ScTable.vue",
+        "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue"
+      ],
+      "selectors": [
+        "[data-semantic-component='ScTable'][data-appearance='flush']",
+        "[data-semantic-component='ScTable'][data-appearance='flush'] tbody tr.selected",
+        "[data-semantic-component='ScTable'][data-appearance='flush'] tbody tr:focus-visible",
+        "[data-semantic-component='ScTable'][data-appearance='flush'] tbody tr:hover",
+        "[data-semantic-component='ScTable'][data-appearance='flush'] tbody tr[aria-selected='true']",
+        "[data-semantic-component='ScTable'][data-appearance='flush'] th",
+        "[data-semantic-component='ScTable'][data-appearance='flush'] th, [data-semantic-component='ScTable'][data-appearance='flush'] td"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "form-field",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScDateField.vue",
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/design-system/ScRelationField.vue",
+        "frontend/apps/web/src/components/design-system/ScSelect.vue",
+        "frontend/apps/web/src/components/design-system/ScTextarea.vue",
+        "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue"
+      ],
+      "selectors": [
+        ".sc-input[data-appearance='form-field'], .sc-select[data-appearance='form-field'], [data-semantic-component='ScRelationField'][data-appearance='form-field'], [data-semantic-component='ScDateField'][data-appearance='form-field']",
+        ".sc-textarea[data-appearance='form-field']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "info-action",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/views/ActionView.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='info-action']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "menu-choice",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScCheckbox.vue",
+        "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue",
+        "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue"
+      ],
+      "selectors": [
+        ".sc-checkbox[data-appearance='menu-choice']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "menu-item",
+      "consumers": [
+        "frontend/apps/web/src/components/GlobalMessagePanel.vue",
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/views/ActionView.vue"
+      ],
+      "selectors": [
+        ".global-message__conversation.sc-btn[data-appearance='menu-item']",
+        ".global-message__conversation.sc-btn[data-appearance='menu-item'].active",
+        ".sc-btn[data-appearance='menu-item']",
+        ".sc-btn[data-appearance='menu-item'] small",
+        ".sc-btn[data-appearance='menu-item']:disabled",
+        ".sc-btn[data-appearance='menu-item']:hover:not(:disabled)",
+        ".sc-btn[data-appearance='toolbar-chip'].active, .sc-btn[data-appearance='toolbar-chip'][aria-pressed='true'], .sc-btn[data-appearance='menu-item'].active, .sc-btn[data-appearance='menu-item'][aria-pressed='true']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "navigation-search",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "selectors": [
+        ".sc-input[data-appearance='navigation-search']",
+        ".sc-input[data-appearance='navigation-search']:focus-within",
+        ".sc-input[data-appearance='navigation-search']:hover"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "outline-action",
+      "consumers": [
+        "frontend/apps/web/src/components/DevContextPanel.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
+        "frontend/apps/web/src/components/page/PageRenderer.vue",
+        "frontend/apps/web/src/components/product-list/CollectionGroupHeader.vue",
+        "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue",
+        "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue",
+        "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
+        "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
+        "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/views/LoginView.vue",
+        "frontend/apps/web/src/views/MenuView.vue",
+        "frontend/apps/web/src/views/PlaceholderView.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/src/views/WorkbenchView.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='outline-action']",
+        ".sc-icon-button[data-appearance='outline-action']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "primary-submit",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/views/LoginView.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='primary-submit']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "record-title",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+      ],
+      "selectors": [
+        ".sc-input[data-appearance='record-title']",
+        ".sc-input[data-appearance='record-title']:focus-within"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "relation-tag",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='relation-tag']",
+        ".sc-btn[data-appearance='relation-tag']:hover"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "relation-tag-entry",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+      ],
+      "selectors": [
+        ".sc-input[data-appearance='relation-tag-entry']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "scope-option",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='scope-option']",
+        ".sc-btn[data-appearance='scope-option'] :is(span, small)",
+        ".sc-btn[data-appearance='scope-option'] small",
+        ".sc-btn[data-appearance='scope-option'] span",
+        ".sc-btn[data-appearance='scope-option'].active",
+        ".sc-btn[data-appearance='scope-option']:hover:not(:disabled)"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "scope-segment",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='scope-segment']",
+        ".sc-btn[data-appearance='scope-segment'].active",
+        ".sc-btn[data-appearance='scope-segment']:disabled"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "section-tab",
+      "consumers": [
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='section-tab']",
+        ".sc-btn[data-appearance='section-tab'].is-active, .sc-btn[data-appearance='section-tab'].active",
+        ".sc-btn[data-appearance='section-tab']:focus-visible",
+        ".sc-btn[data-appearance='section-tab']:hover"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "smart-action",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/template/NativeSmartAction.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='smart-action']",
+        ".sc-btn[data-appearance='smart-action']:focus-visible",
+        ".sc-btn[data-appearance='smart-action']:hover"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "status-chip",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='status-chip']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "summary-chip",
+      "consumers": [
+        "frontend/apps/web/src/components/GroupSummaryBar.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='summary-chip']",
+        ".sc-btn[data-appearance='summary-chip'].active"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "surface-tile",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/pages/ActivityPage.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/src/views/WorkbenchView.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='surface-tile']",
+        ".sc-btn[data-appearance='surface-tile'] small"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "toolbar-chip",
+      "consumers": [
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-list/CollectionFilterChip.vue",
+        "frontend/apps/web/src/components/product-list/CollectionGroupHeader.vue",
+        "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/views/SceneView.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='toolbar-chip']",
+        ".sc-btn[data-appearance='toolbar-chip'].active, .sc-btn[data-appearance='toolbar-chip'][aria-pressed='true'], .sc-btn[data-appearance='menu-item'].active, .sc-btn[data-appearance='menu-item'][aria-pressed='true']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "toolbar-menu-toggle",
+      "consumers": [
+        "frontend/apps/web/src/components/GlobalMessagePanel.vue",
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='toolbar-menu-toggle'], .sc-icon-button[data-appearance='toolbar-menu-toggle']",
+        ".sc-btn[data-appearance='toolbar-menu-toggle'].active, .sc-btn[data-appearance='toolbar-menu-toggle'][aria-expanded='true'], .sc-icon-button[data-appearance='toolbar-menu-toggle'][aria-expanded='true']"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "tree-item",
+      "consumers": [
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+        "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
+        "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
+        "frontend/apps/web/src/components/design-system/ScButton.vue"
+      ],
+      "selectors": [
+        ".sc-btn[data-appearance='tree-item']",
+        ".sc-btn[data-appearance='tree-item'].active",
+        ".sc-btn[data-appearance='tree-item']:hover"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "worksheet",
+      "consumers": [
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+        "frontend/apps/web/src/components/design-system/ScTable.vue"
+      ],
+      "selectors": [
+        "[data-semantic-component='ScTable'][data-appearance='worksheet']",
+        "[data-semantic-component='ScTable'][data-appearance='worksheet'] .summary-row td",
+        "[data-semantic-component='ScTable'][data-appearance='worksheet'] :is(.group-row, .heading-row) td",
+        "[data-semantic-component='ScTable'][data-appearance='worksheet'] td",
+        "[data-semantic-component='ScTable'][data-appearance='worksheet'] th",
+        "[data-semantic-component='ScTable'][data-appearance='worksheet'] tr.selected td"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "workspace",
+      "consumers": [
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
+        "frontend/apps/web/src/app/pageMode.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/app/presentation/productPageHeader.ts",
+        "frontend/apps/web/src/app/presentation/productPagePattern.ts",
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "frontend/apps/web/src/components/attachment/AttachmentViewer.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/design-system/ScDialog.vue",
+        "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+        "frontend/apps/web/src/components/product-page-patterns/WorkspaceFormPattern.vue",
+        "frontend/apps/web/src/components/template/PageHeader.vue",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/src/pages/contractForm/RelationCreateDialog.vue",
+        "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/views/MyWorkView.vue",
+        "frontend/apps/web/src/views/PlaceholderView.vue",
+        "frontend/apps/web/src/views/SceneView.vue"
+      ],
+      "selectors": [
+        "[data-semantic-component='ScDialog'][data-appearance='workspace']",
+        "[data-semantic-component='ScDrawer'][data-appearance='workspace']"
+      ],
+      "status": "registered_product_variance"
+    }
+  ],
+  "schemaVersion": "frontend.official-design-alignment.inventory.v1",
+  "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
+  "summary": {
+    "formalStyleSourceCount": 193,
+    "internalVendorSelectorGapCount": 0,
+    "officialPublicTokenCount": 240,
+    "orphanedProductAppearanceVariantCount": 0,
+    "productAppearanceVariantCount": 35,
+    "projectPublicTokenOverrideCount": 38,
+    "unknownProjectTokenOverrideCount": 0,
+    "visualLiteralGapCount": 0
+  },
+  "themeTokens": {
+    "inheritedOfficialTokenCount": 202,
+    "officialPublicTokens": [
+      "--td-bg-color-component",
+      "--td-bg-color-component-active",
+      "--td-bg-color-component-disabled",
+      "--td-bg-color-component-hover",
+      "--td-bg-color-container",
+      "--td-bg-color-container-active",
+      "--td-bg-color-container-hover",
+      "--td-bg-color-container-select",
+      "--td-bg-color-page",
+      "--td-bg-color-secondarycomponent",
+      "--td-bg-color-secondarycomponent-active",
+      "--td-bg-color-secondarycomponent-hover",
+      "--td-bg-color-secondarycontainer",
+      "--td-bg-color-secondarycontainer-active",
+      "--td-bg-color-secondarycontainer-hover",
+      "--td-bg-color-specialcomponent",
+      "--td-border-level-1-color",
+      "--td-border-level-2-color",
+      "--td-brand-color",
+      "--td-brand-color-1",
+      "--td-brand-color-10",
+      "--td-brand-color-2",
+      "--td-brand-color-3",
+      "--td-brand-color-4",
+      "--td-brand-color-5",
+      "--td-brand-color-6",
+      "--td-brand-color-7",
+      "--td-brand-color-8",
+      "--td-brand-color-9",
+      "--td-brand-color-active",
+      "--td-brand-color-disabled",
+      "--td-brand-color-focus",
+      "--td-brand-color-hover",
+      "--td-brand-color-light",
+      "--td-brand-color-light-hover",
+      "--td-comp-margin-l",
+      "--td-comp-margin-m",
+      "--td-comp-margin-s",
+      "--td-comp-margin-xl",
+      "--td-comp-margin-xs",
+      "--td-comp-margin-xxl",
+      "--td-comp-margin-xxs",
+      "--td-comp-margin-xxxl",
+      "--td-comp-margin-xxxxl",
+      "--td-comp-padding",
+      "--td-comp-size-l",
+      "--td-comp-size-m",
+      "--td-comp-size-s",
+      "--td-comp-size-xl",
+      "--td-comp-size-xs",
+      "--td-comp-size-xxl",
+      "--td-comp-size-xxs",
+      "--td-comp-size-xxxl",
+      "--td-comp-size-xxxs",
+      "--td-comp-size-xxxxl",
+      "--td-comp-size-xxxxxl",
+      "--td-component-border",
+      "--td-component-stroke",
+      "--td-error-color",
+      "--td-error-color-1",
+      "--td-error-color-10",
+      "--td-error-color-2",
+      "--td-error-color-3",
+      "--td-error-color-4",
+      "--td-error-color-5",
+      "--td-error-color-6",
+      "--td-error-color-7",
+      "--td-error-color-8",
+      "--td-error-color-9",
+      "--td-error-color-active",
+      "--td-error-color-disabled",
+      "--td-error-color-focus",
+      "--td-error-color-hover",
+      "--td-error-color-light",
+      "--td-error-color-light-hover",
+      "--td-font-body-large",
+      "--td-font-body-medium",
+      "--td-font-body-small",
+      "--td-font-display-large",
+      "--td-font-display-medium",
+      "--td-font-family",
+      "--td-font-family-medium",
+      "--td-font-gray-1",
+      "--td-font-gray-2",
+      "--td-font-gray-3",
+      "--td-font-gray-4",
+      "--td-font-headline-large",
+      "--td-font-headline-medium",
+      "--td-font-headline-small",
+      "--td-font-link-large",
+      "--td-font-link-medium",
+      "--td-font-link-small",
+      "--td-font-mark-medium",
+      "--td-font-mark-small",
+      "--td-font-size-body-large",
+      "--td-font-size-body-medium",
+      "--td-font-size-body-small",
+      "--td-font-size-display-large",
+      "--td-font-size-display-medium",
+      "--td-font-size-headline-large",
+      "--td-font-size-headline-medium",
+      "--td-font-size-headline-small",
+      "--td-font-size-link-large",
+      "--td-font-size-link-medium",
+      "--td-font-size-link-small",
+      "--td-font-size-mark-medium",
+      "--td-font-size-mark-small",
+      "--td-font-size-title-extra",
+      "--td-font-size-title-large",
+      "--td-font-size-title-medium",
+      "--td-font-size-title-small",
+      "--td-font-title-extra",
+      "--td-font-title-large",
+      "--td-font-title-medium",
+      "--td-font-title-small",
+      "--td-font-white-1",
+      "--td-font-white-2",
+      "--td-font-white-3",
+      "--td-font-white-4",
+      "--td-gray-color-1",
+      "--td-gray-color-10",
+      "--td-gray-color-11",
+      "--td-gray-color-12",
+      "--td-gray-color-13",
+      "--td-gray-color-14",
+      "--td-gray-color-2",
+      "--td-gray-color-3",
+      "--td-gray-color-4",
+      "--td-gray-color-5",
+      "--td-gray-color-6",
+      "--td-gray-color-7",
+      "--td-gray-color-8",
+      "--td-gray-color-9",
+      "--td-line-height-body-large",
+      "--td-line-height-body-medium",
+      "--td-line-height-body-small",
+      "--td-line-height-display-large",
+      "--td-line-height-display-medium",
+      "--td-line-height-headline-large",
+      "--td-line-height-headline-medium",
+      "--td-line-height-headline-small",
+      "--td-line-height-link-large",
+      "--td-line-height-link-medium",
+      "--td-line-height-link-small",
+      "--td-line-height-mark-medium",
+      "--td-line-height-mark-small",
+      "--td-line-height-title-extra",
+      "--td-line-height-title-large",
+      "--td-line-height-title-medium",
+      "--td-line-height-title-small",
+      "--td-mask-active",
+      "--td-mask-background",
+      "--td-mask-disabled",
+      "--td-pop-padding-l",
+      "--td-pop-padding-m",
+      "--td-pop-padding-s",
+      "--td-pop-padding-xl",
+      "--td-pop-padding-xxl",
+      "--td-radius-circle",
+      "--td-radius-default",
+      "--td-radius-extra",
+      "--td-radius-large",
+      "--td-radius-medium",
+      "--td-radius-round",
+      "--td-radius-small",
+      "--td-screen-lg",
+      "--td-screen-md",
+      "--td-screen-sm",
+      "--td-screen-xl",
+      "--td-screen-xs",
+      "--td-screen-xxl",
+      "--td-scroll-track-color",
+      "--td-scrollbar-color",
+      "--td-scrollbar-hover-color",
+      "--td-shadow-1",
+      "--td-shadow-2",
+      "--td-shadow-3",
+      "--td-shadow-inset-bottom",
+      "--td-shadow-inset-left",
+      "--td-shadow-inset-right",
+      "--td-shadow-inset-top",
+      "--td-size-1",
+      "--td-size-10",
+      "--td-size-11",
+      "--td-size-12",
+      "--td-size-13",
+      "--td-size-14",
+      "--td-size-15",
+      "--td-size-16",
+      "--td-size-2",
+      "--td-size-3",
+      "--td-size-4",
+      "--td-size-5",
+      "--td-size-6",
+      "--td-size-7",
+      "--td-size-8",
+      "--td-size-9",
+      "--td-success-color",
+      "--td-success-color-1",
+      "--td-success-color-10",
+      "--td-success-color-2",
+      "--td-success-color-3",
+      "--td-success-color-4",
+      "--td-success-color-5",
+      "--td-success-color-6",
+      "--td-success-color-7",
+      "--td-success-color-8",
+      "--td-success-color-9",
+      "--td-success-color-active",
+      "--td-success-color-disabled",
+      "--td-success-color-focus",
+      "--td-success-color-hover",
+      "--td-success-color-light",
+      "--td-success-color-light-hover",
+      "--td-table-shadow-color",
+      "--td-text-color-anti",
+      "--td-text-color-brand",
+      "--td-text-color-disabled",
+      "--td-text-color-link",
+      "--td-text-color-placeholder",
+      "--td-text-color-primary",
+      "--td-text-color-secondary",
+      "--td-text-color-watermark",
+      "--td-warning-color",
+      "--td-warning-color-1",
+      "--td-warning-color-10",
+      "--td-warning-color-2",
+      "--td-warning-color-3",
+      "--td-warning-color-4",
+      "--td-warning-color-5",
+      "--td-warning-color-6",
+      "--td-warning-color-7",
+      "--td-warning-color-8",
+      "--td-warning-color-9",
+      "--td-warning-color-active",
+      "--td-warning-color-disabled",
+      "--td-warning-color-focus",
+      "--td-warning-color-hover",
+      "--td-warning-color-light",
+      "--td-warning-color-light-hover"
+    ],
+    "projectPublicTokenOverrides": [
+      "--td-bg-color-component",
+      "--td-bg-color-component-active",
+      "--td-bg-color-component-disabled",
+      "--td-bg-color-component-hover",
+      "--td-bg-color-container",
+      "--td-bg-color-container-active",
+      "--td-bg-color-container-hover",
+      "--td-bg-color-page",
+      "--td-bg-color-secondarycontainer",
+      "--td-bg-color-specialcomponent",
+      "--td-border-level-1-color",
+      "--td-border-level-2-color",
+      "--td-brand-color",
+      "--td-brand-color-active",
+      "--td-brand-color-disabled",
+      "--td-brand-color-focus",
+      "--td-brand-color-hover",
+      "--td-brand-color-light",
+      "--td-component-border",
+      "--td-component-stroke",
+      "--td-error-color",
+      "--td-error-color-focus",
+      "--td-font-family",
+      "--td-font-family-medium",
+      "--td-radius-default",
+      "--td-radius-medium",
+      "--td-shadow-1",
+      "--td-shadow-2",
+      "--td-shadow-3",
+      "--td-success-color",
+      "--td-success-color-focus",
+      "--td-text-color-anti",
+      "--td-text-color-disabled",
+      "--td-text-color-placeholder",
+      "--td-text-color-primary",
+      "--td-text-color-secondary",
+      "--td-warning-color",
+      "--td-warning-color-focus"
+    ],
+    "unknownProjectTokenOverrides": []
+  },
+  "visualLiteralGaps": []
+}

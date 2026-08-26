@@ -38,7 +38,7 @@ const server = await createServer({
           h(Attachments, {
             editable: true, enabled: true, uploading: state.posting, uploadLabel: '上传附件',
             uploadingLabel: '上传中', error: '', pending: [],
-            onSelected: (event) => { state.selected = event.target?.files?.[0]?.name || ''; },
+            onSelected: (file) => { state.selected = file?.name || ''; },
           }),
         ]); } }).mount('#app');
       `;

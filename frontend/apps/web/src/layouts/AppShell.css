@@ -313,7 +313,7 @@
   text-align: left;
 }
 
-.published-apps__list :deep(.published-app > .t-button__text > .sc-btn__content) {
+.published-app__content {
   width: 100%;
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) auto;

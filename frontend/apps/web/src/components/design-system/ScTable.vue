@@ -55,7 +55,7 @@ const props = withDefaults(defineProps<{
   rowSelectionType?: 'single' | 'multiple';
   selectOnRowClick?: boolean;
   label: string;
-  appearance?: 'default' | 'surface' | 'flush' | 'collection';
+  appearance?: 'default' | 'surface' | 'flush' | 'collection' | 'worksheet';
 }>(), {
   data: () => [],
   columns: () => [],

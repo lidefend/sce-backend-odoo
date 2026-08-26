@@ -102,6 +102,7 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         "event.key === 'End'",
         "event.key === 'Escape'",
         "if (!items.length) return",
+        "trigger.value?.focus?.()",
         "document.addEventListener('pointerdown', onDocumentPointerDown)",
     )
     combined = f"{text}\n{overflow}"

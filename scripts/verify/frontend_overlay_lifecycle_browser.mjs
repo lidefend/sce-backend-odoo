@@ -60,7 +60,11 @@ try {
   };
   await page.locator('#opener').click();
   const dialog = page.locator('[data-overlay-kind="dialog"][data-state="open"]');
-  await dialog.waitFor();
+  try {
+    await dialog.waitFor();
+  } catch (error) {
+    throw new Error(`overlay dialog did not open: ${JSON.stringify({ errors, body: (await page.locator('body').innerText()).slice(0, 500) })}`, { cause: error });
+  }
   await waitForActiveWithin('[data-overlay-kind="dialog"][data-state="open"]');
   const initialFocus = await dialog.evaluate((node) => node.contains(document.activeElement));
   const bodyLocked = await page.evaluate(() => getComputedStyle(document.body).overflow === 'hidden');

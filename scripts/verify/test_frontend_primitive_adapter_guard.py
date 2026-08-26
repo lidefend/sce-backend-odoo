@@ -46,9 +46,6 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "  --td-text-color-placeholder: var(--sc-semantic-text-secondary);\n"
             "  --td-border-level-2-color: var(--sc-semantic-border-strong);\n"
             "}\n"
-            ".sc-input.t-input__wrap[data-size='large'] > .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
-            ".sc-select[data-size='medium'] .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
-            ".sc-textarea .t-textarea__inner { min-height: calc(var(--sc-component-input-height-md) * 2px); }\n"
             ".sc-btn.t-button { height: calc(var(--sc-component-button-height-md) * 1px); }\n"
             ".sc-btn.t-button.sc-btn-primary[data-status='default'] { border-color: var(--sc-semantic-surface-interactive); "
             "background-color: var(--sc-semantic-surface-interactive); color: var(--sc-semantic-text-on-interactive); }\n"
@@ -70,7 +67,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label -->',
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
                 "ScRadio": '<TDesignRadio :checked="checked" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadio\') -->',
-                "ScInput": '<TDesignInput v-native-control-projection :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" />',
+                "ScInput": '<TDesignInput v-native-control-projection :size="normalizePrimitiveSize(size)" :status="status" :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" />',
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',

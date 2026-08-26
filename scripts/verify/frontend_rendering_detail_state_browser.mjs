@@ -89,7 +89,18 @@ try {
   const unexpectedHeadings = await page.locator('[data-density="compact"] h2').count();
   const unsupportedConsumerErrors = await page.locator('#unsupported-consumer [data-semantic-component="ScErrorState"]').count();
   const blockConsumerErrors = await page.locator('#block-consumer [data-semantic-component="ScErrorState"][data-density="compact"] h5').count();
-  const loadingMotion = await page.locator('#loading-state .sc-inline-state__indicator').evaluate((node) => getComputedStyle(node).animationName);
+  const loadingMotion = await page.locator('#loading-state').evaluate((root) => {
+    const durationMs = (value) => value.split(',').map((part) => {
+      const item = part.trim();
+      return item.endsWith('ms') ? Number.parseFloat(item) : Number.parseFloat(item) * 1000;
+    }).filter(Number.isFinite);
+    const nodes = [root, ...root.querySelectorAll('*')];
+    const styles = nodes.map((node) => getComputedStyle(node));
+    return {
+      maxAnimationDurationMs: Math.max(0, ...styles.flatMap((style) => durationMs(style.animationDuration))),
+      maxTransitionDurationMs: Math.max(0, ...styles.flatMap((style) => durationMs(style.transitionDuration))),
+    };
+  });
   const collectionStates = await page.locator('[data-semantic-component^="Collection"], [data-semantic-component="ProductListHeader"]').evaluateAll((nodes) => nodes.map((node) => ({
     component: node.getAttribute('data-semantic-component'),
     state: node.getAttribute('data-state'),
@@ -137,7 +148,9 @@ try {
     && formStates.some((state) => state.component === 'ProductFormErrorSummary' && state.state === 'error')
     && mixedCheckbox.ariaChecked === 'mixed' && mixedCheckbox.nativeIndeterminate
     && mixedCheckbox.driver === 'tdesign'
-    && loadingMotion === 'none' && focusVisible
+    && loadingMotion.maxAnimationDurationMs <= 0.01
+    && loadingMotion.maxTransitionDurationMs <= 0.01
+    && focusVisible
     && !desktopOverflow && !mobileOverflow && errors.length === 0;
   console.log(JSON.stringify({ pass, inlineStates, collectionStates, collectionDisabledReasons, formStates, mixedCheckbox, compactHeadings, unexpectedHeadings, unsupportedConsumerErrors, blockConsumerErrors, loadingMotion, focusVisible, desktopOverflow, mobileOverflow, errors, mutation: 0 }, null, 2));
   if (!pass) process.exitCode = 1;

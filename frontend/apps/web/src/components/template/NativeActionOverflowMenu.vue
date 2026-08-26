@@ -67,7 +67,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ (event: 'select', action: OverflowAction): void }>();
 const root = ref<HTMLElement | null>(null);
 const menu = ref<HTMLElement | null>(null);
-const trigger = ref<{ $el?: HTMLElement } | null>(null);
+const trigger = ref<{ focus?: () => void } | null>(null);
 const open = ref(false);
 const instanceId = useId().replace(/[^a-zA-Z0-9_-]/g, '-');
 const menuId = computed(() => `native-action-overflow-${instanceId}-${props.identity.replace(/[^a-zA-Z0-9_-]/g, '-')}`);
@@ -91,7 +91,7 @@ function toggle() {
 function close(restoreFocus = false) {
   if (!open.value) return;
   open.value = false;
-  if (restoreFocus) trigger.value?.$el?.focus();
+  if (restoreFocus) trigger.value?.focus?.();
 }
 
 function select(action: OverflowAction) {

@@ -173,6 +173,8 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInput must expose loading state on the native input control")
     if input_text.count(':data-appearance="appearance"') != 2:
         errors.append("ScInput must project its registered appearance to both standard and specialized drivers")
+    if ':size="normalizePrimitiveSize(size)"' not in input_text or ':status="status"' not in input_text:
+        errors.append("ScInput must delegate size and status to the official TDesign API")
     input_group_text = (design / "ScInputGroup.vue").read_text(encoding="utf-8") if (design / "ScInputGroup.vue").is_file() else ""
     if "<TDesignInputAdornment" not in input_group_text or 'data-primitive-driver="tdesign"' not in input_group_text:
         errors.append("ScInputGroup must delegate grouped input chrome to TDesign InputAdornment")
@@ -289,16 +291,12 @@ def validate(root: Path = ROOT) -> list[str]:
         "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
         "--td-text-color-placeholder: var(--sc-semantic-text-secondary)",
         "--td-border-level-2-color: var(--sc-semantic-border-strong)",
-        ".sc-input.t-input__wrap[data-size='large'] > .t-input",
-        ".sc-select[data-size='medium'] .t-input",
-        ".sc-textarea .t-textarea__inner",
         ".sc-btn.t-button",
         ".sc-btn.t-button.sc-btn-primary[data-status='default']",
         ".sc-btn.t-button.sc-btn-primary[data-status='default']:hover:not(:disabled)",
         "background-color: var(--sc-semantic-surface-interactive)",
         "background-color: var(--sc-semantic-surface-interactive-hover)",
         "color: var(--sc-semantic-text-on-interactive)",
-        "--sc-component-input-height-md",
         "--sc-component-button-height-md",
     )
     if not ui_theme:

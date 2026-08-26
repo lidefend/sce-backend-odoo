@@ -118,18 +118,15 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         )
         self.assertTrue(any("company context authority visible" in error for error in validate(root)))
 
-    def test_published_apps_must_target_the_sc_button_content_adapter(self):
+    def test_published_apps_must_use_owned_content_markup(self):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)
         path = root / "frontend/apps/web/src/layouts/AppShell.css"
         path.write_text(
-            path.read_text().replace(
-                ".published-app > .t-button__text > .sc-btn__content)",
-                ".published-app > .t-button__text)",
-            ),
+            path.read_text() + "\n.published-app > .t-button__text { display: grid; }\n",
             encoding="utf-8",
         )
-        self.assertTrue(any("ScButton content adapter" in error for error in validate(root)))
+        self.assertTrue(any("vendor internals" in error for error in validate(root)))
 
     def test_navigation_search_must_use_the_input_prefix_adapter(self):
         temporary, root = self.fixture()
