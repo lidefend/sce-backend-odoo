@@ -59,7 +59,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 if name in {"ScDialog", "ScDrawer"} else ""
             )
             state_contract = {
-                "ScButton": '<TDesignButton :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation -->',
+                "ScButton": '<TDesignButton v-bind="attrs" :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation inheritAttrs: false -->',
                 "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label -->',
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
                 "ScRadio": '<TDesignRadio :checked="checked" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadio\') -->',
@@ -99,6 +99,12 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         errors = validate(root)
         self.assertTrue(any("ScButton missing exact semantic" in error for error in errors))
         self.assertTrue(any("ScButton missing primitive layer" in error for error in errors))
+
+    def test_button_without_fallthrough_forwarding_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScButton.vue"
+        source.write_text(source.read_text(encoding="utf-8").replace('v-bind="attrs"', ''), encoding="utf-8")
+        self.assertTrue(any("v-bind=\"attrs\"" in error for error in validate(root)))
 
     def test_business_identity_fails(self) -> None:
         root = self.make_root()

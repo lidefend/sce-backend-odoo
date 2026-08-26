@@ -1,6 +1,7 @@
 <template>
   <ScTooltip :content="hint" :disabled="!hint">
   <TDesignButton
+    v-bind="attrs"
     ref="buttonRef"
     data-semantic-component="ScButton"
     data-semantic-layer="primitive"
@@ -28,6 +29,8 @@ import { computed, ref, useAttrs } from 'vue';
 import { TDesignButton } from './tdesignPrimitiveBridge';
 import ScTooltip from './ScTooltip.vue';
 import { tdesignButtonPresentation, type ScButtonVariant, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
+
+defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(defineProps<{
   type?: 'button' | 'submit' | 'reset';

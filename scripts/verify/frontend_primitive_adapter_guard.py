@@ -87,6 +87,8 @@ def validate(root: Path = ROOT) -> list[str]:
         ':aria-disabled="disabled || loading || undefined"',
         ':loading="loading"',
         'tdesignButtonPresentation',
+        'v-bind="attrs"',
+        'inheritAttrs: false',
     ):
         if marker not in button_text:
             errors.append(f"ScButton missing governed interaction-state marker: {marker}")
