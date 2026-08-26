@@ -158,150 +158,56 @@
       <section v-if="pageSectionEnabled('tables_top', true) && pageSectionTagIs('tables_top', 'section')" class="tables" :style="pageSectionStyle('tables_top')">
         <article class="table-card">
           <h3>{{ pageText('table_top_scenes', 'Top Scenes') }}</h3>
-          <ScDataTable class="usage-table" :label="pageText('table_top_scenes', 'Top Scenes')">
-            <thead>
-              <tr><th>{{ pageText('table_scene_key', 'Scene Key') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="!sceneTop.length"><td colspan="2" class="empty">{{ pageText('empty_text', '暂无数据') }}</td></tr>
-              <tr v-for="item in sceneTop" :key="item.key">
-                <td>{{ item.key }}</td>
-                <td>{{ item.count }}</td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="usage-table" :label="pageText('table_top_scenes', 'Top Scenes')" :data="sceneTop" row-key="key"
+            :columns="usageColumns([['key', pageText('table_scene_key', 'Scene Key')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </article>
 
         <article class="table-card">
           <h3>{{ pageText('table_top_capabilities', 'Top Capabilities') }}</h3>
-          <ScDataTable class="usage-table" :label="pageText('table_top_capabilities', 'Top Capabilities')">
-            <thead>
-              <tr><th>{{ pageText('table_capability_key', 'Capability Key') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="!capabilityTop.length"><td colspan="2" class="empty">{{ pageText('empty_text', '暂无数据') }}</td></tr>
-              <tr v-for="item in capabilityTop" :key="item.key">
-                <td>{{ item.key }}</td>
-                <td>{{ item.count }}</td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="usage-table" :label="pageText('table_top_capabilities', 'Top Capabilities')" :data="capabilityTop" row-key="key"
+            :columns="usageColumns([['key', pageText('table_capability_key', 'Capability Key')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </article>
       </section>
 
       <section v-if="pageSectionEnabled('tables_daily', true) && pageSectionTagIs('tables_daily', 'section')" class="tables" :style="pageSectionStyle('tables_daily')">
         <article class="table-card">
           <h3>{{ pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)') }}</h3>
-          <ScDataTable class="usage-table" :label="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')">
-            <thead>
-              <tr><th>{{ pageText('table_date', 'Date') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="!sceneDaily.length"><td colspan="2" class="empty">{{ pageText('empty_text', '暂无数据') }}</td></tr>
-              <tr v-for="item in sceneDaily" :key="item.day">
-                <td>{{ item.day }}</td>
-                <td>{{ item.count }}</td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="usage-table" :label="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')" :data="sceneDaily" row-key="day"
+            :columns="usageColumns([['day', pageText('table_date', 'Date')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </article>
 
         <article class="table-card">
           <h3>{{ pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)') }}</h3>
-          <ScDataTable class="usage-table" :label="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')">
-            <thead>
-              <tr><th>{{ pageText('table_date', 'Date') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="!capabilityDaily.length"><td colspan="2" class="empty">{{ pageText('empty_text', '暂无数据') }}</td></tr>
-              <tr v-for="item in capabilityDaily" :key="item.day">
-                <td>{{ item.day }}</td>
-                <td>{{ item.count }}</td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="usage-table" :label="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')" :data="capabilityDaily" row-key="day"
+            :columns="usageColumns([['day', pageText('table_date', 'Date')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </article>
       </section>
 
       <section v-if="pageSectionEnabled('tables_visibility', true) && pageSectionTagIs('tables_visibility', 'section')" class="tables" :style="pageSectionStyle('tables_visibility')">
         <article class="table-card">
           <h3>{{ pageText('table_visibility_reason_counts', 'Visibility Reason Counts') }}</h3>
-          <ScDataTable class="usage-table" :label="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')">
-            <thead>
-              <tr><th>{{ pageText('table_reason_code', 'Reason Code') }}</th><th>{{ pageText('table_count', 'Count') }}</th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="!reasonCounts.length"><td colspan="2" class="empty">{{ pageText('empty_text', '暂无数据') }}</td></tr>
-              <tr v-for="item in reasonCounts" :key="item.reason_code">
-                <td>{{ item.reason_code }}</td>
-                <td>{{ item.count }}</td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="usage-table" :label="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')" :data="reasonCounts" row-key="reason_code"
+            :columns="usageColumns([['reason_code', pageText('table_reason_code', 'Reason Code')], ['count', pageText('table_count', 'Count')]])" size="small" />
         </article>
 
         <article class="table-card">
           <h3>{{ pageText('table_hidden_capability_samples', 'Hidden Capability Samples') }}</h3>
-          <ScDataTable class="usage-table" :label="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')">
-            <thead>
-              <tr><th>{{ pageText('table_key', 'Key') }}</th><th>{{ pageText('table_reason', 'Reason') }}</th></tr>
-            </thead>
-            <tbody>
-              <tr v-if="!filteredHiddenSamples.length"><td colspan="2" class="empty">{{ pageText('empty_text', '暂无数据') }}</td></tr>
-              <tr v-for="item in filteredHiddenSamples" :key="item.key">
-                <td>{{ item.key }}</td>
-                <td>{{ item.reason_code || item.reason || '-' }}</td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="usage-table" :label="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')" :data="hiddenSampleRows" row-key="key"
+            :columns="usageColumns([['key', pageText('table_key', 'Key')], ['reasonLabel', pageText('table_reason', 'Reason')]])" size="small" />
         </article>
       </section>
 
       <section v-if="pageSectionEnabled('tables_role_user', true) && pageSectionTagIs('tables_role_user', 'section')" class="tables" :style="pageSectionStyle('tables_role_user')">
         <article class="table-card">
           <h3>{{ pageText('table_role_top', 'Role Top') }}</h3>
-          <ScDataTable class="usage-table" :label="pageText('table_role_top', 'Role Top')">
-            <thead>
-              <tr>
-                <th>{{ pageText('table_role_code', 'Role Code') }}</th>
-                <th>{{ pageText('table_scene', 'Scene') }}</th>
-                <th>{{ pageText('table_capability', 'Capability') }}</th>
-                <th>{{ pageText('table_total', 'Total') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!roleTop.length"><td colspan="4" class="empty">{{ pageText('empty_text', '暂无数据') }}</td></tr>
-              <tr v-for="item in roleTop" :key="`role-top-${item.role_code}`">
-                <td>{{ item.role_code }}</td>
-                <td>{{ item.scene_open_total }}</td>
-                <td>{{ item.capability_open_total }}</td>
-                <td>{{ item.combined_total }}</td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="usage-table" :label="pageText('table_role_top', 'Role Top')" :data="roleTop" row-key="role_code"
+            :columns="usageColumns([['role_code', pageText('table_role_code', 'Role Code')], ['scene_open_total', pageText('table_scene', 'Scene')], ['capability_open_total', pageText('table_capability', 'Capability')], ['combined_total', pageText('table_total', 'Total')]])" size="small" />
         </article>
 
         <article class="table-card">
           <h3>{{ pageText('table_user_top', 'User Top') }}</h3>
-          <ScDataTable class="usage-table" :label="pageText('table_user_top', 'User Top')">
-            <thead>
-              <tr>
-                <th>{{ pageText('table_user_id', 'User ID') }}</th>
-                <th>{{ pageText('table_scene', 'Scene') }}</th>
-                <th>{{ pageText('table_capability', 'Capability') }}</th>
-                <th>{{ pageText('table_total', 'Total') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!userTop.length"><td colspan="4" class="empty">{{ pageText('empty_text', '暂无数据') }}</td></tr>
-              <tr v-for="item in userTop" :key="`user-top-${item.user_id}`">
-                <td>{{ item.user_id }}</td>
-                <td>{{ item.scene_open_total }}</td>
-                <td>{{ item.capability_open_total }}</td>
-                <td>{{ item.combined_total }}</td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="usage-table" :label="pageText('table_user_top', 'User Top')" :data="userTop" row-key="user_id"
+            :columns="usageColumns([['user_id', pageText('table_user_id', 'User ID')], ['scene_open_total', pageText('table_scene', 'Scene')], ['capability_open_total', pageText('table_capability', 'Capability')], ['combined_total', pageText('table_total', 'Total')]])" size="small" />
         </article>
       </section>
     </template>
@@ -313,7 +219,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { exportUsageCsv, fetchCapabilityVisibilityReport, fetchUsageReport, type CapabilityVisibilityReport, type UsageReport } from '../api/usage';
 import StatusPanel from '../components/StatusPanel.vue';
-import ScDataTable from '../components/design-system/ScDataTable.vue';
+import ScTable from '../components/design-system/ScTable.vue';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { collectErrorContextIssue, issueScopeLabel } from '../app/errorContext';
 import { usePageContract } from '../app/pageContract';
@@ -356,9 +262,17 @@ const filteredHiddenSamples = computed(() => {
   if (hiddenReasonFilter.value === 'ALL') return hiddenSamples.value;
   return hiddenSamples.value.filter((item) => String(item.reason_code || '') === hiddenReasonFilter.value);
 });
+const hiddenSampleRows = computed(() => filteredHiddenSamples.value.map((item) => ({
+  ...item,
+  reasonLabel: item.reason_code || item.reason || '-',
+})));
 const canExport = computed(() => Boolean(report.value || visibility.value));
 const errorCopy = computed(() => resolveErrorCopy(statusError.value, errorText.value || pageText('error_fallback', 'Failed to load usage report')));
 const headerActions = computed(() => pageGlobalActions.value);
+
+function usageColumns(entries: Array<[string, string]>) {
+  return entries.map(([colKey, title]) => ({ colKey, title }));
+}
 
 function resolveContextAwareErrorText(err: unknown, fallback: string) {
   const counter = new Map<string, { model: string; op: string; reasonCode: string; count: number }>();
