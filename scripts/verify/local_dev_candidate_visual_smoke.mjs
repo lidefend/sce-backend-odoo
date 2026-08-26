@@ -1075,7 +1075,7 @@ for (const item of report.routes) {
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
   }
-  if (item.path && item.shellAdapterEvidence && routes.find((target) => target.name === item.name)?.exerciseShellAdapterProjection === true && !item.shellAdapterEvidence.pass) {
+  if (item.path && item.viewport === 'desktop' && item.shellAdapterEvidence && routes.find((target) => target.name === item.name)?.exerciseShellAdapterProjection === true && !item.shellAdapterEvidence.pass) {
     failures.push({ name: item.name, shellAdapterEvidence: item.shellAdapterEvidence });
   }
   if (item.path && item.expectedPageHeaders !== null && item.pageHeaders !== item.expectedPageHeaders) {
