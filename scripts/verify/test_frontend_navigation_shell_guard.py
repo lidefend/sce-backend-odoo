@@ -76,6 +76,17 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path.write_text(path.read_text().replace(".shell :deep(.sidebar)", ".sidebar"), encoding="utf-8")
         self.assertTrue(any("deep boundary" in error for error in validate(root)))
 
+    def test_desktop_sidebar_must_not_restore_parallel_activity_rail(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/layouts/AppShell.css"
+        source = path.read_text().replace(
+            "grid-template-columns: minmax(0, 1fr);\n    border-right-color",
+            "grid-template-columns: 48px minmax(0, 1fr);\n    border-right-color",
+        )
+        path.write_text(source, encoding="utf-8")
+        self.assertTrue(any("single-column" in error for error in validate(root)))
+
 
 if __name__ == "__main__":
     unittest.main()

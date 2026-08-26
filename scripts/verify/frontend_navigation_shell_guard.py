@@ -63,6 +63,8 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"ProductSideNavigation must retain canonical rendering detail: {marker}")
     for marker in (
         ".shell :deep(.sidebar)",
+        "grid-template-columns: minmax(0, 1fr)",
+        ".published-apps__list :deep(.published-app > .t-button__text)",
         "height: 100vh",
         "overflow: hidden",
         ".product-side-navigation__tree",
@@ -72,6 +74,11 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"navigation shell lost bounded scroll ownership: {marker}")
     if re.search(r"(?m)^\.sidebar\s*\{", shell_style):
         errors.append("navigation drawer root styling bypasses the child-component deep boundary")
+    desktop_shell = shell_style[shell_style.find("@media (min-width: 961px)") :]
+    if "grid-template-columns: 48px minmax(0, 1fr)" in desktop_shell or not re.search(
+        r"\.workspace-activity-rail\s*\{[^}]*display:\s*none\s*!important", desktop_shell, re.DOTALL
+    ):
+        errors.append("desktop navigation must retain the single-column product menu")
     if (component_root / "PrimaryNavigation.vue").exists() or "<PrimaryNavigation" in shell:
         errors.append("legacy PrimaryNavigation must not remain as a parallel shell authority")
     if "session.navigationModel?.nodes" not in shell:
