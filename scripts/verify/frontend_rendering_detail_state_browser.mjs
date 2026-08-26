@@ -30,6 +30,8 @@ const server = await createServer({
         import CollectionPaginationFooter from '/src/components/product-list/CollectionPaginationFooter.vue';
         import CollectionKanbanRecordCard from '/src/components/product-list/CollectionKanbanRecordCard.vue';
         import CollectionMobileRecordRow from '/src/components/product-list/CollectionMobileRecordRow.vue';
+        import ProductFormLoadingSkeleton from '/src/components/product-record/ProductFormLoadingSkeleton.vue';
+        import ProductFormErrorSummary from '/src/components/product-record/ProductFormErrorSummary.vue';
         import '/src/styles/design-system.css';
         createApp({ render() { return h('main', { style: 'display:grid;gap:12px;max-width:720px;padding:16px' }, [
           h(ScInlineState, { state: 'loading', label: '正在加载', id: 'loading-state' }),
@@ -50,6 +52,8 @@ const server = await createServer({
           h(CollectionPaginationFooter, { mode: 'paged', recordCountText: '共 2 项', loading: false, canPrevious: false, canNext: true, pageText: '1 / 2', pageJumpValue: '1', pageLimitValue: '20', listLimit: 20, totalPages: 2, pageLimitOptions: [20, 50], labels: { region: '分页', previous: '上一页', next: '下一页', groupPrevious: '上一组', groupNext: '下一组', pageInput: '页码', jump: '跳转', pageSize: '每页', pageSizeInput: '每页数量', pageSizeSelect: '选择每页数量' } }),
           h(CollectionKanbanRecordCard, { recordKey: 'project-2', title: '示例项目', disabled: true, disabledReason: '记录不可打开' }),
           h(CollectionMobileRecordRow, { recordKey: 'project-2', identity: '示例项目', openLabel: '打开', selectionEnabled: true, selectionDisabled: true, selectionDisabledReason: '无选择权限' }),
+          h(ProductFormLoadingSkeleton, { loadingLabel: '正在载入表单' }),
+          h(ProductFormErrorSummary, { errors: ['必填字段缺失'] }),
         ]); } }).mount('#app');
       `;
     },
@@ -86,6 +90,11 @@ try {
     busy: node.getAttribute('aria-busy'),
   })));
   const collectionDisabledReasons = await page.locator('[data-semantic-component="CollectionKanbanRecordCard"], [data-semantic-component="CollectionSelectionControl"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('title')).filter(Boolean));
+  const formStates = await page.locator('[data-semantic-component="ProductFormLoadingSkeleton"], [data-semantic-component="ProductFormErrorSummary"]').evaluateAll((nodes) => nodes.map((node) => ({
+    component: node.getAttribute('data-semantic-component'),
+    state: node.getAttribute('data-state'),
+    busy: node.getAttribute('aria-busy'),
+  })));
   await page.locator('#retry-action').focus();
   const focusVisible = await page.locator('#retry-action').evaluate((node) => getComputedStyle(node).outlineStyle !== 'none');
   await page.setViewportSize({ width: 390, height: 844 });
@@ -102,9 +111,11 @@ try {
     && collectionStates.some((state) => state.component === 'CollectionKanbanRecordCard' && state.state === 'disabled' && state.disabled === 'true')
     && collectionStates.some((state) => state.component === 'CollectionMobileRecordRow' && state.state === 'selection-disabled')
     && collectionDisabledReasons.includes('记录不可打开') && collectionDisabledReasons.includes('无选择权限')
+    && formStates.some((state) => state.component === 'ProductFormLoadingSkeleton' && state.state === 'loading' && state.busy === 'true')
+    && formStates.some((state) => state.component === 'ProductFormErrorSummary' && state.state === 'error')
     && loadingMotion === 'none' && focusVisible
     && !desktopOverflow && !mobileOverflow && errors.length === 0;
-  console.log(JSON.stringify({ pass, inlineStates, collectionStates, collectionDisabledReasons, compactHeadings, unexpectedHeadings, unsupportedConsumerErrors, blockConsumerErrors, loadingMotion, focusVisible, desktopOverflow, mobileOverflow, errors, mutation: 0 }, null, 2));
+  console.log(JSON.stringify({ pass, inlineStates, collectionStates, collectionDisabledReasons, formStates, compactHeadings, unexpectedHeadings, unsupportedConsumerErrors, blockConsumerErrors, loadingMotion, focusVisible, desktopOverflow, mobileOverflow, errors, mutation: 0 }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();
