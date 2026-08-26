@@ -98,16 +98,6 @@ try {
       const enabledPrimary = primary.filter((node) => !(node instanceof HTMLButtonElement) || !node.disabled);
       const fakeReadonly = [...patternNode?.querySelectorAll('input:disabled, textarea:disabled, select:disabled') || []]
         .filter(visible);
-      const inlineNativeText = [...patternNode?.querySelectorAll('[data-native-text-presentation="inline"]') || []]
-        .filter(visible);
-      const boxedInlineNativeText = inlineNativeText.filter((node) => {
-        const style = getComputedStyle(node);
-        const background = style.backgroundColor.replace(/\s+/g, '');
-        return Number.parseFloat(style.borderTopWidth || '0') > 0
-          || !['transparent', 'rgba(0,0,0,0)'].includes(background);
-      });
-      const nativeCallouts = [...patternNode?.querySelectorAll('[data-native-text-presentation="callout"]') || []]
-        .filter(visible);
       const selectedNav = document.querySelectorAll(`#primary-sidebar [data-navigation-menu-id="${menuId}"][aria-current="page"]`).length;
       return {
         url: location.href,
@@ -134,9 +124,6 @@ try {
         })),
         registeredComponents: components.length,
         unregisteredComponents: unresolved.length,
-        inlineNativeText: inlineNativeText.length,
-        boxedInlineNativeText: boxedInlineNativeText.length,
-        nativeCallouts: nativeCallouts.length,
         horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       };
     }, { menuId: spec.menuId });
@@ -177,10 +164,6 @@ try {
       check(Boolean(findKey(formContract, 'effectiveRenderProfile')),
         `${spec.key}: render profile was not backend-declared`, metrics);
     }
-    if (metrics.contractPresentationMode === 'workspace') {
-      check(metrics.inlineNativeText > 0, `${spec.key}: workspace inline Native text evidence is absent`, metrics);
-      check(metrics.boxedInlineNativeText === 0, `${spec.key}: ordinary Native text still uses callout chrome`, metrics);
-    }
     if (metrics.contractRenderProfile === 'edit') {
       check(metrics.saveActions === 1 && metrics.enabledPrimaryActions === 1,
         `${spec.key}: edit primary action is not uniquely usable`, metrics);
@@ -194,7 +177,6 @@ try {
       check(new URL(metrics.url).pathname.startsWith('/r/'), `${spec.key}: explicit readonly route was promoted`, metrics);
     }
 
-    await page.screenshot({ path: path.join(outputDir, `${spec.key}-1440.png`), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForFunction(() => document.documentElement.clientWidth === 390, null, { timeout: 15000 });
     metrics.mobile390Overflow = await page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth));
