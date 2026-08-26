@@ -12,22 +12,23 @@
       <p v-if="errorOp" class="trace">Operation: {{ errorOp }}</p>
       <p v-if="retryable !== undefined" class="trace">Retryable: {{ retryable ? 'yes' : 'no' }}</p>
       <p v-if="hint" class="trace">Hint: {{ hint }}</p>
-      <button v-if="traceId" class="trace-copy sc-btn sc-btn-ghost sc-btn-sm" @click="copyTrace">复制诊断编号</button>
-      <button v-if="canRunSuggestedAction && suggestedActionLabel" class="trace-copy" @click="runSuggestedAction">
+      <ScButton v-if="traceId" class="trace-copy" variant="ghost" size="small" @click="copyTrace">复制诊断编号</ScButton>
+      <ScButton v-if="canRunSuggestedAction && suggestedActionLabel" class="trace-copy" variant="ghost" size="small" @click="runSuggestedAction">
         {{ suggestedActionLabel }}
-      </button>
+      </ScButton>
       <p v-if="actionRunFeedback" class="trace action-feedback">{{ actionRunFeedback }}</p>
     </div>
-    <button
+    <ScButton
       v-else-if="variant === 'error' && canRunSuggestedAction && suggestedActionLabel"
-      class="trace-copy sc-btn sc-btn-ghost"
+      class="trace-copy"
+      variant="ghost"
       @click="runSuggestedAction"
     >
       {{ suggestedActionLabel }}
-    </button>
-    <button v-if="onRetry" class="sc-btn sc-btn-primary" type="button" :disabled="retrying" @click="retry">
+    </ScButton>
+    <ScButton v-if="onRetry" variant="primary" :disabled="retrying" :loading="retrying" loading-label="正在重试" @click="retry">
       {{ retrying ? '正在重试…' : (retryLabel || productState.actionLabel) }}
-    </button>
+    </ScButton>
   </section>
 </template>
 
@@ -37,6 +38,7 @@ import { useRoute } from 'vue-router';
 import { useSuggestedAction } from '../composables/useSuggestedAction';
 import { isHudEnabled } from '../config/debug';
 import { resolveProductErrorState } from '../app/productErrorState';
+import ScButton from './design-system/ScButton.vue';
 
 const props = defineProps<{
   title: string;
@@ -154,16 +156,10 @@ function copyTrace() {
   color: var(--sc-app-text-secondary);
 }
 
-.panel > button { justify-self: start; }
+.panel > :deep(button) { justify-self: start; }
 
 .trace-copy {
   justify-self: start;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--sc-app-border);
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  font-size: 12px;
 }
 
 .action-feedback {
