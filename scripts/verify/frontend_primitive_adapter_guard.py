@@ -11,9 +11,10 @@ INDEX = DESIGN_SYSTEM / "index.ts"
 BRIDGE = DESIGN_SYSTEM / "tdesignPrimitiveBridge.ts"
 UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
 UI_THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
+OWNERSHIP = ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json"
 
 PRIMITIVES = (
-    "ScButton", "ScIconButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInputGroup", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
+    "ScButton", "ScIconButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInputGroup", "ScLayout", "ScAside", "ScHeader", "ScContent", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
     "ScActionBar", "ScAutoComplete", "ScNumberInput", "ScDatePicker", "ScUpload", "ScForm", "ScFormItem",
     "ScCard", "ScCollapse", "ScDisclosure", "ScProgress", "ScSkeleton", "ScDescriptions", "ScList", "ScTimeline",
@@ -28,8 +29,48 @@ CONSUMER_PRIMITIVE_CHROME = re.compile(
     r":deep\(\.sc-(?:input|btn|select|textarea|checkbox|radio|dialog|drawer|tabs|table)[^)]*\)\s*\{(?P<body>[^}]*)\}",
     re.DOTALL,
 )
-VISUAL_CHROME_PROPERTY = re.compile(r"(?:^|;)\s*(?:border(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.MULTILINE)
+VISUAL_CHROME_PROPERTY = re.compile(r"(?:^|;)\s*(?:border(?!-(?:collapse|spacing))(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.MULTILINE)
+SC_ROOT_TAG = re.compile(r"<Sc(?:Button|IconButton|Input|InputGroup|Select|Textarea|Checkbox|Radio|Dialog|Drawer|Tabs|Table)\b(?P<attrs>[^>]*)>", re.DOTALL)
+STATIC_CLASS = re.compile(r"(?<!:)\bclass\s*=\s*['\"](?P<value>[^'\"]+)['\"]")
+STYLE_RULE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
+STYLE_SOURCE = re.compile(r"<style\b[^>]*\bsrc\s*=\s*['\"](?P<value>[^'\"]+)['\"][^>]*>", re.IGNORECASE)
 PROFESSIONAL_COMPOSITE_OWNERS: set[str] = set()
+
+
+def p3_scope(root: Path) -> tuple[set[str], tuple[str, ...]]:
+    path = root / OWNERSHIP.relative_to(ROOT)
+    if not path.is_file():
+        return set(), ()
+    import json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    owner = payload.get("owners", {}).get("p3-low-code-administration", {})
+    return set(owner.get("sources", [])), tuple(owner.get("prefixes", []))
+
+
+def direct_root_visual_overrides(source_text: str, style_text: str | None = None) -> list[str]:
+    classes: set[str] = set()
+    for tag in SC_ROOT_TAG.finditer(source_text):
+        match = STATIC_CLASS.search(tag.group("attrs"))
+        if match:
+            classes.update(value for value in match.group("value").split() if value and not value.startswith("sc-"))
+    findings = []
+    for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
+        if not VISUAL_CHROME_PROPERTY.search(rule.group("body")):
+            continue
+        selector = rule.group("selector")
+        for class_name in sorted(classes):
+            if re.search(rf"\.{re.escape(class_name)}(?![\w-])", selector):
+                findings.append(class_name)
+    return sorted(set(findings))
+
+
+def component_style_text(path: Path, source_text: str) -> str:
+    styles = [source_text]
+    for match in STYLE_SOURCE.finditer(source_text):
+        target = (path.parent / match.group("value")).resolve()
+        if target.is_file() and target.suffix == ".css":
+            styles.append(target.read_text(encoding="utf-8"))
+    return "\n".join(styles)
 
 
 def validate(root: Path = ROOT) -> list[str]:
@@ -43,14 +84,21 @@ def validate(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
 
     source_root = root / "frontend/apps/web/src"
+    p3_files, p3_prefixes = p3_scope(root)
     if source_root.is_dir():
         for path in sorted(source_root.rglob("*.vue")):
             relative = path.relative_to(root).as_posix()
             if "/components/design-system/" in f"/{relative}" or relative in PROFESSIONAL_COMPOSITE_OWNERS:
                 continue
+            if relative in p3_files or relative.startswith(p3_prefixes):
+                continue
             source_text = path.read_text(encoding="utf-8")
-            if any(VISUAL_CHROME_PROPERTY.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME.finditer(source_text)):
+            style_text = component_style_text(path, source_text)
+            if any(VISUAL_CHROME_PROPERTY.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME.finditer(style_text)):
                 errors.append(f"consumer primitive visual chrome must move to an adapter appearance: {relative}")
+            root_overrides = direct_root_visual_overrides(source_text, style_text)
+            if root_overrides:
+                errors.append(f"consumer primitive root classes must not own visual chrome: {relative} classes={','.join(root_overrides)}")
 
     for component in PRIMITIVES:
         source = design / f"{component}.vue"

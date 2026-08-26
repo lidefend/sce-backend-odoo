@@ -7,10 +7,14 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from scripts.verify.frontend_primitive_adapter_guard import component_style_text, direct_root_visual_overrides, p3_scope
 WEB_REL = Path("frontend/apps/web/src")
 DEFAULT_REFERENCE = ROOT / "docs/frontend_productization/rendering-detail/daily-frontend-reference-projection-v1.json"
 DEFAULT_OUTPUT = ROOT / "docs/frontend_productization/rendering-detail/visual-projection-inventory-v1.json"
@@ -45,7 +49,7 @@ CONSUMER_PRIMITIVE_CHROME_RE = re.compile(
     r":deep\(\.sc-(?:input|btn|icon-button|select|textarea|checkbox|radio|dialog|drawer|tabs|table)[^)]*\)\s*\{(?P<body>[^}]*)\}",
     re.S,
 )
-VISUAL_CHROME_PROPERTY_RE = re.compile(r"(?:^|;)\s*(?:border(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.M)
+VISUAL_CHROME_PROPERTY_RE = re.compile(r"(?:^|;)\s*(?:border(?!-(?:collapse|spacing))(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.M)
 
 ADAPTER_MARKERS = {
     "ScInput": ".sc-input.t-input__wrap[data-size='large'] > .t-input",
@@ -127,13 +131,21 @@ def inspect_tree(root: Path) -> list[dict[str, object]]:
 
 def consumer_primitive_visual_chrome(root: Path = ROOT) -> list[str]:
     source_root = normalized_source_root(root)
+    p3_files, p3_prefixes = p3_scope(root)
     violations = []
     for path in sorted(source_root.rglob("*.vue")):
         relative = path.relative_to(source_root).as_posix()
+        repository_relative = path.relative_to(root).as_posix() if path.is_relative_to(root) else relative
         if relative.startswith("components/design-system/"):
             continue
+        if repository_relative in p3_files or repository_relative.startswith(p3_prefixes):
+            continue
         text = path.read_text(encoding="utf-8", errors="ignore")
-        if any(VISUAL_CHROME_PROPERTY_RE.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME_RE.finditer(text)):
+        style_text = component_style_text(path, text)
+        if (
+            any(VISUAL_CHROME_PROPERTY_RE.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME_RE.finditer(style_text))
+            or direct_root_visual_overrides(text, style_text)
+        ):
             violations.append(relative)
     return violations
 

@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify.frontend_collection_group_header_guard import HEADER, HEADER_CSS, LIST_PAGE, VISUAL_SMOKE, validate
+from scripts.verify.frontend_collection_group_header_guard import HEADER, HEADER_CSS, LIST_PAGE, THEME, VISUAL_SMOKE, validate
 
 
 class CollectionGroupHeaderGuardTest(unittest.TestCase):
@@ -10,6 +10,7 @@ class CollectionGroupHeaderGuardTest(unittest.TestCase):
         cls.header_source = HEADER.read_text(encoding="utf-8")
         cls.css_source = HEADER_CSS.read_text(encoding="utf-8")
         cls.visual_source = VISUAL_SMOKE.read_text(encoding="utf-8")
+        cls.theme_source = THEME.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
         self.assertEqual(validate(self.list_source, self.header_source, self.css_source), [])
@@ -37,6 +38,12 @@ class CollectionGroupHeaderGuardTest(unittest.TestCase):
     def test_missing_reduced_motion_fails(self):
         altered = self.css_source.replace("prefers-reduced-motion", "legacy-motion")
         self.assertTrue(any("reduced-motion" in item for item in validate(self.list_source, self.header_source, altered)))
+
+    def test_missing_adapter_focus_authority_fails(self):
+        altered = self.theme_source.replace(".sc-btn:focus-visible", ".legacy-btn:focus-visible")
+        self.assertTrue(any("adapter theme" in item for item in validate(
+            self.list_source, self.header_source, self.css_source, self.visual_source, altered,
+        )))
 
     def test_missing_browser_state_evidence_fails(self):
         altered = self.visual_source.replace("toggledExpanded", "legacyExpanded")

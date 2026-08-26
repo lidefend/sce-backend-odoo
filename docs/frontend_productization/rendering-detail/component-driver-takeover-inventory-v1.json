@@ -597,14 +597,25 @@
       "status": "adapter_present"
     },
     {
-      "adapterKeys": [],
-      "adapterSources": [],
-      "bridgeExports": [],
+      "adapterKeys": [
+        "ScLayout"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScLayout"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScLayout.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignLayout"
+      ],
       "officialComponent": "layout",
-      "productionConsumerCount": 0,
-      "requiredForCurrentProduct": false,
-      "requirementDecision": "not required by current formal product semantics",
-      "status": "not_required"
+      "productionConsumerCount": 2,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
     },
     {
       "adapterKeys": [],
@@ -1261,19 +1272,19 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "ca87980408a025e976c32ee1a2ec5f1dc3b403b1e9522f4af3d8d8a05c289ad7",
+  "inputDigest": "8117987c501e2d501d0821b4f20e0f78850e2f5aa3ab9cd8b052fe9ac162df2c",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
-    "adapter_present": 34,
+    "adapter_present": 35,
     "adapter_unconsumed": 0,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
     "missing": 0,
-    "not_required": 37,
+    "not_required": 36,
     "officialComponents": 71,
-    "requiredDrivers": 34,
+    "requiredDrivers": 35,
     "unassessedRawBehaviorSurfaces": 0
   }
 }

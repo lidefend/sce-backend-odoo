@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
   "sourceCommit": "ea0170d2652188083146c5423ed9dcbb20a170d7",
-  "generatorDigest": "1e87572d9aec6f551595555e0e36b12a7417776d9a359a4a3fd7692dee0a9e14",
+  "generatorDigest": "617f82ac546d795f4767c2cec2bcba14e2577a67080b57520ba81fad3beae006",
   "ownershipDigest": "6349644dec46ae7c415f217a04ba9cf89c2524787cf8bfc07aa62ce1401b9d1f",
-  "inputDigest": "64859e8078f1d43bc234eec6d2266e3cabb80645171048c59318fca0221a57c6",
+  "inputDigest": "004af6b3153c517c17376740b28c1fdfada13de90df6f5db9189d1af17d4f78e",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -1035,8 +1035,7 @@
       "stateTypes": [
         "loading",
         "error",
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1282,8 +1281,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1363,8 +1361,7 @@
       "stateTypes": [
         "loading",
         "empty",
-        "error",
-        "focus"
+        "error"
       ],
       "rawControls": {},
       "governedStatePrimitives": [
@@ -1905,8 +1902,7 @@
         "loading",
         "empty",
         "error",
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],

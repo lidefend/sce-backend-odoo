@@ -109,7 +109,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/action/HierarchyPlanner.vue": {"section": {"attrs": {"data-semantic-component": "HierarchyPlanner", ":aria-busy": "loading || undefined"}}},
         "frontend/apps/web/src/components/action/HierarchyTreeNode.vue": {"div": {"attrs": {"data-semantic-component": "HierarchyTreeNode", ":data-state": "node.children.length ? 'branch' : 'leaf'"}}},
         "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue": {"nav": {"attrs": {"data-semantic-component": "NavigationBreadcrumb"}}},
-        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue": {"aside": {"attrs": {"data-semantic-component": "ProductMobileNavigationDrawer"}}},
+        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue": {"scaside": {"attrs": {"data-semantic-component": "ProductMobileNavigationDrawer"}}},
         "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue": {"nav": {"attrs": {"data-semantic-component": "ProductSideNavigation"}}},
         "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue": {"div": {"attrs": {"data-semantic-component": "WorkspaceContextIndicator"}}},
     },

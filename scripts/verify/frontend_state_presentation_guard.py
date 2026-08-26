@@ -6,6 +6,7 @@ FILES = {
     "activity": ROOT / "frontend/apps/web/src/pages/ActivityPage.vue",
     "status": ROOT / "frontend/apps/web/src/components/StatusPanel.vue",
     "tabs": ROOT / "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+    "theme": ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css",
 }
 
 
@@ -19,9 +20,12 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
     for legacy in ('<p v-if="loading"', '<div v-else class="activity-page__state"'):
         if legacy in activity:
             failures.append(f"activity retains private state DOM: {legacy}")
-    for marker in (':data-state="loading ?', ".activity-card:focus-visible", "prefers-reduced-motion"):
+    for marker in (':data-state="loading ?', 'appearance="surface-tile"', "prefers-reduced-motion"):
         if marker not in activity:
             failures.append(f"activity interaction state missing: {marker}")
+    for marker in (".sc-btn:focus-visible", "var(--sc-semantic-focus-ring)"):
+        if marker not in values["theme"]:
+            failures.append(f"activity adapter focus authority missing: {marker}")
 
     status = values["status"]
     if status.count("<ScButton") < 3:

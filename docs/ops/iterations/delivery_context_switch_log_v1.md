@@ -6597,8 +6597,13 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   driver and no legacy searchbox chrome.
 - Machine boundary: required TDesign drivers have no missing, bridge-only or
   unconsumed rows; ordinary P0/P1 consumers have zero primitive visual-chrome
-  overrides and zero native-selector candidates. Tracked visual inventories
-  report deterministic evidence bindings only and never self-assert runtime
-  closure.
+  overrides and zero native-selector candidates. The guard joins Vue templates
+  to both inline and `style src` CSS before deciding closure, so a class attached
+  directly to an `Sc*` root cannot reintroduce page-owned chrome through an
+  external stylesheet. Official TDesign Layout/Aside/Header/Content drivers now
+  own the application layout primitives. The generated inventories report
+  `151` formal surfaces with `gap=0`, `35` required drivers with `missing=0`,
+  and `consumerPrimitiveVisualChromeCount=0`; they remain deterministic static
+  evidence and never self-assert runtime closure.
 - Excluded: Contract V2, permissions, routes, action/menu authority, business
   models, database data, fixtures and P3 low-code administration surfaces.

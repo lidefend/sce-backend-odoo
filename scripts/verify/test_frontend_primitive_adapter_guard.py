@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from scripts.verify.frontend_primitive_adapter_guard import PRIMITIVES, validate
+from scripts.verify.frontend_primitive_adapter_guard import PRIMITIVES, direct_root_visual_overrides, validate
 
 
 class PrimitiveAdapterGuardTest(unittest.TestCase):
@@ -176,6 +176,18 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         consumer.parent.mkdir(parents=True, exist_ok=True)
         consumer.write_text("<style scoped>.legacy :deep(.sc-input) { border: 1px solid red; }</style>\n", encoding="utf-8")
         self.assertTrue(any("adapter appearance" in error for error in validate(root)))
+
+    def test_consumer_root_class_cannot_hide_primitive_visual_chrome(self) -> None:
+        source = '<template><ScButton class="legacy-action" /></template><style>.legacy-action { background: red; border: 1px solid red; }</style>'
+        self.assertEqual(direct_root_visual_overrides(source), ["legacy-action"])
+
+    def test_external_component_style_cannot_repaint_primitive_root(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/views/ExternalStyleView.vue"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text('<template><ScButton class="legacy" /></template><style scoped src="./ExternalStyleView.css"></style>', encoding="utf-8")
+        source.with_suffix(".css").write_text(".legacy { background: red; }", encoding="utf-8")
+        self.assertTrue(any("ExternalStyleView.vue classes=legacy" in error for error in validate(root)))
 
 
 if __name__ == "__main__":

@@ -43,6 +43,15 @@ class FrontendVisualProjectionInventoryTest(unittest.TestCase):
             source.write_text("<style scoped>.legacy :deep(.sc-btn) { background: red; }</style>", encoding="utf-8")
             self.assertEqual(consumer_primitive_visual_chrome(root), ["views/LegacyView.vue"])
 
+    def test_external_style_root_override_is_inventory_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "frontend/apps/web/src/views/ExternalView.vue"
+            source.parent.mkdir(parents=True)
+            source.write_text('<template><ScButton class="legacy" /></template><style scoped src="./ExternalView.css"></style>', encoding="utf-8")
+            source.with_suffix(".css").write_text(".legacy { border: 1px solid red; }", encoding="utf-8")
+            self.assertEqual(consumer_primitive_visual_chrome(root), ["views/ExternalView.vue"])
+
     def test_formal_gap_cannot_self_assert_closed_without_machine_evidence(self) -> None:
         parity = {"gaps": [{"key": "overlay.dialog-drawer-focus-density", "status": "closed"}]}
         with tempfile.TemporaryDirectory() as directory:
