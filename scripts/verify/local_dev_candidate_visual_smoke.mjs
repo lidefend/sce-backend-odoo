@@ -1066,7 +1066,12 @@ try {
             label: item.getAttribute('data-section-tab') || '',
             rect: (() => { const itemRect = item.getBoundingClientRect(); return [Math.round(itemRect.left), Math.round(itemRect.top), Math.round(itemRect.right), Math.round(itemRect.bottom)]; })(),
             color: getComputedStyle(item).color,
+            display: getComputedStyle(item).display,
+            font: getComputedStyle(item).font,
+            fontSize: getComputedStyle(item).fontSize,
             visibility: getComputedStyle(item).visibility,
+            parentClass: item.parentElement?.className || '',
+            parentRect: (() => { const parentRect = item.parentElement?.getBoundingClientRect(); return parentRect ? [Math.round(parentRect.left), Math.round(parentRect.top), Math.round(parentRect.right), Math.round(parentRect.bottom)] : null; })(),
           })),
         };
       }));
