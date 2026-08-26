@@ -47,7 +47,9 @@ def validate(
         'v-if="hasStructuredConditions"\n                class="toolbar-clear-all"',
         '<ScButton\n          v-if="canCreateRecord"\n          class="toolbar-overflow-create"',
         "'search-input': [value: string]",
-        'var(--sc-semantic-focus-ring)',
+        'appearance="toolbar-chip"',
+        'appearance="menu-item"',
+        'appearance="toolbar-menu-toggle"',
         '@media (prefers-reduced-motion: reduce)',
     )
     for marker in required:

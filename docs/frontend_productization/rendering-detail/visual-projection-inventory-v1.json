@@ -8,6 +8,13 @@
       "status": "projected"
     },
     {
+      "component": "ScInputGroup",
+      "driverPresent": true,
+      "projectionMarker": ".sc-input-group",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
       "component": "ScButton",
       "driverPresent": true,
       "projectionMarker": ".sc-btn.t-button",
@@ -135,7 +142,7 @@
     },
     {
       "category": "other",
-      "digest": "d05bcfb717df769fb31544e61654a4aa0fa79de2eecbe135e0adfc52d3e855fb",
+      "digest": "7cb7eb0e6c4d8054bc9351a272d17a73d84eee0e4f272b6a5c77ad8c2f4cd415",
       "nativeStyleSelectors": [],
       "path": "components/GlobalMessagePanel.vue",
       "referenceNativeStyleSelectors": [
@@ -198,7 +205,7 @@
     },
     {
       "category": "other",
-      "digest": "56e82064635226768ea89f284e110583b1c14b744bbf07023a33ab47af16f2ad",
+      "digest": "332de0511aecc1a7aa6147f024a24bd85b50764d3589a59546bed2a43f337f20",
       "nativeStyleSelectors": [],
       "path": "components/action/ActionSurfaceToolbar.vue",
       "referenceNativeStyleSelectors": [
@@ -224,12 +231,13 @@
         "ScIcon",
         "ScIconButton",
         "ScInput",
+        "ScInputGroup",
         "ScSelect"
       ]
     },
     {
       "category": "other",
-      "digest": "ce5eb83802e662e081ae360acc235e04df902bcc84a8ce9979ed3a4f8ce7bdeb",
+      "digest": "7c3de06e18b227c3f263a16548b6864c48f4d8d932f0258b3e9d786ee426c01f",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchicalWorksheet.vue",
       "referenceNativeStyleSelectors": [
@@ -409,7 +417,7 @@
     },
     {
       "category": "other",
-      "digest": "0745a6d8d4628784582ace127a3a87887f52978fd799929cc4e582db06074119",
+      "digest": "bef38205f8f27bbd2a83f55a6b993d004b768b24462acae2baac631a3bb1bdac",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -607,7 +615,7 @@
     },
     {
       "category": "other",
-      "digest": "dccfe6d72a9c865f762d1f803588e09f08ead5cdf549956c780a415a11d19cbb",
+      "digest": "919b7816ff1bee02fafb85fd2e1cf20dec2d353687505eb3312b8aeb85fc0a6c",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScIconButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -627,9 +635,19 @@
     },
     {
       "category": "other",
-      "digest": "042bd4bb7955af8553df95d07f45ddbded8a5cd364a55244e9d81aecb5be40b3",
+      "digest": "91990255d96903fee17223403e884cffdae1e7c0096890cb448e779b81b0a14d",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInput.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "d62afdea36429d6dc4afe5ae9e000e83fd4e475ccc673ff8a12c12de19cb322b",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScInputGroup.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
       "referenceScComponents": [],
@@ -1405,7 +1423,7 @@
     },
     {
       "category": "shell",
-      "digest": "2d021b37bc71281a58030cdde0f28b0eeeb6a9d6d17eeabbbf2487802d868c14",
+      "digest": "cde501b0ee19cfe7604e8f05625a1ce193de0e33f634af3f7ac7cf05c48cc869",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/ProductSideNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -1483,7 +1501,7 @@
     },
     {
       "category": "dashboard",
-      "digest": "aa3412c13538929d878072358cc4748d3081fde12f98685bb908f1fcc08f071f",
+      "digest": "e9a5d1e22efad19be65d5d9d73b4263fd510f33601dcf51d9ba70a1a783d2ee7",
       "nativeStyleSelectors": [],
       "path": "components/role-home/WorkspaceHome.vue",
       "referenceNativeStyleSelectors": [
@@ -1522,7 +1540,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "b9f1287b76ab553a680939dbe774d153df0533f63d45d3a6774d3f19147547bb",
+      "digest": "c92e05090ce6e26d83db94ee459cc234f0c789a421d59cd5bc53e18e1953bf5b",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1797,7 +1815,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "2c2f2f1e8868f5a9abbffcab4dd1b13c1908fe6181c6c72061748a0d69dcd68f",
+      "digest": "5bffbc3859a72decd69465c657abb273bd6a6a8b96c053a84d653211e417e198",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -1815,7 +1833,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "2fd47b704ec026a39a3b7375b1f04ae8d92731a5c5729068bd46a14cbcc70fb7",
+      "digest": "2d19329b8f652470467a5a83356ebb47901dc7f2dc06fa0cc49667439382e255",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormNativeCanvas.vue",
       "referenceNativeStyleSelectors": [
@@ -2273,166 +2291,212 @@
       ]
     }
   ],
-  "currentInputDigest": "e6adcc01c7d0c303fe53fd96864ee1240cd3147bb66b551823584f1d96e15f45",
+  "consumerPrimitiveVisualChrome": [],
+  "currentInputDigest": "cfc90bc169d59c5db419324d004599f2caf0c8c7191ef4693b88fce8f2241621",
+  "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
     "Contract authority",
     "database data",
-    "customer addons"
+    "customer addons",
+    "exact-head runtime pass/fail"
   ],
   "formalGapEvidence": [
     {
+      "browserAssertionMarker": "[data-product-page-header]",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/frontend_product_page_header_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.product_page_header.browser",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "collection.page-identity-and-primary-action",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.product_page_header.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "collectionMobileRecordEvidence",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "collection.workspace-gutter-and-ledger-density",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.collection_row_cell.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "collectionToolbarEvidence",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "collection.query-filter-view-toolbar-hierarchy",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.collection_action_toolbar.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "collectionSummaryEvidence",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "collection.authoritative-status-tone",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.collection_row_cell.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "shellAdapterEvidence",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "shell.context-and-navigation-density",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.navigation_shell.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "data-semantic-component",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/frontend_rendering_detail_state_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.rendering_detail_state.browser",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "form.task-field-hierarchy",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.primitive_adapter.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "focusSequence",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.native_form_action_presentation.browser",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "form.workspace-native-structure-density",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.native_form_action_presentation.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "relationSearchDialogEvidence",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "relations-x2many.lifecycle-and-table-detail",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.professional_relation_lifecycle.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "allDisabledEscapeClosed",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.native_form_action_presentation.browser",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "workflow.action-status-disabled-reason",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.professional_workflow.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "bodyLocked",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/frontend_overlay_lifecycle_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.overlay_lifecycle.browser",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "overlay.dialog-drawer-focus-density",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.overlay_lifecycle.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "filePrimitivePresent",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/frontend_collaboration_primitives_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.collaboration_primitives.browser",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "collaboration.chatter-activity-attachment",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.professional_collaboration.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "data-state",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/frontend_rendering_detail_state_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.rendering_detail_state.browser",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "states.loading-empty-error-disabled-focus",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.rendering_detail_state.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "dashboardActions",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/frontend_state_dashboard_browser.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "verify.frontend.state_dashboard.browser",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "dashboard.metric-risk-todo-drilldown",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.state_dashboard.unit",
       "unitTargetWired": true
     },
     {
+      "browserAssertionMarker": "mobileOverflow",
+      "browserAssertionMarkerPresent": true,
       "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
       "browserFailureExitPresent": true,
       "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
       "browserTargetWired": true,
       "key": "responsive.390-no-overflow-and-action-settlement",
-      "status": "closed",
+      "status": "bound",
       "unitTarget": "verify.frontend.rendering_detail_state.unit",
       "unitTargetWired": true
     }
   ],
-  "openFormalVisualGaps": [],
+  "invalidFormalVisualEvidenceBindings": [],
   "referenceInputDigest": "9065801740ce27219e7d0bb92998350fdd3b16e2948288c186d8798a353c74aa",
   "scAdapterWithNativeSelectorCandidates": [],
   "schemaVersion": "frontend.visual-projection.inventory.v1",
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
-    "adapterCount": 17,
-    "changedSourceCount": 161,
-    "currentSourceCount": 198,
-    "openFormalVisualGapCount": 0,
-    "projectedAdapterCount": 17,
+    "adapterCount": 18,
+    "changedSourceCount": 162,
+    "consumerPrimitiveVisualChromeCount": 0,
+    "currentSourceCount": 199,
+    "invalidFormalVisualEvidenceBindingCount": 0,
+    "projectedAdapterCount": 18,
     "referenceSourceCount": 132,
     "scAdapterWithNativeSelectorCandidateCount": 0,
     "unassessedAdapterCount": 0

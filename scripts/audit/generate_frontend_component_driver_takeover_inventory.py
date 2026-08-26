@@ -23,7 +23,7 @@ INTERNAL_DIRS = {"_chunks", "common", "common-components", "config-provider", "l
 REQUIRED_DRIVERS = {
     "alert", "auto-complete", "badge", "button", "card", "checkbox", "collapse", "date-picker",
     "descriptions", "dialog", "drawer", "dropdown", "empty", "form", "input", "input-number",
-    "list", "loading", "menu", "pagination", "progress", "radio", "select", "skeleton",
+    "input-adornment", "list", "loading", "menu", "pagination", "progress", "radio", "select", "skeleton",
     "space", "steps", "table", "tabs", "tag", "textarea", "timeline",
     "tooltip", "upload",
 }

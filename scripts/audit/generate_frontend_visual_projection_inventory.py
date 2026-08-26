@@ -22,28 +22,34 @@ VISUAL_PARITY = ROOT / "docs/frontend_productization/rendering-detail/visual-par
 # parity document describes the product requirement; it is not allowed to
 # self-assert closure.
 FORMAL_GAP_EVIDENCE = {
-    "collection.page-identity-and-primary-action": ("verify.frontend.product_page_header.unit", "verify.frontend.product_page_header.browser", "scripts/verify/frontend_product_page_header_browser.mjs"),
-    "collection.workspace-gutter-and-ledger-density": ("verify.frontend.collection_row_cell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
-    "collection.query-filter-view-toolbar-hierarchy": ("verify.frontend.collection_action_toolbar.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
-    "collection.authoritative-status-tone": ("verify.frontend.collection_row_cell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
-    "shell.context-and-navigation-density": ("verify.frontend.navigation_shell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
-    "form.task-field-hierarchy": ("verify.frontend.primitive_adapter.unit", "verify.frontend.rendering_detail_state.browser", "scripts/verify/frontend_rendering_detail_state_browser.mjs"),
-    "form.workspace-native-structure-density": ("verify.frontend.native_form_action_presentation.unit", "verify.frontend.native_form_action_presentation.browser", "scripts/verify/frontend_native_form_action_presentation_browser.mjs"),
-    "relations-x2many.lifecycle-and-table-detail": ("verify.frontend.professional_relation_lifecycle.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
-    "workflow.action-status-disabled-reason": ("verify.frontend.professional_workflow.unit", "verify.frontend.native_form_action_presentation.browser", "scripts/verify/frontend_native_form_action_presentation_browser.mjs"),
-    "overlay.dialog-drawer-focus-density": ("verify.frontend.overlay_lifecycle.unit", "verify.frontend.overlay_lifecycle.browser", "scripts/verify/frontend_overlay_lifecycle_browser.mjs"),
-    "collaboration.chatter-activity-attachment": ("verify.frontend.professional_collaboration.unit", "verify.frontend.collaboration_primitives.browser", "scripts/verify/frontend_collaboration_primitives_browser.mjs"),
-    "states.loading-empty-error-disabled-focus": ("verify.frontend.rendering_detail_state.unit", "verify.frontend.rendering_detail_state.browser", "scripts/verify/frontend_rendering_detail_state_browser.mjs"),
-    "dashboard.metric-risk-todo-drilldown": ("verify.frontend.state_dashboard.unit", "verify.frontend.state_dashboard.browser", "scripts/verify/frontend_state_dashboard_browser.mjs"),
-    "responsive.390-no-overflow-and-action-settlement": ("verify.frontend.rendering_detail_state.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
+    "collection.page-identity-and-primary-action": ("verify.frontend.product_page_header.unit", "verify.frontend.product_page_header.browser", "scripts/verify/frontend_product_page_header_browser.mjs", "[data-product-page-header]"),
+    "collection.workspace-gutter-and-ledger-density": ("verify.frontend.collection_row_cell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "collectionMobileRecordEvidence"),
+    "collection.query-filter-view-toolbar-hierarchy": ("verify.frontend.collection_action_toolbar.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "collectionToolbarEvidence"),
+    "collection.authoritative-status-tone": ("verify.frontend.collection_row_cell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "collectionSummaryEvidence"),
+    "shell.context-and-navigation-density": ("verify.frontend.navigation_shell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "shellAdapterEvidence"),
+    "form.task-field-hierarchy": ("verify.frontend.primitive_adapter.unit", "verify.frontend.rendering_detail_state.browser", "scripts/verify/frontend_rendering_detail_state_browser.mjs", "data-semantic-component"),
+    "form.workspace-native-structure-density": ("verify.frontend.native_form_action_presentation.unit", "verify.frontend.native_form_action_presentation.browser", "scripts/verify/frontend_native_form_action_presentation_browser.mjs", "focusSequence"),
+    "relations-x2many.lifecycle-and-table-detail": ("verify.frontend.professional_relation_lifecycle.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "relationSearchDialogEvidence"),
+    "workflow.action-status-disabled-reason": ("verify.frontend.professional_workflow.unit", "verify.frontend.native_form_action_presentation.browser", "scripts/verify/frontend_native_form_action_presentation_browser.mjs", "allDisabledEscapeClosed"),
+    "overlay.dialog-drawer-focus-density": ("verify.frontend.overlay_lifecycle.unit", "verify.frontend.overlay_lifecycle.browser", "scripts/verify/frontend_overlay_lifecycle_browser.mjs", "bodyLocked"),
+    "collaboration.chatter-activity-attachment": ("verify.frontend.professional_collaboration.unit", "verify.frontend.collaboration_primitives.browser", "scripts/verify/frontend_collaboration_primitives_browser.mjs", "filePrimitivePresent"),
+    "states.loading-empty-error-disabled-focus": ("verify.frontend.rendering_detail_state.unit", "verify.frontend.rendering_detail_state.browser", "scripts/verify/frontend_rendering_detail_state_browser.mjs", "data-state"),
+    "dashboard.metric-risk-todo-drilldown": ("verify.frontend.state_dashboard.unit", "verify.frontend.state_dashboard.browser", "scripts/verify/frontend_state_dashboard_browser.mjs", "dashboardActions"),
+    "responsive.390-no-overflow-and-action-settlement": ("verify.frontend.rendering_detail_state.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "mobileOverflow"),
 }
 
 SC_TAG_RE = re.compile(r"<(?P<name>Sc[A-Z][A-Za-z0-9]+)\b")
 STYLE_RE = re.compile(r"<style[^>]*>(?P<body>.*?)</style>", re.S | re.I)
 NATIVE_SELECTOR_RE = re.compile(r"(?m)(?P<selector>[^{}]*(?:^|[\s>+~,])(input|button|select|textarea)(?=[:.#[\s>+~,{]|$)[^{}]*)\{")
+CONSUMER_PRIMITIVE_CHROME_RE = re.compile(
+    r":deep\(\.sc-(?:input|btn|icon-button|select|textarea|checkbox|radio|dialog|drawer|tabs|table)[^)]*\)\s*\{(?P<body>[^}]*)\}",
+    re.S,
+)
+VISUAL_CHROME_PROPERTY_RE = re.compile(r"(?:^|;)\s*(?:border(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.M)
 
 ADAPTER_MARKERS = {
     "ScInput": ".sc-input.t-input__wrap[data-size='large'] > .t-input",
+    "ScInputGroup": ".sc-input-group",
     "ScButton": ".sc-btn.t-button",
     "ScSelect": ".sc-select[data-size='medium'] .t-input",
     "ScTextarea": ".sc-textarea .t-textarea__inner",
@@ -119,6 +125,19 @@ def inspect_tree(root: Path) -> list[dict[str, object]]:
     return [inspect_source(path, source_root) for path in sorted(source_root.rglob("*.vue"))]
 
 
+def consumer_primitive_visual_chrome(root: Path = ROOT) -> list[str]:
+    source_root = normalized_source_root(root)
+    violations = []
+    for path in sorted(source_root.rglob("*.vue")):
+        relative = path.relative_to(source_root).as_posix()
+        if relative.startswith("components/design-system/"):
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if any(VISUAL_CHROME_PROPERTY_RE.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME_RE.finditer(text)):
+            violations.append(relative)
+    return violations
+
+
 def encode(payload: dict[str, object]) -> str:
     return json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
@@ -129,6 +148,14 @@ def evaluate_formal_gap_evidence(parity: dict[str, object], root: Path = ROOT) -
         for path in (root / "make/frontend.mk", root / "make/dev.mk")
         if path.is_file()
     )
+    wrapper_authority = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (
+            root / "scripts/dev/local_dev_candidate_frontend.py",
+            root / "scripts/verify/local_dev_candidate_visual_smoke.sh",
+        )
+        if path.is_file()
+    )
     results = []
     for gap in parity.get("gaps", []):
         key = str(gap.get("key", ""))
@@ -136,17 +163,19 @@ def evaluate_formal_gap_evidence(parity: dict[str, object], root: Path = ROOT) -
         if evidence is None:
             results.append({"key": key, "status": "open", "reason": "evidence_binding_missing"})
             continue
-        unit_target, browser_target, browser_source = evidence
+        unit_target, browser_target, browser_source, assertion_marker = evidence
         source_path = root / browser_source
         source = source_path.read_text(encoding="utf-8") if source_path.is_file() else ""
         unit_wired = re.search(rf"(?m)^{re.escape(unit_target)}\s*:", make_authority) is not None
         browser_wired = re.search(rf"(?m)^{re.escape(browser_target)}\s*:", make_authority) is not None
+        target_recipe_wired = browser_wired and browser_source in (make_authority + wrapper_authority)
         failure_exit_present = (
-            ("process.exitCode" in source and "const pass" in source)
-            or ("failures" in source and "report.pass" in source and "process.exit(1)" in source)
+            "process.exit(1)" in source
+            or "process.exitCode = 1" in source
             or ("function check" in source and "throw new Error" in source)
         )
-        status = "closed" if unit_wired and browser_wired and failure_exit_present else "open"
+        assertion_present = assertion_marker in source
+        status = "bound" if unit_wired and target_recipe_wired and failure_exit_present and assertion_present else "invalid"
         results.append({
             "key": key,
             "status": status,
@@ -154,7 +183,10 @@ def evaluate_formal_gap_evidence(parity: dict[str, object], root: Path = ROOT) -
             "unitTargetWired": unit_wired,
             "browserTarget": browser_target,
             "browserTargetWired": browser_wired,
+            "browserTargetRecipeWired": target_recipe_wired,
             "browserEvidenceSource": browser_source,
+            "browserAssertionMarker": assertion_marker,
+            "browserAssertionMarkerPresent": assertion_present,
             "browserFailureExitPresent": failure_exit_present,
         })
     return results
@@ -202,8 +234,9 @@ def build_inventory(reference_path: Path) -> dict[str, object]:
             })
     parity = json.loads(VISUAL_PARITY.read_text(encoding="utf-8"))
     formal_gap_evidence = evaluate_formal_gap_evidence(parity)
-    open_gaps = [gap["key"] for gap in formal_gap_evidence if gap["status"] == "open"]
+    invalid_bindings = [gap["key"] for gap in formal_gap_evidence if gap["status"] != "bound"]
     risky = [row for row in current if row["scComponents"] and row["nativeStyleSelectors"]]
+    consumer_chrome = consumer_primitive_visual_chrome(ROOT)
     return {
         "schemaVersion": "frontend.visual-projection.inventory.v1",
         "scope": "repository formal P0/P1 frontend source projection",
@@ -212,8 +245,9 @@ def build_inventory(reference_path: Path) -> dict[str, object]:
         "adapterProjection": projection,
         "changedSourceProjection": differences,
         "scAdapterWithNativeSelectorCandidates": risky,
+        "consumerPrimitiveVisualChrome": consumer_chrome,
         "formalGapEvidence": formal_gap_evidence,
-        "openFormalVisualGaps": open_gaps,
+        "invalidFormalVisualEvidenceBindings": invalid_bindings,
         "summary": {
             "referenceSourceCount": reference["sourceCount"],
             "currentSourceCount": len(current),
@@ -222,9 +256,11 @@ def build_inventory(reference_path: Path) -> dict[str, object]:
             "projectedAdapterCount": sum(row["status"] == "projected" for row in projection),
             "unassessedAdapterCount": sum(row["status"] != "projected" for row in projection),
             "scAdapterWithNativeSelectorCandidateCount": len(risky),
-            "openFormalVisualGapCount": len(open_gaps),
+            "consumerPrimitiveVisualChromeCount": len(consumer_chrome),
+            "invalidFormalVisualEvidenceBindingCount": len(invalid_bindings),
         },
-        "excludedScopes": ["runtime permissions", "Contract authority", "database data", "customer addons"],
+        "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
+        "excludedScopes": ["runtime permissions", "Contract authority", "database data", "customer addons", "exact-head runtime pass/fail"],
     }
 
 

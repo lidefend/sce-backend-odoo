@@ -545,6 +545,7 @@
       ],
       "bridgeExports": [
         "TDesignInput",
+        "TDesignInputAdornment",
         "TDesignInputNumber"
       ],
       "officialComponent": "input",
@@ -554,14 +555,25 @@
       "status": "adapter_present"
     },
     {
-      "adapterKeys": [],
-      "adapterSources": [],
-      "bridgeExports": [],
+      "adapterKeys": [
+        "ScInputGroup"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScInputGroup"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScInputGroup.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignInputAdornment"
+      ],
       "officialComponent": "input-adornment",
-      "productionConsumerCount": 0,
-      "requiredForCurrentProduct": false,
-      "requirementDecision": "not required by current formal product semantics",
-      "status": "not_required"
+      "productionConsumerCount": 1,
+      "requiredForCurrentProduct": true,
+      "requirementDecision": "required_current_semantic",
+      "status": "adapter_present"
     },
     {
       "adapterKeys": [
@@ -1249,19 +1261,19 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "3f8eac6c35a3abbd15a7b0e0124c12fd4cef8ec4536a2fc914332bc6d2bc3160",
+  "inputDigest": "ca87980408a025e976c32ee1a2ec5f1dc3b403b1e9522f4af3d8d8a05c289ad7",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
-    "adapter_present": 33,
+    "adapter_present": 34,
     "adapter_unconsumed": 0,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
     "missing": 0,
-    "not_required": 38,
+    "not_required": 37,
     "officialComponents": 71,
-    "requiredDrivers": 33,
+    "requiredDrivers": 34,
     "unassessedRawBehaviorSurfaces": 0
   }
 }

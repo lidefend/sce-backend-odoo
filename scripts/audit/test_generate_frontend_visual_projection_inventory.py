@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.audit.generate_frontend_visual_projection_inventory import category, evaluate_formal_gap_evidence, inspect_tree, normalized_source_root
+from scripts.audit.generate_frontend_visual_projection_inventory import category, consumer_primitive_visual_chrome, evaluate_formal_gap_evidence, inspect_tree, normalized_source_root
 
 
 class FrontendVisualProjectionInventoryTest(unittest.TestCase):
@@ -35,28 +35,52 @@ class FrontendVisualProjectionInventoryTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 normalized_source_root(root / "missing")
 
+    def test_page_consumer_cannot_repaint_primitive_chrome(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "frontend/apps/web/src/views/LegacyView.vue"
+            source.parent.mkdir(parents=True)
+            source.write_text("<style scoped>.legacy :deep(.sc-btn) { background: red; }</style>", encoding="utf-8")
+            self.assertEqual(consumer_primitive_visual_chrome(root), ["views/LegacyView.vue"])
+
     def test_formal_gap_cannot_self_assert_closed_without_machine_evidence(self) -> None:
         parity = {"gaps": [{"key": "overlay.dialog-drawer-focus-density", "status": "closed"}]}
         with tempfile.TemporaryDirectory() as directory:
             result = evaluate_formal_gap_evidence(parity, Path(directory))
-        self.assertEqual(result[0]["status"], "open")
+        self.assertEqual(result[0]["status"], "invalid")
         self.assertFalse(result[0]["unitTargetWired"])
 
-    def test_formal_gap_closure_requires_wired_targets_and_failing_browser_assertion(self) -> None:
+    def test_formal_gap_binding_rejects_generic_constant_pass_script(self) -> None:
         parity = {"gaps": [{"key": "overlay.dialog-drawer-focus-density", "status": "open"}]}
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "make").mkdir()
             (root / "make/frontend.mk").write_text(
-                "verify.frontend.overlay_lifecycle.unit:\nverify.frontend.overlay_lifecycle.browser:\n",
+                "verify.frontend.overlay_lifecycle.unit:\n\t@true\nverify.frontend.overlay_lifecycle.browser:\n\t@node scripts/verify/frontend_overlay_lifecycle_browser.mjs\n",
                 encoding="utf-8",
             )
             source = root / "scripts/verify/frontend_overlay_lifecycle_browser.mjs"
             source.parent.mkdir(parents=True)
             source.write_text("const pass = true; if (!pass) process.exitCode = 1;", encoding="utf-8")
             result = evaluate_formal_gap_evidence(parity, root)
-        self.assertEqual(result[0]["status"], "closed")
+        self.assertEqual(result[0]["status"], "invalid")
         self.assertTrue(result[0]["browserFailureExitPresent"])
+
+    def test_formal_gap_binding_requires_recipe_source_and_named_assertion(self) -> None:
+        parity = {"gaps": [{"key": "overlay.dialog-drawer-focus-density", "status": "open"}]}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "make").mkdir()
+            (root / "make/frontend.mk").write_text(
+                "verify.frontend.overlay_lifecycle.unit:\n\t@true\nverify.frontend.overlay_lifecycle.browser:\n\t@node scripts/verify/frontend_overlay_lifecycle_browser.mjs\n",
+                encoding="utf-8",
+            )
+            source = root / "scripts/verify/frontend_overlay_lifecycle_browser.mjs"
+            source.parent.mkdir(parents=True)
+            source.write_text("const bodyLocked = false; if (!bodyLocked) process.exit(1);", encoding="utf-8")
+            result = evaluate_formal_gap_evidence(parity, root)
+        self.assertEqual(result[0]["status"], "bound")
+        self.assertTrue(result[0]["browserTargetRecipeWired"])
 
 
 if __name__ == "__main__":

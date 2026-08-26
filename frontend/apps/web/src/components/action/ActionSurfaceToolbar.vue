@@ -15,6 +15,7 @@
           v-for="mode in viewModes"
           :key="`view-mode-${mode}`"
           class="contract-chip"
+          appearance="toolbar-chip"
           variant="ghost"
           size="small"
           :class="{ active: currentViewMode === mode }"
@@ -32,9 +33,11 @@
         <ScButton
           v-if="activeFilterChip"
           class="search-facet"
+          appearance="toolbar-chip"
           type="button"
           variant="ghost"
           size="small"
+          aria-pressed="true"
           :disabled="loading"
           @click="$emit('clear-filter')"
         >
@@ -44,9 +47,11 @@
         <ScButton
           v-if="activeSavedFilterChip"
           class="search-facet"
+          appearance="toolbar-chip"
           type="button"
           variant="ghost"
           size="small"
+          aria-pressed="true"
           :disabled="loading"
           @click="$emit('clear-saved-filter')"
         >
@@ -56,9 +61,11 @@
         <ScButton
           v-if="activeCustomFilterLabel"
           class="search-facet"
+          appearance="toolbar-chip"
           type="button"
           variant="ghost"
           size="small"
+          aria-pressed="true"
           :disabled="loading"
           @click="$emit('clear-custom-filter')"
         >
@@ -68,9 +75,11 @@
         <ScButton
           v-if="activeGroupChip"
           class="search-facet"
+          appearance="toolbar-chip"
           type="button"
           variant="ghost"
           size="small"
+          aria-pressed="true"
           :disabled="loading"
           @click="$emit('clear-group')"
         >
@@ -149,9 +158,11 @@
               v-for="chip in allFilterChips"
               :key="`filter-${chip.key}`"
               class="search-menu-item"
+              appearance="menu-item"
               variant="ghost"
               size="small"
               :class="{ selected: activeFilterKey === chip.key }"
+              :aria-pressed="activeFilterKey === chip.key"
               :disabled="loading"
               @click="selectFilter(chip.key)"
             >
@@ -162,6 +173,7 @@
             <ScButton
               v-if="customFilterEnabled"
               class="search-menu-item custom-entry"
+              appearance="menu-item"
               type="button"
               variant="ghost"
               size="small"
@@ -192,9 +204,11 @@
               v-for="chip in menuGroupChips"
               :key="`group-${chip.key}`"
               class="search-menu-item"
+              appearance="menu-item"
               variant="ghost"
               size="small"
               :class="{ selected: activeGroupKey === chip.key }"
+              :aria-pressed="activeGroupKey === chip.key"
               :disabled="loading"
               @click="selectGroup(chip.key)"
             >
@@ -220,9 +234,11 @@
               v-for="chip in allSavedFilterChips"
               :key="`saved-filter-${chip.key}`"
               class="search-menu-item"
+              appearance="menu-item"
               variant="ghost"
               size="small"
               :class="{ selected: activeSavedFilterKey === chip.key }"
+              :aria-pressed="activeSavedFilterKey === chip.key"
               :disabled="loading"
               @click="selectSavedFilter(chip.key)"
             >
@@ -235,6 +251,7 @@
             <ScButton
               v-if="favoriteSaveEnabled"
               class="search-menu-item custom-entry"
+              appearance="menu-item"
               type="button"
               variant="ghost"
               size="small"
@@ -265,6 +282,7 @@
           v-for="option in sortOptions"
           :key="`sort-${option.value}`"
           class="contract-chip"
+          appearance="toolbar-chip"
           variant="ghost"
           size="small"
           :class="{ active: option.value === sortValue }"
@@ -281,6 +299,7 @@
       <ScIconButton
         ref="overflowMenuToggle"
         class="toolbar-overflow-toggle"
+        appearance="toolbar-menu-toggle"
         :disabled="loading"
         :aria-expanded="overflowMenuOpen"
         :label="uiLabel('more_actions', '更多列表操作')"
@@ -296,6 +315,7 @@
             v-for="mode in viewModes"
             :key="`overflow-view-mode-${mode}`"
             type="button"
+            appearance="menu-item"
             variant="ghost"
             size="small"
             :class="{ active: currentViewMode === mode }"
@@ -312,6 +332,7 @@
             v-for="option in sortOptions"
             :key="`overflow-sort-${option.value}`"
             type="button"
+            appearance="menu-item"
             variant="ghost"
             size="small"
             :class="{ active: option.value === sortValue }"
@@ -679,13 +700,6 @@ onBeforeUnmount(() => {
   grid-template-areas: 'search sort primary';
 }
 
-.action-toolbar :deep(.sc-btn:focus-visible),
-.action-toolbar :deep(.sc-input:focus-visible),
-.action-toolbar :deep(.sc-select:focus-visible) {
-  outline: 2px solid var(--sc-semantic-focus-ring);
-  outline-offset: 2px;
-}
-
 .view-switch { grid-area: view; }
 .native-search { grid-area: search; }
 .sort-switch { grid-area: sort; }
@@ -714,12 +728,6 @@ onBeforeUnmount(() => {
 .view-switch .contract-chips {
   flex-wrap: nowrap;
   gap: 4px;
-}
-
-.view-switch :deep(.sc-btn) {
-  min-height: calc(var(--sc-component-button-height-md) * 1px);
-  border-radius: var(--sc-component-button-radius);
-  padding-inline: calc(var(--sc-component-button-padding-x) * 1px);
 }
 
 .group-switch {
@@ -777,15 +785,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 22px;
   max-width: min(150px, 38%);
-  border: 1px solid var(--sc-app-selected-border);
-  border-radius: 5px;
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-  padding: 2px 6px;
-  font-size: 12px;
-  cursor: pointer;
   white-space: nowrap;
 }
 
@@ -864,13 +864,7 @@ onBeforeUnmount(() => {
   grid-template-columns: 18px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 6px;
-  border: 0;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  padding: 7px 12px;
   text-align: left;
-  font-size: 13px;
-  cursor: pointer;
   min-width: 0;
 }
 
@@ -880,18 +874,7 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 
-.search-menu-item:hover {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
-}
-
-.search-menu-item.selected {
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-}
-
 .search-menu-item.custom-entry {
-  color: var(--sc-app-text-primary);
   font-weight: 700;
 }
 
@@ -914,22 +897,6 @@ onBeforeUnmount(() => {
 .custom-search-actions {
   display: flex;
   gap: 6px;
-}
-
-.custom-search-actions :deep(.sc-btn) {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 6px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 5px 9px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.custom-search-actions :deep(.sc-btn:first-child) {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
 }
 
 .search-menu-empty {
@@ -983,62 +950,18 @@ onBeforeUnmount(() => {
 }
 
 .contract-chip {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 999px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 3px 8px;
-  font-size: 12px;
-  cursor: pointer;
   max-width: 100%;
   white-space: nowrap;
-  min-height: 44px;
 }
 
 .toolbar-overflow { position: relative; display: none; }
-.toolbar-overflow-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-control); background: var(--sc-app-input-bg); color: var(--sc-app-text-primary); cursor: pointer; }
+.toolbar-overflow-toggle { width: 44px; min-height: 44px; }
 .toolbar-overflow-menu { position: absolute; z-index: 90; top: calc(100% + var(--sc-space-2xs)); right: 0; display: grid; gap: var(--sc-space-xs); min-width: 220px; max-height: min(420px, 70vh); overflow: auto; padding: var(--sc-space-xs); border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
 .toolbar-overflow-section { display: grid; gap: var(--sc-space-2xs); }
 .toolbar-overflow-section p { margin: 0; color: var(--sc-app-text-secondary); font-size: 12px; font-weight: 700; }
 .toolbar-overflow-section :deep(.sc-btn),
-.toolbar-overflow-create { display: flex; align-items: center; gap: var(--sc-space-xs); width: 100%; min-height: 44px; padding: var(--sc-space-xs); border: 1px solid transparent; border-radius: var(--sc-product-radius-control); background: var(--sc-app-panel); color: var(--sc-app-text-primary); text-align: left; cursor: pointer; }
-.toolbar-overflow-section :deep(.sc-btn:hover),
-.toolbar-overflow-create:hover { border-color: var(--sc-app-border); background: var(--sc-app-muted-bg); }
-.toolbar-overflow-section :deep(.sc-btn.active) {
-  border-color: var(--sc-app-selected-border);
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-}
+.toolbar-overflow-create { display: flex; align-items: center; gap: var(--sc-space-xs); width: 100%; min-height: 44px; }
 .toolbar-overflow-create { display: none; }
-
-.contract-chip.active {
-  border-color: var(--sc-app-selected-border);
-  color: var(--sc-app-selected-text);
-  background: var(--sc-app-selected-bg);
-}
-
-.contract-chip.primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-}
-
-.contract-chip.ghost {
-  border-style: dashed;
-}
-
-.contract-chip:disabled,
-.toolbar-search-submit:disabled,
-.toolbar-search-clear:disabled,
-.search-menu-toggle:disabled,
-.search-facet:disabled,
-.search-menu-item:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
 
 @media (max-width: 1199px) {
   .action-toolbar {

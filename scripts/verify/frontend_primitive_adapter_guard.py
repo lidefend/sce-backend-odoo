@@ -13,7 +13,7 @@ UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
 UI_THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
 
 PRIMITIVES = (
-    "ScButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInputGroup", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
+    "ScButton", "ScIconButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInputGroup", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
     "ScActionBar", "ScAutoComplete", "ScNumberInput", "ScDatePicker", "ScUpload", "ScForm", "ScFormItem",
     "ScCard", "ScCollapse", "ScDisclosure", "ScProgress", "ScSkeleton", "ScDescriptions", "ScList", "ScTimeline",
@@ -29,9 +29,7 @@ CONSUMER_PRIMITIVE_CHROME = re.compile(
     re.DOTALL,
 )
 VISUAL_CHROME_PROPERTY = re.compile(r"(?:^|;)\s*(?:border(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.MULTILINE)
-PROFESSIONAL_COMPOSITE_OWNERS = {
-    "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
-}
+PROFESSIONAL_COMPOSITE_OWNERS: set[str] = set()
 
 
 def validate(root: Path = ROOT) -> list[str]:
@@ -120,6 +118,9 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"ScButton missing governed interaction-state marker: {marker}")
     if "TDesignButton" not in bridge or "TDesignButton" not in ui_primitives:
         errors.append("ScButton must consume the public project TDesign button authority")
+    icon_button_text = (design / "ScIconButton.vue").read_text(encoding="utf-8") if (design / "ScIconButton.vue").is_file() else ""
+    if "<TDesignButton" not in icon_button_text or ':data-appearance="appearance"' not in icon_button_text:
+        errors.append("ScIconButton must use the TDesign button driver and project registered appearances")
 
     checkbox_text = (design / "ScCheckbox.vue").read_text(encoding="utf-8") if (design / "ScCheckbox.vue").is_file() else ""
     for marker in (

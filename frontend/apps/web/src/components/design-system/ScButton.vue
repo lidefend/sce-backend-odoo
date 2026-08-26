@@ -41,7 +41,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   loading?: boolean;
   loadingLabel?: string;
-  appearance?: 'default' | 'section-tab' | 'menu-item' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link';
+  appearance?: 'default' | 'section-tab' | 'menu-item' | 'toolbar-chip' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link';
 }>(), {
   type: 'button',
   variant: 'secondary',
