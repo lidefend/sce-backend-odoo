@@ -76,6 +76,16 @@ class SystemwidePublicMetricReportTest(unittest.TestCase):
         self.assertIn("input:disabled, textarea:disabled, select:disabled", source)
         self.assertNotIn("['checkbox', 'radio'].includes(node.type)", source)
 
+    def test_browser_projection_expectations_come_from_runtime_contract(self):
+        browser_source = Path("scripts/verify/frontend_systemwide_public_metric_browser.mjs").read_text(encoding="utf-8")
+        target_source = Path("scripts/verify/local_dev_systemwide_public_metric_ids.py").read_text(encoding="utf-8")
+        self.assertIn("metrics.contractPagePattern", browser_source)
+        self.assertIn("metrics.presentationMode === metrics.contractPresentationMode", browser_source)
+        self.assertNotIn("spec.presentationMode", browser_source)
+        self.assertNotIn("spec.renderProfile", browser_source)
+        self.assertNotIn('"presentationMode":', target_source)
+        self.assertNotIn('"renderProfile":', target_source)
+
 
 if __name__ == "__main__":
     unittest.main()

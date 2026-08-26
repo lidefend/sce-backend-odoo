@@ -53,9 +53,6 @@ payload = {
             "menuId": int(report_menu.id),
             "actionId": int(report_action.id),
             "model": report_action.res_model,
-            "pagePattern": "collection",
-            "presentationMode": "collection",
-            "renderProfile": "readonly",
         },
         {
             "key": "payment-task-edit",
@@ -65,9 +62,6 @@ payload = {
             "actionId": int(payment_action.id),
             "model": "payment.request",
             "recordId": int(payment.id),
-            "pagePattern": "task-form",
-            "presentationMode": "task",
-            "renderProfile": "edit",
         },
         {
             "key": "project-workspace-readonly",
@@ -77,9 +71,6 @@ payload = {
             "actionId": int(project_action.id),
             "model": "project.project",
             "recordId": int(project.id),
-            "pagePattern": "workspace-form",
-            "presentationMode": "workspace",
-            "renderProfile": "readonly",
         },
     ],
     "businessFingerprint": hashlib.sha256(

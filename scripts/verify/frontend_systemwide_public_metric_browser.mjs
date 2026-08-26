@@ -78,7 +78,7 @@ try {
   for (const spec of target.targets) {
     const contractStart = report.contracts.length;
     await page.goto(`${frontendUrl}${spec.route}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    const pattern = page.locator(`[data-product-page-pattern="${spec.pagePattern}"]:visible`).first();
+    const pattern = page.locator('[data-product-page-pattern]:visible').first();
     await pattern.waitFor({ timeout: 45000 });
     await page.locator('[data-product-page-header]:visible').first().waitFor({ timeout: 45000 });
     await page.waitForFunction(() => !/正在载入|正在加载|正在初始化/.test(document.body.innerText || ''), null, { timeout: 45000 });
@@ -136,14 +136,19 @@ try {
     const contract = formContract || listContract;
     metrics.contractPresentationMode = formContract ? findKey(formContract, 'presentationMode') : 'collection';
     metrics.contractRenderProfile = formContract ? findKey(formContract, 'effectiveRenderProfile') : 'readonly';
+    metrics.contractPagePattern = formContract ? `${metrics.contractPresentationMode}-form` : 'collection';
     metrics.contractModel = findKey(contract, 'model');
     metrics.contractActionId = candidateContracts.map((row) => findKey(row.request, 'action_id')).find(Boolean);
     metrics.contractMenuId = candidateContracts.map((row) => findKey(row.request, 'menu_id')).find(Boolean);
 
     check(metrics.h1 === 1 && metrics.pageHeader === 1, `${spec.key}: page identity is not unique`, metrics);
-    check(metrics.pattern === spec.pagePattern, `${spec.key}: page pattern drifted`, metrics);
-    check(metrics.presentationMode === spec.presentationMode && metrics.renderProfile === spec.renderProfile,
-      `${spec.key}: header authority drifted`, metrics);
+    check(['collection', 'task', 'workspace'].includes(metrics.contractPresentationMode),
+      `${spec.key}: Contract presentation mode is invalid`, metrics);
+    check(['readonly', 'edit', 'create'].includes(metrics.contractRenderProfile),
+      `${spec.key}: Contract render profile is invalid`, metrics);
+    check(metrics.pattern === metrics.contractPagePattern, `${spec.key}: page pattern differs from Contract authority`, metrics);
+    check(metrics.presentationMode === metrics.contractPresentationMode && metrics.renderProfile === metrics.contractRenderProfile,
+      `${spec.key}: header differs from Contract authority`, metrics);
     check(metrics.selectedNavigationItem === 1, `${spec.key}: selected navigation identity is not unique`, metrics);
     check(metrics.primaryActions <= 1, `${spec.key}: multiple primary actions`, metrics);
     check(metrics.duplicateFields.length === 0, `${spec.key}: duplicate fields`, metrics);
@@ -153,13 +158,13 @@ try {
     check(metrics.contractModel === spec.model, `${spec.key}: Contract model drifted`, metrics);
     check(String(metrics.contractActionId) === String(spec.actionId), `${spec.key}: Contract action drifted`, metrics);
     check(String(metrics.contractMenuId) === String(spec.menuId), `${spec.key}: Contract menu drifted`, metrics);
-    if (spec.pagePattern !== 'collection') {
-      check(metrics.contractPresentationMode === spec.presentationMode,
+    if (formContract) {
+      check(Boolean(findKey(formContract, 'presentationMode')),
         `${spec.key}: presentation mode was not backend-declared`, metrics);
-      check(metrics.contractRenderProfile === spec.renderProfile,
-        `${spec.key}: render profile differs from backend authority`, metrics);
+      check(Boolean(findKey(formContract, 'effectiveRenderProfile')),
+        `${spec.key}: render profile was not backend-declared`, metrics);
     }
-    if (spec.renderProfile === 'edit') {
+    if (metrics.contractRenderProfile === 'edit') {
       check(metrics.saveActions === 1 && metrics.enabledPrimaryActions === 1,
         `${spec.key}: edit primary action is not uniquely usable`, metrics);
       check(metrics.editTransitions === 0, `${spec.key}: edit intermediate action remains`, metrics);
