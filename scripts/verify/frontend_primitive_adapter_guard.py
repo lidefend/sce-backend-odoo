@@ -10,6 +10,7 @@ DESIGN_SYSTEM = ROOT / "frontend/apps/web/src/components/design-system"
 INDEX = DESIGN_SYSTEM / "index.ts"
 BRIDGE = DESIGN_SYSTEM / "tdesignPrimitiveBridge.ts"
 UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
+UI_THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
 
 PRIMITIVES = (
     "ScButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
@@ -28,6 +29,8 @@ def validate(root: Path = ROOT) -> list[str]:
     bridge = (design / "tdesignPrimitiveBridge.ts").read_text(encoding="utf-8") if (design / "tdesignPrimitiveBridge.ts").is_file() else ""
     ui_primitives_path = root / "frontend/packages/ui/src/primitives.ts"
     ui_primitives = ui_primitives_path.read_text(encoding="utf-8") if ui_primitives_path.is_file() else ""
+    ui_theme_path = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+    ui_theme = ui_theme_path.read_text(encoding="utf-8") if ui_theme_path.is_file() else ""
     errors: list[str] = []
 
     for component in PRIMITIVES:
@@ -150,6 +153,26 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("missing project UI primitive driver authority")
     elif FORBIDDEN_PRIVATE_TDESIGN.search(ui_primitives) or "tdesign-vue-next/es/" not in ui_primitives:
         errors.append("project UI primitive driver must use TDesign public entrypoints")
+
+    visual_projection_markers = (
+        "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
+        "--td-text-color-placeholder: var(--sc-semantic-text-muted)",
+        "--td-border-level-2-color: var(--sc-semantic-border-strong)",
+        ".sc-input.t-input",
+        ".sc-select[data-size='medium'] .t-input",
+        ".sc-textarea .t-textarea__inner",
+        ".sc-btn.t-button",
+        "--sc-component-input-height-md",
+        "--sc-component-button-height-md",
+    )
+    if not ui_theme:
+        errors.append("missing project TDesign visual projection bridge")
+    else:
+        for marker in visual_projection_markers:
+            if marker not in ui_theme:
+                errors.append(f"TDesign visual projection bridge missing marker: {marker}")
+        if FORBIDDEN_BUSINESS_IDENTITY.search(ui_theme):
+            errors.append("TDesign visual projection bridge contains business-specific identity")
 
     return errors
 

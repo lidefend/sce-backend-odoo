@@ -94,11 +94,3 @@ function onTDesignBlur(value: string | number, context: { e?: FocusEvent }) {
 
 defineExpose({ focus: () => textareaRef.value?.focus?.() });
 </script>
-
-<style scoped>
-.sc-textarea :deep(textarea) {
-  min-height: calc(var(--sc-component-input-height-md) * 2px);
-  padding-block: var(--sc-space-sm);
-  resize: vertical;
-}
-</style>

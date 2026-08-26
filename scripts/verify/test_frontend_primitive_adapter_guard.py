@@ -16,6 +16,8 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         design.mkdir(parents=True)
         ui = root / "frontend/packages/ui/src"
         ui.mkdir(parents=True)
+        theme = ui / "kits/tdesign/theme.css"
+        theme.parent.mkdir(parents=True)
         (design / "index.ts").write_text(
             "\n".join(f"export {{ default as {name} }} from './{name}.vue';" for name in PRIMITIVES),
             encoding="utf-8",
@@ -35,6 +37,18 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "export { Dialog as TDesignDialog } from 'tdesign-vue-next/es/dialog';\n"
             "export { Drawer as TDesignDrawer } from 'tdesign-vue-next/es/drawer';\n"
             "export { Empty as TDesignEmpty } from 'tdesign-vue-next/es/empty';\n",
+            encoding="utf-8",
+        )
+        theme.write_text(
+            ":root {\n"
+            "  --td-bg-color-specialcomponent: var(--sc-semantic-surface-input);\n"
+            "  --td-text-color-placeholder: var(--sc-semantic-text-muted);\n"
+            "  --td-border-level-2-color: var(--sc-semantic-border-strong);\n"
+            "}\n"
+            ".sc-input.t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
+            ".sc-select[data-size='medium'] .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
+            ".sc-textarea .t-textarea__inner { min-height: calc(var(--sc-component-input-height-md) * 2px); }\n"
+            ".sc-btn.t-button { min-height: calc(var(--sc-component-button-height-md) * 1px); }\n",
             encoding="utf-8",
         )
         for name in PRIMITIVES:
@@ -134,6 +148,18 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         errors = validate(root)
         self.assertTrue(any("data-indeterminate" in error for error in errors))
         self.assertTrue(any("aria-checked" in error for error in errors))
+
+    def test_missing_visual_projection_fails(self) -> None:
+        root = self.make_root()
+        theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+        theme.write_text(":root {}\n", encoding="utf-8")
+        self.assertTrue(any("visual projection bridge missing marker" in error for error in validate(root)))
+
+    def test_business_identity_in_visual_projection_fails(self) -> None:
+        root = self.make_root()
+        theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+        theme.write_text(theme.read_text(encoding="utf-8") + "/* payment.request */\n", encoding="utf-8")
+        self.assertTrue(any("visual projection bridge contains business-specific identity" in error for error in validate(root)))
 
 
 if __name__ == "__main__":
