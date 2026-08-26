@@ -67,7 +67,7 @@ def validate(root: Path = ROOT) -> list[str]:
     for marker in (
         ".shell :deep(.sidebar)",
         "grid-template-columns: minmax(0, 1fr)",
-        ".published-apps__list :deep(.published-app > .t-button__text)",
+        ".published-apps__list :deep(.published-app > .t-button__text > .sc-btn__content)",
         "height: 100vh",
         "overflow: hidden",
         ".product-side-navigation__tree",
@@ -75,6 +75,8 @@ def validate(root: Path = ROOT) -> list[str]:
     ):
         if marker not in (shell_style + "\n" + side_navigation):
             errors.append(f"navigation shell lost bounded scroll ownership: {marker}")
+    if ".published-app > .t-button__text)" in shell_style:
+        errors.append("published app layout must project through the ScButton content adapter")
     if re.search(r"(?m)^\.sidebar\s*\{", shell_style):
         errors.append("navigation drawer root styling bypasses the child-component deep boundary")
     desktop_shell = shell_style[shell_style.find("@media (min-width: 961px)") :]
