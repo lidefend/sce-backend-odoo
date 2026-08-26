@@ -136,6 +136,29 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalAttachmentManager"}}},
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalCollaborationComposer"}}},
     },
+    "p0-shared-utility-scene-completion-v1": {
+        "frontend/apps/web/src/components/DevContextPanel.vue": {"aside": {"attrs": {"data-semantic-component": "DevContextPanel"}}},
+        "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue": {"scdialog": {"attrs": {"data-semantic-component": "IntentConfirmationDialog"}}},
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"scsection": {"attrs": {"data-semantic-component": "MyWorkApprovalWorkspace"}}},
+        "frontend/apps/web/src/components/page/PageRenderer.vue": {"section": {"attrs": {"data-semantic-component": "PageRenderer"}}},
+        "frontend/apps/web/src/components/page/ZoneRenderer.vue": {"section": {"attrs": {"data-semantic-component": "ZoneRenderer"}}},
+        "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue": {"header": {"attrs": {"data-semantic-component": "ProductPageHeader"}}},
+        "frontend/apps/web/src/components/product-shell/ProductIdentity.vue": {"div": {"attrs": {"data-semantic-component": "ProductIdentity"}}},
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue": {"div": {"attrs": {"data-semantic-component": "WorkspaceHome", ":aria-busy": "loading || undefined"}}, "scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
+        "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue": {"section": {"attrs": {"data-semantic-component": "SceneBlocksRenderer"}}},
+        "frontend/apps/web/src/views/AccessDeniedView.vue": {"scpage": {"attrs": {"data-semantic-component": "AccessDeniedView", "data-state": "error"}}},
+        "frontend/apps/web/src/views/AccountActivationView.vue": {"main": {"attrs": {"data-semantic-component": "AccountActivationView"}}},
+        "frontend/apps/web/src/views/ApiKeyManagementView.vue": {"scpage": {"attrs": {"data-semantic-component": "ApiKeyManagementView", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/views/LoginView.vue": {"main": {"attrs": {"data-semantic-component": "LoginView", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/views/MenuView.vue": {"section": {"attrs": {"data-semantic-component": "MenuView", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/views/MyWorkView.vue": {"scpage": {"attrs": {"data-semantic-component": "MyWorkView"}}},
+        "frontend/apps/web/src/views/NotFoundView.vue": {"scpage": {"attrs": {"data-semantic-component": "NotFoundView", "data-state": "error"}}},
+        "frontend/apps/web/src/views/PasswordRecoveryView.vue": {"main": {"attrs": {"data-semantic-component": "PasswordRecoveryView"}}},
+        "frontend/apps/web/src/views/PlaceholderView.vue": {"main": {"attrs": {"data-semantic-component": "PlaceholderView"}}},
+        "frontend/apps/web/src/views/SceneContractBlockGridView.vue": {"section": {"attrs": {"data-semantic-component": "SceneContractBlockGridView", ":data-state": "status"}}},
+        "frontend/apps/web/src/views/SceneView.vue": {"section": {"attrs": {"data-semantic-component": "SceneView", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/views/WorkbenchView.vue": {"pagerenderer": {"attrs": {"data-semantic-component": "WorkbenchView", "data-state": "unified"}}, "section": {"attrs": {"data-semantic-component": "WorkbenchView", "data-state": "fallback"}}},
+    },
 }
 OWNED_BINDINGS = {
     source: (batch, requirements)
@@ -259,9 +282,9 @@ def build_inventory() -> dict[str, Any]:
         raw_controls = {name: len(pattern.findall(text)) for name, pattern in RAW_CONTROL_PATTERNS.items()}
         raw_controls = {name: count for name, count in raw_controls.items() if count}
         governed_primitives = [name for name in GOVERNED_STATE_PRIMITIVES if name in text]
-        if not state_types and not raw_controls and not governed_primitives:
-            continue
         source = rel(path)
+        if not state_types and not raw_controls and not governed_primitives and source not in OWNED_BINDINGS:
+            continue
         status, reason = classify(source, text)
         if status not in STATUS_VALUES:
             raise ValueError(f"invalid status for {source}: {status}")
@@ -293,9 +316,9 @@ def build_inventory() -> dict[str, Any]:
         ],
         "summary": {"surfaceCount": len(surfaces), **{key: counts.get(key, 0) for key in sorted(STATUS_VALUES)}},
         "nextBatch": {
-            "key": "p0-form-relation-workflow-completion-v1",
-            "targetSurfaceCount": len(BATCH_BINDINGS["p0-form-relation-workflow-completion-v1"]),
-            "targetSources": sorted(BATCH_BINDINGS["p0-form-relation-workflow-completion-v1"]),
+            "key": "p0-shared-utility-scene-completion-v1",
+            "targetSurfaceCount": len(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
+            "targetSources": sorted(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
             "commitBudget": {"minimum": 12, "maximum": 20},
         },
         "surfaces": surfaces,

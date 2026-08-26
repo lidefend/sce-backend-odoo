@@ -72,6 +72,32 @@
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue"
       ]
     },
+    "p0-shared-utility-scene-completion-v1": {
+      "formalProductLayer": "P0",
+      "sources": [
+        "frontend/apps/web/src/components/DevContextPanel.vue",
+        "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/page/PageRenderer.vue",
+        "frontend/apps/web/src/components/page/ZoneRenderer.vue",
+        "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+        "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
+        "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
+        "frontend/apps/web/src/views/AccessDeniedView.vue",
+        "frontend/apps/web/src/views/AccountActivationView.vue",
+        "frontend/apps/web/src/views/ApiKeyManagementView.vue",
+        "frontend/apps/web/src/views/LoginView.vue",
+        "frontend/apps/web/src/views/MenuView.vue",
+        "frontend/apps/web/src/views/MyWorkView.vue",
+        "frontend/apps/web/src/views/NotFoundView.vue",
+        "frontend/apps/web/src/views/PasswordRecoveryView.vue",
+        "frontend/apps/web/src/views/PlaceholderView.vue",
+        "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/src/views/WorkbenchView.vue"
+      ]
+    },
     "p3-low-code-administration": {
       "formalProductLayer": "P3",
       "sources": [
