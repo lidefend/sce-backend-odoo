@@ -270,10 +270,11 @@ verify.frontend.state_dashboard.browser: guard.prod.forbid
 	@node scripts/verify/frontend_state_dashboard_browser.mjs
 
 verify.frontend.rendering_detail_state.unit: guard.prod.forbid
-	@python3 -m unittest scripts.audit.test_generate_frontend_rendering_detail_inventory scripts.verify.test_frontend_inline_state_guard scripts.verify.test_frontend_rendering_detail_state_guard
+	@python3 -m unittest scripts.audit.test_generate_frontend_rendering_detail_inventory scripts.audit.test_generate_frontend_visual_projection_inventory scripts.verify.test_frontend_inline_state_guard scripts.verify.test_frontend_rendering_detail_state_guard
 	@python3 scripts/verify/frontend_inline_state_guard.py
 	@python3 scripts/verify/frontend_rendering_detail_state_guard.py
 	@python3 scripts/audit/generate_frontend_rendering_detail_inventory.py --check
+	@python3 scripts/audit/generate_frontend_visual_projection_inventory.py --check
 
 verify.frontend.rendering_detail_state.browser: guard.prod.forbid
 	@node scripts/verify/frontend_rendering_detail_state_browser.mjs

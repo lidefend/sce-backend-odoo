@@ -410,6 +410,9 @@ try {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
           primaryActions: document.querySelectorAll('[data-primary-action]:not([hidden]), .sc-btn-primary:not([hidden])').length,
+          presentationModes: [...new Set([...document.querySelectorAll('[data-product-page-pattern][data-presentation-mode]')].map((node) => node.getAttribute('data-presentation-mode')).filter(Boolean))],
+          nativeStructureCount: document.querySelectorAll('[data-native-contract-structure]').length,
+          nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] [role="tab"], [data-native-contract-structure] [data-container-kind="page"]').length,
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
@@ -983,7 +986,7 @@ try {
           return { points, resizeHandles };
         })
         : null;
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, verticalLineEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, verticalLineEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -1000,6 +1003,21 @@ for (const item of report.routes) {
   }
   if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
     failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
+  }
+  if (item.path && item.expectedPageHeaders !== null && item.pageHeaders !== item.expectedPageHeaders) {
+    failures.push({ name: item.name, expectedPageHeaders: item.expectedPageHeaders, actualPageHeaders: item.pageHeaders });
+  }
+  if (item.path && item.expectedPrimaryActions !== null && item.primaryActions !== item.expectedPrimaryActions) {
+    failures.push({ name: item.name, expectedPrimaryActions: item.expectedPrimaryActions, actualPrimaryActions: item.primaryActions });
+  }
+  if (item.path && item.expectedPresentationMode !== null && !item.presentationModes.includes(item.expectedPresentationMode)) {
+    failures.push({ name: item.name, expectedPresentationMode: item.expectedPresentationMode, actualPresentationModes: item.presentationModes });
+  }
+  if (item.path && item.expectedNativeStructureCount !== null && item.nativeStructureCount !== item.expectedNativeStructureCount) {
+    failures.push({ name: item.name, expectedNativeStructureCount: item.expectedNativeStructureCount, actualNativeStructureCount: item.nativeStructureCount });
+  }
+  if (item.path && item.expectedNativeNotebookPageCount !== null && item.nativeNotebookPageCount !== item.expectedNativeNotebookPageCount) {
+    failures.push({ name: item.name, expectedNativeNotebookPageCount: item.expectedNativeNotebookPageCount, actualNativeNotebookPageCount: item.nativeNotebookPageCount });
   }
 }
 for (const item of report.routes) {

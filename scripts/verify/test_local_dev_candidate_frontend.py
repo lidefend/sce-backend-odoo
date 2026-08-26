@@ -148,6 +148,11 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn('data-semantic-component=\"CollectionPaginationFooter\"', browser)
         self.assertIn('data-semantic-component=\"CollectionColumnHeaderControl\"', browser)
         self.assertIn("openerRestored", browser)
+        self.assertIn("overlayResidueEvidence", browser)
+        self.assertIn("expectedPageHeaders", browser)
+        self.assertIn("expectedPrimaryActions", browser)
+        self.assertIn("expectedPresentationMode", browser)
+        self.assertIn("expectedNativeNotebookPageCount", browser)
         self.assertNotIn("waitForTimeout", browser)
 
 if __name__ == "__main__":

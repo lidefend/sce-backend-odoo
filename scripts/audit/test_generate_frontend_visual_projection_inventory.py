@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.audit.generate_frontend_visual_projection_inventory import category, inspect_tree, normalized_source_root
+from scripts.audit.generate_frontend_visual_projection_inventory import category, evaluate_formal_gap_evidence, inspect_tree, normalized_source_root
 
 
 class FrontendVisualProjectionInventoryTest(unittest.TestCase):
@@ -34,6 +34,29 @@ class FrontendVisualProjectionInventoryTest(unittest.TestCase):
             self.assertEqual(normalized_source_root(root), root / "frontend/apps/web/src")
             with self.assertRaises(ValueError):
                 normalized_source_root(root / "missing")
+
+    def test_formal_gap_cannot_self_assert_closed_without_machine_evidence(self) -> None:
+        parity = {"gaps": [{"key": "overlay.dialog-drawer-focus-density", "status": "closed"}]}
+        with tempfile.TemporaryDirectory() as directory:
+            result = evaluate_formal_gap_evidence(parity, Path(directory))
+        self.assertEqual(result[0]["status"], "open")
+        self.assertFalse(result[0]["unitTargetWired"])
+
+    def test_formal_gap_closure_requires_wired_targets_and_failing_browser_assertion(self) -> None:
+        parity = {"gaps": [{"key": "overlay.dialog-drawer-focus-density", "status": "open"}]}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "make").mkdir()
+            (root / "make/frontend.mk").write_text(
+                "verify.frontend.overlay_lifecycle.unit:\nverify.frontend.overlay_lifecycle.browser:\n",
+                encoding="utf-8",
+            )
+            source = root / "scripts/verify/frontend_overlay_lifecycle_browser.mjs"
+            source.parent.mkdir(parents=True)
+            source.write_text("const pass = true; if (!pass) process.exitCode = 1;", encoding="utf-8")
+            result = evaluate_formal_gap_evidence(parity, root)
+        self.assertEqual(result[0]["status"], "closed")
+        self.assertTrue(result[0]["browserFailureExitPresent"])
 
 
 if __name__ == "__main__":

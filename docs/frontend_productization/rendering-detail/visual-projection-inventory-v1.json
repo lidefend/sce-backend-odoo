@@ -2010,6 +2010,148 @@
     "database data",
     "customer addons"
   ],
+  "formalGapEvidence": [
+    {
+      "browserEvidenceSource": "scripts/verify/frontend_product_page_header_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.product_page_header.browser",
+      "browserTargetWired": true,
+      "key": "collection.page-identity-and-primary-action",
+      "status": "closed",
+      "unitTarget": "verify.frontend.product_page_header.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetWired": true,
+      "key": "collection.workspace-gutter-and-ledger-density",
+      "status": "closed",
+      "unitTarget": "verify.frontend.collection_row_cell.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetWired": true,
+      "key": "collection.query-filter-view-toolbar-hierarchy",
+      "status": "closed",
+      "unitTarget": "verify.frontend.collection_action_toolbar.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetWired": true,
+      "key": "collection.authoritative-status-tone",
+      "status": "closed",
+      "unitTarget": "verify.frontend.collection_row_cell.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetWired": true,
+      "key": "shell.context-and-navigation-density",
+      "status": "closed",
+      "unitTarget": "verify.frontend.navigation_shell.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/frontend_rendering_detail_state_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.rendering_detail_state.browser",
+      "browserTargetWired": true,
+      "key": "form.task-field-hierarchy",
+      "status": "closed",
+      "unitTarget": "verify.frontend.primitive_adapter.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.native_form_action_presentation.browser",
+      "browserTargetWired": true,
+      "key": "form.workspace-native-structure-density",
+      "status": "closed",
+      "unitTarget": "verify.frontend.native_form_action_presentation.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetWired": true,
+      "key": "relations-x2many.lifecycle-and-table-detail",
+      "status": "closed",
+      "unitTarget": "verify.frontend.professional_relation_lifecycle.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.native_form_action_presentation.browser",
+      "browserTargetWired": true,
+      "key": "workflow.action-status-disabled-reason",
+      "status": "closed",
+      "unitTarget": "verify.frontend.professional_workflow.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/frontend_overlay_lifecycle_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.overlay_lifecycle.browser",
+      "browserTargetWired": true,
+      "key": "overlay.dialog-drawer-focus-density",
+      "status": "closed",
+      "unitTarget": "verify.frontend.overlay_lifecycle.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/frontend_collaboration_primitives_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.collaboration_primitives.browser",
+      "browserTargetWired": true,
+      "key": "collaboration.chatter-activity-attachment",
+      "status": "closed",
+      "unitTarget": "verify.frontend.professional_collaboration.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/frontend_rendering_detail_state_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.rendering_detail_state.browser",
+      "browserTargetWired": true,
+      "key": "states.loading-empty-error-disabled-focus",
+      "status": "closed",
+      "unitTarget": "verify.frontend.rendering_detail_state.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/frontend_state_dashboard_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.state_dashboard.browser",
+      "browserTargetWired": true,
+      "key": "dashboard.metric-risk-todo-drilldown",
+      "status": "closed",
+      "unitTarget": "verify.frontend.state_dashboard.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetWired": true,
+      "key": "responsive.390-no-overflow-and-action-settlement",
+      "status": "closed",
+      "unitTarget": "verify.frontend.rendering_detail_state.unit",
+      "unitTargetWired": true
+    }
+  ],
   "openFormalVisualGaps": [],
   "referenceInputDigest": "9065801740ce27219e7d0bb92998350fdd3b16e2948288c186d8798a353c74aa",
   "scAdapterWithNativeSelectorCandidates": [],

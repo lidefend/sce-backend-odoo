@@ -17,6 +17,27 @@ DEFAULT_OUTPUT = ROOT / "docs/frontend_productization/rendering-detail/visual-pr
 THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
 VISUAL_PARITY = ROOT / "docs/frontend_productization/rendering-detail/visual-parity-inventory-v1.json"
 
+# A formal gap is closed only when its static authority and representative
+# runtime evidence are both wired into governed Make targets.  The tracked
+# parity document describes the product requirement; it is not allowed to
+# self-assert closure.
+FORMAL_GAP_EVIDENCE = {
+    "collection.page-identity-and-primary-action": ("verify.frontend.product_page_header.unit", "verify.frontend.product_page_header.browser", "scripts/verify/frontend_product_page_header_browser.mjs"),
+    "collection.workspace-gutter-and-ledger-density": ("verify.frontend.collection_row_cell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
+    "collection.query-filter-view-toolbar-hierarchy": ("verify.frontend.collection_action_toolbar.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
+    "collection.authoritative-status-tone": ("verify.frontend.collection_row_cell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
+    "shell.context-and-navigation-density": ("verify.frontend.navigation_shell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
+    "form.task-field-hierarchy": ("verify.frontend.primitive_adapter.unit", "verify.frontend.rendering_detail_state.browser", "scripts/verify/frontend_rendering_detail_state_browser.mjs"),
+    "form.workspace-native-structure-density": ("verify.frontend.native_form_action_presentation.unit", "verify.frontend.native_form_action_presentation.browser", "scripts/verify/frontend_native_form_action_presentation_browser.mjs"),
+    "relations-x2many.lifecycle-and-table-detail": ("verify.frontend.professional_relation_lifecycle.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
+    "workflow.action-status-disabled-reason": ("verify.frontend.professional_workflow.unit", "verify.frontend.native_form_action_presentation.browser", "scripts/verify/frontend_native_form_action_presentation_browser.mjs"),
+    "overlay.dialog-drawer-focus-density": ("verify.frontend.overlay_lifecycle.unit", "verify.frontend.overlay_lifecycle.browser", "scripts/verify/frontend_overlay_lifecycle_browser.mjs"),
+    "collaboration.chatter-activity-attachment": ("verify.frontend.professional_collaboration.unit", "verify.frontend.collaboration_primitives.browser", "scripts/verify/frontend_collaboration_primitives_browser.mjs"),
+    "states.loading-empty-error-disabled-focus": ("verify.frontend.rendering_detail_state.unit", "verify.frontend.rendering_detail_state.browser", "scripts/verify/frontend_rendering_detail_state_browser.mjs"),
+    "dashboard.metric-risk-todo-drilldown": ("verify.frontend.state_dashboard.unit", "verify.frontend.state_dashboard.browser", "scripts/verify/frontend_state_dashboard_browser.mjs"),
+    "responsive.390-no-overflow-and-action-settlement": ("verify.frontend.rendering_detail_state.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs"),
+}
+
 SC_TAG_RE = re.compile(r"<(?P<name>Sc[A-Z][A-Za-z0-9]+)\b")
 STYLE_RE = re.compile(r"<style[^>]*>(?P<body>.*?)</style>", re.S | re.I)
 NATIVE_SELECTOR_RE = re.compile(r"(?m)(?P<selector>[^{}]*(?:^|[\s>+~,])(input|button|select|textarea)(?=[:.#[\s>+~,{]|$)[^{}]*)\{")
@@ -102,6 +123,43 @@ def encode(payload: dict[str, object]) -> str:
     return json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
+def evaluate_formal_gap_evidence(parity: dict[str, object], root: Path = ROOT) -> list[dict[str, object]]:
+    make_authority = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (root / "make/frontend.mk", root / "make/dev.mk")
+        if path.is_file()
+    )
+    results = []
+    for gap in parity.get("gaps", []):
+        key = str(gap.get("key", ""))
+        evidence = FORMAL_GAP_EVIDENCE.get(key)
+        if evidence is None:
+            results.append({"key": key, "status": "open", "reason": "evidence_binding_missing"})
+            continue
+        unit_target, browser_target, browser_source = evidence
+        source_path = root / browser_source
+        source = source_path.read_text(encoding="utf-8") if source_path.is_file() else ""
+        unit_wired = re.search(rf"(?m)^{re.escape(unit_target)}\s*:", make_authority) is not None
+        browser_wired = re.search(rf"(?m)^{re.escape(browser_target)}\s*:", make_authority) is not None
+        failure_exit_present = (
+            ("process.exitCode" in source and "const pass" in source)
+            or ("failures" in source and "report.pass" in source and "process.exit(1)" in source)
+            or ("function check" in source and "throw new Error" in source)
+        )
+        status = "closed" if unit_wired and browser_wired and failure_exit_present else "open"
+        results.append({
+            "key": key,
+            "status": status,
+            "unitTarget": unit_target,
+            "unitTargetWired": unit_wired,
+            "browserTarget": browser_target,
+            "browserTargetWired": browser_wired,
+            "browserEvidenceSource": browser_source,
+            "browserFailureExitPresent": failure_exit_present,
+        })
+    return results
+
+
 def capture_reference(root: Path, output: Path) -> None:
     sources = inspect_tree(root)
     payload = {
@@ -143,7 +201,8 @@ def build_inventory(reference_path: Path) -> dict[str, object]:
                 "referenceNativeStyleSelectors": previous.get("nativeStyleSelectors", []) if previous else [],
             })
     parity = json.loads(VISUAL_PARITY.read_text(encoding="utf-8"))
-    open_gaps = [gap["key"] for gap in parity["gaps"] if gap["status"] == "open"]
+    formal_gap_evidence = evaluate_formal_gap_evidence(parity)
+    open_gaps = [gap["key"] for gap in formal_gap_evidence if gap["status"] == "open"]
     risky = [row for row in current if row["scComponents"] and row["nativeStyleSelectors"]]
     return {
         "schemaVersion": "frontend.visual-projection.inventory.v1",
@@ -153,6 +212,7 @@ def build_inventory(reference_path: Path) -> dict[str, object]:
         "adapterProjection": projection,
         "changedSourceProjection": differences,
         "scAdapterWithNativeSelectorCandidates": risky,
+        "formalGapEvidence": formal_gap_evidence,
         "openFormalVisualGaps": open_gaps,
         "summary": {
             "referenceSourceCount": reference["sourceCount"],
