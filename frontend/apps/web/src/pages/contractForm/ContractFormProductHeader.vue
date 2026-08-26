@@ -71,50 +71,52 @@
     </template>
     <template #actions>
       <span v-if="showBack !== false || showReturn" class="form-header-navigation-actions">
-        <button
+        <ScButton
           v-if="showBack !== false"
-          class="sc-btn sc-btn-ghost sc-btn-sm form-header-back-action"
+          class="form-header-back-action"
+          variant="ghost"
+          size="small"
           :disabled="busy"
           type="button"
           :aria-label="backLabel"
           :data-form-secondary-action="backSemanticIdentity"
           @click="$emit('back')"
-        ><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</button>
-        <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
+        ><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</ScButton>
+        <ScButton v-if="showReturn" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</ScButton>
       </span>
       <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length || canonicalDirectActions.length || canonicalLocalSavePrimary" class="form-header-primary-actions">
-        <button v-if="showContinueProcessing" data-product-primary-action data-form-mode-action="edit" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('continue-processing')">{{ continueProcessingLabel }}</button>
-        <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
-        <button v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</button>
-        <button v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-        <button v-if="canonicalLocalSavePrimary" data-product-primary-action data-action-ref="form.save" data-action-tier="primary" :data-action-enabled="String(!busy)" class="sc-btn sc-btn-primary sc-btn-sm" :disabled="busy" type="button" @click="$emit('canonical-save')">{{ mode === 'create' ? '保存草稿' : '保存修改' }}</button>
-        <button v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :class="canonicalButtonClass(action)" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+        <ScButton v-if="showContinueProcessing" data-product-primary-action data-form-mode-action="edit" variant="primary" size="small" :disabled="busy" type="button" @click="$emit('continue-processing')">{{ continueProcessingLabel }}</ScButton>
+        <ScButton v-if="showDraftSave" variant="ghost" size="small" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</ScButton>
+        <ScButton v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" variant="primary" size="small" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</ScButton>
+        <ScButton v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
+        <ScButton v-if="canonicalLocalSavePrimary" data-product-primary-action data-action-ref="form.save" data-action-tier="primary" :data-action-enabled="String(!busy)" variant="primary" size="small" :disabled="busy" type="button" @click="$emit('canonical-save')">{{ mode === 'create' ? '保存草稿' : '保存修改' }}</ScButton>
+        <ScButton v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
       </span>
       <details v-if="presentedOverflowActions.length || canonicalPresentedOverflowActions.length" class="form-header-more-actions">
         <summary class="sc-btn sc-btn-ghost sc-btn-sm">更多操作</summary>
         <div>
-          <button v-for="action in presentedOverflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-for="action in canonicalPresentedOverflowActions" :key="`canonical-hdr-more-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
+          <ScButton v-for="action in presentedOverflowActions" :key="`hdr-more-${action.key}`" v-bind="actionEvidenceAttributes(action)" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
+          <ScButton v-for="action in canonicalPresentedOverflowActions" :key="`canonical-hdr-more-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
         </div>
       </details>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
-      <button v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-      <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</button>
-      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</button>
-      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</button>
-      <button v-if="showDebug && !intakeMode" class="sc-btn sc-btn-ghost sc-btn-sm form-header-desktop-secondary-action" :disabled="busy" type="button" @click="$emit('reload')">{{ reloadLabel }}</button>
+      <ScButton v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="form-header-config-action" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
+      <ScButton v-if="showDiscard" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</ScButton>
+      <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</ScButton>
+      <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</ScButton>
+      <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('reload')">{{ reloadLabel }}</ScButton>
       <details v-if="mobileActionAuthority.count" class="form-header-mobile-actions" :data-mobile-action-count="mobileActionAuthority.count" :data-mobile-action-keys="mobileActionAuthority.keys.join(',')">
         <summary class="sc-btn sc-btn-secondary sc-btn-sm" aria-label="打开更多页面操作">更多</summary>
         <div class="form-header-mobile-actions__panel" aria-label="更多页面操作">
-          <button v-if="showBack !== false" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="back:form.back" :disabled="busy" type="button" @click="$emit('back')"><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</button>
-          <button v-if="showReturn" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="return:form.return-workbench" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</button>
-          <button v-if="showDraftSave" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="draft:form.save-draft" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</button>
-          <button v-for="action in mobilePresentedDirectActions" :key="`mobile-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`business:${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-for="action in presentedOverflowActions" :key="`mobile-overflow-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`business:${action.key}`" :class="buttonClass(action)" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-for="action in mobileCanonicalDirectActions" :key="`mobile-canonical-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-mobile-action-key="`canonical:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
-          <button v-for="action in canonicalPresentedOverflowActions" :key="`mobile-canonical-overflow-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-mobile-action-key="`canonical:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</button>
-          <button v-for="action in configActions" :key="`mobile-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`config:${action.key}`" class="sc-btn sc-btn-ghost sc-btn-sm form-header-config-action" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</button>
-          <button v-if="showDiscard" class="sc-btn sc-btn-ghost sc-btn-sm" data-mobile-action-key="discard:form.discard" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</button>
+          <ScButton v-if="showBack !== false" variant="ghost" size="small" data-mobile-action-key="back:form.back" :disabled="busy" type="button" @click="$emit('back')"><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</ScButton>
+          <ScButton v-if="showReturn" variant="ghost" size="small" data-mobile-action-key="return:form.return-workbench" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</ScButton>
+          <ScButton v-if="showDraftSave" variant="ghost" size="small" data-mobile-action-key="draft:form.save-draft" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</ScButton>
+          <ScButton v-for="action in mobilePresentedDirectActions" :key="`mobile-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`business:${action.key}`" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
+          <ScButton v-for="action in presentedOverflowActions" :key="`mobile-overflow-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`business:${action.key}`" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
+          <ScButton v-for="action in mobileCanonicalDirectActions" :key="`mobile-canonical-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-mobile-action-key="`canonical:${action.key}`" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
+          <ScButton v-for="action in canonicalPresentedOverflowActions" :key="`mobile-canonical-overflow-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-mobile-action-key="`canonical:${action.key}`" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
+          <ScButton v-for="action in configActions" :key="`mobile-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-mobile-action-key="`config:${action.key}`" class="form-header-config-action" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
+          <ScButton v-if="showDiscard" variant="ghost" size="small" data-mobile-action-key="discard:form.discard" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</ScButton>
         </div>
       </details>
     </template>
@@ -124,6 +126,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
+import ScButton from '../../components/design-system/ScButton.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import type { ProductPageHeaderAction, ProductPagePresentationMode } from '../../app/presentation/productPageHeader';
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
@@ -286,12 +289,12 @@ onBeforeUnmount(() => {
   commandBarShell?.style.removeProperty('--sc-form-command-bar-height');
 });
 
-function buttonClass(action: ContractAction) {
-  return ['sc-btn', 'sc-btn-sm', action.destructive ? 'sc-btn-danger' : action.presentationTier === 'primary' || action.semantic === 'primary_action' ? 'sc-btn-primary' : 'sc-btn-ghost'];
+function buttonVariant(action: ContractAction): 'danger' | 'primary' | 'ghost' {
+  return action.destructive ? 'danger' : action.presentationTier === 'primary' || action.semantic === 'primary_action' ? 'primary' : 'ghost';
 }
 
-function canonicalButtonClass(action: CanonicalFormAction) {
-  return ['sc-btn', 'sc-btn-sm', action.tier === 'primary' ? 'sc-btn-primary' : 'sc-btn-ghost'];
+function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost' {
+  return action.tier === 'primary' ? 'primary' : 'ghost';
 }
 </script>
 

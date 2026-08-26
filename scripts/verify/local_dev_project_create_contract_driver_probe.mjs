@@ -16,6 +16,22 @@ const executeRequests = [];
 const contractActions = [];
 const contractPresentations = [];
 const browserErrors = [];
+async function captureHeaderPresentation(surface) {
+  const header = surface.locator('.contract-form-command-bar');
+  await header.waitFor({ state: 'visible', timeout: 45000 });
+  return {
+    commandBars: await header.count(),
+    scButtons: await header.locator('[data-semantic-component="ScButton"]').count(),
+    primaryActions: await header.locator('[data-product-primary-action]:visible:not(:disabled)').count(),
+    rawButtons: await header.locator('button:not([data-semantic-component="ScButton"])').count(),
+    rawButtonsOutsideWorkflow: await header.locator('button:not([data-semantic-component="ScButton"]):not(.native-statusbar-step)').count(),
+    mobileActionKeys: await header.locator('[data-mobile-action-key]').evaluateAll((nodes) => (
+      nodes.map((node) => node.getAttribute('data-mobile-action-key')).filter(Boolean)
+    )),
+    mobileDisclosures: await header.locator('details.form-header-mobile-actions').count(),
+    horizontalOverflow: await header.evaluate((node) => node.scrollWidth > node.clientWidth + 1),
+  };
+}
 page.on('console', (message) => {
   if (message.type() === 'error') browserErrors.push(`console:${message.text()}`);
 });
@@ -135,6 +151,7 @@ try {
     taskPage: await surface.locator('[data-object-task-page]').count(),
     nativeStructure: await surface.locator('[data-native-contract-structure]').count(),
     contractActions: [...contractActions],
+    header: await captureHeaderPresentation(surface),
   };
   const projectPresentation = contractPresentations
     .filter((row) => row.actionId === String(target.action_id))
@@ -144,6 +161,10 @@ try {
   }
   if (projectResult.taskPage !== 1 || projectResult.nativeStructure !== 0) {
     throw new Error(`project initiation did not render Floorplan: ${JSON.stringify(projectResult)}`);
+  }
+  if (projectResult.header.commandBars !== 1 || projectResult.header.scButtons < 1
+    || projectResult.header.primaryActions > 1 || projectResult.header.rawButtonsOutsideWorkflow !== 0) {
+    throw new Error(`project initiation header primitive boundary failed: ${JSON.stringify(projectResult.header)}`);
   }
 
   contractActions.length = 0;
@@ -167,6 +188,7 @@ try {
     taskPage: await workspaceSurface.locator('[data-object-task-page]').count(),
     nativeStructure: await workspaceSurface.locator('[data-native-contract-structure]').count(),
     notebookPages: await workspaceSurface.locator('[data-native-contract-structure] .native-tabs .native-tab').count(),
+    header: await captureHeaderPresentation(workspaceSurface),
   };
   const workspacePresentation = contractPresentations
     .filter((row) => row.actionId === String(target.workspace_action_id))
@@ -182,6 +204,10 @@ try {
     || workspaceResult.notebookPages !== 11
   ) {
     throw new Error(`project workspace did not preserve native notebook structure: ${JSON.stringify(workspaceResult)}`);
+  }
+  if (workspaceResult.header.commandBars !== 1 || workspaceResult.header.scButtons < 1
+    || workspaceResult.header.primaryActions > 1 || workspaceResult.header.rawButtonsOutsideWorkflow !== 0) {
+    throw new Error(`project workspace header primitive boundary failed: ${JSON.stringify(workspaceResult.header)}`);
   }
 
   contractActions.length = 0;
@@ -205,19 +231,45 @@ try {
     drivers: paymentDrivers,
     errors: paymentErrors,
     contractActions: [...contractActions],
+    header: await captureHeaderPresentation(paymentSurface),
   };
+  if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
+    throw new Error(`payment record canonical driver did not load: ${JSON.stringify(paymentResult)}`);
+  }
+  if (paymentResult.header.commandBars !== 1 || paymentResult.header.scButtons < 1
+    || paymentResult.header.primaryActions !== 1 || paymentResult.header.rawButtonsOutsideWorkflow !== 0) {
+    throw new Error(`payment task header primitive boundary failed: ${JSON.stringify(paymentResult.header)}`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileResults = {};
+  for (const [key, route, selector] of [
+    ['workspace', workspaceRoute, `[data-product-page-mode="form"][data-form-model="project.project"][data-form-record="${target.project_record_id}"]`],
+    ['payment', paymentRoute, `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${target.payment_record_id}"]`],
+  ]) {
+    await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    const mobileSurface = page.locator(selector);
+    await mobileSurface.waitFor({ state: 'visible', timeout: 45000 });
+    await page.waitForFunction(() => (
+      document.querySelectorAll('[data-contract-form-driver]').length
+      + document.querySelectorAll('[data-contract-form-driver-error]').length === 1
+    ), undefined, { timeout: 45000 });
+    mobileResults[key] = await captureHeaderPresentation(mobileSurface);
+    if (mobileResults[key].commandBars !== 1 || mobileResults[key].scButtons < 1
+      || mobileResults[key].primaryActions > 1 || mobileResults[key].rawButtonsOutsideWorkflow !== 0
+      || mobileResults[key].mobileDisclosures !== 1 || mobileResults[key].horizontalOverflow) {
+      throw new Error(`${key} mobile header boundary failed: ${JSON.stringify(mobileResults[key])}`);
+    }
+  }
   console.log('LOCAL_DEV_CONTRACT_DRIVER_JSON=' + JSON.stringify({
     project: projectResult,
     workspace: workspaceResult,
     payment: paymentResult,
+    mobile: mobileResults,
     contractPresentations,
     mutations,
     executeRequests,
     browserErrors,
   }));
-  if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
-    throw new Error(`payment record canonical driver did not load: ${JSON.stringify(paymentResult)}`);
-  }
   if (mutations.length) throw new Error('read-only project create driver probe observed mutation');
   if (executeRequests.length) throw new Error(`read-only browser driver probe observed execute request: ${executeRequests.length}`);
   if (browserErrors.length) throw new Error(`browser errors observed: ${JSON.stringify(browserErrors)}`);
