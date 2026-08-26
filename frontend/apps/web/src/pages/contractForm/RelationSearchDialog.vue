@@ -3,6 +3,7 @@
     :open="dialog.open"
     :title="dialog.title"
     :close-label="dialog.labels.close || '关闭'"
+    size="wide"
     panel-class="relation-dialog"
     data-professional-relation-lifecycle="search"
     @close="$emit('close')"
