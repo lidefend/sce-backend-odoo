@@ -43,9 +43,13 @@ const props = withDefaults(defineProps<{
 });
 
 const presentation = computed(() => tdesignButtonPresentation(props.variant, props.status));
-const buttonRef = ref<{ $el?: HTMLButtonElement } | null>(null);
+const buttonRef = ref<{ $el?: HTMLElement } | null>(null);
 
 defineExpose({
-  focus: () => buttonRef.value?.$el?.focus(),
+  focus: () => {
+    const root = buttonRef.value?.$el;
+    const target = root instanceof HTMLButtonElement ? root : root?.querySelector<HTMLButtonElement>('button');
+    target?.focus();
+  },
 });
 </script>
