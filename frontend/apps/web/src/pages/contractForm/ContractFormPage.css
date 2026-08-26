@@ -786,7 +786,6 @@
   min-height: 34px;
   margin: calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) 0;
   padding: 0 var(--sc-surface-padding);
-  border-left: 2px solid var(--sc-app-accent);
   border-bottom: 1px solid var(--sc-app-border);
   background: color-mix(in srgb, var(--sc-app-info-bg) 24%, var(--sc-app-panel));
 }
@@ -808,31 +807,6 @@
 .contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
   margin: calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) var(--sc-field-row-gap);
   border-radius: 0;
-}
-
-.contract-form-native-shell :deep(.native-tabs) {
-  gap: 18px;
-  border: 0;
-  border-bottom: 1px solid var(--sc-app-border);
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
-}
-
-.contract-form-native-shell :deep(.native-tab) {
-  min-height: 38px;
-  padding: 8px 2px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-}
-
-.contract-form-native-shell :deep(.native-tab--active) {
-  border-bottom-color: var(--sc-app-accent);
-  background: transparent;
-  box-shadow: none;
-  color: var(--sc-app-text-primary);
-  font-weight: 600;
 }
 
 .contract-mode-actions {

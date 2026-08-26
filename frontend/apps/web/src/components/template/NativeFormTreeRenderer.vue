@@ -875,8 +875,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-container--group > .native-container-head {
-  border-left: 3px solid var(--sc-app-accent);
-  padding-left: 10px;
+  padding-left: 0;
 }
 
 .native-container--group > .native-container-head h3 {
