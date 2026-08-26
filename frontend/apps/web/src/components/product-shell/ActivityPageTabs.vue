@@ -1,6 +1,6 @@
 <template>
   <nav v-if="pages.length" ref="tablistRef" class="activity-tabs" role="tablist" :aria-label="label">
-    <div v-for="page in pages" :key="page.key" class="activity-tab" :class="{active:page.key===activeKey}">
+    <div v-for="page in pages" :key="page.key" class="activity-tab" :class="{active:page.key===activeKey}" role="presentation">
       <button
         class="activity-tab-main"
         type="button"
@@ -8,11 +8,19 @@
         :title="page.title"
         :aria-selected="page.key === activeKey"
         :aria-current="page.key === activeKey ? 'page' : undefined"
+        aria-keyshortcuts="Delete"
         :tabindex="page.key === activeKey ? 0 : -1"
         @click="$emit('activate', page)"
         @keydown="activateFromKeyboard(page, $event)"
-      ><span>{{ page.title }}</span></button>
-      <button class="activity-tab-close" type="button" :aria-label="`${closeLabel} ${page.title}`" :title="`${closeLabel} ${page.title}`" @click.stop="$emit('close',page)"><ScIcon name="close" :size="14" /></button>
+      >
+        <span>{{ page.title }}</span>
+        <span
+          class="activity-tab-close"
+          aria-hidden="true"
+          :title="`${closeLabel} ${page.title}`"
+          @click.stop="$emit('close', page)"
+        ><ScIcon name="close" :size="14" /></span>
+      </button>
     </div>
   </nav>
 </template>
@@ -27,6 +35,11 @@ const emit = defineEmits<{activate:[page:ActivityPage];close:[page:ActivityPage]
 const tablistRef = ref<HTMLElement | null>(null);
 
 function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
+  if (event.key === 'Delete') {
+    event.preventDefault();
+    emit('close', page);
+    return;
+  }
   const currentIndex = props.pages.findIndex((item) => item.key === page.key);
   const nextIndex = resolveActivityTabKeyboardIndex({ key: event.key, currentIndex, count: props.pages.length });
   if (nextIndex === null) return;
@@ -57,8 +70,7 @@ function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
   flex: 0 1 180px;
   min-width: 96px;
   max-width: 220px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 20px;
+  display: block;
   align-items: center;
   color: var(--sc-app-text-secondary);
 }
@@ -92,6 +104,10 @@ function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
 }
 
 .activity-tab-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  align-items: center;
+  width: 100%;
   padding: 0 4px;
   text-align: left;
   font-size: 12px;
@@ -111,7 +127,11 @@ function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
 }
 
 .activity-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
+  height: 20px;
   padding: 0;
   opacity: 0;
   transition: opacity var(--sc-motion-fast, 120ms) ease;
@@ -119,7 +139,7 @@ function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
 
 .activity-tab:hover .activity-tab-close,
 .activity-tab.active .activity-tab-close,
-.activity-tab-close:focus-visible {
+.activity-tab-main:focus-visible .activity-tab-close {
   opacity: .65;
 }
 
