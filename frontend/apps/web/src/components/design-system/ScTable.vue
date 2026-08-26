@@ -12,6 +12,7 @@
     :row-attributes="rowAttributes"
     :keyboard-row-hover="keyboardRowHover"
     :disable-data-page="disableDataPage"
+    :table-content-width="tableContentWidth"
     :selected-row-keys="selectedRowKeys"
     :row-selection-type="rowSelectionType"
     :select-on-row-click="selectOnRowClick"
@@ -44,6 +45,7 @@ withDefaults(defineProps<{
   rowAttributes?: Record<string, unknown> | ((context: unknown) => Record<string, unknown>);
   keyboardRowHover?: boolean;
   disableDataPage?: boolean;
+  tableContentWidth?: string;
   selectedRowKeys?: Array<string | number>;
   rowSelectionType?: 'single' | 'multiple';
   selectOnRowClick?: boolean;
