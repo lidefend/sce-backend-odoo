@@ -1,6 +1,8 @@
 <template>
   <div
     class="professional-business-value"
+    data-semantic-component="ProfessionalBusinessValueControl"
+    :data-state="field.invalid ? 'error' : field.readonly ? 'readonly' : 'editable'"
     data-professional-field-family="business-value"
     :data-business-value-kind="kind"
     :data-presentation-mode="field.presentationMode"

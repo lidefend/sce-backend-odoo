@@ -1,6 +1,8 @@
 <template>
   <div
     class="professional-base-field-control"
+    data-semantic-component="ProfessionalBaseFieldControl"
+    :data-state="model.controlState"
     data-professional-field-family="base"
     :data-professional-field-type="model.fieldType"
     :data-control-kind="model.controlKind"
