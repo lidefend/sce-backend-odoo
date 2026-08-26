@@ -49,39 +49,39 @@
  * its default component scale must not leak into formal product surfaces.
  * These selectors are deliberately limited to the semantic adapter roots.
  */
-:is(.sc-input.t-input, .sc-select .t-input)[data-size='small'],
+.sc-input.t-input__wrap[data-size='small'] > .t-input,
 .sc-select[data-size='small'] .t-input {
   height: calc(var(--sc-component-input-height-sm) * 1px);
   min-height: calc(var(--sc-component-input-height-sm) * 1px);
 }
 
-:is(.sc-input.t-input, .sc-select .t-input)[data-size='medium'],
+.sc-input.t-input__wrap[data-size='medium'] > .t-input,
 .sc-select[data-size='medium'] .t-input {
   height: calc(var(--sc-component-input-height-md) * 1px);
   min-height: calc(var(--sc-component-input-height-md) * 1px);
 }
 
-:is(.sc-input.t-input, .sc-select .t-input)[data-size='large'],
+.sc-input.t-input__wrap[data-size='large'] > .t-input,
 .sc-select[data-size='large'] .t-input {
   height: calc(var(--sc-component-input-height-lg) * 1px);
   min-height: calc(var(--sc-component-input-height-lg) * 1px);
 }
 
-.sc-input.t-input,
+.sc-input.t-input__wrap > .t-input,
 .sc-select .t-input {
   padding-inline: calc(var(--sc-component-input-padding-x) * 1px);
   border-radius: var(--sc-component-input-radius);
   font-size: calc(var(--sc-component-input-font-size) * 1px);
 }
 
-.sc-input.t-input.t-is-readonly,
+.sc-input.t-input__wrap[data-readonly='true'] > .t-input,
 .sc-select[data-readonly='true'] .t-input {
   border-color: var(--sc-semantic-border-default);
   background: var(--sc-semantic-surface-subtle);
   color: var(--sc-semantic-text-secondary);
 }
 
-.sc-input.t-input.t-is-disabled,
+.sc-input.t-input__wrap > .t-input.t-is-disabled,
 .sc-select.t-is-disabled .t-input {
   opacity: var(--sc-component-input-disabled-opacity);
 }
@@ -95,7 +95,7 @@
 }
 
 .sc-btn.t-button {
-  min-height: calc(var(--sc-component-button-height-md) * 1px);
+  height: calc(var(--sc-component-button-height-md) * 1px);
   padding-inline: calc(var(--sc-component-button-padding-x) * 1px);
   border-radius: var(--sc-component-button-radius);
   font-size: calc(var(--sc-component-button-font-size) * 1px);
@@ -103,11 +103,11 @@
 }
 
 .sc-btn.t-button[data-size='small'] {
-  min-height: calc(var(--sc-component-button-height-sm) * 1px);
+  height: calc(var(--sc-component-button-height-sm) * 1px);
 }
 
 .sc-btn.t-button[data-size='large'] {
-  min-height: calc(var(--sc-component-button-height-lg) * 1px);
+  height: calc(var(--sc-component-button-height-lg) * 1px);
 }
 
 .sc-btn.t-button.t-is-disabled {

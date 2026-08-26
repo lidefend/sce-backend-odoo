@@ -158,7 +158,7 @@ def validate(root: Path = ROOT) -> list[str]:
         "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
         "--td-text-color-placeholder: var(--sc-semantic-text-muted)",
         "--td-border-level-2-color: var(--sc-semantic-border-strong)",
-        ".sc-input.t-input",
+        ".sc-input.t-input__wrap[data-size='large'] > .t-input",
         ".sc-select[data-size='medium'] .t-input",
         ".sc-textarea .t-textarea__inner",
         ".sc-btn.t-button",

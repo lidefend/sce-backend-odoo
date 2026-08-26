@@ -45,10 +45,10 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "  --td-text-color-placeholder: var(--sc-semantic-text-muted);\n"
             "  --td-border-level-2-color: var(--sc-semantic-border-strong);\n"
             "}\n"
-            ".sc-input.t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
+            ".sc-input.t-input__wrap[data-size='large'] > .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
             ".sc-select[data-size='medium'] .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
             ".sc-textarea .t-textarea__inner { min-height: calc(var(--sc-component-input-height-md) * 2px); }\n"
-            ".sc-btn.t-button { min-height: calc(var(--sc-component-button-height-md) * 1px); }\n",
+            ".sc-btn.t-button { height: calc(var(--sc-component-button-height-md) * 1px); }\n",
             encoding="utf-8",
         )
         for name in PRIMITIVES:
