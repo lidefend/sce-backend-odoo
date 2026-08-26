@@ -64,18 +64,18 @@
       </article>
 
       <section v-if="pageSectionEnabled('cards', true) && pageSectionTagIs('cards', 'section')" class="cards" :style="pageSectionStyle('cards')">
-        <article class="card danger">
+        <ScCard class="card danger" appearance="metric">
           <h3>Critical Resolve Errors</h3>
           <p>{{ health.summary.critical_resolve_errors_count }}</p>
-        </article>
-        <article class="card danger">
+        </ScCard>
+        <ScCard class="card danger" appearance="metric">
           <h3>Critical Drift Warn</h3>
           <p>{{ health.summary.critical_drift_warn_count }}</p>
-        </article>
-        <article class="card">
+        </ScCard>
+        <ScCard class="card" appearance="metric">
           <h3>Non-Critical Debt</h3>
           <p>{{ health.summary.non_critical_debt_count }}</p>
-        </article>
+        </ScCard>
       </section>
 
       <article v-if="pageSectionEnabled('meta', true) && pageSectionTagIs('meta', 'section')" class="meta" :style="pageSectionStyle('meta')">
@@ -154,6 +154,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScCard from '../components/design-system/ScCard.vue';
 import { intentRequest } from '../api/intents';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { usePageContract } from '../app/pageContract';
@@ -471,10 +472,7 @@ onMounted(async () => {
 }
 
 .card {
-  border-radius: var(--sc-component-panel-radius);
-  padding: 16px;
-  background: var(--sc-app-panel);
-  border: 1px solid var(--sc-app-border);
+  min-width: 0;
 }
 
 .card.danger {

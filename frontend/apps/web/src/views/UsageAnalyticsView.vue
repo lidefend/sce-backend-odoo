@@ -120,95 +120,87 @@
       </section>
 
       <section v-if="pageSectionEnabled('summary_usage', true) && pageSectionTagIs('summary_usage', 'section')" class="summary-grid" :style="pageSectionStyle('summary_usage')">
-        <article class="summary-card">
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_scene_open_total', 'Scene Open Total') }}</p>
           <p class="count">{{ report?.totals.scene_open_total ?? 0 }}</p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_capability_open_total', 'Capability Open Total') }}</p>
           <p class="count">{{ report?.totals.capability_open_total ?? 0 }}</p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_generated_at', 'Generated At') }}</p>
           <p class="count small">{{ report?.generated_at || '-' }}</p>
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('summary_visibility', true) && pageSectionTagIs('summary_visibility', 'section')" class="summary-grid" :style="pageSectionStyle('summary_visibility')">
-        <article class="summary-card">
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_capability_total', 'Capability Total') }}</p>
           <p class="count">{{ visibility?.summary.total ?? 0 }}</p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_visible_hidden', 'Visible / Hidden') }}</p>
           <p class="count small">{{ visibility?.summary.visible ?? 0 }} / {{ visibility?.summary.hidden ?? 0 }}</p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_ready_preview_locked', 'Ready / Preview / Locked') }}</p>
           <p class="count small">
             {{ visibility?.summary.ready ?? 0 }} / {{ visibility?.summary.preview ?? 0 }} / {{ visibility?.summary.locked ?? 0 }}
           </p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_role_codes', 'Role Codes') }}</p>
           <p class="count small">{{ (visibility?.role_codes || []).join(', ') || '-' }}</p>
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_top', true) && pageSectionTagIs('tables_top', 'section')" class="tables" :style="pageSectionStyle('tables_top')">
-        <article class="table-card">
-          <h3>{{ pageText('table_top_scenes', 'Top Scenes') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_top_scenes', 'Top Scenes')">
           <ScTable class="usage-table" :label="pageText('table_top_scenes', 'Top Scenes')" :data="sceneTop" row-key="key"
             :columns="usageColumns([['key', pageText('table_scene_key', 'Scene Key')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
 
-        <article class="table-card">
-          <h3>{{ pageText('table_top_capabilities', 'Top Capabilities') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_top_capabilities', 'Top Capabilities')">
           <ScTable class="usage-table" :label="pageText('table_top_capabilities', 'Top Capabilities')" :data="capabilityTop" row-key="key"
             :columns="usageColumns([['key', pageText('table_capability_key', 'Capability Key')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_daily', true) && pageSectionTagIs('tables_daily', 'section')" class="tables" :style="pageSectionStyle('tables_daily')">
-        <article class="table-card">
-          <h3>{{ pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')">
           <ScTable class="usage-table" :label="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')" :data="sceneDaily" row-key="day"
             :columns="usageColumns([['day', pageText('table_date', 'Date')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
 
-        <article class="table-card">
-          <h3>{{ pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')">
           <ScTable class="usage-table" :label="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')" :data="capabilityDaily" row-key="day"
             :columns="usageColumns([['day', pageText('table_date', 'Date')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_visibility', true) && pageSectionTagIs('tables_visibility', 'section')" class="tables" :style="pageSectionStyle('tables_visibility')">
-        <article class="table-card">
-          <h3>{{ pageText('table_visibility_reason_counts', 'Visibility Reason Counts') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')">
           <ScTable class="usage-table" :label="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')" :data="reasonCounts" row-key="reason_code"
             :columns="usageColumns([['reason_code', pageText('table_reason_code', 'Reason Code')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
 
-        <article class="table-card">
-          <h3>{{ pageText('table_hidden_capability_samples', 'Hidden Capability Samples') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')">
           <ScTable class="usage-table" :label="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')" :data="hiddenSampleRows" row-key="key"
             :columns="usageColumns([['key', pageText('table_key', 'Key')], ['reasonLabel', pageText('table_reason', 'Reason')]])" size="small" />
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_role_user', true) && pageSectionTagIs('tables_role_user', 'section')" class="tables" :style="pageSectionStyle('tables_role_user')">
-        <article class="table-card">
-          <h3>{{ pageText('table_role_top', 'Role Top') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_role_top', 'Role Top')">
           <ScTable class="usage-table" :label="pageText('table_role_top', 'Role Top')" :data="roleTop" row-key="role_code"
             :columns="usageColumns([['role_code', pageText('table_role_code', 'Role Code')], ['scene_open_total', pageText('table_scene', 'Scene')], ['capability_open_total', pageText('table_capability', 'Capability')], ['combined_total', pageText('table_total', 'Total')]])" size="small" />
-        </article>
+        </ScCard>
 
-        <article class="table-card">
-          <h3>{{ pageText('table_user_top', 'User Top') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_user_top', 'User Top')">
           <ScTable class="usage-table" :label="pageText('table_user_top', 'User Top')" :data="userTop" row-key="user_id"
             :columns="usageColumns([['user_id', pageText('table_user_id', 'User ID')], ['scene_open_total', pageText('table_scene', 'Scene')], ['capability_open_total', pageText('table_capability', 'Capability')], ['combined_total', pageText('table_total', 'Total')]])" size="small" />
-        </article>
+        </ScCard>
       </section>
     </template>
   </section>
@@ -219,6 +211,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { exportUsageCsv, fetchCapabilityVisibilityReport, fetchUsageReport, type CapabilityVisibilityReport, type UsageReport } from '../api/usage';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScCard from '../components/design-system/ScCard.vue';
 import ScTable from '../components/design-system/ScTable.vue';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { collectErrorContextIssue, issueScopeLabel } from '../app/errorContext';
@@ -459,10 +452,7 @@ onMounted(load);
 }
 
 .summary-card {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  padding: 12px;
-  background: var(--sc-app-panel);
+  min-width: 0;
 }
 
 .summary-card .label {
@@ -488,17 +478,7 @@ onMounted(load);
 }
 
 .table-card {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  background: var(--sc-app-panel);
   overflow: hidden;
-}
-
-.table-card h3 {
-  margin: 0;
-  padding: 12px;
-  border-bottom: 1px solid var(--sc-app-border);
-  color: var(--sc-app-text-primary);
 }
 
 .usage-table :deep(table) {

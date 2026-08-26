@@ -269,10 +269,10 @@
       </div>
     </section>
     <section v-if="vm.content.kind === 'kanban' && hasLedgerOverviewStrip && (vm.content.kanban?.overviewItems || []).length" class="ledger-overview-strip">
-      <article v-for="item in vm.content.kanban?.overviewItems || []" :key="item.key" class="ledger-overview-card" :class="`tone-${item.tone}`">
+      <ScCard v-for="item in vm.content.kanban?.overviewItems || []" :key="item.key" class="ledger-overview-card" :class="`tone-${item.tone}`" appearance="metric">
         <p class="ledger-overview-label">{{ item.label }}</p>
         <p class="ledger-overview-value">{{ item.value }}</p>
-      </article>
+      </ScCard>
     </section>
     <KanbanPage
       v-if="vm.content.kind === 'kanban'"
@@ -667,6 +667,7 @@ import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessLis
 import { useRoute, useRouter } from 'vue-router';
 import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScCard from '../components/design-system/ScCard.vue';
 import ScDialog from '../components/design-system/ScDialog.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
@@ -3632,10 +3633,7 @@ function refreshForRecordContextChange(): void {
 }
 
 .ledger-overview-card {
-  border-radius: var(--sc-component-panel-radius);
-  border: 1px solid var(--sc-app-border);
-  padding: 10px;
-  background: var(--sc-app-panel);
+  min-width: 0;
 }
 
 .ledger-overview-label {
