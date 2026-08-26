@@ -8,40 +8,23 @@
       <div class="actions">
         <label>
           {{ pageText('label_top', 'Top') }}
-          <select v-model="topN" :disabled="loading">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-          </select>
+          <ScSelect v-model="topN" :disabled="loading" :options="topOptions" />
         </label>
         <label>
           {{ pageText('label_daily_range', '趋势范围') }}
-          <select v-model="dailyRange" :disabled="loading">
-            <option :value="3">{{ pageText('option_recent_3_days', '最近 3 天') }}</option>
-            <option :value="7">{{ pageText('option_recent_7_days', '最近 7 天') }}</option>
-          </select>
+          <ScSelect v-model="dailyRange" :disabled="loading" :options="dailyRangeOptions" />
         </label>
         <label>
           {{ pageText('label_hidden_reason', '隐藏原因') }}
-          <select v-model="hiddenReasonFilter" :disabled="loading">
-            <option value="ALL">{{ pageText('option_all', '全部') }}</option>
-            <option v-for="item in reasonCounts" :key="`reason-filter-${item.reason_code}`" :value="item.reason_code">
-              {{ item.reason_code }} ({{ item.count }})
-            </option>
-          </select>
+          <ScSelect v-model="hiddenReasonFilter" :disabled="loading" :options="hiddenReasonOptions" />
         </label>
         <label>
           {{ pageText('label_role_slice', '角色切片') }}
-          <select v-model="roleSlice" :disabled="loading">
-            <option value="">{{ pageText('option_all_roles', '全部角色') }}</option>
-            <option v-for="code in roleCodeOptions" :key="`role-${code}`" :value="code">
-              {{ code }}
-            </option>
-          </select>
+          <ScSelect v-model="roleSlice" :disabled="loading" :options="roleSliceOptions" />
         </label>
         <label>
           {{ pageText('label_user_slice', '用户切片') }}
-          <input
+          <ScInput
             v-model.number="userSlice"
             type="number"
             min="0"
@@ -52,7 +35,7 @@
         </label>
         <label>
           {{ pageText('label_scene_prefix', 'Scene 前缀') }}
-          <input
+          <ScInput
             v-model.trim="scenePrefix"
             type="text"
             :placeholder="pageText('placeholder_scene_prefix', '如 workspace.')"
@@ -61,7 +44,7 @@
         </label>
         <label>
           {{ pageText('label_capability_prefix', 'Capability 前缀') }}
-          <input
+          <ScInput
             v-model.trim="capabilityPrefix"
             type="text"
             :placeholder="pageText('placeholder_capability_prefix', '如 contract.')"
@@ -69,8 +52,9 @@
           />
         </label>
         <label class="export-scope">
-          <input v-model="exportFilteredOnly" type="checkbox" />
-          {{ pageText('label_export_filtered_only', '仅导出当前筛选') }}
+          <ScCheckbox v-model:checked="exportFilteredOnly">
+            {{ pageText('label_export_filtered_only', '仅导出当前筛选') }}
+          </ScCheckbox>
         </label>
         <ScButton class="secondary" :disabled="loading" @click="copyExportParams">{{ pageText('action_copy_export_params', '复制导出参数') }}</ScButton>
         <ScButton class="secondary" :disabled="loading" @click="resetFilters">{{ pageText('action_reset_filters', '重置筛选') }}</ScButton>
@@ -213,6 +197,9 @@ import { exportUsageCsv, fetchCapabilityVisibilityReport, fetchUsageReport, type
 import StatusPanel from '../components/StatusPanel.vue';
 import ScCard from '../components/design-system/ScCard.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScCheckbox from '../components/design-system/ScCheckbox.vue';
+import ScInput from '../components/design-system/ScInput.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
 import ScTable from '../components/design-system/ScTable.vue';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { collectErrorContextIssue, issueScopeLabel } from '../app/errorContext';
@@ -251,6 +238,19 @@ const sceneDaily = computed(() => report.value?.daily?.scene_open || []);
 const capabilityDaily = computed(() => report.value?.daily?.capability_open || []);
 const reasonCounts = computed(() => visibility.value?.reason_counts || []);
 const roleCodeOptions = computed(() => visibility.value?.role_codes || []);
+const topOptions = [5, 10, 20].map((value) => ({ value, label: String(value) }));
+const dailyRangeOptions = computed(() => [
+  { value: 3, label: pageText('option_recent_3_days', '最近 3 天') },
+  { value: 7, label: pageText('option_recent_7_days', '最近 7 天') },
+]);
+const hiddenReasonOptions = computed(() => [
+  { value: 'ALL', label: pageText('option_all', '全部') },
+  ...reasonCounts.value.map((item) => ({ value: item.reason_code, label: `${item.reason_code} (${item.count})` })),
+]);
+const roleSliceOptions = computed(() => [
+  { value: '', label: pageText('option_all_roles', '全部角色') },
+  ...roleCodeOptions.value.map((code) => ({ value: code, label: code })),
+]);
 const hiddenSamples = computed(() => visibility.value?.hidden_samples || []);
 const filteredHiddenSamples = computed(() => {
   if (hiddenReasonFilter.value === 'ALL') return hiddenSamples.value;
