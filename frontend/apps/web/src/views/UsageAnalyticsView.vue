@@ -72,10 +72,10 @@
           <input v-model="exportFilteredOnly" type="checkbox" />
           {{ pageText('label_export_filtered_only', '仅导出当前筛选') }}
         </label>
-        <button class="secondary" :disabled="loading" @click="copyExportParams">{{ pageText('action_copy_export_params', '复制导出参数') }}</button>
-        <button class="secondary" :disabled="loading" @click="resetFilters">{{ pageText('action_reset_filters', '重置筛选') }}</button>
-        <button class="secondary" :disabled="loading || !canExport" @click="exportCsv">{{ pageText('action_export_csv', '导出 CSV') }}</button>
-        <button
+        <ScButton class="secondary" :disabled="loading" @click="copyExportParams">{{ pageText('action_copy_export_params', '复制导出参数') }}</ScButton>
+        <ScButton class="secondary" :disabled="loading" @click="resetFilters">{{ pageText('action_reset_filters', '重置筛选') }}</ScButton>
+        <ScButton class="secondary" :disabled="loading || !canExport" @click="exportCsv">{{ pageText('action_export_csv', '导出 CSV') }}</ScButton>
+        <ScButton
           v-for="action in headerActions"
           :key="action.key"
           class="secondary"
@@ -83,7 +83,7 @@
           @click="executeHeaderAction(action.key)"
         >
           {{ action.label }}
-        </button>
+        </ScButton>
       </div>
     </header>
 
@@ -212,6 +212,7 @@ import { useRouter } from 'vue-router';
 import { exportUsageCsv, fetchCapabilityVisibilityReport, fetchUsageReport, type CapabilityVisibilityReport, type UsageReport } from '../api/usage';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScCard from '../components/design-system/ScCard.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import ScTable from '../components/design-system/ScTable.vue';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { collectErrorContextIssue, issueScopeLabel } from '../app/errorContext';

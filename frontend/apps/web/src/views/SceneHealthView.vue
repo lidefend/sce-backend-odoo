@@ -15,14 +15,14 @@
             </option>
           </select>
         </label>
-        <button
+        <ScButton
           v-for="action in headerActions"
           :key="action.key"
           class="secondary"
           @click="executeHeaderAction(action.key)"
         >
           {{ action.label }}
-        </button>
+        </ScButton>
       </div>
     </header>
 
@@ -115,10 +115,10 @@
           </label>
         </div>
         <div class="governance-actions">
-          <button class="secondary" :disabled="governanceBusy" @click="runGovernance('set_channel')">Set Channel</button>
-          <button class="danger" :disabled="governanceBusy" @click="runGovernance('rollback')">Rollback</button>
-          <button class="secondary" :disabled="governanceBusy" @click="runGovernance('pin_stable')">Pin Stable</button>
-          <button class="secondary" :disabled="governanceBusy" @click="runGovernance('export_contract')">Export Contract</button>
+          <ScButton class="secondary" :disabled="governanceBusy" @click="runGovernance('set_channel')">Set Channel</ScButton>
+          <ScButton class="danger" :disabled="governanceBusy" @click="runGovernance('rollback')">Rollback</ScButton>
+          <ScButton class="secondary" :disabled="governanceBusy" @click="runGovernance('pin_stable')">Pin Stable</ScButton>
+          <ScButton class="secondary" :disabled="governanceBusy" @click="runGovernance('export_contract')">Export Contract</ScButton>
         </div>
       </section>
 
@@ -155,6 +155,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScCard from '../components/design-system/ScCard.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import { intentRequest } from '../api/intents';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { usePageContract } from '../app/pageContract';

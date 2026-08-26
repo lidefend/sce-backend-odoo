@@ -28,15 +28,15 @@
           <span>按旧表单分区点选字段，或按住字段拖拽调整顺序和分组。</span>
         </div>
         <div class="contract-form-settings-section-actions">
-          <button
+          <ScButton
             class="ghost small contract-field-central-create"
             type="button"
             :disabled="busy"
             @click="$emit('open-custom-field-create')"
           >
             新增字段
-          </button>
-          <button
+          </ScButton>
+          <ScButton
             v-if="suggestedHiddenCount"
             class="ghost small"
             type="button"
@@ -44,7 +44,7 @@
             @click="$emit('hide-suggested-internal-fields')"
           >
             隐藏系统字段 {{ suggestedHiddenCount }}
-          </button>
+          </ScButton>
         </div>
       </header>
       <div class="contract-form-designer-control-grid">
@@ -69,7 +69,7 @@
             </label>
             <div class="contract-form-field-search-summary">
               <span>匹配 {{ filteredFieldRows.length }} / {{ fieldCount }}</span>
-              <button
+              <ScButton
                 v-if="fieldSearchText"
                 class="link-button"
                 type="button"
@@ -77,10 +77,10 @@
                 @click="$emit('update:fieldSearchText', '')"
               >
                 清空
-              </button>
+              </ScButton>
             </div>
             <div v-if="filteredFieldRows.length" class="contract-form-field-search-results">
-              <button
+              <ScButton
                 v-for="item in filteredFieldRows.slice(0, 8)"
                 :key="`form-field-search-${item.fieldKey}`"
                 type="button"
@@ -91,7 +91,7 @@
               >
                 <span>{{ item.label }}</span>
                 <em>{{ item.groupTitle }}</em>
-              </button>
+              </ScButton>
             </div>
             <p v-else class="contract-form-field-search-empty">没有匹配字段</p>
           </section>
@@ -100,7 +100,7 @@
               <strong>分组导航</strong>
               <span>点选分组定位画布</span>
             </header>
-            <button
+            <ScButton
               v-for="item in groupNavigatorItems"
               :key="item.title"
               type="button"
@@ -110,7 +110,7 @@
             >
               <span>{{ item.title }}</span>
               <em>{{ item.count }}</em>
-            </button>
+            </ScButton>
           </section>
           <section class="contract-form-layout-tools" aria-label="表单布局配置">
             <header>
@@ -283,14 +283,14 @@
                         <option value="after">移到其后</option>
                       </select>
                     </label>
-                    <button
+                    <ScButton
                       class="ghost small"
                       type="button"
                       :disabled="busy || !orderTargetKey"
                       @click="$emit('move-selected-field')"
                     >
                       移动
-                    </button>
+                    </ScButton>
                   </div>
                 </section>
               </div>
@@ -306,14 +306,14 @@
                 <strong>本次操作记录</strong>
                 <span>{{ operatorName }}</span>
               </div>
-              <button
+              <ScButton
                 class="ghost small"
                 type="button"
                 :disabled="!operationLog.length"
                 @click="$emit('clear-operation-log')"
               >
                 清空记录
-              </button>
+              </ScButton>
             </header>
             <ol v-if="operationLog.length" class="contract-form-operation-log-list">
               <li v-for="entry in operationLog.slice(0, 8)" :key="entry.id">
@@ -340,21 +340,22 @@
         class="contract-field-governance-audit"
         :class="{ 'contract-field-governance-audit--warning': auditResult?.hasConflict }"
       >{{ auditSummary }}</span>
-      <button class="ghost" type="button" :disabled="busy || auditBusy" @click="$emit('audit')">
+      <ScButton class="ghost" type="button" :disabled="busy || auditBusy" @click="$emit('audit')">
         {{ auditBusy ? '检查中...' : (auditResult ? '重新检查' : '检查效果') }}
-      </button>
-      <button class="chip-btn" type="button" :disabled="busy" @click="$emit('preview')">
+      </ScButton>
+      <ScButton class="chip-btn" type="button" :disabled="busy" @click="$emit('preview')">
         {{ hasDraftChanges ? '保存并预览' : '预览当前页面' }}
-      </button>
-      <button class="ghost" type="button" :disabled="busy || !hasDraftChanges" @click="$emit('save')">保存表单设置</button>
-      <button class="ghost" type="button" :disabled="busy" @click="$emit('return-to-workbench')">返回工作台</button>
-      <button class="ghost" type="button" :disabled="busy || !hasDraftChanges" @click="$emit('reset')">放弃调整</button>
+      </ScButton>
+      <ScButton class="ghost" type="button" :disabled="busy || !hasDraftChanges" @click="$emit('save')">保存表单设置</ScButton>
+      <ScButton class="ghost" type="button" :disabled="busy" @click="$emit('return-to-workbench')">返回工作台</ScButton>
+      <ScButton class="ghost" type="button" :disabled="busy || !hasDraftChanges" @click="$emit('reset')">放弃调整</ScButton>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import ScCard from '../../components/design-system/ScCard.vue';
+import ScButton from '../../components/design-system/ScButton.vue';
 import type {
   ContractFieldGovernanceRow,
   FormConfigAuditResult,

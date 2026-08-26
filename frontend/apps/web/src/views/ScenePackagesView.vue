@@ -5,7 +5,7 @@
         <h2>{{ pageText('title', 'Scene Packages') }}</h2>
         <p>{{ pageText('subtitle', '导入、导出与审阅已安装的 Scene 能力包。') }}</p>
       </div>
-      <button
+      <ScButton
         v-for="action in headerActions"
         :key="action.key"
         class="secondary"
@@ -13,7 +13,7 @@
         @click="executeHeaderAction(action.key)"
       >
         {{ action.label }}
-      </button>
+      </ScButton>
     </header>
 
     <StatusPanel
@@ -70,8 +70,8 @@
           <input v-model="importReason" type="text" placeholder="input reason" />
         </label>
         <div class="actions">
-          <button class="secondary" :disabled="busy" @click="runDryRun">Dry Run</button>
-          <button class="danger" :disabled="busy" @click="runImport">Import</button>
+          <ScButton class="secondary" :disabled="busy" @click="runDryRun">Dry Run</ScButton>
+          <ScButton class="danger" :disabled="busy" @click="runImport">Import</ScButton>
         </div>
         <pre v-if="dryRunResult">{{ JSON.stringify(dryRunResult, null, 2) }}</pre>
       </article>
@@ -103,7 +103,7 @@
           <input v-model="exportReason" type="text" placeholder="scene package export" />
         </label>
         <div class="actions">
-          <button class="secondary" :disabled="busy" @click="runExport">Export</button>
+          <ScButton class="secondary" :disabled="busy" @click="runExport">Export</ScButton>
         </div>
         <pre v-if="exportResult">{{ JSON.stringify(exportResult, null, 2) }}</pre>
       </article>
@@ -115,6 +115,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import {
