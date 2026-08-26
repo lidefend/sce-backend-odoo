@@ -20,7 +20,7 @@ withDefaults(defineProps<{
   title?: string;
   subtitle?: string;
   bordered?: boolean;
-  appearance?: 'default' | 'summary' | 'task' | 'section' | 'context' | 'relation';
+  appearance?: 'default' | 'summary' | 'task' | 'section' | 'context' | 'relation' | 'form-section';
 }>(), {
   bordered: true,
   appearance: 'default',

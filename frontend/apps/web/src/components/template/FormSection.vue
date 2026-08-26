@@ -1,9 +1,13 @@
 <template>
-  <section :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]" data-component="FormSection" data-semantic-component="FormSection" :data-state="allFieldsReadonly ? 'readonly' : 'editable'">
-    <div v-if="showHead" class="template-form-section-head">
-      <h3 v-if="title" class="template-form-section-title">{{ title }}</h3>
-      <slot name="action" />
-    </div>
+  <ScCard
+    :class="['template-form-section', toneClass, { 'template-form-section--readonly': allFieldsReadonly }]"
+    data-component="FormSection"
+    data-semantic-component="FormSection"
+    :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
+    :title="showHead ? title : undefined"
+    appearance="form-section"
+  >
+    <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
     <p v-if="hint" class="template-form-section-hint">{{ hint }}</p>
     <div :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
       <template v-if="fields.length">
@@ -312,12 +316,13 @@
       </template>
       <slot v-else />
     </div>
-  </section>
+  </ScCard>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, useId, useSlots } from 'vue';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
+import ScCard from '../design-system/ScCard.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -921,39 +926,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   grid-column: 1 / -1;
   min-width: 0;
   container-type: inline-size;
-  border: 0;
-  border-top: 1px solid var(--sc-app-border);
-  border-radius: 0;
-  background: transparent;
-  padding: 14px 0 0;
-}
-
-.template-form-section--core {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.template-form-section--advanced {
-  border-top: 1px solid var(--sc-app-border);
-  margin-top: 2px;
-}
-
-.template-form-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
-  min-width: 0;
-}
-
-.template-form-section-title {
-  margin: 0;
-  font-size: 14px;
-  color: var(--sc-app-text-primary);
-  font-weight: 500;
-  overflow-wrap: anywhere;
 }
 
 .template-form-section-hint {
@@ -1225,49 +1197,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   font-size: 14px;
 }
 
-/* Business document sections: visible grouping without a dark navigation treatment. */
-.template-form-section {
-  padding: 18px 20px 20px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
-  background: var(--sc-app-panel);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--sc-app-shadow) 8%, transparent);
-}
-
-.template-form-section--core,
-.template-form-section--advanced {
-  padding-top: 18px;
-  border-top: 1px solid var(--sc-app-border);
-  margin-top: 0;
-}
-
-.template-form-section-head {
-  position: relative;
-  min-height: 28px;
-  margin: -18px -20px 14px;
-  padding: 12px 16px 10px 20px;
-  border-bottom: 1px solid var(--sc-app-border);
-  border-radius: 10px 10px 0 0;
-  background: linear-gradient(90deg, var(--sc-app-info-bg) 0%, color-mix(in srgb, var(--sc-app-info-bg) 48%, var(--sc-app-panel)) 62%, var(--sc-app-panel) 100%);
-}
-
-.template-form-section-head::before {
-  position: absolute;
-  top: 11px;
-  bottom: 9px;
-  left: 0;
-  width: 4px;
-  border-radius: 0 999px 999px 0;
-  background: var(--sc-semantic-surface-interactive);
-  content: '';
-}
-
-.template-form-section-title {
-  color: var(--sc-app-info-text);
-  font-size: 15px;
-  font-weight: 700;
-}
-
 .template-form-section--readonly .template-form-section-grid {
   row-gap: 12px;
   column-gap: 26px;
@@ -1298,17 +1227,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 @media (max-width: 760px) {
-  .template-form-section {
-    padding: 14px 14px 16px;
-    border-radius: 9px;
-  }
-
-  .template-form-section-head {
-    margin: -14px -14px 12px;
-    padding: 10px 12px 9px 16px;
-    border-radius: 9px 9px 0 0;
-  }
-
   .template-form-section--readonly .template-form-section-grid {
     row-gap: 12px;
   }
