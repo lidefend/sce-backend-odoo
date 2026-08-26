@@ -24,6 +24,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("FormSection does not route many2one and many2many through the relation family")
     if "import ScButton from '../design-system/ScButton.vue'" not in section or section.count("<ScButton") != 4:
         failures.append("many2one lifecycle commands must consume four shared ScButton primitives")
+    if "import ScInput from '../design-system/ScInput.vue'" not in section or '<ScInput\n              v-else-if="fieldConfigEditable"' not in section:
+        failures.append("field configuration label editor must consume the shared ScInput primitive")
+    if ".field-label-editor {\n  flex: 1 1 140px;\n  min-width: 96px;\n  max-width: 220px;\n  height:" in section:
+        failures.append("field configuration label editor overrides shared ScInput appearance")
     for marker in (
         'v-if="field.many2oneOpenToken"',
         'v-if="field.many2oneSearchToken"',

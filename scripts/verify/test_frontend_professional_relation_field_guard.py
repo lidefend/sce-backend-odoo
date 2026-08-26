@@ -40,6 +40,12 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
             return f"{value}\n.many2one-action:hover {{ background: red; }}" if path.endswith("FormSection.vue") else value
         self.assertTrue(any("override" in item for item in validate(read_text)))
 
+    def test_field_label_editor_cannot_regress_to_private_input(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            return value.replace('<ScInput\n              v-else-if="fieldConfigEditable"', '<input\n              v-else-if="fieldConfigEditable"', 1)
+        self.assertTrue(any("label editor" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -12,13 +12,14 @@
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
       >
         <header v-if="containerTitle(node)" class="native-container-head">
-          <input
+          <ScInput
             v-if="fieldConfigEditable && isEditableGroupNode(node)"
             class="native-container-title-editor"
             type="text"
-            :value="containerTitle(node)"
+            size="small"
+            :model-value="containerTitle(node)"
             :aria-label="`${containerTitle(node)}区域名称`"
-            @change="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
+            @change="emitGroupRename(node, $event)"
             @keydown.enter.prevent="emitGroupRename(node, ($event.target as HTMLInputElement).value)"
           />
           <h3 v-else>{{ containerTitle(node) }}</h3>
@@ -370,6 +371,7 @@ import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScInput from '../design-system/ScInput.vue';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import type {
   FormSectionFieldAction,
@@ -884,13 +886,6 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-container-title-editor {
   min-width: 140px;
   max-width: 260px;
-  height: 30px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 5px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 4px 8px;
-  font-size: 14px;
   font-weight: 600;
 }
 

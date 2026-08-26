@@ -16,6 +16,8 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
     failures: list[str] = []
     required = (
         "import ScButton from '../design-system/ScButton.vue'",
+        "import ScInput from '../design-system/ScInput.vue'",
+        '<ScInput\n            v-if="fieldConfigEditable && isEditableGroupNode(node)"',
         'v-if="!isSmartButtonNode(buttonNode)"',
         'class="native-action-btn"',
         'size="small"',
@@ -46,6 +48,8 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
             failures.append(f"native form changed action event authority: {event}")
     if 'class="native-tab"' not in text or 'class="native-title-favorite"' not in text:
         failures.append("stateful tab and favorite controls must remain native semantic controls")
+    if ".native-container-title-editor {\n  min-width: 140px;\n  max-width: 260px;\n  height:" in text:
+        failures.append("native group title editor overrides shared ScInput appearance")
     smart_required = (
         "import NativeSmartAction from './NativeSmartAction.vue'",
         '<NativeSmartAction',

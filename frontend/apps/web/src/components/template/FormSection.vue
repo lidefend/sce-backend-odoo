@@ -39,13 +39,14 @@
               <span v-if="field.required && !field.readonly" class="field-state field-state--required"><span aria-hidden="true">*</span><span class="sr-only">必填</span></span>
               <span v-else-if="field.readonly && !allFieldsReadonly" class="field-state">只读</span>
             </label>
-            <input
+            <ScInput
               v-else-if="fieldConfigEditable"
               class="field-label-editor"
               type="text"
-              :value="field.label"
+              size="small"
+              :model-value="field.label"
               :aria-label="`${field.label}显示名称`"
-              @change="emitFieldLabelChange(field, ($event.target as HTMLInputElement).value)"
+              @change="emitFieldLabelChange(field, $event)"
               @keydown.enter.prevent="emitFieldLabelChange(field, ($event.target as HTMLInputElement).value)"
             />
             <div v-if="fieldActionsFor(field).length" class="field-inline-config">
@@ -336,6 +337,7 @@ import ScDateField from '../design-system/ScDateField.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScInput from '../design-system/ScInput.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
 import ProfessionalBusinessValueControl from '../professional-fields/ProfessionalBusinessValueControl.vue';
@@ -1110,13 +1112,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   flex: 1 1 140px;
   min-width: 96px;
   max-width: 220px;
-  height: 28px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 5px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 4px 8px;
-  font-size: 13px;
   font-weight: 600;
 }
 
