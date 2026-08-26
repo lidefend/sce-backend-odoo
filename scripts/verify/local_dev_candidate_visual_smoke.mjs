@@ -742,10 +742,11 @@ try {
         await page.keyboard.press('Escape');
         await searchLayer.waitFor({ state: 'hidden', timeout: 15000 });
         const searchFocusRestored = await searchToggle.evaluate((node) => node === document.activeElement);
-        const rowCheckbox = viewport.name === 'mobile'
-          ? page.locator('[data-mobile-record-select] input[type="checkbox"]').first()
-          : page.locator('.desktop-record-table tbody input[type="checkbox"]').first();
-        await rowCheckbox.locator('xpath=..').click();
+        const rowSelection = viewport.name === 'mobile'
+          ? page.locator('.mobile-record-list [data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]').first()
+          : page.locator('.desktop-record-table tbody [data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]').first();
+        const rowCheckbox = rowSelection.locator('input[type="checkbox"]');
+        await rowSelection.click();
         if (!(await rowCheckbox.isChecked())) throw new Error('collection row selection control did not settle checked');
         const batchBar = page.locator('[data-semantic-component="CollectionBatchActionBar"]');
         await batchBar.waitFor({ state: 'visible', timeout: 15000 });
