@@ -395,6 +395,56 @@ try {
       });
       const initialFinalUrl = page.url();
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
+      let relationSearchDialogEvidence = null;
+      if (target.captureRelationSearchDialog === true) {
+        const relation = page.locator('.many2one-combobox:visible').first();
+        await relation.waitFor({ state: 'visible', timeout: 15000 });
+        await relation.locator('input').focus();
+        const searchMore = relation.locator('.many2one-action:visible').filter({ hasText: /搜索更多/ }).first();
+        await searchMore.waitFor({ state: 'visible', timeout: 15000 });
+        await searchMore.click();
+        const dialog = page.locator('[data-professional-relation-lifecycle="search"]:visible');
+        await dialog.waitFor({ state: 'visible', timeout: 15000 });
+        await dialog.locator('[data-semantic-component="ScInput"][type="search"]').waitFor({ state: 'visible', timeout: 15000 });
+        await dialog.locator('[data-semantic-component="ScLoading"][data-state="idle"], [data-semantic-component="ScEmptyState"]').first().waitFor({ state: 'visible', timeout: 15000 });
+        const visibleResults = dialog.locator('[data-semantic-component="RelationSearchResult"]:visible');
+        const resultCount = await visibleResults.count();
+        const resultLayouts = await visibleResults.evaluateAll((nodes) => nodes.map((node) => ({
+          layout: node.getAttribute('data-semantic-layout') || '',
+          recordId: node.getAttribute('data-record-id') || '',
+          role: node.getAttribute('role') || '',
+          tabIndex: node.getAttribute('tabindex') || '',
+          selected: node.getAttribute('aria-selected') || '',
+        })));
+        let keyboardSelected = null;
+        if (resultCount > 0) {
+          const firstResult = visibleResults.first();
+          await firstResult.focus();
+          await firstResult.press('Space');
+          keyboardSelected = await firstResult.getAttribute('aria-selected');
+        }
+        const dialogBox = await dialog.boundingBox();
+        const listboxCount = await dialog.locator('[role="listbox"]:visible').count();
+        const searchInputCount = await dialog.locator('[data-semantic-component="ScInput"][type="search"]:visible').count();
+        const primaryCount = await dialog.locator('.relation-dialog-footer .sc-btn-primary:visible:not(:disabled)').count();
+        const footerActionLabels = await dialog.locator('.relation-dialog-footer-actions button:visible').allTextContents();
+        relationSearchDialogEvidence = {
+          resultCount, resultLayouts, keyboardSelected, listboxCount, searchInputCount, primaryCount,
+          footerActionLabels: footerActionLabels.map((label) => label.replace(/\s+/g, ' ').trim()),
+          width: Math.round(dialogBox?.width || 0),
+          pass: resultCount > 0
+            && resultLayouts.every((item) => item.recordId && item.role === 'option' && item.tabIndex === '0')
+            && keyboardSelected === 'true'
+            && listboxCount === 1
+            && searchInputCount === 1
+            && primaryCount === 1
+            && (viewport.name !== 'desktop' || Number(dialogBox?.width || 0) >= 800)
+            && Number(dialogBox?.width || 0) <= viewport.width,
+        };
+        await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-relation-dialog.png`), fullPage: false });
+        await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'hidden', timeout: 15000 });
+      }
       let collectionSelectionEvidence = null;
       let collectionSummaryEvidence = null;
       let collectionMobileRecordEvidence = null;
@@ -745,7 +795,7 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -762,6 +812,7 @@ for (const item of report.routes) {
   if (item.collectionSummaryEvidence && !item.collectionSummaryEvidence.pass) failures.push({ name: item.name, collectionSummaryEvidence: item.collectionSummaryEvidence });
   if (item.collectionMobileRecordEvidence && !item.collectionMobileRecordEvidence.pass) failures.push({ name: item.name, collectionMobileRecordEvidence: item.collectionMobileRecordEvidence });
   if (item.collectionKanbanEvidence && !item.collectionKanbanEvidence.pass) failures.push({ name: item.name, collectionKanbanEvidence: item.collectionKanbanEvidence });
+  if (item.relationSearchDialogEvidence && !item.relationSearchDialogEvidence.pass) failures.push({ name: item.name, relationSearchDialogEvidence: item.relationSearchDialogEvidence });
   if (item.collectionAggregateEvidence && !item.collectionAggregateEvidence.pass) failures.push({ name: item.name, collectionAggregateEvidence: item.collectionAggregateEvidence });
   if (item.collectionGroupHeaderEvidence && !item.collectionGroupHeaderEvidence.pass) failures.push({ name: item.name, collectionGroupHeaderEvidence: item.collectionGroupHeaderEvidence });
   if (item.dialogLifecycleEvidence && !item.dialogLifecycleEvidence.pass) failures.push({ name: item.name, dialogLifecycleEvidence: item.dialogLifecycleEvidence });

@@ -27,5 +27,10 @@ class ProfessionalRelationLifecycleGuardTests(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             return value + "\n.fixture{gap:var(--sc-space-xs)}\n" if path.endswith("RelationSearchDialog.css") else value
         self.assertTrue(any("directly consumes primitive" in item for item in validate(read_text)))
+    def test_missing_runtime_evidence_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            return value.replace('captureRelationSearchDialog', 'legacyRelationDialogCapture') if path.endswith("local_dev_candidate_visual_smoke.mjs") else value
+        self.assertTrue(any("runtime evidence" in item for item in validate(read_text)))
 
 if __name__ == "__main__": unittest.main()

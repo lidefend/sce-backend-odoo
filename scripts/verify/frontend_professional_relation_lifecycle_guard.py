@@ -10,6 +10,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     consumer = read_text("frontend/apps/web/src/pages/contractForm/relationCreateDialogRuntime.ts")
     search = read_text("frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue")
     search_style = read_text("frontend/apps/web/src/pages/contractForm/RelationSearchDialog.css")
+    visual = read_text("scripts/verify/local_dev_candidate_visual_smoke.mjs")
     create = read_text("frontend/apps/web/src/pages/contractForm/RelationCreateDialog.vue")
     for symbol in (
         "buildProfessionalRelationCreatedMessage", "buildProfessionalRelationCancelledMessage",
@@ -36,6 +37,9 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     for primitive_prefix in ('var(--sc-space-', 'var(--sc-base-'):
         if primitive_prefix in search_style:
             failures.append(f"relation search style directly consumes primitive token {primitive_prefix}")
+    for marker in ('captureRelationSearchDialog', 'relationSearchDialogEvidence', 'keyboardSelected'):
+        if marker not in visual:
+            failures.append(f"relation search runtime evidence missing {marker}")
     if 'data-professional-relation-lifecycle="create"' not in create:
         failures.append("relation create dialog missing professional lifecycle identity")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
