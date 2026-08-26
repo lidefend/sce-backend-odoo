@@ -15,14 +15,15 @@
       <form v-if="showSearch" class="product-list-header__search" role="search" @submit.prevent="$emit('search-submit')">
         <label>
           <span class="sc-visually-hidden">{{ searchLabel }}</span>
-          <input
+          <ScInput
             type="search"
-            :value="searchValue"
+            size="small"
+            :model-value="searchValue"
             :disabled="loading"
             :placeholder="searchPlaceholder"
             @compositionstart="$emit('composition-start')"
             @compositionend="$emit('composition-end', $event)"
-            @input="$emit('search-input', $event)"
+            @input="(value) => $emit('search-input', value)"
           />
         </label>
         <ScButton type="submit" :disabled="loading">{{ searchLabel }}</ScButton>
@@ -39,6 +40,7 @@
 import type { StyleValue } from 'vue';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
+import ScInput from '../design-system/ScInput.vue';
 
 defineProps<{
   loading: boolean;
@@ -51,7 +53,7 @@ defineProps<{
 }>();
 
 defineEmits<{
-  'search-input': [event: Event];
+  'search-input': [value: string];
   'search-submit': [];
   'search-clear': [];
   'composition-start': [];

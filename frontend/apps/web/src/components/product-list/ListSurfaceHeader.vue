@@ -87,7 +87,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'search-input': [event: Event];
+  'search-input': [value: string];
   'search-submit': [];
   'search-clear': [];
   'composition-start': [];

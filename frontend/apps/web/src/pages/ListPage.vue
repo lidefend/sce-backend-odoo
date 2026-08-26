@@ -1332,8 +1332,8 @@ function applyPageLimit() {
 
 function onPageLimitSelectChange(value: string) { applyPageLimitValue(Number(value || 0)); }
 
-function onPlainSearchInput(event: Event) {
-  plainSearchDraft.value = String((event.target as HTMLInputElement | null)?.value || '');
+function onPlainSearchInput(value: string) {
+  plainSearchDraft.value = String(value || '');
 }
 
 function onPlainSearchCompositionEnd(event: CompositionEvent) {
