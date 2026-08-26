@@ -33,7 +33,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             )
             state_contract = {
                 "ScButton": '<button :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined"><span class="sc-btn__spinner" /></button>',
-                "ScCheckbox": '<label :data-checked="checked || undefined" :data-disabled="disabled || undefined"><input type="checkbox" :aria-label="label" /></label>',
+                "ScCheckbox": '<label :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined"><input type="checkbox" :aria-checked="indeterminate ? \'mixed\' : checked" :aria-label="label" /></label>',
                 "ScInput": '<input :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScTextarea": '<textarea :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<select :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
@@ -106,6 +106,19 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("interaction-state marker" in error for error in validate(root)))
+
+    def test_checkbox_indeterminate_state_markers_are_required(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScCheckbox.vue"
+        source.write_text(
+            '<template><label data-semantic-component="ScCheckbox" data-semantic-layer="primitive" '
+            ':data-checked="checked || undefined" :data-disabled="disabled || undefined">'
+            '<input type="checkbox" :aria-label="label" /></label></template>\n',
+            encoding="utf-8",
+        )
+        errors = validate(root)
+        self.assertTrue(any("data-indeterminate" in error for error in errors))
+        self.assertTrue(any("aria-checked" in error for error in errors))
 
 
 if __name__ == "__main__":

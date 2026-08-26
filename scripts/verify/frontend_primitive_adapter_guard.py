@@ -75,7 +75,14 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"ScButton missing governed interaction-state marker: {marker}")
 
     checkbox_text = (design / "ScCheckbox.vue").read_text(encoding="utf-8") if (design / "ScCheckbox.vue").is_file() else ""
-    for marker in ('type="checkbox"', ':data-checked="checked || undefined"', ':data-disabled="disabled || undefined"', ':aria-label="label"'):
+    for marker in (
+        'type="checkbox"',
+        ':data-checked="checked || undefined"',
+        ':data-indeterminate="indeterminate || undefined"',
+        ':data-disabled="disabled || undefined"',
+        ':aria-checked="indeterminate ? \'mixed\' : checked"',
+        ':aria-label="label"',
+    ):
         if marker not in checkbox_text:
             errors.append(f"ScCheckbox missing governed selection marker: {marker}")
 
