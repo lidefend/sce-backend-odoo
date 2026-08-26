@@ -88,7 +88,7 @@ Generated from repository source files. This report is informational during the 
 | 1189 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1170 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
-| 1145 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1150 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1136 | Python source | `addons/smart_core/core/view_orchestrator.py` |
@@ -113,6 +113,7 @@ Generated from repository source files. This report is informational during the 
 | 911 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 905 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 891 | Python source | `addons/smart_core/handlers/execute_button.py` |
+| 891 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
@@ -125,7 +126,6 @@ Generated from repository source files. This report is informational during the 
 | 845 | Python source | `scripts/release/test_production_admin_identity_baseline.py` |
 | 843 | Python source | `scripts/verify/contract_evidence_guard.py` |
 | 841 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
-| 841 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
@@ -212,7 +212,7 @@ Generated from repository source files. This report is informational during the 
 | 1189 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1170 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1157 | warning | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
-| 1145 | warning | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1150 | warning | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1145 | warning | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | warning | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1136 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |

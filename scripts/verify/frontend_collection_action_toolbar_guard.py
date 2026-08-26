@@ -35,6 +35,13 @@ def validate(
         'focusOpenLayer',
         'import ScInput',
         '<ScInput',
+        'import ScSelect',
+        '<ScSelect v-model="customFilterField" size="small">',
+        '<ScSelect v-model="customFilterOperator" size="small">',
+        '<ScButton type="button" variant="primary" size="small" :disabled="!canApplyCustomFilter || loading"',
+        '<ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading"',
+        '<ScButton\n          v-if="hasStructuredConditions"\n          class="toolbar-clear-all"',
+        '<ScButton\n          v-if="canCreateRecord"\n          class="toolbar-overflow-create"',
         "'search-input': [value: string]",
         'var(--sc-semantic-focus-ring)',
         '@media (prefers-reduced-motion: reduce)',
@@ -42,6 +49,25 @@ def validate(
     for marker in required:
         if marker not in text:
             failures.append(f"collection toolbar missing {marker}")
+    forbidden_legacy_actions = (
+        '<button\n          v-if="hasStructuredConditions"\n          class="toolbar-clear-all"',
+        '<button type="button" :disabled="!canApplyCustomFilter || loading"',
+        '<button type="button" :disabled="!favoriteName.trim() || loading"',
+        '<button\n          v-if="canCreateRecord"\n          class="toolbar-overflow-create"',
+    )
+    if any(marker in text for marker in forbidden_legacy_actions):
+        failures.append("collection toolbar retains a generic legacy action control")
+    stateful_native_controls = (
+        'class="contract-chip"',
+        'class="search-facet"',
+        'class="search-menu-toggle"',
+        'class="search-menu-item"',
+        'class="toolbar-overflow-toggle"',
+        'type="checkbox"',
+    )
+    for marker in stateful_native_controls:
+        if marker not in text:
+            failures.append(f"collection toolbar lost stateful native control {marker}")
     if 'role="menu"' in text or 'role="menuitem"' in text:
         failures.append("collection toolbar disclosure must preserve native button semantics")
     required_list = (
