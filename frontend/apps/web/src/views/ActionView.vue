@@ -58,142 +58,148 @@
     <section v-if="showStandaloneQuickFilters" class="contract-block" :style="getSectionStyle('quick_filters')">
       <p class="contract-label">{{ t('label.quick_filters', '快速筛选') }}</p>
       <div class="contract-chips">
-        <button
+        <CollectionFilterChip
           v-for="chip in vm.filters.quickFilters.primary"
           :key="`contract-filter-${chip.key}`"
           class="contract-chip"
-          :class="{ active: activeContractFilterKey === chip.key }"
+          :filter-key="chip.key"
+          :active="activeContractFilterKey === chip.key"
           :disabled="isBusyDisabled()"
-          @click="applyContractFilter(chip.key)"
+          @activate="applyContractFilter(chip.key)"
         >
           {{ chip.label }}
-        </button>
-        <button
+        </CollectionFilterChip>
+        <CollectionFilterChip
           v-if="activeContractFilterKey"
           class="contract-chip ghost"
           :disabled="isBusyDisabled()"
-          @click="clearContractFilter"
+          @activate="clearContractFilter"
         >
           {{ t('chip_action_clear', '清除') }}
-        </button>
-        <button
+        </CollectionFilterChip>
+        <CollectionFilterChip
           v-if="vm.filters.quickFilters.overflow.length"
           class="contract-chip ghost"
           :disabled="isBusyDisabled()"
-          @click="toggleMoreContractFilters"
+          @activate="toggleMoreContractFilters"
         >
           {{
             showMoreContractFilters
               ? t('chip_more_filters_collapse', '收起更多筛选')
               : `${t('chip_more_filters_expand', '更多筛选')} (${vm.filters.quickFilters.overflow.length})`
           }}
-        </button>
+        </CollectionFilterChip>
       </div>
       <div v-if="showMoreContractFilters && vm.filters.quickFilters.overflow.length" class="contract-chips">
-        <button
+        <CollectionFilterChip
           v-for="chip in vm.filters.quickFilters.overflow"
           :key="`contract-filter-overflow-${chip.key}`"
           class="contract-chip"
-          :class="{ active: activeContractFilterKey === chip.key }"
+          :filter-key="chip.key"
+          :active="activeContractFilterKey === chip.key"
           :disabled="isBusyDisabled()"
-          @click="applyContractFilter(chip.key)"
+          @activate="applyContractFilter(chip.key)"
         >
           {{ chip.label }}
-        </button>
+        </CollectionFilterChip>
       </div>
     </section>
     <section v-if="showStandaloneSavedFilters" class="contract-block" :style="getSectionStyle('saved_filters')">
       <p class="contract-label">{{ t('label.saved_filters', '已保存筛选') }}</p>
       <div class="contract-chips">
-        <button
+        <CollectionFilterChip
           v-for="chip in vm.filters.savedFilters.primary"
           :key="`saved-filter-${chip.key}`"
           class="contract-chip"
-          :class="{ active: activeSavedFilterKey === chip.key }"
+          :filter-key="chip.key"
+          :active="activeSavedFilterKey === chip.key"
           :disabled="isBusyDisabled()"
-          @click="applySavedFilter(chip.key)"
+          @activate="applySavedFilter(chip.key)"
         >
           {{ chip.label }}
-        </button>
-        <button
+        </CollectionFilterChip>
+        <CollectionFilterChip
           v-if="activeSavedFilterKey"
           class="contract-chip ghost"
           :disabled="isBusyDisabled()"
-          @click="clearSavedFilter"
+          @activate="clearSavedFilter"
         >
           {{ t('chip_action_clear', '清除') }}
-        </button>
-        <button
+        </CollectionFilterChip>
+        <CollectionFilterChip
           v-if="vm.filters.savedFilters.overflow.length"
           class="contract-chip ghost"
           :disabled="isBusyDisabled()"
-          @click="toggleMoreSavedFilters"
+          @activate="toggleMoreSavedFilters"
         >
           {{
             showMoreSavedFilters
               ? t('chip_more_filters_collapse', '收起更多筛选')
               : `${t('chip_more_filters_expand', '更多筛选')} (${vm.filters.savedFilters.overflow.length})`
           }}
-        </button>
+        </CollectionFilterChip>
       </div>
       <div v-if="showMoreSavedFilters && vm.filters.savedFilters.overflow.length" class="contract-chips">
-        <button
+        <CollectionFilterChip
           v-for="chip in vm.filters.savedFilters.overflow"
           :key="`saved-filter-overflow-${chip.key}`"
           class="contract-chip"
-          :class="{ active: activeSavedFilterKey === chip.key }"
+          :filter-key="chip.key"
+          :active="activeSavedFilterKey === chip.key"
           :disabled="isBusyDisabled()"
-          @click="applySavedFilter(chip.key)"
+          @activate="applySavedFilter(chip.key)"
         >
           {{ chip.label }}
-        </button>
+        </CollectionFilterChip>
       </div>
     </section>
     <section v-if="showStandaloneGroupView" class="contract-block" :style="getSectionStyle('group_view')">
       <p class="contract-label">{{ t('label.group_view', '分组查看') }}</p>
       <div class="contract-chips">
-        <button
+        <CollectionFilterChip
           v-for="chip in vm.filters.groupBy.primary"
           :key="`group-by-${chip.field}`"
           class="contract-chip"
-          :class="{ active: activeGroupByField === chip.key }"
+          :filter-key="chip.key"
+          :active="activeGroupByField === chip.key"
           :disabled="isBusyDisabled()"
-          @click="applyGroupBy(chip.key)"
+          @activate="applyGroupBy(chip.key)"
         >
           {{ chip.label }}
-        </button>
-        <button
+        </CollectionFilterChip>
+        <CollectionFilterChip
           v-if="activeGroupByField"
           class="contract-chip ghost"
           :disabled="isBusyDisabled()"
-          @click="clearGroupBy"
+          @activate="clearGroupBy"
         >
           {{ t('chip_action_clear', '清除') }}
-        </button>
-        <button
+        </CollectionFilterChip>
+        <CollectionFilterChip
           v-if="vm.filters.groupBy.overflow.length"
           class="contract-chip ghost"
           :disabled="isBusyDisabled()"
-          @click="toggleMoreGroupBy"
+          @activate="toggleMoreGroupBy"
         >
           {{
             showMoreGroupBy
               ? t('chip_more_group_collapse', '收起更多分组')
               : `${t('chip_more_group_expand', '更多分组')} (${vm.filters.groupBy.overflow.length})`
           }}
-        </button>
+        </CollectionFilterChip>
       </div>
       <div v-if="showMoreGroupBy && vm.filters.groupBy.overflow.length" class="contract-chips">
-        <button
+        <CollectionFilterChip
           v-for="chip in vm.filters.groupBy.overflow"
           :key="`group-by-overflow-${chip.field}`"
           class="contract-chip"
-          :class="{ active: activeGroupByField === chip.key }"
+          :filter-key="chip.key"
+          :active="activeGroupByField === chip.key"
           :disabled="isBusyDisabled()"
-          @click="applyGroupBy(chip.key)"
+          @activate="applyGroupBy(chip.key)"
         >
           {{ chip.label }}
-        </button>
+        </CollectionFilterChip>
       </div>
     </section>
     <GroupSummaryBar
@@ -658,6 +664,7 @@ import ScDialog from '../components/design-system/ScDialog.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import CollectionPattern from '../components/product-page-patterns/CollectionPattern.vue';
+import CollectionFilterChip from '../components/product-list/CollectionFilterChip.vue';
 import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
 import { getUserViewPreference, setUserViewPreference } from '../api/preferences';
