@@ -142,7 +142,7 @@
         </ScButton>
       </div>
       <div v-if="activeSection" class="section-grid section-grid--active" data-lowcode-config-task-grid="v1">
-        <article :key="activeSection.key" class="config-card" data-lowcode-config-task-card="v1">
+        <ScCard :key="activeSection.key" class="config-card" appearance="config" data-lowcode-config-task-card="v1">
           <div class="config-card-head">
             <div>
               <span>{{ sectionTaskKindLabel(activeSection.key) }}</span>
@@ -224,7 +224,7 @@
               打开完整规则
             </ScButton>
           </div>
-        </article>
+        </ScCard>
       </div>
     </section>
     <aside v-if="surface" class="workbench-status-rail" aria-label="交付状态" data-lowcode-delivery-readiness="low_code_delivery_readiness.v1">
@@ -270,6 +270,7 @@ import type {
   BusinessConfigSurfacePayload,
 } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScCard from '../../components/design-system/ScCard.vue';
 import ScStatusBadge from '../../components/design-system/ScStatusBadge.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
 

@@ -35,7 +35,7 @@
       </ScEmptyState>
 
       <div v-else class="credential-list" data-auth-credential-list>
-        <article v-for="item in credentials" :key="item.credential_id" class="credential-card">
+        <ScCard v-for="item in credentials" :key="item.credential_id" class="credential-card" appearance="record">
           <header>
             <div>
               <h3>{{ item.name }}</h3>
@@ -59,7 +59,7 @@
             <ScButton variant="secondary" @click="openRotate(item)">轮换</ScButton>
             <ScButton variant="danger" :loading="busyCredentialId === item.credential_id" @click="revoke(item)">撤销</ScButton>
           </div>
-        </article>
+        </ScCard>
       </div>
     </ScSection>
 
@@ -141,6 +141,7 @@ import { useSessionStore } from '../stores/session';
 import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import {
   ScButton,
+  ScCard,
   ScCheckbox,
   ScDialog,
   ScEmptyState,
@@ -358,7 +359,6 @@ onBeforeUnmount(() => {
 .credential-alert--error { color: var(--sc-app-danger-text); background: var(--sc-app-danger-bg); }
 .credential-alert--warning { color: var(--sc-app-warning-text); background: var(--sc-app-warning-bg); }
 .credential-list { display: grid; gap: var(--sc-product-space-3); }
-.credential-card { display: grid; gap: var(--sc-product-space-3); padding: var(--sc-product-space-3); border: 1px solid var(--sc-app-border); border-radius: var(--sc-component-panel-radius); background: var(--sc-app-panel); }
 .credential-card > header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sc-product-space-2); }
 .credential-card h3 { margin: 0 0 var(--sc-product-space-1); }
 .credential-card code { color: var(--sc-app-text-secondary); overflow-wrap: anywhere; }
