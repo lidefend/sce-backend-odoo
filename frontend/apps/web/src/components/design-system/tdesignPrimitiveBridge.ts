@@ -13,6 +13,7 @@ export {
   TDesignSelect,
   TDesignTabPanel,
   TDesignTabs,
+  TDesignTag,
   TDesignTextarea,
   TDesignTooltip,
 } from '@sc/ui/primitives';
