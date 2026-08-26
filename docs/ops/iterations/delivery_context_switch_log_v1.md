@@ -6551,9 +6551,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   state identities.
 - Authority boundary: action, menu, route, Contract V2, permissions, record
   capabilities, task/workspace selection and mutation semantics are unchanged.
-- Machine evidence: 13 collection targets have parsed SFC bindings and leave
-  `gap`; the formal gap count falls from 63 to 51. The component browser harness
+- Machine evidence: 15 collection targets and 9 navigation/hierarchy targets
+  have parsed SFC bindings and leave `gap`; the formal gap count falls from 63
+  to 40. The component browser harness
   covers desktop and 390px, disabled reasons, focus/reduced-motion, browser
   errors 0, overflow 0 and mutation 0.
-- Excluded: hierarchy and Shell navigation authority, form/relation/workflow
-  productization, P3 low-code/admin surfaces and business-model special cases.
+- Excluded: form/relation/workflow productization, P3 low-code/admin surfaces,
+  business-model special cases, and all navigation/route authority changes.
