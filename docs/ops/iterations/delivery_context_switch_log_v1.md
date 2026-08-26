@@ -6393,3 +6393,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   remain exact, and the action group contains one create and one cancel action.
   Frontend Quick, strict typecheck, development build, style-system and
   delivery-hardening guards pass.
+
+## Canonical form Header action primitives convergence v1
+
+- Branch / baseline: `feature/p0-form-header-action-primitives-v1` /
+  `49b50e9e4fa95f35b66b482c6cbb492498ce10d5`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  canonical form Header action presentation / `frontend/apps/web`.
+- Product result: desktop, overflow and mobile Header actions now consume the
+  shared `ScButton` primitive with explicit small-size and primary, ghost or
+  danger variants. The only native button retained in the component is the
+  workflow status step because it owns `aria-current=step` state semantics
+  rather than generic page-action semantics.
+- Authority boundary: primary-action arbitration, business/canonical/config
+  action arrays, disabled reasons, backend evidence attributes, mobile action
+  keys and all emitted events remain unchanged. The existing `details`
+  disclosure remains in place; this batch does not change dropdown settlement,
+  routes, permissions, Contract payloads or business mutations.
+- Evidence: six source guard cases prove shared primitive ownership, the single
+  native status-step exception, event/evidence preservation and destructive /
+  primary variant mapping. Product Page Header, professional workflow,
+  primitive adapter, style-system, delivery-hardening and strict typecheck
+  gates pass.
