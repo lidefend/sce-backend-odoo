@@ -1,5 +1,5 @@
 <template>
-  <section v-if="items.length" class="group-summary">
+  <section v-if="items.length" class="group-summary" data-semantic-component="GroupSummaryBar" data-state="ready">
     <header class="group-summary-head">
       <p>分组摘要</p>
       <div class="group-summary-head-actions">
