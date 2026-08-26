@@ -28,16 +28,17 @@
 }
 
 .relation-dialog-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
-  flex-wrap: wrap;
   padding: var(--sc-product-space-2) var(--sc-product-space-3);
   border-bottom: 1px solid var(--sc-app-border);
   background: var(--sc-app-panel);
 }
 
 .relation-dialog-search__input {
-  flex: 1 1 auto;
-  min-width: min(280px, 100%);
+  width: auto;
+  min-width: 0;
 }
 
 .relation-dialog-table-wrap {
