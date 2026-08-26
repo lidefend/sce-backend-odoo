@@ -133,7 +133,7 @@
     <div class="o2m-toolbar">
       <ScButton
         v-if="adapter.one2manyCanCreate(field.name)"
-        class="chip-btn"
+        class="o2m-create"
         type="button"
         variant="primary"
         size="small"
@@ -195,7 +195,7 @@
           </label>
         </div>
         <ScButton
-          class="ghost o2m-row-remove"
+          class="o2m-row-remove"
           type="button"
           variant="danger"
           size="small"
@@ -217,7 +217,7 @@
         <ScButton
           v-for="row in adapter.removedOne2manyRows(field.name)"
           :key="`rm-${row.key}`"
-          class="chip-btn"
+          class="o2m-row-restore"
           type="button"
           variant="ghost"
           size="small"
@@ -230,9 +230,9 @@
     </div>
     </template>
     <nav v-if="one2manyPageCount > 1" class="o2m-pagination" aria-label="明细分页" data-detail-collection-pagination>
-      <ScButton type="button" class="ghost" variant="ghost" size="small" :disabled="one2manyPage <= 1" @click="one2manyPage -= 1">上一页</ScButton>
+      <ScButton type="button" class="o2m-page-action" variant="ghost" size="small" :disabled="one2manyPage <= 1" @click="one2manyPage -= 1">上一页</ScButton>
       <span>第 {{ one2manyPage }} / {{ one2manyPageCount }} 页</span>
-      <ScButton type="button" class="ghost" variant="ghost" size="small" :disabled="one2manyPage >= one2manyPageCount" @click="one2manyPage += 1">下一页</ScButton>
+      <ScButton type="button" class="o2m-page-action" variant="ghost" size="small" :disabled="one2manyPage >= one2manyPageCount" @click="one2manyPage += 1">下一页</ScButton>
     </nav>
   </div>
   <ScInput
@@ -469,7 +469,6 @@ function tagColorStyle(color: unknown) {
 }
 
 .relation-tag-option,
-.relation-tag-action,
 .relation-tag-hint {
   display: flex;
   align-items: center;
@@ -496,16 +495,13 @@ function tagColorStyle(color: unknown) {
 }
 
 .relation-tag-action {
-  color: var(--sc-semantic-surface-interactive);
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .relation-tag-hint {
   color: var(--sc-app-text-secondary);
   cursor: default;
-}
-
-.relation-tag-action:hover {
-  background: var(--sc-app-hover-bg);
 }
 
 .relation-tag-swatch {
@@ -578,16 +574,6 @@ function tagColorStyle(color: unknown) {
 
 .relation-tag:hover {
   background: var(--sc-app-info-bg);
-}
-
-.chip-btn {
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  cursor: pointer;
 }
 
 .meta {
@@ -774,8 +760,9 @@ select.input {
     white-space: nowrap;
   }
 
-  .o2m-toolbar .chip-btn,
-  .o2m-removed .chip-btn {
+  .o2m-create,
+  .o2m-row-restore,
+  .o2m-page-action {
     min-height: 44px;
   }
 
@@ -792,12 +779,4 @@ select.input {
   }
 }
 
-.ghost {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  font-weight: 500;
-  color: var(--sc-semantic-text-muted);
-}
 </style>

@@ -29,12 +29,12 @@
         <div v-if="editTxState === 'saved'" class="editor-banner">Saved.</div>
         <div v-else-if="editTxState === 'saving'" class="editor-banner">Saving…</div>
         <label class="editor-label">Name</label>
-        <ScInput v-model="draftName" class="editor-input" type="text" />
+        <ScInput v-model="draftName" type="text" />
         <div class="editor-actions">
           <ScButton class="relational-save" type="button" variant="primary" :loading="saving" :disabled="!draftName.trim()" @click="saveRow">
             {{ saving ? 'Saving…' : 'Save' }}
           </ScButton>
-          <ScButton class="relational-cancel" type="button" variant="ghost" :disabled="saving" @click="cancelEdit">Cancel</ScButton>
+          <ScButton class="relational-cancel" type="button" variant="ghost" @click="cancelEdit">Cancel</ScButton>
         </div>
         <div v-if="editorError" class="relational-meta">{{ editorError }}</div>
       </div>
@@ -274,42 +274,11 @@ onMounted(load);
 .relational-link {
   width: 100%;
   text-align: left;
-  background: var(--sc-app-input-bg);
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  padding: 6px 10px;
-  color: var(--sc-app-text-primary);
-  cursor: pointer;
 }
 
 .relational-row-actions {
   display: flex;
   gap: 6px;
-}
-
-.relational-add,
-.relational-edit,
-.relational-delete,
-.relational-save,
-.relational-cancel {
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.relational-delete {
-  border-color: var(--sc-app-danger-border);
-  color: var(--sc-app-danger-text);
-}
-
-.relational-save {
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-  border-color: var(--sc-semantic-surface-interactive);
 }
 
 .relational-editor {
@@ -334,15 +303,6 @@ onMounted(load);
   color: var(--sc-app-text-secondary);
 }
 
-.editor-input {
-  border-radius: 8px;
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 8px;
-  font-size: 13px;
-}
-
 .editor-banner {
   font-size: 12px;
   color: var(--sc-app-info-text);
@@ -357,7 +317,4 @@ onMounted(load);
   gap: 8px;
 }
 
-.relational-link:hover {
-  border-color: var(--sc-app-border-strong);
-}
 </style>

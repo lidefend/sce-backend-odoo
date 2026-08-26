@@ -13,7 +13,7 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     x2many_actions = (
         '<ScButton\n              v-if="adapter.relationCreateMode(field.name) === \'page\'"',
         '<ScButton\n        v-if="adapter.one2manyCanCreate(field.name)"',
-        '<ScButton\n          class="ghost o2m-row-remove"',
+        '<ScButton\n          class="o2m-row-remove"',
         'v-for="row in adapter.removedOne2manyRows(field.name)"',
         '>上一页</ScButton>',
         '>下一页</ScButton>',
@@ -44,6 +44,17 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     )
     if any(marker in x2m or marker in view for marker in forbidden):
         failures.append("relational surface retains a generic legacy command")
+    forbidden_variant_overrides = (
+        ".chip-btn {",
+        ".ghost {",
+        ".relational-add,",
+        ".relational-delete {",
+        ".relational-save {",
+    )
+    if any(marker in x2m or marker in view for marker in forbidden_variant_overrides):
+        failures.append("relational surface overrides governed ScButton variant presentation")
+    if ':disabled="saving" @click="cancelEdit"' in view:
+        failures.append("relational cancel changed the existing transaction settlement boundary")
     stateful_native = (
         'v-for="option in adapter.selectedRelationOptions(field.name)"',
         'v-for="option in adapter.filteredRelationOptions(field.name).slice(0, 8)"',

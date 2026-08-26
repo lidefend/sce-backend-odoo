@@ -24,6 +24,14 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
         altered = self.view_relation.replace('<ScInput v-model="draftName"', '<input v-model="draftName"')
         self.assertTrue(any("draftName" in error for error in validate(self.x2many, altered)))
 
+    def test_legacy_css_cannot_override_button_variant(self):
+        altered = f"{self.x2many}\n.chip-btn {{ background: red; }}"
+        self.assertIn("relational surface overrides governed ScButton variant presentation", validate(altered, self.view_relation))
+
+    def test_cancel_keeps_existing_settlement_behavior(self):
+        altered = self.view_relation.replace('variant="ghost" @click="cancelEdit"', 'variant="ghost" :disabled="saving" @click="cancelEdit"')
+        self.assertIn("relational cancel changed the existing transaction settlement boundary", validate(self.x2many, altered))
+
     def test_stateful_tag_choice_remains_native(self):
         altered = self.x2many.replace('v-for="option in adapter.filteredRelationOptions(field.name).slice(0, 8)"', 'v-for="item in genericCommands"')
         self.assertTrue(any("stateful native" in error for error in validate(altered, self.view_relation)))
