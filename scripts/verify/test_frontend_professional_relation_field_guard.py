@@ -26,13 +26,13 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             return value.replace('<ScButton\n                          v-if="field.many2oneOpenToken"', '<button\n                          v-if="field.many2oneOpenToken"', 1)
-        self.assertTrue(any("four shared ScButton" in item for item in validate(read_text)))
+        self.assertTrue(any("five shared ScButton" in item for item in validate(read_text)))
 
-    def test_many2one_option_remains_a_native_option(self):
+    def test_many2one_option_cannot_regress_to_private_button(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
-            return value.replace('<button\n                          v-for="(option, optionIndex)', '<ScButton\n                          v-for="(option, optionIndex)', 1)
-        self.assertTrue(any("native option" in item for item in validate(read_text)))
+            return value.replace('<ScButton\n                          v-for="(option, optionIndex)', '<button\n                          v-for="(option, optionIndex)', 1)
+        self.assertTrue(any("listbox options" in item for item in validate(read_text)))
 
     def test_many2one_command_cannot_override_primitive_hover(self):
         def read_text(path):

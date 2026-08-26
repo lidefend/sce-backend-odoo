@@ -2,6 +2,7 @@ export {
   TDesignBadge,
   TDesignButton,
   TDesignCheckbox,
+  TDesignRadioGroup,
   TDesignDropdown,
   TDesignEmpty,
   TDesignAlert,

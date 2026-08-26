@@ -244,9 +244,15 @@ def _check_complexity_and_accessibility(errors: list[str]) -> None:
             errors.append(f"record runtime exceeds {limit} lines: {_rel(path)}={lines}")
 
     form_text = _check_required_file(FORM_SECTION, errors)
-    for token in ['aria-required', 'aria-invalid', 'aria-describedby', 'data-field-key']:
-        if token not in form_text:
-            errors.append(f"{_rel(FORM_SECTION)} missing accessible field token: {token}")
+    accessible_contracts = {
+        "required": ("aria-required", ':required="field.required"'),
+        "invalid": ("aria-invalid", ':status="field.invalid'),
+        "described_by": ("aria-describedby", ':described-by="fieldDescribedBy(field)"'),
+        "field_identity": ("data-field-key",),
+    }
+    for contract, markers in accessible_contracts.items():
+        if not any(marker in form_text for marker in markers):
+            errors.append(f"{_rel(FORM_SECTION)} missing accessible field contract: {contract}")
 
     for retired in [WEB_SRC / "views/RecordView.vue", WEB_SRC / "pages/ModelFormPage.vue"]:
         if retired.exists():

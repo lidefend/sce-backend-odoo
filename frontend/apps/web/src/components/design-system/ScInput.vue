@@ -18,6 +18,9 @@
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
     :aria-invalid="status === 'error' || undefined"
+    :min="min"
+    :max="max"
+    :step="step"
     @update:model-value="onTDesignInput"
     @change="onTDesignChange"
     @focus="onTDesignFocus"
@@ -38,6 +41,9 @@
     :disabled="disabled || loading"
     :readonly="readonly"
     :required="required"
+    :min="min"
+    :max="max"
+    :step="step"
     :placeholder="placeholder"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
@@ -70,6 +76,9 @@ const props = withDefaults(defineProps<{
   type?: 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
   placeholder?: string;
   describedBy?: string;
+  min?: string | number;
+  max?: string | number;
+  step?: string | number;
 }>(), {
   modelValue: '',
   size: 'medium',
@@ -77,6 +86,9 @@ const props = withDefaults(defineProps<{
   type: 'text',
   placeholder: undefined,
   describedBy: undefined,
+  min: undefined,
+  max: undefined,
+  step: undefined,
 });
 
 const emit = defineEmits<{
@@ -96,6 +108,9 @@ const nativeProjection = computed(() => ({
     'aria-busy': props.loading || undefined,
     'aria-describedby': props.describedBy,
     'aria-invalid': props.status === 'error' || undefined,
+    min: props.min,
+    max: props.max,
+    step: props.step,
   },
 }));
 

@@ -22,8 +22,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"professional relation field missing marker {marker}")
     if section.count("<ProfessionalRelationFieldControl") < 2:
         failures.append("FormSection does not route many2one and many2many through the relation family")
-    if "import ScButton from '../design-system/ScButton.vue'" not in section or section.count("<ScButton") != 4:
-        failures.append("many2one lifecycle commands must consume four shared ScButton primitives")
+    if "import ScButton from '../design-system/ScButton.vue'" not in section or section.count("<ScButton") != 5:
+        failures.append("many2one options and lifecycle commands must consume five shared ScButton primitives")
     if "import ScInput from '../design-system/ScInput.vue'" not in section or '<ScInput\n              v-else-if="fieldConfigEditable"' not in section:
         failures.append("field configuration label editor must consume the shared ScInput primitive")
     if ".field-label-editor {\n  flex: 1 1 140px;\n  min-width: 96px;\n  max-width: 220px;\n  height:" in section:
@@ -38,8 +38,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"many2one lifecycle command authority is incomplete: {marker}")
     if ".many2one-action:hover" in section or ".many2one-action {\n  min-height:" in section:
         failures.append("many2one lifecycle commands override shared ScButton presentation")
-    if '<button\n                          v-for="(option, optionIndex)' not in section:
-        failures.append("many2one stateful listbox options must remain native option controls")
+    if '<ScButton\n                          v-for="(option, optionIndex)' not in section:
+        failures.append("many2one stateful listbox options must consume the shared ScButton primitive")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")

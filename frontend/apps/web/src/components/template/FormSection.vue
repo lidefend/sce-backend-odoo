@@ -50,72 +50,44 @@
               @keydown.enter.prevent="emitFieldLabelChange(field, ($event.target as HTMLInputElement).value)"
             />
             <div v-if="fieldActionsFor(field).length" class="field-inline-config">
-              <div
+              <ScRadioGroup
                 v-if="fieldActionsFor(field).length"
                 class="field-inline-actions"
-                role="radiogroup"
-                :aria-label="`${field.label}字段操作`"
-              >
-                <label
-                  v-for="action in fieldActionsFor(field)"
-                  :key="`${field.key}-${action.key}`"
-                  class="field-inline-action"
-                  :title="action.title"
-                >
-                  <input
-                    type="radio"
-                    :name="fieldActionGroupName(field)"
-                    :value="action.value"
-                    :checked="Boolean(action.checked)"
-                    :disabled="Boolean(action.disabled)"
-                    @change="emitFieldAction(field, action)"
-                  />
-                  <span>{{ action.label }}</span>
-                </label>
-              </div>
+                :model-value="selectedFieldActionValue(field)"
+                :options="fieldActionOptions(field)"
+                :name="fieldActionGroupName(field)"
+                :label="`${field.label}字段操作`"
+                size="small"
+                @change="emitFieldActionValue(field, $event)"
+              />
             </div>
           </div>
           <div :class="['field-control-row', { 'field-control-row--favorite': field.favoriteToggle }]">
-            <button
+            <ScIconButton
               v-if="field.favoriteToggle"
-              type="button"
               class="field-favorite-toggle"
               :class="{ 'field-favorite-toggle--active': field.favoriteToggle.active }"
-              :aria-label="field.favoriteToggle.label"
               :aria-pressed="field.favoriteToggle.active"
-              :title="field.favoriteToggle.label"
+              :label="field.favoriteToggle.label"
               :disabled="field.favoriteToggle.readonly"
               @click="emitFavoriteToggle(field)"
             >
               <ScIcon :name="field.favoriteToggle.active ? 'star' : 'star-outline'" :size="16" />
-            </button>
+            </ScIconButton>
             <div class="field-control-main">
-              <div
+              <ScRadioGroup
                 v-if="field.type === 'selection' && isRadioWidget(field) && !(preferReadonlyFacts && field.readonly)"
                 class="native-radio-group"
-                role="radiogroup"
-                :aria-label="field.label"
-                :aria-required="field.required || undefined"
-                :aria-invalid="field.invalid || undefined"
-                :aria-describedby="fieldDescribedBy(field)"
-              >
-                <label
-                  v-for="option in field.selectionOptions || []"
-                  :key="`${field.name}-radio-${option.value}`"
-                  class="native-radio-option"
-                >
-                  <input
-                    class="native-radio-input"
-                    type="radio"
-                    :name="fieldRadioGroupName(field)"
-                    :value="option.value"
-                    :checked="String(field.inputValue ?? '') === String(option.value)"
-                    :disabled="field.readonly"
-                    @change="!field.readonly && emitFieldChange(field, option.value)"
-                  />
-                  <span>{{ option.label }}</span>
-                </label>
-              </div>
+                :model-value="String(field.inputValue ?? '')"
+                :options="field.selectionOptions || []"
+                :name="fieldRadioGroupName(field)"
+                :label="field.label"
+                :required="field.required"
+                :invalid="field.invalid"
+                :readonly="field.readonly"
+                :described-by="fieldDescribedBy(field)"
+                @change="emitFieldChange(field, $event)"
+              />
               <ProfessionalBusinessValueControl
                 v-else-if="usesProfessionalBusinessValue(field)"
                 :field="field"
@@ -203,12 +175,14 @@
                     />
                     <div v-if="hasMany2oneDropdown(field)" :id="many2oneListboxId(field)" class="many2one-option-panel" role="listbox">
                       <div v-if="field.relationOptions?.length" class="many2one-option-list" role="presentation">
-                        <button
+                        <ScButton
                           v-for="(option, optionIndex) in field.relationOptions.slice(0, 8)"
                           :id="many2oneOptionId(field, optionIndex)"
                           :key="`${field.name}-option-${option.value}`"
                           type="button"
                           class="many2one-option"
+                          size="small"
+                          variant="ghost"
                           :class="{ 'is-active': many2oneActiveIndex[field.name] === optionIndex }"
                           role="option"
                           :aria-selected="many2oneActiveIndex[field.name] === optionIndex"
@@ -216,7 +190,7 @@
                           @click="emitMany2oneAction(field, option.value, $event)"
                         >
                           {{ option.label }}
-                        </button>
+                        </ScButton>
                       </div>
                       <div class="many2one-actions">
                         <ScButton
@@ -291,32 +265,32 @@
                   />
                 </div>
                 <div v-else-if="field.type === 'monetary'" class="field-monetary-control">
-                  <input
+                  <ScInput
                     :id="fieldControlId(field)"
-                    :value="String(field.inputValue ?? '')"
+                    :model-value="String(field.inputValue ?? '')"
                     class="input"
-                    :aria-required="field.required || undefined"
-                    :aria-invalid="field.invalid || undefined"
-                    :aria-describedby="fieldDescribedBy(field)"
+                    :required="field.required"
+                    :status="field.invalid ? 'error' : 'default'"
+                    :described-by="fieldDescribedBy(field)"
                     type="number"
                     :step="monetaryInputStep(field.digits)"
                     :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                    @input="emitFieldChange(field, ($event.target as HTMLInputElement).value)"
+                    @update:model-value="emitFieldChange(field, $event)"
                   />
                   <span v-if="field.currencyLabel" class="field-currency-label">{{ field.currencyLabel }}</span>
                 </div>
               </template>
               <template v-else>
-                <input
+                <ScInput
                   :id="fieldControlId(field)"
-                  :value="String(field.inputValue ?? '')"
+                  :model-value="String(field.inputValue ?? '')"
                   class="input"
-                  :aria-required="field.required || undefined"
-                  :aria-invalid="field.invalid || undefined"
-                  :aria-describedby="fieldDescribedBy(field)"
+                  :required="field.required"
+                  :status="field.invalid ? 'error' : 'default'"
+                  :described-by="fieldDescribedBy(field)"
                   :type="inputType(field.type)"
                   :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
-                  @input="emitFieldChange(field, ($event.target as HTMLInputElement).value)"
+                  @update:model-value="emitFieldChange(field, $event)"
                 />
               </template>
             </div>
@@ -337,7 +311,9 @@ import ScDateField from '../design-system/ScDateField.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScRadioGroup, { type ScRadioOption } from '../design-system/ScRadioGroup.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
 import ProfessionalBusinessValueControl from '../professional-fields/ProfessionalBusinessValueControl.vue';
@@ -677,6 +653,23 @@ function readonlyHtml(field: FormSectionFieldSchema) {
 
 function fieldActionsFor(field: FormSectionFieldSchema) {
   return props.fieldActions?.(field) || [];
+}
+
+function fieldActionOptions(field: FormSectionFieldSchema): ScRadioOption[] {
+  return fieldActionsFor(field).map((action) => ({
+    value: action.value,
+    label: action.label,
+    disabled: Boolean(action.disabled),
+  }));
+}
+
+function selectedFieldActionValue(field: FormSectionFieldSchema) {
+  return fieldActionsFor(field).find((action) => action.checked)?.value || '';
+}
+
+function emitFieldActionValue(field: FormSectionFieldSchema, value: string | number | boolean) {
+  const action = fieldActionsFor(field).find((candidate) => String(candidate.value) === String(value));
+  if (action) emitFieldAction(field, action);
 }
 
 function isFieldMarkedHidden(field: FormSectionFieldSchema) {
@@ -1206,17 +1199,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   line-height: 1;
 }
 
-.field-inline-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.field-inline-action input {
-  margin: 0;
-}
-
 .field-control-row {
   display: flex;
   align-items: center;
@@ -1435,29 +1417,6 @@ select.input {
   display: grid;
   gap: 8px;
   align-items: start;
-}
-
-.native-radio-option {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.native-radio-input {
-  margin-top: 2px;
-  accent-color: var(--sc-semantic-surface-interactive);
-}
-
-.native-radio-input:disabled {
-  cursor: default;
-}
-
-.native-radio-input:disabled + span {
-  color: var(--sc-semantic-text-muted);
 }
 
 .many2one-widget-shell {
