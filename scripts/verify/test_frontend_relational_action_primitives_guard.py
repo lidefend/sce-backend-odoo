@@ -32,9 +32,13 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
         altered = self.view_relation.replace('variant="ghost" @click="cancelEdit"', 'variant="ghost" :disabled="saving" @click="cancelEdit"')
         self.assertIn("relational cancel changed the existing transaction settlement boundary", validate(self.x2many, altered))
 
-    def test_stateful_tag_choice_remains_native(self):
+    def test_stateful_tag_choice_remains_governed(self):
         altered = self.x2many.replace('v-for="option in adapter.filteredRelationOptions(field.name).slice(0, 8)"', 'v-for="item in genericCommands"')
-        self.assertTrue(any("stateful native" in error for error in validate(altered, self.view_relation)))
+        self.assertTrue(any("stateful governed" in error for error in validate(altered, self.view_relation)))
+
+    def test_raw_relation_control_is_rejected(self):
+        altered = self.x2many.replace('<ScCheckbox', '<input', 1)
+        self.assertTrue(any("raw interactive control" in error for error in validate(altered, self.view_relation)))
 
     def test_parallel_command_is_rejected(self):
         altered = self.view_relation.replace('</template>', '<ScButton>parallel</ScButton>\n</template>', 1)

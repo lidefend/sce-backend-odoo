@@ -20,11 +20,13 @@
     <div v-else-if="isMany2manyTags(field)" class="relation-tag-picker">
       <div class="relation-tags-control">
         <div v-if="adapter.selectedRelationOptions(field.name).length" class="relation-tag-list">
-          <button
+          <ScButton
             v-for="option in adapter.selectedRelationOptions(field.name)"
             :key="`${field.name}-tag-${option.id}`"
             type="button"
             class="relation-tag"
+            variant="ghost"
+            size="small"
             :style="tagColorStyle(option.color)"
             :disabled="adapter.busy"
             :title="`移除${option.label}`"
@@ -32,29 +34,30 @@
           >
             {{ option.label }}
             <ScIcon name="close" :size="14" />
-          </button>
+          </ScButton>
         </div>
-        <input
+        <ScInput
           class="relation-tags-input"
           type="text"
-          :value="adapter.relationKeyword(field.name)"
+          :model-value="adapter.relationKeyword(field.name)"
           :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
-          autocomplete="off"
-          @input="adapter.setRelationKeyword(field.name, ($event.target as HTMLInputElement).value)"
+          @update:model-value="adapter.setRelationKeyword(field.name, $event)"
           @keydown.enter.prevent="commitTagKeyword(field.name)"
         />
         <div v-if="hasTagDropdown(field.name)" class="relation-tag-dropdown">
-          <button
+          <ScButton
             v-for="option in adapter.filteredRelationOptions(field.name).slice(0, 8)"
             :key="`${field.name}-tag-option-${option.id}`"
             type="button"
             class="relation-tag-option"
+            variant="ghost"
+            size="small"
             @mousedown.prevent
             @click="toggleRelationId(field.name, option.id, true)"
           >
             <span class="relation-tag-swatch" :style="tagColorStyle(option.color)" aria-hidden="true"></span>
             <span>{{ option.label }}</span>
-          </button>
+          </ScButton>
           <div v-if="hasTagCreateActions(field.name)" class="relation-tag-actions">
             <div
               v-if="adapter.canInlineCreateRelation(field.name)"
@@ -86,22 +89,21 @@
         :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
         @update:model-value="adapter.setRelationKeyword(field.name, $event)"
       />
-      <select
-        class="input"
-        multiple
-        size="6"
+      <div
+        class="relation-multi-options"
+        role="listbox"
+        aria-multiselectable="true"
         :aria-label="field.label || `${field.name} 选项列表`"
-        :value="adapter.relationIds(field.name).map((id) => String(id))"
-        @change="adapter.setRelationMultiField(field.name, $event.target as HTMLSelectElement)"
       >
-        <option
+        <ScCheckbox
           v-for="option in adapter.filteredRelationOptions(field.name)"
           :key="`${field.name}-${option.id}`"
-          :value="String(option.id)"
-        >
-          {{ option.label }}
-        </option>
-      </select>
+          :checked="relationIdSet(field.name).has(option.id)"
+          :disabled="adapter.busy"
+          :label="option.label"
+          @change="toggleRelationId(field.name, option.id, $event)"
+        />
+      </div>
     </div>
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
@@ -165,13 +167,13 @@
             class="o2m-field"
           >
             <span class="meta">{{ column.label }}</span>
-            <input
+            <ScCheckbox
               v-if="column.ttype === 'boolean'"
               class="input-checkbox"
-              type="checkbox"
               :disabled="column.readonly || adapter.busy"
               :checked="Boolean(row.values[column.name])"
-              @change="adapter.setOne2manyRowField(field.name, row.key, column, ($event.target as HTMLInputElement).checked)"
+              :label="column.label"
+              @change="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
             />
             <ScSelect
               v-else-if="column.ttype === 'selection'"
@@ -251,6 +253,7 @@
 import { computed, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
@@ -428,6 +431,18 @@ function tagColorStyle(color: unknown) {
 .relation-select-editor {
   display: grid;
   gap: 8px;
+}
+
+.relation-multi-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sc-space-xs);
+  max-height: 240px;
+  overflow: auto;
+  padding: var(--sc-space-sm);
+  border: 1px solid var(--sc-app-border-strong);
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-app-input-bg);
 }
 
 .relation-tags-control {
@@ -693,47 +708,6 @@ function tagColorStyle(color: unknown) {
 
 .relation-search {
   font-size: 14px;
-}
-
-.input {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  padding: 8px 12px;
-  height: 40px;
-  min-height: 40px;
-  width: 100%;
-  min-width: 0;
-  font-size: 14px;
-  line-height: 1.35;
-  color: var(--sc-app-text-primary);
-  background: var(--sc-app-input-bg);
-  box-sizing: border-box;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
-}
-
-.input::placeholder {
-  color: var(--sc-app-text-secondary);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--sc-semantic-surface-interactive);
-  box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
-}
-
-.input:disabled {
-  color: var(--sc-app-text-secondary);
-  background: var(--sc-app-muted-bg);
-  cursor: not-allowed;
-}
-
-select.input {
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--sc-app-text-secondary) 50%), linear-gradient(135deg, var(--sc-app-text-secondary) 50%, transparent 50%);
-  background-position: calc(100% - 16px) calc(50% - 2px), calc(100% - 11px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  padding-right: 32px;
 }
 
 @media (max-width: 760px) {
