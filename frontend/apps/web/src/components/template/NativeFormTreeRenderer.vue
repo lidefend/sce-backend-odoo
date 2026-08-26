@@ -836,6 +836,8 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 <style scoped>
 .native-form-tree {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: var(--sc-field-row-gap);
   grid-column: 1 / -1;
   min-width: 0;
@@ -843,6 +845,8 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 
 .native-container {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: 12px;
   min-width: 0;
   position: relative;

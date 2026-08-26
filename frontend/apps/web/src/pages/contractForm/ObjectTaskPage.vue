@@ -300,13 +300,17 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 <style scoped>
 .object-task-page {
   display: grid;
-  gap: 20px;
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 16px;
   min-width: 0;
 }
 .object-task-page__body {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  gap: 16px;
   min-width: 0;
 }
 .object-task-page--with-context .object-task-page__body {
@@ -359,6 +363,9 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   min-width: 0;
 }
 .object-task-page__current-task-copy { display: grid; gap: 8px; }
+.object-task-page__current-task :deep(.t-card__header) { padding-block: 14px 8px; }
+.object-task-page__current-task :deep(.t-card__body) { padding: 8px 20px 18px; }
+.object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 12px; }
 .object-task-page__current-task-facts {
   color: var(--sc-app-text-secondary);
 }

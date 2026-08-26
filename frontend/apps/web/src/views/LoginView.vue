@@ -1,14 +1,26 @@
 <template>
   <main class="login-page sc-page" data-semantic-component="LoginView" :data-state="loading ? 'loading' : error ? 'error' : 'ready'" :aria-busy="loading || undefined">
+    <header class="login-masthead" aria-label="产品品牌">
+      <span class="login-masthead__mark" aria-hidden="true">S</span>
+      <strong>{{ pageText('brand_name', config.appBrand.name) }}</strong>
+    </header>
     <section class="login-layout">
       <section class="brand-panel" aria-label="平台介绍">
-        <p class="brand-title">{{ pageText('brand_name', config.appBrand.name) }}</p>
-        <p class="brand-subtitle">{{ pageText('brand_subtitle', config.appBrand.subtitle) }}</p>
-        <p v-if="brandSlogan" class="brand-slogan">{{ brandSlogan }}</p>
-
-        <ul v-if="valueLines.length" class="value-list" aria-label="价值主张">
-          <li v-for="line in valueLines" :key="line">{{ line }}</li>
-        </ul>
+        <div class="brand-visual" aria-hidden="true">
+          <span class="brand-visual__plane brand-visual__plane--primary" />
+          <span class="brand-visual__plane brand-visual__plane--secondary" />
+          <span class="brand-visual__orb brand-visual__orb--primary" />
+          <span class="brand-visual__orb brand-visual__orb--success" />
+          <span class="brand-visual__grid" />
+        </div>
+        <div class="brand-copy">
+          <p class="brand-title">{{ pageText('brand_name', config.appBrand.name) }}</p>
+          <p class="brand-subtitle">{{ pageText('brand_subtitle', config.appBrand.subtitle) }}</p>
+          <p v-if="brandSlogan" class="brand-slogan">{{ brandSlogan }}</p>
+          <ul v-if="valueLines.length" class="value-list" aria-label="价值主张">
+            <li v-for="line in valueLines" :key="line">{{ line }}</li>
+          </ul>
+        </div>
       </section>
 
       <section class="auth-panel">
@@ -259,33 +271,83 @@ async function executeHeaderAction(actionKey: string) {
   background: var(--sc-app-bg);
   color: var(--ink);
   font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
-  padding: 30px 16px;
+  padding: 72px clamp(24px, 5vw, 72px) 56px;
   position: relative;
   overflow: hidden;
 }
 
-.login-layout {
-  width: min(1180px, 100%);
+.login-masthead {
+  position: absolute;
+  z-index: 2;
+  top: 14px;
+  left: clamp(24px, 3vw, 48px);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--sc-app-text-primary);
+  font-size: 16px;
+}
+
+.login-masthead__mark {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
-  gap: clamp(28px, 5vw, 80px);
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-semantic-surface-interactive);
+  color: var(--sc-semantic-text-on-interactive);
+  font-weight: 800;
+}
+
+.login-layout {
+  width: min(1320px, 100%);
+  display: grid;
+  grid-template-areas: 'auth brand';
+  grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
+  gap: clamp(44px, 7vw, 112px);
   align-items: center;
   position: relative;
   z-index: 1;
 }
 
 .brand-panel {
+  grid-area: brand;
+  position: relative;
   display: grid;
-  gap: 0;
-  max-width: 620px;
-  padding-left: clamp(20px, 4.5vw, 60px);
+  min-height: 620px;
+  align-items: end;
+  overflow: hidden;
+  border-radius: 36px 0 36px 36px;
+  padding: 48px;
+  background: linear-gradient(145deg, var(--sc-app-panel) 0%, var(--sc-app-subtle-bg) 60%, var(--sc-app-info-bg) 100%);
 }
 
 .auth-panel {
+  grid-area: auth;
   width: 100%;
   display: grid;
-  justify-items: end;
+  justify-items: stretch;
 }
+
+.brand-visual { position: absolute; inset: 0; overflow: hidden; }
+.brand-visual__grid {
+  position: absolute;
+  inset: 7% -8% auto 28%;
+  height: 46%;
+  opacity: .34;
+  transform: rotate(-8deg);
+  background-image: linear-gradient(var(--sc-app-border) 1px, transparent 1px), linear-gradient(90deg, var(--sc-app-border) 1px, transparent 1px);
+  background-size: 38px 38px;
+}
+.brand-visual__plane,
+.brand-visual__orb { position: absolute; box-shadow: var(--sc-app-shadow-modal); }
+.brand-visual__plane { width: 280px; height: 86px; border-radius: 18px; transform: rotate(32deg); }
+.brand-visual__plane--primary { top: 25%; left: 12%; background: linear-gradient(135deg, var(--sc-app-info-bg), var(--sc-semantic-surface-interactive)); }
+.brand-visual__plane--secondary { right: 5%; bottom: 19%; background: var(--sc-app-panel); }
+.brand-visual__orb { width: 116px; height: 116px; border-radius: 50%; }
+.brand-visual__orb--primary { top: 32%; right: 18%; background: linear-gradient(145deg, var(--sc-semantic-surface-interactive), var(--sc-app-info-bg)); }
+.brand-visual__orb--success { top: 48%; right: 36%; width: 88px; height: 88px; background: var(--sc-app-success-bg); }
+.brand-copy { position: relative; z-index: 1; max-width: 520px; }
 
 .page-actions {
   width: 100%;
@@ -323,6 +385,9 @@ async function executeHeaderAction(actionKey: string) {
 
 .login-card {
   width: 100%;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 .brand-header {
@@ -423,11 +488,13 @@ label {
 }
 
 .page-footer {
-  text-align: center;
+  position: absolute;
+  bottom: 24px;
+  left: clamp(24px, 5vw, 72px);
+  text-align: left;
   color: var(--sc-app-text-secondary);
   font-size: 12px;
   line-height: 1.45;
-  position: relative;
   z-index: 1;
 }
 
@@ -437,9 +504,12 @@ label {
 
 @media (max-width: 920px) {
   .login-layout {
+    grid-template-areas: 'auth';
     grid-template-columns: 1fr;
     gap: 18px;
   }
+
+  .brand-panel { display: none; }
 
   .auth-panel {
     justify-items: stretch;
@@ -448,7 +518,7 @@ label {
 
 @media (max-width: 640px) {
   .login-page {
-    padding: 16px 10px 18px;
+    padding: 72px 16px 56px;
   }
 
   .brand-panel {
@@ -468,6 +538,8 @@ label {
   .login-card {
     border-radius: 16px;
   }
+
+  .page-footer { left: 16px; bottom: 16px; }
 
   h1 {
     font-size: 19px;
