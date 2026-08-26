@@ -71,7 +71,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
-                "ScTabs": '<TDesignTabs><TDesignTabPanel :label="item.label" /></TDesignTabs>',
+                "ScTabs": "<TDesignTabs><TDesignTabPanel :label=\"tabLabel(item)\" /></TDesignTabs>\nreturn h('span', {}, item.label)",
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
                 "ScInlineState": '<div :data-state="state" :aria-busy="state === \'loading\' || undefined" />',
                 "ScEmptyState": '<TDesignEmpty data-state="empty" role="status" />',
@@ -158,7 +158,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
     def test_tabs_without_formal_label_projection_fails(self) -> None:
         root = self.make_root()
         source = root / "frontend/apps/web/src/components/design-system/ScTabs.vue"
-        source.write_text(source.read_text(encoding="utf-8").replace(':label="item.label"', ''), encoding="utf-8")
+        source.write_text(source.read_text(encoding="utf-8").replace(':label="tabLabel(item)"', ''), encoding="utf-8")
         self.assertTrue(any("formal label prop" in error for error in validate(root)))
 
     def test_interaction_state_markers_are_required(self) -> None:

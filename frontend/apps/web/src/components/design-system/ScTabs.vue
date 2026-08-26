@@ -7,10 +7,7 @@
     @change="onChange"
   >
     <slot>
-      <TDesignTabPanel v-for="item in items" :key="item.value" :value="item.value" :label="item.label" :disabled="disabled || item.disabled">
-        <template #label>
-          <span :class="item.labelClass" v-bind="item.labelAttributes">{{ item.label }}</span>
-        </template>
+      <TDesignTabPanel v-for="item in items" :key="item.value" :value="item.value" :label="tabLabel(item)" :disabled="disabled || item.disabled">
         <slot name="panel" :item="item" />
       </TDesignTabPanel>
     </slot>
@@ -18,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+import { h } from 'vue';
 import { TDesignTabPanel, TDesignTabs } from './tdesignPrimitiveBridge';
 import { semanticPrimitiveIdentity, tdesignTabsSize, type ScPrimitiveSize } from './primitiveAdapter';
 
@@ -34,6 +32,9 @@ const props = withDefaults(defineProps<{ modelValue: string | number; items?: Sc
   size: 'medium',
 });
 const emit = defineEmits<{ 'update:modelValue': [value: string | number]; change: [value: string | number] }>();
+function tabLabel(item: ScTabItem) {
+  return h('span', { class: item.labelClass, ...item.labelAttributes }, item.label);
+}
 function onChange(value: string | number) {
   if (props.disabled) return;
   emit('update:modelValue', value);

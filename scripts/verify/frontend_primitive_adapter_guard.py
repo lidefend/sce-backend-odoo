@@ -184,8 +184,8 @@ def validate(root: Path = ROOT) -> list[str]:
     tabs_text = (design / "ScTabs.vue").read_text(encoding="utf-8") if (design / "ScTabs.vue").is_file() else ""
     if "<TDesignTabs" not in tabs_text or "<TDesignTabPanel" not in tabs_text:
         errors.append("ScTabs must delegate tab navigation and panels to the TDesign driver")
-    if ':label="item.label"' not in tabs_text:
-        errors.append("ScTabs must project the formal label prop for TDesign tab measurement")
+    if ':label="tabLabel(item)"' not in tabs_text or "return h('span'" not in tabs_text:
+        errors.append("ScTabs must project the formal label prop as measurable semantic content")
 
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
     if "<TDesignTextarea" not in textarea_text or "v-native-control-projection" not in textarea_text:
