@@ -1522,6 +1522,7 @@ function collectionTableColumns(groupKey = '') {
       checkProps: ({ row }: { row: Record<string, unknown> }) => ({
         disabled: props.loading || !rowId(row),
         title: rowSelectionLabel(row),
+        'aria-label': rowSelectionLabel(row),
       }),
     });
   }

@@ -334,6 +334,7 @@ try {
       };
       report.routes.push({ viewport: viewport.name, primitiveInputContract: inputContract });
       await companySearch.fill('');
+      await page.getByRole('button', { name: '业务导航' }).click();
     }
     for (const target of routes) {
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
@@ -601,48 +602,44 @@ try {
         };
       }
       if (target.exerciseCollectionSelection === true) {
-        const controls = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
+        const mobileDriver = viewport.name === 'mobile';
+        const table = page.locator('[data-semantic-component="ScTable"][data-semantic-driver="tdesign-table"]:visible').first();
+        const controls = mobileDriver
+          ? page.locator('[data-semantic-component="CollectionSelectionControl"]:visible')
+          : table.locator('input[type="checkbox"]');
         const controlCount = await controls.count();
-        if (controlCount < 1) throw new Error(`${target.name}: collection selection control is missing`);
-        const rowControl = page.locator('[data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]:visible').first();
-        if (await rowControl.count() !== 1) throw new Error(`${target.name}: collection row selection control is missing`);
-        const rowInput = rowControl.locator('input[type="checkbox"]');
-        const initialRowState = await rowControl.getAttribute('data-selection-state');
-        const ariaLabel = await rowInput.getAttribute('aria-label');
-        const touchTarget = await rowControl.boundingBox();
+        if (controlCount < 1) throw new Error(`${target.name}: collection selection adapter is missing`);
+        const rowControl = mobileDriver
+          ? page.locator('[data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]:visible').first()
+          : table.locator('tbody input[type="checkbox"]').first();
+        if (await rowControl.count() !== 1) throw new Error(`${target.name}: collection row selection adapter is missing`);
+        const rowInput = mobileDriver ? rowControl.locator('input[type="checkbox"]') : rowControl;
+        const stateOf = async (input) => await input.isChecked() ? 'checked' : 'unchecked';
+        const initialRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(rowInput);
+        const ariaLabel = await rowInput.getAttribute('aria-label') || await rowControl.getAttribute('title') || '';
+        const touchTarget = await (mobileDriver ? rowControl : rowInput).boundingBox();
         await rowInput.focus();
-        const focusContained = await rowControl.evaluate((node) => node.contains(document.activeElement));
-        await rowControl.click();
-        await page.waitForFunction(
-          ({ label, state }) => [...document.querySelectorAll('[data-semantic-component="CollectionSelectionControl"]')]
-            .some((node) => node instanceof HTMLElement && node.offsetParent !== null
-              && node.querySelector('input')?.getAttribute('aria-label') === label
-              && node.getAttribute('data-selection-state') === state),
-          { label: ariaLabel, state: 'checked' },
-          { timeout: 15000 },
-        );
-        const selectedRowState = await rowControl.getAttribute('data-selection-state');
+        const focusContained = await rowInput.evaluate((node) => node === document.activeElement || node.parentElement?.contains(document.activeElement));
+        await rowInput.click({ force: true });
+        await page.waitForFunction((input) => input instanceof HTMLInputElement && input.checked, await rowInput.elementHandle(), { timeout: 15000 });
+        const selectedRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(rowInput);
         let selectedHeaderState = null;
         let headerIndeterminate = null;
-        const headerControl = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible:not([data-selection-scope="row"])').first();
+        const headerControl = mobileDriver
+          ? page.locator('[data-semantic-component="CollectionSelectionControl"]:visible:not([data-selection-scope="row"])').first()
+          : table.locator('thead input[type="checkbox"]').first();
         if (viewport.name === 'desktop' && await headerControl.count() === 1) {
-          selectedHeaderState = await headerControl.getAttribute('data-selection-state');
-          headerIndeterminate = await headerControl.locator('input[type="checkbox"]').evaluate((input) => input.indeterminate);
+          selectedHeaderState = await headerControl.evaluate((input) => input.indeterminate ? 'mixed' : input.checked ? 'checked' : 'unchecked');
+          headerIndeterminate = await headerControl.evaluate((input) => input.indeterminate);
         }
-        await rowControl.click();
-        await page.waitForFunction(
-          ({ label, state }) => [...document.querySelectorAll('[data-semantic-component="CollectionSelectionControl"]')]
-            .some((node) => node instanceof HTMLElement && node.offsetParent !== null
-              && node.querySelector('input')?.getAttribute('aria-label') === label
-              && node.getAttribute('data-selection-state') === state),
-          { label: ariaLabel, state: 'unchecked' },
-          { timeout: 15000 },
-        );
-        const restoredRowState = await rowControl.getAttribute('data-selection-state');
+        await rowInput.click({ force: true });
+        await page.waitForFunction((input) => input instanceof HTMLInputElement && !input.checked, await rowInput.elementHandle(), { timeout: 15000 });
+        const restoredRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(rowInput);
         const restoredHeaderState = viewport.name === 'desktop' && await headerControl.count() === 1
-          ? await headerControl.getAttribute('data-selection-state')
+          ? await headerControl.evaluate((input) => input.indeterminate ? 'mixed' : input.checked ? 'checked' : 'unchecked')
           : null;
         collectionSelectionEvidence = {
+          driver: mobileDriver ? 'CollectionSelectionControl' : 'tdesign-table',
           controlCount, ariaLabel, touchTarget, focusContained, initialRowState, selectedRowState,
           selectedHeaderState, headerIndeterminate, restoredRowState, restoredHeaderState,
           pass: Boolean(ariaLabel) && focusContained && initialRowState === 'unchecked'
