@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
   "sourceCommit": "376bbfb229afa995f8d5f16e7fca4ec8131e29b9",
-  "generatorDigest": "f23bd4207d9dcfe10c74e0c2fe0b7c72b1d3344618d452d1b38286bbd42ee75c",
-  "ownershipDigest": "56026c98beac0973e375b82e18ecfdda2420f1d7a689266c99149203f260e4b1",
-  "inputDigest": "adc4427d7f9b03118f0fd94aab2e8e01d5f41e00bcbf8d39f18d67894aeed865",
+  "generatorDigest": "a87c4dbfd78fb73277f089792efc0d3c9a49ae29c6ba9559562e99eb21e500a3",
+  "ownershipDigest": "a70b7f8379b0b22db842de80d59e6ad58b48f036b2eafc269968528689013e4d",
+  "inputDigest": "e33d37974d9e0bdd53bc4a1f3e5bd33fbabc2511da92c12430b7f59074518f29",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -22,28 +22,24 @@
   "summary": {
     "surfaceCount": 137,
     "deliberate_native_composite": 6,
-    "gap": 51,
-    "governed_composite": 36,
+    "gap": 40,
+    "governed_composite": 47,
     "governed_primitive": 26,
     "p3_out_of_scope": 18
   },
   "nextBatch": {
-    "key": "p0-collection-state-control-completion-v1",
-    "targetSurfaceCount": 13,
+    "key": "p0-navigation-hierarchy-composite-completion-v1",
+    "targetSurfaceCount": 9,
     "targetSources": [
-      "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue",
-      "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue",
-      "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue",
-      "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue",
-      "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
-      "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue",
-      "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
-      "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
-      "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue",
-      "frontend/apps/web/src/pages/KanbanPage.vue",
-      "frontend/apps/web/src/pages/ListPage.vue",
-      "frontend/apps/web/src/pages/ModelListPage.vue",
-      "frontend/apps/web/src/views/ActionView.vue"
+      "frontend/apps/web/src/components/MenuTree.vue",
+      "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+      "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
+      "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
+      "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
+      "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue",
+      "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+      "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
+      "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue"
     ],
     "commitBudget": {
       "minimum": 12,
@@ -84,21 +80,22 @@
     {
       "source": "frontend/apps/web/src/components/GroupSummaryBar.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/MenuTree.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "empty",
         "disabled",
         "focus"
       ],
@@ -106,7 +103,7 @@
         "button": 2
       },
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/StatusPanel.vue",
@@ -144,8 +141,8 @@
     {
       "source": "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -156,13 +153,13 @@
         "button": 3
       },
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -176,13 +173,13 @@
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -196,13 +193,13 @@
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty"
       ],
@@ -210,7 +207,7 @@
         "button": 1
       },
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue",
@@ -828,14 +825,14 @@
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionFilterChip.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue",
@@ -1028,8 +1025,8 @@
     {
       "source": "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
@@ -1037,7 +1034,7 @@
         "button": 1
       },
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
@@ -1054,8 +1051,8 @@
     {
       "source": "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "focus"
       ],
@@ -1063,31 +1060,31 @@
         "button": 1
       },
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
       "rawControls": {
         "button": 2
       },
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
