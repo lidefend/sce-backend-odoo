@@ -29,6 +29,7 @@
         <ScLoading :loading="dialog.loading" :label="dialog.labels.loading || '正在加载关系记录'">
         <ScTable class="relation-dialog-table" :aria-busy="dialog.loading || undefined"
           :label="dialog.title" :data="dialog.rows" :columns="relationTableColumns" row-key="id" size="small"
+          role="listbox"
           row-selection-type="single" :select-on-row-click="true" :selected-row-keys="selectedRowKeys"
           :row-class-name="relationRowClassName" :row-attributes="relationRowAttributes"
           @select-change="onTableSelectChange" @row-dblclick="onTableConfirm" />
