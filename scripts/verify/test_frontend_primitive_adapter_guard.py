@@ -21,9 +21,13 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         (design / "tdesignPrimitiveBridge.ts").write_text(
-            "export { TDesignInput } from '@sc/ui/primitives';\n", encoding="utf-8"
+            "export { TDesignButton, TDesignInput } from '@sc/ui/primitives';\n", encoding="utf-8"
         )
-        (ui / "primitives.ts").write_text("export { Input } from 'tdesign-vue-next/es/input';\n", encoding="utf-8")
+        (ui / "primitives.ts").write_text(
+            "export { Button as TDesignButton } from 'tdesign-vue-next/es/button';\n"
+            "export { Input as TDesignInput } from 'tdesign-vue-next/es/input';\n",
+            encoding="utf-8",
+        )
         for name in PRIMITIVES:
             overlay_kind = name.removeprefix("Sc").lower()
             modal_contract = (
@@ -32,7 +36,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 if name in {"ScDialog", "ScDrawer"} else ""
             )
             state_contract = {
-                "ScButton": '<button :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined"><span class="sc-btn__spinner" /></button>',
+                "ScButton": '<TDesignButton :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation -->',
                 "ScCheckbox": '<label :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined"><input type="checkbox" :aria-checked="indeterminate ? \'mixed\' : checked" :aria-label="label" /></label>',
                 "ScInput": '<input :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScTextarea": '<textarea :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',

@@ -1,5 +1,6 @@
 export {
   TDesignBadge,
+  TDesignButton,
   TDesignDropdown,
   TDesignInput,
   TDesignLoading,

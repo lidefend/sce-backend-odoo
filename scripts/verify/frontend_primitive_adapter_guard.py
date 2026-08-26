@@ -70,9 +70,17 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScTextarea must expose loading state on the native textarea control")
 
     button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
-    for marker in (':data-loading="loading || undefined"', ':aria-disabled="disabled || loading || undefined"', 'class="sc-btn__spinner"'):
+    for marker in (
+        '<TDesignButton',
+        ':data-loading="loading || undefined"',
+        ':aria-disabled="disabled || loading || undefined"',
+        ':loading="loading"',
+        'tdesignButtonPresentation',
+    ):
         if marker not in button_text:
             errors.append(f"ScButton missing governed interaction-state marker: {marker}")
+    if "TDesignButton" not in bridge or "TDesignButton" not in ui_primitives:
+        errors.append("ScButton must consume the public project TDesign button authority")
 
     checkbox_text = (design / "ScCheckbox.vue").read_text(encoding="utf-8") if (design / "ScCheckbox.vue").is_file() else ""
     for marker in (

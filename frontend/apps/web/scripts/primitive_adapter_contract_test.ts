@@ -5,6 +5,7 @@ import {
   normalizePrimitiveStatus,
   resolvePrimitiveControlUpdate,
   semanticPrimitiveIdentity,
+  tdesignButtonPresentation,
   tdesignDropdownOptions,
   tdesignTabsSize,
 } from '../src/components/design-system/primitiveAdapter.ts';
@@ -28,6 +29,13 @@ assert.equal(resolvePrimitiveControlUpdate({ value: 'blocked', loading: true }),
 assert.equal(tdesignTabsSize('small'), 'medium');
 assert.equal(tdesignTabsSize('medium'), 'medium');
 assert.equal(tdesignTabsSize('large'), 'large');
+assert.deepEqual(tdesignButtonPresentation('primary'), { theme: 'primary', variant: 'base' });
+assert.deepEqual(tdesignButtonPresentation('secondary'), { theme: 'default', variant: 'outline' });
+assert.deepEqual(tdesignButtonPresentation('ghost'), { theme: 'default', variant: 'text' });
+assert.deepEqual(tdesignButtonPresentation('danger'), { theme: 'danger', variant: 'base' });
+assert.deepEqual(tdesignButtonPresentation('secondary', 'success'), { theme: 'success', variant: 'base' });
+assert.deepEqual(tdesignButtonPresentation('ghost', 'warning'), { theme: 'warning', variant: 'text' });
+assert.deepEqual(tdesignButtonPresentation('primary', 'error'), { theme: 'danger', variant: 'base' });
 assert.deepEqual(tdesignDropdownOptions([
   { value: 'open', label: 'Open' },
   { value: 2, label: 'Disabled', disabled: true },
