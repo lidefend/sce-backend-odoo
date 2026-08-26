@@ -74,7 +74,11 @@ try {
   page.on('pageerror', (error) => errors.push(`page:${error.message}`));
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`http://127.0.0.1:${address.port}/__rendering_detail_state.html`);
-  await page.locator('[data-semantic-component="ScInlineState"]').first().waitFor();
+  try {
+    await page.locator('[data-semantic-component="ScInlineState"]').first().waitFor({ timeout: 15000 });
+  } catch (error) {
+    throw new Error(`rendering detail harness did not mount: ${JSON.stringify({ errors, body: (await page.locator('body').innerText()).slice(0, 500) })}`, { cause: error });
+  }
   const desktopOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   const inlineStates = await page.locator('[data-semantic-component="ScInlineState"]').evaluateAll((nodes) => nodes.map((node) => ({
     state: node.getAttribute('data-state'),

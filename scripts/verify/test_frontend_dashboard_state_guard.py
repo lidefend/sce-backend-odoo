@@ -35,7 +35,7 @@ class FrontendDashboardStateGuardTest(unittest.TestCase):
         self.assertTrue(any("container adaptation" in error for error in validate(self.altered("entry", "@container (max-width: 480px)"))))
 
     def test_focus_state_is_required(self):
-        self.assertTrue(any("focus-visible" in error for error in validate(self.altered("metric", "button.metric-item:focus-visible"))))
+        self.assertTrue(any("focus-visible" in error for error in validate(self.altered("metric", ".metric-item[data-interactive='true']:focus-visible"))))
 
     def test_reduced_motion_is_required(self):
         self.assertTrue(any("reduced-motion" in error for error in validate(self.altered("metric", "prefers-reduced-motion"))))

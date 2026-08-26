@@ -155,7 +155,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/views/PasswordRecoveryView.vue": {"main": {"attrs": {"data-semantic-component": "PasswordRecoveryView"}}},
         "frontend/apps/web/src/views/PlaceholderView.vue": {"main": {"attrs": {"data-semantic-component": "PlaceholderView"}}},
         "frontend/apps/web/src/views/SceneContractBlockGridView.vue": {"section": {"attrs": {"data-semantic-component": "SceneContractBlockGridView", ":data-state": "status"}}},
-        "frontend/apps/web/src/views/SceneView.vue": {"section": {"attrs": {"data-semantic-component": "SceneView", ":aria-busy": "loading || undefined"}}},
+        "frontend/apps/web/src/views/SceneView.vue": {"section": {"attrs": {"data-semantic-component": "SceneView", ":aria-busy": "isLoading || undefined"}}},
         "frontend/apps/web/src/views/WorkbenchView.vue": {"pagerenderer": {"attrs": {"data-semantic-component": "WorkbenchView", "data-state": "unified"}}, "section": {"attrs": {"data-semantic-component": "WorkbenchView", "data-state": "fallback"}}},
     },
 }
