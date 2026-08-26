@@ -15,7 +15,7 @@
     :disabled="disabled"
     @change="onTDesignChange"
   >
-    <span v-if="$slots.default || label" class="sc-checkbox__label"><slot>{{ label }}</slot></span>
+    <span v-if="$slots.default || (label && !hideLabel)" class="sc-checkbox__label"><slot>{{ label }}</slot></span>
   </TDesignCheckbox>
 </template>
 
@@ -31,6 +31,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   required?: boolean;
   label?: string;
+  hideLabel?: boolean;
   describedBy?: string;
   size?: ScPrimitiveSize;
 }>(), {
@@ -39,6 +40,7 @@ const props = withDefaults(defineProps<{
   disabled: false,
   required: false,
   label: '',
+  hideLabel: false,
   describedBy: undefined,
   size: 'medium',
 });

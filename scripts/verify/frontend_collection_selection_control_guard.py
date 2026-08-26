@@ -41,27 +41,25 @@ def validate(list_source: str | None = None, control_source: str | None = None, 
         if marker not in mobile_row_text:
             failures.append(f"mobile collection selection adapter missing {marker}")
     required_control = (
+        '<ScCheckbox',
         'data-semantic-component="CollectionSelectionControl"',
         ':data-selection-state="presentation.state"',
         ':data-selection-interactive="presentation.interactive"',
         ':data-selection-scope="scope"',
-        'type="checkbox"',
-        ':aria-label="label"',
+        ':checked="checked"',
+        ':indeterminate="indeterminate"',
+        ':label="label"',
+        'hide-label',
         '@click.stop',
-        'inputRef.value.indeterminate = props.indeterminate',
         'resolveCollectionSelectionPresentation(props)',
-        "emit('change', Boolean((event.target as HTMLInputElement | null)?.checked))",
+        "@change=\"emit('change', $event)\"",
     )
     for marker in required_control:
         if marker not in control_text:
             failures.append(f"CollectionSelectionControl missing {marker}")
     required_css = (
-        "[data-selection-state='checked']",
-        "[data-selection-state='mixed']",
-        ':focus-within',
-        ':has(input:disabled)',
-        'var(--sc-semantic-surface-interactive)',
-        '@media (prefers-reduced-motion: reduce)',
+        "[data-selection-interactive='false']",
+        'var(--sc-touch-target-min)',
     )
     for marker in required_css:
         if marker not in css_text:

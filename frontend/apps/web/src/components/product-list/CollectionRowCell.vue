@@ -1,24 +1,23 @@
 <template>
-  <button
+  <ScIconButton
     v-if="kind === 'favorite'"
     data-semantic-component="CollectionRowCell"
     type="button"
     class="favorite-toggle"
     :class="{ active: favoriteActive }"
     :disabled="disabled"
-    :title="label"
-    :aria-label="label"
+    :label="label"
     @click.stop="$emit('toggle-favorite')"
   >
     <ScIcon class="favorite-star" :name="favoriteActive ? 'star' : 'star-outline'" :size="16" />
-  </button>
+  </ScIconButton>
   <span v-else-if="kind === 'status'" data-semantic-component="CollectionRowCell" class="status-badge" :class="`tone-${tone}`">
     {{ text }}
   </span>
   <div v-else-if="kind === 'primary'" data-semantic-component="CollectionRowCell" class="cell-primary">
-    <button type="button" class="cell-primary-link" @click.stop="$emit('open-record')">
+    <ScButton type="button" class="cell-primary-link" variant="ghost" size="small" @click.stop="$emit('open-record')">
       {{ text }}
-    </button>
+    </ScButton>
     <div v-if="secondaryText" class="secondary">{{ secondaryText }}</div>
   </div>
   <span v-else-if="kind === 'attachments'" data-semantic-component="CollectionRowCell" class="attachment-links">
@@ -33,20 +32,24 @@
       {{ link.name }}
     </a>
   </span>
-  <button
+  <ScButton
     v-else-if="kind === 'attachment-count'"
     data-semantic-component="CollectionRowCell"
     type="button"
     class="attachment-count-link"
+    variant="ghost"
+    size="small"
     @click.prevent.stop="$emit('open-attachment-count')"
   >
     {{ text }}
-  </button>
+  </ScButton>
   <span v-else data-semantic-component="CollectionRowCell">{{ text }}</span>
 </template>
 
 <script setup lang="ts">
 import ScIcon from '../design-system/ScIcon.vue';
+import ScButton from '../design-system/ScButton.vue';
+import ScIconButton from '../design-system/ScIconButton.vue';
 
 export type CollectionRowCellKind = 'favorite' | 'status' | 'primary' | 'attachments' | 'attachment-count' | 'text';
 export type CollectionAttachmentLink = { name: string; url: string };

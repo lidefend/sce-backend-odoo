@@ -61,7 +61,7 @@ class CollectionActionToolbarGuardTest(unittest.TestCase):
 
     def test_stateful_view_chip_cannot_be_erased_by_mechanical_migration(self):
         altered = self.source.replace('class="contract-chip"', 'class="generic-action"')
-        self.assertTrue(any("stateful native control" in item for item in validate(altered, self.list_source)))
+        self.assertTrue(any("stateful semantic control" in item for item in validate(altered, self.list_source)))
 
     def test_parallel_direct_and_overflow_projection_fails(self):
         altered = self.batch_source.replace(

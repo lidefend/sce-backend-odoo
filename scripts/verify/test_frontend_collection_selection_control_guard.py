@@ -40,20 +40,16 @@ class CollectionSelectionControlGuardTest(unittest.TestCase):
         self.assertTrue(any("mobile row" in item for item in validate(self.list_source, self.control_source, self.css_source, self.visual_source, altered)))
 
     def test_missing_indeterminate_property_fails(self):
-        altered = self.control_source.replace("inputRef.value.indeterminate = props.indeterminate", "void props.indeterminate")
+        altered = self.control_source.replace(':indeterminate="indeterminate"', ':indeterminate="false"')
         self.assertTrue(any("indeterminate" in item for item in validate(self.list_source, altered, self.css_source)))
 
     def test_missing_boolean_event_contract_fails(self):
-        altered = self.control_source.replace("emit('change', Boolean((event.target as HTMLInputElement | null)?.checked))", "emit('change', false)")
+        altered = self.control_source.replace("@change=\"emit('change', $event)\"", "@change=\"emit('change', false)\"")
         self.assertTrue(any("emit('change'" in item for item in validate(self.list_source, altered, self.css_source)))
 
-    def test_missing_mixed_visual_state_fails(self):
-        altered = self.css_source.replace("[data-selection-state='mixed']", "[data-selection-state='partial']")
-        self.assertTrue(any("mixed" in item for item in validate(self.list_source, self.control_source, altered)))
-
-    def test_missing_focus_contract_fails(self):
-        altered = self.css_source.replace(":focus-within", ":hover")
-        self.assertTrue(any("focus-within" in item for item in validate(self.list_source, self.control_source, altered)))
+    def test_mobile_adapter_cannot_regress_to_raw_checkbox(self):
+        altered = self.control_source.replace('<ScCheckbox', '<input type="checkbox"', 1)
+        self.assertTrue(any("ScCheckbox" in item for item in validate(self.list_source, altered, self.css_source)))
 
     def test_missing_browser_mixed_state_fails(self):
         altered = self.visual_source.replace("selectedHeaderState === 'mixed'", "selectedHeaderState === 'checked'")

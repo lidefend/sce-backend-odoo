@@ -11,62 +11,72 @@
     <div v-if="showViewSwitch && viewModes.length > 1" class="toolbar-section view-switch">
       <p class="contract-label">{{ viewLabel }}</p>
       <div class="contract-chips">
-        <button
+        <ScButton
           v-for="mode in viewModes"
           :key="`view-mode-${mode}`"
           class="contract-chip"
+          variant="ghost"
+          size="small"
           :class="{ active: currentViewMode === mode }"
           :disabled="loading"
           :aria-pressed="currentViewMode === mode"
           @click="$emit('switch-view', mode)"
         >
           {{ viewModeLabels[mode] || mode }}
-        </button>
+        </ScButton>
       </div>
     </div>
 
     <div class="native-search">
       <div class="native-searchbox">
-        <button
+        <ScButton
           v-if="activeFilterChip"
           class="search-facet"
           type="button"
+          variant="ghost"
+          size="small"
           :disabled="loading"
           @click="$emit('clear-filter')"
         >
           <span>{{ activeFilterChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
-        </button>
-        <button
+        </ScButton>
+        <ScButton
           v-if="activeSavedFilterChip"
           class="search-facet"
           type="button"
+          variant="ghost"
+          size="small"
           :disabled="loading"
           @click="$emit('clear-saved-filter')"
         >
           <span>{{ activeSavedFilterChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
-        </button>
-        <button
+        </ScButton>
+        <ScButton
           v-if="activeCustomFilterLabel"
           class="search-facet"
           type="button"
+          variant="ghost"
+          size="small"
           :disabled="loading"
           @click="$emit('clear-custom-filter')"
         >
           <span>{{ activeCustomFilterLabel }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
-        </button>
-        <button
+        </ScButton>
+        <ScButton
           v-if="activeGroupChip"
           class="search-facet"
           type="button"
+          variant="ghost"
+          size="small"
           :disabled="loading"
           @click="$emit('clear-group')"
         >
           <span>{{ activeGroupChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
-        </button>
+        </ScButton>
         <ScInput
           type="search"
           :model-value="searchValue"
@@ -100,19 +110,18 @@
         >
           {{ clearLabel }}
         </ScButton>
-        <button
+        <ScIconButton
           ref="searchMenuToggle"
           class="search-menu-toggle"
-          type="button"
           :class="{ active: searchMenuOpen }"
           :disabled="loading || !hasSearchMenu"
-          :aria-label="uiLabel('search_menu_toggle', '展开搜索菜单')"
+          :label="uiLabel('search_menu_toggle', '展开搜索菜单')"
           :aria-expanded="searchMenuOpen"
           aria-controls="collection-search-disclosure"
           @click="toggleSearchMenu"
         >
           <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
-        </button>
+        </ScIconButton>
         <ScButton
           v-if="hasStructuredConditions"
           class="toolbar-clear-all"
@@ -130,28 +139,32 @@
         <section v-if="showFilterColumn" class="search-dropdown-section">
           <p class="search-dropdown-title">{{ filterLabel }}</p>
           <div class="search-dropdown-items">
-            <button
+            <ScButton
               v-for="chip in allFilterChips"
               :key="`filter-${chip.key}`"
               class="search-menu-item"
+              variant="ghost"
+              size="small"
               :class="{ selected: activeFilterKey === chip.key }"
               :disabled="loading"
               @click="selectFilter(chip.key)"
             >
               <span class="menu-check">{{ activeFilterKey === chip.key ? selectedSymbol : '' }}</span>
               <span>{{ chip.label }}</span>
-            </button>
+            </ScButton>
             <p v-if="!allFilterChips.length" class="search-menu-empty">{{ uiLabel('empty_filters', '暂无筛选') }}</p>
-            <button
+            <ScButton
               v-if="customFilterEnabled"
               class="search-menu-item custom-entry"
               type="button"
+              variant="ghost"
+              size="small"
               :disabled="loading"
               @click="customFilterOpen = !customFilterOpen"
             >
               <span class="menu-check"></span>
               <span>{{ customFilterLabel }}</span>
-            </button>
+            </ScButton>
             <div v-if="customFilterEnabled && customFilterOpen" class="custom-search-panel">
               <ScSelect v-model="customFilterField" size="small" :placeholder="uiLabel('select_field', '选择字段')" :options="customFilterFields.map((field) => ({ value: field.field, label: field.label }))" />
               <ScSelect v-model="customFilterOperator" size="small" :options="activeCustomFilterOperators.map((operator) => ({ value: operator.value, label: operator.label }))" />
@@ -169,38 +182,40 @@
         <section v-if="showGroupColumn" class="search-dropdown-section">
           <p class="search-dropdown-title">{{ groupLabel }}</p>
           <div class="search-dropdown-items">
-            <button
+            <ScButton
               v-for="chip in menuGroupChips"
               :key="`group-${chip.key}`"
               class="search-menu-item"
+              variant="ghost"
+              size="small"
               :class="{ selected: activeGroupKey === chip.key }"
               :disabled="loading"
               @click="selectGroup(chip.key)"
             >
               <span class="menu-check">{{ activeGroupKey === chip.key ? selectedSymbol : '' }}</span>
               <span>{{ chip.label }}</span>
-            </button>
+            </ScButton>
             <p v-if="!menuGroupChips.length" class="search-menu-empty">{{ uiLabel('empty_group_by', '暂无分组') }}</p>
-            <select
+            <ScSelect
               v-if="customGroupEnabled"
               v-model="customGroupField"
               class="custom-group-select"
               :disabled="loading"
+              :options="[{ value: '', label: customGroupLabel }, ...customGroupFields.map((chip) => ({ value: chip.key, label: chip.label }))]"
               @change="applyCustomGroup"
-            >
-              <option value="">{{ customGroupLabel }}</option>
-              <option v-for="chip in customGroupFields" :key="chip.key" :value="chip.key">{{ chip.label }}</option>
-            </select>
+            />
           </div>
         </section>
 
         <section v-if="showSavedFilterColumn" class="search-dropdown-section">
           <p class="search-dropdown-title">{{ savedFilterLabel }}</p>
           <div class="search-dropdown-items">
-            <button
+            <ScButton
               v-for="chip in allSavedFilterChips"
               :key="`saved-filter-${chip.key}`"
               class="search-menu-item"
+              variant="ghost"
+              size="small"
               :class="{ selected: activeSavedFilterKey === chip.key }"
               :disabled="loading"
               @click="selectSavedFilter(chip.key)"
@@ -209,28 +224,24 @@
               <span>{{ chip.label }}</span>
               <span v-if="chip.isDefault" class="menu-badge">{{ uiLabel('default', '默认') }}</span>
               <span v-if="chip.isShared" class="menu-badge">{{ uiLabel('shared', '共享') }}</span>
-            </button>
+            </ScButton>
             <p v-if="!allSavedFilterChips.length" class="search-menu-empty">{{ uiLabel('empty_saved_filters', '暂无收藏') }}</p>
-            <button
+            <ScButton
               v-if="favoriteSaveEnabled"
               class="search-menu-item custom-entry"
               type="button"
+              variant="ghost"
+              size="small"
               :disabled="loading"
               @click="favoriteSaveOpen = !favoriteSaveOpen"
             >
               <span class="menu-check"></span>
               <span>{{ favoriteSaveLabel }}</span>
-            </button>
+            </ScButton>
             <div v-if="favoriteSaveEnabled && favoriteSaveOpen" class="custom-search-panel">
               <ScInput v-model="favoriteName" size="small" :placeholder="uiLabel('favorite_name', '收藏名称')" />
-              <label class="custom-search-check">
-                <input v-model="favoriteUseByDefault" type="checkbox" />
-                <span>{{ uiLabel('favorite_use_by_default', '设为默认筛选') }}</span>
-              </label>
-              <label class="custom-search-check">
-                <input v-model="favoriteShared" type="checkbox" />
-                <span>{{ uiLabel('favorite_shared', '共享给所有用户') }}</span>
-              </label>
+              <ScCheckbox v-model:checked="favoriteUseByDefault" :label="uiLabel('favorite_use_by_default', '设为默认筛选')" />
+              <ScCheckbox v-model:checked="favoriteShared" :label="uiLabel('favorite_shared', '共享给所有用户')" />
               <div class="custom-search-actions">
                 <ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading" @click="saveFavorite">{{ uiLabel('save', '保存') }}</ScButton>
                 <ScButton type="button" variant="ghost" size="small" :disabled="loading" @click="favoriteSaveOpen = false">{{ uiLabel('cancel', '取消') }}</ScButton>
@@ -244,62 +255,66 @@
     <div v-if="sortOptions.length" class="toolbar-section sort-switch">
       <p class="contract-label">{{ sortLabel }}</p>
       <div class="contract-chips">
-        <button
+        <ScButton
           v-for="option in sortOptions"
           :key="`sort-${option.value}`"
           class="contract-chip"
+          variant="ghost"
+          size="small"
           :class="{ active: option.value === sortValue }"
           :disabled="loading"
           :aria-pressed="option.value === sortValue"
           @click="$emit('sort', option.value)"
         >
           {{ option.label }}
-        </button>
+        </ScButton>
       </div>
     </div>
 
     <div v-if="hasResponsiveOverflow" class="toolbar-overflow">
-      <button
+      <ScIconButton
         ref="overflowMenuToggle"
         class="toolbar-overflow-toggle"
-        type="button"
         :disabled="loading"
         :aria-expanded="overflowMenuOpen"
-        :aria-label="uiLabel('more_actions', '更多列表操作')"
-        :title="uiLabel('more_actions', '更多列表操作')"
+        :label="uiLabel('more_actions', '更多列表操作')"
         aria-controls="collection-toolbar-overflow"
         @click="toggleOverflowMenu"
       >
         <ScIcon name="menu" :size="18" />
-      </button>
+      </ScIconButton>
       <div v-if="overflowMenuOpen" id="collection-toolbar-overflow" class="toolbar-overflow-menu" data-collection-toolbar-layer="overflow" :aria-label="uiLabel('more_actions', '更多列表操作')">
         <section v-if="showViewSwitch && viewModes.length > 1" class="toolbar-overflow-section">
           <p>{{ viewLabel }}</p>
-          <button
+          <ScButton
             v-for="mode in viewModes"
             :key="`overflow-view-mode-${mode}`"
             type="button"
+            variant="ghost"
+            size="small"
             :class="{ active: currentViewMode === mode }"
             :disabled="loading"
             :aria-pressed="currentViewMode === mode"
             @click="selectOverflowView(mode)"
           >
             {{ viewModeLabels[mode] || mode }}
-          </button>
+          </ScButton>
         </section>
         <section v-if="sortOptions.length" class="toolbar-overflow-section">
           <p>{{ sortLabel }}</p>
-          <button
+          <ScButton
             v-for="option in sortOptions"
             :key="`overflow-sort-${option.value}`"
             type="button"
+            variant="ghost"
+            size="small"
             :class="{ active: option.value === sortValue }"
             :disabled="loading"
             :aria-pressed="option.value === sortValue"
             @click="selectOverflowSort(option.value)"
           >
             {{ option.label }}
-          </button>
+          </ScButton>
         </section>
         <ScButton
           v-if="canCreateRecord"
@@ -328,7 +343,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 
@@ -905,30 +922,9 @@ onBeforeUnmount(() => {
   padding: 6px 12px 10px 36px;
 }
 
-.custom-search-panel select,
-.custom-search-panel input,
 .custom-group-select {
   width: 100%;
   min-width: 0;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 6px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 6px 8px;
-  font-size: 12px;
-}
-
-.custom-search-check {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--sc-app-text-primary);
-  font-size: 12px;
-}
-
-.custom-search-check input {
-  width: auto;
-  padding: 0;
 }
 
 .custom-group-select {
