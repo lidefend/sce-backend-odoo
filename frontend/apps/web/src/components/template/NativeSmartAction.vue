@@ -55,7 +55,7 @@ defineProps<{
 
 .native-smart-action:disabled {
   cursor: not-allowed;
-  opacity: var(--sc-base-opacity-disabled);
+  opacity: var(--sc-component-button-disabled-opacity);
 }
 
 .native-smart-action__icon {

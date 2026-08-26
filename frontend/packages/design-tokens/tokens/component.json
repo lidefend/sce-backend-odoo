@@ -4,6 +4,7 @@
     "height_md": 36,
     "height_lg": 42,
     "loading_duration": "{motion.slow}",
+    "disabled_opacity": "{opacity.disabled}",
     "overflow_z_index": "{z_index.dropdown}",
     "radius": "{radius.md}",
     "padding_x": "{space.md}",

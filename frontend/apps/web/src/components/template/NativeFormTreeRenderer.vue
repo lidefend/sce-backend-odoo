@@ -228,35 +228,18 @@
                 @click.stop.prevent="emitNativeAction(buttonNode)"
               />
             </template>
-            <div v-if="overflowActionButtons(node).length" class="native-action-more">
-              <ScButton
-                type="button"
-                class="native-action-more-trigger"
-                size="small"
-                variant="ghost"
-                :aria-expanded="isMoreOpen(node)"
-                aria-haspopup="menu"
-                @click="toggleMore(node)"
-              >
-                <span class="native-action-label">更多</span>
-              </ScButton>
-              <div v-if="isMoreOpen(node)" class="native-action-more-menu" role="menu">
-                <button
-                  v-for="(buttonNode, buttonIndex) in overflowActionButtons(node)"
-                  :key="`more-${nodeKey(buttonNode, buttonIndex)}`"
-                  v-bind="nativeActionEvidenceAttributes(buttonNode)"
-                  type="button"
-                  class="native-action-more-item"
-                  role="menuitem"
-                  :disabled="nativeActionDisabled(buttonNode)"
-                  :title="nativeActionTitle(buttonNode)"
-                  @click.stop.prevent="emitNativeAction(buttonNode); closeMore(node)"
-                >
-                  <span v-if="buttonIcon(buttonNode)" :class="['native-action-icon', buttonIcon(buttonNode)]" aria-hidden="true" />
-                  <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
-                </button>
-              </div>
-            </div>
+            <NativeActionOverflowMenu
+              v-if="overflowActionButtons(node).length"
+              :actions="overflowActionButtons(node)"
+              :identity="nodeKey(node, index)"
+              :key-resolver="overflowActionKey"
+              :evidence-resolver="nativeActionEvidenceAttributes"
+              :label-resolver="buttonLabel"
+              :icon-resolver="buttonIcon"
+              :disabled-resolver="nativeActionDisabled"
+              :title-resolver="nativeActionTitle"
+              @select="emitNativeAction"
+            />
           </div>
           <template v-for="(widgetNode, widgetIndex) in widgetChildren(node)" :key="nodeKey(widgetNode, widgetIndex)">
             <div v-if="widgetName(widgetNode) === 'web_ribbon'" class="native-ribbon" :class="widgetClass(widgetNode)">
@@ -383,6 +366,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
+import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
@@ -492,7 +476,6 @@ const emit = defineEmits<{
 }>();
 
 const activePageIndex = ref(0);
-const openMoreKeys = ref<Record<string, boolean>>({});
 const SMART_BUTTON_DIRECT_LIMIT = 4;
 const visibleNodes = computed(() => (props.nodes || []).filter((node) => isNodeRenderable(node)));
 
@@ -811,29 +794,8 @@ function emitNativeAction(node: NativeFormLayoutNode) {
   emit('native-action', action);
 }
 
-function moreKey(node: NativeFormLayoutNode) {
-  return nodeKey(node, 0);
-}
-
-function isMoreOpen(node: NativeFormLayoutNode) {
-  return Boolean(openMoreKeys.value[moreKey(node)]);
-}
-
-function toggleMore(node: NativeFormLayoutNode) {
-  const key = moreKey(node);
-  openMoreKeys.value = {
-    ...openMoreKeys.value,
-    [key]: !openMoreKeys.value[key],
-  };
-}
-
-function closeMore(node: NativeFormLayoutNode) {
-  const key = moreKey(node);
-  if (!openMoreKeys.value[key]) return;
-  openMoreKeys.value = {
-    ...openMoreKeys.value,
-    [key]: false,
-  };
+function overflowActionKey(node: Record<string, unknown>, index: number) {
+  return `more-${nodeKey(node as NativeFormLayoutNode, index)}`;
 }
 </script>
 
@@ -1021,54 +983,6 @@ function closeMore(node: NativeFormLayoutNode) {
   min-width: 0;
   max-width: 100%;
   white-space: nowrap;
-}
-
-.native-action-more {
-  position: relative;
-  display: inline-flex;
-  min-width: 0;
-  width: 100%;
-}
-
-.native-action-more-trigger {
-  width: 100%;
-  justify-content: center;
-}
-
-.native-action-more-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 12;
-  min-width: 160px;
-  max-width: min(280px, 80vw);
-  display: grid;
-  gap: 2px;
-  padding: 6px;
-  background: var(--sc-app-panel);
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 6px;
-  box-shadow: var(--sc-semantic-shadow-modal);
-}
-
-.native-action-more-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  padding: 8px 10px;
-  border-radius: 5px;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  min-width: 0;
-}
-
-.native-action-more-item:hover {
-  background: var(--sc-app-hover-bg);
 }
 
 .native-action-icon {

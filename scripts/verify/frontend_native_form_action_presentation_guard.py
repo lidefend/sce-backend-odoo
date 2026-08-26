@@ -4,11 +4,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 RENDERER = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
 SMART_ACTION = ROOT / "frontend/apps/web/src/components/template/NativeSmartAction.vue"
+OVERFLOW_MENU = ROOT / "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue"
 
 
-def validate(source: str | None = None, smart_action: str | None = None) -> list[str]:
+def validate(source: str | None = None, smart_action: str | None = None, overflow_menu: str | None = None) -> list[str]:
     text = source if source is not None else RENDERER.read_text(encoding="utf-8")
     smart = smart_action if smart_action is not None else SMART_ACTION.read_text(encoding="utf-8")
+    overflow = overflow_menu if overflow_menu is not None else OVERFLOW_MENU.read_text(encoding="utf-8")
     failures: list[str] = []
     required = (
         "import ScButton from '../design-system/ScButton.vue'",
@@ -35,8 +37,8 @@ def validate(source: str | None = None, smart_action: str | None = None) -> list
     )
     if any(marker in text for marker in private_appearance):
         failures.append("native ordinary actions must not override ScButton appearance or states")
-    if text.count("<ScButton") != 3:
-        failures.append(f"native form expected two ordinary action branches and one disclosure trigger, found {text.count('<ScButton')}")
+    if text.count("<ScButton") != 2:
+        failures.append(f"native form expected two ordinary action primitive branches, found {text.count('<ScButton')}")
     for event in ('@click.stop.prevent="emitNativeAction(buttonNode)"', '@click.stop.prevent="emitNativeAction(node)"'):
         if text.count(event) != 2:
             failures.append(f"native form changed action event authority: {event}")
@@ -59,6 +61,26 @@ def validate(source: str | None = None, smart_action: str | None = None) -> list
         failures.append(f"native form expected two smart action branches, found {text.count('<NativeSmartAction')}")
     if ".native-action-btn--smart" in text:
         failures.append("native renderer must not retain parallel smart-action appearance")
+    overflow_required = (
+        "import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue'",
+        '<NativeActionOverflowMenu',
+        '@select="emitNativeAction"',
+        'data-semantic-component="NativeActionOverflowMenu"',
+        'aria-haspopup="menu"',
+        ':aria-expanded="open"',
+        ':aria-controls="menuId"',
+        'role="menu"',
+        'role="menuitem"',
+        '@keydown.esc.stop.prevent="close(true)"',
+        "document.addEventListener('pointerdown', onDocumentPointerDown)",
+    )
+    combined = f"{text}\n{overflow}"
+    for marker in overflow_required:
+        if marker not in combined:
+            failures.append(f"native action overflow lost disclosure/menu semantics: {marker}")
+    for private_state in ("openMoreKeys", "toggleMore(", "closeMore(", ".native-action-more-menu"):
+        if private_state in text:
+            failures.append(f"native renderer retained private overflow implementation: {private_state}")
     return failures
 
 
