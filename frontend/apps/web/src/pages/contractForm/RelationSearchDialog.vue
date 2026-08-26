@@ -30,9 +30,8 @@
         <ScTable class="relation-dialog-table" :aria-busy="dialog.loading || undefined"
           :label="dialog.title" :data="relationTableRows" :columns="relationTableColumns" row-key="id" size="small"
           role="listbox"
-          row-selection-type="single" :select-on-row-click="true" :selected-row-keys="selectedRowKeys"
           :row-class-name="relationRowClassName" :row-attributes="relationRowAttributes"
-          @select-change="onTableSelectChange" @row-dblclick="onTableConfirm" />
+          @row-click="onTableSelect" @row-dblclick="onTableConfirm" />
         </ScLoading>
         <ScEmptyState v-if="!dialog.loading && !dialog.rows.length" :title="dialog.labels.empty || '未找到匹配记录'" />
       </div>
@@ -143,16 +142,12 @@ const emit = defineEmits<{
 }>();
 
 const searchInputRef = ref<{ $el?: HTMLInputElement } | null>(null);
-const selectedRowKeys = computed<Array<string | number>>(() => props.dialog.selectedId ? [props.dialog.selectedId] : []);
 const relationTableRows = computed(() => props.dialog.rows.map((row) => ({ ...row.values, ...row, id: row.id })));
-const relationTableColumns = computed(() => [
-  { colKey: 'row-select', type: 'single', width: 48 },
-  ...props.dialog.columns.map((column) => ({
-    colKey: column.name,
-    title: column.label,
-    cell: ({ row }: { row: RelationSearchRow }) => relationSearchCell(row, column.name),
-  })),
-]);
+const relationTableColumns = computed(() => props.dialog.columns.map((column) => ({
+  colKey: column.name,
+  title: column.label,
+  cell: ({ row }: { row: RelationSearchRow }) => relationSearchCell(row, column.name),
+})));
 
 function tableRow(context: unknown): RelationSearchRow | null {
   if (!context || typeof context !== 'object') return null;
@@ -179,10 +174,7 @@ function relationRowAttributes(context: unknown): Record<string, unknown> {
     },
   };
 }
-function onTableSelectChange(keys: Array<string | number>) {
-  const selected = props.dialog.rows.find((row) => row.id === Number(keys.at(-1)));
-  if (selected) emit('select-row', selected);
-}
+function onTableSelect(context: unknown) { const row = tableRow(context); if (row) emit('select-row', row); }
 function onTableConfirm(context: unknown) {
   const row = tableRow(context);
   if (row) emit('confirm', row);
