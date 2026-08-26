@@ -17,6 +17,10 @@
     "p0-collection-state-control-completion-v1": {
       "formalProductLayer": "P0",
       "sources": [
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue",
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+        "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue",
         "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue",
         "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue",
         "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue",
@@ -58,8 +62,10 @@
         "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue",
         "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/NativeSmartAction.vue",
         "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
         "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue",
+        "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue",
         "frontend/apps/web/src/pages/ContractFormPage.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",

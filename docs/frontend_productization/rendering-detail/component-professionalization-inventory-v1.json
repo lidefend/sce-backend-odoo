@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
   "sourceCommit": "376bbfb229afa995f8d5f16e7fca4ec8131e29b9",
-  "generatorDigest": "8ca45ed6ca5773ef86b0f8ebfd32669afe3b1e7af302f0ef5fbb48b3c732d5ef",
-  "ownershipDigest": "54931624a7bbda234bbb8b30073c1c588e129beedbad213973a64fd9c1765471",
-  "inputDigest": "660b99e3dee7903ab85aa9c301c520291194491e1412a4763637b1ae69bfe036",
+  "generatorDigest": "5ce5dcd991f127ad806d5e18386a8e2e82ed891a98c753430d6f69e028ebad5a",
+  "ownershipDigest": "138582376e6038ec7d4de5d40956e7e1def8398b0b0fc052d3922db6a36ce304",
+  "inputDigest": "1fc46915a72f104d33e477997067730cdde6f0953e596447558876488b3d6356",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,11 +20,13 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 137,
-    "deliberate_native_composite": 6,
+    "surfaceCount": 138,
+    "p0P1RawControlBypassSurfaceCount": 0,
+    "p0P1RawControlBypassControlCount": 0,
+    "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 87,
-    "governed_primitive": 26,
+    "governed_composite": 93,
+    "governed_primitive": 27,
     "p3_out_of_scope": 18
   },
   "nextBatch": null,
@@ -51,9 +53,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
@@ -79,9 +79,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
@@ -102,21 +100,17 @@
     {
       "source": "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "collection disclosure and facet controls retain native button semantics under the collection toolbar guard",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 15,
-        "input": 2,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
@@ -129,9 +123,7 @@
         "error",
         "focus"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
@@ -147,9 +139,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
@@ -167,9 +157,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
@@ -183,9 +171,7 @@
       "stateTypes": [
         "empty"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
@@ -244,10 +230,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "input": 1,
-        "textarea": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
@@ -274,9 +257,7 @@
         "loading",
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -287,20 +268,6 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "disabled",
-        "focus"
-      ],
-      "rawControls": {
-        "input": 1
-      },
-      "governedStatePrimitives": [],
-      "targetBatch": null
-    },
-    {
-      "source": "frontend/apps/web/src/components/design-system/ScDataTable.vue",
-      "formalProductLayer": "P0",
-      "status": "governed_primitive",
-      "reason": "design-system primitive source",
-      "stateTypes": [
         "focus"
       ],
       "rawControls": {},
@@ -327,6 +294,7 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
+        "loading",
         "focus"
       ],
       "rawControls": {},
@@ -460,9 +428,7 @@
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -524,6 +490,30 @@
       "targetBatch": null
     },
     {
+      "source": "frontend/apps/web/src/components/design-system/ScRadio.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScRadioGroup.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
       "source": "frontend/apps/web/src/components/design-system/ScRelationField.vue",
       "formalProductLayer": "P0",
       "status": "governed_primitive",
@@ -544,11 +534,10 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "error",
-        "disabled"
+        "disabled",
+        "focus"
       ],
-      "rawControls": {
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -558,7 +547,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "loading"
+        "loading",
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -587,9 +577,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "textarea": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -788,17 +776,15 @@
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "column sorting and disclosure are a registered collection composite",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionFilterChip.vue",
@@ -881,30 +867,26 @@
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "row-cell interaction is owned by the collection row-cell guard",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "native checkbox semantics are owned by the collection selection guard",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "input": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
@@ -992,9 +974,7 @@
       "stateTypes": [
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -1006,9 +986,7 @@
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
@@ -1030,9 +1008,7 @@
       "stateTypes": [
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
@@ -1054,9 +1030,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
@@ -1069,10 +1043,7 @@
         "empty",
         "error"
       ],
-      "rawControls": {
-        "input": 1,
-        "textarea": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
@@ -1112,9 +1083,7 @@
       "stateTypes": [
         "empty"
       ],
-      "rawControls": {
-        "button": 5
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
@@ -1129,10 +1098,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2,
-        "input": 4
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
@@ -1159,27 +1125,22 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2,
-        "input": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/template/NativeSmartAction.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "native smart action semantics are owned by the native action presentation guard",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
@@ -1192,11 +1153,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2,
-        "input": 2,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
@@ -1206,24 +1163,19 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "input": 1,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "native notebook interaction is owned by the structured form renderer",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue",
@@ -1252,9 +1204,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 17
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
@@ -1269,9 +1219,7 @@
         "error",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScLoading",
         "ScEmptyState",
@@ -1291,9 +1239,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
@@ -1362,9 +1308,7 @@
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
@@ -1390,9 +1334,7 @@
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScErrorState"
       ],
@@ -1409,10 +1351,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
@@ -1425,9 +1364,7 @@
         "loading",
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
@@ -1570,9 +1507,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "input": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScLoading",
         "ScEmptyState"
@@ -1604,10 +1539,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2,
-        "input": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
@@ -1637,9 +1569,7 @@
         "empty",
         "error"
       ],
-      "rawControls": {
-        "input": 7
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
@@ -1671,10 +1601,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 3,
-        "input": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
@@ -1703,9 +1630,7 @@
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
@@ -1756,9 +1681,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
@@ -1773,10 +1696,7 @@
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "button": 12,
-        "select": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -1843,9 +1763,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 4
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
@@ -2029,6 +1947,7 @@
   ],
   "completionPolicy": {
     "formalP0P1UntreatedGapTarget": 0,
+    "formalP0P1RawControlBypassTarget": 0,
     "gapIsFailClosed": true,
     "nativeControlRequiresExplicitCompositeOwnership": true,
     "p3DoesNotBlockP0P1Completion": true

@@ -51,14 +51,7 @@ P3_OWNER = OWNERSHIP["owners"]["p3-low-code-administration"]
 P3_PREFIXES = tuple(P3_OWNER.get("prefixes", []))
 P3_FILES = set(P3_OWNER["sources"])
 
-DELIBERATE_NATIVE_COMPOSITES = {
-    "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": "collection disclosure and facet controls retain native button semantics under the collection toolbar guard",
-    "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue": "column sorting and disclosure are a registered collection composite",
-    "frontend/apps/web/src/components/product-list/CollectionRowCell.vue": "row-cell interaction is owned by the collection row-cell guard",
-    "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue": "native checkbox semantics are owned by the collection selection guard",
-    "frontend/apps/web/src/components/template/NativeSmartAction.vue": "native smart action semantics are owned by the native action presentation guard",
-    "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue": "native notebook interaction is owned by the structured form renderer",
-}
+DELIBERATE_NATIVE_COMPOSITES: dict[str, str] = {}
 
 KNOWN_GOVERNED_COMPOSITES = {
     "frontend/apps/web/src/components/StatusPanel.vue",
@@ -88,6 +81,10 @@ BATCH_BINDINGS = {
     "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue": {"scinlinestate": {"states": {"loading", "empty"}, "minimum": 1}},
     },
     "p0-collection-state-control-completion-v1": {
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": {"scbutton": {"minimum": 1}, "sccheckbox": {"minimum": 1}, "scselect": {"minimum": 1}},
+        "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue": {"scbutton": {"minimum": 1}, "sciconbutton": {"minimum": 1}},
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.vue": {"scbutton": {"minimum": 1}, "sciconbutton": {"minimum": 1}},
+        "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue": {"sccheckbox": {"minimum": 1}},
         "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue": {"section": {"attrs": {"data-semantic-component": "CollectionBatchActionBar", ":data-state": "loading ? 'loading' : selectedCount ? 'ready' : 'empty'"}}},
         "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue": {"nav": {"attrs": {"data-semantic-component": "CollectionGroupPageControls", ":data-state": "loading ? 'loading' : 'ready'"}}},
         "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue": {"header": {"attrs": {"data-semantic-component": "CollectionGroupingToolbar"}}},
@@ -123,8 +120,10 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/template/FormSection.vue": {"section": {"attrs": {"data-semantic-component": "FormSection"}}},
         "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue": {"div": {"attrs": {"data-semantic-component": "NativeActionOverflowMenu"}}},
         "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": {"div": {"attrs": {"data-semantic-component": "NativeFormTreeRenderer"}}},
+        "frontend/apps/web/src/components/template/NativeSmartAction.vue": {"scbutton": {"minimum": 1}},
         "frontend/apps/web/src/components/view/ViewFieldRenderer.vue": {"div": {"attrs": {"data-semantic-component": "ViewFieldRenderer"}}},
         "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue": {"div": {"attrs": {"data-semantic-component": "ViewRelationalRenderer", ":aria-busy": "loading || undefined"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
+        "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue": {"sctabs": {"minimum": 1}},
         "frontend/apps/web/src/pages/ContractFormPage.vue": {"layoutshell": {"attrs": {"data-semantic-component": "ContractFormPage", ":data-state": "status"}}},
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue": {"nav": {"attrs": {"data-semantic-component": "CanonicalActionBar"}}},
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue": {"section": {"attrs": {"data-semantic-component": "CanonicalFormNodeRenderer"}}},
@@ -302,6 +301,9 @@ def classify(source: str, text: str) -> tuple[str, str]:
         return "p3_out_of_scope", "low-code or administration product surface; handled by a separate P3 batch"
     if source in DELIBERATE_NATIVE_COMPOSITES:
         return "deliberate_native_composite", DELIBERATE_NATIVE_COMPOSITES[source]
+    raw_controls = sorted(name for name, pattern in RAW_CONTROL_PATTERNS.items() if pattern.search(text))
+    if raw_controls:
+        return "gap", f"formal P0/P1 surface bypasses governed adapters: {', '.join(raw_controls)}"
     if source in KNOWN_GOVERNED_COMPOSITES:
         return "governed_composite", "state/dashboard or overlay guard owns this composite"
     if source in OWNED_BINDINGS:
@@ -344,6 +346,15 @@ def build_inventory() -> dict[str, Any]:
             "targetBatch": OWNED_BINDINGS[source][0] if source in OWNED_BINDINGS else None,
         })
     counts = Counter(item["status"] for item in surfaces)
+    p0_p1_raw_bypass_surfaces = [
+        item for item in surfaces
+        if item["formalProductLayer"] in {"P0", "P1"}
+        and item["status"] != "governed_primitive"
+        and item["rawControls"]
+    ]
+    p0_p1_raw_bypass_controls = sum(
+        sum(item["rawControls"].values()) for item in p0_p1_raw_bypass_surfaces
+    )
     next_batch = None if counts.get("gap", 0) == 0 else {
         "key": "p0-shared-utility-scene-completion-v1",
         "targetSurfaceCount": len(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
@@ -365,11 +376,17 @@ def build_inventory() -> dict[str, Any]:
             "Contract V2 authority changes",
             "permission and route authority changes",
         ],
-        "summary": {"surfaceCount": len(surfaces), **{key: counts.get(key, 0) for key in sorted(STATUS_VALUES)}},
+        "summary": {
+            "surfaceCount": len(surfaces),
+            "p0P1RawControlBypassSurfaceCount": len(p0_p1_raw_bypass_surfaces),
+            "p0P1RawControlBypassControlCount": p0_p1_raw_bypass_controls,
+            **{key: counts.get(key, 0) for key in sorted(STATUS_VALUES)},
+        },
         "nextBatch": next_batch,
         "surfaces": surfaces,
         "completionPolicy": {
             "formalP0P1UntreatedGapTarget": 0,
+            "formalP0P1RawControlBypassTarget": 0,
             "gapIsFailClosed": True,
             "nativeControlRequiresExplicitCompositeOwnership": True,
             "p3DoesNotBlockP0P1Completion": True,

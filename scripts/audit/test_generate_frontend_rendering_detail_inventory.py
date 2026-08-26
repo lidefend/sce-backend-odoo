@@ -39,7 +39,7 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_collection_batch_sources_have_machine_proven_completion(self) -> None:
         batch = "p0-collection-state-control-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
-        self.assertEqual(len(sources), 15)
+        self.assertEqual(len(sources), 19)
         for source in sources:
             self.assertIn(source, self.by_source)
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
@@ -56,7 +56,7 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_form_relation_workflow_sources_have_machine_proven_completion(self) -> None:
         batch = "p0-form-relation-workflow-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
-        self.assertEqual(len(sources), 19)
+        self.assertEqual(len(sources), 21)
         for source in sources:
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)
@@ -109,6 +109,19 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             self.assertEqual(self.by_source[source]["status"], "deliberate_native_composite")
             self.assertEqual(self.by_source[source]["reason"], reason)
             self.assertTrue(reason.strip())
+
+    def test_formal_surface_cannot_regress_to_raw_control(self) -> None:
+        source = "frontend/apps/web/src/components/template/NativeSmartAction.vue"
+        fake = """<template><button>办理</button><ScButton>办理</ScButton></template>
+<script setup>import ScButton from '../design-system/ScButton.vue';</script>"""
+        status, reason = INVENTORY.classify(source, fake)
+        self.assertEqual(status, "gap")
+        self.assertIn("bypasses governed adapters", reason)
+
+    def test_p0_p1_raw_control_bypass_is_zero(self) -> None:
+        self.assertEqual(self.report["summary"]["p0P1RawControlBypassSurfaceCount"], 0)
+        self.assertEqual(self.report["summary"]["p0P1RawControlBypassControlCount"], 0)
+        self.assertEqual(self.report["completionPolicy"]["formalP0P1RawControlBypassTarget"], 0)
 
     def test_p3_surfaces_do_not_masquerade_as_p0_completion(self) -> None:
         for source in INVENTORY.P3_FILES:
