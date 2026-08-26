@@ -283,13 +283,13 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 <style scoped>
 .object-task-page {
   display: grid;
-  gap: 20px;
+  gap: 12px;
   min-width: 0;
 }
 .object-task-page__body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  gap: 12px;
   min-width: 0;
 }
 .object-task-page--with-context .object-task-page__body {
@@ -327,27 +327,30 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  padding: 16px;
+  gap: 0;
+  padding: 0;
   border: 1px solid var(--sc-app-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
+  overflow: hidden;
 }
 .object-task-page__summary :deep(.canonical-form-node) {
   height: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--sc-app-panel) 82%, var(--sc-app-surface));
+  padding: 12px 16px;
+  border: 0;
+  border-right: 1px solid var(--sc-app-border);
+  border-radius: 0;
+  background: transparent;
 }
+.object-task-page__summary :deep(.canonical-form-node:last-child) { border-right:0; }
 .object-task-page__current-task {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 20px;
+  gap: 12px;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 16px;
   border: 1px solid var(--sc-app-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 .object-task-page__current-task-copy { display: grid; gap: 8px; }
@@ -357,17 +360,17 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 }
 .object-task-page__current-task-actions { min-width: max-content; }
 .object-task-page__risk {
-  padding: 14px 16px;
+  padding: 12px 14px;
   border: 1px solid var(--sc-app-warning-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-warning-bg);
 }
 .object-task-page__core-input,
 .object-task-page__condition-input,
 .object-task-page__pre-execution-input {
-  padding: 16px;
+  padding: 14px 16px;
   border: 1px solid var(--sc-app-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 .object-task-page__condition-input {
@@ -381,7 +384,7 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__supplementary-input {
   padding: 12px 16px;
   border: 1px solid var(--sc-app-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 .object-task-page__supplementary-input > summary { cursor: pointer; font-weight: 600; }
@@ -394,13 +397,13 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__audit {
   padding: 12px 16px;
   border: 1px solid var(--sc-app-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 .object-task-page__overflow-context {
   padding: 12px 16px;
   border: 1px solid var(--sc-app-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 .object-task-page__overflow-context > summary { cursor: pointer; font-weight: 600; }
@@ -427,9 +430,9 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__audit-event p { color: var(--sc-app-text-secondary); }
 .object-task-page__audit-event p { grid-column: 1 / -1; margin: 4px 0 0; }
 .object-task-page__context {
-  padding: 16px;
+  padding: 14px 16px;
   border: 1px solid var(--sc-app-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 .object-task-page__subordinate {
@@ -438,9 +441,9 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 }
 .object-task-page__relation,
 .object-task-page__activity {
-  padding: 16px;
+  padding: 14px 16px;
   border: 1px solid var(--sc-app-border);
-  border-radius: 12px;
+  border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
 .object-task-page__actions {
@@ -454,6 +457,8 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 }
 @media (max-width: 960px) {
   .object-task-page__summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .object-task-page__summary :deep(.canonical-form-node:nth-child(2n)) { border-right:0; }
+  .object-task-page__summary :deep(.canonical-form-node:nth-child(n + 3)) { border-top:1px solid var(--sc-app-border); }
   .object-task-page__current-task { grid-template-columns: minmax(0, 1fr); }
   .object-task-page__current-task-actions { min-width: 0; }
   .object-task-page--with-context .object-task-page__body {
