@@ -39,9 +39,9 @@ def validate(page_source: str | None = None, card_source: str | None = None, sty
         if marker not in semantics_browser: failures.append(f"collection semantics browser missing {marker}")
     for legacy in ('.card-title', '.meta-row dt', 'explicit_card"] .card'):
         if legacy in semantics_browser: failures.append(f"collection semantics browser retains legacy selector {legacy}")
-    for marker in ('data-semantic-component="CollectionKanbanRecordCard"', ':data-record-key="recordKey"', ':aria-label="openAriaLabel"', ':aria-disabled="disabled || undefined"', '@keydown.enter="openRecord"', '@keydown.space.prevent="openRecord"', 'if (!props.disabled) emit(\'open\')', 'ScStatusBadge', ':data-fact-key="fact.key"'):
+    for marker in ('<ScCard', 'appearance="kanban-record"', 'data-semantic-component="CollectionKanbanRecordCard"', ':data-record-key="recordKey"', ':aria-label="openAriaLabel"', ':aria-disabled="disabled || undefined"', '@keydown.enter="openRecord"', '@keydown.space.prevent="openRecord"', 'if (!props.disabled) emit(\'open\')', 'ScStatusBadge', ':data-fact-key="fact.key"'):
         if marker not in card: failures.append(f"shared kanban card missing {marker}")
-    for marker in ('var(--sc-semantic-focus-ring)', 'var(--sc-semantic-shadow-panel)', 'prefers-reduced-motion', '.collection-kanban-record-card__fact'):
+    for marker in ('var(--sc-semantic-focus-ring)', 'prefers-reduced-motion', '.collection-kanban-record-card__fact'):
         if marker not in style: failures.append(f"shared kanban card style missing {marker}")
     return failures
 

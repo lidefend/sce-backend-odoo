@@ -20,7 +20,7 @@ withDefaults(defineProps<{
   title?: string;
   subtitle?: string;
   bordered?: boolean;
-  appearance?: 'default' | 'summary' | 'task' | 'section' | 'context' | 'relation' | 'form-section' | 'auth' | 'main-surface' | 'flow';
+  appearance?: 'default' | 'summary' | 'task' | 'section' | 'context' | 'relation' | 'form-section' | 'auth' | 'account' | 'main-surface' | 'flow' | 'kanban-record';
 }>(), {
   bordered: true,
   appearance: 'default',
@@ -33,6 +33,8 @@ withDefaults(defineProps<{
 [data-appearance='task'] :deep(.t-card__header) { align-items: center; }
 [data-appearance='task'] :deep(.t-card__body) { padding-top: 8px; }
 [data-appearance='auth'] :deep(.t-card__body) { display: grid; gap: 18px; padding: 32px; }
+[data-appearance='account'] :deep(.t-card__body) { display: grid; gap: 16px; padding: 28px; }
+[data-appearance='kanban-record'] :deep(.t-card__body) { display: grid; gap: var(--sc-card-gap); padding: var(--sc-product-space-2); }
 [data-appearance='main-surface'] { width: 100%; min-width: 0; }
 [data-appearance='main-surface'] :deep(.t-card__body) { padding: 0 20px 24px; }
 [data-appearance='flow'] { width: 100%; min-width: 0; border: 0; background: transparent; box-shadow: none; }
