@@ -103,7 +103,7 @@ require(
     '@keydown="onKeydown"',
 )
 toggle_match = re.search(
-    r"<button\b(?=[^>]*\baria-controls=\"primary-sidebar\")"
+    r"<ScButton\b(?=[^>]*\baria-controls=\"primary-sidebar\")"
     r"(?=[^>]*:aria-expanded=\"sidebarVisible\")[^>]*>",
     app_shell,
     re.DOTALL,

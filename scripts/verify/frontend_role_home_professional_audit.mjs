@@ -106,7 +106,7 @@ async function inspectHome(page, role, viewport, landingPath, screenshot) {
     const rect = node.getBoundingClientRect();
     return rect.top >= 0 && rect.top < window.innerHeight && rect.left >= 0 && rect.left < window.innerWidth;
   }).length);
-  const topNavigationGroups = await visibleCount(page.locator('.tree--root > li'));
+  const topNavigationGroups = await visibleCount(page.locator('[data-semantic-driver="tdesign-menu"] > [data-navigation-depth="0"]'));
   const homePanels = await visibleCount(page.locator('main section, main article, main details'));
   const firstAction = await page.locator('main button:visible, main a:visible').first().innerText().catch(() => '');
   const horizontal = await page.evaluate(() => ({

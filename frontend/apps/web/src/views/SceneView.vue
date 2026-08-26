@@ -10,6 +10,7 @@
           v-for="action in headerActions"
           :key="`scene-header-${action.key}`"
           class="ghost"
+          appearance="outline-action"
           variant="ghost"
           size="small"
           :disabled="status === 'loading' || action.disabled"
@@ -26,6 +27,7 @@
             v-for="item in sceneViewSwitchOptions"
             :key="`scene-view-switch-${item.key}`"
             class="scene-view-switch__chip"
+            appearance="toolbar-chip"
             variant="ghost"
             size="small"
             :class="{ active: item.active }"
@@ -118,6 +120,7 @@
               variant="ghost"
               size="small"
               class="handling-item"
+              appearance="surface-tile"
               :disabled="!isHandlingEntryActionable(item)"
               :title="item.business_category_code"
               @click="openHandlingEntry(item)"
@@ -1477,22 +1480,11 @@ watch(
 
 .scene-view-switch__chip {
   padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
   font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
   max-width: 100%;
   white-space: normal;
   overflow-wrap: anywhere;
-}
-
-.scene-view-switch__chip.active {
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-  border-color: var(--sc-semantic-surface-interactive);
 }
 
 .scene-view-switch__chip:disabled {
@@ -1645,18 +1637,12 @@ watch(
   display: grid;
   gap: 4px;
   min-height: 66px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
   padding: 9px 10px;
   text-align: left;
-  cursor: pointer;
 }
 
 .handling-item:hover:not(:disabled) {
-  border-color: var(--sc-semantic-surface-interactive);
-  box-shadow: 0 10px 22px var(--sc-app-focus-ring);
+  transform: translateY(-1px);
 }
 
 .handling-item:disabled {
@@ -1673,13 +1659,11 @@ watch(
 .handling-item small {
   font-size: 11px;
   line-height: 1.25;
-  color: var(--sc-app-text-secondary);
   overflow-wrap: anywhere;
 }
 
 .scene-top-controls--compact :deep(.ghost) {
   padding: 5px 11px;
-  border-radius: 999px;
   white-space: normal;
   overflow-wrap: anywhere;
 }

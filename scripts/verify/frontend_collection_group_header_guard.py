@@ -6,13 +6,15 @@ LIST_PAGE = ROOT / "frontend/apps/web/src/pages/ListPage.vue"
 HEADER = ROOT / "frontend/apps/web/src/components/product-list/CollectionGroupHeader.vue"
 HEADER_CSS = ROOT / "frontend/apps/web/src/components/product-list/CollectionGroupHeader.css"
 VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
+THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
 
 
-def validate(list_source: str | None = None, header_source: str | None = None, css_source: str | None = None, visual_source: str | None = None) -> list[str]:
+def validate(list_source: str | None = None, header_source: str | None = None, css_source: str | None = None, visual_source: str | None = None, theme_source: str | None = None) -> list[str]:
     list_text = list_source if list_source is not None else LIST_PAGE.read_text(encoding="utf-8")
     header_text = header_source if header_source is not None else HEADER.read_text(encoding="utf-8")
     css_text = css_source if css_source is not None else HEADER_CSS.read_text(encoding="utf-8")
     visual_text = visual_source if visual_source is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
+    theme_text = theme_source if theme_source is not None else THEME.read_text(encoding="utf-8")
     failures: list[str] = []
     for marker in (
         'data-semantic-component="CollectionGroupHeader"',
@@ -22,6 +24,8 @@ def validate(list_source: str | None = None, header_source: str | None = None, c
         'aria-live="polite"',
         '<slot name="pagination" />',
         'v-if="openEnabled"',
+        'appearance="toolbar-chip"',
+        'appearance="outline-action"',
         "toggle: []",
         "open: []",
     ):
@@ -46,12 +50,14 @@ def validate(list_source: str | None = None, header_source: str | None = None, c
     for marker in (
         "var(--sc-space-xs)",
         "var(--sc-app-info-border)",
-        "var(--sc-semantic-focus-ring)",
         "var(--sc-touch-target-min)",
         "prefers-reduced-motion",
     ):
         if marker not in css_text:
             failures.append(f"collection group header styles missing {marker}")
+    for marker in (".sc-btn:focus-visible", "var(--sc-semantic-focus-ring)"):
+        if marker not in theme_text:
+            failures.append(f"collection group header adapter theme missing {marker}")
     for marker in (
         "exerciseCollectionGroupHeader",
         "collectionGroupHeaderEvidence",

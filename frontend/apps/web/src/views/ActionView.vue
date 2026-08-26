@@ -35,7 +35,7 @@
         {{ t('route_preset_applied_prefix', '已应用推荐筛选：') }}{{ vm.filters.routePreset?.label }}
         <span v-if="vm.filters.routePreset?.source">（{{ t('route_preset_source_prefix', '来源：') }}{{ vm.filters.routePreset?.source }}）</span>
       </p>
-      <ScButton class="clear-btn" variant="ghost" size="small" type="button" @click="clearRoutePreset">{{ t('route_preset_clear', '清除推荐') }}</ScButton>
+      <ScButton class="clear-btn" appearance="info-action" variant="ghost" size="small" type="button" @click="clearRoutePreset">{{ t('route_preset_clear', '清除推荐') }}</ScButton>
     </section>
     <section v-if="isSectionVisible('focus_strip', { defaultEnabled: pageSectionEnabled('focus_strip', false), tag: 'section', vmVisible: vm.sections.focus })" class="focus-strip" :style="getSectionStyle('focus_strip')">
       <div>
@@ -73,6 +73,7 @@
         <CollectionFilterChip
           v-if="activeContractFilterKey"
           class="contract-chip ghost"
+          appearance="toolbar-chip"
           :disabled="isBusyDisabled()"
           @activate="clearContractFilter"
         >
@@ -287,6 +288,8 @@
       :secondary-fields="kanbanSecondaryFields"
       :status-fields="kanbanStatusFields"
       :field-labels="kanbanFieldLabels"
+      :field-selections="kanbanFieldSelections"
+      :field-tone-by-value="kanbanFieldToneByValue"
       :title-field="kanbanTitleField"
       :subtitle="vm.page.subtitle"
       :status-label="vm.page.statusLabel"
@@ -642,6 +645,7 @@
           v-for="(option, optionIndex) in businessCategoryCreateOptions"
           :key="option.code"
           class="business-category-picker-option"
+          appearance="menu-item"
           type="button"
           :data-dialog-primary="optionIndex === 0 ? '' : undefined"
           variant="secondary"
@@ -654,6 +658,7 @@
     </template>
     </ActionSurfaceRendererHost>
     </component>
+    <IntentConfirmationDialog ref="batchConfirmationRef" />
   </ScPage>
 </template>
 <script setup lang="ts">
@@ -665,6 +670,7 @@ import ScButton from '../components/design-system/ScButton.vue';
 import ScDialog from '../components/design-system/ScDialog.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
+import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import CollectionPattern from '../components/product-page-patterns/CollectionPattern.vue';
 import CollectionFilterChip from '../components/product-list/CollectionFilterChip.vue';
@@ -1090,6 +1096,7 @@ const {
 const headerActions = computed(() => pageGlobalActions.value);
 const advancedFields = ref<string[]>([]);
 const batchBusy = ref(false);
+const batchConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 const {
   isUiBusy,
   isBusyDisabled,
@@ -1640,6 +1647,18 @@ const kanbanFieldLabels = computed<Record<string, string>>(() => ({
   ...extractViewFieldLabels(actionContract.value, 'kanban'),
   ...(listProfile.value?.column_labels || {}),
 }));
+const kanbanFieldSelections = computed<Record<string, Array<{ value: string; label: string }>>>(() =>
+  listColumnOptions.value.reduce<Record<string, Array<{ value: string; label: string }>>>((acc, column) => {
+    if (Array.isArray(column.selection) && column.selection.length) acc[column.name] = column.selection;
+    return acc;
+  }, {}),
+);
+const kanbanFieldToneByValue = computed<Record<string, Record<string, string>>>(() =>
+  listColumnOptions.value.reduce<Record<string, Record<string, string>>>((acc, column) => {
+    if (column.toneByValue && Object.keys(column.toneByValue).length) acc[column.name] = column.toneByValue;
+    return acc;
+  }, {}),
+);
 const sortLabel = computed(() => sortValue.value || 'id asc');
 const {
   subtitle,
@@ -1893,7 +1912,7 @@ async function runBatchPolicyAction(action: 'archive' | 'activate' | 'delete') {
     return;
   }
   if (action === 'delete') {
-    if (!confirm(toolbarUiLabel('batch_confirm_delete', `确认删除选中的 ${selected.length} 条记录？`))) {
+    if (!await batchConfirmationRef.value?.confirm({ actionLabel: '批量删除', message: toolbarUiLabel('batch_confirm_delete', `确认删除选中的 ${selected.length} 条记录？`) })) {
       return;
     }
     const seed = resolveBatchDeleteExecutionSeed({
@@ -3429,15 +3448,6 @@ function refreshForRecordContextChange(): void {
   font-size: 13px;
 }
 
-.clear-btn {
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: var(--sc-component-button-radius);
-  background: var(--sc-app-panel);
-  color: var(--sc-app-info-text);
-  padding: 4px 8px;
-  cursor: pointer;
-}
-
 .contract-block {
   display: grid;
   gap: 8px;
@@ -3552,31 +3562,6 @@ function refreshForRecordContextChange(): void {
   color: var(--sc-semantic-text-muted);
 }
 
-.contract-chip {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 999px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  padding: 5px 11px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.contract-chip.active {
-  border-color: var(--sc-semantic-surface-interactive);
-  color: var(--sc-app-info-text);
-  background: var(--sc-app-info-bg);
-}
-
-.contract-chip.primary {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-}
-
-.contract-chip.ghost {
-  border-style: dashed;
-}
 
 .advanced-view {
   border: 1px solid var(--sc-app-border);

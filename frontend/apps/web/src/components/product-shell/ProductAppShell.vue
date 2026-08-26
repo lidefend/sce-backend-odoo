@@ -1,9 +1,10 @@
 <template>
-  <div data-semantic-component="ProductAppShell">
+  <ScLayout data-semantic-component="ProductAppShell" data-layout-driver="tdesign">
     <slot />
-  </div>
+  </ScLayout>
 </template>
 
 <script setup lang="ts">
+import ScLayout from '../design-system/ScLayout.vue';
 defineOptions({ inheritAttrs: true });
 </script>

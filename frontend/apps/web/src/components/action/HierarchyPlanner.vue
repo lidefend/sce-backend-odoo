@@ -60,7 +60,7 @@
 
       <div v-if="loading" class="planner-state">{{ labels.loading }}</div>
       <ScEmptyState v-else-if="!visibleEntries.length" class="planner-state" :title="String(config.empty_title || '')" :description="String(config.empty_hint || '')" />
-      <ScTable v-else class="planner-grid" :label="title" :data="plannerTableRows" :columns="plannerTableColumns"
+      <ScTable v-else class="planner-grid" appearance="flush" :label="title" :data="plannerTableRows" :columns="plannerTableColumns"
         row-key="__rowKey" size="small" :table-content-width="plannerTableWidth"
         :row-class-name="plannerRowClassName" :row-attributes="plannerRowAttributes"
         @row-click="selectPlannerRow" @row-dblclick="openPlannerRow" />
@@ -329,14 +329,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', closeMenusFromOuts
 .planner-commands { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--sc-toolbar-gap); }
 .planner-menu { position: relative; }
 .planner-menu-popover { position: absolute; z-index: 5; top: calc(100% + var(--sc-space-2xs)); right: 0; display: grid; min-width: 140px; padding: var(--sc-space-xs); border: 1px solid var(--sc-app-border); background: var(--sc-app-panel); box-shadow: var(--sc-app-shadow-md); }
-.planner-grid { max-height: calc(100vh - 260px); border: 0; border-radius: 0; box-shadow: none; }
-.planner-grid :deep(.sc-product-table) { width: 100%; border-collapse: collapse; font-size: var(--sc-product-text-body); }
-.planner-grid :deep(th), .planner-grid :deep(td) { height: var(--sc-product-table-row-height); padding: calc(var(--sc-component-table-cell-padding-y) * 1px) calc(var(--sc-component-table-cell-padding-x) * 1px); border-bottom: 1px solid var(--sc-table-divider); text-align: left; white-space: nowrap; }
-.planner-grid :deep(th) { position: sticky; top: 0; z-index: 1; height: calc(var(--sc-component-table-header-height) * 1px); background: var(--sc-table-header-bg); color: var(--sc-app-text-secondary); }
-.planner-grid :deep(tbody tr) { cursor: pointer; }
-.planner-grid :deep(tbody tr:hover) { background: var(--sc-app-hover-bg); }
-.planner-grid :deep(tbody tr.selected) { background: var(--sc-app-selected-bg); }
-.planner-grid :deep(tbody tr.parent td) { font-weight: 600; }
+.planner-grid { max-height: calc(100vh - 260px); }
 .outline-cell, .code-cell { display: flex; align-items: center; min-width: 0; }
 .tree-elbow { align-self: stretch; width: var(--sc-space-sm); margin-inline-end: var(--sc-space-xs); border-bottom: 1px solid var(--sc-app-border-strong); border-left: 1px solid var(--sc-app-border-strong); }
 .outline-toggle, .outline-toggle-spacer { flex: 0 0 var(--sc-touch-target-min); width: var(--sc-touch-target-min); min-height: var(--sc-touch-target-min); }

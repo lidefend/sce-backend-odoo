@@ -2,6 +2,7 @@
   <div class="global-message">
     <ScButton
       class="global-message__trigger sc-btn sc-btn-sm"
+      appearance="toolbar-menu-toggle"
       size="small"
       title="消息"
       aria-label="消息"
@@ -40,6 +41,7 @@
               class="global-message__conversation sc-list-item"
               type="button"
               variant="ghost"
+              appearance="menu-item"
               :class="{ active: conversation.key === activeConversationKey && !composeMode }"
               @click="selectConversation(conversation)"
             >
@@ -97,6 +99,7 @@
                 class="sc-list-item"
                 type="button"
                 variant="ghost"
+                appearance="menu-item"
                 :disabled="isSelected(user.id)"
                 @click="selectUser(user)"
               >
@@ -444,9 +447,6 @@ onUnmounted(() => {
   min-width: 32px;
   padding: 0;
   justify-content: center;
-  border-color: transparent;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
 }
 
 .global-message__label {
@@ -463,12 +463,6 @@ onUnmounted(() => {
   top: -3px;
   right: -3px;
   margin: 0;
-}
-
-.global-message__trigger.active {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
 }
 
 .global-message__badge {
@@ -533,12 +527,6 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
-.global-message__conversation.active {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
-}
-
 .global-message__conversation-list {
   min-height: 0;
   overflow: auto;
@@ -553,11 +541,8 @@ onUnmounted(() => {
   display: grid;
   gap: 4px;
   width: 100%;
-  border: none;
-  border-left: 3px solid transparent;
   padding: 8px 9px 8px 8px;
   text-align: left;
-  cursor: pointer;
 }
 
 .global-message__conversation-title {
@@ -568,7 +553,6 @@ onUnmounted(() => {
 }
 
 .global-message__conversation small {
-  color: var(--sc-app-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -611,8 +595,8 @@ onUnmounted(() => {
   color: var(--sc-app-text-secondary);
 }
 
-.global-message__field input,
-.global-message__composer textarea {
+.global-message__field :deep(.sc-input),
+.global-message__composer :deep(.sc-textarea) {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
@@ -630,25 +614,6 @@ onUnmounted(() => {
   gap: 0;
   max-height: 84px;
   overflow: auto;
-}
-
-.global-message__options button {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  border: none;
-  padding: 7px 8px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.global-message__options button:hover:not(:disabled) {
-  background: var(--sc-app-hover-bg);
-}
-
-.global-message__options button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 .global-message__options small {
@@ -702,7 +667,7 @@ onUnmounted(() => {
   border-top: 1px solid var(--sc-app-border);
 }
 
-.global-message__composer textarea {
+.global-message__composer :deep(.sc-textarea) {
   resize: vertical;
   min-height: 56px;
 }
@@ -723,7 +688,6 @@ onUnmounted(() => {
   :deep(.global-message__panel) {
     width: 100vw;
     height: 100dvh;
-    border-radius: 0;
   }
 
   .global-message__workspace {

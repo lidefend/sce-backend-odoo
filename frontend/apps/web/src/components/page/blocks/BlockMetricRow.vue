@@ -6,12 +6,13 @@
 
     <div v-if="metrics.length" class="metric-grid" :data-metric-count="metrics.length">
       <component
-        :is="item.actionKey ? 'button' : 'article'"
+        :is="item.actionKey ? ScButton : 'article'"
         v-for="item in metrics"
         :key="item.key"
         class="metric-item"
         :class="`tone-${item.tone || 'neutral'}`"
         :type="item.actionKey ? 'button' : undefined"
+        :variant="item.actionKey ? 'ghost' : undefined"
         :data-metric-key="item.key"
         :data-metric-tone="item.tone"
         :data-interactive="Boolean(item.actionKey)"
@@ -30,6 +31,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import ScButton from '../../design-system/ScButton.vue';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const METRIC_TONES = new Set(['neutral', 'success', 'warning', 'danger', 'info']);
@@ -129,12 +131,17 @@ function emitAction(item: MetricItem) {
   font: inherit;
   overflow: hidden;
 }
-button.metric-item { cursor: pointer; }
-button.metric-item:hover {
+.metric-item[data-interactive='true'] { cursor: pointer; }
+.metric-item[data-interactive='true'] :deep(.sc-btn__content) {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+.metric-item[data-interactive='true']:hover {
   border-color: var(--sc-semantic-surface-interactive);
   box-shadow: 0 10px 20px var(--sc-app-focus-ring);
 }
-button.metric-item:focus-visible { outline: 3px solid var(--sc-app-focus-ring); outline-offset: 2px; }
+.metric-item[data-interactive='true']:focus-visible { outline: 3px solid var(--sc-app-focus-ring); outline-offset: 2px; }
 .metric-label {
   margin: 0;
   font-size: 13px;

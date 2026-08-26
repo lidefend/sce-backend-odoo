@@ -321,20 +321,22 @@ try {
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     await loginPage(page);
     if (viewport.name === 'desktop') {
-      const companyTrigger = page.getByRole('button', { name: '公司空间：切换公司' });
-      await companyTrigger.click();
-      const companySearchRoot = page.locator('[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"]');
-      const companySearch = page.locator('input[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"], [data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"] input');
-      await companySearch.waitFor({ state: 'visible', timeout: 15000 });
-      await companySearch.fill('__primitive_adapter_probe__');
+      const revealSidebar = page.getByRole('button', { name: '显示侧边栏', exact: true });
+      if (await revealSidebar.count() === 1) {
+        await revealSidebar.click();
+        await page.locator('#primary-sidebar').waitFor({ state: 'visible', timeout: 15000 });
+      }
+      const navigationSearchRoot = page.locator('#primary-sidebar [data-semantic-component="ScInput"][data-semantic-layer="primitive"]').filter({ visible: true }).first();
+      const navigationSearch = navigationSearchRoot.locator('input').first();
+      await navigationSearch.waitFor({ state: 'visible', timeout: 15000 });
+      await navigationSearch.fill('__primitive_adapter_probe__');
       const inputContract = {
-        rootCount: await companySearchRoot.count(),
-        inputCount: await companySearch.count(),
-        value: await companySearch.inputValue(),
+        rootCount: await navigationSearchRoot.count(),
+        inputCount: await navigationSearch.count(),
+        value: await navigationSearch.inputValue(),
       };
       report.routes.push({ viewport: viewport.name, primitiveInputContract: inputContract });
-      await companySearch.fill('');
-      await page.getByRole('button', { name: '业务导航' }).click();
+      await navigationSearch.fill('');
     }
     for (const target of routes) {
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
@@ -389,10 +391,51 @@ try {
             missingDriverCount: nodes.filter((node) => !node.matches(driverSelector) && !node.querySelector(driverSelector)).length,
           };
         });
+        const overlayResidues = [...document.querySelectorAll('.t-drawer, .t-drawer__mask, .t-dialog, .t-dialog__mask, [data-overlay-kind]')]
+          .filter((node) => {
+            const nodeStyle = getComputedStyle(node);
+            const rect = node.getBoundingClientRect();
+            return nodeStyle.display !== 'none' && nodeStyle.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+          })
+          .map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+              tag: node.tagName,
+              className: typeof node.className === 'string' ? node.className : '',
+              overlayKind: node.getAttribute('data-overlay-kind') || '',
+              state: node.getAttribute('data-state') || '',
+              ariaHidden: node.getAttribute('aria-hidden'),
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+            };
+          });
+        const publishedApps = [...document.querySelectorAll('.published-apps__list .published-app')]
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
+          .map((node) => {
+            const content = node.querySelector('.sc-btn__content');
+            const mark = node.querySelector('.published-app__mark');
+            const label = node.querySelector('.published-app__label');
+            const contentStyle = content ? getComputedStyle(content) : null;
+            const markRect = mark?.getBoundingClientRect();
+            const labelRect = label?.getBoundingClientRect();
+            return {
+              label: label?.textContent?.trim() || '',
+              contentDisplay: contentStyle?.display || '',
+              contentColumns: contentStyle?.gridTemplateColumns || '',
+              labelWidth: Math.round(labelRect?.width || 0),
+              ordered: Boolean(markRect && labelRect && labelRect.left >= markRect.right),
+            };
+          });
+        const navigationSearch = document.querySelector('.product-side-navigation__search [data-semantic-component="ScInput"]');
+        const navigationSearchPrefix = navigationSearch?.querySelector('.t-input__prefix-icon');
+        const navigationSearchInput = navigationSearch?.querySelector('input');
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
-          primaryActions: document.querySelectorAll('[data-primary-action]:not([hidden]), .sc-btn-primary:not([hidden])').length,
+          primaryActions: [...document.querySelectorAll('[data-product-primary-action]')]
+            .filter((node) => node instanceof HTMLElement && node.offsetParent !== null).length,
+          presentationModes: [...new Set([...document.querySelectorAll('[data-product-page-pattern][data-presentation-mode]')].map((node) => node.getAttribute('data-presentation-mode')).filter(Boolean))],
+          nativeStructureCount: document.querySelectorAll('[data-native-contract-structure]').length,
+          nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] .t-tabs__nav-item').length,
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
@@ -400,6 +443,24 @@ try {
             drivers: primitiveDrivers,
             specializedInputCount: document.querySelectorAll('[data-semantic-component="ScInput"][data-primitive-driver="browser-specialized"]').length,
             pass: primitiveDrivers.every((entry) => entry.missingDriverCount === 0),
+          },
+          overlayResidueEvidence: {
+            residues: overlayResidues,
+            activeElement: document.activeElement instanceof HTMLElement ? {
+              tag: document.activeElement.tagName,
+              className: document.activeElement.className,
+              semantic: document.activeElement.getAttribute('data-semantic-component') || '',
+            } : null,
+            pass: overlayResidues.length === 0,
+          },
+          shellAdapterEvidence: {
+            publishedApps,
+            navigationSearchCount: navigationSearch ? 1 : 0,
+            navigationSearchPrefixCount: navigationSearchPrefix ? 1 : 0,
+            navigationSearchInputCount: navigationSearchInput ? 1 : 0,
+            pass: publishedApps.length > 0
+              && publishedApps.every((entry) => entry.label && entry.contentDisplay === 'grid' && entry.contentColumns !== 'none' && entry.labelWidth >= 32 && entry.ordered)
+              && Boolean(navigationSearch && navigationSearchPrefix && navigationSearchInput),
           },
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
             .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
@@ -414,6 +475,45 @@ try {
         };
       });
       const initialFinalUrl = page.url();
+      let sidebarScrollEvidence = null;
+      if (target.exerciseSidebarScroll === true && viewport.name === 'desktop') {
+        const originalViewport = page.viewportSize();
+        await page.setViewportSize({ width: originalViewport?.width || 1440, height: Math.min(originalViewport?.height || 960, 600) });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        sidebarScrollEvidence = await page.evaluate(() => {
+          const sidebar = document.querySelector('#primary-sidebar');
+          const owner = document.querySelector('#primary-sidebar .product-side-navigation__tree');
+          if (!(sidebar instanceof HTMLElement) || !(owner instanceof HTMLElement)) return { pass: false, reason: 'scroll_owner_missing' };
+          const sidebarStyle = getComputedStyle(sidebar);
+          const ownerStyle = getComputedStyle(owner);
+          const menuOwner = owner.querySelector('.t-menu--scroll');
+          const scrollOwner = menuOwner instanceof HTMLElement ? menuOwner : owner;
+          const scrollOwnerStyle = getComputedStyle(scrollOwner);
+          scrollOwner.scrollTop = scrollOwner.scrollHeight;
+          const observedScrollTop = scrollOwner.scrollTop;
+          scrollOwner.scrollTop = 0;
+          return {
+            viewportHeight: window.innerHeight,
+            sidebarHeight: sidebar.clientHeight,
+            sidebarDisplay: sidebarStyle.display,
+            ownerClientHeight: owner.clientHeight,
+            ownerScrollHeight: owner.scrollHeight,
+            ownerScrollTop: owner.scrollTop,
+            ownerOverflowY: ownerStyle.overflowY,
+            scrollOwnerClass: scrollOwner.className,
+            scrollOwnerClientHeight: scrollOwner.clientHeight,
+            scrollOwnerScrollHeight: scrollOwner.scrollHeight,
+            scrollOwnerScrollTop: observedScrollTop,
+            scrollOwnerOverflowY: scrollOwnerStyle.overflowY,
+            pass: sidebar.clientHeight <= window.innerHeight
+              && sidebarStyle.display === 'grid'
+              && ownerStyle.overflowY === 'auto'
+              && ['auto', 'scroll'].includes(scrollOwnerStyle.overflowY)
+              && scrollOwner.scrollHeight > scrollOwner.clientHeight
+              && observedScrollTop > 0,
+          };
+        });
+      }
       let nativeActionPresentationEvidence = null;
       if (target.exerciseNativeActionOverflow === true) {
         const smartActions = page.locator('[data-semantic-component="NativeSmartAction"]:visible');
@@ -849,30 +949,37 @@ try {
         const rowSelection = viewport.name === 'mobile'
           ? page.locator('.mobile-record-list [data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]').first()
           : page.locator('.desktop-record-table tbody [data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]').first();
-        const rowCheckbox = rowSelection.locator('input[type="checkbox"]');
-        await rowSelection.click();
-        if (!(await rowCheckbox.isChecked())) throw new Error('collection row selection control did not settle checked');
         const batchBar = page.locator('[data-semantic-component="CollectionBatchActionBar"]');
-        await batchBar.waitFor({ state: 'visible', timeout: 15000 });
-        const actionCount = Number(await batchBar.getAttribute('data-action-count') || 0);
-        const directKeys = String(await batchBar.getAttribute('data-direct-action-keys') || '').split(',').filter(Boolean);
-        const overflowKeys = String(await batchBar.getAttribute('data-overflow-action-keys') || '').split(',').filter(Boolean);
-        const projectedKeys = await batchBar.locator('button[data-action-key]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-action-key') || '').filter(Boolean));
+        const selectionAvailable = await rowSelection.count() === 1;
+        let actionCount = 0;
+        let directKeys = [];
+        let overflowKeys = [];
+        let projectedKeys = [];
         let batchFocusContained = true;
         let batchFocusRestored = true;
-        if (overflowKeys.length) {
-          const batchToggle = batchBar.getByRole('button', { name: /更多批量操作/ });
-          await batchToggle.click();
-          const batchLayer = batchBar.locator('[data-collection-batch-layer="overflow"]');
-          await batchLayer.waitFor({ state: 'visible', timeout: 15000 });
-          batchFocusContained = await batchLayer.evaluate((node) => node.contains(document.activeElement));
-          await page.keyboard.press('Escape');
-          await batchLayer.waitFor({ state: 'hidden', timeout: 15000 });
-          batchFocusRestored = await batchToggle.evaluate((node) => node === document.activeElement);
+        if (selectionAvailable) {
+          const rowCheckbox = rowSelection.locator('input[type="checkbox"]');
+          await rowSelection.click();
+          if (!(await rowCheckbox.isChecked())) throw new Error('collection row selection control did not settle checked');
+          await batchBar.waitFor({ state: 'visible', timeout: 15000 });
+          actionCount = Number(await batchBar.getAttribute('data-action-count') || 0);
+          directKeys = String(await batchBar.getAttribute('data-direct-action-keys') || '').split(',').filter(Boolean);
+          overflowKeys = String(await batchBar.getAttribute('data-overflow-action-keys') || '').split(',').filter(Boolean);
+          projectedKeys = await batchBar.locator('button[data-action-key]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-action-key') || '').filter(Boolean));
+          if (overflowKeys.length) {
+            const batchToggle = batchBar.getByRole('button', { name: /更多批量操作/ });
+            await batchToggle.click();
+            const batchLayer = batchBar.locator('[data-collection-batch-layer="overflow"]');
+            await batchLayer.waitFor({ state: 'visible', timeout: 15000 });
+            batchFocusContained = await batchLayer.evaluate((node) => node.contains(document.activeElement));
+            await page.keyboard.press('Escape');
+            await batchLayer.waitFor({ state: 'hidden', timeout: 15000 });
+            batchFocusRestored = await batchToggle.evaluate((node) => node === document.activeElement);
+          }
         }
         const uniqueKeys = [...new Set([...directKeys, ...overflowKeys])];
         collectionToolbarEvidence = {
-          actionCount, directKeys, overflowKeys, projectedKeys,
+          selectionAvailable, actionCount, directKeys, overflowKeys, projectedKeys,
           primitiveOwners, customFilterPrimitiveEvidence,
           searchFocusContained, searchFocusRestored, batchFocusContained, batchFocusRestored,
           pass: searchFocusContained && searchFocusRestored && batchFocusContained && batchFocusRestored
@@ -892,7 +999,7 @@ try {
         const paginationMode = String(await footer.getAttribute('data-pagination-mode') || '');
         const columnHeaders = page.locator('[data-semantic-component="CollectionColumnHeaderControl"]');
         const columnHeaderCount = await columnHeaders.count();
-        const invalidColumnRoots = await columnHeaders.evaluateAll((nodes) => nodes.filter((node) => node.tagName !== 'TH').length);
+        const invalidColumnRoots = await columnHeaders.evaluateAll((nodes) => nodes.filter((node) => node.closest('th') === null).length);
         const missingDragLabels = await columnHeaders.locator('.column-drag-handle:not([aria-label])').count();
         const missingResizeLabels = await columnHeaders.locator('.column-resize-handle:not([aria-label])').count();
         const groupingToolbarCount = await page.locator('[data-semantic-component="CollectionGroupingToolbar"]').count();
@@ -950,7 +1057,7 @@ try {
           return { points, resizeHandles };
         })
         : null;
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, verticalLineEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, sidebarScrollEvidence, verticalLineEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -965,6 +1072,28 @@ for (const item of report.routes) {
   if (item.path && item.primitiveDriverEvidence && !item.primitiveDriverEvidence.pass) {
     failures.push({ name: item.name, primitiveDriverEvidence: item.primitiveDriverEvidence });
   }
+  if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
+    failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
+  }
+  if (item.path && item.viewport === 'desktop' && item.shellAdapterEvidence && routes.find((target) => target.name === item.name)?.exerciseShellAdapterProjection === true && !item.shellAdapterEvidence.pass) {
+    failures.push({ name: item.name, shellAdapterEvidence: item.shellAdapterEvidence });
+  }
+  if (item.path && item.expectedPageHeaders !== null && item.pageHeaders !== item.expectedPageHeaders) {
+    failures.push({ name: item.name, expectedPageHeaders: item.expectedPageHeaders, actualPageHeaders: item.pageHeaders });
+  }
+  if (item.path && item.expectedPrimaryActions !== null && item.primaryActions !== item.expectedPrimaryActions) {
+    failures.push({ name: item.name, expectedPrimaryActions: item.expectedPrimaryActions, actualPrimaryActions: item.primaryActions });
+  }
+  if (item.path && item.expectedPresentationMode !== null && !item.presentationModes.includes(item.expectedPresentationMode)) {
+    failures.push({ name: item.name, expectedPresentationMode: item.expectedPresentationMode, actualPresentationModes: item.presentationModes });
+  }
+  if (item.path && item.expectedNativeStructureCount !== null && item.nativeStructureCount !== item.expectedNativeStructureCount) {
+    failures.push({ name: item.name, expectedNativeStructureCount: item.expectedNativeStructureCount, actualNativeStructureCount: item.nativeStructureCount });
+  }
+  if (item.path && item.expectedNativeNotebookPageCount !== null && item.nativeNotebookPageCount !== item.expectedNativeNotebookPageCount) {
+    failures.push({ name: item.name, expectedNativeNotebookPageCount: item.expectedNativeNotebookPageCount, actualNativeNotebookPageCount: item.nativeNotebookPageCount });
+  }
+  if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
 }
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });

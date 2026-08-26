@@ -1,0 +1,2 @@
+<template><TDesignSkeleton v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScSkeleton') }" :loading="loading" :animation="animation" :row-col="rowCol"><slot /></TDesignSkeleton></template>
+<script setup lang="ts">import { TDesignSkeleton } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); withDefaults(defineProps<{loading?:boolean; animation?:'gradient'|'flashed'|'none'; rowCol?:unknown[]}>(),{loading:true,animation:'gradient',rowCol:()=>[]});</script>

@@ -33,14 +33,11 @@ export function useNativeAttachmentRuntime(params: {
     pendingAttachments.value = [];
   }
 
-  async function onAttachmentSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+  async function onAttachmentSelected(file: File | null) {
     if (!file || !params.model() || uploading.value) return;
     error.value = '';
     if (file.size > params.maxBytes()) {
       error.value = params.resolveLabel('size_exceeded', '文件过大');
-      input.value = '';
       return;
     }
     const recordId = params.recordId();
@@ -54,7 +51,6 @@ export function useNativeAttachmentRuntime(params: {
           file,
         },
       ];
-      input.value = '';
       return;
     }
     uploading.value = true;
@@ -72,7 +68,6 @@ export function useNativeAttachmentRuntime(params: {
       error.value = err instanceof Error ? err.message : params.resolveLabel('upload_failed', '附件上传失败');
     } finally {
       uploading.value = false;
-      input.value = '';
     }
   }
 

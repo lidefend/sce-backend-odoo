@@ -66,6 +66,7 @@
             <ScIconButton
               v-if="field.favoriteToggle"
               class="field-favorite-toggle"
+              appearance="favorite-toggle"
               :class="{ 'field-favorite-toggle--active': field.favoriteToggle.active }"
               :aria-pressed="field.favoriteToggle.active"
               :label="field.favoriteToggle.label"
@@ -157,6 +158,7 @@
                     <ScRelationField
                       :id="fieldControlId(field)"
                       class="input"
+                      appearance="form-field"
                       :required="field.required"
                       :invalid="field.invalid"
                       :described-by="fieldDescribedBy(field)"
@@ -181,6 +183,7 @@
                           :key="`${field.name}-option-${option.value}`"
                           type="button"
                           class="many2one-option"
+                          appearance="menu-item"
                           size="small"
                           variant="ghost"
                           :class="{ 'is-active': many2oneActiveIndex[field.name] === optionIndex }"
@@ -197,6 +200,7 @@
                           v-if="field.many2oneOpenToken"
                           type="button"
                           class="many2one-action many2one-action--record"
+                          appearance="menu-item"
                           size="small"
                           variant="ghost"
                           @mousedown.prevent
@@ -208,6 +212,7 @@
                           v-if="field.many2oneSearchToken"
                           type="button"
                           class="many2one-action"
+                          appearance="menu-item"
                           size="small"
                           variant="ghost"
                           @mousedown.prevent
@@ -219,6 +224,7 @@
                           v-if="['page', 'dialog'].includes(field.relationCreateMode || '') && field.many2oneCreateToken"
                           type="button"
                           class="many2one-action"
+                          appearance="menu-item"
                           size="small"
                           variant="ghost"
                           @mousedown.prevent
@@ -230,6 +236,7 @@
                           v-if="showMany2oneInlineCreate(field)"
                           type="button"
                           class="many2one-action"
+                          appearance="menu-item"
                           size="small"
                           variant="ghost"
                           @mousedown.prevent
@@ -247,6 +254,7 @@
                     :id="fieldControlId(field)"
                     :model-value="String(field.inputValue ?? '')"
                     class="input"
+                    appearance="form-field"
                     :aria-label="field.label"
                     :required="field.required"
                     :invalid="field.invalid"
@@ -259,6 +267,7 @@
                     v-if="field.dateRangeEndField"
                     :model-value="String(field.dateRangeEndInputValue ?? '')"
                     class="input"
+                    appearance="form-field"
                     :aria-label="`${field.label}结束日期`"
                     :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                     @update:model-value="emitDateRangeEndChange(field, $event)"
@@ -269,6 +278,7 @@
                     :id="fieldControlId(field)"
                     :model-value="String(field.inputValue ?? '')"
                     class="input"
+                    appearance="form-field"
                     :required="field.required"
                     :status="field.invalid ? 'error' : 'default'"
                     :described-by="fieldDescribedBy(field)"
@@ -285,6 +295,7 @@
                   :id="fieldControlId(field)"
                   :model-value="String(field.inputValue ?? '')"
                   class="input"
+                  appearance="form-field"
                   :required="field.required"
                   :status="field.invalid ? 'error' : 'default'"
                   :described-by="fieldDescribedBy(field)"
@@ -683,9 +694,7 @@ function emitFieldChange(field: FormSectionFieldSchema, value: string | number |
   emit('field-change', toContractFormDriverFieldChange(field, value));
 }
 
-function emitBinaryFieldChange(field: FormSectionFieldSchema, event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
+function emitBinaryFieldChange(field: FormSectionFieldSchema, file: File | null) {
   if (!file) {
     emitFieldChange(field, null);
     return;
@@ -968,10 +977,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   color: var(--sc-app-danger-text);
 }
 
-.field :is(input, select, textarea)[aria-invalid='true'] {
-  border-color: var(--sc-app-danger-border);
-}
-
 .template-form-section-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1059,8 +1064,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   grid-column: 1 / -1;
 }
 
-.field--large .input,
-.field--large textarea.input {
+.field--large .input {
   min-height: 92px;
 }
 
@@ -1106,35 +1110,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-width: 96px;
   max-width: 220px;
   font-weight: 600;
-}
-
-.field-favorite-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--sc-semantic-text-muted);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.field-favorite-toggle:hover:not(:disabled) {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-secondary);
-}
-
-.field-favorite-toggle--active {
-  color: var(--sc-app-warning-text);
-}
-
-.field-favorite-toggle:disabled {
-  cursor: default;
-  opacity: 0.62;
 }
 
 .field-state {
@@ -1344,43 +1319,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   }
 }
 
-.input {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-input-radius);
-  padding: 7px 10px;
-  height: 36px;
-  min-height: 36px;
-  width: 100%;
-  min-width: 0;
-  font-size: 14px;
-  line-height: 1.35;
-  color: var(--sc-app-text-primary);
-  background: var(--sc-app-input-bg);
-  box-sizing: border-box;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
-}
-
-.input::placeholder {
-  color: var(--sc-semantic-text-muted);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--sc-semantic-surface-interactive);
-  box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
-}
-
-.input:hover:not(:disabled):not(:focus) {
-  border-color: var(--sc-app-border-strong);
-}
-
-.input:disabled,
-.input[readonly] {
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-app-text-secondary);
-  cursor: not-allowed;
-}
-
 .field[data-field-type='integer'] .input,
 .field[data-field-type='float'] .input,
 .field[data-field-type='monetary'] .input,
@@ -1396,21 +1334,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .field[data-field-type='date'] :deep(.contract-readonly-value),
 .field[data-field-type='datetime'] :deep(.contract-readonly-value) {
   font-variant-numeric: tabular-nums;
-}
-
-textarea.input {
-  min-height: 104px;
-  height: auto;
-  resize: vertical;
-}
-
-select.input {
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--sc-app-text-secondary) 50%), linear-gradient(135deg, var(--sc-app-text-secondary) 50%, transparent 50%);
-  background-position: calc(100% - 16px) calc(50% - 2px), calc(100% - 11px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  padding-right: 30px;
 }
 
 .native-radio-group {
@@ -1461,22 +1384,6 @@ select.input {
   display: grid;
 }
 
-.many2one-option {
-  min-height: 32px;
-  border: 0;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  padding: 6px 10px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.many2one-option:hover,
-.many2one-option.is-active {
-  background: var(--sc-app-info-bg);
-}
-
 .many2one-actions {
   display: grid;
   min-width: 0;
@@ -1486,7 +1393,6 @@ select.input {
 .many2one-action {
   width: 100%;
   justify-content: flex-start;
-  border-radius: 0;
   max-width: 100%;
 }
 

@@ -23,17 +23,17 @@ class CollectionSelectionControlGuardTest(unittest.TestCase):
         altered = self.list_source.replace(':columns="collectionTableColumns(group.key)"', ':columns="legacyColumns"', 1)
         self.assertTrue(any("exactly two" in item for item in validate(altered, self.control_source, self.css_source)))
 
-    def test_missing_tdesign_multiple_selection_fails(self):
-        altered = self.list_source.replace("type: 'multiple'", "type: 'single'", 1)
-        self.assertTrue(any("type: 'multiple'" in item for item in validate(altered, self.control_source, self.css_source)))
+    def test_missing_professional_header_selection_fails(self):
+        altered = self.list_source.replace('title: () => h(CollectionSelectionControl', 'title: () => h(ScCheckbox', 1)
+        self.assertTrue(any("header and one row" in item or "title:" in item for item in validate(altered, self.control_source, self.css_source)))
 
-    def test_missing_selected_key_authority_fails(self):
-        altered = self.list_source.replace(':selected-row-keys="selectedIds || []"', ':selected-row-keys="[]"', 1)
-        self.assertTrue(any("selected-row-keys" in item for item in validate(altered, self.control_source, self.css_source)))
+    def test_missing_page_selection_authority_fails(self):
+        altered = self.list_source.replace('props.onToggleSelectionAll?.(selectionIds, checked)', 'noop()', 1)
+        self.assertTrue(any("onToggleSelectionAll" in item for item in validate(altered, self.control_source, self.css_source)))
 
-    def test_missing_selection_event_adapter_fails(self):
-        altered = self.list_source.replace('@select-change="onTableSelectionChange($event, records)"', '@select-change="noop"', 1)
-        self.assertTrue(any("onTableSelectionChange" in item for item in validate(altered, self.control_source, self.css_source)))
+    def test_missing_row_selection_authority_fails(self):
+        altered = self.list_source.replace('onRowCheckboxChange(row, checked)', 'noop()', 1)
+        self.assertTrue(any("onRowCheckboxChange" in item for item in validate(altered, self.control_source, self.css_source)))
 
     def test_missing_mobile_touch_adapter_fails(self):
         altered = self.mobile_row_source.replace("<CollectionSelectionControl", "<LegacySelectionControl", 1)

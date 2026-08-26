@@ -25,6 +25,7 @@
             :key="`${field.name}-tag-${option.id}`"
             type="button"
             class="relation-tag"
+            appearance="relation-tag"
             variant="ghost"
             size="small"
             :style="tagColorStyle(option.color)"
@@ -38,6 +39,7 @@
         </div>
         <ScInput
           class="relation-tags-input"
+          appearance="relation-tag-entry"
           type="text"
           :model-value="adapter.relationKeyword(field.name)"
           :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
@@ -50,6 +52,7 @@
             :key="`${field.name}-tag-option-${option.id}`"
             type="button"
             class="relation-tag-option"
+            appearance="menu-item"
             variant="ghost"
             size="small"
             @mousedown.prevent
@@ -461,10 +464,6 @@ function tagColorStyle(color: unknown) {
 .relation-tags-input {
   flex: 1 1 140px;
   min-width: 120px;
-  border: 0;
-  outline: none;
-  color: var(--sc-app-text-primary);
-  font-size: 14px;
   line-height: 1.4;
 }
 
@@ -487,7 +486,6 @@ function tagColorStyle(color: unknown) {
   display: grid;
 }
 
-.relation-tag-option,
 .relation-tag-hint {
   display: flex;
   align-items: center;
@@ -502,10 +500,6 @@ function tagColorStyle(color: unknown) {
   cursor: pointer;
   font-size: 12px;
   line-height: 1.25;
-}
-
-.relation-tag-option:hover {
-  background: var(--sc-app-hover-bg);
 }
 
 .relation-tag-actions {
@@ -580,19 +574,7 @@ function tagColorStyle(color: unknown) {
   align-items: center;
   gap: 5px;
   max-width: 100%;
-  min-height: 24px;
-  border: 0;
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: var(--tag-bg, var(--sc-app-muted-bg));
-  color: var(--sc-app-text-primary);
-  font-size: 12px;
   line-height: 1.35;
-  cursor: pointer;
-}
-
-.relation-tag:hover {
-  background: var(--sc-app-info-bg);
 }
 
 .meta {

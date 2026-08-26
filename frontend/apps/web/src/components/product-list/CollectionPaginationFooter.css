@@ -10,7 +10,7 @@
 .pagination-input--size { width: 72px; padding-right: 30px; }
 .pagination-size-select { position: absolute; inset: 1px 1px 1px auto; width: 28px; min-height: 30px; border-left: 1px solid var(--sc-app-info-border); border-radius: 0 5px 5px 0; font-size: 0; }
 .pagination-size-select option { font-size: 12px; color: var(--sc-app-text-primary); }
-.pagination-btn:focus-visible, .pagination-input:focus-visible, .pagination-size-select:focus-visible { outline: 2px solid var(--sc-semantic-focus-ring); outline-offset: 2px; }
+.pagination-input:focus-visible, .pagination-size-select:focus-visible { outline: 2px solid var(--sc-semantic-focus-ring); outline-offset: 2px; }
 @media (max-width: 900px) { .pagination-actions { flex-wrap: wrap; justify-content: flex-start; white-space: normal; } }
 @media (max-width: 760px) { .pagination-footer { padding: var(--sc-space-xs); } .pagination-actions { width: auto; max-width: 100%; justify-content: flex-end; gap: var(--sc-space-xs); } .pagination-btn { min-height: 44px; } }
 @media (max-width: 520px) { .pagination-footer, .pagination-actions { justify-content: flex-start; } .pagination-actions { width: 100%; } }

@@ -83,6 +83,8 @@
         :page-limit-value="pageLimitInput"
         :list-limit="listLimit"
         :total-pages="totalPages"
+        :current-page="currentPage"
+        :total-records="listRecordTotal"
         :page-limit-options="pageLimitOptions"
         :labels="collectionPaginationLabels"
       />
@@ -204,12 +206,11 @@
             />
             </template>
           </CollectionGroupHeader>
-          <ScTable v-if="!isGroupCollapsed(group.key)" class="group-table"
+          <ScTable v-if="!isGroupCollapsed(group.key)" class="group-table" appearance="collection"
             :class="{ 'has-selection-column': showSelectionColumn }" :label="group.label"
             :data="group.sampleRows" :columns="collectionTableColumns(group.key)"
             :foot-data="collectionFootData(groupAggregateFooterRows(group))" row-key="id" size="small"
-            :table-content-width="tableContentWidth" :selected-row-keys="selectedIds || []"
-            @select-change="onTableSelectionChange($event, group.sampleRows)"
+            :table-content-width="tableContentWidth"
             @row-click="handleTableRowClick" />
         </article>
       </section>
@@ -248,12 +249,11 @@
         :columns="aggregateFooterColumns"
         :rows="flatAggregateFooterRows"
       />
-      <ScTable v-if="!showGroupedRows" class="flat-table desktop-record-table"
+      <ScTable v-if="!showGroupedRows" class="flat-table desktop-record-table" appearance="collection"
         :class="{ 'has-selection-column': showSelectionColumn }" :label="title"
         :data="records" :columns="collectionTableColumns()"
         :foot-data="collectionFootData(flatAggregateFooterRows)" row-key="id" size="small"
-        :table-content-width="tableContentWidth" :selected-row-keys="selectedIds || []"
-        @select-change="onTableSelectionChange($event, records)"
+        :table-content-width="tableContentWidth"
         @row-click="handleTableRowClick" />
 
       <CollectionPaginationFooter
@@ -267,6 +267,8 @@
         :page-limit-value="pageLimitInput"
         :list-limit="listLimit"
         :total-pages="totalPages"
+        :current-page="currentPage"
+        :total-records="listRecordTotal"
         :page-limit-options="pageLimitOptions"
         :labels="collectionPaginationLabels"
         @previous="showGroupedWindowPagination ? onGroupWindowPrev?.() : pagePrev()"
@@ -276,10 +278,12 @@
         @page-limit-input="onPageLimitInput"
         @page-limit-apply="applyPageLimit"
         @page-limit-select="onPageLimitSelectChange"
+        @page-select="selectPage"
       />
     </section>
 
     </template>
+    <ScInlineState v-if="attachmentPreviewError" state="error" :label="attachmentPreviewError" />
     <AttachmentViewer ref="attachmentViewerRef" />
   </section>
 </template>
@@ -287,6 +291,7 @@
 import { computed, h, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
+import ScInlineState from '../components/design-system/ScInlineState.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
 import CollectionBatchActionBar from '../components/product-list/CollectionBatchActionBar.vue';
 import CollectionAggregateFooter, { type CollectionAggregateRow } from '../components/product-list/CollectionAggregateFooter.vue';
@@ -297,6 +302,7 @@ import CollectionMobileRecordRow, { type CollectionMobileRecordFact } from '../c
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import CollectionRowCell, { type CollectionRowCellKind } from '../components/product-list/CollectionRowCell.vue';
+import CollectionSelectionControl from '../components/product-list/CollectionSelectionControl.vue';
 import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
@@ -470,6 +476,7 @@ const emit = defineEmits<{
 }>();
 const slots = useSlots();
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
+const attachmentPreviewError = ref('');
 function uiLabel(key: string, fallback: string, vars: Record<string, string | number> = {}) {
   const candidate = String(props.uiLabels?.[key] || '').trim();
   const template = candidate || fallback;
@@ -693,6 +700,7 @@ function attachmentLinks(value: unknown) {
   return parseAttachmentReferenceLinks(value);
 }
 async function previewAttachmentLink(link: { name: string; url: string }, row: Record<string, unknown>) {
+  attachmentPreviewError.value = '';
   try {
     const context = {
       model: props.model,
@@ -705,7 +713,7 @@ async function previewAttachmentLink(link: { name: string; url: string }, row: R
     }
     openExternalAttachmentUrl(link.url);
   } catch (err) {
-    window.alert(err instanceof Error ? err.message : '附件打开失败');
+    attachmentPreviewError.value = err instanceof Error ? err.message : '附件打开失败';
   }
 }
 function isAttachmentCountCell(field: string, value: unknown) {
@@ -714,6 +722,7 @@ function isAttachmentCountCell(field: string, value: unknown) {
   return label === '附件' && /^附件\([1-9]\d*\)$/.test(text);
 }
 async function previewRecordAttachmentCount(row: Record<string, unknown>, value: unknown) {
+  attachmentPreviewError.value = '';
   const text = String(normalizeCellRawValue(value) ?? '').trim() || '附件';
   try {
     await attachmentViewerRef.value?.open({
@@ -721,7 +730,7 @@ async function previewRecordAttachmentCount(row: Record<string, unknown>, value:
       res_id: Number(row.id || 0) || undefined,
     }, text);
   } catch (err) {
-    window.alert(err instanceof Error ? err.message : '附件打开失败');
+    attachmentPreviewError.value = err instanceof Error ? err.message : '附件打开失败';
   }
 }
 
@@ -1162,6 +1171,10 @@ function jumpPage() {
   pageJumpInput.value = String(target.page);
   emitPageOffset(target.offset);
 }
+function selectPage(page: number) {
+  const normalizedPage = Math.min(Math.max(Math.trunc(page), 1), totalPages.value);
+  emitPageOffset((normalizedPage - 1) * listLimit.value);
+}
 
 function applyPageLimitValue(raw: number) {
   const normalized = resolveCollectionPageLimit(raw, listLimit.value);
@@ -1489,7 +1502,6 @@ function collectionHeader(field: string) {
     dragging: draggingColumn.value === field,
     sortIcon: columnSortIcon(field),
     sortTitle: columnSortTitle(field),
-    ariaSort: columnAriaSort(field),
     dragLabel: uiLabel('column_drag_reorder', '拖动调整列顺序'),
     resizeLabel: uiLabel('column_resize', '调整列宽'),
     densityClass: columnDensityClass(field),
@@ -1515,14 +1527,29 @@ function collectionCell(row: Record<string, unknown>, field: string) {
 function collectionTableColumns(groupKey = '') {
   const columns: Array<Record<string, unknown>> = [];
   if (showSelectionColumn.value) {
+    const selectionRows = groupKey
+      ? (groupedRows.value.find((group) => group.key === groupKey)?.sampleRows || [])
+      : props.records;
+    const selectionIds = selectionRows.map(rowId).filter((id): id is number => Boolean(id));
+    const pageChecked = selectionIds.length > 0 && selectionIds.every((id) => selectedIdSet.value.has(id));
+    const pageIndeterminate = !pageChecked && selectionIds.some((id) => selectedIdSet.value.has(id));
     columns.push({
       colKey: 'row-select',
-      type: 'multiple',
       width: 40,
-      checkProps: ({ row }: { row: Record<string, unknown> }) => ({
+      title: () => h(CollectionSelectionControl, {
+        checked: pageChecked,
+        indeterminate: pageIndeterminate,
+        disabled: props.loading || selectionIds.length === 0,
+        label: uiLabel('select_page_records', '选择本页全部记录'),
+        scope: groupKey ? 'group' : 'page',
+        onChange: (checked: boolean) => props.onToggleSelectionAll?.(selectionIds, checked),
+      }),
+      cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => h(CollectionSelectionControl, {
+        checked: isSelected(row),
         disabled: props.loading || !rowId(row),
-        title: rowSelectionLabel(row),
-        'aria-label': rowSelectionLabel(row),
+        label: rowSelectionLabel(row),
+        scope: 'row',
+        onChange: (checked: boolean) => onRowCheckboxChange(row, checked),
       }),
     });
   }
@@ -1539,6 +1566,9 @@ function collectionTableColumns(groupKey = '') {
   displayedColumns.value.forEach((field) => columns.push({
     colKey: field,
     title: () => collectionHeader(field),
+    attrs: ({ type }: { type?: string }) => type === 'th'
+      ? { 'aria-sort': columnAriaSort(field) }
+      : {},
     width: resolvedColumnWidth(field),
     className: (_context: unknown) => columnDensityClass(field),
     cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => collectionCell(row, field),
@@ -1550,17 +1580,6 @@ function handleTableRowClick(context: unknown) {
   const row = (context as { row?: unknown }).row;
   const event = (context as { e?: unknown }).e;
   if (row && typeof row === 'object' && event instanceof MouseEvent) handleRowClick(row as Record<string, unknown>, event);
-}
-function onTableSelectionChange(keys: Array<string | number>, sourceRows: Array<Record<string, unknown>>) {
-  const sourceIds = sourceRows.map(rowId).filter((id): id is number => Boolean(id));
-  const next = new Set(keys.map(Number).filter(Number.isFinite));
-  const changed = sourceIds.filter((id) => next.has(id) !== selectedIdSet.value.has(id));
-  if (!changed.length) return;
-  if (changed.length > 1 && props.onToggleSelectionAll) {
-    props.onToggleSelectionAll(sourceIds, sourceIds.every((id) => next.has(id)));
-    return;
-  }
-  changed.forEach((id) => props.onToggleSelection?.(id, next.has(id)));
 }
 function firstSortClause(value: string) {
   return String(value || '').split(',')[0]?.trim() || '';

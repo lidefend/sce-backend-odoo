@@ -1,92 +1,63 @@
 <template>
-  <div class="sc-file-field" :class="{ 'is-invalid': invalid }">
-    <input
-      :id="id"
-      ref="inputRef"
-      class="sc-file-field__native"
-      type="file"
-      :accept="accept || undefined"
-      :disabled="disabled"
-      :aria-required="required || undefined"
-      :aria-invalid="invalid || undefined"
-      :aria-describedby="describedBy"
-      @change="handleChange"
-    />
-    <ScButton class="sc-btn-sm" variant="secondary" type="button" :disabled="disabled" @click="inputRef?.click()">
-      {{ chooseLabel }}
-    </ScButton>
-    <span class="sc-file-field__name" :title="selectedName || emptyLabel">{{ selectedName || emptyLabel }}</span>
-  </div>
+  <TDesignUpload
+    v-bind="semanticPrimitiveIdentity('ScUpload')"
+    class="sc-file-field"
+    theme="file-input"
+    :accept="accept || undefined"
+    :disabled="disabled"
+    :auto-upload="false"
+    :multiple="false"
+    :max="1"
+    :files="files"
+    :aria-required="required || undefined"
+    :aria-invalid="invalid || undefined"
+    :aria-describedby="describedBy"
+    :data-field-id="id"
+    @select-change="handleSelectChange"
+    @remove="clearSelection"
+  >
+    <template #trigger>
+      <ScButton variant="secondary" size="small" type="button" :disabled="disabled">{{ chooseLabel }}</ScButton>
+    </template>
+    <template #file-list-display>
+      <span class="sc-file-field__name" :title="selectedName || emptyLabel">{{ selectedName || emptyLabel }}</span>
+    </template>
+  </TDesignUpload>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import ScButton from './ScButton.vue';
+import { semanticPrimitiveIdentity } from './primitiveAdapter';
+import { TDesignUpload } from './tdesignPrimitiveBridge';
 
 withDefaults(defineProps<{
-  id?: string;
-  accept?: string;
-  disabled?: boolean;
-  required?: boolean;
-  invalid?: boolean;
-  describedBy?: string;
-  chooseLabel?: string;
-  emptyLabel?: string;
+  id?: string; accept?: string; disabled?: boolean; required?: boolean; invalid?: boolean;
+  describedBy?: string; chooseLabel?: string; emptyLabel?: string;
 }>(), {
-  id: undefined,
-  accept: '',
-  disabled: false,
-  required: false,
-  invalid: false,
-  describedBy: undefined,
-  chooseLabel: '选择文件',
-  emptyLabel: '未选择文件',
+  id: undefined, accept: '', disabled: false, required: false, invalid: false,
+  describedBy: undefined, chooseLabel: '选择文件', emptyLabel: '未选择文件',
 });
 
-const emit = defineEmits<{ change: [event: Event] }>();
-const inputRef = ref<HTMLInputElement | null>(null);
-const selectedName = ref('');
+type UploadFileLike = { name?: string; raw?: File };
+const emit = defineEmits<{ change: [file: File | null] }>();
+const selected = ref<File | null>(null);
+const selectedName = computed(() => selected.value?.name || '');
+const files = computed<UploadFileLike[]>(() => selected.value ? [{ name: selected.value.name, raw: selected.value }] : []);
 
-function handleChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  selectedName.value = input.files?.[0]?.name || '';
-  emit('change', event);
+function handleSelectChange(nextFiles: File[]) {
+  selected.value = nextFiles[0] || null;
+  emit('change', selected.value);
+}
+
+function clearSelection() {
+  selected.value = null;
+  emit('change', null);
 }
 </script>
 
 <style scoped>
-.sc-file-field {
-  display: flex;
-  align-items: center;
-  gap: var(--sc-space-xs);
-  width: 100%;
-  min-height: calc(var(--sc-component-button-height-md) * 1px);
-  box-sizing: border-box;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: var(--sc-component-input-radius);
-  background: var(--sc-app-panel);
-  padding: 2px;
-}
-
-.sc-file-field:focus-within {
-  border-color: var(--sc-semantic-surface-interactive);
-  box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
-}
-
-.sc-file-field.is-invalid {
-  border-color: var(--sc-app-danger-border);
-}
-
-.sc-file-field__native {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
+.sc-file-field { width: 100%; }
 .sc-file-field__name {
   min-width: 0;
   overflow: hidden;

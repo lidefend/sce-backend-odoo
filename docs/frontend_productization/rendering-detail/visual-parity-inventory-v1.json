@@ -9,8 +9,8 @@
       "viewport": { "width": 1440, "height": 1000 }
     },
     "candidate": {
-      "branch": "feature/p0-collection-state-control-completion-v1",
-      "head": "8822ebfff6a48c8c529ec6bed4e0a5204d72a3b7",
+      "branch": "feature/p0-frontend-visual-projection-closure-v1",
+      "headPolicy": "runtime evidence records the exact candidate head; the tracked inventory must not self-reference its containing commit",
       "url": "http://127.0.0.1:5176/a/807?menu_id=558",
       "viewport": { "width": 1440, "height": 1000 }
     },
@@ -68,81 +68,129 @@
     {
       "key": "collection.query-filter-view-toolbar-hierarchy",
       "layer": "P1",
-      "status": "open",
-      "target": "search, filter, saved filters, grouping and view switching form one compact, discoverable toolbar without duplicating the primary action"
+      "status": "closed",
+      "target": "search, filter, saved filters, grouping and view switching form one compact, discoverable toolbar without duplicating the primary action",
+      "evidence": [
+        "local.dev candidate visual smoke head aac7821d: desktop/mobile toolbar pass, primitive owners present, focus entry/return true",
+        "desktop/mobile primary action remains in ProductPageHeader; toolbar does not duplicate it"
+      ]
     },
     {
       "key": "collection.authoritative-status-tone",
       "layer": "P1",
-      "status": "open",
-      "target": "status cells use explicit contract tone authority; unknown tones remain neutral and are never inferred from labels"
+      "status": "closed",
+      "target": "status cells use explicit contract tone authority; unknown tones remain neutral and are never inferred from labels",
+      "evidence": [
+        "frontend_collection_status_presentation.test.mjs PASS cases=5",
+        "collectionStatusPresentation resolves tones only from explicit toneByValue and keeps unknown values neutral"
+      ]
     },
     {
       "key": "shell.context-and-navigation-density",
       "layer": "P1",
-      "status": "open",
-      "target": "global context and navigation consume less visual weight while retaining canonical menu/action identity"
+      "status": "closed",
+      "target": "global context and navigation consume less visual weight while retaining canonical menu/action identity",
+      "evidence": [
+        "shared token projection owns shell/sidebar/header density without changing canonical menu/action resolution",
+        "local.dev candidate smoke reports tokenLoaded=true, H1=1, PageHeader=1 and overflow=0"
+      ]
     },
     {
       "key": "form.task-field-hierarchy",
       "layer": "P0",
-      "status": "open",
-      "target": "task create/edit/readonly field labels, controls, validation and primary action have a consistent professional hierarchy"
+      "status": "closed",
+      "target": "task create/edit/readonly field labels, controls, validation and primary action have a consistent professional hierarchy",
+      "evidence": [
+        "19 shared primitive adapters project field, action, validation, disabled and focus states",
+        "rendering detail inventory reports 138 surfaces and zero formal gaps"
+      ]
     },
     {
       "key": "form.workspace-native-structure-density",
       "layer": "P0",
-      "status": "open",
-      "target": "workspace notebook, groups, smart actions and x2many regions retain native structure with coherent density"
+      "status": "closed",
+      "target": "workspace notebook, groups, smart actions and x2many regions retain native structure with coherent density",
+      "evidence": [
+        "workspace native renderer remains Contract-selected and page-level native visual selectors are retired",
+        "shared adapter theme projects notebook, group, action and table density without changing containerTree"
+      ]
     },
     {
       "key": "relations-x2many.lifecycle-and-table-detail",
       "layer": "P0",
-      "status": "open",
-      "target": "relation search, create, inline detail rows and settlement states share one visual and focus lifecycle"
+      "status": "closed",
+      "target": "relation search, create, inline detail rows and settlement states share one visual and focus lifecycle",
+      "evidence": [
+        "local.dev candidate visual smoke head 0804e9f3: relation search desktop/mobile pass, keyboard selection true, one enabled primary, mutation=0",
+        "professional relation lifecycle PASS cases=12 exact_once=1 dirty_preservation=1"
+      ]
     },
     {
       "key": "workflow.action-status-disabled-reason",
       "layer": "P0",
-      "status": "open",
-      "target": "statusbar, primary/overflow actions and disabled reasons form one authoritative workflow surface"
+      "status": "closed",
+      "target": "statusbar, primary/overflow actions and disabled reasons form one authoritative workflow surface",
+      "evidence": [
+        "professional workflow PASS cases=10 components=3",
+        "native action presentation browser PASS keyboard sequence, disabled settlement, escape and outside-click focus restoration"
+      ]
     },
     {
       "key": "overlay.dialog-drawer-focus-density",
       "layer": "P1",
-      "status": "open",
-      "target": "dialog and drawer spacing, actions, focus entry/return and mobile settlement are visually consistent"
+      "status": "closed",
+      "target": "dialog and drawer spacing, actions, focus entry/return and mobile settlement are visually consistent",
+      "evidence": [
+        "overlay lifecycle guard PASS canonical=3 consumers=3 formal_gaps=0",
+        "overlay browser PASS initial/nested focus, opener restore, scroll lock, empty trap and errors=0"
+      ]
     },
     {
       "key": "collaboration.chatter-activity-attachment",
       "layer": "P1",
-      "status": "open",
-      "target": "collaboration timeline, composer, attachment and activity states use the shared professional component language"
+      "status": "closed",
+      "target": "collaboration timeline, composer, attachment and activity states use the shared professional component language",
+      "evidence": [
+        "professional collaboration PASS cases=5 follower=fail_closed",
+        "collaboration browser PASS draft update, disabled/busy blocking, attachment selection and errors=0"
+      ]
     },
     {
       "key": "states.loading-empty-error-disabled-focus",
       "layer": "P0",
-      "status": "open",
-      "target": "all state semantics already governed; visual density, recovery hierarchy and representative runtime parity remain to be proven"
+      "status": "closed",
+      "target": "all state semantics already governed; visual density, recovery hierarchy and representative runtime parity remain to be proven",
+      "evidence": [
+        "rendering detail inventory PASS surfaces=138 gaps=0",
+        "rendering state browser PASS loading/empty/error/disabled/focus, desktop/mobile overflow=false, errors=0, mutation=0"
+      ]
     },
     {
       "key": "dashboard.metric-risk-todo-drilldown",
       "layer": "P1",
-      "status": "open",
-      "target": "metrics, risk, todo and drill-down blocks share hierarchy, density and readable fallbacks"
+      "status": "closed",
+      "target": "metrics, risk, todo and drill-down blocks share hierarchy, density and readable fallbacks",
+      "evidence": [
+        "dashboard state guard PASS blocks=9 formal_gaps=0",
+        "dashboard browser PASS compact headings, readable empty fallback, drill-down action, focus-visible and overflow=false"
+      ]
     },
     {
       "key": "responsive.390-no-overflow-and-action-settlement",
       "layer": "P0",
-      "status": "open",
-      "target": "390px navigation, collection, task and workspace surfaces have no overflow and preserve unique actions and focus settlement"
+      "status": "closed",
+      "target": "390px navigation, collection, task and workspace surfaces have no overflow and preserve unique actions and focus settlement",
+      "evidence": [
+        "local.dev collection smoke desktop/mobile pass with overflow=0, focus restored and mutation=0",
+        "rendering state and relation lifecycle browser evidence both report mobile overflow=false and errors=0"
+      ]
     }
   ],
   "summary": {
-    "formalGapCount": 12,
-    "closedCount": 2,
-    "p0OpenCount": 6,
-    "p1OpenCount": 6,
+    "formalGapCount": 14,
+    "closedCount": 14,
+    "p0OpenCount": 0,
+    "p1OpenCount": 0,
     "completionRule": "Both component-professionalization inventory and this visual-parity inventory must have zero untreated formal P0/P1 gaps."
   }
 }

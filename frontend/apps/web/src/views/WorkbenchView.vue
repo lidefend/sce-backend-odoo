@@ -16,7 +16,7 @@
         <p class="meta">{{ pageText('header_subtitle', '我们已为你保留可继续操作的入口。') }}</p>
         <p v-if="hasContext" class="context-line">
           {{ pageText('context_prefix', '推荐上下文：') }}{{ workspaceContextSummary }}
-          <ScButton class="ghost mini" variant="ghost" size="small" @click="clearWorkspaceContext">{{ pageText('action_clear_context', '清除') }}</ScButton>
+          <ScButton class="ghost mini" appearance="outline-action" variant="ghost" size="small" @click="clearWorkspaceContext">{{ pageText('action_clear_context', '清除') }}</ScButton>
         </p>
       </div>
       <div class="actions">
@@ -24,6 +24,7 @@
           v-for="action in headerActions"
           :key="action.key"
           class="ghost"
+          appearance="outline-action"
           variant="ghost"
           @click="executeWorkbenchAction(action.key)"
         >
@@ -45,6 +46,7 @@
         v-for="tile in tiles"
         :key="tile.key || tile.title"
         class="tile"
+        appearance="surface-tile"
         variant="ghost"
         :class="{ disabled: tile.policy.state !== 'enabled' }"
         :title="tile.tooltip"
@@ -104,7 +106,7 @@
         <span class="label">{{ pageText('hud_label_trace_id', '追踪 ID') }}</span>
         <span class="value">
           {{ lastTraceId || pageText('hud_value_na', 'N/A') }}
-          <ScButton v-if="lastTraceId" class="ghost mini" variant="ghost" size="small" @click="copyTrace">{{ pageText('action_copy', '复制') }}</ScButton>
+          <ScButton v-if="lastTraceId" class="ghost mini" appearance="outline-action" variant="ghost" size="small" @click="copyTrace">{{ pageText('action_copy', '复制') }}</ScButton>
         </span>
       </div>
       <div v-if="showHud" class="detail">
@@ -671,13 +673,6 @@ function isReachableMenuNode(node: NavNode): boolean {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
-  border-radius: 14px;
-  background: var(--sc-app-panel);
-  border: 1px solid var(--sc-app-border);
-  box-shadow: var(--sc-app-shadow);
-  text-align: left;
-  cursor: pointer;
 }
 
 .tile.disabled {
@@ -732,12 +727,4 @@ function isReachableMenuNode(node: NavNode): boolean {
   font-weight: 600;
 }
 
-.ghost {
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  border: 1px solid var(--sc-app-border);
-  padding: 10px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-}
 </style>

@@ -36,7 +36,7 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         if "@container (max-width: 480px)" not in values[key]:
             failures.append(f"dashboard block {key} lacks compact container adaptation")
     metric = values["metric"]
-    for marker in ("button.metric-item:focus-visible", "prefers-reduced-motion"):
+    for marker in (".metric-item[data-interactive='true']:focus-visible", "prefers-reduced-motion"):
         if marker not in metric:
             failures.append(f"dashboard metric interaction state missing: {marker}")
     return failures

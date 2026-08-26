@@ -9,6 +9,7 @@
     :data-checked="checked || undefined"
     :data-indeterminate="indeterminate || undefined"
     :data-disabled="disabled || undefined"
+    :data-appearance="appearance"
     data-primitive-driver="tdesign"
     :model-value="checked"
     :indeterminate="indeterminate"
@@ -34,6 +35,7 @@ const props = withDefaults(defineProps<{
   hideLabel?: boolean;
   describedBy?: string;
   size?: ScPrimitiveSize;
+  appearance?: 'default' | 'menu-choice';
 }>(), {
   checked: false,
   indeterminate: false,
@@ -43,6 +45,7 @@ const props = withDefaults(defineProps<{
   hideLabel: false,
   describedBy: undefined,
   size: 'medium',
+  appearance: 'default',
 });
 
 const emit = defineEmits<{

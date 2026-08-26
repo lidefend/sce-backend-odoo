@@ -43,9 +43,9 @@
             <ScStatusBadge :value="item.state.key" :label="item.state.label" :semantic="statusSemantic(item.state.key)" />
           </div>
           <h3>{{ item.record.label }}</h3>
-          <dl>
-            <div v-for="fact in item.facts" :key="fact.key"><dt>{{ fact.label }}</dt><dd><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact)" :label="fact.label" /><template v-else>{{ formatFact(fact) }}</template></dd></div>
-          </dl>
+          <ScDescriptions :column="2" :items="item.facts.map((fact) => ({ ...fact, key: fact.key, label: fact.label }))">
+            <template #item="{ item: fact }"><ScMoney v-if="fact.display_role === 'money'" :display="formatFact(fact as ProductMyWorkFact)" :label="fact.label" /><template v-else>{{ formatFact(fact as ProductMyWorkFact) }}</template></template>
+          </ScDescriptions>
         </div>
         <ScActionBar class="work-card__actions" :label="`${item.record.label}操作`">
           <ScButton variant="ghost" @click="openItem(item)">打开详情</ScButton>
@@ -64,21 +64,19 @@
             :disabled="busy"
             @click="beginAction(item, action)"
           >{{ action.label }}</ScButton>
-          <details v-if="overflowActions(item).length" class="more-actions">
-            <summary>更多操作</summary>
-            <ScButton
-              v-for="action in overflowActions(item)"
-              :key="action.key"
-              variant="ghost"
-              :disabled="busy"
-              @click="beginAction(item, action)"
-            >{{ action.label }}</ScButton>
-          </details>
+          <ScDropdown
+            v-if="overflowActions(item).length"
+            class="more-actions"
+            :items="overflowActions(item).map((action) => ({ value: action.key, label: action.label, disabled: busy }))"
+            @select="(selected) => selectOverflowAction(item, selected.value)"
+          >
+            <template #trigger><ScButton variant="ghost" :disabled="busy">更多操作</ScButton></template>
+          </ScDropdown>
         </ScActionBar>
       </ScPanel>
     </ScSection>
 
-    <ScDialog :open="dialogOpen" :title="pendingAction?.label || '确认操作'" panel-class="intent-dialog" @close="closeDialog">
+    <ScDialog :open="dialogOpen" :title="pendingAction?.label || '确认操作'" appearance="workspace" panel-class="intent-dialog" @close="closeDialog">
       <form method="dialog" @submit.prevent>
         <p v-if="pendingItem">{{ confirmationSummary(pendingItem) }}</p>
         <label v-if="pendingAction?.requires_reason">
@@ -105,6 +103,8 @@ import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWor
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScDialog from '../design-system/ScDialog.vue';
+import ScDescriptions from '../design-system/ScDescriptions.vue';
+import ScDropdown, { type ScDropdownItem } from '../design-system/ScDropdown.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScField from '../design-system/ScField.vue';
 import ScMoney from '../design-system/ScMoney.vue';
@@ -131,6 +131,11 @@ const pendingAction = ref<ProductMyWorkAction | null>(null);
 const dialogOpen = ref(false);
 const reasonRef = ref<{ focus: () => void } | null>(null);
 let actionTrigger: HTMLElement | null = null;
+
+function selectOverflowAction(item: ProductMyWorkItem, value: ScDropdownItem['value']) {
+  const action = overflowActions(item).find((candidate) => candidate.key === String(value));
+  if (action) beginAction(item, action);
+}
 
 const visibleSections = computed(() => {
   const selected = props.workspace.sections.find((row) => row.key === activeSection.value);
@@ -273,7 +278,7 @@ async function confirmAction() {
 .product-work__counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); }
 .product-work__filters label { display: grid; gap: 6px; color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
-.product-work__filters input, .product-work__filters select { min-height: var(--sc-product-control-height); padding: 0 12px; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-control); background: var(--sc-app-panel); color: var(--sc-app-text-primary); }
+.product-work__filters :deep(.sc-input), .product-work__filters :deep(.sc-select) { width: 100%; min-height: var(--sc-product-control-height); }
 .count-card { display: flex; justify-content: space-between; align-items: center; min-height: 72px; padding: var(--sc-product-space-2); background: var(--sc-app-panel); color: inherit; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); }
 .count-card strong { font-size: 24px; }
 .count-card.active { border-color: var(--sc-semantic-surface-interactive); box-shadow: 0 0 0 3px var(--sc-app-focus-ring); }
@@ -297,9 +302,9 @@ async function confirmAction() {
 .empty { padding: var(--sc-product-space-3); border: 1px dashed var(--sc-app-border); border-radius: var(--sc-product-radius-panel); color: var(--sc-app-text-secondary); }
 .feedback { margin: 0; padding: 10px 12px; border-radius: var(--sc-product-radius-control); background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }
 .feedback.error { background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
-:deep(.intent-dialog) { width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--sc-app-text-primary); }
+:deep(.intent-dialog) { width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
 :deep(.intent-dialog label) { display: grid; gap: 6px; }
-:deep(.intent-dialog textarea) { width: 100%; box-sizing: border-box; }
+:deep(.intent-dialog .sc-textarea) { width: 100%; box-sizing: border-box; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 @media (max-width: 640px) {
   .product-work { gap: 14px; }
@@ -316,6 +321,6 @@ async function confirmAction() {
   .work-card dt { font-size: 11px; }
   .work-card dd { font-size: 13px; }
   .work-card__actions { width: 100%; }
-  .work-card__actions button { flex: 1 1 auto; }
+  .work-card__actions :deep(.sc-btn) { flex: 1 1 auto; }
 }
 </style>

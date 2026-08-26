@@ -23,7 +23,10 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
         self.assertTrue(any("ScErrorState" in error for error in validate(self.altered("activity", "<ScErrorState"))))
 
     def test_activity_focus_state_is_required(self):
-        self.assertTrue(any("focus-visible" in error for error in validate(self.altered("activity", ".activity-card:focus-visible"))))
+        self.assertTrue(any("surface-tile" in error for error in validate(self.altered("activity", 'appearance="surface-tile"'))))
+
+    def test_activity_adapter_focus_authority_is_required(self):
+        self.assertTrue(any("focus authority" in error for error in validate(self.altered("theme", ".sc-btn:focus-visible"))))
 
     def test_activity_deterministic_state_is_required(self):
         self.assertTrue(any("data-state" in error for error in validate(self.altered("activity", ':data-state="loading ?'))))

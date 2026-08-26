@@ -5,18 +5,12 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-radius: var(--sc-component-dialog-radius);
-  background: var(--sc-app-panel);
-  border: 1px solid var(--sc-app-border);
-  box-shadow: var(--sc-product-shadow-overlay);
   overflow: hidden;
 }
 
 :deep(.relation-dialog > header) {
   min-height: var(--sc-product-toolbar-height);
   padding: var(--sc-product-space-2) var(--sc-product-space-3);
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
   box-sizing: border-box;
 }
 
@@ -61,17 +55,14 @@
   width: max(100%, 720px);
   min-width: 720px;
   border-collapse: collapse;
-  background: var(--sc-app-panel);
   font-size: var(--sc-product-text-sm);
 }
 
 .relation-dialog-table th,
 .relation-dialog-table td {
-  border-bottom: 1px solid var(--sc-app-border);
   padding: var(--sc-product-space-2);
   text-align: left;
   vertical-align: middle;
-  color: var(--sc-app-text-primary);
   white-space: normal;
   overflow-wrap: anywhere;
 }
@@ -80,8 +71,6 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-app-text-secondary);
   font-weight: 600;
 }
 
@@ -89,21 +78,7 @@
   cursor: pointer;
 }
 
-.relation-dialog-table tbody tr:hover,
-.relation-dialog-table tbody tr:focus-visible {
-  background: var(--sc-app-hover-bg);
-}
-
-.relation-dialog-table tbody tr:focus-visible,
-.relation-dialog-result-card:focus-visible {
-  outline: 2px solid var(--sc-semantic-focus-ring);
-  outline-offset: -2px;
-}
-
-.relation-dialog-table tbody .relation-dialog-row--active {
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-}
+.relation-dialog-result-card:focus-visible { outline: 2px solid var(--sc-semantic-focus-ring); outline-offset: -2px; }
 
 .relation-dialog-select-col {
   width: 34px;

@@ -99,6 +99,7 @@
             <ScIconButton
               v-if="titleFieldForNode(node)?.favoriteToggle"
               class="native-title-favorite"
+              appearance="favorite-toggle"
               :class="{ 'native-title-favorite--active': titleFieldForNode(node)?.favoriteToggle?.active }"
               :aria-pressed="titleFieldForNode(node)?.favoriteToggle?.active"
               :label="titleFieldForNode(node)?.favoriteToggle?.label || '切换收藏'"
@@ -110,6 +111,7 @@
             <ScInput
               v-if="!titleFieldForNode(node)?.readonly"
               class="native-title-input"
+              appearance="record-title"
               type="text"
               :model-value="titleFieldValue(titleFieldForNode(node))"
               :aria-label="titleFieldForNode(node)?.label"
@@ -996,17 +998,9 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-title-favorite {
-  border: 0;
-  background: transparent;
-  color: var(--sc-semantic-text-muted);
   font-size: 27px;
   line-height: 1;
   padding: 0 2px;
-  cursor: pointer;
-}
-
-.native-title-favorite--active {
-  color: var(--sc-app-warning-text);
 }
 
 .native-title-favorite:disabled {
@@ -1017,19 +1011,9 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-title-input {
   flex: 1 1 auto;
   min-width: 0;
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  font-size: 27px;
-  font-weight: 600;
   line-height: 1.25;
   padding: 2px 0;
   letter-spacing: 0;
-}
-
-.native-title-input:focus {
-  outline: none;
-  box-shadow: inset 0 -2px 0 var(--sc-semantic-surface-interactive);
 }
 
 .native-title-text {

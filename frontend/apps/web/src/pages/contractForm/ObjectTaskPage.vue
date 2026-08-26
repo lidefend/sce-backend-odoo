@@ -113,12 +113,12 @@
         @field-change="emit('field-change', $event)"
       />
     </section>
-    <details
+    <ScDisclosure
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
       data-floorplan-region="supplementary-input"
+      title="补充信息"
     >
-      <summary>补充信息</summary>
       <CanonicalFormNodeRenderer
         v-for="node in supplementaryInputNodes"
         :key="node.nodeId"
@@ -127,7 +127,7 @@
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
-    </details>
+    </ScDisclosure>
     <slot v-if="!decisionMode" name="blocking" />
     <section
       v-if="!decisionMode && riskNodes.length"
@@ -175,12 +175,12 @@
         />
       </aside>
     </div>
-    <details
+    <ScDisclosure
       v-if="overflowContextNodes.length"
       class="object-task-page__overflow-context"
       data-floorplan-region="overflow-context"
+      title="更多业务信息"
     >
-      <summary>更多业务信息</summary>
       <CanonicalFormNodeRenderer
         v-for="node in overflowContextNodes"
         :key="node.nodeId"
@@ -189,7 +189,7 @@
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
-    </details>
+    </ScDisclosure>
     <section
       v-if="relationNodes.length"
       class="object-task-page__relation"
@@ -255,6 +255,7 @@ import type { FormSectionFieldChange } from '../../components/template/formSecti
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
+import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
 
 defineProps<{
   summaryNodes: CanonicalFormNode[];

@@ -5,6 +5,7 @@
         v-for="action in headerActions"
         :key="`menu-header-${action.key}`"
         class="ghost"
+        appearance="outline-action"
         variant="ghost"
         size="small"
         :disabled="loading"
@@ -277,10 +278,5 @@ watch(
 
 .ghost {
   padding: 8px 10px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  cursor: pointer;
 }
 </style>

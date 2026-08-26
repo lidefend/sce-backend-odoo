@@ -159,6 +159,7 @@
   --sc-component-table-cell-padding-x: 12;
   --sc-component-table-cell-padding-y: 8;
   --sc-component-table-header-height: 40;
+  --sc-component-table-header-z-index: 1;
   --sc-component-table-radius: 8px;
   --sc-component-table-row-height: 44;
   --sc-component-table-row-height-compact: 36;

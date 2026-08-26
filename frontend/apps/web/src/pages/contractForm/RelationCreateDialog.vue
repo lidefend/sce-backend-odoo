@@ -4,6 +4,7 @@
     :title="dialog.title"
     close-label="关闭新建窗口"
     panel-class="relation-create-dialog"
+    appearance="workspace"
     data-professional-relation-lifecycle="create"
     @close="$emit('close')"
   >

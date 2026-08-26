@@ -5,14 +5,14 @@
       <span v-if="windowInfo" class="group-window-info" aria-live="polite">{{ windowInfo }}</span>
     </div>
     <div class="grouped-toolbar-actions">
-      <ScButton v-if="hasWindowPrevious" class="grouped-sort-btn" size="small" :disabled="loading || !canWindowPrevious" @click="$emit('window-previous')">{{ labels.windowPrevious }}</ScButton>
-      <ScButton v-if="hasWindowNext" class="grouped-sort-btn" size="small" :disabled="loading || !canWindowNext" @click="$emit('window-next')">{{ labels.windowNext }}</ScButton>
-      <ScButton class="grouped-sort-btn" size="small" :disabled="!groupCount || !hasCollapsedGroups" @click="$emit('expand-all')">{{ labels.expandAll }}</ScButton>
-      <ScButton class="grouped-sort-btn" size="small" :disabled="!groupCount || allGroupsCollapsed" @click="$emit('collapse-all')">{{ labels.collapseAll }}</ScButton>
-      <ScButton class="grouped-sort-btn" size="small" :aria-label="labels.sort" @click="$emit('toggle-sort')">{{ sortLabel }}</ScButton>
+      <ScButton v-if="hasWindowPrevious" class="grouped-sort-btn" appearance="outline-action" size="small" :disabled="loading || !canWindowPrevious" @click="$emit('window-previous')">{{ labels.windowPrevious }}</ScButton>
+      <ScButton v-if="hasWindowNext" class="grouped-sort-btn" appearance="outline-action" size="small" :disabled="loading || !canWindowNext" @click="$emit('window-next')">{{ labels.windowNext }}</ScButton>
+      <ScButton class="grouped-sort-btn" appearance="outline-action" size="small" :disabled="!groupCount || !hasCollapsedGroups" @click="$emit('expand-all')">{{ labels.expandAll }}</ScButton>
+      <ScButton class="grouped-sort-btn" appearance="outline-action" size="small" :disabled="!groupCount || allGroupsCollapsed" @click="$emit('collapse-all')">{{ labels.collapseAll }}</ScButton>
+      <ScButton class="grouped-sort-btn" appearance="outline-action" size="small" :aria-label="labels.sort" @click="$emit('toggle-sort')">{{ sortLabel }}</ScButton>
       <label v-if="sampleLimitEnabled" class="group-sample-limit">
         <span>{{ labels.sampleLimit }}</span>
-        <ScSelect class="group-sample-limit-select" size="small" :model-value="String(sampleLimit)" :disabled="loading" :aria-label="labels.sampleLimit" :options="sampleLimitOptions.map((option) => ({ value: String(option), label: String(option) }))" @change="(value) => $emit('sample-limit-change', value)" />
+        <ScSelect class="group-sample-limit-select" appearance="form-field" size="small" :model-value="String(sampleLimit)" :disabled="loading" :aria-label="labels.sampleLimit" :options="sampleLimitOptions.map((option) => ({ value: String(option), label: String(option) }))" @change="(value) => $emit('sample-limit-change', value)" />
       </label>
     </div>
   </header>

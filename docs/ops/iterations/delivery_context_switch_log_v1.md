@@ -6582,3 +6582,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   at 1440px and 390px with governed TDesign drivers, overflow 0, browser errors
   0 and business mutation 0. Stable fingerprint and independent read-only
   review remain the final publication gates.
+
+## 2026-08-26 — Primitive visual authority closure
+
+- Branch / baseline: `feature/p0-frontend-visual-projection-closure-v1` /
+  `ea0170d2652188083146c5423ed9dcbb20a170d7`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  frontend renderer and design-system adapter visual authority /
+  `frontend/apps/web` and `frontend/packages/ui`.
+- Product result: page and composite consumers retain structure and layout,
+  while borders, backgrounds, radii, focus and interaction states of primitive
+  controls are projected by registered `Sc*` appearances and the project
+  TDesign theme bridge. Collection search uses the official InputAdornment
+  driver and no legacy searchbox chrome.
+- Machine boundary: required TDesign drivers have no missing, bridge-only or
+  unconsumed rows; ordinary P0/P1 consumers have zero primitive visual-chrome
+  overrides and zero native-selector candidates. The guard joins Vue templates
+  to both inline and `style src` CSS before deciding closure, so a class attached
+  directly to an `Sc*` root cannot reintroduce page-owned chrome through an
+  external stylesheet. Official TDesign Layout/Aside/Header/Content drivers now
+  own the application layout primitives. The generated inventories report
+  `151` formal surfaces with `gap=0`, `35` required drivers with `missing=0`,
+  and `consumerPrimitiveVisualChromeCount=0`; they remain deterministic static
+  evidence and never self-assert runtime closure.
+- Excluded: Contract V2, permissions, routes, action/menu authority, business
+  models, database data, fixtures and P3 low-code administration surfaces.

@@ -15,6 +15,7 @@
           v-for="mode in viewModes"
           :key="`view-mode-${mode}`"
           class="contract-chip"
+          appearance="toolbar-chip"
           variant="ghost"
           size="small"
           :class="{ active: currentViewMode === mode }"
@@ -32,9 +33,11 @@
         <ScButton
           v-if="activeFilterChip"
           class="search-facet"
+          appearance="toolbar-chip"
           type="button"
           variant="ghost"
           size="small"
+          aria-pressed="true"
           :disabled="loading"
           @click="$emit('clear-filter')"
         >
@@ -44,9 +47,11 @@
         <ScButton
           v-if="activeSavedFilterChip"
           class="search-facet"
+          appearance="toolbar-chip"
           type="button"
           variant="ghost"
           size="small"
+          aria-pressed="true"
           :disabled="loading"
           @click="$emit('clear-saved-filter')"
         >
@@ -56,9 +61,11 @@
         <ScButton
           v-if="activeCustomFilterLabel"
           class="search-facet"
+          appearance="toolbar-chip"
           type="button"
           variant="ghost"
           size="small"
+          aria-pressed="true"
           :disabled="loading"
           @click="$emit('clear-custom-filter')"
         >
@@ -68,72 +75,81 @@
         <ScButton
           v-if="activeGroupChip"
           class="search-facet"
+          appearance="toolbar-chip"
           type="button"
           variant="ghost"
           size="small"
+          aria-pressed="true"
           :disabled="loading"
           @click="$emit('clear-group')"
         >
           <span>{{ activeGroupChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
         </ScButton>
-        <ScInput
-          type="search"
-          :model-value="searchValue"
-          size="small"
-          :disabled="loading"
-          :loading="loading"
-          :placeholder="searchPlaceholder"
-          @compositionstart="$emit('search-composition-start')"
-          @compositionend="$emit('search-composition-end', $event)"
-          @input="$emit('search-input', $event)"
-          @keydown.enter.prevent="$emit('search-submit')"
-          @keydown.esc.stop="closeSearchMenuAndRestoreFocus"
-        />
-        <ScButton
-          class="toolbar-search-submit"
-          type="button"
-          variant="secondary"
-          :disabled="loading"
-          @click="$emit('search-submit')"
-        >
-          <ScIcon name="search" :size="16" />
-          {{ uiLabel('search_submit', '搜索') }}
-        </ScButton>
-        <ScButton
-          v-if="searchValue"
-          class="toolbar-search-clear"
-          type="button"
-          variant="ghost"
-          :disabled="loading"
-          @click="$emit('clear-search')"
-        >
-          {{ clearLabel }}
-        </ScButton>
-        <ScIconButton
-          ref="searchMenuToggle"
-          class="search-menu-toggle"
-          :class="{ active: searchMenuOpen }"
-          :disabled="loading || !hasSearchMenu"
-          :label="uiLabel('search_menu_toggle', '展开搜索菜单')"
-          :aria-expanded="searchMenuOpen"
-          aria-controls="collection-search-disclosure"
-          @click="toggleSearchMenu"
-        >
-          <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
-        </ScIconButton>
-        <ScButton
-          v-if="hasStructuredConditions"
-          class="toolbar-clear-all"
-          type="button"
-          variant="ghost"
-          size="small"
-          :disabled="loading"
-          :aria-label="`已应用 ${activeConditionCount} 项查询条件，清除全部`"
-          @click="$emit('clear-all')"
-        >
-          清除全部
-        </ScButton>
+        <ScInputGroup class="collection-search-control">
+          <ScInput
+            type="search"
+            :model-value="searchValue"
+            size="small"
+            :disabled="loading"
+            :loading="loading"
+            :placeholder="searchPlaceholder"
+            @compositionstart="$emit('search-composition-start')"
+            @compositionend="$emit('search-composition-end', $event)"
+            @input="$emit('search-input', $event)"
+            @keydown.enter.prevent="$emit('search-submit')"
+            @keydown.esc.stop="closeSearchMenuAndRestoreFocus"
+          />
+          <template #append>
+            <span class="collection-search-control__actions">
+              <ScButton
+                class="toolbar-search-submit"
+                type="button"
+                variant="secondary"
+                :disabled="loading"
+                @click="$emit('search-submit')"
+              >
+                <ScIcon name="search" :size="16" />
+                {{ uiLabel('search_submit', '搜索') }}
+              </ScButton>
+              <ScButton
+                v-if="searchValue"
+                class="toolbar-search-clear"
+                type="button"
+                variant="ghost"
+                :disabled="loading"
+                @click="$emit('clear-search')"
+              >
+                {{ clearLabel }}
+              </ScButton>
+              <ScIconButton
+                ref="searchMenuToggle"
+                class="search-menu-toggle"
+                appearance="toolbar-menu-toggle"
+                :class="{ active: searchMenuOpen }"
+                :disabled="loading || !hasSearchMenu"
+                :label="uiLabel('search_menu_toggle', '展开搜索菜单')"
+                :aria-expanded="searchMenuOpen"
+                aria-controls="collection-search-disclosure"
+                @click="toggleSearchMenu"
+              >
+                <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
+              </ScIconButton>
+              <ScButton
+                v-if="hasStructuredConditions"
+                class="toolbar-clear-all"
+                type="button"
+                variant="ghost"
+                size="small"
+                :disabled="loading"
+                :aria-label="`已应用 ${activeConditionCount} 项查询条件，清除全部`"
+                @click="$emit('clear-all')"
+              >
+                清除全部
+              </ScButton>
+            </span>
+          </template>
+        </ScInputGroup>
       </div>
       <div v-if="searchMenuOpen && hasSearchMenu" id="collection-search-disclosure" class="search-dropdown" data-collection-toolbar-layer="search">
         <section v-if="showFilterColumn" class="search-dropdown-section">
@@ -143,9 +159,11 @@
               v-for="chip in allFilterChips"
               :key="`filter-${chip.key}`"
               class="search-menu-item"
+              appearance="menu-item"
               variant="ghost"
               size="small"
               :class="{ selected: activeFilterKey === chip.key }"
+              :aria-pressed="activeFilterKey === chip.key"
               :disabled="loading"
               @click="selectFilter(chip.key)"
             >
@@ -156,6 +174,7 @@
             <ScButton
               v-if="customFilterEnabled"
               class="search-menu-item custom-entry"
+              appearance="menu-item"
               type="button"
               variant="ghost"
               size="small"
@@ -186,9 +205,11 @@
               v-for="chip in menuGroupChips"
               :key="`group-${chip.key}`"
               class="search-menu-item"
+              appearance="menu-item"
               variant="ghost"
               size="small"
               :class="{ selected: activeGroupKey === chip.key }"
+              :aria-pressed="activeGroupKey === chip.key"
               :disabled="loading"
               @click="selectGroup(chip.key)"
             >
@@ -214,9 +235,11 @@
               v-for="chip in allSavedFilterChips"
               :key="`saved-filter-${chip.key}`"
               class="search-menu-item"
+              appearance="menu-item"
               variant="ghost"
               size="small"
               :class="{ selected: activeSavedFilterKey === chip.key }"
+              :aria-pressed="activeSavedFilterKey === chip.key"
               :disabled="loading"
               @click="selectSavedFilter(chip.key)"
             >
@@ -229,6 +252,7 @@
             <ScButton
               v-if="favoriteSaveEnabled"
               class="search-menu-item custom-entry"
+              appearance="menu-item"
               type="button"
               variant="ghost"
               size="small"
@@ -259,6 +283,7 @@
           v-for="option in sortOptions"
           :key="`sort-${option.value}`"
           class="contract-chip"
+          appearance="toolbar-chip"
           variant="ghost"
           size="small"
           :class="{ active: option.value === sortValue }"
@@ -275,6 +300,7 @@
       <ScIconButton
         ref="overflowMenuToggle"
         class="toolbar-overflow-toggle"
+        appearance="toolbar-menu-toggle"
         :disabled="loading"
         :aria-expanded="overflowMenuOpen"
         :label="uiLabel('more_actions', '更多列表操作')"
@@ -290,6 +316,7 @@
             v-for="mode in viewModes"
             :key="`overflow-view-mode-${mode}`"
             type="button"
+            appearance="menu-item"
             variant="ghost"
             size="small"
             :class="{ active: currentViewMode === mode }"
@@ -306,6 +333,7 @@
             v-for="option in sortOptions"
             :key="`overflow-sort-${option.value}`"
             type="button"
+            appearance="menu-item"
             variant="ghost"
             size="small"
             :class="{ active: option.value === sortValue }"
@@ -347,6 +375,7 @@ import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScInputGroup from '../design-system/ScInputGroup.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 
 type SearchChip = { key: string; label: string };
@@ -672,14 +701,6 @@ onBeforeUnmount(() => {
   grid-template-areas: 'search sort primary';
 }
 
-.action-toolbar button:focus-visible,
-.action-toolbar :deep(.sc-btn:focus-visible),
-.action-toolbar :deep(.sc-input:focus-visible),
-.action-toolbar select:focus-visible {
-  outline: 2px solid var(--sc-semantic-focus-ring);
-  outline-offset: 2px;
-}
-
 .view-switch { grid-area: view; }
 .native-search { grid-area: search; }
 .sort-switch { grid-area: sort; }
@@ -710,12 +731,6 @@ onBeforeUnmount(() => {
   gap: 4px;
 }
 
-.view-switch button {
-  min-height: calc(var(--sc-component-button-height-md) * 1px);
-  border-radius: var(--sc-component-button-radius);
-  padding-inline: calc(var(--sc-component-button-padding-x) * 1px);
-}
-
 .group-switch {
   flex-wrap: wrap;
 }
@@ -741,42 +756,24 @@ onBeforeUnmount(() => {
   flex-wrap: nowrap;
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 44px;
   gap: 4px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 3px 3px 3px 8px;
 }
 
-.native-searchbox input {
+.collection-search-control {
   flex: 1 1 110px;
   min-width: 72px;
-  height: 28px;
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  font-size: 12px;
-  padding: 2px 4px;
 }
 
-.native-searchbox input:focus {
-  outline: none;
+.collection-search-control__actions {
+  display: inline-flex;
+  align-items: stretch;
 }
 
 .toolbar-search-submit,
 .toolbar-search-clear,
 .toolbar-clear-all {
   flex: 0 0 auto;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-secondary);
-  padding: 4px 7px;
-  font-size: 12px;
-  cursor: pointer;
   white-space: nowrap;
-  min-height: 36px;
 }
 
 .toolbar-search-submit {
@@ -789,15 +786,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 22px;
   max-width: min(150px, 38%);
-  border: 1px solid var(--sc-app-selected-border);
-  border-radius: 5px;
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-  padding: 2px 6px;
-  font-size: 12px;
-  cursor: pointer;
   white-space: nowrap;
 }
 
@@ -814,19 +803,6 @@ onBeforeUnmount(() => {
 
 .search-menu-toggle {
   flex: 0 0 auto;
-  width: 28px;
-  min-height: 24px;
-  border: 0;
-  border-left: 1px solid var(--sc-app-border-strong);
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  padding: 0;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.search-menu-toggle.active {
-  color: var(--sc-app-selected-text);
 }
 
 .search-menu-caret {
@@ -885,13 +861,7 @@ onBeforeUnmount(() => {
   grid-template-columns: 18px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 6px;
-  border: 0;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  padding: 7px 12px;
   text-align: left;
-  font-size: 13px;
-  cursor: pointer;
   min-width: 0;
 }
 
@@ -901,18 +871,7 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 
-.search-menu-item:hover {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
-}
-
-.search-menu-item.selected {
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-}
-
 .search-menu-item.custom-entry {
-  color: var(--sc-app-text-primary);
   font-weight: 700;
 }
 
@@ -935,22 +894,6 @@ onBeforeUnmount(() => {
 .custom-search-actions {
   display: flex;
   gap: 6px;
-}
-
-.custom-search-actions button {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 6px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 5px 9px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.custom-search-actions button:first-child {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
 }
 
 .search-menu-empty {
@@ -1004,62 +947,18 @@ onBeforeUnmount(() => {
 }
 
 .contract-chip {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 999px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 3px 8px;
-  font-size: 12px;
-  cursor: pointer;
   max-width: 100%;
   white-space: nowrap;
-  min-height: 44px;
 }
 
 .toolbar-overflow { position: relative; display: none; }
-.toolbar-overflow-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-control); background: var(--sc-app-input-bg); color: var(--sc-app-text-primary); cursor: pointer; }
+.toolbar-overflow-toggle { width: 44px; min-height: 44px; }
 .toolbar-overflow-menu { position: absolute; z-index: 90; top: calc(100% + var(--sc-space-2xs)); right: 0; display: grid; gap: var(--sc-space-xs); min-width: 220px; max-height: min(420px, 70vh); overflow: auto; padding: var(--sc-space-xs); border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); box-shadow: var(--sc-product-shadow-overlay); }
 .toolbar-overflow-section { display: grid; gap: var(--sc-space-2xs); }
 .toolbar-overflow-section p { margin: 0; color: var(--sc-app-text-secondary); font-size: 12px; font-weight: 700; }
-.toolbar-overflow-section button,
-.toolbar-overflow-create { display: flex; align-items: center; gap: var(--sc-space-xs); width: 100%; min-height: 44px; padding: var(--sc-space-xs); border: 1px solid transparent; border-radius: var(--sc-product-radius-control); background: var(--sc-app-panel); color: var(--sc-app-text-primary); text-align: left; cursor: pointer; }
-.toolbar-overflow-section button:hover,
-.toolbar-overflow-create:hover { border-color: var(--sc-app-border); background: var(--sc-app-muted-bg); }
-.toolbar-overflow-section button.active {
-  border-color: var(--sc-app-selected-border);
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-}
+.toolbar-overflow-section :deep(.sc-btn),
+.toolbar-overflow-create { display: flex; align-items: center; gap: var(--sc-space-xs); width: 100%; min-height: 44px; }
 .toolbar-overflow-create { display: none; }
-
-.contract-chip.active {
-  border-color: var(--sc-app-selected-border);
-  color: var(--sc-app-selected-text);
-  background: var(--sc-app-selected-bg);
-}
-
-.contract-chip.primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-}
-
-.contract-chip.ghost {
-  border-style: dashed;
-}
-
-.contract-chip:disabled,
-.toolbar-search-submit:disabled,
-.toolbar-search-clear:disabled,
-.search-menu-toggle:disabled,
-.search-facet:disabled,
-.search-menu-item:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
 
 @media (max-width: 1199px) {
   .action-toolbar {
@@ -1124,9 +1023,9 @@ onBeforeUnmount(() => {
   .toolbar-search-submit { width: 44px; min-height: 44px; padding-inline: 0; font-size: 0; justify-content: center; }
   .search-menu-toggle { width: 44px; min-height: 44px; }
   .search-menu-item,
-  .toolbar-overflow-section button,
+  .toolbar-overflow-section :deep(.sc-btn),
   .toolbar-overflow-create,
-  .custom-search-actions button { min-height: 44px; }
+  .custom-search-actions :deep(.sc-btn) { min-height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,0 +1,2 @@
+<template><TDesignForm v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScForm') }" :data="data" :disabled="disabled"><slot /></TDesignForm></template>
+<script setup lang="ts">import { TDesignForm } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); defineProps<{data?:Record<string,unknown>; disabled?:boolean}>();</script>

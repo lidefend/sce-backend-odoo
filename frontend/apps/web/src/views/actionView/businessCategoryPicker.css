@@ -10,18 +10,8 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 44px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-control-radius);
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-app-text-primary);
   padding: 10px 12px;
   text-align: left;
-  cursor: pointer;
-}
-
-.business-category-picker-option:hover {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-app-info-bg);
 }
 
 .business-category-picker-option span {
@@ -30,7 +20,6 @@
 }
 
 .business-category-picker-option small {
-  color: var(--sc-semantic-text-muted);
   font-size: 11px;
   white-space: nowrap;
 }

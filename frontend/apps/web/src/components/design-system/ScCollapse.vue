@@ -1,0 +1,2 @@
+<template><TDesignCollapse v-bind="{ ...$attrs, ...semanticPrimitiveIdentity('ScCollapse') }" :value="modelValue" @change="emit('update:modelValue', ($event as Array<string|number>).map(String))"><slot /></TDesignCollapse></template>
+<script setup lang="ts">import { TDesignCollapse } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; defineOptions({ inheritAttrs:false }); defineProps<{modelValue?:string[]}>(); const emit=defineEmits<{ 'update:modelValue':[value:string[]] }>();</script>

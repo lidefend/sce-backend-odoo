@@ -4,6 +4,7 @@ import {
   resolveTemplateInputValue,
   type FormSectionMapperFieldNode,
 } from './formSection.mapper';
+import type { TemplateSelectOption } from './formSection.types';
 
 export type CreateFormSectionFieldSchemaBuilderContext = {
   resolveFieldType: (descriptor?: FieldDescriptor) => string;
@@ -17,8 +18,8 @@ export type CreateFormSectionFieldSchemaBuilderContext = {
   resolveInputPlaceholder: (fieldLabel: string) => string;
   resolveHelpText?: (field: FormSectionMapperFieldNode) => string;
   resolveErrorText?: (field: FormSectionMapperFieldNode) => string;
-  resolveSelectionOptions: (descriptor?: FieldDescriptor) => Array<{ value: string; label: string }>;
-  resolveRelationOptions: (fieldName: string) => Array<{ value: string; label: string }>;
+  resolveSelectionOptions: (descriptor?: FieldDescriptor) => TemplateSelectOption[];
+  resolveRelationOptions: (fieldName: string) => TemplateSelectOption[];
   resolveRelationCreateMode: (fieldName: string, descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
   resolveRelationInlineCreate: (fieldName: string, descriptor?: FieldDescriptor) => ReturnType<typeof buildFormSectionFieldSchemas>[number]['relationInlineCreate'];
   resolveRelationTextValue: (fieldName: string) => string;

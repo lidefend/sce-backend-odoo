@@ -28,7 +28,12 @@ def read(root: Path, relative: str) -> str:
 def validate(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     shell = read(root, "frontend/apps/web/src/layouts/AppShell.vue")
+    shell_style = read(root, "frontend/apps/web/src/layouts/AppShell.css")
     tree = read(root, "frontend/apps/web/src/components/MenuTree.vue")
+    menu_node = read(root, "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue")
+    primitive_bridge = read(root, "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts")
+    theme = read(root, "frontend/packages/ui/src/kits/tdesign/theme.css")
+    ui_primitives = read(root, "frontend/packages/ui/src/primitives.ts")
     session = read(root, "frontend/apps/web/src/stores/session.ts")
     canonical = read(root, "frontend/apps/web/src/app/canonicalNavigation.ts")
     menu_service = read(root, "addons/smart_core/delivery/menu_service.py")
@@ -50,16 +55,52 @@ def validate(root: Path = ROOT) -> list[str]:
 
     if "<ProductSideNavigation" not in shell or ':nodes="filteredNavigation"' not in shell:
         errors.append("AppShell must render ProductSideNavigation from the canonical filtered model")
+    context_indicator = read(root, "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue")
+    context_projection = shell.split("<WorkspaceContextIndicator", 1)[-1].split("/>", 1)[0]
+    if ':show-record="showRecordContext"' not in context_projection or "v-if=" in context_projection:
+        errors.append("AppShell must keep the company context authority visible while gating only record context")
+    for marker in ('v-if="showRecord"', "@company=\"openWorkspacePanel('company')\""):
+        if marker not in context_indicator + context_projection:
+            errors.append(f"workspace context authority missing capability split: {marker}")
 
     side_navigation = (root / "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue").read_text(encoding="utf-8")
     for marker in (
         "grid-template-rows: max-content minmax(0, 1fr)",
         "var(--sc-nav-row-gap)",
-        "var(--sc-app-focus-ring)",
         "overscroll-behavior: contain",
+        "<template #prefix><ScIcon name=\"search\"",
+        "clearable",
+        'appearance="navigation-search"',
     ):
         if marker not in side_navigation:
             errors.append(f"ProductSideNavigation must retain canonical rendering detail: {marker}")
+    for marker in (".sc-input[data-appearance='navigation-search']", "var(--sc-app-focus-ring)"):
+        if marker not in theme:
+            errors.append(f"navigation search appearance must be owned by the TDesign theme bridge: {marker}")
+    if "border-color:" in side_navigation or "box-shadow:" in side_navigation or ":deep(.sc-input:hover)" in side_navigation:
+        errors.append("ProductSideNavigation must not own ScInput visual chrome")
+    if "product-side-navigation__search > .sc-icon" in side_navigation or "padding-left: 34px" in side_navigation:
+        errors.append("navigation search must use the ScInput prefix adapter instead of manual icon positioning")
+    for marker in (
+        ".shell :deep(.sidebar)",
+        "grid-template-columns: minmax(0, 1fr)",
+        ".published-apps__list :deep(.published-app > .t-button__text > .sc-btn__content)",
+        "height: 100vh",
+        "overflow: hidden",
+        ".product-side-navigation__tree",
+        "overflow: auto",
+    ):
+        if marker not in (shell_style + "\n" + side_navigation):
+            errors.append(f"navigation shell lost bounded scroll ownership: {marker}")
+    if ".published-app > .t-button__text)" in shell_style:
+        errors.append("published app layout must project through the ScButton content adapter")
+    if re.search(r"(?m)^\.sidebar\s*\{", shell_style):
+        errors.append("navigation drawer root styling bypasses the child-component deep boundary")
+    desktop_shell = shell_style[shell_style.find("@media (min-width: 961px)") :]
+    if "grid-template-columns: 48px minmax(0, 1fr)" in desktop_shell or not re.search(
+        r"\.workspace-activity-rail\s*\{[^}]*display:\s*none\s*!important", desktop_shell, re.DOTALL
+    ):
+        errors.append("desktop navigation must retain the single-column product menu")
     if (component_root / "PrimaryNavigation.vue").exists() or "<PrimaryNavigation" in shell:
         errors.append("legacy PrimaryNavigation must not remain as a parallel shell authority")
     if "session.navigationModel?.nodes" not in shell:
@@ -68,11 +109,19 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("canonical menu selection must retain the immutable authority snapshot chain")
 
     for forbidden in ("useSessionStore", "evaluateCapabilityPolicy", "capabilityTooltip", "console.info"):
-        if forbidden in tree:
+        if forbidden in tree + menu_node:
             errors.append(f"MenuTree must remain presentation-only: {forbidden}")
-    for required in ("expandedKeys", "emit('toggle'", "node.disabledReason", ".parentChain"):
+    for required in ("TDesignMenu", 'data-semantic-driver="tdesign-menu"', "expandedKeys", "emit('toggle'", ".parentChain"):
         if required not in tree:
             errors.append(f"MenuTree missing canonical interaction token: {required}")
+    for required in ("TDesignSubmenu", "TDesignMenuItem", "node.disabledReason", 'data-navigation-node="canonical"'):
+        if required not in menu_node:
+            errors.append(f"canonical navigation adapter missing standard menu projection: {required}")
+    if re.search(r"<(?:ul|li|button|ScButton)\b", tree + menu_node):
+        errors.append("canonical navigation must not retain a hand-built menu interaction tree")
+    for required in ("TDesignMenu", "TDesignSubmenu", "TDesignMenuItem"):
+        if required not in primitive_bridge or required not in ui_primitives:
+            errors.append(f"standard navigation driver is not exported through the project bridge: {required}")
 
     canonical_required = (
         "CANONICAL_NAVIGATION_CARRIER_MISSING",

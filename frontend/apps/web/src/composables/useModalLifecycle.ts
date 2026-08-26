@@ -1,4 +1,4 @@
-import { nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue';
+import { nextTick, onBeforeUnmount, ref, watch, type ComponentPublicInstance, type Ref } from 'vue';
 import { resolveModalKeyboardAction } from './modalKeyboard';
 
 const FOCUSABLE = [
@@ -13,6 +13,14 @@ const FOCUSABLE = [
 let bodyLockDepth = 0;
 let savedBodyOverflow = '';
 let savedBodyPaddingRight = '';
+
+type ModalSurface = HTMLElement | ComponentPublicInstance | null;
+
+function resolveSurfaceElement(surface: ModalSurface): HTMLElement | null {
+  if (surface instanceof HTMLElement) return surface;
+  const root = surface?.$el;
+  return root instanceof HTMLElement ? root : null;
+}
 
 function lockBodyScroll() {
   if (bodyLockDepth === 0) {
@@ -34,25 +42,46 @@ function unlockBodyScroll() {
 
 export function useModalLifecycle(options: {
   open: () => boolean;
-  surface: Ref<HTMLElement | null>;
+  surface: Ref<ModalSurface>;
   close: () => void;
   closeOnEscape?: () => boolean;
 }) {
   const opener = ref<HTMLElement | null>(null);
   let locked = false;
+  let focusGeneration = 0;
 
   function focusInitial() {
-    const initial = options.surface.value?.querySelector<HTMLElement>('[autofocus], [data-dialog-primary]');
-    (initial || options.surface.value)?.focus();
+    const surface = resolveSurfaceElement(options.surface.value);
+    const initial = surface?.querySelector<HTMLElement>('[autofocus], [data-dialog-primary]');
+    (initial || surface)?.focus();
   }
 
-  function restoreOpener() {
+  function focusInitialWhenVisible(generation: number, attempt = 0) {
+    const surface = resolveSurfaceElement(options.surface.value);
+    if (generation !== focusGeneration || !options.open() || !surface || attempt > 120) return;
+    if (surface.contains(document.activeElement)) return;
+    if (surface.getClientRects().length > 0) {
+      focusInitial();
+    }
+    requestAnimationFrame(() => focusInitialWhenVisible(generation, attempt + 1));
+  }
+
+  function restoreOpener(attempt = 0) {
     const target = opener.value;
+    if (!target?.isConnected) {
+      opener.value = null;
+      return;
+    }
+    target.focus();
+    if (attempt < 4) {
+      requestAnimationFrame(() => restoreOpener(attempt + 1));
+      return;
+    }
     opener.value = null;
-    if (target?.isConnected) target.focus();
   }
 
   function release() {
+    focusGeneration += 1;
     if (locked) {
       unlockBodyScroll();
       locked = false;
@@ -61,8 +90,9 @@ export function useModalLifecycle(options: {
   }
 
   function onKeydown(event: KeyboardEvent) {
-    const focusable = options.surface.value
-      ? Array.from(options.surface.value.querySelectorAll<HTMLElement>(FOCUSABLE))
+    const surface = resolveSurfaceElement(options.surface.value);
+    const focusable = surface
+      ? Array.from(surface.querySelectorAll<HTMLElement>(FOCUSABLE))
         .filter((element) => element.getClientRects().length > 0 && element.getAttribute('aria-hidden') !== 'true')
       : [];
     const activeIndex = focusable.findIndex((element) => element === document.activeElement);
@@ -71,17 +101,18 @@ export function useModalLifecycle(options: {
       shiftKey: event.shiftKey,
       focusableCount: focusable.length,
       activeIndex,
-      surfaceActive: document.activeElement === options.surface.value,
+      surfaceActive: document.activeElement === surface,
     });
     if (action === 'close') {
       if (options.closeOnEscape && !options.closeOnEscape()) return;
       event.preventDefault();
+      event.stopPropagation();
       options.close();
       return;
     }
     if (action === 'focus-surface') {
       event.preventDefault();
-      options.surface.value?.focus();
+      surface?.focus();
       return;
     }
     if (action === 'focus-last') {
@@ -93,16 +124,20 @@ export function useModalLifecycle(options: {
     }
   }
 
-  watch(options.open, async (open) => {
+  watch([options.open, () => options.surface.value] as const, async ([open, surface]) => {
     if (!open) {
       release();
       return;
     }
-    opener.value = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    lockBodyScroll();
-    locked = true;
+    if (!locked) {
+      opener.value = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      lockBodyScroll();
+      locked = true;
+    }
+    if (!resolveSurfaceElement(surface)) return;
     await nextTick();
-    focusInitial();
+    focusGeneration += 1;
+    focusInitialWhenVisible(focusGeneration);
   }, { immediate: true });
 
   onBeforeUnmount(() => {

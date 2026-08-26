@@ -10,16 +10,100 @@ DESIGN_SYSTEM = ROOT / "frontend/apps/web/src/components/design-system"
 INDEX = DESIGN_SYSTEM / "index.ts"
 BRIDGE = DESIGN_SYSTEM / "tdesignPrimitiveBridge.ts"
 UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
+UI_THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
+OWNERSHIP = ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json"
 
 PRIMITIVES = (
-    "ScButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
+    "ScButton", "ScIconButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInputGroup", "ScLayout", "ScAside", "ScHeader", "ScContent", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
+    "ScActionBar", "ScAutoComplete", "ScNumberInput", "ScDatePicker", "ScUpload", "ScForm", "ScFormItem",
+    "ScCard", "ScCollapse", "ScDisclosure", "ScProgress", "ScSkeleton", "ScDescriptions", "ScList", "ScTimeline",
+    "ScSteps", "ScPagination", "ScSwitch", "ScTimePicker", "ScPopconfirm",
 )
 FORBIDDEN_PRIVATE_TDESIGN = re.compile(r"tdesign-vue-next/(?:lib|cjs|src)/")
 FORBIDDEN_BUSINESS_IDENTITY = re.compile(
     r"\b(?:project\.project|payment\.request|construction\.contract|action_id|menu_id|role_code)\b",
     re.IGNORECASE,
 )
+CONSUMER_PRIMITIVE_CHROME = re.compile(
+    r":deep\(\.sc-(?:input|btn|select|textarea|checkbox|radio|dialog|drawer|tabs|table)[^)]*\)\s*\{(?P<body>[^}]*)\}",
+    re.DOTALL,
+)
+VISUAL_CHROME_PROPERTY = re.compile(r"(?:^|;)\s*(?:border(?!-(?:collapse|spacing))(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.MULTILINE)
+SC_ROOT_TAG = re.compile(r"<Sc(?:Button|IconButton|Input|InputGroup|Select|Textarea|Checkbox|Radio|Dialog|Drawer|Tabs|Table)\b(?P<attrs>[^>]*)>", re.DOTALL)
+STATIC_CLASS = re.compile(r"(?<!:)\bclass\s*=\s*['\"](?P<value>[^'\"]+)['\"]")
+DYNAMIC_CLASS_ATTR = re.compile(r":class\s*=\s*(['\"])(?P<value>.*?)\1", re.DOTALL)
+DYNAMIC_CLASS = re.compile(r"(?:['\"](?P<quoted>[A-Za-z][\w-]*)['\"]|(?P<bare>[A-Za-z][\w-]*))\s*:")
+ALL_STATIC_CLASS = re.compile(r"(?<!:)\bclass\s*=\s*['\"](?P<value>[^'\"]+)['\"]")
+STYLE_RULE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
+STYLE_SOURCE = re.compile(r"<style\b[^>]*\bsrc\s*=\s*['\"](?P<value>[^'\"]+)['\"][^>]*>", re.IGNORECASE)
+PROFESSIONAL_COMPOSITE_OWNERS: set[str] = set()
+
+
+def p3_scope(root: Path) -> tuple[set[str], tuple[str, ...]]:
+    path = root / OWNERSHIP.relative_to(ROOT)
+    if not path.is_file():
+        return set(), ()
+    import json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    owner = payload.get("owners", {}).get("p3-low-code-administration", {})
+    return set(owner.get("sources", [])), tuple(owner.get("prefixes", []))
+
+
+def direct_root_visual_overrides(source_text: str, style_text: str | None = None) -> list[str]:
+    classes: set[str] = set()
+    for tag in SC_ROOT_TAG.finditer(source_text):
+        match = STATIC_CLASS.search(tag.group("attrs"))
+        if match:
+            classes.update(value for value in match.group("value").split() if value and not value.startswith("sc-"))
+        for binding in DYNAMIC_CLASS_ATTR.finditer(tag.group("attrs")):
+            for dynamic in DYNAMIC_CLASS.finditer(binding.group("value")):
+                value = dynamic.group("quoted") or dynamic.group("bare")
+                if value and value not in {"active", "selected", "disabled"} and not value.startswith("sc-"):
+                    classes.add(value)
+    findings = []
+    for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
+        if not VISUAL_CHROME_PROPERTY.search(rule.group("body")):
+            continue
+        selector = rule.group("selector")
+        for class_name in sorted(classes):
+            if re.search(rf"\.{re.escape(class_name)}(?![\w-])", selector):
+                findings.append(class_name)
+    return sorted(set(findings))
+
+
+def native_descendant_visual_overrides(source_text: str, style_text: str | None = None) -> list[str]:
+    if not SC_ROOT_TAG.search(source_text):
+        return []
+    container_classes = {
+        value
+        for match in ALL_STATIC_CLASS.finditer(source_text)
+        for value in match.group("value").split()
+        if value and not value.startswith("sc-")
+    }
+    findings: list[str] = []
+    for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
+        selector = rule.group("selector")
+        if "<style" in selector:
+            selector = selector.rsplit("<style", 1)[1].split(">", 1)[-1]
+        if not re.search(r"(?:^|[\s>+~])(?:button|input|select|textarea)(?:\b|[:.#[])", selector):
+            continue
+        if not re.search(r"(?:^|;)\s*(?:border(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color|padding(?:-[a-z]+)?|width|min-width|max-width|height|min-height|max-height)\s*:", rule.group("body"), re.MULTILINE):
+            continue
+        for class_name in sorted(container_classes):
+            if re.search(rf"\.{re.escape(class_name)}(?![\w-])", selector):
+                findings.append(selector.strip())
+                break
+    return sorted(set(findings))
+
+
+def component_style_text(path: Path, source_text: str) -> str:
+    styles = [source_text]
+    for match in STYLE_SOURCE.finditer(source_text):
+        target = (path.parent / match.group("value")).resolve()
+        if target.is_file() and target.suffix == ".css":
+            styles.append(target.read_text(encoding="utf-8"))
+    return "\n".join(styles)
 
 
 def validate(root: Path = ROOT) -> list[str]:
@@ -28,7 +112,29 @@ def validate(root: Path = ROOT) -> list[str]:
     bridge = (design / "tdesignPrimitiveBridge.ts").read_text(encoding="utf-8") if (design / "tdesignPrimitiveBridge.ts").is_file() else ""
     ui_primitives_path = root / "frontend/packages/ui/src/primitives.ts"
     ui_primitives = ui_primitives_path.read_text(encoding="utf-8") if ui_primitives_path.is_file() else ""
+    ui_theme_path = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+    ui_theme = ui_theme_path.read_text(encoding="utf-8") if ui_theme_path.is_file() else ""
     errors: list[str] = []
+
+    source_root = root / "frontend/apps/web/src"
+    p3_files, p3_prefixes = p3_scope(root)
+    if source_root.is_dir():
+        for path in sorted(source_root.rglob("*.vue")):
+            relative = path.relative_to(root).as_posix()
+            if "/components/design-system/" in f"/{relative}" or relative in PROFESSIONAL_COMPOSITE_OWNERS:
+                continue
+            if relative in p3_files or relative.startswith(p3_prefixes):
+                continue
+            source_text = path.read_text(encoding="utf-8")
+            style_text = component_style_text(path, source_text)
+            if any(VISUAL_CHROME_PROPERTY.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME.finditer(style_text)):
+                errors.append(f"consumer primitive visual chrome must move to an adapter appearance: {relative}")
+            root_overrides = direct_root_visual_overrides(source_text, style_text)
+            if root_overrides:
+                errors.append(f"consumer primitive root classes must not own visual chrome: {relative} classes={','.join(root_overrides)}")
+            descendant_overrides = native_descendant_visual_overrides(source_text, style_text)
+            if descendant_overrides:
+                errors.append(f"consumer containers must not repaint primitive native controls: {relative} selectors={','.join(descendant_overrides)}")
 
     for component in PRIMITIVES:
         source = design / f"{component}.vue"
@@ -53,7 +159,7 @@ def validate(root: Path = ROOT) -> list[str]:
         if f"<{driver}" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
             errors.append(f"{modal} must use its TDesign overlay driver and preserve dialog semantics")
         overlay_kind = modal.removeprefix("Sc").lower()
-        if f'data-overlay-kind="{overlay_kind}"' not in text or 'data-state="open"' not in text:
+        if f'data-overlay-kind="{overlay_kind}"' not in text or ':data-state="open ? \'open\' : \'closed\'"' not in text:
             errors.append(f"{modal} must expose deterministic overlay state")
         if f"--sc-component-{overlay_kind}-z-index" not in text:
             errors.append(f"{modal} must consume its registered overlay stacking token")
@@ -65,6 +171,13 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInput must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in input_text or ':aria-busy="loading || undefined"' not in input_text:
         errors.append("ScInput must expose loading state on the native input control")
+    if input_text.count(':data-appearance="appearance"') != 2:
+        errors.append("ScInput must project its registered appearance to both standard and specialized drivers")
+    input_group_text = (design / "ScInputGroup.vue").read_text(encoding="utf-8") if (design / "ScInputGroup.vue").is_file() else ""
+    if "<TDesignInputAdornment" not in input_group_text or 'data-primitive-driver="tdesign"' not in input_group_text:
+        errors.append("ScInputGroup must delegate grouped input chrome to TDesign InputAdornment")
+    if "TDesignInputAdornment" not in bridge or "TDesignInputAdornment" not in ui_primitives:
+        errors.append("ScInputGroup must consume the public project TDesign InputAdornment authority")
 
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
     if "<TDesignTextarea" not in textarea_text or "v-native-control-projection" not in textarea_text:
@@ -74,6 +187,21 @@ def validate(root: Path = ROOT) -> list[str]:
     if ':data-loading="loading || undefined"' not in textarea_text or ':aria-busy="loading || undefined"' not in textarea_text:
         errors.append("ScTextarea must expose loading state on the native textarea control")
 
+    date_field_text = (design / "ScDateField.vue").read_text(encoding="utf-8") if (design / "ScDateField.vue").is_file() else ""
+    for marker in (
+        '<TDesignDatePicker',
+        'v-native-control-projection="nativeProjection"',
+        "selector: 'input' as const",
+        'required: props.required',
+        "'aria-required': props.required ? 'true' : undefined",
+        "'aria-invalid': props.invalid ? 'true' : undefined",
+        "'aria-describedby': props.describedBy",
+    ):
+        if marker not in date_field_text:
+            errors.append(f"ScDateField missing native accessibility projection: {marker}")
+    if ':aria-required=' in date_field_text:
+        errors.append("ScDateField must not place aria-required on the DatePicker wrapper")
+
     button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
     for marker in (
         '<TDesignButton',
@@ -81,11 +209,17 @@ def validate(root: Path = ROOT) -> list[str]:
         ':aria-disabled="disabled || loading || undefined"',
         ':loading="loading"',
         'tdesignButtonPresentation',
+        'v-bind="attrs"',
+        'inheritAttrs: false',
+        ':data-appearance="appearance"',
     ):
         if marker not in button_text:
             errors.append(f"ScButton missing governed interaction-state marker: {marker}")
     if "TDesignButton" not in bridge or "TDesignButton" not in ui_primitives:
         errors.append("ScButton must consume the public project TDesign button authority")
+    icon_button_text = (design / "ScIconButton.vue").read_text(encoding="utf-8") if (design / "ScIconButton.vue").is_file() else ""
+    if "<TDesignButton" not in icon_button_text or ':data-appearance="appearance"' not in icon_button_text:
+        errors.append("ScIconButton must use the TDesign button driver and project registered appearances")
 
     checkbox_text = (design / "ScCheckbox.vue").read_text(encoding="utf-8") if (design / "ScCheckbox.vue").is_file() else ""
     for marker in (
@@ -150,6 +284,33 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("missing project UI primitive driver authority")
     elif FORBIDDEN_PRIVATE_TDESIGN.search(ui_primitives) or "tdesign-vue-next/es/" not in ui_primitives:
         errors.append("project UI primitive driver must use TDesign public entrypoints")
+
+    visual_projection_markers = (
+        "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
+        "--td-text-color-placeholder: var(--sc-semantic-text-secondary)",
+        "--td-border-level-2-color: var(--sc-semantic-border-strong)",
+        ".sc-input.t-input__wrap[data-size='large'] > .t-input",
+        ".sc-select[data-size='medium'] .t-input",
+        ".sc-textarea .t-textarea__inner",
+        ".sc-btn.t-button",
+        ".sc-btn.t-button.sc-btn-primary[data-status='default']",
+        ".sc-btn.t-button.sc-btn-primary[data-status='default']:hover:not(:disabled)",
+        "background-color: var(--sc-semantic-surface-interactive)",
+        "background-color: var(--sc-semantic-surface-interactive-hover)",
+        "color: var(--sc-semantic-text-on-interactive)",
+        "--sc-component-input-height-md",
+        "--sc-component-button-height-md",
+    )
+    if not ui_theme:
+        errors.append("missing project TDesign visual projection bridge")
+    else:
+        for marker in visual_projection_markers:
+            if marker not in ui_theme:
+                errors.append(f"TDesign visual projection bridge missing marker: {marker}")
+        if ".sc-btn.t-button.sc-btn-primary {" in ui_theme or ".sc-btn.t-button.sc-btn-primary:hover" in ui_theme:
+            errors.append("primary button visual projection must preserve non-default status themes")
+        if FORBIDDEN_BUSINESS_IDENTITY.search(ui_theme):
+            errors.append("TDesign visual projection bridge contains business-specific identity")
 
     return errors
 

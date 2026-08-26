@@ -19,6 +19,7 @@
     :select-on-row-click="selectOnRowClick"
     :aria-label="label"
     :data-row-count="data.length"
+    :data-appearance="appearance"
     data-semantic-driver="tdesign-table"
     @row-click="emit('rowClick', $event)"
     @row-dblclick="emit('rowDblclick', $event)"
@@ -31,8 +32,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, type ComputedRef } from 'vue';
 import { TDesignTable } from './tdesignPrimitiveBridge';
+import type { TDesignTableRowAttributes, TDesignTableRowData } from './tdesignPrimitiveBridge';
 import { normalizePrimitiveSize, semanticPrimitiveIdentity, type ScPrimitiveSize } from './primitiveAdapter';
 
 const props = withDefaults(defineProps<{
@@ -53,6 +55,7 @@ const props = withDefaults(defineProps<{
   rowSelectionType?: 'single' | 'multiple';
   selectOnRowClick?: boolean;
   label: string;
+  appearance?: 'default' | 'surface' | 'flush' | 'collection';
 }>(), {
   data: () => [],
   columns: () => [],
@@ -63,13 +66,17 @@ const props = withDefaults(defineProps<{
   disableDataPage: true,
   selectedRowKeys: () => [],
   footData: () => [],
+  appearance: 'default',
 });
-function stringAttributes(attributes: Record<string, unknown> | undefined): Record<string, string> {
-  return Object.fromEntries(Object.entries(attributes || {}).map(([name, value]) => [name, String(value ?? '')]));
+function projectRowAttributes(attributes: Record<string, unknown> | undefined): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(attributes || {}).map(([name, value]) => [
+    name,
+    /^on[A-Z]/.test(name) && typeof value === 'function' ? value : String(value ?? ''),
+  ]));
 }
 const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
-  ? (context: unknown) => stringAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
-  : stringAttributes(props.rowAttributes));
+  ? (context: unknown) => projectRowAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
+  : projectRowAttributes(props.rowAttributes)) as unknown as ComputedRef<TDesignTableRowAttributes<TDesignTableRowData>>;
 const emit = defineEmits<{
   rowClick: [context: unknown];
   rowDblclick: [context: unknown];

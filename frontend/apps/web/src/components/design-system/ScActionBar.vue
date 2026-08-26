@@ -1,2 +1,2 @@
-<template><div class="sc-action-group sc-design-action-bar" role="group" :aria-label="label"><slot /></div></template>
-<script setup lang="ts">withDefaults(defineProps<{label?:string}>(),{label:'页面操作'});</script>
+<template><TDesignSpace v-bind="semanticPrimitiveIdentity('ScActionBar')" class="sc-action-group sc-design-action-bar" role="group" :aria-label="label" break-line><slot /></TDesignSpace></template>
+<script setup lang="ts">import { TDesignSpace } from './tdesignPrimitiveBridge'; import { semanticPrimitiveIdentity } from './primitiveAdapter'; withDefaults(defineProps<{label?:string}>(),{label:'页面操作'});</script>

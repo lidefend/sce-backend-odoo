@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceCommit": "376bbfb229afa995f8d5f16e7fca4ec8131e29b9",
-  "generatorDigest": "5ce5dcd991f127ad806d5e18386a8e2e82ed891a98c753430d6f69e028ebad5a",
-  "ownershipDigest": "138582376e6038ec7d4de5d40956e7e1def8398b0b0fc052d3922db6a36ce304",
-  "inputDigest": "1fc46915a72f104d33e477997067730cdde6f0953e596447558876488b3d6356",
+  "sourceCommit": "ea0170d2652188083146c5423ed9dcbb20a170d7",
+  "generatorDigest": "617f82ac546d795f4767c2cec2bcba14e2577a67080b57520ba81fad3beae006",
+  "ownershipDigest": "6349644dec46ae7c415f217a04ba9cf89c2524787cf8bfc07aa62ce1401b9d1f",
+  "inputDigest": "02d94a7e35a4be099da537822818cd97c4c3e917eafc46980f1e1077c51fa488",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,13 +20,13 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 138,
+    "surfaceCount": 151,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 93,
-    "governed_primitive": 27,
+    "governed_composite": 94,
+    "governed_primitive": 39,
     "p3_out_of_scope": 18
   },
   "nextBatch": null,
@@ -76,8 +76,7 @@
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -237,6 +236,18 @@
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/components/design-system/ScAutoComplete.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
       "source": "frontend/apps/web/src/components/design-system/ScBadge.vue",
       "formalProductLayer": "P0",
       "status": "governed_primitive",
@@ -255,7 +266,8 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "loading",
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -282,9 +294,19 @@
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "input": 1
-      },
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScDatePicker.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -296,6 +318,18 @@
       "stateTypes": [
         "loading",
         "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScDisclosure.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -387,12 +421,21 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "empty",
-        "disabled",
-        "focus"
+        "disabled"
       ],
-      "rawControls": {
-        "input": 1
-      },
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScForm.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -426,7 +469,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "disabled"
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -490,6 +534,43 @@
       "targetBatch": null
     },
     {
+      "source": "frontend/apps/web/src/components/design-system/ScNumberInput.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "error",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScPagination.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScProgress.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
       "source": "frontend/apps/web/src/components/design-system/ScRadio.vue",
       "formalProductLayer": "P0",
       "status": "governed_primitive",
@@ -521,9 +602,7 @@
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "input": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -536,6 +615,42 @@
         "error",
         "disabled",
         "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScSkeleton.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "loading"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScSteps.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScSwitch.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -582,7 +697,31 @@
       "targetBatch": null
     },
     {
+      "source": "frontend/apps/web/src/components/design-system/ScTimePicker.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
       "source": "frontend/apps/web/src/components/design-system/ScTooltip.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScUpload.vue",
       "formalProductLayer": "P0",
       "status": "governed_primitive",
       "reason": "design-system primitive source",
@@ -896,8 +1035,7 @@
       "stateTypes": [
         "loading",
         "error",
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -910,8 +1048,7 @@
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -977,6 +1114,18 @@
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue",
@@ -1068,8 +1217,7 @@
       "stateTypes": [
         "loading",
         "empty",
-        "error",
-        "focus"
+        "error"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1135,8 +1283,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1216,8 +1363,7 @@
       "stateTypes": [
         "loading",
         "empty",
-        "error",
-        "focus"
+        "error"
       ],
       "rawControls": {},
       "governedStatePrimitives": [
@@ -1293,7 +1439,6 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
-        "loading",
         "disabled"
       ],
       "rawControls": {},
@@ -1598,8 +1743,7 @@
       "stateTypes": [
         "loading",
         "error",
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1760,8 +1904,7 @@
         "loading",
         "empty",
         "error",
-        "disabled",
-        "focus"
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],

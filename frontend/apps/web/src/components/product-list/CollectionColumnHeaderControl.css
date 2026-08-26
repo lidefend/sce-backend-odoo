@@ -4,19 +4,12 @@
 .cell-sortable:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--sc-semantic-focus-ring); }
 .cell-sortable.is-sort-disabled { cursor: default; }
 .cell-sortable.is-sort-disabled:hover, .cell-sortable.is-sort-disabled:focus-visible { background: var(--sc-app-panel); box-shadow: none; }
-.column-drag-handle { position: absolute; inset: 0 auto 0 0; z-index: var(--sc-z-content-raised); width: 22px; border: 0; background: transparent; padding: 0; cursor: grab; }
+.column-drag-handle { position: absolute; inset: 0 auto 0 0; z-index: var(--sc-z-content-raised); width: 22px; padding: 0; cursor: grab; }
 .column-drag-handle:active { cursor: grabbing; }
-.column-drag-handle::before { content: ""; position: absolute; top: 50%; left: 9px; width: 3px; height: 14px; border-radius: 999px; background: radial-gradient(circle, var(--sc-app-text-secondary) 1.2px, transparent 1.4px) 0 0 / 3px 5px repeat-y; opacity: 0.45; transform: translateY(-50%); }
-.column-drag-handle:hover::before, .column-drag-handle:focus-visible::before, .is-dragging .column-drag-handle::before { background: radial-gradient(circle, var(--sc-app-info-text) 1.2px, transparent 1.4px) 0 0 / 3px 5px repeat-y; opacity: 1; }
-.column-drag-handle:focus-visible, .column-resize-handle:focus-visible { outline: 2px solid var(--sc-semantic-focus-ring); outline-offset: -3px; }
-.column-sort-btn { display: inline-flex; align-items: center; justify-content: flex-start; gap: 4px; width: 100%; min-height: var(--sc-table-header-height, 40px); max-width: 100%; border: 0; background: transparent; color: var(--sc-app-text-primary); padding: 0 12px 0 18px; font: inherit; font-weight: 700; line-height: 16px; text-align: left; cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
+.column-sort-btn { display: inline-flex; align-items: center; justify-content: flex-start; gap: 4px; width: 100%; min-height: var(--sc-table-header-height, 40px); max-width: 100%; padding: 0 12px 0 18px; font: inherit; font-weight: 700; line-height: 16px; text-align: left; cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
 .column-sort-btn > span:first-child { min-width: 0; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
 .column-long-text .column-sort-btn, .column-long-text .column-drag-handle { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
-.is-sort-disabled .column-sort-btn { color: var(--sc-app-text-secondary); cursor: default; }
-.cell-sortable:hover .column-sort-btn, .cell-sortable:focus-visible .column-sort-btn, .column-sort-btn:hover { color: var(--sc-app-info-text); }
-.is-sort-disabled:hover .column-sort-btn, .is-sort-disabled:focus-visible .column-sort-btn, .is-sort-disabled .column-sort-btn:hover { color: var(--sc-app-text-secondary); }
-.column-resize-handle { position: absolute; inset: 0 0 0 auto; z-index: var(--sc-z-content); width: 8px; border: 0; background: transparent; padding: 0; cursor: col-resize; }
-.column-resize-handle::after { content: ""; position: absolute; top: 10px; right: 5px; width: 1px; height: calc(100% - 20px); background: transparent; }
-.column-resize-handle:hover::after, .is-dragging .column-resize-handle::after { background: var(--sc-app-info-text); }
+.is-sort-disabled .column-sort-btn { cursor: default; }
+.column-resize-handle { position: absolute; inset: 0 0 0 auto; z-index: var(--sc-z-content); width: 8px; padding: 0; cursor: col-resize; }
 .sort-indicator { width: 12px; min-width: 12px; color: var(--sc-app-info-text); }
 @media (prefers-reduced-motion: reduce) { .cell-sortable { transition-duration: 0.01ms; } }

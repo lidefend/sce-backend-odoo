@@ -1,19 +1,12 @@
 import type { Ref } from 'vue';
 import type { SceneListProfile } from '../resolvers/sceneRegistry';
+import { resolveCollectionStatusPresentation } from '../presentation/collectionStatusPresentation';
 
 type ListColumnMetricOption = {
   name: string;
   selection?: Array<{ value: string; label: string }>;
   toneByValue?: Record<string, string>;
 };
-
-function normalizeCellRawValue(value: unknown) {
-  if (Array.isArray(value)) {
-    if (value.length > 1 && value[1] !== null && value[1] !== undefined) return value[1];
-    if (value.length) return value[0];
-  }
-  return value;
-}
 
 export function useActionViewCollectionMetricRuntime(options: {
   listProfile: Ref<SceneListProfile | null>;
@@ -30,14 +23,14 @@ export function useActionViewCollectionMetricRuntime(options: {
     const statusField = String(options.listProfile.value?.status_field || '').trim();
     if (!statusField) return { text: '', tone: 'neutral' };
     const column = options.listColumnOptions.value.find((item) => item.name === statusField);
-    const raw = normalizeCellRawValue(row[statusField]);
-    const key = String(raw ?? '').trim();
-    const selectionLabel = key && Array.isArray(column?.selection)
-      ? column.selection.find((item) => item.value === key)?.label || ''
-      : '';
+    const status = resolveCollectionStatusPresentation({
+      value: row[statusField],
+      selection: column?.selection,
+      toneByValue: column?.toneByValue,
+    });
     return {
-      text: selectionLabel || key,
-      tone: key ? (column?.toneByValue?.[key] || 'neutral') : 'neutral',
+      text: status.label,
+      tone: status.tone,
     };
   }
 

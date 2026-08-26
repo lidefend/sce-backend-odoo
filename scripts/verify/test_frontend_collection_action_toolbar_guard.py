@@ -80,6 +80,16 @@ class CollectionActionToolbarGuardTest(unittest.TestCase):
             validate(self.source, altered, self.overflow_source, self.batch_source),
         )
 
+    def test_legacy_searchbox_visual_chrome_cannot_wrap_the_input_group(self):
+        altered = self.source.replace(
+            "  gap: 4px;\n}\n\n.collection-search-control",
+            "  gap: 4px;\n  border: 1px solid red;\n}\n\n.collection-search-control",
+        )
+        self.assertIn(
+            "collection toolbar legacy searchbox retains visual chrome outside ScInputGroup",
+            validate(altered, self.list_source, self.overflow_source, self.batch_source),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -429,7 +429,13 @@ async function open(page, route) {
   await waitBusiness(page);
 }
 async function selectCompany(page, label) {
-  await page.getByRole('button', { name: '公司空间：切换公司', exact: true }).click();
+  const contextIndicator = page.locator('[data-semantic-component="WorkspaceContextIndicator"]:visible');
+  await contextIndicator.waitFor({ state: 'visible', timeout: 30000 });
+  check(await contextIndicator.count() === 1, 'workspace context indicator identity is not unique');
+  const companyTrigger = contextIndicator.getByRole('button', { name: /^切换公司：/ });
+  await companyTrigger.waitFor({ state: 'visible', timeout: 30000 });
+  check(await companyTrigger.count() === 1, 'company switch trigger identity is not unique');
+  await companyTrigger.click();
   const companyPanel = page.locator('.workspace-scope-panel').filter({
     has: page.getByRole('heading', { name: '公司空间', exact: true }),
   });
@@ -1074,7 +1080,12 @@ async function openPaymentCreateFromList(page, target, label) {
   const listSurface = page.locator('[data-product-page-mode="list"][data-list-status]:visible');
   await listSurface.waitFor({ state: 'visible', timeout: 45000 });
   check(await listSurface.count() === 1, `${label}: active payment list identity is not unique`);
-  const create = listSurface.getByRole('button', { name: '新建', exact: true });
+  const actionViewSurface = page.locator(
+    '[data-product-page-mode="list"][data-semantic-component="ActionView"][data-collection-state]:visible',
+  );
+  await actionViewSurface.waitFor({ state: 'visible', timeout: 45000 });
+  check(await actionViewSurface.count() === 1, `${label}: active payment action view identity is not unique`);
+  const create = actionViewSurface.getByRole('button', { name: '新建', exact: true });
   await create.waitFor({ state: 'visible', timeout: 45000 });
   check(await create.count() === 1, `${label}: create payment action identity is not unique`);
   check(await create.isEnabled(), `${label}: create payment action is disabled`);

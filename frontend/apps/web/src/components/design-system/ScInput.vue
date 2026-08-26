@@ -9,12 +9,16 @@
     :data-size="normalizePrimitiveSize(size)"
     :data-status="status"
     :data-loading="loading || undefined"
+    :data-readonly="readonly || undefined"
+    :data-disabled="disabled || loading || undefined"
+    :data-appearance="appearance"
     data-primitive-driver="tdesign"
     :model-value="modelValue"
     :type="tdesignType"
     :disabled="disabled || loading"
     :readonly="readonly"
     :placeholder="placeholder"
+    :clearable="clearable"
     :autocomplete="autocomplete"
     :aria-busy="loading || undefined"
     :aria-describedby="describedBy"
@@ -28,7 +32,10 @@
     @change="onTDesignChange"
     @focus="onTDesignFocus"
     @blur="onTDesignBlur"
-  />
+  >
+    <template v-if="$slots.prefix" #prefixIcon><slot name="prefix" /></template>
+    <template v-if="$slots.suffix" #suffixIcon><slot name="suffix" /></template>
+  </TDesignInput>
   <input
     v-else
     ref="inputRef"
@@ -39,6 +46,9 @@
     :data-size="normalizePrimitiveSize(size)"
     :data-status="status"
     :data-loading="loading || undefined"
+    :data-readonly="readonly || undefined"
+    :data-disabled="disabled || loading || undefined"
+    :data-appearance="appearance"
     :value="modelValue"
     :type="type"
     :disabled="disabled || loading"
@@ -68,7 +78,7 @@ import { nativeControlProjection } from './nativeControlProjection';
 import { normalizePrimitiveSize, resolvePrimitiveControlUpdate, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
 const inputRef = ref<HTMLInputElement | null>(null);
-const tdesignInputRef = ref<{ focus?: () => void } | null>(null);
+const tdesignInputRef = ref<{ $el?: HTMLElement } | null>(null);
 const vNativeControlProjection = nativeControlProjection;
 
 const props = withDefaults(defineProps<{
@@ -88,6 +98,8 @@ const props = withDefaults(defineProps<{
   step?: string | number;
   minLength?: number;
   maxLength?: number;
+  clearable?: boolean;
+  appearance?: 'default' | 'navigation-search' | 'form-field' | 'record-title' | 'relation-tag-entry';
 }>(), {
   modelValue: '',
   size: 'medium',
@@ -101,6 +113,8 @@ const props = withDefaults(defineProps<{
   step: undefined,
   minLength: undefined,
   maxLength: undefined,
+  clearable: false,
+  appearance: 'default',
 });
 
 const emit = defineEmits<{
@@ -176,6 +190,9 @@ function onTDesignBlur(value: string | number, context: { e?: FocusEvent }) {
 }
 
 defineExpose({
-  focus: () => usesTDesignDriver.value ? tdesignInputRef.value?.focus?.() : inputRef.value?.focus(),
+  focus: () => {
+    if (!usesTDesignDriver.value) return inputRef.value?.focus();
+    return tdesignInputRef.value?.$el?.querySelector<HTMLInputElement>('input')?.focus();
+  },
 });
 </script>

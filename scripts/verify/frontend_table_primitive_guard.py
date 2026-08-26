@@ -18,7 +18,7 @@ def main() -> int:
             print(f"- raw table bypasses ScTable TDesign adapter: {path}")
         return 1
     primitive = PRIMITIVE.read_text(encoding="utf-8") if PRIMITIVE.is_file() else ""
-    for marker in ("<TDesignTable", 'data-semantic-driver="tdesign-table"'):
+    for marker in ("<TDesignTable", 'data-semantic-driver="tdesign-table"', "typeof value === 'function' ? value"):
         if marker not in primitive:
             print(f"[frontend-table-primitive] FAIL\n- ScTable missing {marker}")
             return 1

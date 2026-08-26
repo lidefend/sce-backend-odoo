@@ -19,6 +19,11 @@ export { default as ScIconButton } from './ScIconButton.vue';
 export { default as ScIcon } from './ScIcon.vue';
 export { default as ScMobileRecordCard } from './ScMobileRecordCard.vue';
 export { default as ScInput } from './ScInput.vue';
+export { default as ScInputGroup } from './ScInputGroup.vue';
+export { default as ScLayout } from './ScLayout.vue';
+export { default as ScAside } from './ScAside.vue';
+export { default as ScHeader } from './ScHeader.vue';
+export { default as ScContent } from './ScContent.vue';
 export { default as ScInlineState } from './ScInlineState.vue';
 export { default as ScTextarea } from './ScTextarea.vue';
 export { default as ScLoading } from './ScLoading.vue';
@@ -36,6 +41,25 @@ export { default as ScStatusBadge } from './ScStatusBadge.vue';
 export { default as ScTable } from './ScTable.vue';
 export { default as ScTabs } from './ScTabs.vue';
 export { default as ScTooltip } from './ScTooltip.vue';
+export { default as ScAutoComplete } from './ScAutoComplete.vue';
+export { default as ScNumberInput } from './ScNumberInput.vue';
+export { default as ScSwitch } from './ScSwitch.vue';
+export { default as ScDatePicker } from './ScDatePicker.vue';
+export { default as ScTimePicker } from './ScTimePicker.vue';
+export { default as ScUpload } from './ScUpload.vue';
+export { default as ScForm } from './ScForm.vue';
+export { default as ScFormItem } from './ScFormItem.vue';
+export { default as ScCard } from './ScCard.vue';
+export { default as ScCollapse } from './ScCollapse.vue';
+export { default as ScDisclosure } from './ScDisclosure.vue';
+export { default as ScProgress } from './ScProgress.vue';
+export { default as ScSkeleton } from './ScSkeleton.vue';
+export { default as ScDescriptions } from './ScDescriptions.vue';
+export { default as ScList } from './ScList.vue';
+export { default as ScTimeline } from './ScTimeline.vue';
+export { default as ScSteps } from './ScSteps.vue';
+export { default as ScPagination } from './ScPagination.vue';
+export { default as ScPopconfirm } from './ScPopconfirm.vue';
 export {
   SC_PRIMITIVE_KEYS,
   normalizePrimitiveSize,

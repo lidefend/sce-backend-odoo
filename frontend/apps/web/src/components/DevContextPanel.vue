@@ -7,6 +7,7 @@
         :key="action.key"
         type="button"
         class="action-btn"
+        appearance="outline-action"
         size="small"
         variant="secondary"
         @click="action.onClick()"
@@ -73,13 +74,8 @@ defineProps<{
 }
 
 .action-btn {
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-text-secondary);
-  color: var(--sc-app-panel);
-  border-radius: 8px;
   padding: 4px 8px;
   font-size: 11px;
-  cursor: pointer;
 }
 
 .message {

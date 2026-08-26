@@ -43,6 +43,22 @@ class CollectionNavigationControlsGuardTest(unittest.TestCase):
             )
         )
 
+    def test_nested_column_header_semantics_fail(self):
+        altered = self.column.replace('<div', '<div role="columnheader" aria-sort="ascending"', 1)
+        self.assertIn(
+            "collection column header must not duplicate the native th semantics",
+            validate(self.component, self.list_page, self.grouping, altered),
+        )
+
+    def test_missing_native_th_sort_projection_fails(self):
+        altered = self.list_page.replace("{ 'aria-sort': columnAriaSort(field) }", '{}')
+        self.assertTrue(
+            any(
+                "project sort semantics to the native th" in item
+                for item in validate(self.component, altered, self.grouping, self.column)
+            )
+        )
+
     def test_parallel_group_page_controls_fail(self):
         altered = self.list_page + '\n<button class="group-page-btn">legacy</button>\n'
         self.assertIn(

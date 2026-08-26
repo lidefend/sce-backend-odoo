@@ -35,6 +35,8 @@ def validate(
         'focusOpenLayer',
         'import ScInput',
         '<ScInput',
+        'import ScInputGroup',
+        '<ScInputGroup class="collection-search-control">',
         'import ScSelect',
         '<ScSelect v-model="customFilterField" size="small" :placeholder=',
         ':options="customFilterFields.map(',
@@ -42,10 +44,12 @@ def validate(
         ':options="activeCustomFilterOperators.map(',
         '<ScButton type="button" variant="primary" size="small" :disabled="!canApplyCustomFilter || loading"',
         '<ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading"',
-        '<ScButton\n          v-if="hasStructuredConditions"\n          class="toolbar-clear-all"',
+        'v-if="hasStructuredConditions"\n                class="toolbar-clear-all"',
         '<ScButton\n          v-if="canCreateRecord"\n          class="toolbar-overflow-create"',
         "'search-input': [value: string]",
-        'var(--sc-semantic-focus-ring)',
+        'appearance="toolbar-chip"',
+        'appearance="menu-item"',
+        'appearance="toolbar-menu-toggle"',
         '@media (prefers-reduced-motion: reduce)',
     )
     for marker in required:
@@ -59,6 +63,9 @@ def validate(
     )
     if any(marker in text for marker in forbidden_legacy_actions):
         failures.append("collection toolbar retains a generic legacy action control")
+    native_searchbox_style = text[text.find(".native-searchbox {"):text.find(".collection-search-control {")]
+    if any(marker in native_searchbox_style for marker in ("border:", "border-radius:", "background:", "padding:")):
+        failures.append("collection toolbar legacy searchbox retains visual chrome outside ScInputGroup")
     stateful_semantic_controls = (
         'class="contract-chip"',
         'class="search-facet"',

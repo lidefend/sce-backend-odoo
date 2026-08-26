@@ -1,11 +1,11 @@
 <template>
-  <TDesignDrawer :visible="open" :header="false" :footer="false" :close-btn="false"
-    :close-on-esc-keydown="dismissible" :close-on-overlay-click="dismissible && closeOnBackdrop"
+  <TDesignDrawer :visible="open" :header="false" :footer="false" :close-btn="false" :destroy-on-close="true"
+    :close-on-esc-keydown="false" :close-on-overlay-click="dismissible && closeOnBackdrop" :prevent-scroll-through="false"
     :size="size === 'wide' ? 'var(--sc-component-dialog-wide-width)' : 'var(--sc-component-drawer-width)'"
     :drawer-class-name="['sc-design-drawer', panelClass].filter(Boolean).join(' ')" :z-index="drawerZIndex" @close="emit('close')">
-    <aside v-bind="$attrs" role="dialog" aria-modal="true" :aria-labelledby="titleId" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
+    <aside ref="surface" v-bind="$attrs" role="dialog" tabindex="-1" aria-modal="true" :aria-labelledby="titleId" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
       data-semantic-component="ScDrawer" data-semantic-driver="tdesign-drawer" data-semantic-layer="primitive"
-      data-overlay-kind="drawer" data-state="open" :data-size="size" :data-dismissible="dismissible">
+      data-overlay-kind="drawer" :data-state="open ? 'open' : 'closed'" :aria-hidden="open ? undefined : true" :data-size="size" :data-appearance="appearance" :data-dismissible="dismissible" @keydown="onKeydown">
       <header class="sc-design-drawer__header">
         <div class="sc-design-drawer__heading"><h2 :id="titleId">{{ title }}</h2><p v-if="description" :id="descriptionId">{{ description }}</p></div>
         <div class="sc-design-drawer__header-actions"><slot name="header-actions" /><ScIconButton v-if="dismissible" :label="closeLabel" @click="emit('close')"><ScIcon name="close" /></ScIconButton></div>
@@ -16,15 +16,23 @@
   </TDesignDrawer>
 </template>
 <script setup lang="ts">
-import { useId } from 'vue';
+import { ref, useId } from 'vue';
 import { TDesignDrawer } from './tdesignPrimitiveBridge';
+import { useModalLifecycle } from '../../composables/useModalLifecycle';
 import ScIcon from './ScIcon.vue';
 import ScIconButton from './ScIconButton.vue';
 defineOptions({ inheritAttrs: false });
-withDefaults(defineProps<{ open: boolean; title: string; description?: string; closeLabel?: string; panelClass?: string; size?: 'default' | 'wide'; dismissible?: boolean; closeOnBackdrop?: boolean; busy?: boolean }>(), {
-  description: '', closeLabel: '关闭', panelClass: '', size: 'default', dismissible: true, closeOnBackdrop: true, busy: false,
+const props = withDefaults(defineProps<{ open: boolean; title: string; description?: string; closeLabel?: string; panelClass?: string; size?: 'default' | 'wide'; appearance?: 'default' | 'workspace'; dismissible?: boolean; closeOnBackdrop?: boolean; busy?: boolean }>(), {
+  description: '', closeLabel: '关闭', panelClass: '', size: 'default', appearance: 'default', dismissible: true, closeOnBackdrop: true, busy: false,
 });
 const emit = defineEmits<{ close: [] }>();
+const surface = ref<HTMLElement | null>(null);
+const { onKeydown } = useModalLifecycle({
+  open: () => props.open,
+  surface,
+  close: () => emit('close'),
+  closeOnEscape: () => props.dismissible !== false,
+});
 const titleId = `sc-drawer-${useId()}`;
 const descriptionId = `${titleId}-description`;
 const drawerZIndex = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sc-component-drawer-z-index'), 10) || 2400;

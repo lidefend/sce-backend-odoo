@@ -4,7 +4,6 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  background: var(--sc-color-surface);
 }
 
 .relation-create-dialog__frame {
@@ -19,6 +18,5 @@
     width: 100vw;
     height: 100dvh;
     max-height: 100dvh;
-    border-radius: 0;
   }
 }

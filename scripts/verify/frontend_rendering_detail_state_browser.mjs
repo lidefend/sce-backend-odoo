@@ -34,6 +34,7 @@ const server = await createServer({
         import ProductFormLoadingSkeleton from '/src/components/product-record/ProductFormLoadingSkeleton.vue';
         import ProductFormErrorSummary from '/src/components/product-record/ProductFormErrorSummary.vue';
         import '/src/styles/design-system.css';
+        import '/src/styles/product-patterns.css';
         createApp({ render() { return h('main', { style: 'display:grid;gap:12px;max-width:720px;padding:16px' }, [
           h(ScInlineState, { state: 'loading', label: '正在加载', id: 'loading-state' }),
           h(ScInlineState, { state: 'empty', label: '暂无记录' }),
@@ -73,7 +74,11 @@ try {
   page.on('pageerror', (error) => errors.push(`page:${error.message}`));
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`http://127.0.0.1:${address.port}/__rendering_detail_state.html`);
-  await page.locator('[data-semantic-component="ScInlineState"]').first().waitFor();
+  try {
+    await page.locator('[data-semantic-component="ScInlineState"]').first().waitFor({ timeout: 15000 });
+  } catch (error) {
+    throw new Error(`rendering detail harness did not mount: ${JSON.stringify({ errors, body: (await page.locator('body').innerText()).slice(0, 500) })}`, { cause: error });
+  }
   const desktopOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   const inlineStates = await page.locator('[data-semantic-component="ScInlineState"]').evaluateAll((nodes) => nodes.map((node) => ({
     state: node.getAttribute('data-state'),
@@ -99,17 +104,21 @@ try {
   })));
   const mixedCheckbox = await page.locator('[data-semantic-component="ScCheckbox"][data-indeterminate="true"]').evaluate((node) => {
     const input = node.querySelector('input[type="checkbox"]');
-    const indicator = node.querySelector('.sc-checkbox__indicator');
-    const pseudo = indicator ? getComputedStyle(indicator, '::after') : null;
     return {
       ariaChecked: input?.getAttribute('aria-checked'),
       nativeIndeterminate: input instanceof HTMLInputElement && input.indeterminate,
-      markerWidth: pseudo?.inlineSize,
-      markerHeight: pseudo?.blockSize,
+      driver: node.getAttribute('data-primitive-driver'),
     };
   });
-  await page.locator('#retry-action').focus();
-  const focusVisible = await page.locator('#retry-action').evaluate((node) => getComputedStyle(node).outlineStyle !== 'none');
+  await page.locator('[data-semantic-component="ScCheckbox"] input').focus();
+  for (let index = 0; index < 20; index += 1) {
+    if (await page.evaluate(() => document.activeElement?.id === 'retry-action')) break;
+    await page.keyboard.press('Tab');
+  }
+  const focusVisible = await page.locator('#retry-action').evaluate((node) => {
+    const style = getComputedStyle(node);
+    return document.activeElement === node && (style.outlineStyle !== 'none' || style.boxShadow !== 'none');
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   const pass = inlineStates.length === 3
@@ -127,7 +136,7 @@ try {
     && formStates.some((state) => state.component === 'ProductFormLoadingSkeleton' && state.state === 'loading' && state.busy === 'true')
     && formStates.some((state) => state.component === 'ProductFormErrorSummary' && state.state === 'error')
     && mixedCheckbox.ariaChecked === 'mixed' && mixedCheckbox.nativeIndeterminate
-    && mixedCheckbox.markerWidth === '8px' && mixedCheckbox.markerHeight === '2px'
+    && mixedCheckbox.driver === 'tdesign'
     && loadingMotion === 'none' && focusVisible
     && !desktopOverflow && !mobileOverflow && errors.length === 0;
   console.log(JSON.stringify({ pass, inlineStates, collectionStates, collectionDisabledReasons, formStates, mixedCheckbox, compactHeadings, unexpectedHeadings, unsupportedConsumerErrors, blockConsumerErrors, loadingMotion, focusVisible, desktopOverflow, mobileOverflow, errors, mutation: 0 }, null, 2));

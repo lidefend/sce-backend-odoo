@@ -9,6 +9,7 @@
     :data-size="size"
     :data-status="status"
     :data-readonly="readonly || undefined"
+    :data-appearance="appearance"
     :model-value="modelValue"
     :options="tdesignOptions"
     :size="size"
@@ -48,12 +49,14 @@ const props = withDefaults(defineProps<{
   required?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  appearance?: 'default' | 'form-field';
 }>(), {
   options: () => [],
   placeholder: undefined,
   size: 'medium',
   status: 'default',
   describedBy: undefined,
+  appearance: 'default',
 });
 const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string] }>();
 const selectRef = ref<{ focus?: () => void; $el?: HTMLElement } | null>(null);

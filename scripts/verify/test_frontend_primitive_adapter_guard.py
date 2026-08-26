@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from scripts.verify.frontend_primitive_adapter_guard import PRIMITIVES, validate
+from scripts.verify.frontend_primitive_adapter_guard import PRIMITIVES, direct_root_visual_overrides, native_descendant_visual_overrides, validate
 
 
 class PrimitiveAdapterGuardTest(unittest.TestCase):
@@ -16,12 +16,14 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         design.mkdir(parents=True)
         ui = root / "frontend/packages/ui/src"
         ui.mkdir(parents=True)
+        theme = ui / "kits/tdesign/theme.css"
+        theme.parent.mkdir(parents=True)
         (design / "index.ts").write_text(
             "\n".join(f"export {{ default as {name} }} from './{name}.vue';" for name in PRIMITIVES),
             encoding="utf-8",
         )
         (design / "tdesignPrimitiveBridge.ts").write_text(
-            "export { TDesignAlert, TDesignButton, TDesignCheckbox, TDesignRadioGroup, TDesignRadio, TDesignDialog, TDesignDrawer, TDesignEmpty, TDesignInput, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
+            "export { TDesignAlert, TDesignButton, TDesignCheckbox, TDesignRadioGroup, TDesignRadio, TDesignDialog, TDesignDrawer, TDesignEmpty, TDesignInput, TDesignInputAdornment, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
         )
         (ui / "primitives.ts").write_text(
             "export { Alert as TDesignAlert } from 'tdesign-vue-next/es/alert';\n"
@@ -30,6 +32,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "export { RadioGroup as TDesignRadioGroup } from 'tdesign-vue-next/es/radio';\n"
             "export { Radio as TDesignRadio } from 'tdesign-vue-next/es/radio';\n"
             "export { Input as TDesignInput } from 'tdesign-vue-next/es/input';\n"
+            "export { InputAdornment as TDesignInputAdornment } from 'tdesign-vue-next/es/input-adornment';\n"
             "export { Select as TDesignSelect } from 'tdesign-vue-next/es/select';\n"
             "export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';\n"
             "export { Dialog as TDesignDialog } from 'tdesign-vue-next/es/dialog';\n"
@@ -37,19 +40,38 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "export { Empty as TDesignEmpty } from 'tdesign-vue-next/es/empty';\n",
             encoding="utf-8",
         )
+        theme.write_text(
+            ":root {\n"
+            "  --td-bg-color-specialcomponent: var(--sc-semantic-surface-input);\n"
+            "  --td-text-color-placeholder: var(--sc-semantic-text-secondary);\n"
+            "  --td-border-level-2-color: var(--sc-semantic-border-strong);\n"
+            "}\n"
+            ".sc-input.t-input__wrap[data-size='large'] > .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
+            ".sc-select[data-size='medium'] .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
+            ".sc-textarea .t-textarea__inner { min-height: calc(var(--sc-component-input-height-md) * 2px); }\n"
+            ".sc-btn.t-button { height: calc(var(--sc-component-button-height-md) * 1px); }\n"
+            ".sc-btn.t-button.sc-btn-primary[data-status='default'] { border-color: var(--sc-semantic-surface-interactive); "
+            "background-color: var(--sc-semantic-surface-interactive); color: var(--sc-semantic-text-on-interactive); }\n"
+            ".sc-btn.t-button.sc-btn-primary[data-status='default']:hover:not(:disabled) { "
+            "background-color: var(--sc-semantic-surface-interactive-hover); "
+            "color: var(--sc-semantic-text-on-interactive); }\n",
+            encoding="utf-8",
+        )
         for name in PRIMITIVES:
             overlay_kind = name.removeprefix("Sc").lower()
             modal_contract = (
                 f'<TDesign{name.removeprefix("Sc")} role="dialog" aria-modal="true" data-overlay-kind="{overlay_kind}" '
-                f'data-state="open" /><!-- --sc-component-{overlay_kind}-z-index -->'
+                f':data-state="open ? \'open\' : \'closed\'" /><!-- --sc-component-{overlay_kind}-z-index -->'
                 if name in {"ScDialog", "ScDrawer"} else ""
             )
             state_contract = {
-                "ScButton": '<TDesignButton :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation -->',
+                "ScButton": '<TDesignButton v-bind="attrs" :data-appearance="appearance" :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation inheritAttrs: false -->',
+                "ScIconButton": '<TDesignButton :data-appearance="appearance" />',
                 "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label -->',
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
                 "ScRadio": '<TDesignRadio :checked="checked" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadio\') -->',
-                "ScInput": '<TDesignInput v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input data-primitive-driver="browser-specialized" />',
+                "ScInput": '<TDesignInput v-native-control-projection :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" />',
+                "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
@@ -62,6 +84,13 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
                 encoding="utf-8",
             )
+        (design / "ScDateField.vue").write_text(
+            '<template><TDesignDatePicker v-native-control-projection="nativeProjection" /></template>\n'
+            "<script>const nativeProjection = { selector: 'input' as const, attributes: { required: props.required, "
+            "'aria-required': props.required ? 'true' : undefined, 'aria-invalid': props.invalid ? 'true' : undefined, "
+            "'aria-describedby': props.describedBy } };</script>\n",
+            encoding="utf-8",
+        )
         return root
 
     def test_valid_adapter_surface_passes(self) -> None:
@@ -85,6 +114,21 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         errors = validate(root)
         self.assertTrue(any("ScButton missing exact semantic" in error for error in errors))
         self.assertTrue(any("ScButton missing primitive layer" in error for error in errors))
+
+    def test_button_without_fallthrough_forwarding_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScButton.vue"
+        source.write_text(source.read_text(encoding="utf-8").replace('v-bind="attrs"', ''), encoding="utf-8")
+        self.assertTrue(any("v-bind=\"attrs\"" in error for error in validate(root)))
+
+    def test_date_field_without_native_required_projection_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScDateField.vue"
+        source.write_text(
+            source.read_text(encoding="utf-8").replace("'aria-required': props.required ? 'true' : undefined, ", ""),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("ScDateField missing native accessibility projection" in error for error in validate(root)))
 
     def test_business_identity_fails(self) -> None:
         root = self.make_root()
@@ -134,6 +178,67 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         errors = validate(root)
         self.assertTrue(any("data-indeterminate" in error for error in errors))
         self.assertTrue(any("aria-checked" in error for error in errors))
+
+    def test_missing_visual_projection_fails(self) -> None:
+        root = self.make_root()
+        theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+        theme.write_text(":root {}\n", encoding="utf-8")
+        self.assertTrue(any("visual projection bridge missing marker" in error for error in validate(root)))
+
+    def test_primary_button_contrast_projection_is_required(self) -> None:
+        root = self.make_root()
+        theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+        theme.write_text(
+            theme.read_text(encoding="utf-8").replace(
+                "background-color: var(--sc-semantic-surface-interactive-hover); ",
+                "",
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("surface-interactive-hover" in error for error in validate(root)))
+
+    def test_primary_projection_cannot_override_status_theme(self) -> None:
+        root = self.make_root()
+        theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+        theme.write_text(
+            theme.read_text(encoding="utf-8")
+            + "\n.sc-btn.t-button.sc-btn-primary { background-color: var(--sc-semantic-surface-interactive); }\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any("preserve non-default status themes" in error for error in validate(root)))
+
+    def test_business_identity_in_visual_projection_fails(self) -> None:
+        root = self.make_root()
+        theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+        theme.write_text(theme.read_text(encoding="utf-8") + "/* payment.request */\n", encoding="utf-8")
+        self.assertTrue(any("visual projection bridge contains business-specific identity" in error for error in validate(root)))
+
+    def test_consumer_cannot_reintroduce_primitive_visual_chrome(self) -> None:
+        root = self.make_root()
+        consumer = root / "frontend/apps/web/src/pages/LegacyPage.vue"
+        consumer.parent.mkdir(parents=True, exist_ok=True)
+        consumer.write_text("<style scoped>.legacy :deep(.sc-input) { border: 1px solid red; }</style>\n", encoding="utf-8")
+        self.assertTrue(any("adapter appearance" in error for error in validate(root)))
+
+    def test_consumer_root_class_cannot_hide_primitive_visual_chrome(self) -> None:
+        source = '<template><ScButton class="legacy-action" /></template><style>.legacy-action { background: red; border: 1px solid red; }</style>'
+        self.assertEqual(direct_root_visual_overrides(source), ["legacy-action"])
+
+    def test_dynamic_root_class_cannot_hide_primitive_visual_chrome(self) -> None:
+        source = '<template><ScButton :class="{ \'legacy-action\': selected }" /></template><style>.legacy-action { background: red; }</style>'
+        self.assertEqual(direct_root_visual_overrides(source), ["legacy-action"])
+
+    def test_container_cannot_repaint_primitive_native_control(self) -> None:
+        source = '<template><div class="legacy"><ScButton /></div></template><style>.legacy > button { width: 2rem; padding: 1rem; }</style>'
+        self.assertEqual(native_descendant_visual_overrides(source), [".legacy > button"])
+
+    def test_external_component_style_cannot_repaint_primitive_root(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/views/ExternalStyleView.vue"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text('<template><ScButton class="legacy" /></template><style scoped src="./ExternalStyleView.css"></style>', encoding="utf-8")
+        source.with_suffix(".css").write_text(".legacy { background: red; }", encoding="utf-8")
+        self.assertTrue(any("ExternalStyleView.vue classes=legacy" in error for error in validate(root)))
 
 
 if __name__ == "__main__":

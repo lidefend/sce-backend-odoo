@@ -20,7 +20,7 @@
     <div class="worksheet-layout" :style="layoutStyle">
       <aside class="worksheet-navigation">
         <h3>{{ navigationTitle }}</h3>
-        <ScButton class="navigation-all" variant="ghost" size="small" :class="{ active: !selectedNavigationNode }" @click="selectNavigation(null)">{{ labels.all }}</ScButton>
+        <ScButton class="navigation-all" appearance="tree-item" variant="ghost" size="small" :class="{ active: !selectedNavigationNode }" @click="selectNavigation(null)">{{ labels.all }}</ScButton>
         <HierarchyTreeNode
           v-for="node in navigationRoots"
           :key="node.key"
@@ -62,7 +62,7 @@
         <div class="worksheet-resizer worksheet-resizer-detail" role="separator" aria-orientation="horizontal" :aria-label="labels.resize_detail" tabindex="0" @pointerdown="startDetailResize" />
         <section class="worksheet-detail">
           <nav class="worksheet-tabs" aria-label="detail tabs">
-            <ScButton v-for="tab in detailTabs" :key="tab.key" variant="ghost" size="small" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">{{ tab.label }}</ScButton>
+            <ScButton v-for="tab in detailTabs" :key="tab.key" variant="ghost" size="small" appearance="section-tab" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">{{ tab.label }}</ScButton>
             <ScButton
               v-if="selectedRecord"
               class="worksheet-open-record"
@@ -379,8 +379,7 @@ onBeforeUnmount(() => stopResize());
 .worksheet-layout { display: grid; height: calc(100vh - 170px); min-height: 600px; overflow: hidden; border: 1px solid var(--sc-app-border); border-top: 0; background: var(--sc-app-panel); }
 .worksheet-navigation { min-width: 0; overflow: auto; padding: var(--sc-space-sm); }
 .worksheet-navigation h3 { margin: 0 0 var(--sc-space-xs); color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-body); }
-.navigation-all { width: 100%; min-height: var(--sc-touch-target-min); padding: var(--sc-space-xs); border: 0; border-radius: var(--sc-product-radius-control); background: transparent; text-align: left; }
-.navigation-all.active { background: var(--sc-app-selected-bg); color: var(--sc-app-selected-text); }
+.navigation-all { width: 100%; min-height: var(--sc-touch-target-min); padding: var(--sc-space-xs); text-align: left; }
 .worksheet-resizer { position: relative; z-index: 2; background: var(--sc-app-border); }
 .worksheet-resizer::after { position: absolute; content: ''; inset: -5px; }
 .worksheet-resizer:hover { background: var(--sc-app-accent); }
@@ -406,8 +405,6 @@ onBeforeUnmount(() => stopResize());
 .worksheet-resizer-detail { cursor: row-resize; }
 .worksheet-detail { min-height: 0; overflow: hidden; background: var(--sc-app-panel); }
 .worksheet-tabs { display: flex; min-height: 38px; padding: 0 var(--sc-space-sm); border-bottom: 1px solid var(--sc-app-border); }
-.worksheet-tabs button { padding: 0 var(--sc-space-sm); border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--sc-app-text-secondary); }
-.worksheet-tabs button.active { border-bottom-color: var(--sc-app-accent); color: var(--sc-app-text-primary); font-weight: 600; }
 .worksheet-open-record { margin: auto 0 auto auto; }
 .worksheet-detail-empty { padding: var(--sc-space-md); color: var(--sc-app-text-secondary); }
 .worksheet-detail-fields { display: grid; grid-template-columns: max-content minmax(180px, 1fr) max-content minmax(180px, 1fr); gap: var(--sc-space-xs) var(--sc-space-sm); max-height: calc(100% - 38px); margin: 0; padding: var(--sc-space-sm); overflow: auto; }

@@ -22,6 +22,7 @@
           variant="secondary"
           size="small"
           class="scene-block__button"
+          appearance="outline-action"
           @click="emitAction(block, action)"
         >
           {{ actionDisplayLabel(action) }}
@@ -34,6 +35,7 @@
             v-for="item in toolbarItems(block, 'quick_filters')"
             :key="`${block.key}-${String(item.key || item.label || '')}`"
             class="scene-block__chip"
+            appearance="toolbar-chip"
             variant="ghost"
             size="small"
             type="button"
@@ -47,6 +49,7 @@
             v-for="item in toolbarItems(block, 'view_modes')"
             :key="`${block.key}-view-${String(item.key || item.label || '')}`"
             class="scene-block__chip scene-block__chip--secondary"
+            appearance="toolbar-chip"
             variant="ghost"
             size="small"
             type="button"
@@ -66,6 +69,7 @@
             variant="ghost"
             size="small"
             class="scene-block__chip scene-block__chip--status"
+            appearance="status-chip"
             @click="emitStatusbarAction(block, item)"
           >
             {{ item.label }}
@@ -81,6 +85,7 @@
           variant="secondary"
           size="small"
           class="scene-block__button"
+          appearance="outline-action"
           @click="emitAction(block, action)"
         >
           {{ actionDisplayLabel(action) }}
@@ -102,7 +107,7 @@
           <span
             v-for="name in blockFieldNames(block)"
             :key="`${block.key}-field-${name}`"
-            class="scene-block__chip scene-block__chip--plain"
+            class="scene-block__plain-chip"
           >
             {{ name }}
           </span>
@@ -114,7 +119,7 @@
           <span
             v-for="item in relationFieldRows(block)"
             :key="`${block.key}-relation-${item.field}`"
-            class="scene-block__chip scene-block__chip--plain"
+            class="scene-block__plain-chip"
           >
             {{ item.label }}
           </span>
@@ -378,32 +383,20 @@ function emitAction(block: SceneBlock, action: SceneBlockAction) {
 }
 .scene-block__chip {
   padding: 4px 10px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 999px;
   font-size: 12px;
-  color: var(--sc-app-text-primary);
-  background: var(--sc-app-muted-bg);
-  cursor: pointer;
-}
-.scene-block__chip--secondary {
-  border-style: dashed;
-}
-.scene-block__chip--status {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
 }
 .scene-block__button {
   padding: 6px 12px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 999px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
   font-size: 13px;
-  cursor: pointer;
 }
-.scene-block__chip--plain {
+.scene-block__plain-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 999px;
+  background: var(--sc-app-muted-bg);
+  color: var(--sc-app-text-primary);
+  font-size: 12px;
   cursor: default;
-  border-color: var(--sc-app-border);
 }
 .scene-block__kv-grid {
   display: grid;

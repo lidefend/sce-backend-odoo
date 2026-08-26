@@ -7,6 +7,7 @@
         <ScButton
           v-if="onPrevWindow"
           class="page-btn"
+          appearance="summary-chip"
           :disabled="!canPrevWindow"
           @click="onPrevWindow?.()"
           variant="secondary"
@@ -17,6 +18,7 @@
         <ScButton
           v-if="onNextWindow"
           class="page-btn"
+          appearance="summary-chip"
           :disabled="!canNextWindow"
           @click="onNextWindow?.()"
           variant="secondary"
@@ -25,7 +27,7 @@
           下一组
         </ScButton>
         <span>{{ groupByLabel }}</span>
-        <ScButton v-if="activeKey" class="clear-btn" variant="ghost" size="small" @click="onClear?.()">清除下钻</ScButton>
+        <ScButton v-if="activeKey" class="clear-btn" appearance="summary-chip" variant="ghost" size="small" @click="onClear?.()">清除下钻</ScButton>
       </div>
     </header>
     <div class="group-summary-items">
@@ -33,6 +35,7 @@
         v-for="item in items"
         :key="`group-summary-${item.key}`"
         class="group-summary-item"
+        appearance="summary-chip"
         :class="{ active: activeKey === item.key }"
         variant="ghost"
         size="small"
@@ -149,40 +152,20 @@ const windowInfo = computed(() => {
 }
 
 .group-summary-item {
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: 999px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-info-text);
   padding: 4px 10px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  cursor: pointer;
-}
-
-.group-summary-item.active {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-app-info-bg);
 }
 
 .clear-btn {
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: 999px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-info-text);
   padding: 2px 8px;
   font-size: 12px;
-  cursor: pointer;
 }
 
 .page-btn {
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: 999px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-info-text);
   padding: 2px 8px;
   font-size: 12px;
-  cursor: pointer;
 }
 
 .page-btn:disabled {

@@ -17,6 +17,7 @@
       variant="ghost"
       size="small"
       class="canonical-form-native-action"
+      appearance="context-action"
       :disabled="!node.action.enabled"
       :title="node.action.reasonCode || undefined"
       :data-action-ref="node.action.actionRef.actionId"
@@ -122,12 +123,6 @@ const presentableNodeText = computed(() => {
   margin: 0 0 12px;
   color: var(--sc-app-text-primary);
   font-size: 15px;
-}
-.canonical-form-native-action {
-  border: 0;
-  background: transparent;
-  color: var(--sc-semantic-surface-interactive);
-  cursor: pointer;
 }
 .canonical-form-native-action:disabled { cursor: not-allowed; opacity: 0.55; }
 .canonical-form-native-widget { color: var(--sc-app-text-secondary); }

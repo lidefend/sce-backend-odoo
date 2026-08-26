@@ -1,0 +1,2550 @@
+{
+  "adapterProjection": [
+    {
+      "component": "ScInput",
+      "driverPresent": true,
+      "projectionMarker": ".sc-input.t-input__wrap[data-size='large'] > .t-input",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScInputGroup",
+      "driverPresent": true,
+      "projectionMarker": ".sc-input-group",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScButton",
+      "driverPresent": true,
+      "projectionMarker": ".sc-btn.t-button",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScSelect",
+      "driverPresent": true,
+      "projectionMarker": ".sc-select[data-size='medium'] .t-input",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScTextarea",
+      "driverPresent": true,
+      "projectionMarker": ".sc-textarea .t-textarea__inner",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScTable",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScTable']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScDialog",
+      "driverPresent": true,
+      "projectionMarker": ".sc-dialog",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScDrawer",
+      "driverPresent": true,
+      "projectionMarker": ".sc-design-drawer",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScTabs",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScTabs']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScCheckbox",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScCheckbox']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScRadio",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScRadio']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScRadioGroup",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScRadioGroup']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScLoading",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScLoading']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScEmptyState",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScEmptyState']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScErrorState",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScErrorState']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScBadge",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScBadge']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScDropdown",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScDropdown']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    },
+    {
+      "component": "ScTooltip",
+      "driverPresent": true,
+      "projectionMarker": "[data-semantic-component='ScTooltip']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
+    }
+  ],
+  "changedSourceProjection": [
+    {
+      "category": "other",
+      "digest": "540b3b726ddeaae0d3e96f01fadd3120e55931a0cae98b70eab25423756ae2a0",
+      "nativeStyleSelectors": [],
+      "path": "components/DevContextPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "dce4bff96882dc3e6446f55b72800376c09a3e0609f13597e7acb53083d5e75f",
+      "nativeStyleSelectors": [],
+      "path": "components/GlobalMessagePanel.vue",
+      "referenceNativeStyleSelectors": [
+        ".global-message__composer textarea",
+        ".global-message__field input, .global-message__composer textarea",
+        ".global-message__options button",
+        ".global-message__options button:disabled",
+        ".global-message__options button:hover:not(:disabled)"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScDrawer",
+        "ScIcon",
+        "ScInlineState",
+        "ScInput",
+        "ScTextarea"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "2beb90071218248be7fab8d703d6b1cd29e1b7919a4d5a586d1f40bde7e97f7c",
+      "nativeStyleSelectors": [],
+      "path": "components/GroupSummaryBar.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "61d5e5c6d01a308ef2c8abd2ca703aab29279b7e498ee8193d4fd1aac0fbd07f",
+      "nativeStyleSelectors": [],
+      "path": "components/MenuTree.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": []
+    },
+    {
+      "category": "workflow",
+      "digest": "e4752b503636d575570d4bd59e94384aea1bbbe386f0a278cc2e0ca3afcec76e",
+      "nativeStyleSelectors": [],
+      "path": "components/StatusPanel.vue",
+      "referenceNativeStyleSelectors": [
+        ".panel > button"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "cc94d4de2f139ba516ecd50cb00bc928b8a9ca475d81d659e3424bb119c30c50",
+      "nativeStyleSelectors": [],
+      "path": "components/action/ActionSurfaceToolbar.vue",
+      "referenceNativeStyleSelectors": [
+        ".custom-search-actions button",
+        ".custom-search-actions button:first-child",
+        ".custom-search-check input",
+        ".custom-search-panel select, .custom-search-panel input, .custom-group-select",
+        ".native-searchbox input",
+        ".native-searchbox input:focus",
+        ".toolbar-overflow-section button, .toolbar-overflow-create",
+        ".toolbar-overflow-section button.active",
+        ".toolbar-overflow-section button:hover, .toolbar-overflow-create:hover",
+        ".view-switch button"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScCheckbox",
+        "ScIcon",
+        "ScIconButton",
+        "ScInput",
+        "ScInputGroup",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "96324e5ecb9b2dfebe9cafeccf31ee371780bf51d6dd2e9340912fd60679b696",
+      "nativeStyleSelectors": [],
+      "path": "components/action/HierarchicalWorksheet.vue",
+      "referenceNativeStyleSelectors": [
+        ".worksheet-tabs button",
+        ".worksheet-tabs button.active"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScTable"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "a4372310e5dafd25e0bfd2f4896b15cea2a90a80e1246883e8d7a3c8dabbce60",
+      "nativeStyleSelectors": [],
+      "path": "components/action/HierarchyBrowser.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScDataTable",
+        "ScEmptyState"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScEmptyState",
+        "ScTable"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "0712b1e5ad414dccef903541346df5b140378eddf96dfad74f349652dc4446bc",
+      "nativeStyleSelectors": [],
+      "path": "components/action/HierarchyPlanner.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScDataTable",
+        "ScEmptyState",
+        "ScIcon",
+        "ScIconButton"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScEmptyState",
+        "ScIcon",
+        "ScIconButton",
+        "ScTable"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "2d3319aaa3372a8f86229a4cce44f0ede107534a010a748efcde33d98e592875",
+      "nativeStyleSelectors": [],
+      "path": "components/action/HierarchyTreeNode.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "b49447c7a45034374b5dbe08b6361969a1d39954c076ba1f228992ad6f4cc46a",
+      "nativeStyleSelectors": [],
+      "path": "components/action/UnsupportedActionSurface.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScErrorState"
+      ]
+    },
+    {
+      "category": "collaboration",
+      "digest": "477e4ce312032c40a79737e6902594ff5a3699020491c53771f9e1cb93f2091f",
+      "nativeStyleSelectors": [],
+      "path": "components/attachment/AttachmentViewer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScDialog",
+        "ScErrorState",
+        "ScLoading"
+      ]
+    },
+    {
+      "category": "overlay",
+      "digest": "74501b1ee44587394c428b9897220b16d6cf8d2f6485989a0d38eefecac20b25",
+      "nativeStyleSelectors": [],
+      "path": "components/business/IntentConfirmationDialog.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScDialog"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "eb1a12a9b05eea0c8b43f2c936c272b1cb115d7d7e6eeef8b5c19afaddad0f2a",
+      "nativeStyleSelectors": [],
+      "path": "components/business/MyWorkApprovalWorkspace.vue",
+      "referenceNativeStyleSelectors": [
+        ".intent-dialog textarea",
+        ".product-work__filters input, .product-work__filters select",
+        ".work-card__actions button"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScActionBar",
+        "ScButton",
+        "ScDialog",
+        "ScEmptyState",
+        "ScField",
+        "ScMoney",
+        "ScPanel",
+        "ScSection",
+        "ScSelect",
+        "ScStatusBadge"
+      ],
+      "scComponents": [
+        "ScActionBar",
+        "ScButton",
+        "ScDescriptions",
+        "ScDialog",
+        "ScDropdown",
+        "ScEmptyState",
+        "ScField",
+        "ScInput",
+        "ScMoney",
+        "ScPanel",
+        "ScSection",
+        "ScSelect",
+        "ScStatusBadge",
+        "ScTextarea"
+      ]
+    },
+    {
+      "category": "workflow",
+      "digest": "d6613fc9a078dd4387852397b9ad816e750d1ff8de9715418ca65e71c5e5911f",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScActionBar.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "c7ff9b926fbbbfd537437323f7a91787ecdc75c10ccf4163bf03d338b8a5122c",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScAside.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "8b5eaf9f29f5cd7bdfd56f9586e36b40a31b984c851a8a2a4296b6ce2688f0ec",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScAutoComplete.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "9275af60f510f4546b02e9ec69d26caf34e52210e5709106c49b80b231c7a891",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScBadge.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "a79e3a99cb4a80ebb89bf82182cf0deb07546cdddcab34a269d5b406790991dc",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScButton.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScTooltip"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "7588b4b8eade2a7d952fce4386710e5fa1e77b29ff6b4f5811f06e0db0dd53c7",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScCard.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "8b077c8d878a7eb4b8b4877b60f55e8813e95384855fe0ad57be27746f33ca10",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScCheckbox.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "87ec788334d8c62804f73ab38886ea145689886d8eba67b43c5fef35d1337d02",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScCollapse.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "80592509eb93deb4eed7cc6161dd6842861d15c31c4c35e5cbd426d385bc7100",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScContent.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "form-fields",
+      "digest": "f5a481d2f389d2374cc6e0a988e8ac0648e07c3c1909894f9abd19ba85b6793f",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScDateField.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "2e691f77ad18bc8a2888d5f9fb86b557fbd632b0ecb7ba08c9d31f74b792ab14",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScDatePicker.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "0db1d859043752dc8056b79c22d27a711fc4b2e74317dd1d8f415df6b547c1ec",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScDescriptions.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "overlay",
+      "digest": "73a65f7f768d2dc7f35c0f8d09a0b347d354733f2b33da831cafa2dc6d8bb3da",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScDialog.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon",
+        "ScIconButton"
+      ],
+      "scComponents": [
+        "ScIcon",
+        "ScIconButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "a8b8e51e4132326fc8af7470d362c9bbc4cce6e9cfdac84be1604c9f36cb21f4",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScDisclosure.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "overlay",
+      "digest": "7a232c11f2286b6aa8b0b053f24ab4cd28c7ab71f44814c17145d2ad1bbb9455",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScDrawer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon",
+        "ScIconButton"
+      ],
+      "scComponents": [
+        "ScIcon",
+        "ScIconButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "322b681c230ab7ecd21617e5e5aa196e8699dbc77e7741242ffaac828821246a",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScDropdown.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "states",
+      "digest": "72de1244de6c12fe42bd0a6601fd53973eb474971435f77d5e0d86b8aa6f70a6",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScEmptyState.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "states",
+      "digest": "c2ace3651c4dd1f33e9f946a37f2ea2063e0e22d86f0dd158b7885d30679b5bc",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScErrorState.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "form-fields",
+      "digest": "a03d36ed83c27d05bf48df68ddff6487a06629964ed930f8feda9563785b751e",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScField.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "form-fields",
+      "digest": "7ad33f7a4a9e230856b3b46e3e72054fdc169b75ed28108b99aa4438337273b1",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScFileField.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton"
+      ],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "83114b1fbd624cd1388ef68737e7c7319c5fe0d6c520697fd1dc68bd5e72c6b9",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScForm.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "form-fields",
+      "digest": "4233ff77d7a8186e1c4a3ca940d4fb5086bbe63726ad97576af5593613121218",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScFormField.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "form-fields",
+      "digest": "8607a6b0f78eb692b5e99316a98df070f04038901da456da7c775d4fba729c62",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScFormItem.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "eeb579028d61b0fdf2a11bf5e27c18c285e074c13b6ad1353c28dffb1ec894ff",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScHeader.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "a182651af681bf943aca0f022e0bc95572a2c261c9015a0b436242f97a3a85e8",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScIconButton.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "states",
+      "digest": "2cab0a20d67257f8017bc1003f199fc4a3f5af5bc68623c1fe7dd6068edf89b4",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScInlineState.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "c0d545229abe603711777bb42fbdabce92ecf0b42edc18a973bf80836f3ca10b",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScInput.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "d62afdea36429d6dc4afe5ae9e000e83fd4e475ccc673ff8a12c12de19cb322b",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScInputGroup.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "cb558c498c0d94d78f5675dd9474cff5b728830f31e161f2f4f8b00ef6a0dfeb",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScLayout.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "4553ff3cfc736a487b1d06a6582c8f0fcf746445a86647c656736a713950b3f0",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScList.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "states",
+      "digest": "518f20c2280491ee311bd8a435a2ed7b563965a69b1dd4ec4a4cb7677b8073f2",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScLoading.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "a3f5d9e8943e0cde494330449fdd98904a25b7469aecc7d3c9d155fd62315ed6",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScNumberInput.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "e1c599338f45ed51361d5d992dc13c0c901b2e981e613e2495fc8cb6fdb1ecad",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScPageHeader.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "6af1bb2f310da35e5e53a2ccf1c9be9a3e234181fd3ac66a10775119f0501b55",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScPagination.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "97555b109e2cf18b5453e3c50fa9af741079dffcf7e66c59c8d0a67eb5aa50ff",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "0d2fe585e93c151d0a4bb9c0fa6da765f5a347e1c707081c1ad04f7960ba3222",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScPopconfirm.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "59a7e4566e376a09550f5617246b04bd56e7b662dfc18ed2c201eb4d30d3c044",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScProgress.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "3451a60d64f24ad0663fe3d065acca808db453301cea87b25e94bdeeef3cd51e",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScRadio.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "901f1b56f947aad19fb4979e4395f8999ba83ecf192224cabe285c0b4c857cca",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScRadioGroup.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "relations-x2many",
+      "digest": "3de7548fa8f01902014793c59ad8e03288814d026eaa939800dfd33c684084f4",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScRelationField.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "d89172299cb8a384a50ea3a4c6f76f54bf2081c436f37f662728c3e50742f60d",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScSelect.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "688861baf081d6ba52e2ebee548b38f39aa74898473b7734d891c353772cbce5",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScSkeleton.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "workflow",
+      "digest": "10c10e3b952ee3c4abc57ffddf3ee512b29fca91e19be9f68327b705f4bf5f7f",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScStatusBadge.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "3636457477505fac37159c793c4bf827517dc6fa77113e1fb5703e64fb5f78f1",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScSteps.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "e61fbe2fc7ff23aa4c602baac3a73f760b1cf31a2359b72e1b148e8c7c8e7e10",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScSwitch.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "604a963d2853e73a71ac053c12256a10a28fbbc9397b58aa6906a21b08ac5b1b",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScTable.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "7b4c17504df16b7e0b0759b7195c34d811640df8a2895d5b5d4f6ead1964e028",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScTabs.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "d167f2d49e8ac26bbcdca85fbde0ee11d599cd164cd6a8d1eb4de901922fda72",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScTextarea.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "bcd66571c1bce9012174a07eed3f9f27551bcec78c756fe110b70b2802d0d68e",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScTimePicker.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "d0f7f6182fe6790282d09272f837f6f2333950a0229659986fb213661e8ba98c",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScTimeline.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "33d891a7fb20f4c86dce2ce9d6b5c861586f5eea5b7da1bd6d2a50f74c34d30a",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScTooltip.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "57355717be467389d5ffdb3f8c1780286fe2407a9a1ec7cfbf6e1861f8a40129",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScUpload.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "42460d8154fd67c1ead4b190456eb0705a3b0cdc21737af135f848b0311117aa",
+      "nativeStyleSelectors": [],
+      "path": "components/page/BlockRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScErrorState"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "ef70e320996c6d9cb1081741108304d6557de02db5a36d4fcb9c46dea2471624",
+      "nativeStyleSelectors": [],
+      "path": "components/page/PageHeader.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "cd22fdf3aeee7a7593960262f4bb18a25c71d07fa6efe024d646df6ae46ae1dd",
+      "nativeStyleSelectors": [],
+      "path": "components/page/PageRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "d4c8e6cbe00a9d7d6f3ff0727d7e21934a1c135492ffba8bb19d6b97640d7f8e",
+      "nativeStyleSelectors": [],
+      "path": "components/page/ZoneRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "d2e7e1cb6b6d2f94bcbd01c60bf5d1689b24ca1343929a62940435bd229bbb81",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockAccordionGroup.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScDisclosure",
+        "ScEmptyState"
+      ]
+    },
+    {
+      "category": "collaboration",
+      "digest": "0ffa5d896bac36df8f6b657c4d9d4396211a0f9a1fc5427a034098331639dd60",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockActivityFeed.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScEmptyState"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "e3504a6c6f23711e98dd22e24b42d4ee7966f142bdd98aad706a7b06c26b4b95",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockAlertPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScEmptyState"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "d9b25df7e02090afd6b04d5b5a513ef7c0461fe7022ad9c3bbece156286cc890",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockEntryGrid.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScEmptyState"
+      ]
+    },
+    {
+      "category": "dashboard",
+      "digest": "df1a8d6457066f28c31e1a86177909be6d13200a86e761e1398dad676238b688",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockMetricRow.vue",
+      "referenceNativeStyleSelectors": [
+        "button.metric-item",
+        "button.metric-item:hover"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScEmptyState"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "39af50df078f487c8ecf2d1eb857dff1bb6824724db70d5c25cf77748b60b564",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockProgressSummary.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScEmptyState",
+        "ScProgress"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "8f9c76fe75ad0bb330bf3e2f09c9a499ee9e8bd08eb659c6dc0ab60a7c20c853",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockRecordSummary.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScEmptyState"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "11b9ee16974c816959cfd81ab3df15da5e3c84cfbad3dc682c0ac2723457fd57",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockRecordTable.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScDataTable"
+      ],
+      "scComponents": [
+        "ScEmptyState",
+        "ScTable"
+      ]
+    },
+    {
+      "category": "dashboard",
+      "digest": "3890409abd8d782091f05a3968bd310cace32c2d743d27d566416fcae66d075b",
+      "nativeStyleSelectors": [],
+      "path": "components/page/blocks/BlockTodoList.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScEmptyState"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "d8cf6d4edb316ed177637647f380d1d418945665b0c43c09f9e555b1a1c96104",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionAggregateFooter.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "collection",
+      "digest": "e76cabc2377e0574e6d059a7c73dcba83d362f5e7fb771faf1ffdf44c876edd0",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionBatchActionBar.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "5f9169c4a83a52b57e348551f884ebfc3f39544c4e4c3feac9311fe5ae6f9e1f",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionColumnHeaderControl.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScIcon",
+        "ScIconButton"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "3e73e970c8f451402278b39a371c2429fe2ce6c45f00a59d7d2267619d09f08d",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionFilterChip.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "f59ea8856099169601c942dadb04375b83642af603ecab8f63689a35ed294bd8",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionGroupHeader.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "d597459d0ee546da02420c10d8928cb969f902c732170e0d0c93c692661c11ff",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionGroupPageControls.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScInput"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "98b0782236e0c5b7d757748f112b303bb4264926dca2f2617a93280f317793bf",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionGroupingToolbar.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "6572c78b04e92b1e11161ec7cb7ab5a3ab12733227918fafdad05aa2d0e152fa",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionKanbanLane.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScBadge"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "283ee7aa066dead88b2fca30bd810d299a713e3370bf5196438c4acb558e35bf",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionKanbanRecordCard.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScStatusBadge"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "cb80e8b2f9e50782c53db03d22cd7b8c59fd3f6419eb1791605705e35b4767e2",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionMobileRecordRow.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScIcon",
+        "ScMobileRecordCard",
+        "ScStatusBadge"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "efd15ac6ec926e492f356d8dd51e8f9360d9f00f7da1d22d0f99677663135d00",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionPaginationFooter.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScPagination"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "e732e2eef562dbce9bd5b83540fa4cb5e365c50e946ffaec6f083c5f2bdf0d0a",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionRowCell.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScIcon",
+        "ScIconButton"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "ec8526017a7a06be123a99bee0ad88a61a29490ff7184262fcce34a4331974dc",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionSelectionControl.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScCheckbox"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "e32a1ad4dd1170be67482e2fb21541dd0ef593500dd253fc8cc52db8eddd03ea",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/CollectionSummaryStrip.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "collection",
+      "digest": "66ee4394eed0f2182cf0e20a19af0aa28c85c4452fe611dea6fbdc53262da090",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/ListSurfaceHeader.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScCheckbox",
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "e3a5dbcf72fcc66a43c5518f2ae9f748a4aa76542dcbd41c77c3df4fe67b2cbd",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/ProductListHeader.vue",
+      "referenceNativeStyleSelectors": [
+        ".product-list-header__search input",
+        ".product-list-header__search input:focus"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScActionBar",
+        "ScButton"
+      ],
+      "scComponents": [
+        "ScActionBar",
+        "ScButton",
+        "ScInput"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "05af769dc3a0575f3e6e2196b6d58d6274d66b914e516c77c9afc80f73c7f350",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/ProductLoadingSkeleton.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScSkeleton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "2f3aefaf45e0c0ba19f76396d17ffff4d33424e31f6be8f3ed7bee651854706a",
+      "nativeStyleSelectors": [],
+      "path": "components/product-page-header/ProductPageHeader.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "970bb75ce6b7cc27dd2fd2f7dcddfdee000fbb1c6c951e3d907f4b82d2d266f2",
+      "nativeStyleSelectors": [],
+      "path": "components/product-page-patterns/CollectionPattern.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "dashboard",
+      "digest": "a10bbdfbba0b03845cf4062afff8b28850e48633f26fbbe18b827c0607ddcf61",
+      "nativeStyleSelectors": [],
+      "path": "components/product-page-patterns/DashboardPattern.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "form-fields",
+      "digest": "baf8cbe6de00296ca7a4504ef6a063be8164275faf6ae161adaf0755509e4d3a",
+      "nativeStyleSelectors": [],
+      "path": "components/product-page-patterns/TaskFormPattern.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "form-fields",
+      "digest": "71818084771e84ede30d926c4e60b9ab34d89cdcbf1fb025b30acb0a01815627",
+      "nativeStyleSelectors": [],
+      "path": "components/product-page-patterns/WorkspaceFormPattern.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "states",
+      "digest": "587960835a0cfc0d42693be50d9450eb9c4cc3efe61eda45e766c7adc3bc7913",
+      "nativeStyleSelectors": [],
+      "path": "components/product-record/ProductFormErrorSummary.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScErrorSummary"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScErrorSummary"
+      ]
+    },
+    {
+      "category": "states",
+      "digest": "e43e2a38aa1739cd51bfb6b6b243079b2df6e437e3c75d5667deac807d0e8534",
+      "nativeStyleSelectors": [],
+      "path": "components/product-record/ProductFormLoadingSkeleton.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "collaboration",
+      "digest": "d6aa8a95ac19342e2c4d7a59a9adf2a791aa1d76e6ee69e52ad74a1d971fbc5a",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/ActivityPageTabs.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "01635c06bf70481b228d2b7834c8213f933be7d68db22d544daedbb70c85e473",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/CanonicalNavigationMenuNode.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "886c344e4c2357b19b143b3a79f9d6a74f5f5ffc70167c83b47e880cb1799b9f",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/NavigationBreadcrumb.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "193ca0022d47745b8b1704476d596c86868703a7c80f05df75d531c8fed32974",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/ProductAppShell.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScLayout"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "998da5d06cddb3e898b8b5fc52c149da09c1b0791bb41463314229fb09418fd4",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/ProductIdentity.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "overlay",
+      "digest": "bb29fc42643a387a2cb1342c7927c9e2ba470eb6a38f49c5394ebb0ee8a35b61",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/ProductMobileNavigationDrawer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScAside",
+        "ScButton"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "eb04e7c5b8a3213d13c9a20f6c839e268404a350afe8de9e66129ab226e2d414",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/ProductSideNavigation.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScIcon",
+        "ScInput"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "c7bef62066d628f362c9146ec0301965cf8c25f5348e5466bf17e057f244b08e",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/WorkspaceContextIndicator.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "5fa0fe96553681462eafd9c01d6ec111ec975e8c7060ccb1b9d65cd0da4dcd37",
+      "nativeStyleSelectors": [],
+      "path": "components/professional-fields/ProfessionalBaseFieldControl.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScCheckbox",
+        "ScDateField",
+        "ScInput",
+        "ScNumberInput",
+        "ScSelect",
+        "ScTextarea"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "889d57ef3cde270cd010e0b4153a7edb532be43ab6d741700217dcfcba6000a4",
+      "nativeStyleSelectors": [],
+      "path": "components/professional-fields/ProfessionalBusinessValueControl.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScInput",
+        "ScMoney",
+        "ScSelect",
+        "ScStatusBadge"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "6c4b3783805f6f3435414917a179ad470144354575389ea69a14ce38ab3d932c",
+      "nativeStyleSelectors": [],
+      "path": "components/professional-fields/ProfessionalDetailCollectionControl.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "relations-x2many",
+      "digest": "415595afee553bf405e4616399686e3f50395501dcd9381863a116d146c598ad",
+      "nativeStyleSelectors": [],
+      "path": "components/professional-fields/ProfessionalRelationFieldControl.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "dashboard",
+      "digest": "e9a5d1e22efad19be65d5d9d73b4263fd510f33601dcf51d9ba70a1a783d2ee7",
+      "nativeStyleSelectors": [],
+      "path": "components/role-home/WorkspaceHome.vue",
+      "referenceNativeStyleSelectors": [
+        ".role-home-surface button",
+        ".role-home-surface button:focus-visible",
+        ".role-home-surface button:hover",
+        ".role-home-surface__link-list button small",
+        ".role-home-surface__link-list button:hover",
+        ".role-home-surface__link-list--quick button",
+        ".role-home-surface__link-list--quick button > .sc-icon:first-child",
+        ".role-home-surface__link-list--quick button > span",
+        ".role-home-surface__link-list--recent button",
+        ".role-home-surface__task-list button, .role-home-surface__section-heading button"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScIcon",
+        "ScInlineState"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "48aaf234c44e147e22a42af05c8977d7b3ac1cd96c970ff5a75d5563e3bcab79",
+      "nativeStyleSelectors": [],
+      "path": "components/scene/SceneBlocksRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "e543c5e38626c32ab12f8bf822d85728989eec408ab4bd136bc34039b1f5770f",
+      "nativeStyleSelectors": [],
+      "path": "components/template/FormSection.vue",
+      "referenceNativeStyleSelectors": [
+        ".field :is(input, select, textarea)[aria-invalid='true']",
+        ".field--large .input, .field--large textarea.input",
+        ".field-inline-action input",
+        "select.input",
+        "textarea.input"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScDateField",
+        "ScFileField",
+        "ScIcon",
+        "ScRelationField",
+        "ScSelect"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScDateField",
+        "ScFileField",
+        "ScIcon",
+        "ScIconButton",
+        "ScInput",
+        "ScRadioGroup",
+        "ScRelationField"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "dd298cd454ecfd84fa78f82528d46ec8f65593ac76b0880be12a8f3a756e8ff9",
+      "nativeStyleSelectors": [],
+      "path": "components/template/NativeActionOverflowMenu.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "6151297d91910ead9d7b6ba8bfda04f7e8d62db26c43b6d81a861382c22aa4d3",
+      "nativeStyleSelectors": [],
+      "path": "components/template/NativeFormTreeRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScIcon",
+        "ScIconButton",
+        "ScInput",
+        "ScTabs"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "237498ac5d7191f9461585b4e759dac3bc3c413b28793ce897142ecc3040f426",
+      "nativeStyleSelectors": [],
+      "path": "components/template/NativeSmartAction.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "27747ea933cc8494afabb9f7345a5f1c59a657e1235f82ebf1561ce42345919c",
+      "nativeStyleSelectors": [],
+      "path": "components/template/PageHeader.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "relations-x2many",
+      "digest": "37fd2879676e5d43a162d9a8e17f8b7c529cafa559333c8c6f5dfac154dc7172",
+      "nativeStyleSelectors": [],
+      "path": "components/template/X2ManyRelationRenderer.vue",
+      "referenceNativeStyleSelectors": [
+        "select.input"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScCheckbox",
+        "ScIcon",
+        "ScInlineState",
+        "ScInput",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "ea1365b1f0bcc33481d53b83beac854baf9e9a3b0c948a99e3b231d788006a72",
+      "nativeStyleSelectors": [],
+      "path": "components/view/ViewFieldRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScInput",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "0f7b056f3a52d29d9698bbe75a8d55c98087a398a0437733b068e7981e63633b",
+      "nativeStyleSelectors": [],
+      "path": "components/view/ViewNotebookRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScTabItem",
+        "ScTabs"
+      ]
+    },
+    {
+      "category": "relations-x2many",
+      "digest": "7f70016dfe95e2caaeb56af8db9e50c636b46fa889012c687413fc3d966db5ca",
+      "nativeStyleSelectors": [],
+      "path": "components/view/ViewRelationalRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScInlineState",
+        "ScInput"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "d031c0e7e8958d0b865e51b7944e40be4e08e2dc82e4e2da38b5a6e8d86de9f1",
+      "nativeStyleSelectors": [],
+      "path": "layouts/AppShell.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon",
+        "ScTheme"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScContent",
+        "ScHeader",
+        "ScIcon",
+        "ScIconButton",
+        "ScInlineState",
+        "ScInput",
+        "ScLayout",
+        "ScTheme"
+      ]
+    },
+    {
+      "category": "collaboration",
+      "digest": "56672e0be6f264c57e5d1fe4d368bc5de4f4a977b01c8c1c2aae741e1eda1f2c",
+      "nativeStyleSelectors": [],
+      "path": "pages/ActivityPage.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScEmptyState",
+        "ScErrorState",
+        "ScLoading"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "b28f72ffa64142e44cffcd3cd25b17de760ca9c345f3158f345b58c5adf22b82",
+      "nativeStyleSelectors": [],
+      "path": "pages/ContractFormPage.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "2c37412ac414bfe81cdda12cd4f2174d12ccc6292333397940ce34491d04c422",
+      "nativeStyleSelectors": [],
+      "path": "pages/KanbanPage.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "collection",
+      "digest": "17dd721bbcf6b0dc5f121cab7a35718a6ac3f0bd2560279107d949c3cf724a66",
+      "nativeStyleSelectors": [],
+      "path": "pages/ListPage.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScDataTable",
+        "ScEmptyState",
+        "ScIcon",
+        "ScMobileRecordCard",
+        "ScPageHeader",
+        "ScStatusBadge"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScEmptyState",
+        "ScInlineState",
+        "ScPageHeader",
+        "ScTable"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "40a81c86802214ba61e16e8eb2b72b2508c2080ebc3e40fbea61ff6602064a12",
+      "nativeStyleSelectors": [],
+      "path": "pages/ModelListPage.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "workflow",
+      "digest": "f5fb0d230b6a9df36e99cc2ca745f6364858f83d5e624122d021a81b331ad039",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/CanonicalActionBar.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScDropdown",
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "37448e4ddd77f05fa4ae20f8d1fe780590b4459cbf49b5c4f96c2dc44e835468",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/CanonicalFormNodeRenderer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "9a10a0df45a2b054b41d110c308f02572794534230cc016a0400e8f4b5be4b5b",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ContractFormActionBlocks.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "5bffbc3859a72decd69465c657abb273bd6a6a8b96c053a84d653211e417e198",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ContractFormDriverHost.vue",
+      "referenceNativeStyleSelectors": [
+        ".sc-form-driver-chooser select"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScErrorState",
+        "ScInlineState",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "2d19329b8f652470467a5a83356ebb47901dc7f2dc06fa0cc49667439382e255",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ContractFormNativeCanvas.vue",
+      "referenceNativeStyleSelectors": [
+        ".form-section-nav button",
+        ".form-section-nav button.is-active",
+        ".form-section-nav button:focus-visible",
+        ".form-section-nav button:hover",
+        ".form-section-nav-mobile select"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "58f3a3aae9fed5dd2d6a14be388ffda89c948a0197567dc6867f566e0faa3fd7",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ContractFormProductHeader.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScDropdown",
+        "ScDropdownItem",
+        "ScIcon",
+        "ScSteps"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "38b7209927f6caace24e65e854a301e09ce655afbfd7b58c4ece6f6c3636fa80",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ContractModeSupportPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "70ee7df517c249b4651b99dc25dcb76e0efb343c894deed0b6e1aeb4ccc2aec3",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ContractPromptActionForm.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScFormField",
+        "ScInput",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "overlay",
+      "digest": "b5a4029f9d80a47746441f6240ff64c0a7d1c82bf8691b391818f51661af1c1c",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/LowCodeFieldCreateDialog.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScDialog"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScDialog",
+        "ScFormField",
+        "ScInput",
+        "ScSelect"
+      ]
+    },
+    {
+      "category": "collaboration",
+      "digest": "83d3b37ba4c54603e6b63603947ba6c00a650b37f0f05b303b3f45b6044a0c9c",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/NativeCollaborationPanel.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScInlineState"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "e7b6b5fe541f7608dc8b9f5130008a9034c6c97ba008a72f7391e02818e353de",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ObjectTaskPage.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScDisclosure"
+      ]
+    },
+    {
+      "category": "collaboration",
+      "digest": "b57874487830d65c57288a85ba49ed1c44bde24e3b6b0e9727a27152ea0dad1a",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ProfessionalAttachmentManager.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScFileField",
+        "ScInlineState"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "4ad376cc11b5f09fef55a6ea9e560af8e1fa4dd7bfea8bb66a7b23308230c68b",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ProfessionalAuditEvent.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "form-fields",
+      "digest": "bce8b0537f6b9451546715c955ae37f51e712bc3e0ad928b44a74ee068a11fb3",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ProfessionalAuditTimeline.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScDisclosure",
+        "ScEmptyState",
+        "ScTimeline"
+      ]
+    },
+    {
+      "category": "collaboration",
+      "digest": "0c59023e2516ad6ea1fb3a15e185ba0f03b63bb8e27dfbde5187abb07c19d589",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ProfessionalCollaborationComposer.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScInput",
+        "ScSelect",
+        "ScTextarea"
+      ]
+    },
+    {
+      "category": "collaboration",
+      "digest": "3c21e9e6263dab2d0dd0b174d79e0e528a78e0e06328f0884e0f2c29beff81c1",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ProfessionalCollaborationTimeline.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScInlineState",
+        "ScList"
+      ]
+    },
+    {
+      "category": "relations-x2many",
+      "digest": "96e0c89e306d941240a6975f59b6ceebcefa89aa0c0fb43278892a6c879328d9",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/RelationCreateDialog.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScDialog"
+      ],
+      "scComponents": [
+        "ScDialog"
+      ]
+    },
+    {
+      "category": "relations-x2many",
+      "digest": "f8dc22a8ee4b3321e9c170e0650de4de993adbc3032b74ddbd0ff89be4b0b090",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/RelationSearchDialog.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScDataTable",
+        "ScDialog",
+        "ScEmptyState"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScDialog",
+        "ScEmptyState",
+        "ScInput",
+        "ScLoading",
+        "ScRadio",
+        "ScTable"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "857479ab2fe8193643a9a11143685b76f9ead7cd4e81f556b63d98266fc8b5c5",
+      "nativeStyleSelectors": [],
+      "path": "views/AccessDeniedView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScErrorState",
+        "ScPage"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScErrorState",
+        "ScPage"
+      ]
+    },
+    {
+      "category": "public-entry",
+      "digest": "7bca7199b9d9b146591e239ea1dc29d3604b65c8bb8b5276fe68277efd94cecf",
+      "nativeStyleSelectors": [],
+      "path": "views/AccountActivationView.vue",
+      "referenceNativeStyleSelectors": [
+        "button",
+        "input"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScInput"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "e7537d737f0634849937bac84fc3a9534ee3b89e820e76d436e20fa5412d51b0",
+      "nativeStyleSelectors": [],
+      "path": "views/ActionView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScIcon",
+        "ScPage"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScDialog",
+        "ScIcon",
+        "ScPage"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "24e5a348489858b328030d396dccbe6296e4821c2519b93a0bf52932b138c4af",
+      "nativeStyleSelectors": [],
+      "path": "views/ApiKeyManagementView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScDialog",
+        "ScEmptyState",
+        "ScPage",
+        "ScPageHeader",
+        "ScPanel",
+        "ScSection",
+        "ScStatusBadge"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScCheckbox",
+        "ScDialog",
+        "ScEmptyState",
+        "ScInput",
+        "ScPage",
+        "ScPageHeader",
+        "ScPanel",
+        "ScSection",
+        "ScStatusBadge"
+      ]
+    },
+    {
+      "category": "public-entry",
+      "digest": "789a859941cae8f0bd68759fbbdd20a41c6ebe36ae679e329542d83ef5e787c8",
+      "nativeStyleSelectors": [],
+      "path": "views/LoginView.vue",
+      "referenceNativeStyleSelectors": [
+        "input",
+        "input:focus-visible"
+      ],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScInput"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "4c2c6a03a5517bd304f2c3e4bb0e49bcbc34e6116b4945a990926920d16bf7d9",
+      "nativeStyleSelectors": [],
+      "path": "views/MenuView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "99443e6dafae64327ca1174a200f9fce3d66de902494abc577d084602521dfd3",
+      "nativeStyleSelectors": [],
+      "path": "views/MyWorkView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScPage"
+      ],
+      "scComponents": [
+        "ScPage"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "a8248a78202575bbbabb6ec300f7c5c50ebdaf5c76496861e50abeac91f4e515",
+      "nativeStyleSelectors": [],
+      "path": "views/NotFoundView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScErrorState",
+        "ScPage",
+        "ScPageHeader"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScErrorState",
+        "ScPage",
+        "ScPageHeader"
+      ]
+    },
+    {
+      "category": "public-entry",
+      "digest": "4f15e63239e3793a42e300eaf71db2ae3e6355ca9cf3edfcef877786cef22e9d",
+      "nativeStyleSelectors": [],
+      "path": "views/PasswordRecoveryView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "390f41f5da5e6607fa04e61ec96beef9fe992e47efdfea2a2fa80c598fdd8827",
+      "nativeStyleSelectors": [],
+      "path": "views/PlaceholderView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "8f4ab72aa5f580dfcba01db3c6bd8e20c09808d1e734ef8193abadd878c809c6",
+      "nativeStyleSelectors": [],
+      "path": "views/ReleaseOperatorView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScDataTable"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScSelect",
+        "ScTable"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "e46a275c12eb34a7aa4c69f899ad4d0fcd272f557d55549c01afa51001f8de5b",
+      "nativeStyleSelectors": [],
+      "path": "views/SceneContractBlockGridView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "9dbe119f7b82167e250eafb64734ec0b00e1823846b6e9aed549280cb9eaaaf0",
+      "nativeStyleSelectors": [],
+      "path": "views/SceneView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "443a1daf464959dd1e45ef9aeba30cb9d65c881fa49c16a19c3d91f5758126aa",
+      "nativeStyleSelectors": [],
+      "path": "views/UsageAnalyticsView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScDataTable"
+      ],
+      "scComponents": [
+        "ScTable"
+      ]
+    },
+    {
+      "category": "dashboard",
+      "digest": "8b0bc0834438b43700c4c8800e82207ae71ed7a6f71d0b5e352ec682e889474e",
+      "nativeStyleSelectors": [],
+      "path": "views/WorkbenchView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "c8638b03d64639b60bf96d7a5ca322c6b4678635614122e19624daf171d9db32",
+      "nativeStyleSelectors": [],
+      "path": "views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [
+        "ScButton",
+        "ScSelect",
+        "ScStatusBadge"
+      ],
+      "scComponents": [
+        "ScButton",
+        "ScSelect",
+        "ScStatusBadge"
+      ]
+    }
+  ],
+  "consumerPrimitiveVisualChrome": [],
+  "currentInputDigest": "f567bf47defd9080202658c98795b6e0167d9290fc08c6eeba728912c93cc0e3",
+  "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
+  "excludedScopes": [
+    "runtime permissions",
+    "Contract authority",
+    "database data",
+    "customer addons",
+    "exact-head runtime pass/fail"
+  ],
+  "formalGapEvidence": [
+    {
+      "browserAssertionMarker": "[data-product-page-header]",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/frontend_product_page_header_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.product_page_header.browser",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "collection.page-identity-and-primary-action",
+      "status": "bound",
+      "unitTarget": "verify.frontend.product_page_header.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "collectionMobileRecordEvidence",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "collection.workspace-gutter-and-ledger-density",
+      "status": "bound",
+      "unitTarget": "verify.frontend.collection_row_cell.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "collectionToolbarEvidence",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "collection.query-filter-view-toolbar-hierarchy",
+      "status": "bound",
+      "unitTarget": "verify.frontend.collection_action_toolbar.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "collectionSummaryEvidence",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "collection.authoritative-status-tone",
+      "status": "bound",
+      "unitTarget": "verify.frontend.collection_row_cell.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "shellAdapterEvidence",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "shell.context-and-navigation-density",
+      "status": "bound",
+      "unitTarget": "verify.frontend.navigation_shell.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "data-semantic-component",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/frontend_rendering_detail_state_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.rendering_detail_state.browser",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "form.task-field-hierarchy",
+      "status": "bound",
+      "unitTarget": "verify.frontend.primitive_adapter.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "focusSequence",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.native_form_action_presentation.browser",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "form.workspace-native-structure-density",
+      "status": "bound",
+      "unitTarget": "verify.frontend.native_form_action_presentation.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "relationSearchDialogEvidence",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "relations-x2many.lifecycle-and-table-detail",
+      "status": "bound",
+      "unitTarget": "verify.frontend.professional_relation_lifecycle.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "allDisabledEscapeClosed",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/frontend_native_form_action_presentation_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.native_form_action_presentation.browser",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "workflow.action-status-disabled-reason",
+      "status": "bound",
+      "unitTarget": "verify.frontend.professional_workflow.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "bodyLocked",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/frontend_overlay_lifecycle_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.overlay_lifecycle.browser",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "overlay.dialog-drawer-focus-density",
+      "status": "bound",
+      "unitTarget": "verify.frontend.overlay_lifecycle.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "filePrimitivePresent",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/frontend_collaboration_primitives_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.collaboration_primitives.browser",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "collaboration.chatter-activity-attachment",
+      "status": "bound",
+      "unitTarget": "verify.frontend.professional_collaboration.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "data-state",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/frontend_rendering_detail_state_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.rendering_detail_state.browser",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "states.loading-empty-error-disabled-focus",
+      "status": "bound",
+      "unitTarget": "verify.frontend.rendering_detail_state.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "dashboardActions",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/frontend_state_dashboard_browser.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "verify.frontend.state_dashboard.browser",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "dashboard.metric-risk-todo-drilldown",
+      "status": "bound",
+      "unitTarget": "verify.frontend.state_dashboard.unit",
+      "unitTargetWired": true
+    },
+    {
+      "browserAssertionMarker": "mobileOverflow",
+      "browserAssertionMarkerPresent": true,
+      "browserEvidenceSource": "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+      "browserFailureExitPresent": true,
+      "browserTarget": "local.dev.candidate.frontend.visual-smoke",
+      "browserTargetRecipeWired": true,
+      "browserTargetWired": true,
+      "key": "responsive.390-no-overflow-and-action-settlement",
+      "status": "bound",
+      "unitTarget": "verify.frontend.rendering_detail_state.unit",
+      "unitTargetWired": true
+    }
+  ],
+  "invalidFormalVisualEvidenceBindings": [],
+  "referenceInputDigest": "9065801740ce27219e7d0bb92998350fdd3b16e2948288c186d8798a353c74aa",
+  "scAdapterWithNativeSelectorCandidates": [],
+  "schemaVersion": "frontend.visual-projection.inventory.v1",
+  "scope": "repository formal P0/P1 frontend source projection",
+  "summary": {
+    "adapterCount": 18,
+    "changedSourceCount": 166,
+    "consumerPrimitiveVisualChromeCount": 0,
+    "currentSourceCount": 203,
+    "invalidFormalVisualEvidenceBindingCount": 0,
+    "projectedAdapterCount": 18,
+    "referenceSourceCount": 132,
+    "scAdapterWithNativeSelectorCandidateCount": 0,
+    "unassessedAdapterCount": 0
+  }
+}

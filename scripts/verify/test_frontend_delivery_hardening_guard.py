@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 TOGGLE_PATTERN = re.compile(
-    r"<button\b(?=[^>]*\baria-controls=\"primary-sidebar\")"
+    r"<ScButton\b(?=[^>]*\baria-controls=\"primary-sidebar\")"
     r"(?=[^>]*:aria-expanded=\"sidebarVisible\")[^>]*>",
     re.DOTALL,
 )
@@ -19,22 +19,22 @@ TOGGLE_PATTERN = re.compile(
 class AppShellSidebarSemanticsTest(unittest.TestCase):
     def test_unified_visibility_state_controls_the_named_region(self):
         source = """
-        <button aria-controls="primary-sidebar"
-                :aria-expanded="sidebarVisible"></button>
+        <ScButton aria-controls="primary-sidebar"
+                  :aria-expanded="sidebarVisible"></ScButton>
         """
         self.assertIsNotNone(TOGGLE_PATTERN.search(source))
 
     def test_old_desktop_only_state_is_rejected(self):
         source = """
-        <button aria-controls="primary-sidebar"
-                :aria-expanded="!sidebarHidden"></button>
+        <ScButton aria-controls="primary-sidebar"
+                  :aria-expanded="!sidebarHidden"></ScButton>
         """
         self.assertIsNone(TOGGLE_PATTERN.search(source))
 
     def test_unrelated_aria_expanded_marker_is_rejected(self):
         source = """
-        <button aria-controls="other-panel"
-                :aria-expanded="sidebarVisible"></button>
+        <ScButton aria-controls="other-panel"
+                  :aria-expanded="sidebarVisible"></ScButton>
         """
         self.assertIsNone(TOGGLE_PATTERN.search(source))
 

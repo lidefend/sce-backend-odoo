@@ -17,6 +17,7 @@
             v-for="action in headerActions"
             :key="`login-header-${action.key}`"
             class="ghost sc-btn sc-btn-ghost sc-btn-sm"
+            appearance="outline-action"
             variant="ghost"
             size="small"
             :disabled="loading"
@@ -49,6 +50,7 @@
                 id="login-username"
                 v-model="username"
                 class="sc-input"
+                size="large"
                 autocomplete="username"
                 :placeholder="pageText('username_placeholder', '请输入账号')"
                 :disabled="loading"
@@ -63,6 +65,7 @@
                 id="login-password"
                 v-model="password"
                 class="sc-input"
+                size="large"
                 type="password"
                 autocomplete="current-password"
                 :placeholder="pageText('password_placeholder', '请输入密码')"
@@ -77,6 +80,7 @@
               <ScInput
                 v-model="dbName"
                 class="sc-input"
+                size="large"
                 autocomplete="off"
                 :placeholder="pageText('db_placeholder', '请输入数据库名（如 sc_minimal）')"
                 :disabled="dbInputDisabled"
@@ -91,13 +95,14 @@
             >
               {{ error }}
             </p>
-            <ScButton class="submit" variant="primary" type="submit" :disabled="loading" :loading="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</ScButton>
+            <ScButton class="submit" appearance="primary-submit" variant="primary" size="large" type="submit" :disabled="loading" :loading="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</ScButton>
           </form>
           <nav v-if="authEntryActions.length" class="auth-entry-links" aria-label="账号帮助">
             <ScButton
               v-for="action in authEntryActions"
               :key="`login-auth-${action.key}`"
               class="auth-entry-link"
+              appearance="auth-link"
               type="button"
               variant="ghost"
               :disabled="loading"
@@ -296,10 +301,6 @@ async function executeHeaderAction(actionKey: string) {
 }
 
 .auth-entry-link {
-  border: 0;
-  background: transparent;
-  color: var(--sc-semantic-state-info-text);
-  cursor: pointer;
   padding: 6px 0;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -315,7 +316,6 @@ async function executeHeaderAction(actionKey: string) {
 }
 
 .ghost:hover:not(:disabled) {
-  border-color: var(--sc-app-border-strong);
   transform: translateY(-1px);
 }
 
@@ -407,21 +407,6 @@ label {
   font-weight: 500;
 }
 
-input {
-  padding: 11px 12px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: var(--sc-component-input-radius);
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-}
-
-input:focus-visible {
-  border-color: var(--sc-semantic-surface-interactive);
-  box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
-  outline: none;
-}
-
 .submit {
   min-height: 44px;
   padding: 11px 14px;
@@ -432,7 +417,6 @@ input:focus-visible {
 
 .submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: var(--sc-semantic-shadow-popover);
 }
 
 .error {

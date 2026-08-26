@@ -5,7 +5,6 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: var(--sc-product-radius-control);
   cursor: pointer;
 }
 

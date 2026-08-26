@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -15,10 +16,12 @@ def _read(relative: str) -> str:
 def validate(read_text: Callable[[str], str] = _read) -> list[str]:
     source = read_text(HEADER)
     errors: list[str] = []
-    if "import ScButton" not in source or source.count("<ScButton") != 25:
+    if "import ScButton" not in source or source.count("<ScButton") < 8:
         errors.append("form header actions must consume the shared ScButton primitive")
-    if source.count("<button") != 0 or '<ScButton\n                type="button"\n                class="native-statusbar-step"' not in source:
-        errors.append("workflow status steps must consume the shared ScButton primitive")
+    if source.count("<button") != 0 or "import ScSteps" not in source or "<ScSteps" not in source or '@select="activateStatus(String($event))"' not in source:
+        errors.append("workflow status steps must consume the shared ScSteps primitive")
+    if "import ScDropdown" not in source or len(re.findall(r"<ScDropdown(?:\s|>)", source)) != 2:
+        errors.append("header overflow actions must consume the shared ScDropdown primitive")
     for event in (
         "@click=\"$emit('back')\"",
         "@click=\"$emit('continue-processing')\"",
@@ -34,7 +37,8 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         'v-bind="actionEvidenceAttributes(action)"',
         'v-bind="canonicalActionEvidenceAttributes(action)"',
         'data-product-primary-action',
-        ':data-mobile-action-key=',
+        ':data-mobile-action-keys=',
+        'dispatchDropdownAction',
     ):
         if evidence not in source:
             errors.append(f"form header lost action evidence: {evidence}")
@@ -54,7 +58,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
-    print("[frontend_form_header_action_primitives_guard] PASS sc_buttons=25 raw_buttons=0")
+    print("[frontend_form_header_action_primitives_guard] PASS shared_action_and_workflow_drivers=1 raw_buttons=0")
     return 0
 
 

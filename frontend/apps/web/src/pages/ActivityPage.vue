@@ -27,6 +27,7 @@
         type="button"
         variant="ghost"
         class="activity-card"
+        appearance="surface-tile"
         @click="$emit('open-record', record)"
       >
         <span class="activity-card__identity">{{ labels.record }} #{{ record.id || recordIndex + 1 }}</span>
@@ -71,9 +72,8 @@ defineEmits<{ 'open-record': [record: Record<string, unknown>] }>();
 .activity-page__eyebrow { margin: 0; color: var(--sc-text-link); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .activity-page__count { color: var(--sc-app-text-secondary); font-size: 13px; }
 .activity-page__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
-.activity-card { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--sc-app-border); border-radius: 14px; background: var(--sc-app-panel); color: var(--sc-app-text-primary); text-align: left; cursor: pointer; box-shadow: var(--sc-app-shadow); }
-.activity-card:hover { border-color: var(--sc-app-selected-border); transform: translateY(-1px); }
-.activity-card:focus-visible { outline: 3px solid var(--sc-app-focus-ring); outline-offset: 2px; }
+.activity-card { display: grid; gap: 10px; padding: 16px; text-align: left; }
+.activity-card:hover { transform: translateY(-1px); }
 .activity-card__identity { color: var(--sc-text-link); font-size: 12px; font-weight: 700; }
 .activity-card__field { display: grid; grid-template-columns: minmax(90px, .7fr) 1.3fr; gap: 10px; align-items: baseline; }
 .activity-card__label { color: var(--sc-app-text-secondary); font-size: 12px; }

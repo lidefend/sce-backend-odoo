@@ -123,6 +123,7 @@
         <ScButton variant="primary" @click="clearOneTimeSecret">我已安全保存</ScButton>
       </template>
     </ScDialog>
+    <IntentConfirmationDialog ref="revokeConfirmationRef" />
   </ScPage>
 </template>
 
@@ -137,6 +138,7 @@ import {
   type CredentialState,
 } from '../api/authCredentials';
 import { useSessionStore } from '../stores/session';
+import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import {
   ScButton,
   ScCheckbox,
@@ -163,6 +165,7 @@ const oneTimeSecret = ref('');
 const copyStatus = ref('');
 const errorMessage = ref('');
 const busyCredentialId = ref('');
+const revokeConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 const createForm = reactive({ name: '', password: '', scopes: ['intent.read'], companyIds: [] as number[], expiresAt: '' });
 
 const companyOptions = computed<CompanyOption[]>(() => {
@@ -317,7 +320,7 @@ async function rotateCredential(): Promise<void> {
 }
 
 async function revoke(item: AuthCredentialPolicy): Promise<void> {
-  if (!window.confirm(`确认撤销“${item.name}”？关联机器会话将立即失效。`)) return;
+  if (!await revokeConfirmationRef.value?.confirm({ actionLabel: '撤销 API Key', message: `确认撤销“${item.name}”？关联机器会话将立即失效。` })) return;
   busyCredentialId.value = item.credential_id;
   errorMessage.value = '';
   try {
