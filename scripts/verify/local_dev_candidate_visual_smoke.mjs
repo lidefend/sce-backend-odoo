@@ -849,30 +849,37 @@ try {
         const rowSelection = viewport.name === 'mobile'
           ? page.locator('.mobile-record-list [data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]').first()
           : page.locator('.desktop-record-table tbody [data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]').first();
-        const rowCheckbox = rowSelection.locator('input[type="checkbox"]');
-        await rowSelection.click();
-        if (!(await rowCheckbox.isChecked())) throw new Error('collection row selection control did not settle checked');
         const batchBar = page.locator('[data-semantic-component="CollectionBatchActionBar"]');
-        await batchBar.waitFor({ state: 'visible', timeout: 15000 });
-        const actionCount = Number(await batchBar.getAttribute('data-action-count') || 0);
-        const directKeys = String(await batchBar.getAttribute('data-direct-action-keys') || '').split(',').filter(Boolean);
-        const overflowKeys = String(await batchBar.getAttribute('data-overflow-action-keys') || '').split(',').filter(Boolean);
-        const projectedKeys = await batchBar.locator('button[data-action-key]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-action-key') || '').filter(Boolean));
+        const selectionAvailable = await rowSelection.count() === 1;
+        let actionCount = 0;
+        let directKeys = [];
+        let overflowKeys = [];
+        let projectedKeys = [];
         let batchFocusContained = true;
         let batchFocusRestored = true;
-        if (overflowKeys.length) {
-          const batchToggle = batchBar.getByRole('button', { name: /更多批量操作/ });
-          await batchToggle.click();
-          const batchLayer = batchBar.locator('[data-collection-batch-layer="overflow"]');
-          await batchLayer.waitFor({ state: 'visible', timeout: 15000 });
-          batchFocusContained = await batchLayer.evaluate((node) => node.contains(document.activeElement));
-          await page.keyboard.press('Escape');
-          await batchLayer.waitFor({ state: 'hidden', timeout: 15000 });
-          batchFocusRestored = await batchToggle.evaluate((node) => node === document.activeElement);
+        if (selectionAvailable) {
+          const rowCheckbox = rowSelection.locator('input[type="checkbox"]');
+          await rowSelection.click();
+          if (!(await rowCheckbox.isChecked())) throw new Error('collection row selection control did not settle checked');
+          await batchBar.waitFor({ state: 'visible', timeout: 15000 });
+          actionCount = Number(await batchBar.getAttribute('data-action-count') || 0);
+          directKeys = String(await batchBar.getAttribute('data-direct-action-keys') || '').split(',').filter(Boolean);
+          overflowKeys = String(await batchBar.getAttribute('data-overflow-action-keys') || '').split(',').filter(Boolean);
+          projectedKeys = await batchBar.locator('button[data-action-key]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-action-key') || '').filter(Boolean));
+          if (overflowKeys.length) {
+            const batchToggle = batchBar.getByRole('button', { name: /更多批量操作/ });
+            await batchToggle.click();
+            const batchLayer = batchBar.locator('[data-collection-batch-layer="overflow"]');
+            await batchLayer.waitFor({ state: 'visible', timeout: 15000 });
+            batchFocusContained = await batchLayer.evaluate((node) => node.contains(document.activeElement));
+            await page.keyboard.press('Escape');
+            await batchLayer.waitFor({ state: 'hidden', timeout: 15000 });
+            batchFocusRestored = await batchToggle.evaluate((node) => node === document.activeElement);
+          }
         }
         const uniqueKeys = [...new Set([...directKeys, ...overflowKeys])];
         collectionToolbarEvidence = {
-          actionCount, directKeys, overflowKeys, projectedKeys,
+          selectionAvailable, actionCount, directKeys, overflowKeys, projectedKeys,
           primitiveOwners, customFilterPrimitiveEvidence,
           searchFocusContained, searchFocusRestored, batchFocusContained, batchFocusRestored,
           pass: searchFocusContained && searchFocusRestored && batchFocusContained && batchFocusRestored
