@@ -18,7 +18,7 @@
         </tbody>
       </ScDataTable>
     </div>
-    <p v-else class="empty-text">{{ emptyMessage }}</p>
+    <ScEmptyState v-else density="compact" :title="emptyMessage" />
   </article>
 </template>
 
@@ -26,6 +26,7 @@
 import { computed } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScDataTable from '../../design-system/ScDataTable.vue';
+import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -78,6 +79,5 @@ function stringify(value: unknown) {
 .mini-table :deep(td) { border: 1px solid var(--sc-app-border); padding: 8px 10px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
 .mini-table :deep(th) { background: var(--sc-app-muted-bg); font-weight: 700; color: var(--sc-app-text-primary); }
 .mini-table :deep(tbody tr:nth-child(2n) td) { background: var(--sc-app-muted-bg); }
-.empty-text { margin: 6px 0 0; color: var(--sc-app-text-secondary); font-size: 13px; }
 
 </style>

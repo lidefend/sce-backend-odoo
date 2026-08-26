@@ -3,15 +3,15 @@
     <header class="block-header">
       <h4>{{ block.title || '提醒' }}</h4>
       <div class="block-header-actions">
-        <button
+        <ScButton
           v-for="action in actions"
           :key="`alert-action-${action.key}`"
-          type="button"
-          class="block-action-btn"
+          size="small"
+          variant="ghost"
           @click="emitAction(action.key, {})"
         >
           {{ action.label || action.key }}
-        </button>
+        </ScButton>
       </div>
     </header>
 
@@ -27,18 +27,20 @@
           <span class="alert-source" :class="`source-${item.source}`">{{ item.sourceLabel }}</span>
         </p>
         <p class="alert-desc">{{ item.description }}</p>
-        <button type="button" class="alert-open-btn" @click="emitAction(item.actionKey || 'open_scene', item.raw)">
+        <ScButton size="small" variant="primary" class="alert-open-btn" @click="emitAction(item.actionKey || 'open_scene', item.raw)">
           {{ item.buttonText }}
-        </button>
+        </ScButton>
       </article>
     </div>
-    <p v-else class="alert-empty">当前无风险提醒</p>
+    <ScEmptyState v-else density="compact" title="当前无风险提醒" />
   </article>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import ScButton from '../../design-system/ScButton.vue';
+import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -116,24 +118,11 @@ function normalizeSource(value: unknown) {
 }
 .block-header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
-.block-action-btn,
 .alert-open-btn {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 7px 12px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.alert-open-btn {
-  border-color: var(--sc-app-danger-border);
-  background: var(--sc-app-danger-text);
-  color: var(--sc-semantic-text-on-interactive);
-  font-weight: 600;
+  justify-self: start;
 }
 .alert-list {
   display: grid;
@@ -189,9 +178,8 @@ function normalizeSource(value: unknown) {
   border-left-width: 7px;
   box-shadow: 0 10px 20px var(--sc-app-shadow);
 }
-.alert-empty {
-  margin: 8px 0 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
+@container (max-width: 480px) {
+  .block-header { align-items: flex-start; flex-direction: column; }
+  .block-header-actions { width: 100%; }
 }
 </style>

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "state-dashboard-coverage/v1",
+  "formalProductLayer": "P0 platform kernel product",
+  "layerTarget": "frontend state and dashboard block presentation",
+  "reference": {
+    "kind": "read-only daily frontend snapshot",
+    "path": "/home/lidefend/workspace/sce-daily-frontend-snapshot-20260826",
+    "authority": "presentation reference only; not Contract, permission, route or business authority"
+  },
+  "governedStates": ["loading", "empty", "error", "disabled", "focus", "reduced_motion"],
+  "surfaces": [
+    {"key": "activity_page", "stateAuthority": "ScLoading/ScEmptyState/ScErrorState", "readiness": "ready"},
+    {"key": "status_panel", "stateAuthority": "productErrorState + ScButton", "readiness": "ready"},
+    {"key": "dashboard_activity_feed", "stateAuthority": "ScEmptyState", "readiness": "ready"},
+    {"key": "dashboard_alert_panel", "stateAuthority": "ScButton/ScEmptyState", "readiness": "ready"},
+    {"key": "dashboard_entry_grid", "stateAuthority": "ScButton/ScEmptyState", "readiness": "ready"},
+    {"key": "dashboard_metric_row", "stateAuthority": "ScEmptyState", "readiness": "ready"},
+    {"key": "dashboard_progress_summary", "stateAuthority": "ScEmptyState", "readiness": "ready"},
+    {"key": "dashboard_record_summary", "stateAuthority": "ScButton/ScEmptyState", "readiness": "ready"},
+    {"key": "dashboard_record_table", "stateAuthority": "ScDataTable/ScEmptyState", "readiness": "ready"},
+    {"key": "dashboard_todo_list", "stateAuthority": "ScButton/ScEmptyState", "readiness": "ready"}
+  ],
+  "responsiveInvariants": [
+    "dashboard container owns inline-size adaptation",
+    "interactive cards retain focus-visible state",
+    "compact blocks collapse to one column at 480px",
+    "record tables use contained horizontal scrolling",
+    "motion is removed when reduced motion is requested"
+  ],
+  "formalGaps": [],
+  "excludedScopes": ["Contract V2", "permissions", "routes", "business action execution", "task/workspace authority", "data mutations"]
+}

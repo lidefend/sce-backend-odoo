@@ -3,15 +3,15 @@
     <header class="block-header">
       <h4>{{ block.title || '待办' }}</h4>
       <div class="block-header-actions">
-        <button
+        <ScButton
           v-for="action in actions"
           :key="`block-action-${action.key}`"
-          type="button"
-          class="block-action-btn"
+          size="small"
+          variant="ghost"
           @click="emitAction(action.key, {})"
         >
           {{ action.label || action.key }}
-        </button>
+        </ScButton>
       </div>
     </header>
 
@@ -31,19 +31,21 @@
           <p class="todo-desc">{{ item.description }}</p>
           <p v-if="item.pendingCount > 0" class="todo-meta">待处理 {{ item.pendingCount }}</p>
         </div>
-        <button type="button" class="todo-open-btn" @click.stop="emitAction(item.actionKey || 'open_scene', item.raw)">
+        <ScButton size="small" variant="primary" class="todo-open-btn" @click.stop="emitAction(item.actionKey || 'open_scene', item.raw)">
           {{ item.buttonText }}
-        </button>
+        </ScButton>
       </article>
     </div>
 
-    <p v-else class="todo-empty">当前暂无待办</p>
+    <ScEmptyState v-else density="compact" title="当前暂无待办" />
   </article>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import ScButton from '../../design-system/ScButton.vue';
+import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -123,25 +125,11 @@ function normalizeSource(value: unknown) {
 }
 .block-header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
-.block-action-btn,
 .todo-open-btn {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 7px 12px;
-  cursor: pointer;
-  font-weight: 600;
   white-space: nowrap;
-}
-
-.todo-open-btn {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-  font-weight: 600;
 }
 .todo-list {
   display: grid;
@@ -220,14 +208,14 @@ function normalizeSource(value: unknown) {
   color: var(--sc-app-warning-text);
   background: var(--sc-app-warning-bg);
 }
+@container (max-width: 480px) {
+  .block-header, .todo-item { align-items: stretch; flex-direction: column; }
+  .block-header-actions { width: 100%; }
+  .todo-open-btn { width: 100%; }
+}
 .tone-warning { background: var(--sc-app-warning-bg); border-left-color: var(--sc-app-warning-text); }
 .tone-danger { background: var(--sc-app-danger-bg); border-left-color: var(--sc-app-danger-text); }
 .tone-info { background: var(--sc-app-info-bg); border-left-color: var(--sc-app-info-text); }
 .tone-success { background: var(--sc-app-success-bg); border-left-color: var(--sc-app-success-text); }
 .tone-neutral { background: var(--sc-app-muted-bg); border-left-color: var(--sc-app-border-strong); }
-.todo-empty {
-  margin: 8px 0 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
-}
 </style>
