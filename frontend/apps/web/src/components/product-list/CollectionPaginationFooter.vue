@@ -3,6 +3,8 @@
     class="pagination-footer"
     data-semantic-component="CollectionPaginationFooter"
     :data-pagination-mode="mode"
+    :data-state="loading ? 'loading' : 'ready'"
+    :aria-busy="loading || undefined"
     :aria-label="labels.region"
   >
     <div class="pagination-actions pagination-actions--bottom">

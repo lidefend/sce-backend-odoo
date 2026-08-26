@@ -1,5 +1,5 @@
 <template>
-  <header class="grouped-toolbar" data-semantic-component="CollectionGroupingToolbar" :data-group-count="groupCount">
+  <header class="grouped-toolbar" data-semantic-component="CollectionGroupingToolbar" :data-group-count="groupCount" :data-state="loading ? 'loading' : groupCount ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <div class="grouped-toolbar-title">
       <span>{{ labels.title }}</span>
       <span v-if="windowInfo" class="group-window-info" aria-live="polite">{{ windowInfo }}</span>
