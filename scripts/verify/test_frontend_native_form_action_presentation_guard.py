@@ -42,6 +42,10 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
         altered = self.overflow_menu.replace("event.key === 'Escape'", "event.key === 'Dismiss'")
         self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
 
+    def test_overflow_trigger_requires_all_disabled_settlement(self):
+        altered = self.overflow_menu.replace('@keydown.esc.stop.prevent="close(true)"', '')
+        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
+
     def test_overflow_requires_complete_keyboard_navigation(self):
         altered = self.overflow_menu.replace("event.key === 'Home'", "event.key === 'Start'")
         self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))

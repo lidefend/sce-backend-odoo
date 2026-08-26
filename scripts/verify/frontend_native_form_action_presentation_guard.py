@@ -81,6 +81,8 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         'role="menuitem"',
         '@keydown.down.stop.prevent="openMenu(\'first\')"',
         '@keydown.up.stop.prevent="openMenu(\'last\')"',
+        '@keydown.esc.stop.prevent="close(true)"',
+        '@keydown.tab="close()"',
         '@keydown="onMenuKeydown"',
         "const instanceId = useId()",
         "event.key === 'ArrowDown'",
@@ -88,6 +90,7 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         "event.key === 'Home'",
         "event.key === 'End'",
         "event.key === 'Escape'",
+        "if (!items.length) return",
         "document.addEventListener('pointerdown', onDocumentPointerDown)",
     )
     combined = f"{text}\n{overflow}"

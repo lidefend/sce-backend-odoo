@@ -12,6 +12,8 @@
       @click="toggle"
       @keydown.down.stop.prevent="openMenu('first')"
       @keydown.up.stop.prevent="openMenu('last')"
+      @keydown.esc.stop.prevent="close(true)"
+      @keydown.tab="close()"
     >
       {{ label }}
     </ScButton>
@@ -98,6 +100,15 @@ function select(action: OverflowAction) {
 }
 
 function onMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    close(true);
+    return;
+  } else if (event.key === 'Tab') {
+    close();
+    return;
+  }
   const items = enabledItems();
   if (!items.length) return;
   const current = items.indexOf(document.activeElement as HTMLButtonElement);
@@ -106,15 +117,7 @@ function onMenuKeydown(event: KeyboardEvent) {
   else if (event.key === 'ArrowUp') target = (current - 1 + items.length) % items.length;
   else if (event.key === 'Home') target = 0;
   else if (event.key === 'End') target = items.length - 1;
-  else if (event.key === 'Escape') {
-    event.preventDefault();
-    event.stopPropagation();
-    close(true);
-    return;
-  } else if (event.key === 'Tab') {
-    close();
-    return;
-  } else return;
+  else return;
   event.preventDefault();
   items[target]?.focus();
 }

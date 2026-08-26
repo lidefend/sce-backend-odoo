@@ -36,7 +36,7 @@ const server = await createServer({
         window.nativeActionEvidence = { selected: [] };
         createApp({ render() { return h('div', [
           h(Menu, { ...props, label: '更多一', onSelect: (a) => window.nativeActionEvidence.selected.push(a.key) }),
-          h(Menu, { ...props, label: '更多二', onSelect: (a) => window.nativeActionEvidence.selected.push(a.key) }),
+          h(Menu, { ...props, actions: actions.map((action) => ({ ...action, disabled: true })), label: '更多二', onSelect: (a) => window.nativeActionEvidence.selected.push(a.key) }),
         ]); } }).mount('#app');
       `;
     },
@@ -70,17 +70,23 @@ try {
   await page.keyboard.press('Enter');
   const selected = await page.evaluate(() => window.nativeActionEvidence.selected);
   const selectionRestored = await firstTrigger.evaluate((node) => document.activeElement === node);
-  await triggers.nth(1).click();
+  await triggers.nth(1).press('ArrowDown');
   const secondId = await page.locator('[role="menu"]').getAttribute('id');
+  await triggers.nth(1).press('Escape');
+  const allDisabledEscapeClosed = await page.locator('[role="menu"]').count() === 0;
+  await triggers.nth(1).click();
+  await triggers.nth(1).press('Tab');
+  const allDisabledTabClosed = await page.locator('[role="menu"]').count() === 0;
+  await firstTrigger.click();
   await page.locator('#outside').click();
   const outsideClosed = await page.locator('[role="menu"]').count() === 0;
   const pass = JSON.stringify(focusSequence) === JSON.stringify(['动作一', '动作二', '动作三', '动作一', '动作三'])
     && arrowUpInitial === '动作三'
     && JSON.stringify(selected) === JSON.stringify(['three'])
-    && escapeRestored && selectionRestored && outsideClosed
+    && escapeRestored && selectionRestored && outsideClosed && allDisabledEscapeClosed && allDisabledTabClosed
     && ids.length === 1 && Boolean(ids[0]) && Boolean(secondId) && ids[0] !== secondId
     && errors.length === 0;
-  console.log(JSON.stringify({ pass, focusSequence, arrowUpInitial, selected, escapeRestored, selectionRestored, outsideClosed, ids: [ids[0], secondId], errors }, null, 2));
+  console.log(JSON.stringify({ pass, focusSequence, arrowUpInitial, selected, escapeRestored, selectionRestored, outsideClosed, allDisabledEscapeClosed, allDisabledTabClosed, ids: [ids[0], secondId], errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();
