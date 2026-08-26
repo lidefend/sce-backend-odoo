@@ -46,4 +46,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_state_presentation_guard] PASS surfaces=2 states=loading,empty,error,disabled,focus")
+    print("[frontend_state_presentation_guard] PASS surfaces=3 states=loading,empty,error,disabled,focus")

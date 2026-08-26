@@ -130,6 +130,7 @@ function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
 }
 
 @media (max-width: 760px) {
-  .activity-tabs { display: none; }
+  .activity-tabs { gap: 8px; padding-inline: 8px; }
+  .activity-tab { flex-basis: 150px; min-width: 120px; }
 }
 </style>
