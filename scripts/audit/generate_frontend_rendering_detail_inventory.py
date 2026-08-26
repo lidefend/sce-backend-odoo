@@ -97,11 +97,25 @@ class TemplateElements(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.elements: list[tuple[str, dict[str, str]]] = []
+        self.stack: list[tuple[str, bool]] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self.elements.append((tag, {name: value or "" for name, value in attrs}))
+        attributes = {name: value or "" for name, value in attrs}
+        statically_dead = attributes.get("v-if", "").strip().lower() in {"false", "0", "null", "undefined"}
+        reachable = not statically_dead and all(parent_reachable for _, parent_reachable in self.stack)
+        if reachable:
+            self.elements.append((tag, attributes))
+        self.stack.append((tag, reachable))
 
-    handle_startendtag = handle_starttag
+    def handle_endtag(self, tag: str) -> None:
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index][0] == tag:
+                del self.stack[index:]
+                return
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
 
 
 def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]]) -> list[str]:

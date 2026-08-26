@@ -48,6 +48,16 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         status, _ = INVENTORY.classify(source, fake)
         self.assertEqual(status, "gap")
 
+    def test_statically_dead_template_binding_cannot_fake_completion(self) -> None:
+        source = "frontend/apps/web/src/components/page/BlockRenderer.vue"
+        fake = """<template><section v-if=\"false\">
+<ScErrorState density=\"compact\" :heading-level=\"5\" />
+</section></template>
+<script setup>import ScErrorState from '../design-system/ScErrorState.vue';</script>"""
+        status, reason = INVENTORY.classify(source, fake)
+        self.assertEqual(status, "gap")
+        self.assertIn("template nodes 0", reason)
+
     def test_native_composites_require_explicit_reason(self) -> None:
         for source, reason in INVENTORY.DELIBERATE_NATIVE_COMPOSITES.items():
             self.assertEqual(self.by_source[source]["status"], "deliberate_native_composite")
