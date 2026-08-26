@@ -293,6 +293,11 @@ def validate(root: Path = ROOT) -> list[str]:
         ".sc-select[data-size='medium'] .t-input",
         ".sc-textarea .t-textarea__inner",
         ".sc-btn.t-button",
+        ".sc-btn.t-button.sc-btn-primary",
+        ".sc-btn.t-button.sc-btn-primary:hover:not(:disabled)",
+        "background-color: var(--sc-semantic-surface-interactive)",
+        "background-color: var(--sc-semantic-surface-interactive-hover)",
+        "color: var(--sc-semantic-text-on-interactive)",
         "--sc-component-input-height-md",
         "--sc-component-button-height-md",
     )

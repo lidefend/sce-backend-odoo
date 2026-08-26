@@ -102,6 +102,19 @@
   font-weight: 500;
 }
 
+.sc-btn.t-button.sc-btn-primary {
+  border-color: var(--sc-semantic-surface-interactive);
+  background-color: var(--sc-semantic-surface-interactive);
+  color: var(--sc-semantic-text-on-interactive);
+}
+
+.sc-btn.t-button.sc-btn-primary:hover:not(:disabled),
+.sc-btn.t-button.sc-btn-primary:active:not(:disabled) {
+  border-color: var(--sc-semantic-surface-interactive-hover);
+  background-color: var(--sc-semantic-surface-interactive-hover);
+  color: var(--sc-semantic-text-on-interactive);
+}
+
 .sc-btn.t-button[data-size='small'] {
   height: calc(var(--sc-component-button-height-sm) * 1px);
 }

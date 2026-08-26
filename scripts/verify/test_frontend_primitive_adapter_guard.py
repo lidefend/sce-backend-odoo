@@ -49,7 +49,12 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             ".sc-input.t-input__wrap[data-size='large'] > .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
             ".sc-select[data-size='medium'] .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
             ".sc-textarea .t-textarea__inner { min-height: calc(var(--sc-component-input-height-md) * 2px); }\n"
-            ".sc-btn.t-button { height: calc(var(--sc-component-button-height-md) * 1px); }\n",
+            ".sc-btn.t-button { height: calc(var(--sc-component-button-height-md) * 1px); }\n"
+            ".sc-btn.t-button.sc-btn-primary { border-color: var(--sc-semantic-surface-interactive); "
+            "background-color: var(--sc-semantic-surface-interactive); color: var(--sc-semantic-text-on-interactive); }\n"
+            ".sc-btn.t-button.sc-btn-primary:hover:not(:disabled) { "
+            "background-color: var(--sc-semantic-surface-interactive-hover); "
+            "color: var(--sc-semantic-text-on-interactive); }\n",
             encoding="utf-8",
         )
         for name in PRIMITIVES:
@@ -179,6 +184,18 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
         theme.write_text(":root {}\n", encoding="utf-8")
         self.assertTrue(any("visual projection bridge missing marker" in error for error in validate(root)))
+
+    def test_primary_button_contrast_projection_is_required(self) -> None:
+        root = self.make_root()
+        theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
+        theme.write_text(
+            theme.read_text(encoding="utf-8").replace(
+                "background-color: var(--sc-semantic-surface-interactive-hover); ",
+                "",
+            ),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("surface-interactive-hover" in error for error in validate(root)))
 
     def test_business_identity_in_visual_projection_fails(self) -> None:
         root = self.make_root()
