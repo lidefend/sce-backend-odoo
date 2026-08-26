@@ -71,35 +71,6 @@ const nativeProjection = computed(() => ({
   },
 }));
 
-function eventValue(event: Event): string | null {
-  return resolvePrimitiveControlUpdate({
-    value: (event.target as HTMLTextAreaElement).value,
-    disabled: props.disabled,
-    readonly: props.readonly,
-    loading: props.loading,
-  });
-}
-
-function onInput(event: Event) {
-  const value = eventValue(event);
-  if (value === null) return;
-  emit('update:modelValue', value);
-  emit('input', value, event);
-}
-
-function onChange(event: Event) {
-  const value = eventValue(event);
-  if (value !== null) emit('change', value, event);
-}
-
-function onFocus(event: FocusEvent) {
-  emit('focus', props.modelValue, event);
-}
-
-function onBlur(event: FocusEvent) {
-  emit('blur', props.modelValue, event);
-}
-
 function eventFrom(context: unknown, name: string): Event {
   const event = (context as { e?: Event } | undefined)?.e;
   return event instanceof Event ? event : new Event(name);

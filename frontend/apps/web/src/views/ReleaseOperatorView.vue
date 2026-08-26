@@ -548,12 +548,6 @@ function releaseStateLabel(page: AnyRecord) {
   };
   return labels[state] || state || '-';
 }
-function releaseStateClass(page: AnyRecord) {
-  const state = String(page.release_state || (page.enabled === false ? 'hidden' : 'released'));
-  if (state === 'preview') return 'release-operator__pill--preview';
-  if (state === 'hidden' || state === 'retired' || page.enabled === false) return 'release-operator__pill--muted';
-  return '';
-}
 function accessLevelLabel(page: AnyRecord) {
   const level = String(page.access_level || 'public');
   const labels: Record<string, string> = {
