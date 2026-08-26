@@ -1,5 +1,5 @@
 <template>
-<section v-if="analysisPanelOpen" class="edit-panel config-editor-panel">
+<ScCard v-if="analysisPanelOpen" appearance="main-surface" class="edit-panel config-editor-panel">
   <div class="edit-panel-head">
     <div>
       <h2>分析视图设置</h2>
@@ -68,9 +68,9 @@
     <span v-if="hasAnalysisDraftChanges" class="edit-dirty">配置已调整；可先检查修改，保存后才会发布生效</span>
     <span v-if="advancedPanelOpen">生效来源：{{ boundaryLabel(analysisAudit?.business_config_boundary || 'business_contract') }}</span>
   </div>
-</section>
+</ScCard>
 
-<section v-if="listSearchPanelOpen" class="edit-panel config-editor-panel">
+<ScCard v-if="listSearchPanelOpen" appearance="main-surface" class="edit-panel config-editor-panel">
   <div class="edit-panel-head">
     <div>
       <h2>列表与搜索设置</h2>
@@ -205,12 +205,13 @@
       {{ item.user_name || '用户' }} · {{ viewTypeLabel(item.view_type || 'list') }} · {{ item.column_count }}列
     </span>
   </div>
-</section>
+</ScCard>
 </template>
 
 <script setup lang="ts">
 import LowCodeFieldChipEditor from './LowCodeFieldChipEditor.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScCard from '../../components/design-system/ScCard.vue';
 
 type ListSearchEditorKind = 'list' | 'filter' | 'group';
 type AnalysisEditorKind = 'pivotMeasure' | 'pivotDimension' | 'graphMeasure' | 'graphDimension';

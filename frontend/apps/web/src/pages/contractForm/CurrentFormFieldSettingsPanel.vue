@@ -129,7 +129,7 @@
         </aside>
         <aside class="record-form-inspector" aria-label="字段属性检查器">
           <section class="contract-field-selection-panel">
-            <div v-if="selectedFieldRow" class="contract-field-selection-card">
+            <ScCard v-if="selectedFieldRow" appearance="record" class="contract-field-selection-card">
               <div class="contract-field-selection-main">
                 <span>已选字段</span>
                 <strong>{{ selectedFieldRow.label }}</strong>
@@ -294,7 +294,7 @@
                   </div>
                 </section>
               </div>
-            </div>
+            </ScCard>
             <div v-else class="contract-field-selection-empty">
               <strong>选择字段后开始配置</strong>
               <span>在下方表单点选字段后，可在这里调整显示、隐藏、顺序和分组。</span>
@@ -354,6 +354,7 @@
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../components/design-system/ScCard.vue';
 import type {
   ContractFieldGovernanceRow,
   FormConfigAuditResult,

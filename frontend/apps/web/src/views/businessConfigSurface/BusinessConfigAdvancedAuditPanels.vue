@@ -1,5 +1,5 @@
 <template>
-  <section v-if="coverageScan" class="scan-panel scan-panel--admin">
+  <ScCard v-if="coverageScan" appearance="section" class="scan-panel scan-panel--admin">
     <div class="scan-toolbar">
       <strong>配置检查明细</strong>
       <span v-if="snapshotSummaryText">{{ snapshotSummaryText }}</span>
@@ -38,8 +38,8 @@
         <ScButton type="button" class="link-button" @click="$emit('focusScanRow', row)">选择此页面</ScButton>
       </div>
     </div>
-  </section>
-  <section class="scan-panel snapshot-compare-panel">
+  </ScCard>
+  <ScCard appearance="section" class="scan-panel snapshot-compare-panel">
     <div class="scan-toolbar">
       <strong>跨环境快照对比</strong>
       <span v-if="snapshotCompareResult">{{ snapshotCompareSummary }}</span>
@@ -83,7 +83,7 @@
         <span>版本 {{ item.version_no }}</span>
       </div>
     </div>
-  </section>
+  </ScCard>
 </template>
 
 <script setup lang="ts">
@@ -93,6 +93,7 @@ import type {
   BusinessConfigSnapshotComparePayload,
 } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScCard from '../../components/design-system/ScCard.vue';
 
 defineProps<{
   coverageScan: unknown;

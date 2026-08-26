@@ -1,5 +1,5 @@
 <template>
-  <section class="version-panel">
+  <ScCard appearance="main-surface" class="version-panel">
     <div class="edit-panel-head">
       <div>
         <h2>{{ title }}</h2>
@@ -15,7 +15,7 @@
     </div>
     <div v-if="!contracts.length" class="empty-state">{{ emptyText }}</div>
     <div v-else class="version-list">
-      <article v-for="contract in contracts" :key="contract.id" class="version-card">
+      <ScCard v-for="contract in contracts" :key="contract.id" appearance="record" class="version-card">
         <div class="version-card-head">
           <div class="version-card-title">
             <strong>{{ viewTypeLabel(contract.view_type) }}</strong>
@@ -69,14 +69,15 @@
             </ScButton>
           </div>
         </div>
-      </article>
+      </ScCard>
     </div>
-  </section>
+  </ScCard>
 </template>
 
 <script setup lang="ts">
 import type { BusinessConfigContractVersionsPayload } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScCard from '../../components/design-system/ScCard.vue';
 
 type Contract = BusinessConfigContractVersionsPayload['contracts'][number];
 type Summary = Contract['summary'];

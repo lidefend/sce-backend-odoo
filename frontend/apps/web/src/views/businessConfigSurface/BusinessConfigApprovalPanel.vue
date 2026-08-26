@@ -1,5 +1,5 @@
 <template>
-  <section class="edit-panel config-editor-panel approval-panel">
+  <ScCard appearance="main-surface" class="edit-panel config-editor-panel approval-panel">
     <div class="edit-panel-head">
       <div>
         <h2>审批规则</h2>
@@ -148,11 +148,12 @@
         打开完整规则
       </ScButton>
     </div>
-  </section>
+  </ScCard>
 </template>
 
 <script setup lang="ts">
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScCard from '../../components/design-system/ScCard.vue';
 
 type ApprovalForm = {
   approval_required: boolean;
