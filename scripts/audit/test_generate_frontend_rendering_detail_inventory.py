@@ -38,7 +38,7 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_collection_batch_sources_have_machine_proven_completion(self) -> None:
         batch = "p0-collection-state-control-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
-        self.assertEqual(len(sources), 13)
+        self.assertEqual(len(sources), 15)
         self.assertEqual(self.report["nextBatch"]["key"], batch)
         for source in sources:
             self.assertIn(source, self.by_source)

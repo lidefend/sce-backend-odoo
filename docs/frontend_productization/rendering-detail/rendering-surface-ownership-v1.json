@@ -23,13 +23,15 @@
         "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue",
         "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
         "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue",
+        "frontend/apps/web/src/components/product-list/CollectionFilterChip.vue",
         "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
         "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
         "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue",
         "frontend/apps/web/src/pages/KanbanPage.vue",
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/src/pages/ModelListPage.vue",
-        "frontend/apps/web/src/views/ActionView.vue"
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/components/GroupSummaryBar.vue"
       ]
     },
     "p3-low-code-administration": {

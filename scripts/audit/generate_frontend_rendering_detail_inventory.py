@@ -94,6 +94,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue": {"article": {"attrs": {"data-semantic-component": "CollectionKanbanRecordCard", ":aria-disabled": "disabled || undefined"}}},
         "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue": {"article": {"attrs": {"data-semantic-component": "CollectionMobileRecordRow", ":data-state": "selectionDisabled ? 'selection-disabled' : 'ready'"}}},
         "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue": {"nav": {"attrs": {"data-semantic-component": "CollectionPaginationFooter", ":data-state": "loading ? 'loading' : 'ready'"}}},
+        "frontend/apps/web/src/components/product-list/CollectionFilterChip.vue": {"scbutton": {"attrs": {"data-semantic-component": "CollectionFilterChip", ":aria-pressed": "active"}}},
         "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue": {"productlistheader": {"attrs": {"data-list-surface-header": ""}}},
         "frontend/apps/web/src/components/product-list/ProductListHeader.vue": {"section": {"attrs": {"data-semantic-component": "ProductListHeader", ":aria-busy": "loading || undefined"}}},
         "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue": {"section": {"attrs": {"data-semantic-component": "ProductLoadingSkeleton", "data-state": "loading"}}},
@@ -101,6 +102,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/pages/ListPage.vue": {"section": {"attrs": {"data-semantic-component": "ListPage", ":data-list-status": "status"}}},
         "frontend/apps/web/src/pages/ModelListPage.vue": {"main": {"attrs": {"data-semantic-component": "ModelListCompatibilityRedirect", "data-state": "redirecting"}}},
         "frontend/apps/web/src/views/ActionView.vue": {"scpage": {"attrs": {"data-semantic-component": "ActionView", ":data-collection-state": "status"}}},
+        "frontend/apps/web/src/components/GroupSummaryBar.vue": {"section": {"attrs": {"data-semantic-component": "GroupSummaryBar"}}},
     },
 }
 OWNED_BINDINGS = {
