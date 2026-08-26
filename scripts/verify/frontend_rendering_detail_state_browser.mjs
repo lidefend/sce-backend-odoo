@@ -23,6 +23,8 @@ const server = await createServer({
         import ScEmptyState from '/src/components/design-system/ScEmptyState.vue';
         import ScErrorState from '/src/components/design-system/ScErrorState.vue';
         import ScInlineState from '/src/components/design-system/ScInlineState.vue';
+        import UnsupportedActionSurface from '/src/components/action/UnsupportedActionSurface.vue';
+        import BlockRenderer from '/src/components/page/BlockRenderer.vue';
         import '/src/styles/design-system.css';
         createApp({ render() { return h('main', { style: 'display:grid;gap:12px;max-width:720px;padding:16px' }, [
           h(ScInlineState, { state: 'loading', label: '正在加载', id: 'loading-state' }),
@@ -32,6 +34,12 @@ const server = await createServer({
           h(ScErrorState, { density: 'compact', headingLevel: 5, title: '区块失败', description: '请稍后重试' }, {
             actions: () => h(ScButton, { id: 'retry-action', variant: 'primary' }, () => '重试'),
           }),
+          h('section', { id: 'unsupported-consumer' }, [h(UnsupportedActionSurface)]),
+          h('section', { id: 'block-consumer' }, [h(BlockRenderer, {
+            block: { key: 'unknown-test-block', block_type: 'not_registered', props: {} },
+            zoneKey: 'test-zone',
+            dataset: {},
+          })]),
         ]); } }).mount('#app');
       `;
     },
@@ -58,6 +66,8 @@ try {
   })));
   const compactHeadings = await page.locator('[data-density="compact"] h5').count();
   const unexpectedHeadings = await page.locator('[data-density="compact"] h2').count();
+  const unsupportedConsumerErrors = await page.locator('#unsupported-consumer [data-semantic-component="ScErrorState"]').count();
+  const blockConsumerErrors = await page.locator('#block-consumer [data-semantic-component="ScErrorState"][data-density="compact"] h5').count();
   const loadingMotion = await page.locator('#loading-state .sc-inline-state__indicator').evaluate((node) => getComputedStyle(node).animationName);
   await page.locator('#retry-action').focus();
   const focusVisible = await page.locator('#retry-action').evaluate((node) => getComputedStyle(node).outlineStyle !== 'none');
@@ -67,10 +77,11 @@ try {
     && inlineStates.some((state) => state.state === 'loading' && state.role === 'status' && state.busy === 'true')
     && inlineStates.some((state) => state.state === 'empty' && state.role === 'status')
     && inlineStates.some((state) => state.state === 'error' && state.role === 'alert')
-    && compactHeadings === 2 && unexpectedHeadings === 0
+    && compactHeadings === 3 && unexpectedHeadings === 0
+    && unsupportedConsumerErrors === 1 && blockConsumerErrors === 1
     && loadingMotion === 'none' && focusVisible
     && !desktopOverflow && !mobileOverflow && errors.length === 0;
-  console.log(JSON.stringify({ pass, inlineStates, compactHeadings, unexpectedHeadings, loadingMotion, focusVisible, desktopOverflow, mobileOverflow, errors, mutation: 0 }, null, 2));
+  console.log(JSON.stringify({ pass, inlineStates, compactHeadings, unexpectedHeadings, unsupportedConsumerErrors, blockConsumerErrors, loadingMotion, focusVisible, desktopOverflow, mobileOverflow, errors, mutation: 0 }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();
