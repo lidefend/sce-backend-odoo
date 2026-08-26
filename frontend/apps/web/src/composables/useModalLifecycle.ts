@@ -36,6 +36,7 @@ export function useModalLifecycle(options: {
   open: () => boolean;
   surface: Ref<HTMLElement | null>;
   close: () => void;
+  closeOnEscape?: () => boolean;
 }) {
   const opener = ref<HTMLElement | null>(null);
   let locked = false;
@@ -73,6 +74,7 @@ export function useModalLifecycle(options: {
       surfaceActive: document.activeElement === options.surface.value,
     });
     if (action === 'close') {
+      if (options.closeOnEscape && !options.closeOnEscape()) return;
       event.preventDefault();
       options.close();
       return;

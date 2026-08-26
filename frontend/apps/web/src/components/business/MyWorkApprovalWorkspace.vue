@@ -297,11 +297,9 @@ async function confirmAction() {
 .empty { padding: var(--sc-product-space-3); border: 1px dashed var(--sc-app-border); border-radius: var(--sc-product-radius-panel); color: var(--sc-app-text-secondary); }
 .feedback { margin: 0; padding: 10px 12px; border-radius: var(--sc-product-radius-control); background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }
 .feedback.error { background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
-.intent-dialog { width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); padding: var(--sc-product-space-3); box-shadow: var(--sc-product-shadow-overlay); background: var(--sc-app-panel); color: var(--sc-app-text-primary); }
-.intent-dialog::backdrop { background: color-mix(in srgb, var(--sc-app-text-primary) 45%, transparent); }
-.intent-dialog h2 { margin-top: 0; }
-.intent-dialog label { display: grid; gap: 6px; }
-.intent-dialog textarea { width: 100%; box-sizing: border-box; }
+:deep(.intent-dialog) { width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--sc-app-text-primary); }
+:deep(.intent-dialog label) { display: grid; gap: 6px; }
+:deep(.intent-dialog textarea) { width: 100%; box-sizing: border-box; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 @media (max-width: 640px) {
   .product-work { gap: 14px; }

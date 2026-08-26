@@ -141,10 +141,6 @@
 }
 
 @media (max-width: 860px) {
-  .relation-dialog-backdrop {
-    padding: var(--sc-product-space-2);
-  }
-
   .relation-dialog-search,
   .relation-dialog-footer {
     align-items: stretch;

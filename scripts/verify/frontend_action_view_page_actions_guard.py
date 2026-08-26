@@ -16,7 +16,8 @@ def validate(source: str | None = None) -> list[str]:
         'v-for="btn in group.actions"',
         '<ScButton variant="primary" size="small" type="button" @click="openFocusAction(vm.empty.primaryAction)"',
         'v-if="vm.empty.secondaryAction"',
-        '<ScButton class="business-category-picker-close"',
+        '<ScDialog\n      :open="businessCategoryCreatePickerVisible"',
+        '@close="closeBusinessCategoryCreatePicker"',
         "import ScButton from '../components/design-system/ScButton.vue';",
     )
     for marker in required_actions:
@@ -37,13 +38,13 @@ def validate(source: str | None = None) -> list[str]:
         'v-for="chip in vm.filters.groupBy.primary"',
         'v-if="vm.filters.quickFilters.overflow.length"',
         'v-if="vm.actions.overflowGroups.length"',
-        'v-for="option in businessCategoryCreateOptions"',
+        'v-for="(option, optionIndex) in businessCategoryCreateOptions"',
     )
     for marker in stateful_native:
         if marker not in text:
             failures.append(f"ActionView lost stateful native control {marker}")
-    if text.count('<ScButton') != 8:
-        failures.append(f"ActionView expected 8 governed page-action projections, found {text.count('<ScButton')}")
+    if text.count('<ScButton') != 7:
+        failures.append(f"ActionView expected 7 governed page-action projections, found {text.count('<ScButton')}")
     return failures
 
 
@@ -54,4 +55,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_action_view_page_actions_guard] PASS sc_button_projections=8")
+    print("[frontend_action_view_page_actions_guard] PASS sc_button_projections=7 overlay_close=ScDialog")

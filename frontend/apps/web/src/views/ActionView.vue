@@ -623,35 +623,26 @@
       :title="vm.hud?.title || 'View Context'"
       :entries="vm.hud?.entries || []"
     />
-    <div
-      v-if="businessCategoryCreatePickerVisible"
-      class="business-category-picker-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="business-category-picker-title"
-      @click.self="closeBusinessCategoryCreatePicker"
+    <ScDialog
+      :open="businessCategoryCreatePickerVisible"
+      title="选择办理类型"
+      :description="actionMetaName || vm.page.title || '新建业务'"
+      panel-class="business-category-picker"
+      @close="closeBusinessCategoryCreatePicker"
     >
-      <section class="business-category-picker">
-        <header class="business-category-picker-head">
-          <div>
-            <h3 id="business-category-picker-title">选择办理类型</h3>
-            <p>{{ actionMetaName || vm.page.title || '新建业务' }}</p>
-          </div>
-          <ScButton class="business-category-picker-close" variant="ghost" size="small" type="button" aria-label="关闭" @click="closeBusinessCategoryCreatePicker"><ScIcon name="close" :size="18" /></ScButton>
-        </header>
-        <div class="business-category-picker-list">
-          <button
-            v-for="option in businessCategoryCreateOptions"
-            :key="option.code"
-            class="business-category-picker-option"
-            type="button"
-            @click="openCreateRecordWithBusinessCategory(option.code)"
-          >
-            <span>{{ option.label }}</span>
-          </button>
-        </div>
-      </section>
-    </div>
+      <div class="business-category-picker-list" data-semantic-component="BusinessCategoryPickerOptions">
+        <button
+          v-for="(option, optionIndex) in businessCategoryCreateOptions"
+          :key="option.code"
+          class="business-category-picker-option"
+          type="button"
+          :data-dialog-primary="optionIndex === 0 ? '' : undefined"
+          @click="openCreateRecordWithBusinessCategory(option.code)"
+        >
+          <span>{{ option.label }}</span>
+        </button>
+      </div>
+    </ScDialog>
     </template>
     </ActionSurfaceRendererHost>
     </component>
@@ -663,7 +654,7 @@ import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessLis
 import { useRoute, useRouter } from 'vue-router';
 import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScButton from '../components/design-system/ScButton.vue';
-import ScIcon from '../components/design-system/ScIcon.vue';
+import ScDialog from '../components/design-system/ScDialog.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import CollectionPattern from '../components/product-page-patterns/CollectionPattern.vue';
