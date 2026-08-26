@@ -21,16 +21,13 @@
         <span v-else class="professional-base-field-control__readonly">{{ readonlyText }}</span>
       </template>
     </template>
-    <input
+    <ScCheckbox
       v-else-if="field.type === 'boolean'"
-      :id="controlId"
       :checked="Boolean(field.value)"
-      class="professional-base-field-control__checkbox"
-      :aria-required="field.required || undefined"
-      :aria-invalid="field.invalid || undefined"
-      :aria-describedby="describedBy"
-      type="checkbox"
-      @change="emitValue(($event.target as HTMLInputElement).checked)"
+      :required="field.required"
+      :described-by="describedBy"
+      :label="field.label || field.name"
+      @change="emitValue($event)"
     />
     <ScSelect
       v-else-if="field.type === 'selection'"
@@ -54,17 +51,15 @@
       :placeholder="placeholder"
       @update:model-value="emitValue"
     />
-    <textarea
+    <ScTextarea
       v-else-if="field.type === 'text' || field.type === 'html'"
-      :id="controlId"
-      :value="String(field.inputValue ?? '')"
-      class="professional-base-field-control__textarea"
-      :aria-required="field.required || undefined"
-      :aria-invalid="field.invalid || undefined"
-      :aria-describedby="describedBy"
+      :model-value="String(field.inputValue ?? '')"
+      :required="field.required"
+      :status="field.invalid ? 'error' : 'default'"
+      :described-by="describedBy"
       :placeholder="placeholder"
-      rows="4"
-      @input="emitValue(($event.target as HTMLTextAreaElement).value)"
+      :rows="4"
+      @update:model-value="emitValue"
     />
     <ScInput
       v-else
@@ -83,8 +78,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import ScDateField from '../design-system/ScDateField.vue';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScSelect from '../design-system/ScSelect.vue';
+import ScTextarea from '../design-system/ScTextarea.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import type { FormSectionFieldSchema } from '../template/formSection.types';

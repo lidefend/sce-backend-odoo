@@ -10,18 +10,20 @@
         :parent-id="parentId"
         :editable="relationalEditable"
       />
-      <input
+      <ScInput
         v-else-if="canEdit && !isSelection"
         class="view-input"
         :type="inputType"
-        :value="inputValue"
-        @input="onInput"
+        :model-value="inputValue"
+        @update:model-value="emitInputValue"
       />
-      <select v-else-if="canEdit && isSelection" class="view-select" :value="inputValue" @change="onInput">
-        <option v-for="opt in selectionOptions" :key="opt[0]" :value="opt[0]">
-          {{ opt[1] }}
-        </option>
-      </select>
+      <ScSelect
+        v-else-if="canEdit && isSelection"
+        class="view-select"
+        :model-value="inputValue"
+        :options="selectionOptions.map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
+        @update:model-value="emitInputValue"
+      />
       <FieldValue v-else :value="value" :field="descriptor" />
     </div>
   </div>
@@ -30,6 +32,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import FieldValue from '../FieldValue.vue';
+import ScInput from '../design-system/ScInput.vue';
+import ScSelect from '../design-system/ScSelect.vue';
 import ViewRelationalRenderer from './ViewRelationalRenderer.vue';
 import type { ViewContract } from '@sc/schema';
 
@@ -123,10 +127,7 @@ const isHidden = computed(() => {
   return false;
 });
 
-function onInput(event: Event) {
-  const name = props.field.name || '';
-  emit('update:field', { name, value: (event.target as HTMLInputElement).value });
-}
+function emitInputValue(value: string) { emit('update:field', { name: props.field.name || '', value }); }
 </script>
 
 <style scoped>
