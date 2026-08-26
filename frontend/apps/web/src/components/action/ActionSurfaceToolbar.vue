@@ -77,63 +77,69 @@
           <span>{{ activeGroupChip.label }}</span>
           <span class="facet-remove">{{ clearSymbol }}</span>
         </ScButton>
-        <ScInput
-          type="search"
-          :model-value="searchValue"
-          size="small"
-          :disabled="loading"
-          :loading="loading"
-          :placeholder="searchPlaceholder"
-          @compositionstart="$emit('search-composition-start')"
-          @compositionend="$emit('search-composition-end', $event)"
-          @input="$emit('search-input', $event)"
-          @keydown.enter.prevent="$emit('search-submit')"
-          @keydown.esc.stop="closeSearchMenuAndRestoreFocus"
-        />
-        <ScButton
-          class="toolbar-search-submit"
-          type="button"
-          variant="secondary"
-          :disabled="loading"
-          @click="$emit('search-submit')"
-        >
-          <ScIcon name="search" :size="16" />
-          {{ uiLabel('search_submit', '搜索') }}
-        </ScButton>
-        <ScButton
-          v-if="searchValue"
-          class="toolbar-search-clear"
-          type="button"
-          variant="ghost"
-          :disabled="loading"
-          @click="$emit('clear-search')"
-        >
-          {{ clearLabel }}
-        </ScButton>
-        <ScIconButton
-          ref="searchMenuToggle"
-          class="search-menu-toggle"
-          :class="{ active: searchMenuOpen }"
-          :disabled="loading || !hasSearchMenu"
-          :label="uiLabel('search_menu_toggle', '展开搜索菜单')"
-          :aria-expanded="searchMenuOpen"
-          aria-controls="collection-search-disclosure"
-          @click="toggleSearchMenu"
-        >
-          <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
-        </ScIconButton>
-        <ScButton
-          v-if="hasStructuredConditions"
-          class="toolbar-clear-all"
-          type="button"
-          variant="ghost"
-          size="small"
-          :disabled="loading"
-          :aria-label="`已应用 ${activeConditionCount} 项查询条件，清除全部`"
-          @click="$emit('clear-all')"
-        >
-          清除全部
-        </ScButton>
+        <ScInputGroup class="collection-search-control">
+          <ScInput
+            type="search"
+            :model-value="searchValue"
+            size="small"
+            :disabled="loading"
+            :loading="loading"
+            :placeholder="searchPlaceholder"
+            @compositionstart="$emit('search-composition-start')"
+            @compositionend="$emit('search-composition-end', $event)"
+            @input="$emit('search-input', $event)"
+            @keydown.enter.prevent="$emit('search-submit')"
+            @keydown.esc.stop="closeSearchMenuAndRestoreFocus"
+          />
+          <template #append>
+            <span class="collection-search-control__actions">
+              <ScButton
+                class="toolbar-search-submit"
+                type="button"
+                variant="secondary"
+                :disabled="loading"
+                @click="$emit('search-submit')"
+              >
+                <ScIcon name="search" :size="16" />
+                {{ uiLabel('search_submit', '搜索') }}
+              </ScButton>
+              <ScButton
+                v-if="searchValue"
+                class="toolbar-search-clear"
+                type="button"
+                variant="ghost"
+                :disabled="loading"
+                @click="$emit('clear-search')"
+              >
+                {{ clearLabel }}
+              </ScButton>
+              <ScIconButton
+                ref="searchMenuToggle"
+                class="search-menu-toggle"
+                :class="{ active: searchMenuOpen }"
+                :disabled="loading || !hasSearchMenu"
+                :label="uiLabel('search_menu_toggle', '展开搜索菜单')"
+                :aria-expanded="searchMenuOpen"
+                aria-controls="collection-search-disclosure"
+                @click="toggleSearchMenu"
+              >
+                <ScIcon name="chevron-right" :size="14" class="search-menu-caret" :class="{ 'is-open': searchMenuOpen }" />
+              </ScIconButton>
+              <ScButton
+                v-if="hasStructuredConditions"
+                class="toolbar-clear-all"
+                type="button"
+                variant="ghost"
+                size="small"
+                :disabled="loading"
+                :aria-label="`已应用 ${activeConditionCount} 项查询条件，清除全部`"
+                @click="$emit('clear-all')"
+              >
+                清除全部
+              </ScButton>
+            </span>
+          </template>
+        </ScInputGroup>
       </div>
       <div v-if="searchMenuOpen && hasSearchMenu" id="collection-search-disclosure" class="search-dropdown" data-collection-toolbar-layer="search">
         <section v-if="showFilterColumn" class="search-dropdown-section">
@@ -347,6 +353,7 @@ import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScInputGroup from '../design-system/ScInputGroup.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 
 type SearchChip = { key: string; label: string };
@@ -740,42 +747,24 @@ onBeforeUnmount(() => {
   flex-wrap: nowrap;
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 44px;
   gap: 4px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 3px 3px 3px 8px;
 }
 
-.native-searchbox :deep(.sc-input) {
+.collection-search-control {
   flex: 1 1 110px;
   min-width: 72px;
-  height: 28px;
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  font-size: 12px;
-  padding: 2px 4px;
 }
 
-.native-searchbox :deep(.sc-input:focus-within) {
-  outline: none;
+.collection-search-control__actions {
+  display: inline-flex;
+  align-items: stretch;
 }
 
 .toolbar-search-submit,
 .toolbar-search-clear,
 .toolbar-clear-all {
   flex: 0 0 auto;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-secondary);
-  padding: 4px 7px;
-  font-size: 12px;
-  cursor: pointer;
   white-space: nowrap;
-  min-height: 36px;
 }
 
 .toolbar-search-submit {
@@ -813,15 +802,6 @@ onBeforeUnmount(() => {
 
 .search-menu-toggle {
   flex: 0 0 auto;
-  width: 28px;
-  min-height: 24px;
-  border: 0;
-  border-left: 1px solid var(--sc-app-border-strong);
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  padding: 0;
-  font-size: 12px;
-  cursor: pointer;
 }
 
 .search-menu-toggle.active {

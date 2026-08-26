@@ -13,7 +13,7 @@ UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
 UI_THEME = ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css"
 
 PRIMITIVES = (
-    "ScButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
+    "ScButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInputGroup", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
     "ScActionBar", "ScAutoComplete", "ScNumberInput", "ScDatePicker", "ScUpload", "ScForm", "ScFormItem",
     "ScCard", "ScCollapse", "ScDisclosure", "ScProgress", "ScSkeleton", "ScDescriptions", "ScList", "ScTimeline",
@@ -71,6 +71,11 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInput must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in input_text or ':aria-busy="loading || undefined"' not in input_text:
         errors.append("ScInput must expose loading state on the native input control")
+    input_group_text = (design / "ScInputGroup.vue").read_text(encoding="utf-8") if (design / "ScInputGroup.vue").is_file() else ""
+    if "<TDesignInputAdornment" not in input_group_text or 'data-primitive-driver="tdesign"' not in input_group_text:
+        errors.append("ScInputGroup must delegate grouped input chrome to TDesign InputAdornment")
+    if "TDesignInputAdornment" not in bridge or "TDesignInputAdornment" not in ui_primitives:
+        errors.append("ScInputGroup must consume the public project TDesign InputAdornment authority")
 
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
     if "<TDesignTextarea" not in textarea_text or "v-native-control-projection" not in textarea_text:

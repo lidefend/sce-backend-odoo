@@ -23,7 +23,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         (design / "tdesignPrimitiveBridge.ts").write_text(
-            "export { TDesignAlert, TDesignButton, TDesignCheckbox, TDesignRadioGroup, TDesignRadio, TDesignDialog, TDesignDrawer, TDesignEmpty, TDesignInput, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
+            "export { TDesignAlert, TDesignButton, TDesignCheckbox, TDesignRadioGroup, TDesignRadio, TDesignDialog, TDesignDrawer, TDesignEmpty, TDesignInput, TDesignInputAdornment, TDesignSelect, TDesignTextarea } from '@sc/ui/primitives';\n", encoding="utf-8"
         )
         (ui / "primitives.ts").write_text(
             "export { Alert as TDesignAlert } from 'tdesign-vue-next/es/alert';\n"
@@ -32,6 +32,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "export { RadioGroup as TDesignRadioGroup } from 'tdesign-vue-next/es/radio';\n"
             "export { Radio as TDesignRadio } from 'tdesign-vue-next/es/radio';\n"
             "export { Input as TDesignInput } from 'tdesign-vue-next/es/input';\n"
+            "export { InputAdornment as TDesignInputAdornment } from 'tdesign-vue-next/es/input-adornment';\n"
             "export { Select as TDesignSelect } from 'tdesign-vue-next/es/select';\n"
             "export { Textarea as TDesignTextarea } from 'tdesign-vue-next/es/textarea';\n"
             "export { Dialog as TDesignDialog } from 'tdesign-vue-next/es/dialog';\n"
@@ -64,6 +65,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
                 "ScRadio": '<TDesignRadio :checked="checked" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadio\') -->',
                 "ScInput": '<TDesignInput v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input data-primitive-driver="browser-specialized" />',
+                "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',

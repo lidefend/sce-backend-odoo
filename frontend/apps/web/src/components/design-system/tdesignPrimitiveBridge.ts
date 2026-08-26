@@ -14,6 +14,7 @@ export {
   TDesignDescriptionsItem,
   TDesignDrawer,
   TDesignInput,
+  TDesignInputAdornment,
   TDesignInputNumber,
   TDesignLoading,
   TDesignMenu,

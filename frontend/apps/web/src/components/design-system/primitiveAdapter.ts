@@ -5,6 +5,7 @@ export const SC_PRIMITIVE_KEYS = [
   'ScRadioGroup',
   'ScRadio',
   'ScInput',
+  'ScInputGroup',
   'ScInlineState',
   'ScTextarea',
   'ScSelect',
