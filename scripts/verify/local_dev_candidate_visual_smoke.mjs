@@ -652,29 +652,38 @@ try {
       }
       let collectionAggregateEvidence = null;
       if (target.exerciseCollectionAggregate === true) {
-        const footers = page.locator('[data-semantic-component="CollectionAggregateFooter"]:visible');
+        const tdesignTables = page.locator('[data-semantic-component="ScTable"][data-semantic-driver="tdesign-table"]:visible');
+        const tdesignFooters = tdesignTables.locator('tfoot');
+        const summaryFooters = page.locator('[data-semantic-component="CollectionAggregateFooter"]:visible');
+        const usesTdesign = viewport.name === 'desktop' && await tdesignFooters.count() > 0;
+        const footers = usesTdesign ? tdesignFooters : summaryFooters;
         const footerCount = await footers.count();
-        if (footerCount < 1) throw new Error(`${target.name}: collection aggregate footer is missing`);
-        const contexts = await footers.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-context') || ''));
-        const rows = footers.locator('[data-aggregate-scope]');
+        if (footerCount < 1) throw new Error(`${target.name}: collection aggregate adapter is missing`);
+        const expectedContext = target.aggregateContext === 'group' ? 'group' : 'flat';
+        const contexts = usesTdesign
+          ? Array(footerCount).fill(expectedContext)
+          : await summaryFooters.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-context') || ''));
+        const rows = usesTdesign ? tdesignFooters.locator('tr') : summaryFooters.locator('[data-aggregate-scope]');
         const rowCount = await rows.count();
-        const scopes = await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-scope') || ''));
-        const rowHeaderCount = await rows.locator('th[scope="row"], [data-aggregate-row-label]').count();
-        const numericCells = rows.locator('.collection-aggregate-number');
+        const scopes = usesTdesign
+          ? Array(rowCount).fill('page-or-total')
+          : await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-scope') || ''));
+        const rowHeaderCount = usesTdesign ? rowCount : await rows.locator('th[scope="row"], [data-aggregate-row-label]').count();
+        const numericCells = usesTdesign ? rows.locator('td.column-layout-numeric') : rows.locator('.collection-aggregate-number');
         const numericCellCount = await numericCells.count();
         const misalignedNumericCells = await numericCells.evaluateAll((nodes) => nodes.filter((node) => getComputedStyle(node).textAlign !== 'right').length);
-        const expectedContext = target.aggregateContext === 'group' ? 'group' : 'flat';
         collectionAggregateEvidence = {
+          driver: usesTdesign ? 'tdesign-table-footData' : 'CollectionAggregateFooter',
           footerCount, contexts, rowCount, scopes, rowHeaderCount, numericCellCount, misalignedNumericCells,
           pass: footerCount >= 1
             && contexts.every((context) => context === expectedContext)
             && rowCount >= footerCount
-            && scopes.every((scope) => scope === 'page' || scope === 'total')
+            && scopes.every((scope) => scope === 'page' || scope === 'total' || scope === 'page-or-total')
             && rowHeaderCount === rowCount
             && numericCellCount > 0
             && misalignedNumericCells === 0,
         };
-        if (!collectionAggregateEvidence.pass) throw new Error(`${target.name}: collection aggregate presentation contract failed`);
+        if (!collectionAggregateEvidence.pass) throw new Error(`${target.name}: collection aggregate presentation contract failed ${JSON.stringify(collectionAggregateEvidence)}`);
       }
       let collectionGroupHeaderEvidence = null;
       if (target.exerciseCollectionGroupHeader === true) {

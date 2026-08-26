@@ -63,6 +63,8 @@ def validate(list_source: str | None = None, footer_source: str | None = None, c
         "listAggregates",
         "data-aggregate-context",
         "data-aggregate-scope",
+        "tdesign-table-footData",
+        "tdesignFooters.locator('tr')",
         "misalignedNumericCells",
     ):
         if marker not in visual_text:
