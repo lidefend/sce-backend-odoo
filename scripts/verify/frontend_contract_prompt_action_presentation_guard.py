@@ -42,7 +42,11 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         errors.append("prompt presentation must preserve field and native control required semantics")
     primitive_input = read_text("frontend/apps/web/src/components/design-system/ScInput.vue")
     primitive_select = read_text("frontend/apps/web/src/components/design-system/ScSelect.vue")
-    if ':required="required"' not in primitive_input or ':required="required"' not in primitive_select:
+    if any(
+        'v-native-control-projection="nativeProjection"' not in primitive
+        or "required: props.required" not in primitive
+        for primitive in (primitive_input, primitive_select)
+    ):
         errors.append("prompt primitives must project required to the native control")
     if 'variant="primary"' not in vue or vue.count('variant="primary"') != 1:
         errors.append("prompt presentation must expose exactly one primary action")
