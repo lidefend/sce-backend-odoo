@@ -1,5 +1,5 @@
 <template>
-  <ScSection class="product-work" label="我的工作事项">
+  <ScSection class="product-work" label="我的工作事项" data-semantic-component="MyWorkApprovalWorkspace" :data-state="busy ? 'loading' : 'ready'" :aria-busy="busy || undefined">
     <header class="product-work__header">
       <p>{{ workspace.presentation.description }}</p>
       <ScButton variant="ghost" :disabled="busy" @click="$emit('refresh')">刷新</ScButton>

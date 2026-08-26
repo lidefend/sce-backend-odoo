@@ -1,6 +1,8 @@
 <template>
   <ScPage
     class="my-work-page"
+    data-semantic-component="MyWorkView"
+    data-state="ready"
     data-my-work-renderer="product-workspace"
     :data-hero-enabled="pageSectionEnabled('hero', true)"
     :data-retry-panel-open-default="pageSectionOpenDefault('retry_panel', false)"

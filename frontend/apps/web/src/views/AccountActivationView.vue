@@ -1,5 +1,5 @@
 <template>
-  <main class="activation-page sc-page">
+  <main class="activation-page sc-page" data-semantic-component="AccountActivationView" :data-state="busy ? 'loading' : stage">
     <section class="activation-card sc-panel" aria-labelledby="activation-title">
       <h1 id="activation-title">激活账号</h1>
       <p class="hint">请输入经批准渠道单独收到的激活码，并设置自己的正式密码。</p>

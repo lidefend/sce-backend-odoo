@@ -1,5 +1,5 @@
 <template>
-  <ScPage content-layout="record-grid" class="api-key-page">
+  <ScPage content-layout="record-grid" class="api-key-page" data-semantic-component="ApiKeyManagementView" :data-state="loading ? 'loading' : credentials.length ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <ScPageHeader
       eyebrow="集成与开发者"
       title="API Key 管理"

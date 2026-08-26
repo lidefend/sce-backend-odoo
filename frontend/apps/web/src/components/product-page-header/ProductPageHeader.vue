@@ -1,6 +1,8 @@
 <template>
   <header
     class="product-page-header"
+    data-semantic-component="ProductPageHeader"
+    :data-state="model.renderProfile"
     :class="[
       `product-page-header--${model.variant}`,
       `product-page-header--${model.presentationMode}`,

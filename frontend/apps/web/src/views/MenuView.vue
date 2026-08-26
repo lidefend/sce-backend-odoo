@@ -1,5 +1,5 @@
 <template>
-  <section class="menu-view">
+  <section class="menu-view" data-semantic-component="MenuView" :data-state="loading ? 'loading' : 'ready'" :aria-busy="loading || undefined">
     <section v-if="headerActions.length" class="menu-actions">
       <button
         v-for="action in headerActions"

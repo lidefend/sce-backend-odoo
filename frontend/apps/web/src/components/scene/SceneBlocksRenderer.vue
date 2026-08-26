@@ -1,5 +1,5 @@
 <template>
-  <section class="scene-blocks">
+  <section class="scene-blocks" data-semantic-component="SceneBlocksRenderer" :data-state="orderedBlocks.length ? 'ready' : 'empty'">
     <article
       v-for="block in orderedBlocks"
       :key="block.key"

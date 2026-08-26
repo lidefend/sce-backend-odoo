@@ -1,5 +1,5 @@
 <template>
-  <section class="scene" :class="{ 'scene--compact-controls': compactSceneControls }">
+  <section class="scene" :class="{ 'scene--compact-controls': compactSceneControls }" data-semantic-component="SceneView" :data-state="loading ? 'loading' : sceneError ? 'error' : 'ready'" :aria-busy="loading || undefined">
     <section
       v-if="headerActions.length || sceneViewSwitchOptions.length > 1"
       class="scene-top-controls"

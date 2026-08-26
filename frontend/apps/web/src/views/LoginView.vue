@@ -1,5 +1,5 @@
 <template>
-  <main class="login-page sc-page">
+  <main class="login-page sc-page" data-semantic-component="LoginView" :data-state="loading ? 'loading' : error ? 'error' : 'ready'" :aria-busy="loading || undefined">
     <section class="login-layout">
       <section class="brand-panel" aria-label="平台介绍">
         <p class="brand-title">{{ pageText('brand_name', config.appBrand.name) }}</p>
