@@ -904,7 +904,30 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      const verticalLineEvidence = target.captureVerticalLineEvidence === true
+        ? await page.evaluate(() => {
+          const x = Math.round(window.innerWidth * 0.568);
+          return [10, 100, 300, 700].map((y) => ({
+            x, y,
+            stack: document.elementsFromPoint(x, y).slice(0, 8).map((node) => {
+              const style = getComputedStyle(node);
+              const rect = node.getBoundingClientRect();
+              return {
+                tag: node.tagName,
+                id: node.id,
+                className: typeof node.className === 'string' ? node.className : '',
+                semantic: node.getAttribute('data-semantic-component') || '',
+                rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+                borderLeft: style.borderLeft,
+                borderRight: style.borderRight,
+                outline: style.outline,
+                boxShadow: style.boxShadow,
+              };
+            }),
+          }));
+        })
+        : null;
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, verticalLineEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
