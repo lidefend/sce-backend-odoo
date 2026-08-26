@@ -46,7 +46,7 @@ const rows = computed<DataRow[]>(() => {
 const tableColumns = computed(() => columns.value.map((col, index) => ({
   colKey: col,
   title: columnLabel(col, index),
-  cell: ({ row }: { row: DataRow }) => stringify(row[col]),
+  cell: (_h: unknown, { row }: { row: DataRow }) => stringify(row[col]),
 })));
 
 const emptyMessage = computed(() => String(source.value.empty_message || '暂无数据'));

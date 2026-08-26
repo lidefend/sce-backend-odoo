@@ -173,7 +173,7 @@ const currentTitle = computed(() => selectedNode.value ? [selectedNode.value.cod
 const hierarchyTableColumns = computed(() => listConfig.value.columns.map((column) => ({
   colKey: column.field,
   title: column.label,
-  cell: ({ row }: { row: Dict }) => displayValue(row[column.field], column),
+  cell: (_h: unknown, { row }: { row: Dict }) => displayValue(row[column.field], column),
 })));
 function displayValue(value: unknown, field?: Column): string { return formatDisplayValue(value, field); }
 function tableEventRow(context: unknown): Dict | null {

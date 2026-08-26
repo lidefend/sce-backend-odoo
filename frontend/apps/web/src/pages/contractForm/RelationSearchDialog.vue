@@ -145,7 +145,7 @@ const relationTableRows = computed(() => props.dialog.rows.map((row) => ({ ...ro
 const relationTableColumns = computed(() => props.dialog.columns.map((column) => ({
   colKey: column.name,
   title: column.label,
-  cell: ({ row }: { row: RelationSearchRow }) => relationSearchCell(row, column.name),
+  cell: (_h: unknown, { row }: { row: RelationSearchRow }) => relationSearchCell(row, column.name),
 })));
 
 function tableRow(context: unknown): RelationSearchRow | null {
