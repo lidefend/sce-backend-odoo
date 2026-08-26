@@ -12,7 +12,6 @@ import argparse
 import hashlib
 import json
 import re
-import subprocess
 from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
@@ -277,10 +276,6 @@ def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
-def git(*args: str) -> str:
-    return subprocess.run(["git", *args], cwd=ROOT, check=True, text=True, stdout=subprocess.PIPE).stdout.strip()
-
-
 def digest(paths: list[Path]) -> str:
     result = hashlib.sha256()
     for path in sorted(paths):
@@ -362,12 +357,18 @@ def build_inventory() -> dict[str, Any]:
         "targetSources": sorted(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
         "commitBudget": {"minimum": 12, "maximum": 20},
     }
+    generator_digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    ownership_digest = hashlib.sha256(OWNERSHIP_PATH.read_bytes()).hexdigest()
+    input_digest = digest(vue_files + [OWNERSHIP_PATH])
+    source_identity = hashlib.sha256(
+        f"{generator_digest}:{ownership_digest}:{input_digest}".encode("utf-8")
+    ).hexdigest()
     return {
         "schemaVersion": SCHEMA_VERSION,
-        "sourceCommit": git("merge-base", "HEAD", "origin/main"),
-        "generatorDigest": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        "ownershipDigest": hashlib.sha256(OWNERSHIP_PATH.read_bytes()).hexdigest(),
-        "inputDigest": digest(vue_files + [OWNERSHIP_PATH]),
+        "sourceIdentity": source_identity,
+        "generatorDigest": generator_digest,
+        "ownershipDigest": ownership_digest,
+        "inputDigest": input_digest,
         "scope": "repository formal-product frontend Vue rendering-detail sources",
         "statusVocabulary": sorted(STATUS_VALUES),
         "excludedScopes": [
