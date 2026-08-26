@@ -39,7 +39,14 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         source = "frontend/apps/web/src/components/page/BlockRenderer.vue"
         status, reason = INVENTORY.classify(source, "<ScErrorState />")
         self.assertEqual(status, "gap")
-        self.assertIn("missing markers", reason)
+        self.assertIn("invalid bindings", reason)
+
+    def test_comment_and_unused_import_cannot_fake_completion(self) -> None:
+        source = "frontend/apps/web/src/components/page/BlockRenderer.vue"
+        fake = """<template><!-- <ScErrorState density=\"compact\" :heading-level=\"5\" /> --></template>
+<script setup>import ScErrorState from '../design-system/ScErrorState.vue';</script>"""
+        status, _ = INVENTORY.classify(source, fake)
+        self.assertEqual(status, "gap")
 
     def test_native_composites_require_explicit_reason(self) -> None:
         for source, reason in INVENTORY.DELIBERATE_NATIVE_COMPOSITES.items():
@@ -52,10 +59,13 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             if source in self.by_source:
                 self.assertEqual(self.by_source[source]["status"], "p3_out_of_scope")
                 self.assertEqual(self.by_source[source]["formalProductLayer"], "P3")
+        low_code = "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue"
+        self.assertEqual(self.by_source[low_code]["status"], "p3_out_of_scope")
 
     def test_report_binds_generator_and_all_vue_inputs(self) -> None:
         self.assertRegex(self.report["generatorDigest"], r"^[0-9a-f]{64}$")
         self.assertRegex(self.report["inputDigest"], r"^[0-9a-f]{64}$")
+        self.assertRegex(self.report["ownershipDigest"], r"^[0-9a-f]{64}$")
         self.assertGreater(self.report["summary"]["surfaceCount"], 0)
         self.assertEqual(self.report["completionPolicy"]["formalP0P1UntreatedGapTarget"], 0)
 

@@ -26,11 +26,11 @@ LEGACY_PRIVATE_STATE_DOM = {
 
 def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
-    for source, markers in INVENTORY.NEXT_BATCH_COMPLETION_MARKERS.items():
+    for source, requirements in INVENTORY.NEXT_BATCH_BINDINGS.items():
         text = read_text(source)
-        status, reason = INVENTORY.classify(source, text)
-        if status != "governed_composite":
-            failures.append(f"state surface remains ungoverned: {source}: {reason}")
+        binding_failures = INVENTORY.component_binding_failures(text, requirements)
+        for failure in binding_failures:
+            failures.append(f"state surface remains ungoverned: {source}: {failure}")
         for legacy in LEGACY_PRIVATE_STATE_DOM[source]:
             if legacy in text:
                 failures.append(f"state surface retains private DOM: {source}: {legacy}")
@@ -44,7 +44,7 @@ def main() -> int:
         for failure in failures:
             print(f"- {failure}")
         return 1
-    print(f"[frontend_rendering_detail_state_guard] PASS surfaces={len(INVENTORY.NEXT_BATCH_COMPLETION_MARKERS)}")
+    print(f"[frontend_rendering_detail_state_guard] PASS surfaces={len(INVENTORY.NEXT_BATCH_BINDINGS)}")
     return 0
 
 

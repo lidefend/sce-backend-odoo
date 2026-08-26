@@ -14,6 +14,7 @@ import json
 import re
 import subprocess
 from collections import Counter
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -44,18 +45,11 @@ RAW_CONTROL_PATTERNS = {
 }
 GOVERNED_STATE_PRIMITIVES = ("ScLoading", "ScEmptyState", "ScErrorState")
 
-P3_PREFIXES = (
-    "frontend/apps/web/src/views/businessConfigSurface/",
-)
-P3_FILES = {
-    "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue",
-    "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
-    "frontend/apps/web/src/views/MenuConfigView.vue",
-    "frontend/apps/web/src/views/ReleaseOperatorView.vue",
-    "frontend/apps/web/src/views/SceneHealthView.vue",
-    "frontend/apps/web/src/views/ScenePackagesView.vue",
-    "frontend/apps/web/src/views/UsageAnalyticsView.vue",
-}
+OWNERSHIP_PATH = ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json"
+OWNERSHIP = json.loads(OWNERSHIP_PATH.read_text(encoding="utf-8"))
+P3_OWNER = OWNERSHIP["owners"]["p3-low-code-administration"]
+P3_PREFIXES = tuple(P3_OWNER.get("prefixes", []))
+P3_FILES = set(P3_OWNER["sources"])
 
 DELIBERATE_NATIVE_COMPOSITES = {
     "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": "collection disclosure and facet controls retain native button semantics under the collection toolbar guard",
@@ -82,27 +76,65 @@ KNOWN_GOVERNED_COMPOSITES = {
     "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue",
 }
 
-NEXT_BATCH_GAPS = {
-    "frontend/apps/web/src/layouts/AppShell.vue",
-    "frontend/apps/web/src/components/GlobalMessagePanel.vue",
-    "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue",
-    "frontend/apps/web/src/components/page/BlockRenderer.vue",
-    "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
-    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-    "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
-    "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
+NEXT_BATCH_GAPS = set(OWNERSHIP["owners"]["p0-inline-full-state-completion-v1"]["sources"])
+NEXT_BATCH_BINDINGS = {
+    "frontend/apps/web/src/layouts/AppShell.vue": {"scinlinestate": {"states": {"loading", "error", "empty"}, "minimum": 4}},
+    "frontend/apps/web/src/components/GlobalMessagePanel.vue": {"scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
+    "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue": {"scerrorstate": {"minimum": 1}},
+    "frontend/apps/web/src/components/page/BlockRenderer.vue": {"scerrorstate": {"attrs": {"density": "compact", ":heading-level": "5"}, "minimum": 1}},
+    "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue": {"scerrorstate": {"minimum": 1}, "scinlinestate": {"states": {"info", "empty"}, "minimum": 2}},
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue": {"scinlinestate": {"states": {"empty", "error", "info"}, "minimum": 4}},
+    "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue": {"scinlinestate": {"states": {"empty", "error"}, "minimum": 2}},
+    "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue": {"scinlinestate": {"states": {"loading", "empty"}, "minimum": 1}},
+}
+COMPONENT_IMPORTS = {
+    "scinlinestate": "ScInlineState",
+    "scerrorstate": "ScErrorState",
 }
 
-NEXT_BATCH_COMPLETION_MARKERS = {
-    "frontend/apps/web/src/layouts/AppShell.vue": ("ScInlineState", 'state="loading"', 'state="error"', 'state="empty"'),
-    "frontend/apps/web/src/components/GlobalMessagePanel.vue": ("ScInlineState", "loadingConversations ? 'loading' : 'empty'", "loadingMessages ? 'loading' : 'empty'", 'state="error"'),
-    "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue": ("ScErrorState", "ACTION_SURFACE_RENDERER_NOT_REGISTERED"),
-    "frontend/apps/web/src/components/page/BlockRenderer.vue": ("ScErrorState", 'density="compact"', ':heading-level="5"'),
-    "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue": ("ScErrorState", "ScInlineState", "blockedActionMessage", "data-contract-form-driver-error"),
-    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue": ("ScInlineState", 'state="empty"', 'state="error"', "data-readonly-relation-empty"),
-    "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue": ("ScInlineState", 'state="empty"', 'state="error"'),
-    "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue": ("ScInlineState", "timelineLoading ? 'loading' : 'empty'"),
-}
+
+class TemplateElements(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.elements: list[tuple[str, dict[str, str]]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.elements.append((tag, {name: value or "" for name, value in attrs}))
+
+    handle_startendtag = handle_starttag
+
+
+def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]]) -> list[str]:
+    template_start = re.search(r"<template(?:\s[^>]*)?>", text)
+    template_end = text.rfind("</template>", 0, text.find("<script"))
+    script_match = re.search(r"<script\s+setup(?:\s[^>]*)?>(.*?)</script>", text, re.S)
+    if not template_start or template_end < template_start.end() or not script_match:
+        return ["missing template or script setup block"]
+    parser = TemplateElements()
+    parser.feed(text[template_start.end():template_end])
+    script = re.sub(r"/\*.*?\*/|//[^\n]*", "", script_match.group(1), flags=re.S)
+    imports = set(re.findall(r"import\s+([A-Za-z_$][\w$]*)\s+from\s+['\"][^'\"]*design-system/[^'\"]+['\"]", script))
+    failures: list[str] = []
+    for tag, rule in requirements.items():
+        expected_import = COMPONENT_IMPORTS[tag]
+        if expected_import not in imports:
+            failures.append(f"missing design-system import {expected_import}")
+        nodes = [attrs for node_tag, attrs in parser.elements if node_tag == tag]
+        if len(nodes) < rule.get("minimum", 1):
+            failures.append(f"{expected_import} template nodes {len(nodes)} < {rule.get('minimum', 1)}")
+        for name, value in rule.get("attrs", {}).items():
+            if not any(attrs.get(name) == value for attrs in nodes):
+                failures.append(f"{expected_import} missing template attribute {name}={value}")
+        states = set()
+        for attrs in nodes:
+            if "state" in attrs:
+                states.add(attrs["state"])
+            expression = attrs.get(":state", "")
+            states.update(re.findall(r"['\"](info|loading|empty|error)['\"]", expression))
+        missing_states = set(rule.get("states", set())) - states
+        if missing_states:
+            failures.append(f"{expected_import} missing states {','.join(sorted(missing_states))}")
+    return failures
 
 
 def rel(path: Path) -> str:
@@ -137,10 +169,10 @@ def classify(source: str, text: str) -> tuple[str, str]:
     if source in KNOWN_GOVERNED_COMPOSITES:
         return "governed_composite", "state/dashboard or overlay guard owns this composite"
     if source in NEXT_BATCH_GAPS:
-        missing = [marker for marker in NEXT_BATCH_COMPLETION_MARKERS[source] if marker not in text]
-        if not missing:
-            return "governed_composite", "P0 inline/full-state completion markers are present"
-        return "gap", f"declared P0 inline/full-state completion target; missing markers: {', '.join(missing)}"
+        failures = component_binding_failures(text, NEXT_BATCH_BINDINGS[source])
+        if not failures:
+            return "governed_composite", "formal ownership and parsed SFC component bindings are present"
+        return "gap", f"declared P0 inline/full-state completion target; invalid bindings: {'; '.join(failures)}"
     if "data-professional-" in text and any(name in text for name in GOVERNED_STATE_PRIMITIVES):
         return "governed_composite", "professional semantic marker and governed state primitive are both present"
     return "gap", "relevant state or native interaction has no explicit professionalization ownership declaration"
@@ -176,7 +208,8 @@ def build_inventory() -> dict[str, Any]:
         "schemaVersion": SCHEMA_VERSION,
         "sourceCommit": git("merge-base", "HEAD", "origin/main"),
         "generatorDigest": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        "inputDigest": digest(vue_files),
+        "ownershipDigest": hashlib.sha256(OWNERSHIP_PATH.read_bytes()).hexdigest(),
+        "inputDigest": digest(vue_files + [OWNERSHIP_PATH]),
         "scope": "repository formal-product frontend Vue rendering-detail sources",
         "statusVocabulary": sorted(STATUS_VALUES),
         "excludedScopes": [

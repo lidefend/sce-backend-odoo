@@ -1,8 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
   "sourceCommit": "c63c2dea9fdb7d2385e0d23a8276dc0cd033838e",
-  "generatorDigest": "5619a6dc153dab4b26c8d92cef33f58cbeddd34f88e3945c861bedb462931de9",
-  "inputDigest": "0624a9e8110f3772b5ae1c8f28472ddb61fa1d32790ebf520bbd7ee55e3bf5c4",
+  "generatorDigest": "43ff69a2f6e4575419f5df085ff797a7376cdd895f72494a5d7d5ae346252d34",
+  "ownershipDigest": "ce22fc0b050dca31185a64f7793b5bff9f2f82ff99999a154d4ea88cc7a37b3d",
+  "inputDigest": "d286c2ab0fa8262a6727ac9f0d5c8651a5744e63196b1dcb6fbbb38ba0b961c2",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -21,10 +22,10 @@
   "summary": {
     "surfaceCount": 135,
     "deliberate_native_composite": 6,
-    "gap": 64,
+    "gap": 63,
     "governed_composite": 23,
     "governed_primitive": 25,
-    "p3_out_of_scope": 17
+    "p3_out_of_scope": 18
   },
   "nextBatch": {
     "key": "p0-inline-full-state-completion-v1",
@@ -61,7 +62,7 @@
       "source": "frontend/apps/web/src/components/GlobalMessagePanel.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
-      "reason": "P0 inline/full-state completion markers are present",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -212,7 +213,7 @@
       "source": "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
-      "reason": "P0 inline/full-state completion markers are present",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "error"
       ],
@@ -613,7 +614,7 @@
       "source": "frontend/apps/web/src/components/page/BlockRenderer.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
-      "reason": "P0 inline/full-state completion markers are present",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "error"
       ],
@@ -1184,7 +1185,7 @@
       "source": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
-      "reason": "P0 inline/full-state completion markers are present",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
         "error",
@@ -1242,7 +1243,7 @@
       "source": "frontend/apps/web/src/layouts/AppShell.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
-      "reason": "P0 inline/full-state completion markers are present",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1383,7 +1384,7 @@
       "source": "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
-      "reason": "P0 inline/full-state completion markers are present",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
         "error",
@@ -1475,9 +1476,9 @@
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue",
-      "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "formalProductLayer": "P3",
+      "status": "p3_out_of_scope",
+      "reason": "low-code or administration product surface; handled by a separate P3 batch",
       "stateTypes": [
         "disabled",
         "focus"
@@ -1490,7 +1491,7 @@
       "source": "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
-      "reason": "P0 inline/full-state completion markers are present",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1547,7 +1548,7 @@
       "source": "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
-      "reason": "P0 inline/full-state completion markers are present",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
