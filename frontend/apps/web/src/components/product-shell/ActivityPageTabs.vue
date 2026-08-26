@@ -1,12 +1,42 @@
 <template>
-  <nav v-if="pages.length" class="activity-tabs" :aria-label="label">
+  <nav v-if="pages.length" ref="tablistRef" class="activity-tabs" role="tablist" :aria-label="label">
     <div v-for="page in pages" :key="page.key" class="activity-tab" :class="{active:page.key===activeKey}">
-      <button class="activity-tab-main" type="button" :title="page.title" @click="$emit('activate',page)"><span>{{ page.title }}</span></button>
+      <button
+        class="activity-tab-main"
+        type="button"
+        role="tab"
+        :title="page.title"
+        :aria-selected="page.key === activeKey"
+        :aria-current="page.key === activeKey ? 'page' : undefined"
+        :tabindex="page.key === activeKey ? 0 : -1"
+        @click="$emit('activate', page)"
+        @keydown="activateFromKeyboard(page, $event)"
+      ><span>{{ page.title }}</span></button>
       <button class="activity-tab-close" type="button" :aria-label="`${closeLabel} ${page.title}`" :title="`${closeLabel} ${page.title}`" @click.stop="$emit('close',page)"><ScIcon name="close" :size="14" /></button>
     </div>
   </nav>
 </template>
-<script setup lang="ts">import ScIcon from '../design-system/ScIcon.vue'; import type { ActivityPage } from '../../stores/session'; withDefaults(defineProps<{pages:ActivityPage[];activeKey:string;label?:string;closeLabel?:string}>(),{label:'活动页面',closeLabel:'关闭'}); defineEmits<{activate:[page:ActivityPage];close:[page:ActivityPage]}>();</script>
+<script setup lang="ts">
+import { nextTick, ref } from 'vue';
+import ScIcon from '../design-system/ScIcon.vue';
+import type { ActivityPage } from '../../stores/session';
+import { resolveActivityTabKeyboardIndex } from './activityPageTabKeyboard';
+
+const props = withDefaults(defineProps<{pages:ActivityPage[];activeKey:string;label?:string;closeLabel?:string}>(),{label:'活动页面',closeLabel:'关闭'});
+const emit = defineEmits<{activate:[page:ActivityPage];close:[page:ActivityPage]}>();
+const tablistRef = ref<HTMLElement | null>(null);
+
+function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
+  const currentIndex = props.pages.findIndex((item) => item.key === page.key);
+  const nextIndex = resolveActivityTabKeyboardIndex({ key: event.key, currentIndex, count: props.pages.length });
+  if (nextIndex === null) return;
+  event.preventDefault();
+  emit('activate', props.pages[nextIndex]);
+  void nextTick(() => {
+    tablistRef.value?.querySelectorAll<HTMLButtonElement>('.activity-tab-main')[nextIndex]?.focus();
+  });
+}
+</script>
 <style scoped>
 .activity-tabs {
   display: flex;

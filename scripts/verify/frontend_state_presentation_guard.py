@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FILES = {
     "activity": ROOT / "frontend/apps/web/src/pages/ActivityPage.vue",
     "status": ROOT / "frontend/apps/web/src/components/StatusPanel.vue",
+    "tabs": ROOT / "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
 }
 
 
@@ -31,6 +32,10 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
     for marker in ('aria-live=', 'aria-busy=', "prefers-reduced-motion"):
         if marker not in status:
             failures.append(f"status accessibility state missing: {marker}")
+    tabs = values["tabs"]
+    for marker in ('role="tablist"', 'role="tab"', ':aria-selected=', ':tabindex=', '@keydown="activateFromKeyboard'):
+        if marker not in tabs:
+            failures.append(f"activity tabs accessibility contract missing: {marker}")
     return failures
 
 

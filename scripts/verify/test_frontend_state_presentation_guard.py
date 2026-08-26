@@ -32,6 +32,12 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
     def test_status_reduced_motion_is_required(self):
         self.assertTrue(any("reduced-motion" in error for error in validate(self.altered("status", "prefers-reduced-motion"))))
 
+    def test_activity_tabs_require_roving_tabindex(self):
+        self.assertTrue(any("tabindex" in error for error in validate(self.altered("tabs", ":tabindex="))))
+
+    def test_activity_tabs_require_keyboard_navigation(self):
+        self.assertTrue(any("activateFromKeyboard" in error for error in validate(self.altered("tabs", '@keydown="activateFromKeyboard'))))
+
 
 if __name__ == "__main__":
     unittest.main()
