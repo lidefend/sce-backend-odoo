@@ -365,7 +365,7 @@ try {
         listAggregates = summarizeListAggregates(await response.json());
       }
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
-      await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
+      await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
       if (bootSummaryFixtureTarget === target) {
         while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
