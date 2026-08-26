@@ -57,12 +57,13 @@ try {
   page.on('pageerror', (error) => errors.push(`page:${error.message}`));
   await page.goto(`http://127.0.0.1:${address.port}/__collaboration_primitives.html`);
 
-  const textarea = page.locator('[data-professional-collaboration-component="composer"] [data-semantic-component="ScTextarea"]');
+  const textareaHost = page.locator('[data-professional-collaboration-component="composer"] [data-semantic-component="ScTextarea"]');
+  const textarea = textareaHost.locator('textarea');
   await textarea.fill('协作内容');
   const updated = await page.evaluate(() => ({ draft: window.collaborationState.draft, updates: window.collaborationState.updates }));
   await page.evaluate(() => { window.collaborationState.posting = true; });
   const disabled = await textarea.isDisabled();
-  const busy = await textarea.getAttribute('aria-busy');
+  const busy = await textareaHost.getAttribute('aria-busy');
   const beforeBlockedInput = await page.evaluate(() => window.collaborationState.updates);
   await textarea.dispatchEvent('input');
   const afterBlockedInput = await page.evaluate(() => window.collaborationState.updates);

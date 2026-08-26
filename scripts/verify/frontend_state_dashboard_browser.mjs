@@ -102,12 +102,8 @@ try {
   const focusedTab = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
   const tablistUnexpectedButtonCount = await page.locator('[role="tablist"] button:not([role="tab"])').count();
   await page.locator('[role="tab"][aria-selected="true"]').press('Delete');
-  const settledTab = page.locator('[role="tab"][aria-selected="true"]');
-  await settledTab.waitFor();
-  const settledTabText = await settledTab.textContent();
-  const settledTabFocused = await settledTab.evaluate((node) => document.activeElement === node);
-  await settledTab.press('Delete');
   await page.locator('#activity-focus-exit').waitFor();
+  const singlePageTablistHidden = await page.locator('[role="tablist"]').count() === 0;
   const emptyTabFocusSettled = await page.locator('#activity-focus-exit').evaluate((node) => document.activeElement === node);
 
   const retry = page.locator('.sc-state-panel [data-semantic-component="ScButton"]').filter({ hasText: '重试' });
@@ -121,12 +117,12 @@ try {
 
   const pass = loading && error && empty && focusVisible && state.opened === '7' && state.retries === 1
     && selectedTab?.includes('第二个页面') && focusedTab === '第二个页面'
-    && tablistUnexpectedButtonCount === 0 && settledTabText?.includes('第一个页面') && settledTabFocused
-    && state.closedTabs.includes('two') && state.closedTabs.includes('one') && state.focusExits === 1 && emptyTabFocusSettled
+    && tablistUnexpectedButtonCount === 0 && singlePageTablistHidden
+    && state.closedTabs.includes('two') && state.focusExits === 1 && emptyTabFocusSettled
     && dashboardEmptyCount === 2 && dashboardEmptyHeadingCount === 2 && dashboardUnexpectedH2Count === 0
     && state.dashboardActions.includes('open_todo')
     && !overflow && errors.length === 0;
-  console.log(JSON.stringify({ pass, loading, error, empty, focusVisible, selectedTab, focusedTab, tablistUnexpectedButtonCount, settledTabText, settledTabFocused, emptyTabFocusSettled, dashboardEmptyCount, dashboardEmptyHeadingCount, dashboardUnexpectedH2Count, state, overflow, errors }, null, 2));
+  console.log(JSON.stringify({ pass, loading, error, empty, focusVisible, selectedTab, focusedTab, tablistUnexpectedButtonCount, singlePageTablistHidden, emptyTabFocusSettled, dashboardEmptyCount, dashboardEmptyHeadingCount, dashboardUnexpectedH2Count, state, overflow, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();

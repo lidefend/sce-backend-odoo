@@ -20,8 +20,12 @@ class OverlayLifecycleGuardTest(unittest.TestCase):
         self.assertTrue(any("TDesignDialog" in error for error in validate(self.altered("dialog", "<TDesignDialog"))))
 
     def test_dismissible_policy_cannot_be_bypassed(self):
-        errors = validate(self.altered("drawer", ':close-on-esc-keydown="dismissible"', ':close-on-esc-keydown="true"'))
-        self.assertTrue(any("dismissible" in error for error in errors))
+        errors = validate(self.altered("drawer", ':close-on-esc-keydown="false"', ':close-on-esc-keydown="true"'))
+        self.assertTrue(any("close-on-esc-keydown" in error for error in errors))
+
+    def test_closed_overlay_cannot_claim_open_semantic_state(self):
+        errors = validate(self.altered("dialog", ":data-state=\"open ? 'open' : 'closed'\"", 'data-state="open"'))
+        self.assertTrue(any("data-state" in error for error in errors))
 
     def test_action_view_cannot_restore_private_dialog(self):
         values = self.altered("action_view", "<ScDialog", '<div class="business-category-picker-backdrop" role="dialog"')

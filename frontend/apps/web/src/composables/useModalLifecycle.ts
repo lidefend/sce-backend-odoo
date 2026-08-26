@@ -40,19 +40,39 @@ export function useModalLifecycle(options: {
 }) {
   const opener = ref<HTMLElement | null>(null);
   let locked = false;
+  let focusGeneration = 0;
 
   function focusInitial() {
     const initial = options.surface.value?.querySelector<HTMLElement>('[autofocus], [data-dialog-primary]');
     (initial || options.surface.value)?.focus();
   }
 
-  function restoreOpener() {
+  function focusInitialWhenVisible(generation: number, attempt = 0) {
+    const surface = options.surface.value;
+    if (generation !== focusGeneration || !options.open() || !surface || attempt > 120) return;
+    if (surface.contains(document.activeElement)) return;
+    if (surface.getClientRects().length > 0) {
+      focusInitial();
+    }
+    requestAnimationFrame(() => focusInitialWhenVisible(generation, attempt + 1));
+  }
+
+  function restoreOpener(attempt = 0) {
     const target = opener.value;
+    if (!target?.isConnected) {
+      opener.value = null;
+      return;
+    }
+    target.focus();
+    if (attempt < 4) {
+      requestAnimationFrame(() => restoreOpener(attempt + 1));
+      return;
+    }
     opener.value = null;
-    if (target?.isConnected) target.focus();
   }
 
   function release() {
+    focusGeneration += 1;
     if (locked) {
       unlockBodyScroll();
       locked = false;
@@ -76,6 +96,7 @@ export function useModalLifecycle(options: {
     if (action === 'close') {
       if (options.closeOnEscape && !options.closeOnEscape()) return;
       event.preventDefault();
+      event.stopPropagation();
       options.close();
       return;
     }
@@ -93,16 +114,20 @@ export function useModalLifecycle(options: {
     }
   }
 
-  watch(options.open, async (open) => {
+  watch([options.open, () => options.surface.value] as const, async ([open, surface]) => {
     if (!open) {
       release();
       return;
     }
-    opener.value = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    lockBodyScroll();
-    locked = true;
+    if (!locked) {
+      opener.value = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      lockBodyScroll();
+      locked = true;
+    }
+    if (!surface) return;
     await nextTick();
-    focusInitial();
+    focusGeneration += 1;
+    focusInitialWhenVisible(focusGeneration);
   }, { immediate: true });
 
   onBeforeUnmount(() => {

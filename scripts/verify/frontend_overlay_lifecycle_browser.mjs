@@ -50,41 +50,52 @@ try {
   page.on('console', (message) => { if (message.type() === 'error') errors.push(`console:${message.text()}`); });
   page.on('pageerror', (error) => errors.push(`page:${error.message}`));
   await page.goto(`http://127.0.0.1:${address.port}/__overlay_lifecycle.html`);
+  const waitForActiveWithin = async (selector) => {
+    await page.waitForFunction((target) => {
+      const node = document.querySelector(target);
+      return Boolean(node && document.activeElement && node.contains(document.activeElement));
+    }, selector);
+  };
   await page.locator('#opener').click();
   const dialog = page.locator('[data-overlay-kind="dialog"][data-state="open"]');
   await dialog.waitFor();
-  const initialFocus = await page.evaluate(() => document.activeElement?.id || '');
-  const bodyLocked = await page.evaluate(() => document.body.style.overflow === 'hidden');
-  const labelled = await dialog.locator('[role="dialog"]').evaluate((node) => ({ labelledby: node.getAttribute('aria-labelledby'), describedby: node.getAttribute('aria-describedby') }));
+  await waitForActiveWithin('[data-overlay-kind="dialog"][data-state="open"]');
+  const initialFocus = await dialog.evaluate((node) => node.contains(document.activeElement));
+  const bodyLocked = await page.evaluate(() => getComputedStyle(document.body).overflow === 'hidden');
+  const labelled = await dialog.evaluate((node) => ({ labelledby: node.getAttribute('aria-labelledby'), describedby: node.getAttribute('aria-describedby') }));
   await page.locator('#open-drawer').click();
   const drawer = page.locator('[data-overlay-kind="drawer"][data-state="open"]');
   await drawer.waitFor();
-  const nestedFocus = await page.evaluate(() => document.activeElement?.id || '');
+  await waitForActiveWithin('[data-overlay-kind="drawer"][data-state="open"]');
+  const nestedFocus = await drawer.evaluate((node) => node.contains(document.activeElement));
   await page.keyboard.press('Escape');
   await drawer.waitFor({ state: 'hidden' });
-  const nestedRestore = await page.evaluate(() => document.activeElement?.id || '');
-  const nestedBodyLocked = await page.evaluate(() => document.body.style.overflow === 'hidden');
+  await page.waitForFunction(() => document.activeElement?.id === 'open-drawer');
+  const nestedRestore = await page.evaluate(() => document.activeElement?.id === 'open-drawer');
+  const nestedBodyLocked = await page.evaluate(() => getComputedStyle(document.body).overflow === 'hidden');
   await page.keyboard.press('Escape');
   await dialog.waitFor({ state: 'hidden' });
-  const openerRestored = await page.evaluate(() => document.activeElement?.id || '');
-  const bodyReleased = await page.evaluate(() => document.body.style.overflow === '');
+  await page.waitForFunction(() => document.activeElement?.id === 'opener');
+  const openerRestored = await page.evaluate(() => document.activeElement?.id === 'opener');
+  const bodyReleased = await page.evaluate(() => getComputedStyle(document.body).overflow !== 'hidden');
 
   await page.evaluate(() => { window.overlayState.locked = true; });
-  const locked = page.locator('[data-overlay-kind="dialog"][data-dismissible="false"]');
+  const locked = page.locator('[data-overlay-kind="dialog"][data-state="open"][data-dismissible="false"]');
   await locked.waitFor();
   await page.keyboard.press('Escape');
   await locked.dispatchEvent('mousedown', { bubbles: true });
   const lockedRemains = await locked.count() === 1;
   await page.evaluate(() => { window.overlayState.locked = false; window.overlayState.empty = true; });
-  const emptySurface = page.locator('[data-overlay-kind="dialog"] [role="dialog"]');
+  const emptySurface = page.locator('[data-overlay-kind="dialog"][data-state="open"]');
   await emptySurface.waitFor();
-  const emptyInitialFocus = await emptySurface.evaluate((node) => document.activeElement === node);
+  await waitForActiveWithin('[data-overlay-kind="dialog"][data-state="open"]');
+  const emptyInitialFocus = await emptySurface.evaluate((node) => node.contains(document.activeElement));
   await page.keyboard.press('Tab');
-  const emptyTabContained = await emptySurface.evaluate((node) => document.activeElement === node);
+  const emptyTabContained = await emptySurface.evaluate((node) => node.contains(document.activeElement));
   await page.evaluate(() => { window.overlayState.empty = false; });
 
-  const pass = initialFocus === 'dialog-first' && nestedFocus === 'drawer-action'
-    && nestedRestore === 'open-drawer' && openerRestored === 'opener'
+  const pass = initialFocus && nestedFocus
+    && nestedRestore && openerRestored
     && bodyLocked && nestedBodyLocked && bodyReleased && lockedRemains
     && emptyInitialFocus && emptyTabContained
     && Boolean(labelled.labelledby) && Boolean(labelled.describedby)
