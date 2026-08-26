@@ -479,7 +479,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "89dc2c0e55ae95e064061a8289ae5ace71a783e28924848870c4b2309141430f",
+      "digest": "f5493337d52c2145bc0dd609cdadd07afe5b24b11e45a4b7977066cc441e2eb8",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDateField.vue",
       "referenceNativeStyleSelectors": [],
@@ -1112,7 +1112,7 @@
     },
     {
       "category": "collection",
-      "digest": "1d3e436e65ebabbaaf52039943ef900f88826ac0e0e0dcc94105c2f75d92fea6",
+      "digest": "3b3e92d45107db88ddeae54a1e89c6e29e6080be578d10a4be539e29b81e5204",
       "nativeStyleSelectors": [],
       "path": "components/product-list/CollectionColumnHeaderControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1466,7 +1466,7 @@
     },
     {
       "category": "shell",
-      "digest": "cde501b0ee19cfe7604e8f05625a1ce193de0e33f634af3f7ac7cf05c48cc869",
+      "digest": "eb04e7c5b8a3213d13c9a20f6c839e268404a350afe8de9e66129ab226e2d414",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/ProductSideNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -1787,7 +1787,7 @@
     },
     {
       "category": "collection",
-      "digest": "5798b8b7749ee46a7d1d04d586d0d13ec9accd99c2ff82bb9f76fce03a8f9056",
+      "digest": "7cc9965aca55ad5fa60ac079a289a0ce2d0903ca5d6950180b05a868d8f0c6f5",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2338,7 +2338,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "7ee062b430d90879cb574ac65550091d3c0db3df8f80e05520fabe1a1fe13065",
+  "currentInputDigest": "03ed8dd0b7440109f7b91d45640959364c7206c45ca025ad1bcdefe1d03dda53",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

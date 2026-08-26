@@ -18,21 +18,20 @@ def validate(list_source: str | None = None, control_source: str | None = None, 
     failures: list[str] = []
     if list_text.count(':columns="collectionTableColumns(') != 2:
         failures.append("collection desktop surfaces must project exactly two TDesign selection adapters")
-    if list_text.count(':selected-row-keys="selectedIds || []"') != 2:
-        failures.append("collection desktop surfaces must bind exactly two selected-row-keys authorities")
+    if list_text.count("h(CollectionSelectionControl") != 2:
+        failures.append("collection desktop selection column must use one header and one row professional adapter")
     if mobile_row_text.count("<CollectionSelectionControl") != 1:
         failures.append("collection mobile row must retain one touch selection adapter")
     if 'type="checkbox"' in list_text:
         failures.append("ListPage retains parallel native checkbox DOM")
     required_list = (
-        "type: 'multiple'",
-        'checkProps:',
-        '@select-change="onTableSelectionChange($event, group.sampleRows)"',
-        '@select-change="onTableSelectionChange($event, records)"',
-        'function onTableSelectionChange(keys: Array<string | number>, sourceRows: Array<Record<string, unknown>>)',
-        'if (!changed.length) return;',
-        'props.onToggleSelectionAll(sourceIds, sourceIds.every((id) => next.has(id)))',
-        'props.onToggleSelection?.(id, next.has(id))',
+        'title: () => h(CollectionSelectionControl',
+        'cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => h(CollectionSelectionControl',
+        "scope: groupKey ? 'group' : 'page'",
+        "scope: 'row'",
+        "label: uiLabel('select_page_records', '选择本页全部记录')",
+        'onChange: (checked: boolean) => props.onToggleSelectionAll?.(selectionIds, checked)',
+        'onChange: (checked: boolean) => onRowCheckboxChange(row, checked)',
     )
     for marker in required_list:
         if marker not in list_text:

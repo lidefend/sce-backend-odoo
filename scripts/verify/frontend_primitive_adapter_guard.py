@@ -272,7 +272,7 @@ def validate(root: Path = ROOT) -> list[str]:
 
     visual_projection_markers = (
         "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
-        "--td-text-color-placeholder: var(--sc-semantic-text-muted)",
+        "--td-text-color-placeholder: var(--sc-semantic-text-secondary)",
         "--td-border-level-2-color: var(--sc-semantic-border-strong)",
         ".sc-input.t-input__wrap[data-size='large'] > .t-input",
         ".sc-select[data-size='medium'] .t-input",

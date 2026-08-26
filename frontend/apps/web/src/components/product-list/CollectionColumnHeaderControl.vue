@@ -7,6 +7,7 @@
     :style="columnStyle"
     :tabindex="sortable ? 0 : -1"
     :title="sortTitle"
+    role="columnheader"
     :aria-sort="ariaSort"
     @dragover="$emit('drag-over', $event)"
     @drop="$emit('drop-column', $event)"

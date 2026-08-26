@@ -43,7 +43,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         theme.write_text(
             ":root {\n"
             "  --td-bg-color-specialcomponent: var(--sc-semantic-surface-input);\n"
-            "  --td-text-color-placeholder: var(--sc-semantic-text-muted);\n"
+            "  --td-text-color-placeholder: var(--sc-semantic-text-secondary);\n"
             "  --td-border-level-2-color: var(--sc-semantic-border-strong);\n"
             "}\n"
             ".sc-input.t-input__wrap[data-size='large'] > .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"

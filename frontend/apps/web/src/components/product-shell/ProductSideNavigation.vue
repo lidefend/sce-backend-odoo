@@ -14,7 +14,7 @@
         <template #prefix><ScIcon name="search" :size="16" /></template>
       </ScInput>
     </label>
-    <div class="product-side-navigation__tree">
+    <div class="product-side-navigation__tree" tabindex="0" aria-label="业务菜单树">
       <MenuTree
         :nodes="nodes"
         :active-menu-id="activeMenuId"

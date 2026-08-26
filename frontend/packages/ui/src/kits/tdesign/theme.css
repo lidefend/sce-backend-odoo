@@ -28,7 +28,7 @@
   --td-bg-color-specialcomponent: var(--sc-semantic-surface-input);
   --td-text-color-primary: var(--sc-semantic-text-primary);
   --td-text-color-secondary: var(--sc-semantic-text-secondary);
-  --td-text-color-placeholder: var(--sc-semantic-text-muted);
+  --td-text-color-placeholder: var(--sc-semantic-text-secondary);
   --td-text-color-disabled: var(--sc-semantic-text-disabled);
   --td-text-color-anti: var(--sc-semantic-text-on-interactive);
   --td-border-level-1-color: var(--sc-semantic-border-default);

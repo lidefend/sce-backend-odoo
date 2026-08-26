@@ -1,7 +1,7 @@
 <template>
   <TDesignDatePicker data-semantic-component="ScDateField" data-semantic-driver="tdesign-date-picker" data-semantic-layer="primitive" :data-appearance="appearance"
     :value="modelValue" :disabled="disabled" :readonly="readonly" :enable-time-picker="withTime"
-    :aria-required="required || undefined" :aria-invalid="invalid || undefined" :aria-describedby="describedBy"
+    :aria-invalid="invalid || undefined" :aria-describedby="describedBy"
     @change="emit('update:modelValue', String($event ?? ''))" />
 </template>
 <script setup lang="ts">

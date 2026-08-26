@@ -210,8 +210,7 @@
             :class="{ 'has-selection-column': showSelectionColumn }" :label="group.label"
             :data="group.sampleRows" :columns="collectionTableColumns(group.key)"
             :foot-data="collectionFootData(groupAggregateFooterRows(group))" row-key="id" size="small"
-            :table-content-width="tableContentWidth" :selected-row-keys="selectedIds || []"
-            @select-change="onTableSelectionChange($event, group.sampleRows)"
+            :table-content-width="tableContentWidth"
             @row-click="handleTableRowClick" />
         </article>
       </section>
@@ -254,8 +253,7 @@
         :class="{ 'has-selection-column': showSelectionColumn }" :label="title"
         :data="records" :columns="collectionTableColumns()"
         :foot-data="collectionFootData(flatAggregateFooterRows)" row-key="id" size="small"
-        :table-content-width="tableContentWidth" :selected-row-keys="selectedIds || []"
-        @select-change="onTableSelectionChange($event, records)"
+        :table-content-width="tableContentWidth"
         @row-click="handleTableRowClick" />
 
       <CollectionPaginationFooter
@@ -304,6 +302,7 @@ import CollectionMobileRecordRow, { type CollectionMobileRecordFact } from '../c
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import CollectionRowCell, { type CollectionRowCellKind } from '../components/product-list/CollectionRowCell.vue';
+import CollectionSelectionControl from '../components/product-list/CollectionSelectionControl.vue';
 import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
@@ -1529,14 +1528,29 @@ function collectionCell(row: Record<string, unknown>, field: string) {
 function collectionTableColumns(groupKey = '') {
   const columns: Array<Record<string, unknown>> = [];
   if (showSelectionColumn.value) {
+    const selectionRows = groupKey
+      ? (groupedRows.value.find((group) => group.key === groupKey)?.sampleRows || [])
+      : props.records;
+    const selectionIds = selectionRows.map(rowId).filter((id): id is number => Boolean(id));
+    const pageChecked = selectionIds.length > 0 && selectionIds.every((id) => selectedIdSet.value.has(id));
+    const pageIndeterminate = !pageChecked && selectionIds.some((id) => selectedIdSet.value.has(id));
     columns.push({
       colKey: 'row-select',
-      type: 'multiple',
       width: 40,
-      checkProps: ({ row }: { row: Record<string, unknown> }) => ({
+      title: () => h(CollectionSelectionControl, {
+        checked: pageChecked,
+        indeterminate: pageIndeterminate,
+        disabled: props.loading || selectionIds.length === 0,
+        label: uiLabel('select_page_records', '选择本页全部记录'),
+        scope: groupKey ? 'group' : 'page',
+        onChange: (checked: boolean) => props.onToggleSelectionAll?.(selectionIds, checked),
+      }),
+      cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => h(CollectionSelectionControl, {
+        checked: isSelected(row),
         disabled: props.loading || !rowId(row),
-        title: rowSelectionLabel(row),
-        'aria-label': rowSelectionLabel(row),
+        label: rowSelectionLabel(row),
+        scope: 'row',
+        onChange: (checked: boolean) => onRowCheckboxChange(row, checked),
       }),
     });
   }
@@ -1564,17 +1578,6 @@ function handleTableRowClick(context: unknown) {
   const row = (context as { row?: unknown }).row;
   const event = (context as { e?: unknown }).e;
   if (row && typeof row === 'object' && event instanceof MouseEvent) handleRowClick(row as Record<string, unknown>, event);
-}
-function onTableSelectionChange(keys: Array<string | number>, sourceRows: Array<Record<string, unknown>>) {
-  const sourceIds = sourceRows.map(rowId).filter((id): id is number => Boolean(id));
-  const next = new Set(keys.map(Number).filter(Number.isFinite));
-  const changed = sourceIds.filter((id) => next.has(id) !== selectedIdSet.value.has(id));
-  if (!changed.length) return;
-  if (changed.length > 1 && props.onToggleSelectionAll) {
-    props.onToggleSelectionAll(sourceIds, sourceIds.every((id) => next.has(id)));
-    return;
-  }
-  changed.forEach((id) => props.onToggleSelection?.(id, next.has(id)));
 }
 function firstSortClause(value: string) {
   return String(value || '').split(',')[0]?.trim() || '';
