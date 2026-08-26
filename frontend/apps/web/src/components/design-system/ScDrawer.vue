@@ -1,5 +1,5 @@
 <template>
-  <TDesignDrawer :visible="open" :header="false" :footer="false" :close-btn="false"
+  <TDesignDrawer :visible="open" :header="false" :footer="false" :close-btn="false" :destroy-on-close="true"
     :close-on-esc-keydown="false" :close-on-overlay-click="dismissible && closeOnBackdrop" :prevent-scroll-through="false"
     :size="size === 'wide' ? 'var(--sc-component-dialog-wide-width)' : 'var(--sc-component-drawer-width)'"
     :drawer-class-name="['sc-design-drawer', panelClass].filter(Boolean).join(' ')" :z-index="drawerZIndex" @close="emit('close')">

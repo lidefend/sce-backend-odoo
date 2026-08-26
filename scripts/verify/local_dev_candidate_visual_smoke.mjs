@@ -389,6 +389,23 @@ try {
             missingDriverCount: nodes.filter((node) => !node.matches(driverSelector) && !node.querySelector(driverSelector)).length,
           };
         });
+        const overlayResidues = [...document.querySelectorAll('.t-drawer, .t-drawer__mask, .t-dialog, .t-dialog__mask, [data-overlay-kind]')]
+          .filter((node) => {
+            const nodeStyle = getComputedStyle(node);
+            const rect = node.getBoundingClientRect();
+            return nodeStyle.display !== 'none' && nodeStyle.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+          })
+          .map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+              tag: node.tagName,
+              className: typeof node.className === 'string' ? node.className : '',
+              overlayKind: node.getAttribute('data-overlay-kind') || '',
+              state: node.getAttribute('data-state') || '',
+              ariaHidden: node.getAttribute('aria-hidden'),
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+            };
+          });
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -400,6 +417,15 @@ try {
             drivers: primitiveDrivers,
             specializedInputCount: document.querySelectorAll('[data-semantic-component="ScInput"][data-primitive-driver="browser-specialized"]').length,
             pass: primitiveDrivers.every((entry) => entry.missingDriverCount === 0),
+          },
+          overlayResidueEvidence: {
+            residues: overlayResidues,
+            activeElement: document.activeElement instanceof HTMLElement ? {
+              tag: document.activeElement.tagName,
+              className: document.activeElement.className,
+              semantic: document.activeElement.getAttribute('data-semantic-component') || '',
+            } : null,
+            pass: overlayResidues.length === 0,
           },
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
             .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
@@ -971,6 +997,9 @@ const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded 
 for (const item of report.routes) {
   if (item.path && item.primitiveDriverEvidence && !item.primitiveDriverEvidence.pass) {
     failures.push({ name: item.name, primitiveDriverEvidence: item.primitiveDriverEvidence });
+  }
+  if (item.path && item.overlayResidueEvidence && !item.overlayResidueEvidence.pass) {
+    failures.push({ name: item.name, overlayResidueEvidence: item.overlayResidueEvidence });
   }
 }
 for (const item of report.routes) {

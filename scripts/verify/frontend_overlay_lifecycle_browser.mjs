@@ -50,6 +50,8 @@ try {
   page.on('console', (message) => { if (message.type() === 'error') errors.push(`console:${message.text()}`); });
   page.on('pageerror', (error) => errors.push(`page:${error.message}`));
   await page.goto(`http://127.0.0.1:${address.port}/__overlay_lifecycle.html`);
+  const visibleOverlayResidueCount = async () => page.locator('.t-drawer:visible, .t-drawer__mask:visible, .t-dialog:visible, .t-dialog__mask:visible, [data-overlay-kind]:visible').count();
+  const initialOverlayResidueCount = await visibleOverlayResidueCount();
   const waitForActiveWithin = async (selector) => {
     await page.waitForFunction((target) => {
       const node = document.querySelector(target);
@@ -70,6 +72,8 @@ try {
   const nestedFocus = await drawer.evaluate((node) => node.contains(document.activeElement));
   await page.keyboard.press('Escape');
   await drawer.waitFor({ state: 'hidden' });
+  await page.waitForFunction(() => !document.querySelector('.t-drawer, .t-drawer__mask, [data-overlay-kind="drawer"]'));
+  const closedDrawerResidueCount = await page.locator('.t-drawer, .t-drawer__mask, [data-overlay-kind="drawer"]').count();
   await page.waitForFunction(() => document.activeElement?.id === 'open-drawer');
   const nestedRestore = await page.evaluate(() => document.activeElement?.id === 'open-drawer');
   const nestedBodyLocked = await page.evaluate(() => getComputedStyle(document.body).overflow === 'hidden');
@@ -94,13 +98,14 @@ try {
   const emptyTabContained = await emptySurface.evaluate((node) => node.contains(document.activeElement));
   await page.evaluate(() => { window.overlayState.empty = false; });
 
-  const pass = initialFocus && nestedFocus
+  const pass = initialOverlayResidueCount === 0 && closedDrawerResidueCount === 0
+    && initialFocus && nestedFocus
     && nestedRestore && openerRestored
     && bodyLocked && nestedBodyLocked && bodyReleased && lockedRemains
     && emptyInitialFocus && emptyTabContained
     && Boolean(labelled.labelledby) && Boolean(labelled.describedby)
     && errors.length === 0;
-  console.log(JSON.stringify({ pass, initialFocus, nestedFocus, nestedRestore, openerRestored, bodyLocked, nestedBodyLocked, bodyReleased, lockedRemains, emptyInitialFocus, emptyTabContained, labelled, errors }, null, 2));
+  console.log(JSON.stringify({ pass, initialOverlayResidueCount, closedDrawerResidueCount, initialFocus, nestedFocus, nestedRestore, openerRestored, bodyLocked, nestedBodyLocked, bodyReleased, lockedRemains, emptyInitialFocus, emptyTabContained, labelled, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();
