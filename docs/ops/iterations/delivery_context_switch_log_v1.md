@@ -6566,9 +6566,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Expanded responsibility: one low-risk frontend presentation PR contains
   independently reversible commits for Collection, Navigation/Hierarchy,
   Form/Relation/Workflow and Shared Utility/Scene surfaces.
-- Machine result: 137 relevant Vue surfaces; 26 governed primitives, 87
-  governed composites, 6 deliberate native composites, 18 separately scoped
-  P3 surfaces and zero untreated P0/P1 gaps.
+- Machine result: 138 relevant Vue surfaces; 27 governed primitives, 93
+  governed composites, zero deliberate native composites, 18 separately
+  scoped P3 surfaces, zero untreated P0/P1 gaps and zero P0/P1 raw-control
+  bypasses outside the primitive adapter layer.
 - Product changes: shared controls replace private page actions where safe;
   loading/empty/error/disabled/focus identities are explicit; relation and role
   home local states use governed primitives; all owned surfaces have parsed SFC
@@ -6576,5 +6577,8 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Authority boundary: Contract V2, permissions, route/menu/action authority,
   task/workspace selection, record capabilities and mutation semantics remain
   unchanged.
-- Candidate remains verification pending until one full Quick/build, managed
-  browser coverage, stable fingerprint and independent read-only review pass.
+- Candidate validation: governed Frontend Quick and development build pass;
+  the frozen candidate browser samples AppShell, collection, task and workspace
+  at 1440px and 390px with governed TDesign drivers, overflow 0, browser errors
+  0 and business mutation 0. Stable fingerprint and independent read-only
+  review remain the final publication gates.
