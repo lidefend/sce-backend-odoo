@@ -32,6 +32,7 @@ def validate(root: Path = ROOT) -> list[str]:
     tree = read(root, "frontend/apps/web/src/components/MenuTree.vue")
     menu_node = read(root, "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue")
     primitive_bridge = read(root, "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts")
+    theme = read(root, "frontend/packages/ui/src/kits/tdesign/theme.css")
     ui_primitives = read(root, "frontend/packages/ui/src/primitives.ts")
     session = read(root, "frontend/apps/web/src/stores/session.ts")
     canonical = read(root, "frontend/apps/web/src/app/canonicalNavigation.ts")
@@ -59,13 +60,18 @@ def validate(root: Path = ROOT) -> list[str]:
     for marker in (
         "grid-template-rows: max-content minmax(0, 1fr)",
         "var(--sc-nav-row-gap)",
-        "var(--sc-app-focus-ring)",
         "overscroll-behavior: contain",
         "<template #prefix><ScIcon name=\"search\"",
         "clearable",
+        'appearance="navigation-search"',
     ):
         if marker not in side_navigation:
             errors.append(f"ProductSideNavigation must retain canonical rendering detail: {marker}")
+    for marker in (".sc-input[data-appearance='navigation-search']", "var(--sc-app-focus-ring)"):
+        if marker not in theme:
+            errors.append(f"navigation search appearance must be owned by the TDesign theme bridge: {marker}")
+    if "border-color:" in side_navigation or "box-shadow:" in side_navigation or ":deep(.sc-input:hover)" in side_navigation:
+        errors.append("ProductSideNavigation must not own ScInput visual chrome")
     if "product-side-navigation__search > .sc-icon" in side_navigation or "padding-left: 34px" in side_navigation:
         errors.append("navigation search must use the ScInput prefix adapter instead of manual icon positioning")
     for marker in (

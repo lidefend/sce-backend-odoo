@@ -221,3 +221,21 @@
 .scene-ui-provider[data-scene-ui-kit='tdesign-modern'] .t-textarea__inner {
   min-height: var(--sc-scene-control-height);
 }
+.sc-input[data-appearance='navigation-search'] {
+  width: 100%;
+  min-height: 38px;
+  border-color: var(--sc-app-border);
+  border-radius: var(--sc-component-input-radius);
+  background: color-mix(in srgb, var(--sc-app-panel) 86%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 6%, transparent);
+  transition: border-color var(--sc-motion-fast) ease, box-shadow var(--sc-motion-fast) ease, background-color var(--sc-motion-fast) ease;
+}
+
+.sc-input[data-appearance='navigation-search'] .t-input__prefix-icon { color: var(--sc-app-text-muted); }
+.sc-input[data-appearance='navigation-search']:hover { border-color: var(--sc-app-border-strong); background: var(--sc-app-panel); }
+.sc-input[data-appearance='navigation-search']:focus-within {
+  border-color: var(--sc-semantic-surface-interactive);
+  outline: 3px solid var(--sc-app-focus-ring);
+  outline-offset: 0;
+  background: var(--sc-app-panel);
+}

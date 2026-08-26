@@ -11,6 +11,7 @@
     :data-loading="loading || undefined"
     :data-readonly="readonly || undefined"
     :data-disabled="disabled || loading || undefined"
+    :data-appearance="appearance"
     data-primitive-driver="tdesign"
     :model-value="modelValue"
     :type="tdesignType"
@@ -47,6 +48,7 @@
     :data-loading="loading || undefined"
     :data-readonly="readonly || undefined"
     :data-disabled="disabled || loading || undefined"
+    :data-appearance="appearance"
     :value="modelValue"
     :type="type"
     :disabled="disabled || loading"
@@ -97,6 +99,7 @@ const props = withDefaults(defineProps<{
   minLength?: number;
   maxLength?: number;
   clearable?: boolean;
+  appearance?: 'default' | 'navigation-search';
 }>(), {
   modelValue: '',
   size: 'medium',
@@ -111,6 +114,7 @@ const props = withDefaults(defineProps<{
   minLength: undefined,
   maxLength: undefined,
   clearable: false,
+  appearance: 'default',
 });
 
 const emit = defineEmits<{

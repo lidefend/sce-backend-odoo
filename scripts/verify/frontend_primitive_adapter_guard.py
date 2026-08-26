@@ -71,6 +71,8 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInput must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in input_text or ':aria-busy="loading || undefined"' not in input_text:
         errors.append("ScInput must expose loading state on the native input control")
+    if input_text.count(':data-appearance="appearance"') != 2:
+        errors.append("ScInput must project its registered appearance to both standard and specialized drivers")
     input_group_text = (design / "ScInputGroup.vue").read_text(encoding="utf-8") if (design / "ScInputGroup.vue").is_file() else ""
     if "<TDesignInputAdornment" not in input_group_text or 'data-primitive-driver="tdesign"' not in input_group_text:
         errors.append("ScInputGroup must delegate grouped input chrome to TDesign InputAdornment")

@@ -8,6 +8,7 @@
         placeholder="搜索菜单..."
         aria-label="搜索菜单"
         clearable
+        appearance="navigation-search"
         @update:model-value="emit('update:search', String($event))"
       >
         <template #prefix><ScIcon name="search" :size="16" /></template>
@@ -65,34 +66,7 @@ const emit = defineEmits<{
   align-items: center;
 }
 
-.product-side-navigation__search :deep(.sc-input) {
-  width: 100%;
-  min-height: 38px;
-  border-color: var(--sc-app-border);
-  border-radius: var(--sc-component-input-radius);
-  background: color-mix(in srgb, var(--sc-app-panel) 86%, transparent);
-  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 6%, transparent);
-  transition:
-    border-color var(--sc-motion-fast) ease,
-    box-shadow var(--sc-motion-fast) ease,
-    background-color var(--sc-motion-fast) ease;
-}
-
-.product-side-navigation__search :deep(.t-input__prefix-icon) {
-  color: var(--sc-app-text-muted);
-}
-
-.product-side-navigation__search :deep(.sc-input:hover) {
-  border-color: var(--sc-app-border-strong);
-  background: var(--sc-app-panel);
-}
-
-.product-side-navigation__search :deep(.sc-input:focus) {
-  border-color: var(--sc-semantic-surface-interactive);
-  outline: 3px solid var(--sc-app-focus-ring);
-  outline-offset: 0;
-  background: var(--sc-app-panel);
-}
+.product-side-navigation__search :deep(.sc-input) { width: 100%; }
 
 .product-side-navigation__tree {
   min-height: 0;

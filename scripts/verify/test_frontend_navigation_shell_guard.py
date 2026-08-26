@@ -15,6 +15,7 @@ PATHS = (
     "frontend/apps/web/src/components/design-system/tdesignPrimitiveBridge.ts",
     "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
     "frontend/packages/ui/src/primitives.ts",
+    "frontend/packages/ui/src/kits/tdesign/theme.css",
     "frontend/apps/web/src/stores/session.ts",
     "frontend/apps/web/src/app/canonicalNavigation.ts",
     "addons/smart_core/delivery/menu_service.py",
@@ -129,6 +130,13 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("canonical rendering detail" in error for error in validate(root)))
+
+    def test_navigation_search_visual_chrome_cannot_return_to_the_page_component(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue"
+        path.write_text(path.read_text() + "\n<style>.x { border-color: red; }</style>\n", encoding="utf-8")
+        self.assertIn("ProductSideNavigation must not own ScInput visual chrome", validate(root))
 
 
 if __name__ == "__main__":
