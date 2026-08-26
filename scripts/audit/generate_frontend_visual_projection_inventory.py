@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from scripts.verify.frontend_primitive_adapter_guard import component_style_text, direct_root_visual_overrides, p3_scope
+from scripts.verify.frontend_primitive_adapter_guard import component_style_text, direct_root_visual_overrides, native_descendant_visual_overrides, p3_scope
 WEB_REL = Path("frontend/apps/web/src")
 DEFAULT_REFERENCE = ROOT / "docs/frontend_productization/rendering-detail/daily-frontend-reference-projection-v1.json"
 DEFAULT_OUTPUT = ROOT / "docs/frontend_productization/rendering-detail/visual-projection-inventory-v1.json"
@@ -145,6 +145,7 @@ def consumer_primitive_visual_chrome(root: Path = ROOT) -> list[str]:
         if (
             any(VISUAL_CHROME_PROPERTY_RE.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME_RE.finditer(style_text))
             or direct_root_visual_overrides(text, style_text)
+            or native_descendant_visual_overrides(text, style_text)
         ):
             violations.append(relative)
     return violations

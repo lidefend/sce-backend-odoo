@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from scripts.verify.frontend_primitive_adapter_guard import PRIMITIVES, direct_root_visual_overrides, validate
+from scripts.verify.frontend_primitive_adapter_guard import PRIMITIVES, direct_root_visual_overrides, native_descendant_visual_overrides, validate
 
 
 class PrimitiveAdapterGuardTest(unittest.TestCase):
@@ -180,6 +180,14 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
     def test_consumer_root_class_cannot_hide_primitive_visual_chrome(self) -> None:
         source = '<template><ScButton class="legacy-action" /></template><style>.legacy-action { background: red; border: 1px solid red; }</style>'
         self.assertEqual(direct_root_visual_overrides(source), ["legacy-action"])
+
+    def test_dynamic_root_class_cannot_hide_primitive_visual_chrome(self) -> None:
+        source = '<template><ScButton :class="{ \'legacy-action\': selected }" /></template><style>.legacy-action { background: red; }</style>'
+        self.assertEqual(direct_root_visual_overrides(source), ["legacy-action"])
+
+    def test_container_cannot_repaint_primitive_native_control(self) -> None:
+        source = '<template><div class="legacy"><ScButton /></div></template><style>.legacy > button { width: 2rem; padding: 1rem; }</style>'
+        self.assertEqual(native_descendant_visual_overrides(source), [".legacy > button"])
 
     def test_external_component_style_cannot_repaint_primitive_root(self) -> None:
         root = self.make_root()

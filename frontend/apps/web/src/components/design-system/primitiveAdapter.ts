@@ -1,5 +1,10 @@
 export const SC_PRIMITIVE_KEYS = [
   'ScActionBar',
+  'ScIconButton',
+  'ScLayout',
+  'ScAside',
+  'ScHeader',
+  'ScContent',
   'ScButton',
   'ScCheckbox',
   'ScRadioGroup',

@@ -32,6 +32,9 @@ CONSUMER_PRIMITIVE_CHROME = re.compile(
 VISUAL_CHROME_PROPERTY = re.compile(r"(?:^|;)\s*(?:border(?!-(?:collapse|spacing))(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.MULTILINE)
 SC_ROOT_TAG = re.compile(r"<Sc(?:Button|IconButton|Input|InputGroup|Select|Textarea|Checkbox|Radio|Dialog|Drawer|Tabs|Table)\b(?P<attrs>[^>]*)>", re.DOTALL)
 STATIC_CLASS = re.compile(r"(?<!:)\bclass\s*=\s*['\"](?P<value>[^'\"]+)['\"]")
+DYNAMIC_CLASS_ATTR = re.compile(r":class\s*=\s*(['\"])(?P<value>.*?)\1", re.DOTALL)
+DYNAMIC_CLASS = re.compile(r"(?:['\"](?P<quoted>[A-Za-z][\w-]*)['\"]|(?P<bare>[A-Za-z][\w-]*))\s*:")
+ALL_STATIC_CLASS = re.compile(r"(?<!:)\bclass\s*=\s*['\"](?P<value>[^'\"]+)['\"]")
 STYLE_RULE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
 STYLE_SOURCE = re.compile(r"<style\b[^>]*\bsrc\s*=\s*['\"](?P<value>[^'\"]+)['\"][^>]*>", re.IGNORECASE)
 PROFESSIONAL_COMPOSITE_OWNERS: set[str] = set()
@@ -53,6 +56,11 @@ def direct_root_visual_overrides(source_text: str, style_text: str | None = None
         match = STATIC_CLASS.search(tag.group("attrs"))
         if match:
             classes.update(value for value in match.group("value").split() if value and not value.startswith("sc-"))
+        for binding in DYNAMIC_CLASS_ATTR.finditer(tag.group("attrs")):
+            for dynamic in DYNAMIC_CLASS.finditer(binding.group("value")):
+                value = dynamic.group("quoted") or dynamic.group("bare")
+                if value and value not in {"active", "selected", "disabled"} and not value.startswith("sc-"):
+                    classes.add(value)
     findings = []
     for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
         if not VISUAL_CHROME_PROPERTY.search(rule.group("body")):
@@ -61,6 +69,31 @@ def direct_root_visual_overrides(source_text: str, style_text: str | None = None
         for class_name in sorted(classes):
             if re.search(rf"\.{re.escape(class_name)}(?![\w-])", selector):
                 findings.append(class_name)
+    return sorted(set(findings))
+
+
+def native_descendant_visual_overrides(source_text: str, style_text: str | None = None) -> list[str]:
+    if not SC_ROOT_TAG.search(source_text):
+        return []
+    container_classes = {
+        value
+        for match in ALL_STATIC_CLASS.finditer(source_text)
+        for value in match.group("value").split()
+        if value and not value.startswith("sc-")
+    }
+    findings: list[str] = []
+    for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
+        selector = rule.group("selector")
+        if "<style" in selector:
+            selector = selector.rsplit("<style", 1)[1].split(">", 1)[-1]
+        if not re.search(r"(?:^|[\s>+~])(?:button|input|select|textarea)(?:\b|[:.#[])", selector):
+            continue
+        if not re.search(r"(?:^|;)\s*(?:border(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color|padding(?:-[a-z]+)?|width|min-width|max-width|height|min-height|max-height)\s*:", rule.group("body"), re.MULTILINE):
+            continue
+        for class_name in sorted(container_classes):
+            if re.search(rf"\.{re.escape(class_name)}(?![\w-])", selector):
+                findings.append(selector.strip())
+                break
     return sorted(set(findings))
 
 
@@ -99,6 +132,9 @@ def validate(root: Path = ROOT) -> list[str]:
             root_overrides = direct_root_visual_overrides(source_text, style_text)
             if root_overrides:
                 errors.append(f"consumer primitive root classes must not own visual chrome: {relative} classes={','.join(root_overrides)}")
+            descendant_overrides = native_descendant_visual_overrides(source_text, style_text)
+            if descendant_overrides:
+                errors.append(f"consumer containers must not repaint primitive native controls: {relative} selectors={','.join(descendant_overrides)}")
 
     for component in PRIMITIVES:
         source = design / f"{component}.vue"

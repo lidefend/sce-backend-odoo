@@ -427,7 +427,7 @@
     },
     {
       "category": "other",
-      "digest": "1543aa5c8c10d6ef07f863a48761d7a351e35341c7e960c2c89759687e62056e",
+      "digest": "a79e3a99cb4a80ebb89bf82182cf0deb07546cdddcab34a269d5b406790991dc",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -645,7 +645,7 @@
     },
     {
       "category": "other",
-      "digest": "0d020f9844388a9bf5a1f2a50313160c37b4730ee295c076a8614017d2318036",
+      "digest": "a182651af681bf943aca0f022e0bc95572a2c261c9015a0b436242f97a3a85e8",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScIconButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -1727,7 +1727,7 @@
     },
     {
       "category": "shell",
-      "digest": "a208f8aa96cc9e2e4b790e698945cfebacfe6c40828d3adc2a2f8218f51be1f5",
+      "digest": "a92ff0c1417f1e18caba7c327a5de6d08efee612a61fa6427d21a936c9f47529",
       "nativeStyleSelectors": [],
       "path": "layouts/AppShell.vue",
       "referenceNativeStyleSelectors": [],
@@ -2338,7 +2338,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "8a0a8c9e0229350ac5823cc7926a9317d2cbf3fee09d1ff5de0d16c454fbc69e",
+  "currentInputDigest": "3c3310882b58f5dbdee5000cf27ee497770ff62c0f27ea2d38f54e09351ee126",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

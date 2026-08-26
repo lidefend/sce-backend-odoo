@@ -73,35 +73,6 @@
   letter-spacing: .04em;
 }
 
-.workspace-activity-rail button {
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 7px;
-  display: grid;
-  place-items: center;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  cursor: pointer;
-  transition: background-color var(--sc-motion-fast, 120ms) ease, color var(--sc-motion-fast, 120ms) ease;
-}
-
-.workspace-activity-rail button:hover {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
-}
-
-.workspace-activity-rail button.active {
-  background: var(--sc-navigation-active-bg);
-  color: var(--sc-app-selected-text);
-  box-shadow: inset 3px 0 0 var(--sc-app-accent);
-}
-
-.workspace-activity-rail button:disabled {
-  cursor: not-allowed;
-  opacity: .45;
-}
-
 .workspace-sidebar-panel {
   min-width: 0;
   min-height: 0;
@@ -193,49 +164,6 @@
   align-content: start;
   gap: 3px;
   overflow-y: auto;
-}
-
-.workspace-scope-options > button {
-  min-width: 0;
-  width: 100%;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  padding: 8px;
-  display: grid;
-  gap: 2px;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-
-.workspace-scope-options > button:hover {
-  border-color: var(--sc-app-border);
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
-}
-
-.workspace-scope-options > button.active {
-  border-color: var(--sc-app-selected-border);
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-}
-
-.workspace-scope-options > button span,
-.workspace-scope-options > button small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-scope-options > button span {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.workspace-scope-options > button small {
-  color: var(--sc-app-text-muted);
-  font-size: 11px;
 }
 
 .workspace-scope-clear {
@@ -331,29 +259,6 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   white-space: nowrap;
-}
-
-.business-scope-segments button {
-  min-width: 0;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 6px;
-  padding: 6px 4px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.business-scope-segments button.active {
-  border-color: var(--sc-app-selected-border);
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-}
-
-.business-scope-segments button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .record-context-empty {
@@ -757,41 +662,6 @@
   font-size: 12px;
 }
 
-.topbar-scope button {
-  min-width: 0;
-  max-width: 180px;
-  min-height: 32px;
-  padding: 0 var(--sc-space-xs);
-  border: 1px solid transparent;
-  border-radius: var(--sc-product-radius-control);
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  font: inherit;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sc-space-2xs);
-}
-
-.topbar-scope button:hover {
-  color: var(--sc-app-accent);
-}
-
-.topbar--minimal .topbar-actions :is(.sc-btn, .topbar-context) {
-  box-sizing: border-box;
-  min-height: 32px;
-  height: 32px;
-  padding: 0 10px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 20px;
-}
-
 .topbar--minimal .topbar-context-trigger strong {
   font-size: inherit;
   line-height: inherit;
@@ -1170,17 +1040,6 @@
     background: var(--sc-navigation-bg);
   }
 
-  .workspace-activity-rail button {
-    width: 36px;
-    height: 36px;
-    border-radius: 9px;
-  }
-
-  .workspace-activity-rail button.active {
-    background: var(--sc-app-panel);
-    box-shadow: inset 3px 0 0 var(--sc-app-accent), 0 3px 10px color-mix(in srgb, var(--sc-app-shadow) 14%, transparent);
-  }
-
   .workspace-sidebar-panel {
     padding: 14px 16px 16px;
     gap: 14px;
@@ -1246,10 +1105,6 @@
     gap: 6px;
   }
 
-  .topbar--minimal .topbar-context-trigger {
-    gap: 7px;
-  }
-
   .topbar--minimal .topbar-context-kicker {
     display: none;
   }
@@ -1262,14 +1117,6 @@
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
-  }
-
-  .topbar--minimal .topbar-scope button,
-  .topbar--minimal .topbar-context-trigger {
-    width: 32px;
-    min-width: 32px;
-    padding: 0;
-    justify-content: center;
   }
 
   .topbar--minimal .topbar-context-caret {

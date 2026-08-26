@@ -26,13 +26,13 @@
     >
       <nav class="workspace-activity-rail" aria-label="工作空间切换">
         <span class="workspace-activity-brand" aria-hidden="true">{{ shellLogoText }}</span>
-        <ScIconButton label="业务导航" :class="{ active: workspacePanelMode === 'navigation' }" @click="openWorkspacePanel('navigation')">
+        <ScIconButton label="业务导航" appearance="activity-rail" :class="{ active: workspacePanelMode === 'navigation' }" @click="openWorkspacePanel('navigation')">
           <ScIcon name="apps" :size="20" />
         </ScIconButton>
-        <ScIconButton label="公司空间：切换公司" :class="{ active: workspacePanelMode === 'company' }" @click="openWorkspacePanel('company')">
+        <ScIconButton label="公司空间：切换公司" appearance="activity-rail" :class="{ active: workspacePanelMode === 'company' }" @click="openWorkspacePanel('company')">
           <ScIcon name="building" :size="20" />
         </ScIconButton>
-        <ScIconButton :label="`${recordContextSpaceLabel}：${switchRecordContextLabel}`" :class="{ active: workspacePanelMode === 'record' }" :disabled="!showRecordContext" @click="openWorkspacePanel('record')">
+        <ScIconButton :label="`${recordContextSpaceLabel}：${switchRecordContextLabel}`" appearance="activity-rail" :class="{ active: workspacePanelMode === 'record' }" :disabled="!showRecordContext" @click="openWorkspacePanel('record')">
           <ScIcon :name="recordContextIcon" :size="20" />
         </ScIconButton>
       </nav>
@@ -59,6 +59,7 @@
               :key="`company-space-${company.company_id}`"
               type="button"
               variant="ghost"
+              appearance="scope-option"
               :class="{ active: company.company_id === selectedCompanyId }"
               :aria-current="company.company_id === selectedCompanyId ? 'true' : undefined"
               @click="selectCompanyScope(company.company_id)"
@@ -82,6 +83,7 @@
               type="button"
               variant="ghost"
               size="small"
+              appearance="scope-segment"
               :class="{ active: operation.operation_strategy === selectedOperationStrategy }"
               :disabled="operation.disabled"
               :title="operation.disabled_reason || operationScopeLabel(operation)"
@@ -104,6 +106,7 @@
               :key="`record-context-space-${option.id}`"
               type="button"
               variant="ghost"
+              appearance="scope-option"
               :class="{ active: option.id === selectedRecordContext?.id }"
               :aria-current="option.id === selectedRecordContext?.id ? 'true' : undefined"
               @click="selectRecordContext(option)"
@@ -210,7 +213,7 @@
             <ScButton
               ref="roleContextTrigger"
               class="topbar-context topbar-context-trigger"
-              appearance="outline-action"
+              :appearance="useMinimalTopbar ? 'account-context-compact' : 'account-context'"
               type="button"
               variant="ghost"
               size="small"
