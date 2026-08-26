@@ -8,6 +8,7 @@
     :data-size="normalizePrimitiveSize(size)"
     :data-status="status"
     :data-loading="loading || undefined"
+    :data-appearance="appearance"
     data-primitive-driver="tdesign"
     :model-value="modelValue"
     :autosize="{ minRows: rows }"
@@ -44,6 +45,7 @@ const props = withDefaults(defineProps<{
   loading?: boolean;
   placeholder?: string;
   describedBy?: string;
+  appearance?: 'default' | 'form-field';
 }>(), {
   modelValue: '',
   rows: 3,
@@ -51,6 +53,7 @@ const props = withDefaults(defineProps<{
   status: 'default',
   placeholder: undefined,
   describedBy: undefined,
+  appearance: 'default',
 });
 
 const emit = defineEmits<{

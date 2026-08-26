@@ -22,6 +22,7 @@
             :key="`global-${action.key}`"
             type="button"
             class="page-renderer-action"
+            appearance="outline-action"
             variant="secondary"
             @click="emitAction(action, '', '', {})"
           >
@@ -167,22 +168,12 @@ function onZoneAction(payload: PageBlockActionEvent) {
   gap: 6px;
 }
 .page-renderer-action {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 7px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
   padding: 5px 10px;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
   max-width: 100%;
   white-space: normal;
   overflow-wrap: anywhere;
-}
-.page-renderer-action:hover {
-  border-color: var(--sc-semantic-surface-interactive);
-  color: var(--sc-app-info-text);
-  background: var(--sc-app-info-bg);
 }
 .tone-success { background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }
 .tone-warning { background: var(--sc-app-warning-bg); color: var(--sc-app-warning-text); }

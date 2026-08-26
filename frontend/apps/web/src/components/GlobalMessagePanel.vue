@@ -2,6 +2,7 @@
   <div class="global-message">
     <ScButton
       class="global-message__trigger sc-btn sc-btn-sm"
+      appearance="toolbar-menu-toggle"
       size="small"
       title="消息"
       aria-label="消息"
@@ -446,9 +447,6 @@ onUnmounted(() => {
   min-width: 32px;
   padding: 0;
   justify-content: center;
-  border-color: transparent;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
 }
 
 .global-message__label {
@@ -465,12 +463,6 @@ onUnmounted(() => {
   top: -3px;
   right: -3px;
   margin: 0;
-}
-
-.global-message__trigger.active {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
 }
 
 .global-message__badge {
@@ -535,12 +527,6 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
-.global-message__conversation.active {
-  border-color: var(--sc-app-info-border);
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
-}
-
 .global-message__conversation-list {
   min-height: 0;
   overflow: auto;
@@ -555,11 +541,8 @@ onUnmounted(() => {
   display: grid;
   gap: 4px;
   width: 100%;
-  border: none;
-  border-left: 3px solid transparent;
   padding: 8px 9px 8px 8px;
   text-align: left;
-  cursor: pointer;
 }
 
 .global-message__conversation-title {
@@ -570,7 +553,6 @@ onUnmounted(() => {
 }
 
 .global-message__conversation small {
-  color: var(--sc-app-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -706,7 +688,6 @@ onUnmounted(() => {
   :deep(.global-message__panel) {
     width: 100vw;
     height: 100dvh;
-    border-radius: 0;
   }
 
   .global-message__workspace {

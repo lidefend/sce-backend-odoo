@@ -1,5 +1,5 @@
 <template>
-  <aside
+  <ScAside
     v-if="visible"
     :id="surfaceId"
     ref="surface"
@@ -11,7 +11,7 @@
     @keydown="onKeydown"
   >
     <slot />
-  </aside>
+  </ScAside>
   <ScButton
     v-if="mobile && visible"
     class="mobile-sidebar-backdrop"
@@ -26,6 +26,7 @@
 import { ref } from 'vue';
 import { useModalLifecycle } from '../../composables/useModalLifecycle';
 import ScButton from '../design-system/ScButton.vue';
+import ScAside from '../design-system/ScAside.vue';
 
 defineOptions({ inheritAttrs: false });
 

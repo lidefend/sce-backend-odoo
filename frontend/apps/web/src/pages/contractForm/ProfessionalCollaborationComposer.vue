@@ -27,7 +27,7 @@
       </label>
       <label class="native-chatter-field">
         <span>{{ activityNoteLabel }}</span>
-        <ScTextarea class="native-chatter-input" :model-value="activityNote" :placeholder="activityNotePlaceholder" :disabled="posting" :loading="posting" @update:model-value="emit('update:activityNote', $event)" />
+        <ScTextarea class="native-chatter-input" appearance="form-field" :model-value="activityNote" :placeholder="activityNotePlaceholder" :disabled="posting" :loading="posting" @update:model-value="emit('update:activityNote', $event)" />
       </label>
     </template>
     <template v-else>
@@ -45,7 +45,7 @@
           @{{ collaborationUserLabel(user) }}
         </ScButton>
       </div>
-      <ScTextarea class="native-chatter-input" :model-value="draft" :placeholder="placeholder" :disabled="posting" :loading="posting" @update:model-value="emit('update:draft', $event)" />
+      <ScTextarea class="native-chatter-input" appearance="form-field" :model-value="draft" :placeholder="placeholder" :disabled="posting" :loading="posting" @update:model-value="emit('update:draft', $event)" />
     </template>
     <div class="native-chatter-compose-actions">
       <ScButton variant="primary" :disabled="submitDisabled" :loading="posting" :loading-label="postingLabel" @click="emit('submit')">{{ posting ? postingLabel : submitLabel }}</ScButton>

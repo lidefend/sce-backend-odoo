@@ -15,12 +15,12 @@
     @keydown.enter.prevent="$emit('sort')"
     @keydown.space.prevent="$emit('sort')"
   >
-    <ScIconButton class="column-drag-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')" />
-    <ScButton type="button" class="column-sort-btn" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="$emit('sort')">
+    <ScIconButton class="column-drag-handle" appearance="column-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')" />
+    <ScButton type="button" class="column-sort-btn" appearance="context-action" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="$emit('sort')">
       <span>{{ label }}</span>
       <ScIcon v-if="sorted" class="sort-indicator" :name="sortIcon" :size="14" />
     </ScButton>
-    <ScIconButton class="column-resize-handle" :label="resizeLabel" draggable="false" @click.stop @dragstart.stop.prevent @mousedown.stop.prevent="$emit('resize-start', $event)" />
+    <ScIconButton class="column-resize-handle" appearance="column-handle" :label="resizeLabel" draggable="false" @click.stop @dragstart.stop.prevent @mousedown.stop.prevent="$emit('resize-start', $event)" />
   </div>
 </template>
 

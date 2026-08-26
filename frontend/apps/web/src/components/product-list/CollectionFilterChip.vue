@@ -1,6 +1,7 @@
 <template>
   <ScButton
     class="collection-filter-chip"
+    appearance="toolbar-chip"
     :class="{ 'is-active': active }"
     variant="ghost"
     size="small"
@@ -32,6 +33,5 @@ defineEmits<{ activate: [] }>();
 </script>
 
 <style scoped>
-.collection-filter-chip{max-width:100%;border-radius:var(--sc-component-tag-radius)}
-.collection-filter-chip.is-active{color:var(--sc-app-selected-text);background:var(--sc-app-selected-bg);box-shadow:inset 0 0 0 1px var(--sc-app-selected-border)}
+.collection-filter-chip{max-width:100%}
 </style>

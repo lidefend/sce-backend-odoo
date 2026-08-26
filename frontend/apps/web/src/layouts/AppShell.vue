@@ -52,7 +52,7 @@
             <div><small>数据范围</small><h2 id="company-space-title">公司空间</h2></div>
             <span>{{ filteredCompanyOptions.length }}</span>
           </header>
-          <ScInput v-model="companySearch" class="workspace-scope-search sc-search" type="search" placeholder="搜索公司" aria-label="搜索公司" />
+          <ScInput v-model="companySearch" class="workspace-scope-search sc-search" appearance="navigation-search" type="search" placeholder="搜索公司" aria-label="搜索公司" />
           <div class="workspace-scope-options">
             <ScButton
               v-for="company in filteredCompanyOptions"
@@ -73,7 +73,7 @@
         <section v-else-if="workspacePanelMode === 'record'" class="workspace-scope-panel" aria-labelledby="record-context-space-title">
           <header>
             <div><small>{{ currentCompanyLabel || '全部公司' }}</small><h2 id="record-context-space-title">{{ recordContextSpaceLabel }}</h2></div>
-            <ScButton v-if="selectedRecordContext" class="workspace-scope-clear" type="button" variant="ghost" size="small" @click="clearRecordContextSelection">{{ recordContextAllLabel }}</ScButton>
+            <ScButton v-if="selectedRecordContext" class="workspace-scope-clear" appearance="context-action" type="button" variant="ghost" size="small" @click="clearRecordContextSelection">{{ recordContextAllLabel }}</ScButton>
           </header>
           <div v-if="operationOptions.length" class="business-scope-segments" role="group" :aria-label="recordContextLabel">
             <ScButton
@@ -91,6 +91,7 @@
           <ScInput
             v-model="recordContextSearch"
             class="workspace-scope-search sc-search"
+            appearance="navigation-search"
             type="search"
             :aria-label="recordContextSearchPlaceholder"
             :placeholder="recordContextSearchPlaceholder"
@@ -126,6 +127,7 @@
             v-for="app in visiblePublishedApps"
             :key="app.key"
             class="published-app"
+            appearance="menu-item"
             :class="{ active: app.appId === activeAppId, 'published-app--loading': app.appId === openingAppId }"
             type="button"
             variant="ghost"
@@ -171,12 +173,12 @@
       </div>
     </ProductMobileNavigationDrawer>
 
-    <section
+    <ScLayout
       class="content"
       :class="{ 'content--with-activity-tabs': activityPages.length > 1 }"
       :inert="mobileViewport && mobileSidebarOpen ? true : undefined"
     >
-      <header
+      <ScHeader
         class="topbar sc-toolbar"
         :class="{ 'topbar--compact': activeLayout.header === 'compact', 'topbar--minimal': useMinimalTopbar }"
       >
@@ -208,6 +210,7 @@
             <ScButton
               ref="roleContextTrigger"
               class="topbar-context topbar-context-trigger"
+              appearance="outline-action"
               type="button"
               variant="ghost"
               size="small"
@@ -268,6 +271,7 @@
           <ScButton
             ref="sidebarToggleButton"
             class="sidebar-toggle sc-btn sc-btn-sm"
+            appearance="outline-action"
             type="button"
             variant="ghost"
             size="small"
@@ -290,12 +294,14 @@
           >
             返回业务办理
           </ScButton>
-          <ScButton class="theme-switch" variant="ghost" size="small" type="button" :title="`切换主题，当前${themeLabel}`" :aria-label="`切换主题，当前${themeLabel}`" @click="toggleTheme">
+          <ScButton class="theme-switch" appearance="outline-action" variant="ghost" size="small" type="button" :title="`切换主题，当前${themeLabel}`" :aria-label="`切换主题，当前${themeLabel}`" @click="toggleTheme">
             <ScIcon name="sun" :size="16" />
             <span class="topbar-tool-label">主题：{{ themeLabel }}</span>
           </ScButton>
         </div>
-      </header>
+      </ScHeader>
+
+      <ScContent class="shell-content-surface">
 
       <ActivityPageTabs
         :pages="activityPages"
@@ -343,7 +349,8 @@
         :actions="hudActions"
         :message="hudMessage"
       />
-    </section>
+      </ScContent>
+    </ScLayout>
   </ProductAppShell>
 </template>
 
@@ -365,6 +372,9 @@ import ScIcon from '../components/design-system/ScIcon.vue';
 import ScIconButton from '../components/design-system/ScIconButton.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
+import ScLayout from '../components/design-system/ScLayout.vue';
+import ScHeader from '../components/design-system/ScHeader.vue';
+import ScContent from '../components/design-system/ScContent.vue';
 import { useSessionStore, type ActivityPage } from '../stores/session';
 import { intentRequest } from '../api/intents';
 import { getSceneByKey, getSceneRegistryDiagnostics, resolveSceneLayout } from '../app/resolvers/sceneRegistry';

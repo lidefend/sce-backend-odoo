@@ -3,9 +3,9 @@
     <div class="pagination-actions pagination-actions--bottom">
       <span class="pagination-total" aria-live="polite">{{ recordCountText }}</span>
       <template v-if="mode === 'grouped'">
-        <ScButton class="pagination-btn" size="small" :disabled="loading || !canPrevious" @click="$emit('previous')">{{ labels.groupPrevious }}</ScButton>
+        <ScButton class="pagination-btn" appearance="outline-action" size="small" :disabled="loading || !canPrevious" @click="$emit('previous')">{{ labels.groupPrevious }}</ScButton>
         <span aria-live="polite">{{ pageText }}</span>
-        <ScButton class="pagination-btn" size="small" :disabled="loading || !canNext" @click="$emit('next')">{{ labels.groupNext }}</ScButton>
+        <ScButton class="pagination-btn" appearance="outline-action" size="small" :disabled="loading || !canNext" @click="$emit('next')">{{ labels.groupNext }}</ScButton>
       </template>
       <ScPagination v-else-if="mode === 'paged'" :current="currentPage" :page-size="listLimit" :total="totalRecords" :disabled="loading" :page-size-options="showPageSize ? pageLimitOptions : []" @update:current="$emit('page-select', $event)" @update:page-size="$emit('page-limit-select', String($event))" />
     </div>

@@ -35,7 +35,7 @@
         {{ t('route_preset_applied_prefix', '已应用推荐筛选：') }}{{ vm.filters.routePreset?.label }}
         <span v-if="vm.filters.routePreset?.source">（{{ t('route_preset_source_prefix', '来源：') }}{{ vm.filters.routePreset?.source }}）</span>
       </p>
-      <ScButton class="clear-btn" variant="ghost" size="small" type="button" @click="clearRoutePreset">{{ t('route_preset_clear', '清除推荐') }}</ScButton>
+      <ScButton class="clear-btn" appearance="info-action" variant="ghost" size="small" type="button" @click="clearRoutePreset">{{ t('route_preset_clear', '清除推荐') }}</ScButton>
     </section>
     <section v-if="isSectionVisible('focus_strip', { defaultEnabled: pageSectionEnabled('focus_strip', false), tag: 'section', vmVisible: vm.sections.focus })" class="focus-strip" :style="getSectionStyle('focus_strip')">
       <div>
@@ -73,6 +73,7 @@
         <CollectionFilterChip
           v-if="activeContractFilterKey"
           class="contract-chip ghost"
+          appearance="toolbar-chip"
           :disabled="isBusyDisabled()"
           @activate="clearContractFilter"
         >
@@ -644,6 +645,7 @@
           v-for="(option, optionIndex) in businessCategoryCreateOptions"
           :key="option.code"
           class="business-category-picker-option"
+          appearance="menu-item"
           type="button"
           :data-dialog-primary="optionIndex === 0 ? '' : undefined"
           variant="secondary"
@@ -3446,15 +3448,6 @@ function refreshForRecordContextChange(): void {
   font-size: 13px;
 }
 
-.clear-btn {
-  border: 1px solid var(--sc-app-info-border);
-  border-radius: var(--sc-component-button-radius);
-  background: var(--sc-app-panel);
-  color: var(--sc-app-info-text);
-  padding: 4px 8px;
-  cursor: pointer;
-}
-
 .contract-block {
   display: grid;
   gap: 8px;
@@ -3569,31 +3562,6 @@ function refreshForRecordContextChange(): void {
   color: var(--sc-semantic-text-muted);
 }
 
-.contract-chip {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 999px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  padding: 5px 11px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.contract-chip.active {
-  border-color: var(--sc-semantic-surface-interactive);
-  color: var(--sc-app-info-text);
-  background: var(--sc-app-info-bg);
-}
-
-.contract-chip.primary {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-}
-
-.contract-chip.ghost {
-  border-style: dashed;
-}
 
 .advanced-view {
   border: 1px solid var(--sc-app-border);

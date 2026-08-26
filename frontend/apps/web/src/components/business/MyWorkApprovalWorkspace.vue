@@ -76,7 +76,7 @@
       </ScPanel>
     </ScSection>
 
-    <ScDialog :open="dialogOpen" :title="pendingAction?.label || '确认操作'" panel-class="intent-dialog" @close="closeDialog">
+    <ScDialog :open="dialogOpen" :title="pendingAction?.label || '确认操作'" appearance="workspace" panel-class="intent-dialog" @close="closeDialog">
       <form method="dialog" @submit.prevent>
         <p v-if="pendingItem">{{ confirmationSummary(pendingItem) }}</p>
         <label v-if="pendingAction?.requires_reason">
@@ -302,7 +302,7 @@ async function confirmAction() {
 .empty { padding: var(--sc-product-space-3); border: 1px dashed var(--sc-app-border); border-radius: var(--sc-product-radius-panel); color: var(--sc-app-text-secondary); }
 .feedback { margin: 0; padding: 10px 12px; border-radius: var(--sc-product-radius-control); background: var(--sc-app-success-bg); color: var(--sc-app-success-text); }
 .feedback.error { background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
-:deep(.intent-dialog) { width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--sc-app-text-primary); }
+:deep(.intent-dialog) { width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
 :deep(.intent-dialog label) { display: grid; gap: 6px; }
 :deep(.intent-dialog .sc-textarea) { width: 100%; box-sizing: border-box; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }

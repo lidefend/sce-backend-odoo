@@ -85,7 +85,7 @@
         <template #trigger><ScButton variant="ghost" size="small">更多操作</ScButton></template>
       </ScDropdown>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
-      <ScButton v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="form-header-config-action" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
+      <ScButton v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="form-header-config-action" appearance="context-action" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
       <ScButton v-if="showDiscard" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</ScButton>
@@ -297,7 +297,6 @@ function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost
 .record-header-context span { font-weight: 600; }
 .record-header-intake { display: grid; gap: 2px; }
 .form-header-action-separator { align-self: center; width: 1px; height: 16px; background: var(--sc-app-border); }
-.form-header-config-action { color: var(--sc-semantic-text-muted); }
 .form-header-navigation-actions,
 .form-header-primary-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .form-header-mobile-actions { display: none; }

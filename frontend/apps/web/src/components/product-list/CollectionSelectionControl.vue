@@ -1,6 +1,7 @@
 <template>
   <ScCheckbox
     class="collection-selection-control"
+    appearance="menu-choice"
     :class="`size-${size}`"
     data-semantic-component="CollectionSelectionControl"
     :data-selection-state="presentation.state"

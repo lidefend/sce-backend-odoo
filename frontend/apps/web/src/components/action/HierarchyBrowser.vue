@@ -22,7 +22,7 @@
     <div ref="layoutElement" class="hierarchy-layout" :class="{ resizing: resizingSide }" :style="layoutGridStyle">
       <aside class="hierarchy-tree">
         <h3>{{ config.tree_title }}</h3>
-        <ScButton class="tree-all" variant="ghost" size="small" :class="{ active: !selectedNode }" @click="selectAll">{{ labels.all }}</ScButton>
+        <ScButton class="tree-all" appearance="tree-item" variant="ghost" size="small" :class="{ active: !selectedNode }" @click="selectAll">{{ labels.all }}</ScButton>
         <HierarchyTreeNode
           v-for="node in rootNodes"
           :key="node.key"
@@ -53,7 +53,7 @@
         </div>
         <div v-if="loading && !rows.length" class="list-state">{{ labels.loading }}</div>
         <ScEmptyState v-else-if="!rows.length" class="list-state" :title="String(config.empty_title || '')" :description="String(config.empty_hint || '')" />
-        <ScTable v-else class="table-scroll" :label="String(config.title || labels.surface_aria)"
+        <ScTable v-else class="table-scroll" appearance="flush" :label="String(config.title || labels.surface_aria)"
           :data="rows" :columns="hierarchyTableColumns" row-key="id" size="small"
           :row-class-name="hierarchyRowClassName" :row-attributes="hierarchyRowAttributes"
           @row-click="selectTableRow" @row-dblclick="openTableRow" />
@@ -294,7 +294,6 @@ onBeforeUnmount(() => { window.removeEventListener('pointermove', onResizeMove);
   display: grid;
   gap: 0;
   min-width: 0;
-  color: var(--sc-app-text-primary);
 }
 
 .hierarchy-head {
@@ -378,37 +377,10 @@ onBeforeUnmount(() => { window.removeEventListener('pointermove', onResizeMove);
   width: 100%;
   min-height: var(--sc-touch-target-min);
   padding: var(--sc-space-xs);
-  border: 0;
-  border-radius: var(--sc-product-radius-control);
-  background: transparent;
-  color: var(--sc-app-text-primary);
   text-align: left;
-  cursor: pointer;
 }
-.tree-all:hover { background: var(--sc-app-hover-bg); }
-.tree-all.active { background: var(--sc-app-selected-bg); color: var(--sc-app-selected-text); }
 
-.table-scroll { flex: 1; margin-top: var(--sc-space-sm); border: 0; border-radius: 0; box-shadow: none; }
-.table-scroll :deep(.sc-product-table) { width: 100%; border-collapse: collapse; font-size: var(--sc-product-text-body); }
-.table-scroll :deep(th),
-.table-scroll :deep(td) {
-  height: var(--sc-product-table-row-height);
-  padding: calc(var(--sc-component-table-cell-padding-y) * 1px) calc(var(--sc-component-table-cell-padding-x) * 1px);
-  border-bottom: 1px solid var(--sc-table-divider);
-  text-align: left;
-  white-space: nowrap;
-}
-.table-scroll :deep(th) {
-  position: sticky;
-  top: 0;
-  height: calc(var(--sc-component-table-header-height) * 1px);
-  background: var(--sc-table-header-bg);
-  color: var(--sc-app-text-secondary);
-}
-.table-scroll :deep(tbody tr) { cursor: pointer; }
-.table-scroll :deep(tbody tr:hover) { background: var(--sc-app-hover-bg); }
-.table-scroll :deep(tbody tr.selected) { background: var(--sc-app-selected-bg); }
-
+.table-scroll { flex: 1; margin-top: var(--sc-space-sm); }
 .list-state,
 .detail-empty {
   display: grid;

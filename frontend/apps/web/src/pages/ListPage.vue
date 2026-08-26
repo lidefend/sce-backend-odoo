@@ -206,7 +206,7 @@
             />
             </template>
           </CollectionGroupHeader>
-          <ScTable v-if="!isGroupCollapsed(group.key)" class="group-table"
+          <ScTable v-if="!isGroupCollapsed(group.key)" class="group-table" appearance="collection"
             :class="{ 'has-selection-column': showSelectionColumn }" :label="group.label"
             :data="group.sampleRows" :columns="collectionTableColumns(group.key)"
             :foot-data="collectionFootData(groupAggregateFooterRows(group))" row-key="id" size="small"
@@ -250,7 +250,7 @@
         :columns="aggregateFooterColumns"
         :rows="flatAggregateFooterRows"
       />
-      <ScTable v-if="!showGroupedRows" class="flat-table desktop-record-table"
+      <ScTable v-if="!showGroupedRows" class="flat-table desktop-record-table" appearance="collection"
         :class="{ 'has-selection-column': showSelectionColumn }" :label="title"
         :data="records" :columns="collectionTableColumns()"
         :foot-data="collectionFootData(flatAggregateFooterRows)" row-key="id" size="small"

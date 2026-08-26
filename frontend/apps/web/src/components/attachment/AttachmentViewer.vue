@@ -5,6 +5,7 @@
     :description="statusText"
     size="wide"
     panel-class="attachment-viewer"
+    appearance="workspace"
     :busy="loading"
     close-label="关闭附件"
     @close="close"
@@ -194,7 +195,6 @@ defineExpose({ open, close });
     width: 100%;
     height: calc(100dvh - var(--sc-product-space-4));
     min-height: 0;
-    border-radius: 0;
   }
 }
 </style>

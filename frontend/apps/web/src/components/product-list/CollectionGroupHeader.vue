@@ -7,6 +7,7 @@
   >
     <ScButton
       class="collection-group-header__toggle"
+      appearance="toolbar-chip"
       size="small"
       variant="secondary"
       :aria-expanded="!collapsed"
@@ -23,6 +24,7 @@
     <ScButton
       v-if="openEnabled"
       class="collection-group-header__open"
+      appearance="outline-action"
       size="small"
       variant="secondary"
       @click="$emit('open')"

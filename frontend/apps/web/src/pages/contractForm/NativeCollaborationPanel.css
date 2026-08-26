@@ -65,13 +65,9 @@
 .native-chatter-input {
   min-height: 82px;
   resize: vertical;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 6px;
   padding: 8px 10px;
   font-size: 13px;
   line-height: 1.45;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
 }
 
 .native-chatter-compose-actions {

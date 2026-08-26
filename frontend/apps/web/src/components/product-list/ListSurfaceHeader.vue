@@ -30,6 +30,7 @@
             type="button"
             variant="secondary"
             class="list-surface-column-button"
+            appearance="outline-action"
             :aria-expanded="pickerOpen"
             :aria-label="settingsDescription"
             :title="settingsDescription"
@@ -46,6 +47,7 @@
               v-for="column in columns"
               :key="column.name"
               class="list-surface-column-choice"
+              appearance="menu-choice"
               size="small"
               :checked="visibleColumns.includes(column.name)"
               :disabled="loading || lastVisibleColumn === column.name"
@@ -53,7 +55,7 @@
               :title="lastVisibleColumn === column.name ? '至少保留一列' : undefined"
               @change="(checked) => emitVisibility(column.name, checked)"
             />
-            <ScButton type="button" class="list-surface-column-reset" variant="secondary" size="small" :disabled="loading" @click="$emit('column-reset')">恢复默认</ScButton>
+            <ScButton type="button" class="list-surface-column-reset" appearance="outline-action" variant="secondary" size="small" :disabled="loading" @click="$emit('column-reset')">恢复默认</ScButton>
             <p v-if="saveStatusText" class="list-surface-save-message" :class="`is-${saveStatus}`">{{ saveStatusText }}</p>
           </div>
         </div>
@@ -130,16 +132,15 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
 <style scoped>
 .list-surface-utilities { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--sc-toolbar-gap); min-width: 0; }
 .list-surface-column-manager { position: relative; display: inline-flex; align-items: center; gap: var(--sc-toolbar-gap); }
-.list-surface-column-button { color: var(--sc-app-text-secondary); font-size: 12px; }
-.list-surface-column-button:focus-visible { outline: 3px solid var(--sc-app-focus-ring); outline-offset: 2px; }
+.list-surface-column-button { font-size: 12px; }
 .list-surface-column-button:disabled { opacity: .6; cursor: not-allowed; }
 .list-surface-column-summary { margin: 0; color: var(--sc-app-text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
 .list-surface-save-badge, .list-surface-save-message { border: 1px solid var(--sc-app-success-border); border-radius: var(--sc-product-radius-control); background: var(--sc-app-success-bg); color: var(--sc-app-success-text); padding: 2px var(--sc-space-2xs); font-size: 12px; }
 .list-surface-save-badge.is-saving, .list-surface-save-message.is-saving { border-color: var(--sc-app-info-border); background: var(--sc-app-info-bg); color: var(--sc-app-info-text); }
 .list-surface-save-badge.is-error, .list-surface-save-message.is-error { border-color: var(--sc-app-danger-border); background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
 .list-surface-column-menu { position: absolute; z-index: 40; right: 0; top: calc(100% + var(--sc-space-2xs)); display: grid; gap: var(--sc-space-2xs); min-width: 210px; max-height: min(320px, 70vh); overflow: auto; border: 1px solid var(--sc-app-border-strong); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-panel); padding: var(--sc-space-xs); box-shadow: var(--sc-product-shadow-overlay); }
-.list-surface-column-choice { display: flex; align-items: center; gap: var(--sc-space-xs); min-height: 44px; color: var(--sc-app-text-primary); font-size: 13px; white-space: nowrap; }
-.list-surface-column-reset { min-height: 40px; margin-top: var(--sc-space-2xs); border: 1px solid var(--sc-app-border); border-radius: var(--sc-product-radius-panel); background: var(--sc-app-muted-bg); color: var(--sc-app-text-secondary); cursor: pointer; }
+.list-surface-column-choice { display: flex; align-items: center; gap: var(--sc-space-xs); min-height: 44px; font-size: 13px; white-space: nowrap; }
+.list-surface-column-reset { min-height: 40px; margin-top: var(--sc-space-2xs); }
 .list-surface-save-message { margin: 2px 0 0; padding: var(--sc-space-2xs) var(--sc-space-xs); }
 .list-surface-contextual-toolbar { min-height: 44px; display: flex; align-items: center; width: 100%; }
 @media (max-width: 520px) {

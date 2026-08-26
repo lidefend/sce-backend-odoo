@@ -17,6 +17,7 @@
             v-for="action in headerActions"
             :key="`login-header-${action.key}`"
             class="ghost sc-btn sc-btn-ghost sc-btn-sm"
+            appearance="outline-action"
             variant="ghost"
             size="small"
             :disabled="loading"
@@ -94,13 +95,14 @@
             >
               {{ error }}
             </p>
-            <ScButton class="submit" variant="primary" size="large" type="submit" :disabled="loading" :loading="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</ScButton>
+            <ScButton class="submit" appearance="primary-submit" variant="primary" size="large" type="submit" :disabled="loading" :loading="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</ScButton>
           </form>
           <nav v-if="authEntryActions.length" class="auth-entry-links" aria-label="账号帮助">
             <ScButton
               v-for="action in authEntryActions"
               :key="`login-auth-${action.key}`"
               class="auth-entry-link"
+              appearance="auth-link"
               type="button"
               variant="ghost"
               :disabled="loading"
@@ -299,10 +301,6 @@ async function executeHeaderAction(actionKey: string) {
 }
 
 .auth-entry-link {
-  border: 0;
-  background: transparent;
-  color: var(--sc-semantic-state-info-text);
-  cursor: pointer;
   padding: 6px 0;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -318,7 +316,6 @@ async function executeHeaderAction(actionKey: string) {
 }
 
 .ghost:hover:not(:disabled) {
-  border-color: var(--sc-app-border-strong);
   transform: translateY(-1px);
 }
 
@@ -420,7 +417,6 @@ label {
 
 .submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: var(--sc-semantic-shadow-popover);
 }
 
 .error {

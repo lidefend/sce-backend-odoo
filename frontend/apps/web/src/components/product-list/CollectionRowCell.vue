@@ -4,6 +4,7 @@
     data-semantic-component="CollectionRowCell"
     type="button"
     class="favorite-toggle"
+    appearance="favorite-toggle"
     :class="{ active: favoriteActive }"
     :disabled="disabled"
     :label="label"
@@ -15,7 +16,7 @@
     {{ text }}
   </span>
   <div v-else-if="kind === 'primary'" data-semantic-component="CollectionRowCell" class="cell-primary">
-    <ScButton type="button" class="cell-primary-link" variant="ghost" size="small" @click.stop="$emit('open-record')">
+    <ScButton type="button" class="cell-primary-link" appearance="auth-link" variant="ghost" size="small" @click.stop="$emit('open-record')">
       {{ text }}
     </ScButton>
     <div v-if="secondaryText" class="secondary">{{ secondaryText }}</div>
@@ -37,6 +38,7 @@
     data-semantic-component="CollectionRowCell"
     type="button"
     class="attachment-count-link"
+    appearance="auth-link"
     variant="ghost"
     size="small"
     @click.prevent.stop="$emit('open-attachment-count')"

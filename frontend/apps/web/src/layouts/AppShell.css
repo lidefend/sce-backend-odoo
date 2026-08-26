@@ -8,16 +8,13 @@
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  display: flex;
   background: var(--sc-app-bg);
   color: var(--ink);
   font-family: "Inter", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
 }
 
-.shell--sidebar-hidden {
-  grid-template-columns: minmax(0, 1fr);
-}
+.shell--sidebar-hidden { display: flex; }
 
 .shell--configuration .content {
   padding: 8px 14px 14px;
@@ -185,11 +182,7 @@
   box-sizing: border-box;
   width: 100%;
   height: 34px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 7px;
   padding: 0 9px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
   font-size: 12px;
 }
 
@@ -246,9 +239,6 @@
 }
 
 .workspace-scope-clear {
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-accent);
   padding: 2px 0;
   font-size: 11px;
   cursor: pointer;
@@ -411,16 +401,11 @@
   width: 100%;
   min-width: 0;
   height: 30px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--sc-app-text-primary);
   display: block;
   align-items: center;
   gap: 6px;
   padding: 3px 7px;
   text-align: left;
-  cursor: pointer;
 }
 
 .published-apps__list :deep(.published-app > .t-button__text > .sc-btn__content) {
@@ -429,18 +414,6 @@
   grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
-}
-
-.published-apps__list :deep(.published-app:hover) {
-  border-color: var(--sc-app-border);
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
-}
-
-.published-apps__list :deep(.published-app.active) {
-  border-color: var(--sc-app-selected-border);
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
 }
 
 .published-apps__list :deep(.published-app:disabled) {
@@ -461,16 +434,6 @@
   font-weight: 700;
 }
 
-.published-apps__list :deep(.published-app:hover) .published-app__mark {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
-}
-
-.published-apps__list :deep(.published-app.active) .published-app__mark {
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-}
-
 .published-app__label {
   min-width: 0;
   overflow: hidden;
@@ -480,7 +443,7 @@
   font-weight: 600;
 }
 
-.published-apps__list :deep(.published-app) small {
+.published-apps__list small {
   min-width: 18px;
   height: 18px;
   border-radius: 999px;
@@ -539,8 +502,9 @@
 .content {
   box-sizing: border-box;
   padding: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   gap: 0;
   min-width: 0;
   height: 100vh;
@@ -549,8 +513,17 @@
 }
 
 .content--with-activity-tabs {
-  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 0;
+}
+
+.shell-content-surface {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--sc-app-bg);
 }
 
 .content--with-activity-tabs > .activity-tabs {
@@ -813,7 +786,6 @@
   min-height: 32px;
   height: 32px;
   padding: 0 10px;
-  border-radius: var(--sc-product-radius-control);
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -842,13 +814,10 @@
 
 .topbar-context-trigger {
   cursor: pointer;
-  background: var(--sc-app-panel);
   font: inherit;
 }
 
 .topbar-context-trigger:hover {
-  border-color: var(--sc-app-border-strong);
-  color: var(--sc-app-text-primary);
 }
 
 .topbar-context-kicker {
@@ -856,7 +825,6 @@
 }
 
 .topbar-context-trigger strong {
-  color: var(--sc-app-text-primary);
   font-weight: 600;
 }
 
@@ -1007,12 +975,7 @@
 }
 
 .theme-switch {
-  border: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  border-radius: 8px;
   padding: 6px 10px;
-  cursor: pointer;
 }
 
 @media (max-width: 960px) {
@@ -1161,7 +1124,7 @@
   }
 
   .content--with-activity-tabs {
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
   }
 }
 .navigation-loading {
@@ -1181,7 +1144,6 @@
 /* 2026 workspace refresh: a visibly layered, light enterprise shell. */
 @media (min-width: 961px) {
   .shell {
-    grid-template-columns: var(--sc-shell-sidebar-width) minmax(0, 1fr);
     background: var(--sc-app-bg);
   }
 
@@ -1189,7 +1151,7 @@
    * rendered in the hidden state, so reserving its track creates a dead 312px
    * column and makes every routed page calculate against the wrong viewport. */
   .shell.shell--sidebar-hidden {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
   }
 
   .shell :deep(.sidebar) {
@@ -1286,8 +1248,6 @@
 
   .topbar--minimal .topbar-context-trigger {
     gap: 7px;
-    border-color: transparent;
-    background: var(--sc-app-subtle-bg);
   }
 
   .topbar--minimal .topbar-context-kicker {
@@ -1321,14 +1281,6 @@
     min-width: 44px;
     padding: 0;
     justify-content: center;
-    border-color: transparent;
-    background: transparent;
-    color: var(--sc-app-text-secondary);
-  }
-
-  .topbar--minimal :is(.sidebar-toggle, .theme-switch):hover {
-    background: var(--sc-app-hover-bg);
-    color: var(--sc-app-text-primary);
   }
 
   .topbar--minimal .topbar-tool-label {

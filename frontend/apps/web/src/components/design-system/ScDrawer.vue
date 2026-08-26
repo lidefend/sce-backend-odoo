@@ -5,7 +5,7 @@
     :drawer-class-name="['sc-design-drawer', panelClass].filter(Boolean).join(' ')" :z-index="drawerZIndex" @close="emit('close')">
     <aside ref="surface" v-bind="$attrs" role="dialog" tabindex="-1" aria-modal="true" :aria-labelledby="titleId" :aria-describedby="description ? descriptionId : undefined" :aria-busy="busy || undefined"
       data-semantic-component="ScDrawer" data-semantic-driver="tdesign-drawer" data-semantic-layer="primitive"
-      data-overlay-kind="drawer" :data-state="open ? 'open' : 'closed'" :aria-hidden="open ? undefined : true" :data-size="size" :data-dismissible="dismissible" @keydown="onKeydown">
+      data-overlay-kind="drawer" :data-state="open ? 'open' : 'closed'" :aria-hidden="open ? undefined : true" :data-size="size" :data-appearance="appearance" :data-dismissible="dismissible" @keydown="onKeydown">
       <header class="sc-design-drawer__header">
         <div class="sc-design-drawer__heading"><h2 :id="titleId">{{ title }}</h2><p v-if="description" :id="descriptionId">{{ description }}</p></div>
         <div class="sc-design-drawer__header-actions"><slot name="header-actions" /><ScIconButton v-if="dismissible" :label="closeLabel" @click="emit('close')"><ScIcon name="close" /></ScIconButton></div>
@@ -22,8 +22,8 @@ import { useModalLifecycle } from '../../composables/useModalLifecycle';
 import ScIcon from './ScIcon.vue';
 import ScIconButton from './ScIconButton.vue';
 defineOptions({ inheritAttrs: false });
-const props = withDefaults(defineProps<{ open: boolean; title: string; description?: string; closeLabel?: string; panelClass?: string; size?: 'default' | 'wide'; dismissible?: boolean; closeOnBackdrop?: boolean; busy?: boolean }>(), {
-  description: '', closeLabel: '关闭', panelClass: '', size: 'default', dismissible: true, closeOnBackdrop: true, busy: false,
+const props = withDefaults(defineProps<{ open: boolean; title: string; description?: string; closeLabel?: string; panelClass?: string; size?: 'default' | 'wide'; appearance?: 'default' | 'workspace'; dismissible?: boolean; closeOnBackdrop?: boolean; busy?: boolean }>(), {
+  description: '', closeLabel: '关闭', panelClass: '', size: 'default', appearance: 'default', dismissible: true, closeOnBackdrop: true, busy: false,
 });
 const emit = defineEmits<{ close: [] }>();
 const surface = ref<HTMLElement | null>(null);

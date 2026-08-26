@@ -41,7 +41,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   loading?: boolean;
   loadingLabel?: string;
-  appearance?: 'default' | 'section-tab' | 'menu-item' | 'toolbar-chip' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link';
+  appearance?: 'default' | 'section-tab' | 'menu-item' | 'tree-item' | 'toolbar-chip' | 'toolbar-menu-toggle' | 'status-chip' | 'info-action' | 'favorite-toggle' | 'smart-action' | 'relation-tag' | 'surface-tile' | 'outline-action' | 'summary-chip' | 'breadcrumb-item' | 'context-action' | 'auth-link' | 'primary-submit' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link';
 }>(), {
   type: 'button',
   variant: 'secondary',

@@ -19,6 +19,7 @@
     :select-on-row-click="selectOnRowClick"
     :aria-label="label"
     :data-row-count="data.length"
+    :data-appearance="appearance"
     data-semantic-driver="tdesign-table"
     @row-click="emit('rowClick', $event)"
     @row-dblclick="emit('rowDblclick', $event)"
@@ -54,6 +55,7 @@ const props = withDefaults(defineProps<{
   rowSelectionType?: 'single' | 'multiple';
   selectOnRowClick?: boolean;
   label: string;
+  appearance?: 'default' | 'surface' | 'flush' | 'collection';
 }>(), {
   data: () => [],
   columns: () => [],
@@ -64,6 +66,7 @@ const props = withDefaults(defineProps<{
   disableDataPage: true,
   selectedRowKeys: () => [],
   footData: () => [],
+  appearance: 'default',
 });
 function projectRowAttributes(attributes: Record<string, unknown> | undefined): Record<string, unknown> {
   return Object.fromEntries(Object.entries(attributes || {}).map(([name, value]) => [

@@ -13,6 +13,7 @@
       <ScInput
         v-else-if="canEdit && !isSelection"
         class="view-input"
+        appearance="form-field"
         :type="inputType"
         :model-value="inputValue"
         @update:model-value="emitInputValue"
@@ -20,6 +21,7 @@
       <ScSelect
         v-else-if="canEdit && isSelection"
         class="view-select"
+        appearance="form-field"
         :model-value="inputValue"
         :options="selectionOptions.map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
         @update:model-value="emitInputValue"
@@ -147,21 +149,11 @@ function emitInputValue(value: string) { emit('update:field', { name: props.fiel
 
 .view-input {
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
   font-size: 14px;
 }
 
 .view-select {
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--sc-app-border-strong);
   font-size: 14px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
 }
 </style>

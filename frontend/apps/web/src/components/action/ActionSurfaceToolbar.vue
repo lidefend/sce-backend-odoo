@@ -125,6 +125,7 @@
               <ScIconButton
                 ref="searchMenuToggle"
                 class="search-menu-toggle"
+                appearance="toolbar-menu-toggle"
                 :class="{ active: searchMenuOpen }"
                 :disabled="loading || !hasSearchMenu"
                 :label="uiLabel('search_menu_toggle', '展开搜索菜单')"
@@ -802,10 +803,6 @@ onBeforeUnmount(() => {
 
 .search-menu-toggle {
   flex: 0 0 auto;
-}
-
-.search-menu-toggle.active {
-  color: var(--sc-app-selected-text);
 }
 
 .search-menu-caret {

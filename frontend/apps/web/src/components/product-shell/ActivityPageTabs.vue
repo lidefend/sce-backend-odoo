@@ -2,7 +2,8 @@
   <nav v-if="pages.length > 1" ref="tablistRef" class="activity-tabs" role="tablist" :aria-label="label">
     <div v-for="page in pages" :key="page.key" class="activity-tab" :class="{active:page.key===activeKey}" role="presentation">
       <ScButton
-        class="activity-tab-main"
+      class="activity-tab-main"
+      appearance="section-tab"
         type="button"
         variant="ghost"
         size="small"
@@ -105,10 +106,6 @@ function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
 .activity-tab-close {
   min-width: 0;
   height: 35px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
 }
 
 .activity-tab-main {
