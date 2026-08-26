@@ -4,7 +4,7 @@
       <span class="relational-title">{{ headerLabel }}</span>
       <div class="relational-actions">
         <span class="relational-count">{{ countLabel }}</span>
-        <button v-if="canEdit" class="relational-add" type="button" @click="startCreate">Add line</button>
+        <ScButton v-if="canEdit" class="relational-add" type="button" variant="primary" size="small" @click="startCreate">Add line</ScButton>
       </div>
     </div>
     <div v-if="loading" class="relational-meta">Loading related records…</div>
@@ -12,12 +12,12 @@
     <div v-else-if="!rows.length" class="relational-meta">No related records.</div>
     <ul v-else class="relational-list">
       <li v-for="row in rows" :key="String(row.id)" class="relational-item">
-        <button class="relational-link" type="button" @click="openRecord(row.id)">
+        <ScButton class="relational-link" type="button" variant="ghost" size="small" @click="openRecord(row.id)">
           {{ row.name || `#${row.id}` }}
-        </button>
+        </ScButton>
         <div v-if="canEdit" class="relational-row-actions">
-          <button class="relational-edit" type="button" @click="startEdit(row)">Edit</button>
-          <button class="relational-delete" type="button" @click="removeRow(row)">Delete</button>
+          <ScButton class="relational-edit" type="button" variant="secondary" size="small" @click="startEdit(row)">Edit</ScButton>
+          <ScButton class="relational-delete" type="button" variant="danger" size="small" @click="removeRow(row)">Delete</ScButton>
         </div>
       </li>
     </ul>
@@ -29,12 +29,12 @@
         <div v-if="editTxState === 'saved'" class="editor-banner">Saved.</div>
         <div v-else-if="editTxState === 'saving'" class="editor-banner">Saving…</div>
         <label class="editor-label">Name</label>
-        <input v-model="draftName" class="editor-input" type="text" />
+        <ScInput v-model="draftName" class="editor-input" type="text" />
         <div class="editor-actions">
-          <button class="relational-save" type="button" :disabled="saving || !draftName.trim()" @click="saveRow">
+          <ScButton class="relational-save" type="button" variant="primary" :loading="saving" :disabled="!draftName.trim()" @click="saveRow">
             {{ saving ? 'Saving…' : 'Save' }}
-          </button>
-          <button class="relational-cancel" type="button" @click="cancelEdit">Cancel</button>
+          </ScButton>
+          <ScButton class="relational-cancel" type="button" variant="ghost" :disabled="saving" @click="cancelEdit">Cancel</ScButton>
         </div>
         <div v-if="editorError" class="relational-meta">{{ editorError }}</div>
       </div>
@@ -45,6 +45,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import ScButton from '../design-system/ScButton.vue';
+import ScInput from '../design-system/ScInput.vue';
 import { useEditTx } from '../../composables/useEditTx';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import {
