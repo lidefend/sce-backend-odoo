@@ -899,7 +899,7 @@ try {
         const paginationMode = String(await footer.getAttribute('data-pagination-mode') || '');
         const columnHeaders = page.locator('[data-semantic-component="CollectionColumnHeaderControl"]');
         const columnHeaderCount = await columnHeaders.count();
-        const invalidColumnRoots = await columnHeaders.evaluateAll((nodes) => nodes.filter((node) => node.tagName !== 'TH').length);
+        const invalidColumnRoots = await columnHeaders.evaluateAll((nodes) => nodes.filter((node) => node.closest('th') === null).length);
         const missingDragLabels = await columnHeaders.locator('.column-drag-handle:not([aria-label])').count();
         const missingResizeLabels = await columnHeaders.locator('.column-resize-handle:not([aria-label])').count();
         const groupingToolbarCount = await page.locator('[data-semantic-component="CollectionGroupingToolbar"]').count();

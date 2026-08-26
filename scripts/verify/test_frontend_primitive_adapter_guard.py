@@ -55,7 +55,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             overlay_kind = name.removeprefix("Sc").lower()
             modal_contract = (
                 f'<TDesign{name.removeprefix("Sc")} role="dialog" aria-modal="true" data-overlay-kind="{overlay_kind}" '
-                f'data-state="open" /><!-- --sc-component-{overlay_kind}-z-index -->'
+                f':data-state="open ? \'open\' : \'closed\'" /><!-- --sc-component-{overlay_kind}-z-index -->'
                 if name in {"ScDialog", "ScDrawer"} else ""
             )
             state_contract = {

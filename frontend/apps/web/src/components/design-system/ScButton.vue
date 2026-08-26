@@ -1,5 +1,6 @@
 <template>
   <TDesignButton
+    ref="buttonRef"
     data-semantic-component="ScButton"
     data-semantic-layer="primitive"
     :data-size="size"
@@ -21,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { TDesignButton } from './tdesignPrimitiveBridge';
 import { tdesignButtonPresentation, type ScButtonVariant, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
@@ -42,4 +43,9 @@ const props = withDefaults(defineProps<{
 });
 
 const presentation = computed(() => tdesignButtonPresentation(props.variant, props.status));
+const buttonRef = ref<{ $el?: HTMLButtonElement; focus?: () => void } | null>(null);
+
+defineExpose({
+  focus: () => buttonRef.value?.focus?.() ?? buttonRef.value?.$el?.focus(),
+});
 </script>

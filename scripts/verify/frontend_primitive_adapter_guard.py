@@ -56,7 +56,7 @@ def validate(root: Path = ROOT) -> list[str]:
         if f"<{driver}" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
             errors.append(f"{modal} must use its TDesign overlay driver and preserve dialog semantics")
         overlay_kind = modal.removeprefix("Sc").lower()
-        if f'data-overlay-kind="{overlay_kind}"' not in text or 'data-state="open"' not in text:
+        if f'data-overlay-kind="{overlay_kind}"' not in text or ':data-state="open ? \'open\' : \'closed\'"' not in text:
             errors.append(f"{modal} must expose deterministic overlay state")
         if f"--sc-component-{overlay_kind}-z-index" not in text:
             errors.append(f"{modal} must consume its registered overlay stacking token")
