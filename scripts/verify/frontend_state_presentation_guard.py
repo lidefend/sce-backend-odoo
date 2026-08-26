@@ -19,7 +19,7 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
     for legacy in ('<p v-if="loading"', '<div v-else class="activity-page__state"'):
         if legacy in activity:
             failures.append(f"activity retains private state DOM: {legacy}")
-    for marker in (".activity-card:focus-visible", "prefers-reduced-motion"):
+    for marker in (':data-state="loading ?', ".activity-card:focus-visible", "prefers-reduced-motion"):
         if marker not in activity:
             failures.append(f"activity interaction state missing: {marker}")
 
@@ -29,7 +29,7 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
     for legacy in ("<button v-if=", "<button\n"):
         if legacy in status:
             failures.append(f"status retains private action DOM: {legacy}")
-    for marker in ('aria-live=', 'aria-busy=', "prefers-reduced-motion"):
+    for marker in ('data-semantic-state-surface="page"', ':data-state="busy ?', 'aria-live=', 'aria-busy=', "prefers-reduced-motion"):
         if marker not in status:
             failures.append(f"status accessibility state missing: {marker}")
     tabs = values["tabs"]

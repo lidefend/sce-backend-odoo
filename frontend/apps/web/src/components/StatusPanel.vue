@@ -1,5 +1,13 @@
 <template>
-  <section class="panel sc-state-panel" :class="[variant, `state-${productState.kind}`]" :role="variant === 'error' ? 'alert' : 'status'" :aria-live="variant === 'error' ? 'assertive' : 'polite'" :aria-busy="busy || undefined">
+  <section
+    class="panel sc-state-panel"
+    :class="[variant, `state-${productState.kind}`]"
+    data-semantic-state-surface="page"
+    :data-state="busy ? 'loading' : variant === 'error' ? 'error' : productState.kind"
+    :role="variant === 'error' ? 'alert' : 'status'"
+    :aria-live="variant === 'error' ? 'assertive' : 'polite'"
+    :aria-busy="busy || undefined"
+  >
     <h2 v-if="!hideTitle">{{ displayTitle }}</h2>
     <p v-if="displayMessage">{{ displayMessage }}</p>
     <div v-if="busy" class="state-skeleton" aria-hidden="true"><span /><span /><span /></div>

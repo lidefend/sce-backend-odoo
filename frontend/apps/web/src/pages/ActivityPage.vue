@@ -1,5 +1,9 @@
 <template>
-  <section class="activity-page" data-activity-surface="native-readonly">
+  <section
+    class="activity-page"
+    data-activity-surface="native-readonly"
+    :data-state="loading ? 'loading' : !model.ok ? 'error' : model.records.length ? 'ready' : 'empty'"
+  >
     <slot name="toolbar" />
     <header class="activity-page__head">
       <div>

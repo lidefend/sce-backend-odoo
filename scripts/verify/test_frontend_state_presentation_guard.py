@@ -25,12 +25,18 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
     def test_activity_focus_state_is_required(self):
         self.assertTrue(any("focus-visible" in error for error in validate(self.altered("activity", ".activity-card:focus-visible"))))
 
+    def test_activity_deterministic_state_is_required(self):
+        self.assertTrue(any("data-state" in error for error in validate(self.altered("activity", ':data-state="loading ?'))))
+
     def test_status_actions_cannot_regress_to_native_buttons(self):
         sources = self.altered("status", "<ScButton", "<button")
         self.assertTrue(any("governed buttons" in error or "private action" in error for error in validate(sources)))
 
     def test_status_reduced_motion_is_required(self):
         self.assertTrue(any("reduced-motion" in error for error in validate(self.altered("status", "prefers-reduced-motion"))))
+
+    def test_status_deterministic_state_is_required(self):
+        self.assertTrue(any("semantic-state-surface" in error for error in validate(self.altered("status", 'data-semantic-state-surface="page"'))))
 
     def test_activity_tabs_require_roving_tabindex(self):
         self.assertTrue(any("tabindex" in error for error in validate(self.altered("tabs", ":tabindex="))))
