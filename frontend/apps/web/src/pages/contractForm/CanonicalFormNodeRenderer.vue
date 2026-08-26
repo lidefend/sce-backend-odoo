@@ -3,6 +3,8 @@
     v-if="node.visible && hasContent"
     :class="['canonical-form-node', `canonical-form-node--${nodeKind}`, nativeClass]"
     :data-canonical-node-id="node.nodeId"
+    data-semantic-component="CanonicalFormNodeRenderer"
+    :data-state="preferReadonlyFacts ? 'readonly-preferred' : 'structured'"
     :data-canonical-node-kind="node.kind"
     :data-native-class="nativeClass || undefined"
     :data-section-navigation-role="node.zoneRole"

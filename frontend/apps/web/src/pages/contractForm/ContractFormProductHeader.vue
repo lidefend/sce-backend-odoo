@@ -1,6 +1,8 @@
 <template>
   <PageHeaderTemplate
     class="contract-form-command-bar"
+    data-semantic-component="ContractFormProductHeader"
+    :data-state="busy ? 'loading' : mode"
     :title="title"
     :subtitle="subtitle || undefined"
     :hide-title="hideTitle"

@@ -2,6 +2,8 @@
   <section
     v-if="enabled || pending.length"
     data-professional-collaboration-component="attachments"
+    data-semantic-component="ProfessionalAttachmentManager"
+    :data-state="uploading ? 'loading' : enabled ? 'ready' : 'fail-closed'"
     :data-attachment-readiness="enabled ? 'ready' : 'fail_closed'"
   >
     <section v-if="editable && enabled" class="native-attachment-tools" data-collaboration-capability="attachments">

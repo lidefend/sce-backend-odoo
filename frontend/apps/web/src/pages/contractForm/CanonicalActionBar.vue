@@ -4,6 +4,8 @@
     class="canonical-action-bar"
     aria-label="表单业务动作"
     data-canonical-action-bar
+    data-semantic-component="CanonicalActionBar"
+    :data-state="busy ? 'loading' : 'ready'"
     data-professional-workflow-component="action-bar"
     :data-workflow-action-count="authority.actionCount"
     :data-workflow-disabled-count="authority.disabledCount"

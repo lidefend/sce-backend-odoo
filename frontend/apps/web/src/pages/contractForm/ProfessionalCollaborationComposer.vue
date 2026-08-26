@@ -2,6 +2,8 @@
   <section
     class="native-chatter-compose"
     data-professional-collaboration-component="composer"
+    data-semantic-component="ProfessionalCollaborationComposer"
+    :data-state="posting ? 'loading' : submitDisabled ? 'disabled' : 'ready'"
     :data-composer-mode="activity ? 'activity' : 'comment'"
   >
     <template v-if="activity">

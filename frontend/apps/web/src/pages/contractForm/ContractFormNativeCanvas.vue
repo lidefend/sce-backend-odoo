@@ -12,6 +12,8 @@
     ref="canvasRef"
     class="contract-form-canvas-shell"
     data-form-canvas
+    data-semantic-component="ContractFormNativeCanvas"
+    :data-state="mode"
     :class="{ 'contract-form-designer-canvas': designerMode }"
     aria-label="表单配置画布"
   >
