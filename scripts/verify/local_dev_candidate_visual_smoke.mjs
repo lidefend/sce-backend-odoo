@@ -647,7 +647,7 @@ try {
             && (viewport.name !== 'mobile' || (Number(touchTarget?.width || 0) >= 44 && Number(touchTarget?.height || 0) >= 44))
             && (viewport.name !== 'desktop' || (selectedHeaderState === 'mixed' && headerIndeterminate === true && restoredHeaderState === 'unchecked')),
         };
-        if (!collectionSelectionEvidence.pass) throw new Error(`${target.name}: collection selection state contract failed`);
+        if (!collectionSelectionEvidence.pass) throw new Error(`${target.name}: collection selection state contract failed ${JSON.stringify(collectionSelectionEvidence)}`);
       }
       let collectionAggregateEvidence = null;
       if (target.exerciseCollectionAggregate === true) {
