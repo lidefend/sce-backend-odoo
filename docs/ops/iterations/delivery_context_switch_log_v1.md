@@ -6558,3 +6558,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   errors 0, overflow 0 and mutation 0.
 - Excluded: form/relation/workflow productization, P3 low-code/admin surfaces,
   business-model special cases, and all navigation/route authority changes.
+
+## 2026-08-26 — Rendering detail zero-gap candidate
+
+- Branch / baseline: `feature/p0-collection-state-control-completion-v1` /
+  `376bbfb229afa995f8d5f16e7fca4ec8131e29b9`.
+- Expanded responsibility: one low-risk frontend presentation PR contains
+  independently reversible commits for Collection, Navigation/Hierarchy,
+  Form/Relation/Workflow and Shared Utility/Scene surfaces.
+- Machine result: 137 relevant Vue surfaces; 26 governed primitives, 87
+  governed composites, 6 deliberate native composites, 18 separately scoped
+  P3 surfaces and zero untreated P0/P1 gaps.
+- Product changes: shared controls replace private page actions where safe;
+  loading/empty/error/disabled/focus identities are explicit; relation and role
+  home local states use governed primitives; all owned surfaces have parsed SFC
+  bindings with fail-closed negative tests.
+- Authority boundary: Contract V2, permissions, route/menu/action authority,
+  task/workspace selection, record capabilities and mutation semantics remain
+  unchanged.
+- Candidate remains verification pending until one full Quick/build, managed
+  browser coverage, stable fingerprint and independent read-only review pass.

@@ -83,6 +83,9 @@ Navigation/Hierarchy 9 个，共 24 个表面必须全部退出 `gap`。
 - create/edit/readonly × task/workspace 组合；
 - mutation 精确值与记录级权限降级不变。
 
+状态：已纳入当前扩展 PR。19 个
+`targetBatch=p0-form-relation-workflow-completion-v1` 表面已全部退出 `gap`。
+
 ## Batch 4：P0 Utility/Scene State and Final Coverage Closure
 
 目标：处理仍在正式产品范围内的认证、错误页、workbench、scene host 和通用 utility 表面，并完成最终机器审计。
@@ -95,6 +98,10 @@ Navigation/Hierarchy 9 个，共 24 个表面必须全部退出 `gap`。
 - loading skeleton、error summary、page identity 状态；
 - 对余下每个 `gap` 作实现、明确复合归属或正式层级重分类；
 - 最终 P0/P1 `gap = 0` 的机器断言和受管代表旅程。
+
+状态：已纳入当前扩展 PR。21 个
+`targetBatch=p0-shared-utility-scene-completion-v1` 表面已全部退出 `gap`；
+当前机器清单为 137 个表面、P0/P1 `gap = 0`。
 
 ## P3 独立计划
 
