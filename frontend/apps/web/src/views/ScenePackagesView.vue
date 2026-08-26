@@ -55,19 +55,15 @@
         <h3>Import Package</h3>
         <label>
           <span>Package JSON</span>
-          <textarea v-model="importText" rows="10" placeholder="Paste scene package json"></textarea>
+          <ScTextarea v-model="importText" :rows="10" placeholder="Paste scene package json" />
         </label>
         <label>
           <span>Strategy</span>
-          <select v-model="importStrategy">
-            <option value="skip_existing">skip_existing</option>
-            <option value="override_existing">override_existing</option>
-            <option value="rename_on_conflict">rename_on_conflict</option>
-          </select>
+          <ScSelect v-model="importStrategy" :options="importStrategyOptions" />
         </label>
         <label>
           <span>Reason (required)</span>
-          <input v-model="importReason" type="text" placeholder="input reason" />
+          <ScInput v-model="importReason" type="text" placeholder="input reason" />
         </label>
         <div class="actions">
           <ScButton class="secondary" :disabled="busy" @click="runDryRun">Dry Run</ScButton>
@@ -84,23 +80,19 @@
         <h3>Export Package</h3>
         <label>
           <span>Package Name</span>
-          <input v-model="exportName" type="text" placeholder="example: workspace-default" />
+          <ScInput v-model="exportName" type="text" placeholder="example: workspace-default" />
         </label>
         <label>
           <span>Package Version</span>
-          <input v-model="exportVersion" type="text" placeholder="example: 1.0.0" />
+          <ScInput v-model="exportVersion" type="text" placeholder="example: 1.0.0" />
         </label>
         <label>
           <span>Scene Channel</span>
-          <select v-model="exportChannel">
-            <option value="stable">stable</option>
-            <option value="beta">beta</option>
-            <option value="dev">dev</option>
-          </select>
+          <ScSelect v-model="exportChannel" :options="channelOptions" />
         </label>
         <label>
           <span>Reason</span>
-          <input v-model="exportReason" type="text" placeholder="scene package export" />
+          <ScInput v-model="exportReason" type="text" placeholder="scene package export" />
         </label>
         <div class="actions">
           <ScButton class="secondary" :disabled="busy" @click="runExport">Export</ScButton>
@@ -116,6 +108,9 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScInput from '../components/design-system/ScInput.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
+import ScTextarea from '../components/design-system/ScTextarea.vue';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import {
@@ -125,6 +120,17 @@ import {
   scenePackageList,
 } from '../api/scene';
 import type { SceneChannel, ScenePackageDryRunResult, ScenePackageInfo } from '../contracts/scene';
+
+const channelOptions = [
+  { value: 'stable', label: 'stable' },
+  { value: 'beta', label: 'beta' },
+  { value: 'dev', label: 'dev' },
+];
+const importStrategyOptions = [
+  { value: 'skip_existing', label: 'skip_existing' },
+  { value: 'override_existing', label: 'override_existing' },
+  { value: 'rename_on_conflict', label: 'rename_on_conflict' },
+];
 
 const busy = ref(false);
 const errorText = ref('');
