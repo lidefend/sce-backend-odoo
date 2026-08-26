@@ -228,7 +228,7 @@ verify.frontend.professional_collaboration.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_professional_collaboration_guard.py
 	@python3 scripts/verify/frontend_professional_collaboration_guard.py
 
-.PHONY: verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.contract_prompt_action_presentation.browser verify.frontend.low_code_field_create_dialog.unit
+.PHONY: verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.contract_prompt_action_presentation.browser verify.frontend.low_code_field_create_dialog.unit verify.frontend.low_code_field_create_dialog.browser
 verify.frontend.professional_relation_lifecycle.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-relation-lifecycle-model-test.mjs >/dev/null
 	@node /tmp/professional-relation-lifecycle-model-test.mjs
@@ -245,6 +245,9 @@ verify.frontend.contract_prompt_action_presentation.browser: guard.prod.forbid
 verify.frontend.low_code_field_create_dialog.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_low_code_field_create_dialog_guard.py
 	@python3 scripts/verify/frontend_low_code_field_create_dialog_guard.py
+
+verify.frontend.low_code_field_create_dialog.browser: guard.prod.forbid
+	@node scripts/verify/frontend_low_code_field_create_dialog_browser.mjs
 
 .PHONY: verify.frontend.hierarchical_worksheet.unit
 verify.frontend.hierarchical_worksheet.unit: guard.prod.forbid
