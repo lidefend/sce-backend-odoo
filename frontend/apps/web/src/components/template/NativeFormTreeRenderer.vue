@@ -203,19 +203,34 @@
             </template>
           </FormSection>
           <div v-if="buttonChildren(node).length" :class="nativeActionsClass(node)">
-            <button
-              v-for="(buttonNode, buttonIndex) in visibleActionButtons(node)"
-              :key="nodeKey(buttonNode, buttonIndex)"
-              v-bind="nativeActionEvidenceAttributes(buttonNode)"
-              type="button"
-              :class="nativeActionButtonClass(buttonNode)"
-              :disabled="nativeActionDisabled(buttonNode)"
-              :title="nativeActionTitle(buttonNode)"
-              @click.stop.prevent="emitNativeAction(buttonNode)"
-            >
-              <span v-if="buttonIcon(buttonNode)" :class="['native-action-icon', buttonIcon(buttonNode)]" aria-hidden="true" />
-              <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
-            </button>
+            <template v-for="(buttonNode, buttonIndex) in visibleActionButtons(node)" :key="nodeKey(buttonNode, buttonIndex)">
+              <ScButton
+                v-if="!isSmartButtonNode(buttonNode)"
+                v-bind="nativeActionEvidenceAttributes(buttonNode)"
+                type="button"
+                class="native-action-btn"
+                size="small"
+                variant="secondary"
+                :disabled="nativeActionDisabled(buttonNode)"
+                :title="nativeActionTitle(buttonNode)"
+                @click.stop.prevent="emitNativeAction(buttonNode)"
+              >
+                <span v-if="buttonIcon(buttonNode)" :class="['native-action-icon', buttonIcon(buttonNode)]" aria-hidden="true" />
+                <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
+              </ScButton>
+              <button
+                v-else
+                v-bind="nativeActionEvidenceAttributes(buttonNode)"
+                type="button"
+                class="native-action-btn native-action-btn--smart"
+                :disabled="nativeActionDisabled(buttonNode)"
+                :title="nativeActionTitle(buttonNode)"
+                @click.stop.prevent="emitNativeAction(buttonNode)"
+              >
+                <span v-if="buttonIcon(buttonNode)" :class="['native-action-icon', buttonIcon(buttonNode)]" aria-hidden="true" />
+                <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
+              </button>
+            </template>
             <div v-if="overflowActionButtons(node).length" class="native-action-more">
               <button
                 type="button"
@@ -331,10 +346,25 @@
       </FormSection>
 
       <div v-else-if="nodeType(node) === 'button'" :class="nativeActionsClass(node)">
-        <button
+        <ScButton
+          v-if="!isSmartButtonNode(node)"
           v-bind="nativeActionEvidenceAttributes(node)"
           type="button"
-          :class="nativeActionButtonClass(node)"
+          class="native-action-btn"
+          size="small"
+          variant="secondary"
+          :disabled="nativeActionDisabled(node)"
+          :title="nativeActionTitle(node)"
+          @click.stop.prevent="emitNativeAction(node)"
+        >
+          <span v-if="buttonIcon(node)" :class="['native-action-icon', buttonIcon(node)]" aria-hidden="true" />
+          <span class="native-action-label">{{ buttonLabel(node) }}</span>
+        </ScButton>
+        <button
+          v-else
+          v-bind="nativeActionEvidenceAttributes(node)"
+          type="button"
+          class="native-action-btn native-action-btn--smart"
           :disabled="nativeActionDisabled(node)"
           :title="nativeActionTitle(node)"
           @click.stop.prevent="emitNativeAction(node)"
@@ -356,6 +386,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import FormSection from './FormSection.vue';
+import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import type {
@@ -703,10 +734,6 @@ function nativeActionsClass(node: NativeFormLayoutNode) {
   return ['native-actions', { 'native-actions--smart': smart }];
 }
 
-function nativeActionButtonClass(node: NativeFormLayoutNode) {
-  return ['native-action-btn', { 'native-action-btn--smart': isSmartButtonNode(node) }];
-}
-
 function nativeActionState(node: NativeFormLayoutNode) {
   return props.nativeActionStateResolver?.(node as Record<string, unknown>) || {};
 }
@@ -992,27 +1019,15 @@ function closeMore(node: NativeFormLayoutNode) {
 }
 
 .native-action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   gap: 6px;
-  min-height: calc(var(--sc-component-button-height-sm) * 1px);
-  border: 1px solid var(--sc-app-border);
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  padding: 4px 9px;
-  border-radius: var(--sc-component-button-radius);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  cursor: pointer;
   min-width: 0;
   max-width: 100%;
   white-space: nowrap;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .native-action-btn--smart {
+  display: inline-flex;
+  align-items: center;
   justify-content: flex-start;
   min-height: 60px;
   border: 0;
@@ -1022,6 +1037,8 @@ function closeMore(node: NativeFormLayoutNode) {
   background: var(--sc-app-panel);
   font-weight: 600;
   font-size: 14px;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .native-action-more {
@@ -1086,17 +1103,13 @@ function closeMore(node: NativeFormLayoutNode) {
   font-weight: inherit;
 }
 
-.native-action-btn:hover {
-  background: var(--sc-app-hover-bg);
-}
-
-.native-action-btn:focus-visible {
+.native-action-btn--smart:focus-visible {
   border-color: var(--sc-semantic-surface-interactive);
   box-shadow: 0 0 0 3px var(--sc-app-focus-ring);
   outline: none;
 }
 
-.native-action-btn:disabled {
+.native-action-btn--smart:disabled {
   cursor: not-allowed;
   opacity: var(--sc-base-opacity-disabled);
 }
