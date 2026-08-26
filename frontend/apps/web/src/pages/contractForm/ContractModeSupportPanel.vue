@@ -1,15 +1,15 @@
 <template>
-  <section v-if="activeActions.length" class="contract-mode-actions">
-    <button
+  <section v-if="activeActions.length" class="contract-mode-actions" data-semantic-component="ContractModeSupportPanel" :data-state="busy ? 'loading' : 'ready'">
+    <ScButton
       v-for="action in activeActions"
       :key="`mode-${action.key}`"
       type="button"
-      class="chip-btn"
+      variant="secondary"
       :disabled="busy"
       @click="$emit('open-mode-action', action.raw)"
     >
       {{ action.label }}
-    </button>
+    </ScButton>
     <p v-if="modeFeedback" class="contract-mode-feedback">{{ modeFeedback }}</p>
   </section>
   <ContractPromptActionForm
@@ -33,15 +33,16 @@
     <li v-for="(warning, index) in lowCodePrecheckWarnings" :key="`lowcode-warning-${index}`">{{ warning }}</li>
   </ul>
   <div v-if="showAdvancedToggle" class="layout-divider advanced-toggle">
-    <button class="chip-btn" :disabled="busy" @click="$emit('toggle-advanced')">
+    <ScButton variant="secondary" :disabled="busy" @click="$emit('toggle-advanced')">
       {{ advancedExpanded ? '收起高级信息' : '展开高级信息' }}
-    </button>
+    </ScButton>
   </div>
 </template>
 
 <script setup lang="ts">
 import ContractPromptActionForm from './ContractPromptActionForm.vue';
 import LowCodeFieldCreateDialog, { type LowCodeFieldCreateDialogState } from './LowCodeFieldCreateDialog.vue';
+import ScButton from '../../components/design-system/ScButton.vue';
 import type { ContractPromptField } from './types';
 
 type ContractModeAction = {

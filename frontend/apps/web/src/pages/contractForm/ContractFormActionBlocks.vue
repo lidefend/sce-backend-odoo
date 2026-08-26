@@ -1,5 +1,5 @@
 <template>
-  <section v-if="warnings.length && !isIntakeCreateMode" class="block warn">
+  <section v-if="warnings.length && !isIntakeCreateMode" class="block warn" data-semantic-component="ContractFormActionBlocks" data-state="warning">
     <h3>提示信息</h3>
     <ul>
       <li v-for="item in warnings" :key="item">{{ item }}</li>
@@ -26,54 +26,55 @@
   <section v-if="workflowTransitions.length && !isIntakeCreateMode && !useNativeFormTree" class="block">
     <h3>流程操作</h3>
     <div class="chips">
-      <button
+      <ScButton
         v-for="item in workflowTransitions"
         :key="item.key"
-        class="chip-btn"
+        variant="secondary"
         :disabled="busy || !item.action"
         :title="item.notes || ''"
         @click="item.action && $emit('run-action', item.action)"
       >
         {{ item.label }}
-      </button>
+      </ScButton>
     </div>
   </section>
 
   <section v-if="showSearchFilters && searchFilters.length && !isIntakeCreateMode" class="block">
     <h3>快捷筛选</h3>
     <div class="chips">
-      <button
+      <ScButton
         v-for="item in searchFilters"
         :key="`flt-${item.key}`"
-        class="chip-btn"
+        variant="ghost"
         :class="{ active: activeFilterKey === item.key }"
         :disabled="busy || !item.key"
         @click="$emit('open-filter', item.key)"
       >
         {{ item.label }}
-      </button>
+      </ScButton>
     </div>
   </section>
 
   <section v-if="bodyActions.length && !isIntakeCreateMode && !useNativeFormTree" class="block">
     <h3>可执行操作</h3>
     <div class="chips">
-      <button
+      <ScButton
         v-for="action in bodyActions"
         :key="`body-${action.key}`"
-        class="chip-btn"
+        variant="secondary"
         :disabled="busy || !action.enabled"
         :title="action.hint"
         @click="$emit('run-action', action)"
       >
         {{ action.label }}<template v-if="showHud"> · {{ action.kind }}</template>
-      </button>
+      </ScButton>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import type { ContractAction } from './types';
+import ScButton from '../../components/design-system/ScButton.vue';
 
 type WorkflowEvidenceGateRow = {
   reasonCode: string;
