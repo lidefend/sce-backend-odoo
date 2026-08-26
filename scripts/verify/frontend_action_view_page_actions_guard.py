@@ -45,8 +45,8 @@ def validate(source: str | None = None) -> list[str]:
     for marker in stateful_native:
         if marker not in text:
             failures.append(f"ActionView lost stateful native control {marker}")
-    if text.count('<ScButton') != 9:
-        failures.append(f"ActionView expected 9 governed page-action projections, found {text.count('<ScButton')}")
+    if text.count('<ScButton') != 10:
+        failures.append(f"ActionView expected 10 governed page-action projections, found {text.count('<ScButton')}")
     return failures
 
 
@@ -57,4 +57,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_action_view_page_actions_guard] PASS sc_button_projections=9 overlay_close=ScDialog")
+    print("[frontend_action_view_page_actions_guard] PASS sc_button_projections=10 overlay_close=ScDialog")
