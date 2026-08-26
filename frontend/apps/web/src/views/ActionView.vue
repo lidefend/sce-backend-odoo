@@ -3,7 +3,7 @@
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :content-layout="actionContentLayoutMode">
     <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
       <template v-if="vm.header.actions.length" #actions>
-        <button v-for="action in vm.header.actions" :key="`header-${action.key}`" class="contract-chip ghost" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</button>
+        <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
       </template>
     </ProductPageHeader>
     <component :is="viewMode === 'dashboard' ? DashboardPattern : CollectionPattern">
@@ -34,7 +34,7 @@
         {{ t('route_preset_applied_prefix', '已应用推荐筛选：') }}{{ vm.filters.routePreset?.label }}
         <span v-if="vm.filters.routePreset?.source">（{{ t('route_preset_source_prefix', '来源：') }}{{ vm.filters.routePreset?.source }}）</span>
       </p>
-      <button class="clear-btn" @click="clearRoutePreset">{{ t('route_preset_clear', '清除推荐') }}</button>
+      <ScButton class="clear-btn" variant="ghost" size="small" type="button" @click="clearRoutePreset">{{ t('route_preset_clear', '清除推荐') }}</ScButton>
     </section>
     <section v-if="isSectionVisible('focus_strip', { defaultEnabled: pageSectionEnabled('focus_strip', false), tag: 'section', vmVisible: vm.sections.focus })" class="focus-strip" :style="getSectionStyle('focus_strip')">
       <div>
@@ -42,9 +42,9 @@
         <p class="focus-summary">{{ vm.focus.summary }}</p>
       </div>
       <div class="focus-actions">
-        <button v-for="item in vm.focus.actions" :key="`focus-${item.label}`" class="contract-chip ghost" @click="openFocusAction(item)">
+        <ScButton v-for="item in vm.focus.actions" :key="`focus-${item.label}`" variant="ghost" size="small" type="button" @click="openFocusAction(item)">
           {{ item.label }}
-        </button>
+        </ScButton>
       </div>
     </section>
     <section v-if="vm.sections.strictAlert && vm.strictAlert" class="contract-missing-alert">
@@ -217,16 +217,15 @@
     <section v-if="isSectionVisible('quick_actions', { defaultEnabled: pageSectionEnabled('quick_actions', false), tag: 'section', vmVisible: vm.sections.quickActions && Boolean(vm.actions.primary.length || vm.actions.overflowGroups.length) })" class="contract-block" :style="getSectionStyle('quick_actions')">
       <p class="contract-label">{{ t('label.quick_actions', '快捷操作') }}</p>
       <div class="contract-chips">
-        <button
-          v-for="btn in vm.actions.primary"
+        <ScButton v-for="btn in vm.actions.primary"
           :key="`contract-action-${btn.key}`"
-          class="contract-chip"
+          variant="secondary" size="small" type="button"
           :disabled="isContractActionDisabled({ enabled: btn.enabled })"
           :title="btn.hint"
           @click="runContractAction(btn)"
         >
           {{ btn.label }}
-        </button>
+        </ScButton>
         <button
           v-if="vm.actions.overflowGroups.length"
           class="contract-chip ghost"
@@ -248,16 +247,15 @@
         >
           <p class="contract-group-label">{{ group.label }}</p>
           <div class="contract-chips">
-            <button
-              v-for="btn in group.actions"
+            <ScButton v-for="btn in group.actions"
               :key="`contract-group-action-${group.key}-${btn.key}`"
-              class="contract-chip"
+              variant="secondary" size="small" type="button"
               :disabled="isContractActionDisabled({ enabled: btn.enabled })"
               :title="btn.hint"
               @click="runContractAction(btn)"
             >
               {{ btn.label }}
-            </button>
+            </ScButton>
           </div>
         </section>
       </div>
@@ -607,14 +605,16 @@
       <p class="empty-next-hint">{{ vm.empty.hint }}</p>
       <p class="empty-next-reason">{{ vm.empty.reason }}</p>
       <div class="focus-actions">
-        <button class="contract-chip primary" @click="openFocusAction(vm.empty.primaryAction)">{{ vm.empty.primaryAction.label }}</button>
-        <button
+        <ScButton variant="primary" size="small" type="button" @click="openFocusAction(vm.empty.primaryAction)">{{ vm.empty.primaryAction.label }}</ScButton>
+        <ScButton
           v-if="vm.empty.secondaryAction"
-          class="contract-chip ghost"
+          variant="ghost"
+          size="small"
+          type="button"
           @click="openFocusAction(vm.empty.secondaryAction)"
         >
           {{ vm.empty.secondaryAction.label }}
-        </button>
+        </ScButton>
       </div>
     </section>
     <DevContextPanel
@@ -637,7 +637,7 @@
             <h3 id="business-category-picker-title">选择办理类型</h3>
             <p>{{ actionMetaName || vm.page.title || '新建业务' }}</p>
           </div>
-          <button class="business-category-picker-close" type="button" aria-label="关闭" @click="closeBusinessCategoryCreatePicker"><ScIcon name="close" :size="18" /></button>
+          <ScButton class="business-category-picker-close" variant="ghost" size="small" type="button" aria-label="关闭" @click="closeBusinessCategoryCreatePicker"><ScIcon name="close" :size="18" /></ScButton>
         </header>
         <div class="business-category-picker-list">
           <button
@@ -662,6 +662,7 @@ import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorC
 import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
 import { useRoute, useRouter } from 'vue-router';
 import type { ContractV2NormalizedStore } from '../app/contracts/v2';
+import ScButton from '../components/design-system/ScButton.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
