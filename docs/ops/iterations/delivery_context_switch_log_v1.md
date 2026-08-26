@@ -6436,3 +6436,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   legacy buttons, unregistered custom-filter selects and mechanical chip
   migration. Ten guard cases, production guard, component ESLint and the Vite
   production build pass.
+
+## ActionView page-action primitives convergence v1
+
+- Branch / baseline: `feature/p0-action-view-page-actions-v1` /
+  `d6a2dc17cb5c423e7e11541cd78492e742c18a51`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  collection page-level action presentation / `frontend/apps/web`.
+- Product result: collection Header actions, route-preset clearing, focus
+  actions, formal quick business actions, empty-state actions and the business
+  category dialog close action use `ScButton` with explicit variants and size.
+- Authority boundary: quick, saved and group filter chips, more-disclosure
+  toggles and business category choices remain native stateful controls. All
+  action keys, disabled rules, hints, click handlers and navigation/mutation
+  ownership remain unchanged.
+- Evidence: the dedicated guard distinguishes eight governed page-action
+  projections from retained stateful controls, with negative cases for legacy
+  regressions, primary-action loss, dialog-close drift and parallel actions.
+  Six guard cases, the production guard and Vite production build pass.
