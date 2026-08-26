@@ -144,7 +144,7 @@ const emit = defineEmits<{
 
 const searchInputRef = ref<{ $el?: HTMLInputElement } | null>(null);
 const selectedRowKeys = computed<Array<string | number>>(() => props.dialog.selectedId ? [props.dialog.selectedId] : []);
-const relationTableRows = computed(() => props.dialog.rows.map((row) => ({ ...row, ...row.values })));
+const relationTableRows = computed(() => props.dialog.rows.map((row) => ({ ...row.values, ...row, id: row.id })));
 const relationTableColumns = computed(() => [
   { colKey: 'row-select', type: 'single', width: 48 },
   ...props.dialog.columns.map((column) => ({

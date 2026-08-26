@@ -15,6 +15,8 @@
     :row-selection-type="rowSelectionType"
     :select-on-row-click="selectOnRowClick"
     :aria-label="label"
+    :data-row-count="data.length"
+    data-semantic-driver="tdesign-table"
     @row-click="emit('rowClick', $event)"
     @row-dblclick="emit('rowDblclick', $event)"
     @select-change="onSelectChange"
