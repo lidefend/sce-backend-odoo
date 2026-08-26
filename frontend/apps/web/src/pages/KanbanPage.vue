@@ -113,8 +113,9 @@ import CollectionPaginationFooter from '../components/product-list/CollectionPag
 import CollectionKanbanLane from '../components/product-list/CollectionKanbanLane.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { pageModeLabel } from '../app/pageMode';
-import { semanticStatus, semanticValueByField } from '../utils/semantic';
+import { semanticValueByField } from '../utils/semantic';
 import { groupCollectionRecords } from '../app/runtime/collectionViewRuntime';
+import { resolveCollectionStatusPresentation } from '../app/presentation/collectionStatusPresentation';
 
 const props = defineProps<{
   title: string;
@@ -131,6 +132,8 @@ const props = defineProps<{
   secondaryFields?: string[];
   statusFields?: string[];
   fieldLabels?: Record<string, string>;
+  fieldSelections?: Record<string, Array<{ value: string; label: string }>>;
+  fieldToneByValue?: Record<string, Record<string, string>>;
   titleField: string;
   onReload: () => void;
   onCardClick: (row: Record<string, unknown>) => void;
@@ -239,12 +242,20 @@ const canPageNext = computed(() => {
 });
 const paginationTotalText = computed(() => `共 ${listTotal.value ?? props.records.length} 条`);
 function semanticCell(field: string, value: unknown) {
+  if (statusMetaFields.value.includes(field)) {
+    const status = resolveCollectionStatusPresentation({
+      value,
+      selection: props.fieldSelections?.[field],
+      toneByValue: props.fieldToneByValue?.[field],
+    });
+    return { text: status.label, tone: status.tone };
+  }
   return semanticValueByField(field, value);
 }
 
 function rowTone(row: Record<string, unknown>) {
-  const state = row.state || row.stage_id || row.status;
-  return semanticStatus(state).tone;
+  const field = statusMetaFields.value[0];
+  return field ? semanticCell(field, row[field]).tone : 'neutral';
 }
 
 function rowTitle(row: Record<string, unknown>): string {

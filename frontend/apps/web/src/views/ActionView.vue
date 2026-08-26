@@ -287,6 +287,8 @@
       :secondary-fields="kanbanSecondaryFields"
       :status-fields="kanbanStatusFields"
       :field-labels="kanbanFieldLabels"
+      :field-selections="kanbanFieldSelections"
+      :field-tone-by-value="kanbanFieldToneByValue"
       :title-field="kanbanTitleField"
       :subtitle="vm.page.subtitle"
       :status-label="vm.page.statusLabel"
@@ -1640,6 +1642,18 @@ const kanbanFieldLabels = computed<Record<string, string>>(() => ({
   ...extractViewFieldLabels(actionContract.value, 'kanban'),
   ...(listProfile.value?.column_labels || {}),
 }));
+const kanbanFieldSelections = computed<Record<string, Array<{ value: string; label: string }>>>(() =>
+  listColumnOptions.value.reduce<Record<string, Array<{ value: string; label: string }>>>((acc, column) => {
+    if (Array.isArray(column.selection) && column.selection.length) acc[column.name] = column.selection;
+    return acc;
+  }, {}),
+);
+const kanbanFieldToneByValue = computed<Record<string, Record<string, string>>>(() =>
+  listColumnOptions.value.reduce<Record<string, Record<string, string>>>((acc, column) => {
+    if (column.toneByValue && Object.keys(column.toneByValue).length) acc[column.name] = column.toneByValue;
+    return acc;
+  }, {}),
+);
 const sortLabel = computed(() => sortValue.value || 'id asc');
 const {
   subtitle,
