@@ -701,6 +701,16 @@ tbody td {
   white-space: nowrap;
 }
 
+.table tbody td.column-layout-identity,
+.table tbody td.column-layout-relation,
+.table tbody td.column-layout-text,
+.table tbody td.column-layout-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
 .is-empty-value {
   color: var(--sc-app-text-muted);
 }
