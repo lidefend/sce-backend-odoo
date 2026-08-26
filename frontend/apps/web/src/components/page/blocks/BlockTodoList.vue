@@ -37,7 +37,7 @@
       </article>
     </div>
 
-    <ScEmptyState v-else density="compact" title="当前暂无待办" />
+    <ScEmptyState v-else density="compact" :heading-level="5" title="当前暂无待办" />
   </article>
 </template>
 

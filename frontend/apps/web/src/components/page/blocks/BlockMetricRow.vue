@@ -23,7 +23,7 @@
         <p v-if="item.delta || item.hint" class="metric-meta">{{ item.delta || item.hint }}</p>
       </component>
     </div>
-    <ScEmptyState v-else density="compact" title="暂无指标" description="当前看板尚未提供可展示的指标数据。" />
+    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无指标" description="当前看板尚未提供可展示的指标数据。" />
   </article>
 </template>
 

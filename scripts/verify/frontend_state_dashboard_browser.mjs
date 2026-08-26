@@ -70,6 +70,7 @@ try {
   page.on('console', (message) => { if (message.type() === 'error') errors.push(`console:${message.text()}`); });
   page.on('pageerror', (error) => errors.push(`page:${error.message}`));
   await page.goto(`http://127.0.0.1:${address.port}/__state_dashboard.html`);
+  await page.waitForFunction(() => Boolean(window.stateDashboard));
 
   const loading = await page.locator('[data-activity-surface] [data-semantic-component="ScLoading"][data-state="loading"]').count() === 1;
   await page.evaluate(() => { window.stateDashboard.mode = 'error'; });
@@ -91,15 +92,18 @@ try {
   const retry = page.locator('.sc-state-panel [data-semantic-component="ScButton"]').filter({ hasText: '重试' });
   await retry.click();
   const dashboardEmptyCount = await page.locator('[data-product-page-pattern="dashboard"] [data-semantic-component="ScEmptyState"][data-density="compact"]').count();
+  const dashboardEmptyHeadingCount = await page.locator('[data-product-page-pattern="dashboard"] [data-semantic-component="ScEmptyState"] h5').count();
+  const dashboardUnexpectedH2Count = await page.locator('[data-product-page-pattern="dashboard"] [data-semantic-component="ScEmptyState"] h2').count();
   await page.locator('.block-todo-list [data-semantic-component="ScButton"]').filter({ hasText: '进入处理' }).click();
   const state = await page.evaluate(() => ({ ...window.stateDashboard }));
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
 
   const pass = loading && error && empty && focusVisible && state.opened === '7' && state.retries === 1
     && selectedTab === '第二个页面' && focusedTab === '第二个页面'
-    && dashboardEmptyCount === 2 && state.dashboardActions.includes('open_todo')
+    && dashboardEmptyCount === 2 && dashboardEmptyHeadingCount === 2 && dashboardUnexpectedH2Count === 0
+    && state.dashboardActions.includes('open_todo')
     && !overflow && errors.length === 0;
-  console.log(JSON.stringify({ pass, loading, error, empty, focusVisible, selectedTab, focusedTab, dashboardEmptyCount, state, overflow, errors }, null, 2));
+  console.log(JSON.stringify({ pass, loading, error, empty, focusVisible, selectedTab, focusedTab, dashboardEmptyCount, dashboardEmptyHeadingCount, dashboardUnexpectedH2Count, state, overflow, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();

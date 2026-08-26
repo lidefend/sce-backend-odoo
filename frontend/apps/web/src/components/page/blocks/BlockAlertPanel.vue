@@ -32,7 +32,7 @@
         </ScButton>
       </article>
     </div>
-    <ScEmptyState v-else density="compact" title="当前无风险提醒" />
+    <ScEmptyState v-else density="compact" :heading-level="5" title="当前无风险提醒" />
   </article>
 </template>
 

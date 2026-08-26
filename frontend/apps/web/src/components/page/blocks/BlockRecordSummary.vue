@@ -20,7 +20,7 @@
         <p class="summary-value">{{ item.value }}</p>
       </article>
     </div>
-    <ScEmptyState v-else density="compact" title="暂无摘要信息" />
+    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无摘要信息" />
   </article>
 </template>
 

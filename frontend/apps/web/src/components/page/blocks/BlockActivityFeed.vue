@@ -19,7 +19,7 @@
         <p class="feed-desc">{{ item.description }}</p>
       </li>
     </ul>
-    <ScEmptyState v-else density="compact" title="暂无动态" />
+    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无动态" />
   </article>
 </template>
 

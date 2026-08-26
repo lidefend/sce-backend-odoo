@@ -13,7 +13,7 @@
         <div v-if="item.kind === 'rate'" class="progress-track"><div class="progress-fill" :style="{ width: `${item.value}%` }" /></div>
       </article>
     </div>
-    <ScEmptyState v-if="!rows.length" density="compact" title="当前暂无进度数据" />
+    <ScEmptyState v-if="!rows.length" density="compact" :heading-level="5" title="当前暂无进度数据" />
   </article>
 </template>
 

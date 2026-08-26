@@ -18,7 +18,7 @@
         </tbody>
       </ScDataTable>
     </div>
-    <ScEmptyState v-else density="compact" :title="emptyMessage" />
+    <ScEmptyState v-else density="compact" :heading-level="5" :title="emptyMessage" />
   </article>
 </template>
 

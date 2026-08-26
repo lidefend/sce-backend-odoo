@@ -24,6 +24,8 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
             failures.append(f"dashboard block {key} bypasses governed empty state")
         if 'density="compact"' not in source:
             failures.append(f"dashboard block {key} does not use compact block state density")
+        if ':heading-level="5"' not in source:
+            failures.append(f"dashboard block {key} does not preserve block heading hierarchy")
     for key in ("alert", "entry", "summary", "todo"):
         source = values[key]
         if "<ScButton" not in source:

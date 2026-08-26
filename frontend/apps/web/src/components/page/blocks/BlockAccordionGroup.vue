@@ -3,7 +3,7 @@
     <details open>
       <summary>{{ block.title || '详情' }}</summary>
       <div class="accordion-content">
-        <ScEmptyState v-if="rows.length === 0" density="compact" title="暂无数据" />
+        <ScEmptyState v-if="rows.length === 0" density="compact" :heading-level="5" title="暂无数据" />
         <article v-for="item in rows" :key="item.key" class="accordion-item">
           <p class="accordion-title">{{ item.title }}</p>
           <p class="accordion-desc">{{ item.description }}</p>

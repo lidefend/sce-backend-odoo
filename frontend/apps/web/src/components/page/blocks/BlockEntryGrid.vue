@@ -35,7 +35,7 @@
       </component>
     </div>
 
-    <ScEmptyState v-else density="compact" title="当前无可用入口" />
+    <ScEmptyState v-else density="compact" :heading-level="5" title="当前无可用入口" />
   </article>
 </template>
 

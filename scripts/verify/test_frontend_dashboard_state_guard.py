@@ -22,6 +22,9 @@ class FrontendDashboardStateGuardTest(unittest.TestCase):
     def test_compact_density_is_required(self):
         self.assertTrue(any("compact" in error for error in validate(self.altered("table", 'density="compact"'))))
 
+    def test_block_heading_hierarchy_is_required(self):
+        self.assertTrue(any("heading hierarchy" in error for error in validate(self.altered("activity", ':heading-level="5"'))))
+
     def test_command_button_is_required(self):
         self.assertTrue(any("command buttons" in error for error in validate(self.altered("summary", "<ScButton"))))
 
