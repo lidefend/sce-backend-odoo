@@ -397,11 +397,19 @@ try {
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${target.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`), fullPage: false });
       let relationSearchDialogEvidence = null;
       if (target.captureRelationSearchDialog === true) {
-        const relation = page.locator('.many2one-combobox:visible').first();
-        await relation.waitFor({ state: 'visible', timeout: 15000 });
-        await relation.locator('input').focus();
-        const searchMore = relation.locator('.many2one-action:visible').filter({ hasText: /搜索更多/ }).first();
-        await searchMore.waitFor({ state: 'visible', timeout: 15000 });
+        const relations = page.locator('.many2one-combobox:visible');
+        const relationCount = await relations.count();
+        let searchMore = null;
+        for (let index = 0; index < relationCount; index += 1) {
+          const relation = relations.nth(index);
+          await relation.locator('input').focus();
+          const candidate = relation.locator('.many2one-action:visible').filter({ hasText: /搜索更多/ }).first();
+          if (await candidate.count() === 1) {
+            searchMore = candidate;
+            break;
+          }
+        }
+        if (!searchMore) throw new Error(`${target.name}: no visible relation field declares search-more capability`);
         await searchMore.click();
         const dialog = page.locator('[data-professional-relation-lifecycle="search"]:visible');
         await dialog.waitFor({ state: 'visible', timeout: 15000 });
