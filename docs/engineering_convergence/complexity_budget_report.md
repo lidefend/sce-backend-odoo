@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4105`
+- Scanned files: `4111`
 - Files requiring split plan: `44`
 - Files above warning threshold: `78`
 
@@ -62,7 +62,7 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 1738 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
-| 1490 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1496 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1483 | Python source | `scripts/release/release_publication.py` |
 | 1442 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
@@ -186,7 +186,7 @@ Generated from repository source files. This report is informational during the 
 | 1595 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1547 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1490 | warning | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1496 | warning | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1483 | warning | Python source | `scripts/release/release_publication.py` |
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |

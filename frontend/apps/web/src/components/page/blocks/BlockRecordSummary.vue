@@ -3,23 +3,24 @@
     <header class="block-header">
       <h4>{{ block.title || '摘要' }}</h4>
       <div v-if="actions.length" class="summary-actions">
-        <button
+        <ScButton
           v-for="action in actions"
           :key="`summary-action-${action.key}`"
-          type="button"
-          class="summary-action-btn"
+          size="small"
+          variant="ghost"
           @click="emitAction(action.key)"
         >
           {{ action.label || action.key }}
-        </button>
+        </ScButton>
       </div>
     </header>
-    <div class="summary-grid">
+    <div v-if="rows.length" class="summary-grid">
       <article v-for="item in rows" :key="item.key" class="summary-item">
         <p class="summary-label">{{ item.label }}</p>
         <p class="summary-value">{{ item.value }}</p>
       </article>
     </div>
+    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无摘要信息" />
   </article>
 </template>
 
@@ -27,6 +28,8 @@
 import { computed } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import type { PageBlockActionEvent } from '../../../app/pageOrchestration';
+import ScButton from '../../design-system/ScButton.vue';
+import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -81,19 +84,6 @@ function emitAction(actionKey: string) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-.summary-action-btn {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-input-bg);
-  padding: 4px 10px;
-  font-size: 12px;
-  color: var(--sc-app-text-primary);
-  cursor: pointer;
-}
-.summary-action-btn:hover {
-  border-color: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-surface-interactive);
 }
 .summary-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .summary-item { border: 1px solid var(--sc-app-border); border-radius: 8px; padding: 8px; background: var(--sc-app-muted-bg); }

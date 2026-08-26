@@ -23,7 +23,7 @@
         <p v-if="item.delta || item.hint" class="metric-meta">{{ item.delta || item.hint }}</p>
       </component>
     </div>
-    <ScEmptyState v-else title="暂无指标" description="当前看板尚未提供可展示的指标数据。" />
+    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无指标" description="当前看板尚未提供可展示的指标数据。" />
   </article>
 </template>
 
@@ -134,6 +134,7 @@ button.metric-item:hover {
   border-color: var(--sc-semantic-surface-interactive);
   box-shadow: 0 10px 20px var(--sc-app-focus-ring);
 }
+button.metric-item:focus-visible { outline: 3px solid var(--sc-app-focus-ring); outline-offset: 2px; }
 .metric-label {
   margin: 0;
   font-size: 13px;
@@ -160,4 +161,5 @@ button.metric-item:hover {
   .metric-grid { grid-template-columns: 1fr; }
   .metric-item { min-height: 96px; }
 }
+@media (prefers-reduced-motion: reduce) { .metric-item { transition: none; } }
 </style>

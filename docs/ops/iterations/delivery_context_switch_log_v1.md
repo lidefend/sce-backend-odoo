@@ -6501,3 +6501,18 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Evidence: targeted guards, strict typecheck, one governed Frontend Quick,
   overlay lifecycle browser and collaboration primitive browser pass with
   browser errors 0 and no business mutation.
+
+## 2026-08-26 — Page state and dashboard presentation v1
+
+- Branch: `feature/p0-state-dashboard-presentation-v1`
+- Baseline: `d1cf011276fd6436ddca6515acebb4984f640905`
+- Formal Product Layer: P0 platform kernel product
+- Layer Target: generic Activity, page-state and dashboard block presentation
+- Module: `frontend/apps/web`
+- Reason: converge loading, empty, error, disabled, focus, reduced-motion and
+  compact responsive states on governed primitives without changing runtime
+  authority or business action semantics.
+- Blast radius: ActivityPage/ActivityPageTabs, StatusPanel, ScEmptyState and
+  nine generic dashboard block renderers.
+- Excluded: Contract V2, permissions, routes, task/workspace selection,
+  business models, action execution and data mutations.

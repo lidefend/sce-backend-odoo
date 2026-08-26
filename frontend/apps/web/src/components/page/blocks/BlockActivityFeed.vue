@@ -19,13 +19,14 @@
         <p class="feed-desc">{{ item.description }}</p>
       </li>
     </ul>
-    <p v-else class="feed-empty">暂无动态</p>
+    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无动态" />
   </article>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -73,5 +74,4 @@ function emitAction(actionKey: string, item: Record<string, unknown>) {
 .feed-item.actionable:focus-visible { outline: 2px solid var(--sc-semantic-surface-interactive); outline-offset: 2px; }
 .feed-title { margin: 0; font-size: 13px; font-weight: 600; }
 .feed-desc { margin: 4px 0 0; font-size: 12px; color: var(--sc-app-text-secondary); }
-.feed-empty { margin: 0; font-size: 12px; color: var(--sc-app-text-secondary); }
 </style>

@@ -13,13 +13,14 @@
         <div v-if="item.kind === 'rate'" class="progress-track"><div class="progress-fill" :style="{ width: `${item.value}%` }" /></div>
       </article>
     </div>
-    <p v-if="!rows.length" class="empty-text">当前暂无进度数据。</p>
+    <ScEmptyState v-if="!rows.length" density="compact" :heading-level="5" title="当前暂无进度数据" />
   </article>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -73,5 +74,4 @@ const summaryText = computed(() => {
 .progress-line { display: flex; justify-content: space-between; font-size: 13px; }
 .progress-track { margin-top: 8px; width: 100%; height: 9px; background: var(--sc-app-muted-bg); border-radius: 999px; overflow: hidden; }
 .progress-fill { height: 100%; background: var(--sc-semantic-surface-interactive); }
-.empty-text { margin: 6px 0 0; color: var(--sc-app-text-secondary); font-size: 13px; }
 </style>

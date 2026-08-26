@@ -3,15 +3,15 @@
     <header class="block-header">
       <h4>{{ block.title || '入口' }}</h4>
       <div class="block-header-actions">
-        <button
+        <ScButton
           v-for="action in actions"
           :key="`entry-action-${action.key}`"
-          type="button"
-          class="block-action-btn"
+          size="small"
+          variant="ghost"
           @click="emitAction(action.key, {})"
         >
           {{ action.label || action.key }}
-        </button>
+        </ScButton>
       </div>
     </header>
 
@@ -35,13 +35,15 @@
       </component>
     </div>
 
-    <p v-else class="entry-empty">当前无可用入口</p>
+    <ScEmptyState v-else density="compact" :heading-level="5" title="当前无可用入口" />
   </article>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import ScButton from '../../design-system/ScButton.vue';
+import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{
   block: PageOrchestrationBlock;
@@ -125,16 +127,8 @@ function emitAction(actionKey: string, item: Record<string, unknown>) {
 }
 .block-header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-}
-.block-action-btn {
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 8px;
-  background: var(--sc-app-input-bg);
-  color: var(--sc-app-text-primary);
-  padding: 6px 10px;
-  cursor: pointer;
-  font-weight: 600;
 }
 .entry-grid {
   margin-top: 12px;
@@ -193,9 +187,8 @@ article.entry-item {
   color: var(--sc-app-info-text);
   background: var(--sc-app-info-bg);
 }
-.entry-empty {
-  margin: 8px 0 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
+@container (max-width: 480px) {
+  .block-header { align-items: flex-start; flex-direction: column; }
+  .entry-grid { grid-template-columns: 1fr; }
 }
 </style>
