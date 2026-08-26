@@ -414,7 +414,7 @@ try {
         const dialog = page.locator('[data-professional-relation-lifecycle="search"]:visible');
         await dialog.waitFor({ state: 'visible', timeout: 15000 });
         await dialog.locator('[data-semantic-component="ScInput"][type="search"]').waitFor({ state: 'visible', timeout: 15000 });
-        await dialog.locator('[data-semantic-component="ScLoading"][data-state="idle"], [data-semantic-component="ScEmptyState"]').first().waitFor({ state: 'visible', timeout: 15000 });
+        await dialog.locator('[data-semantic-component="RelationSearchResult"]:visible, [data-semantic-component="ScEmptyState"]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
         const visibleResults = dialog.locator('[data-semantic-component="RelationSearchResult"]:visible');
         const resultCount = await visibleResults.count();
         const resultLayouts = await visibleResults.evaluateAll((nodes) => nodes.map((node) => ({
