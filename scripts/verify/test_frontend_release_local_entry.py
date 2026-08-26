@@ -173,6 +173,12 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             "async function openPaymentCreateFromList(", 1
         )[1].split("\n}\n", 1)[0]
         self.assertIn('[data-product-page-mode="list"][data-list-status]:visible', helper)
+        self.assertIn(
+            '[data-product-page-mode="list"][data-semantic-component="ActionView"][data-collection-state]:visible',
+            helper,
+        )
+        self.assertIn("active payment action view identity is not unique", helper)
+        self.assertIn("const create = actionViewSurface.getByRole", helper)
         self.assertIn("name: '新建', exact: true", helper)
         self.assertIn('data-form-model="payment.request"', helper)
         self.assertIn('data-form-action-id="${target.action_id}"', helper)

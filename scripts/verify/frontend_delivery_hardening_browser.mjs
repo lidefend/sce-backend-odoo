@@ -1074,7 +1074,12 @@ async function openPaymentCreateFromList(page, target, label) {
   const listSurface = page.locator('[data-product-page-mode="list"][data-list-status]:visible');
   await listSurface.waitFor({ state: 'visible', timeout: 45000 });
   check(await listSurface.count() === 1, `${label}: active payment list identity is not unique`);
-  const create = listSurface.getByRole('button', { name: '新建', exact: true });
+  const actionViewSurface = page.locator(
+    '[data-product-page-mode="list"][data-semantic-component="ActionView"][data-collection-state]:visible',
+  );
+  await actionViewSurface.waitFor({ state: 'visible', timeout: 45000 });
+  check(await actionViewSurface.count() === 1, `${label}: active payment action view identity is not unique`);
+  const create = actionViewSurface.getByRole('button', { name: '新建', exact: true });
   await create.waitFor({ state: 'visible', timeout: 45000 });
   check(await create.count() === 1, `${label}: create payment action identity is not unique`);
   check(await create.isEnabled(), `${label}: create payment action is disabled`);
