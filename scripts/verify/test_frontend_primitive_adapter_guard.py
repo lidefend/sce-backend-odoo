@@ -37,6 +37,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScTextarea": '<textarea :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<select :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
+                "ScInlineState": '<div :data-state="state" :aria-busy="state === \'loading\' || undefined" />',
                 "ScEmptyState": '<section data-state="empty" role="status" />',
                 "ScErrorState": '<section data-state="error" role="alert" />',
                 "ScFormField": '<label :data-state="state" :data-required="required" />',
