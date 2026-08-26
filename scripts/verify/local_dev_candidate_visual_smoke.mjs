@@ -467,7 +467,7 @@ try {
         await dialog.waitFor({ state: 'visible', timeout: 15000 });
         const panel = page.locator('.relation-dialog:visible');
         await panel.waitFor({ state: 'visible', timeout: 15000 });
-        await dialog.locator('[data-semantic-component="ScInput"][type="search"]').waitFor({ state: 'visible', timeout: 15000 });
+        await dialog.locator('[data-semantic-component="ScInput"] input[type="search"]').waitFor({ state: 'visible', timeout: 15000 });
         await dialog.locator('[data-semantic-component="RelationSearchResult"]:visible, [data-semantic-component="ScEmptyState"]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
         const visibleResults = dialog.locator('[data-semantic-component="RelationSearchResult"]:visible');
         const resultCount = await visibleResults.count();
@@ -487,7 +487,7 @@ try {
         }
         const dialogBox = await panel.boundingBox();
         const listboxCount = await dialog.locator('[role="listbox"]:visible').count();
-        const searchInputCount = await dialog.locator('[data-semantic-component="ScInput"][type="search"]:visible').count();
+        const searchInputCount = await dialog.locator('[data-semantic-component="ScInput"] input[type="search"]:visible').count();
         const primaryCount = await dialog.locator('.relation-dialog-footer .sc-btn-primary:visible:not(:disabled)').count();
         const footerActionLabels = await dialog.locator('.relation-dialog-footer-actions button:visible').allTextContents();
         relationSearchDialogEvidence = {

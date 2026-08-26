@@ -28,7 +28,7 @@
       <div class="relation-dialog-table-wrap">
         <ScLoading :loading="dialog.loading" :label="dialog.labels.loading || '正在加载关系记录'">
         <ScTable class="relation-dialog-table" :aria-busy="dialog.loading || undefined"
-          :label="dialog.title" :data="dialog.rows" :columns="relationTableColumns" row-key="id" size="small"
+          :label="dialog.title" :data="relationTableRows" :columns="relationTableColumns" row-key="id" size="small"
           role="listbox"
           row-selection-type="single" :select-on-row-click="true" :selected-row-keys="selectedRowKeys"
           :row-class-name="relationRowClassName" :row-attributes="relationRowAttributes"
@@ -144,11 +144,15 @@ const emit = defineEmits<{
 
 const searchInputRef = ref<{ $el?: HTMLInputElement } | null>(null);
 const selectedRowKeys = computed<Array<string | number>>(() => props.dialog.selectedId ? [props.dialog.selectedId] : []);
-const relationTableColumns = computed(() => props.dialog.columns.map((column) => ({
-  colKey: column.name,
-  title: column.label,
-  cell: ({ row }: { row: RelationSearchRow }) => relationSearchCell(row, column.name),
-})));
+const relationTableRows = computed(() => props.dialog.rows.map((row) => ({ ...row, ...row.values })));
+const relationTableColumns = computed(() => [
+  { colKey: 'row-select', type: 'single', width: 48 },
+  ...props.dialog.columns.map((column) => ({
+    colKey: column.name,
+    title: column.label,
+    cell: ({ row }: { row: RelationSearchRow }) => relationSearchCell(row, column.name),
+  })),
+]);
 
 function tableRow(context: unknown): RelationSearchRow | null {
   if (!context || typeof context !== 'object') return null;
