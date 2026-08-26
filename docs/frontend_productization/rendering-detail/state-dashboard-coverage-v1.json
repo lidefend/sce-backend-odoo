@@ -9,6 +9,7 @@
   },
   "governedStates": ["loading", "empty", "error", "disabled", "focus", "reduced_motion"],
   "surfaces": [
+    {"key": "dashboard_accordion_group", "stateAuthority": "ScEmptyState", "readiness": "ready"},
     {"key": "activity_page", "stateAuthority": "ScLoading/ScEmptyState/ScErrorState", "readiness": "ready"},
     {"key": "status_panel", "stateAuthority": "productErrorState + ScButton", "readiness": "ready"},
     {"key": "dashboard_activity_feed", "stateAuthority": "ScEmptyState", "readiness": "ready"},

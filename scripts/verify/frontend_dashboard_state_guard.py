@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BLOCK_ROOT = ROOT / "frontend/apps/web/src/components/page/blocks"
 BLOCKS = {
+    "accordion": "BlockAccordionGroup.vue",
     "activity": "BlockActivityFeed.vue",
     "alert": "BlockAlertPanel.vue",
     "entry": "BlockEntryGrid.vue",
@@ -46,4 +47,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_dashboard_state_guard] PASS blocks=8 formal_gaps=0")
+    print("[frontend_dashboard_state_guard] PASS blocks=9 formal_gaps=0")
