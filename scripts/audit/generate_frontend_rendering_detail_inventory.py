@@ -173,6 +173,48 @@ COMPONENT_IMPORTS = {
 }
 
 
+def ownership_binding_failures(
+    ownership: dict[str, Any] = OWNERSHIP,
+    batch_bindings: dict[str, dict[str, dict[str, dict[str, Any]]]] = BATCH_BINDINGS,
+) -> list[str]:
+    failures: list[str] = []
+    owners = ownership.get("owners") if isinstance(ownership, dict) else None
+    if not isinstance(owners, dict):
+        return ["ownership registry must declare owners"]
+    formal_batches = {
+        key: value for key, value in owners.items()
+        if isinstance(value, dict) and value.get("formalProductLayer") in {"P0", "P1"}
+    }
+    for batch in sorted(set(formal_batches) | set(batch_bindings)):
+        owner = formal_batches.get(batch)
+        bindings = batch_bindings.get(batch)
+        if owner is None:
+            failures.append(f"binding batch lacks formal P0/P1 owner: {batch}")
+            continue
+        if bindings is None:
+            failures.append(f"formal P0/P1 owner lacks binding batch: {batch}")
+            continue
+        declared = owner.get("sources")
+        if not isinstance(declared, list) or any(not isinstance(source, str) or not source for source in declared):
+            failures.append(f"formal owner sources are invalid: {batch}")
+            continue
+        declared_set = set(declared)
+        binding_set = set(bindings)
+        for source in sorted(declared_set - binding_set):
+            failures.append(f"formal owner source lacks binding: {batch}: {source}")
+        for source in sorted(binding_set - declared_set):
+            failures.append(f"binding source lacks formal ownership: {batch}: {source}")
+    source_owners: dict[str, list[str]] = {}
+    for batch, owner in formal_batches.items():
+        for source in owner.get("sources", []):
+            if isinstance(source, str):
+                source_owners.setdefault(source, []).append(batch)
+    for source, batches in sorted(source_owners.items()):
+        if len(batches) > 1:
+            failures.append(f"formal source has multiple owners: {source}: {','.join(sorted(batches))}")
+    return failures
+
+
 class TemplateElements(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -274,6 +316,9 @@ def classify(source: str, text: str) -> tuple[str, str]:
 
 
 def build_inventory() -> dict[str, Any]:
+    binding_failures = ownership_binding_failures()
+    if binding_failures:
+        raise ValueError("invalid rendering ownership bindings: " + "; ".join(binding_failures))
     vue_files = sorted((ROOT / "frontend/apps/web/src").rglob("*.vue"))
     surfaces: list[dict[str, Any]] = []
     for path in vue_files:
@@ -299,6 +344,12 @@ def build_inventory() -> dict[str, Any]:
             "targetBatch": OWNED_BINDINGS[source][0] if source in OWNED_BINDINGS else None,
         })
     counts = Counter(item["status"] for item in surfaces)
+    next_batch = None if counts.get("gap", 0) == 0 else {
+        "key": "p0-shared-utility-scene-completion-v1",
+        "targetSurfaceCount": len(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
+        "targetSources": sorted(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
+        "commitBudget": {"minimum": 12, "maximum": 20},
+    }
     return {
         "schemaVersion": SCHEMA_VERSION,
         "sourceCommit": git("merge-base", "HEAD", "origin/main"),
@@ -315,12 +366,7 @@ def build_inventory() -> dict[str, Any]:
             "permission and route authority changes",
         ],
         "summary": {"surfaceCount": len(surfaces), **{key: counts.get(key, 0) for key in sorted(STATUS_VALUES)}},
-        "nextBatch": {
-            "key": "p0-shared-utility-scene-completion-v1",
-            "targetSurfaceCount": len(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
-            "targetSources": sorted(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
-            "commitBudget": {"minimum": 12, "maximum": 20},
-        },
+        "nextBatch": next_batch,
         "surfaces": surfaces,
         "completionPolicy": {
             "formalP0P1UntreatedGapTarget": 0,

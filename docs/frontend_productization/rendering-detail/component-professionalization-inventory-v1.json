@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
   "sourceCommit": "376bbfb229afa995f8d5f16e7fca4ec8131e29b9",
-  "generatorDigest": "b71d4328e404c608216db75addda21c2a3cfbcc4270f8428badbbd1a560282f0",
+  "generatorDigest": "8ca45ed6ca5773ef86b0f8ebfd32669afe3b1e7af302f0ef5fbb48b3c732d5ef",
   "ownershipDigest": "54931624a7bbda234bbb8b30073c1c588e129beedbad213973a64fd9c1765471",
-  "inputDigest": "4ad59e7973d5b76eea20e4553b0e5ee1b6f2f1497d747f0d7c03dad77a96ad41",
+  "inputDigest": "660b99e3dee7903ab85aa9c301c520291194491e1412a4763637b1ae69bfe036",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -27,37 +27,7 @@
     "governed_primitive": 26,
     "p3_out_of_scope": 18
   },
-  "nextBatch": {
-    "key": "p0-shared-utility-scene-completion-v1",
-    "targetSurfaceCount": 21,
-    "targetSources": [
-      "frontend/apps/web/src/components/DevContextPanel.vue",
-      "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue",
-      "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
-      "frontend/apps/web/src/components/page/PageRenderer.vue",
-      "frontend/apps/web/src/components/page/ZoneRenderer.vue",
-      "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
-      "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
-      "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
-      "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
-      "frontend/apps/web/src/views/AccessDeniedView.vue",
-      "frontend/apps/web/src/views/AccountActivationView.vue",
-      "frontend/apps/web/src/views/ApiKeyManagementView.vue",
-      "frontend/apps/web/src/views/LoginView.vue",
-      "frontend/apps/web/src/views/MenuView.vue",
-      "frontend/apps/web/src/views/MyWorkView.vue",
-      "frontend/apps/web/src/views/NotFoundView.vue",
-      "frontend/apps/web/src/views/PasswordRecoveryView.vue",
-      "frontend/apps/web/src/views/PlaceholderView.vue",
-      "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
-      "frontend/apps/web/src/views/SceneView.vue",
-      "frontend/apps/web/src/views/WorkbenchView.vue"
-    ],
-    "commitBudget": {
-      "minimum": 12,
-      "maximum": 20
-    }
-  },
+  "nextBatch": null,
   "surfaces": [
     {
       "source": "frontend/apps/web/src/components/DevContextPanel.vue",

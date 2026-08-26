@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import copy
 import unittest
 from pathlib import Path
 
@@ -64,10 +65,13 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         batch = "p0-shared-utility-scene-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
         self.assertEqual(len(sources), 21)
-        self.assertEqual(self.report["nextBatch"]["key"], batch)
         for source in sources:
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
+    def test_zero_gap_report_has_no_stale_next_batch(self) -> None:
+        self.assertEqual(self.report["summary"]["gap"], 0)
+        self.assertIsNone(self.report["nextBatch"])
 
     def test_collection_ownership_without_semantic_binding_fails_closed(self) -> None:
         source = "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue"
@@ -120,6 +124,29 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         self.assertRegex(self.report["ownershipDigest"], r"^[0-9a-f]{64}$")
         self.assertGreater(self.report["summary"]["surfaceCount"], 0)
         self.assertEqual(self.report["completionPolicy"]["formalP0P1UntreatedGapTarget"], 0)
+
+    def test_formal_owner_source_cannot_be_removed_while_binding_remains(self) -> None:
+        ownership = copy.deepcopy(INVENTORY.OWNERSHIP)
+        batch = "p0-collection-state-control-completion-v1"
+        removed = ownership["owners"][batch]["sources"].pop()
+        failures = INVENTORY.ownership_binding_failures(ownership, INVENTORY.BATCH_BINDINGS)
+        self.assertTrue(any("binding source lacks formal ownership" in failure and removed in failure for failure in failures))
+
+    def test_formal_owner_batch_cannot_exist_without_bindings(self) -> None:
+        ownership = copy.deepcopy(INVENTORY.OWNERSHIP)
+        ownership["owners"]["p0-unbound-test"] = {
+            "formalProductLayer": "P0",
+            "sources": ["frontend/apps/web/src/components/Unbound.vue"],
+        }
+        failures = INVENTORY.ownership_binding_failures(ownership, INVENTORY.BATCH_BINDINGS)
+        self.assertIn("formal P0/P1 owner lacks binding batch: p0-unbound-test", failures)
+
+    def test_formal_source_cannot_have_multiple_owners(self) -> None:
+        ownership = copy.deepcopy(INVENTORY.OWNERSHIP)
+        duplicate = ownership["owners"]["p0-collection-state-control-completion-v1"]["sources"][0]
+        ownership["owners"]["p0-navigation-hierarchy-composite-completion-v1"]["sources"].append(duplicate)
+        failures = INVENTORY.ownership_binding_failures(ownership, INVENTORY.BATCH_BINDINGS)
+        self.assertTrue(any("formal source has multiple owners" in failure and duplicate in failure for failure in failures))
 
 
 if __name__ == "__main__":
