@@ -79,6 +79,13 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
                 encoding="utf-8",
             )
+        (design / "ScDateField.vue").write_text(
+            '<template><TDesignDatePicker v-native-control-projection="nativeProjection" /></template>\n'
+            "<script>const nativeProjection = { selector: 'input' as const, attributes: { required: props.required, "
+            "'aria-required': props.required ? 'true' : undefined, 'aria-invalid': props.invalid ? 'true' : undefined, "
+            "'aria-describedby': props.describedBy } };</script>\n",
+            encoding="utf-8",
+        )
         return root
 
     def test_valid_adapter_surface_passes(self) -> None:
@@ -108,6 +115,15 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         source = root / "frontend/apps/web/src/components/design-system/ScButton.vue"
         source.write_text(source.read_text(encoding="utf-8").replace('v-bind="attrs"', ''), encoding="utf-8")
         self.assertTrue(any("v-bind=\"attrs\"" in error for error in validate(root)))
+
+    def test_date_field_without_native_required_projection_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScDateField.vue"
+        source.write_text(
+            source.read_text(encoding="utf-8").replace("'aria-required': props.required ? 'true' : undefined, ", ""),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("ScDateField missing native accessibility projection" in error for error in validate(root)))
 
     def test_business_identity_fails(self) -> None:
         root = self.make_root()

@@ -80,10 +80,15 @@ def validate(
     for marker in column_required:
         if marker not in column:
             failures.append(f"collection column header missing {marker}")
+    if 'role="columnheader"' in column or 'aria-sort' in column:
+        failures.append("collection column header must not duplicate the native th semantics")
     if any(marker in column for marker in ("<button", "<input", "<select", "<textarea")):
         failures.append("collection column header retains a raw control outside primitive adapters")
     if list_page.count('h(CollectionColumnHeaderControl') != 1 or 'title: () => collectionHeader(field)' not in list_page:
         failures.append("list page must use one shared TDesign column-header adapter for flat and grouped tables")
+    for marker in ("attrs: ({ type }", "type === 'th'", "{ 'aria-sort': columnAriaSort(field) }"):
+        if marker not in list_page:
+            failures.append(f"list page must project sort semantics to the native th: {marker}")
     if '<th\n              v-for="col in displayedColumns"' in list_page:
         failures.append("list page retains parallel column header DOM")
     legacy_style = LIST_STYLE.read_text(encoding="utf-8")

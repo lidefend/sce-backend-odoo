@@ -7,8 +7,6 @@
     :style="columnStyle"
     :tabindex="sortable ? 0 : -1"
     :title="sortTitle"
-    role="columnheader"
-    :aria-sort="ariaSort"
     @dragover="$emit('drag-over', $event)"
     @drop="$emit('drop-column', $event)"
     @dragend="$emit('drag-end')"
@@ -38,7 +36,6 @@ defineProps<{
   dragging: boolean;
   sortIcon: 'chevron-down' | 'chevron-up';
   sortTitle: string;
-  ariaSort?: 'none' | 'ascending' | 'descending';
   dragLabel: string;
   resizeLabel: string;
   densityClass: Record<string, boolean>;

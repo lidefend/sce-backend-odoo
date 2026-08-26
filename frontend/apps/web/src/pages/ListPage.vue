@@ -1502,7 +1502,6 @@ function collectionHeader(field: string) {
     dragging: draggingColumn.value === field,
     sortIcon: columnSortIcon(field),
     sortTitle: columnSortTitle(field),
-    ariaSort: columnAriaSort(field),
     dragLabel: uiLabel('column_drag_reorder', '拖动调整列顺序'),
     resizeLabel: uiLabel('column_resize', '调整列宽'),
     densityClass: columnDensityClass(field),
@@ -1567,6 +1566,9 @@ function collectionTableColumns(groupKey = '') {
   displayedColumns.value.forEach((field) => columns.push({
     colKey: field,
     title: () => collectionHeader(field),
+    attrs: ({ type }: { type?: string }) => type === 'th'
+      ? { 'aria-sort': columnAriaSort(field) }
+      : {},
     width: resolvedColumnWidth(field),
     className: (_context: unknown) => columnDensityClass(field),
     cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => collectionCell(row, field),
