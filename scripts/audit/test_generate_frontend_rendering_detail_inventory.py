@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import copy
 import unittest
 from pathlib import Path
 
@@ -35,6 +36,51 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], "p0-inline-full-state-completion-v1")
 
+    def test_collection_batch_sources_have_machine_proven_completion(self) -> None:
+        batch = "p0-collection-state-control-completion-v1"
+        sources = INVENTORY.BATCH_BINDINGS[batch]
+        self.assertEqual(len(sources), 19)
+        for source in sources:
+            self.assertIn(source, self.by_source)
+            self.assertEqual(self.by_source[source]["status"], "governed_composite")
+            self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
+    def test_navigation_hierarchy_sources_have_machine_proven_completion(self) -> None:
+        batch = "p0-navigation-hierarchy-composite-completion-v1"
+        sources = INVENTORY.BATCH_BINDINGS[batch]
+        self.assertEqual(len(sources), 9)
+        for source in sources:
+            self.assertEqual(self.by_source[source]["status"], "governed_composite")
+            self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
+    def test_form_relation_workflow_sources_have_machine_proven_completion(self) -> None:
+        batch = "p0-form-relation-workflow-completion-v1"
+        sources = INVENTORY.BATCH_BINDINGS[batch]
+        self.assertEqual(len(sources), 21)
+        for source in sources:
+            self.assertEqual(self.by_source[source]["status"], "governed_composite")
+            self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
+    def test_shared_utility_scene_sources_have_machine_proven_completion(self) -> None:
+        batch = "p0-shared-utility-scene-completion-v1"
+        sources = INVENTORY.BATCH_BINDINGS[batch]
+        self.assertEqual(len(sources), 21)
+        for source in sources:
+            self.assertEqual(self.by_source[source]["status"], "governed_composite")
+            self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
+    def test_zero_gap_report_has_no_stale_next_batch(self) -> None:
+        self.assertEqual(self.report["summary"]["gap"], 0)
+        self.assertIsNone(self.report["nextBatch"])
+
+    def test_collection_ownership_without_semantic_binding_fails_closed(self) -> None:
+        source = "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue"
+        fake = """<template><nav :data-state=\"loading ? 'loading' : 'ready'\"></nav></template>
+<script setup lang=\"ts\"></script>"""
+        status, reason = INVENTORY.classify(source, fake)
+        self.assertEqual(status, "gap")
+        self.assertIn("data-semantic-component", reason)
+
     def test_next_batch_missing_marker_fails_closed(self) -> None:
         source = "frontend/apps/web/src/components/page/BlockRenderer.vue"
         status, reason = INVENTORY.classify(source, "<ScErrorState />")
@@ -64,6 +110,19 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             self.assertEqual(self.by_source[source]["reason"], reason)
             self.assertTrue(reason.strip())
 
+    def test_formal_surface_cannot_regress_to_raw_control(self) -> None:
+        source = "frontend/apps/web/src/components/template/NativeSmartAction.vue"
+        fake = """<template><button>办理</button><ScButton>办理</ScButton></template>
+<script setup>import ScButton from '../design-system/ScButton.vue';</script>"""
+        status, reason = INVENTORY.classify(source, fake)
+        self.assertEqual(status, "gap")
+        self.assertIn("bypasses governed adapters", reason)
+
+    def test_p0_p1_raw_control_bypass_is_zero(self) -> None:
+        self.assertEqual(self.report["summary"]["p0P1RawControlBypassSurfaceCount"], 0)
+        self.assertEqual(self.report["summary"]["p0P1RawControlBypassControlCount"], 0)
+        self.assertEqual(self.report["completionPolicy"]["formalP0P1RawControlBypassTarget"], 0)
+
     def test_p3_surfaces_do_not_masquerade_as_p0_completion(self) -> None:
         for source in INVENTORY.P3_FILES:
             if source in self.by_source:
@@ -78,6 +137,29 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         self.assertRegex(self.report["ownershipDigest"], r"^[0-9a-f]{64}$")
         self.assertGreater(self.report["summary"]["surfaceCount"], 0)
         self.assertEqual(self.report["completionPolicy"]["formalP0P1UntreatedGapTarget"], 0)
+
+    def test_formal_owner_source_cannot_be_removed_while_binding_remains(self) -> None:
+        ownership = copy.deepcopy(INVENTORY.OWNERSHIP)
+        batch = "p0-collection-state-control-completion-v1"
+        removed = ownership["owners"][batch]["sources"].pop()
+        failures = INVENTORY.ownership_binding_failures(ownership, INVENTORY.BATCH_BINDINGS)
+        self.assertTrue(any("binding source lacks formal ownership" in failure and removed in failure for failure in failures))
+
+    def test_formal_owner_batch_cannot_exist_without_bindings(self) -> None:
+        ownership = copy.deepcopy(INVENTORY.OWNERSHIP)
+        ownership["owners"]["p0-unbound-test"] = {
+            "formalProductLayer": "P0",
+            "sources": ["frontend/apps/web/src/components/Unbound.vue"],
+        }
+        failures = INVENTORY.ownership_binding_failures(ownership, INVENTORY.BATCH_BINDINGS)
+        self.assertIn("formal P0/P1 owner lacks binding batch: p0-unbound-test", failures)
+
+    def test_formal_source_cannot_have_multiple_owners(self) -> None:
+        ownership = copy.deepcopy(INVENTORY.OWNERSHIP)
+        duplicate = ownership["owners"]["p0-collection-state-control-completion-v1"]["sources"][0]
+        ownership["owners"]["p0-navigation-hierarchy-composite-completion-v1"]["sources"].append(duplicate)
+        failures = INVENTORY.ownership_binding_failures(ownership, INVENTORY.BATCH_BINDINGS)
+        self.assertTrue(any("formal source has multiple owners" in failure and duplicate in failure for failure in failures))
 
 
 if __name__ == "__main__":

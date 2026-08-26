@@ -32,17 +32,18 @@
             required
             :disabled="busy"
             :described-by="describedBy"
+            :options="[
+              { value: 'char', label: '单行文本' },
+              { value: 'text', label: '多行文本' },
+              { value: 'integer', label: '整数' },
+              { value: 'float', label: '小数' },
+              { value: 'boolean', label: '是/否' },
+              { value: 'date', label: '日期' },
+              { value: 'datetime', label: '日期时间' },
+              { value: 'html', label: '富文本' },
+            ]"
             @update:model-value="$emit('update:ttype', $event)"
-          >
-            <option value="char">单行文本</option>
-            <option value="text">多行文本</option>
-            <option value="integer">整数</option>
-            <option value="float">小数</option>
-            <option value="boolean">是/否</option>
-            <option value="date">日期</option>
-            <option value="datetime">日期时间</option>
-            <option value="html">富文本</option>
-          </ScSelect>
+          />
         </template>
       </ScFormField>
       <footer class="low-code-field-create-actions" data-semantic-component="LowCodeFieldCreateActions">

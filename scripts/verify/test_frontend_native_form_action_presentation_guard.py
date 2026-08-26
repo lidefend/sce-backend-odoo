@@ -26,9 +26,13 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
         altered = self.source.replace('@click.stop.prevent="emitNativeAction(node)"', '@click="legacyAction(node)"', 1)
         self.assertTrue(any("emitNativeAction(node)" in error for error in validate(altered, self.smart_action, self.overflow_menu)))
 
-    def test_stateful_controls_are_not_mechanically_replaced(self):
-        altered = self.source.replace('class="native-tab"', 'class="generic-command"', 1)
-        self.assertTrue(any("stateful" in error for error in validate(altered, self.smart_action, self.overflow_menu)))
+    def test_notebook_tab_semantic_identity_is_preserved(self):
+        altered = self.source.replace("labelClass: `native-tab${", "labelClass: `generic-command${", 1)
+        self.assertTrue(any("notebook tabs" in error for error in validate(altered, self.smart_action, self.overflow_menu)))
+
+    def test_title_favorite_cannot_regress_to_private_button(self):
+        altered = self.source.replace('<ScIconButton\n              v-if="titleFieldForNode(node)?.favoriteToggle"', '<button\n              v-if="titleFieldForNode(node)?.favoriteToggle"', 1)
+        self.assertTrue(any("title favorite" in error for error in validate(altered, self.smart_action, self.overflow_menu)))
 
     def test_smart_action_cannot_return_to_renderer_private_css(self):
         altered = f"{self.source}\n.native-action-btn--smart {{ color: red; }}"

@@ -3,7 +3,8 @@
   <LayoutShell
     :content-layout="recordContentLayoutMode"
     :class="['sc-page', { 'contract-form-native-shell': useNativeFormTree }]"
-    data-product-page-mode="form"
+    data-product-page-mode="form" data-semantic-component="ContractFormPage"
+    :data-state="status"
     :data-form-model="model"
     :data-form-record="recordId ? String(recordId) : 'new'"
     :data-form-action-id="String(actionId || '')"
@@ -225,10 +226,10 @@
       </section>
       <PageFooterTemplate v-if="!canonicalProductRendererActive && isIntakeCreateMode" :hint="formUiLabel('create_hint')">
         <template #default>
-          <button class="ghost" :disabled="busy" @click="cancelIntake">取消</button>
-          <button class="primary" :disabled="isIntakeCreateDisabled" @click="() => saveRecord()">
+          <ScButton variant="ghost" :disabled="busy" @click="cancelIntake">取消</ScButton>
+          <ScButton variant="primary" :disabled="isIntakeCreateDisabled" @click="() => saveRecord()">
             {{ intakeCreateButtonLabel }}
-          </button>
+          </ScButton>
         </template>
       </PageFooterTemplate>
       <NativeCollaborationPanel
@@ -274,6 +275,7 @@ import IntentConfirmationDialog from '../components/business/IntentConfirmationD
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import LayoutShell from '../components/template/LayoutShell.vue';
 import ProductFormLoadingSkeleton from '../components/product-record/ProductFormLoadingSkeleton.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
 import { type NativeFormLayoutNode } from '../components/template/NativeFormTreeRenderer.vue';
 import SceneBlocksRenderer from '../components/scene/SceneBlocksRenderer.vue';
@@ -305,11 +307,7 @@ import CurrentFormFieldSettingsPanel from './contractForm/CurrentFormFieldSettin
 import ContractFormActionBlocks from './contractForm/ContractFormActionBlocks.vue';
 import ContractFormProductHeader from './contractForm/ContractFormProductHeader.vue';
 import { resolveCanonicalHeaderActionPresentation } from './contractForm/contractFormHeaderCanonicalActions';
-import type {
-  FormSectionFieldActionPayload,
-  FormSectionFieldSchema,
-  FormSectionFieldChange,
-} from '../components/template/formSection.types';
+import type { FormSectionFieldActionPayload, FormSectionFieldSchema, FormSectionFieldChange } from '../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../components/template/relationField.types';
 import { createFormSectionFieldSchemaBuilder } from '../components/template/formSection.adapter';
 import { resolveInputPlaceholder, resolveSelectPlaceholder } from '../components/template/placeholder.mapper';

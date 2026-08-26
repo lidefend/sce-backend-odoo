@@ -1,8 +1,10 @@
 export { default as ScActionBar } from './ScActionBar.vue';
 export { default as ScAuditTrail } from './ScAuditTrail.vue';
 export { default as ScButton } from './ScButton.vue';
+export { default as ScCheckbox } from './ScCheckbox.vue';
+export { default as ScRadioGroup } from './ScRadioGroup.vue';
+export { default as ScRadio } from './ScRadio.vue';
 export { default as ScBadge } from './ScBadge.vue';
-export { default as ScDataTable } from './ScDataTable.vue';
 export { default as ScDateField } from './ScDateField.vue';
 export { default as ScDialog } from './ScDialog.vue';
 export { default as ScDrawer } from './ScDrawer.vue';

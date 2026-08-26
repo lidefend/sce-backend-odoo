@@ -3,6 +3,7 @@
     :open="dialog.open"
     :title="dialog.title"
     :close-label="dialog.labels.close || '关闭'"
+    size="wide"
     panel-class="relation-dialog"
     data-professional-relation-lifecycle="search"
     @close="$emit('close')"
@@ -27,47 +28,11 @@
       <p v-if="dialog.error" class="validation-error" role="alert">{{ dialog.error }}</p>
       <div class="relation-dialog-table-wrap">
         <ScLoading :loading="dialog.loading" :label="dialog.labels.loading || '正在加载关系记录'">
-        <ScDataTable class="relation-dialog-table" :aria-busy="dialog.loading || undefined">
-          <thead>
-            <tr>
-              <th class="relation-dialog-select-col"></th>
-              <th v-for="column in dialog.columns" :key="column.name">
-                {{ column.label }}
-              </th>
-            </tr>
-          </thead>
-          <tbody role="listbox" :aria-label="dialog.title">
-            <tr
-              v-for="row in dialog.rows"
-              :key="`rel-${row.id}`"
-              :class="{ 'relation-dialog-row--active': dialog.selectedId === row.id }"
-              data-semantic-component="RelationSearchResult"
-              data-semantic-layout="table-row"
-              :data-record-id="row.id"
-              role="option"
-              tabindex="0"
-              :aria-selected="dialog.selectedId === row.id"
-              @click="$emit('select-row', row)"
-              @dblclick="$emit('confirm', row)"
-              @keydown.space.prevent="$emit('select-row', row)"
-              @keydown.enter.prevent="$emit('confirm', row)"
-            >
-              <td class="relation-dialog-select-col">
-                <input
-                  type="radio"
-                  name="relation-search-select"
-                  :checked="dialog.selectedId === row.id"
-                  :aria-label="relationSearchPrimaryText(row)"
-                  tabindex="-1"
-                  @change="$emit('select-row', row)"
-                />
-              </td>
-              <td v-for="column in dialog.columns" :key="`${row.id}-${column.name}`" :data-label="column.label">
-                {{ relationSearchCell(row, column.name) }}
-              </td>
-            </tr>
-          </tbody>
-        </ScDataTable>
+        <ScTable class="relation-dialog-table" :aria-busy="dialog.loading || undefined"
+          :label="dialog.title" :data="relationTableRows" :columns="relationTableColumns" row-key="id" size="small"
+          role="listbox"
+          :row-class-name="relationRowClassName" :row-attributes="relationRowAttributes"
+          @row-click="onTableSelect" @row-dblclick="onTableConfirm" />
         </ScLoading>
         <ScEmptyState v-if="!dialog.loading && !dialog.rows.length" :title="dialog.labels.empty || '未找到匹配记录'" />
       </div>
@@ -87,13 +52,13 @@
           @keydown.space.prevent="$emit('select-row', row)"
           @keydown.enter.prevent="$emit('confirm', row)"
         >
-          <input
-            type="radio"
+          <ScRadio
             name="relation-search-select-mobile"
+            :value="row.id"
             :checked="dialog.selectedId === row.id"
-            :aria-label="relationSearchPrimaryText(row)"
+            :label="relationSearchPrimaryText(row)"
             tabindex="-1"
-            @change="$emit('select-row', row)"
+            @change="$event && $emit('select-row', row)"
           />
           <span class="relation-dialog-result-content">
             <span class="relation-dialog-result-head">
@@ -138,13 +103,14 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import ScButton from '../../components/design-system/ScButton.vue';
-import ScDataTable from '../../components/design-system/ScDataTable.vue';
+import ScTable from '../../components/design-system/ScTable.vue';
 import ScDialog from '../../components/design-system/ScDialog.vue';
 import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScLoading from '../../components/design-system/ScLoading.vue';
+import ScRadio from '../../components/design-system/ScRadio.vue';
 import type { RelationOption, RelationSearchColumn, RelationSearchRow, RelationUiLabels } from './types';
 
 export type RelationSearchDialogState = {
@@ -168,7 +134,7 @@ const props = defineProps<{
   recordCountLabel: string;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   close: [];
   search: [];
   create: [];
@@ -178,6 +144,43 @@ defineEmits<{
 }>();
 
 const searchInputRef = ref<{ $el?: HTMLInputElement } | null>(null);
+const relationTableRows = computed(() => props.dialog.rows.map((row) => ({ ...row.values, ...row, id: row.id })));
+const relationTableColumns = computed(() => props.dialog.columns.map((column) => ({
+  colKey: column.name,
+  title: column.label,
+  cell: (_h: unknown, { row }: { row: RelationSearchRow }) => relationSearchCell(row, column.name),
+})));
+
+function tableRow(context: unknown): RelationSearchRow | null {
+  if (!context || typeof context !== 'object') return null;
+  const row = (context as { row?: unknown }).row;
+  return row && typeof row === 'object' && 'id' in row ? row as RelationSearchRow : null;
+}
+function relationRowClassName(context: unknown) {
+  const row = tableRow(context);
+  return row?.id === props.dialog.selectedId ? 'relation-dialog-row--active' : '';
+}
+function relationRowAttributes(context: unknown): Record<string, unknown> {
+  const row = tableRow(context);
+  return {
+    'data-semantic-component': 'RelationSearchResult',
+    'data-semantic-layout': 'table-row',
+    'data-record-id': row?.id,
+    role: 'option',
+    tabindex: 0,
+    'aria-selected': row?.id === props.dialog.selectedId,
+    onKeydown: (event: KeyboardEvent) => {
+      if (!row) return;
+      if (event.key === ' ') { event.preventDefault(); emit('select-row', row); }
+      if (event.key === 'Enter') { event.preventDefault(); emit('confirm', row); }
+    },
+  };
+}
+function onTableSelect(context: unknown) { const row = tableRow(context); if (row) emit('select-row', row); }
+function onTableConfirm(context: unknown) {
+  const row = tableRow(context);
+  if (row) emit('confirm', row);
+}
 
 watch(
   () => props.dialog.open,

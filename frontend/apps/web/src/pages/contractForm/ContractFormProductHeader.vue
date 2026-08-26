@@ -1,6 +1,8 @@
 <template>
   <PageHeaderTemplate
     class="contract-form-command-bar"
+    data-semantic-component="ContractFormProductHeader"
+    :data-state="busy ? 'loading' : mode"
     :title="title"
     :subtitle="subtitle || undefined"
     :hide-title="hideTitle"
@@ -54,16 +56,18 @@
             @scroll="updateWorkflowOverflow"
           >
             <li v-for="(item, index) in statusbar.states" :key="String(item.value)">
-              <button
+              <ScButton
                 type="button"
                 class="native-statusbar-step"
+                variant="ghost"
+                size="small"
                 :class="{ 'native-statusbar-step--active': statusbar.current === String(item.value), 'native-statusbar-step--done': statusbar.reachedValues.includes(String(item.value)) && statusbar.current !== String(item.value) }"
                 :aria-current="statusbar.current === String(item.value) ? 'step' : undefined"
                 :aria-label="`第 ${index + 1} 步，共 ${statusbar.states.length} 步：${item.label}`"
                 :aria-disabled="busy || statusbar.readonly"
                 :disabled="busy || statusbar.readonly"
                 @click="activateStatus(String(item.value))"
-              ><span class="native-statusbar-step-index" aria-hidden="true">{{ index + 1 }}</span><span>{{ item.label }}</span></button>
+              ><span class="native-statusbar-step-index" aria-hidden="true">{{ index + 1 }}</span><span>{{ item.label }}</span></ScButton>
             </li>
           </ol>
         </section>

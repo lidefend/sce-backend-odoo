@@ -620,8 +620,9 @@ tbody td {
 
 @media (min-width: 761px) {
   .desktop-record-table table {
-    width: 100%;
-    table-layout: fixed;
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
   }
 }
 
@@ -684,12 +685,11 @@ tbody td {
 
 .table tbody .column-layout-identity .primary,
 .table tbody .column-layout-relation > div {
-  display: -webkit-box;
+  display: block;
   overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .table tbody .column-layout-text > div,
@@ -699,6 +699,16 @@ tbody td {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.table tbody td.column-layout-identity,
+.table tbody td.column-layout-relation,
+.table tbody td.column-layout-text,
+.table tbody td.column-layout-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .is-empty-value {

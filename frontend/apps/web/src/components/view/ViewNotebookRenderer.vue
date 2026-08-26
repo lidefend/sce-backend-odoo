@@ -1,19 +1,10 @@
 <template>
   <div class="view-notebook">
-    <div class="tabs">
-      <button
-        v-for="(page, index) in pages"
-        :key="page.title || index"
-        class="tab"
-        :class="{ active: index === activeIndex }"
-        @click="activeIndex = index"
-      >
-        {{ page.title || `Page ${index + 1}` }}
-      </button>
-    </div>
-    <div class="tab-panel">
+    <ScTabs class="tabs" :model-value="activeIndex" :items="tabItems" size="small" @update:model-value="activeIndex = Number($event)">
+      <template #panel="{ item }">
+    <div v-if="Number(item.value) === activeIndex" class="tab-panel">
       <ViewGroupRenderer
-        v-for="(group, index) in activeGroups"
+        v-for="(group, index) in groupsForPage(activeIndex)"
         :key="`page-${activeIndex}-group-${index}`"
         :group="group"
         :fields="fields"
@@ -25,6 +16,8 @@
         @update:field="emit('update:field', $event)"
       />
     </div>
+      </template>
+    </ScTabs>
   </div>
 </template>
 
@@ -32,6 +25,7 @@
 import { computed, ref } from 'vue';
 import type { ViewContract } from '@sc/schema';
 import ViewGroupRenderer from './ViewGroupRenderer.vue';
+import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 
 interface ViewPageNode {
   title?: string;
@@ -55,13 +49,18 @@ const emit = defineEmits<{ (event: 'update:field', payload: { name: string; valu
 
 const pages = computed(() => (Array.isArray(props.notebook.pages) ? props.notebook.pages : []));
 const activeIndex = ref(0);
-const activeGroups = computed(() => {
-  const page = pages.value[activeIndex.value];
+const tabItems = computed<ScTabItem[]>(() => pages.value.map((page, index) => ({
+  value: index,
+  label: page.title || `Page ${index + 1}`,
+  labelClass: `tab${index === activeIndex.value ? ' active' : ''}`,
+})));
+function groupsForPage(index: number) {
+  const page = pages.value[index];
   if (!page || !Array.isArray(page.groups)) {
     return [];
   }
   return page.groups;
-});
+}
 </script>
 
 <style scoped>
@@ -71,24 +70,15 @@ const activeGroups = computed(() => {
 }
 
 .tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  min-width: 0;
 }
 
 .tab {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--sc-app-border-strong);
-  background: var(--sc-app-subtle-bg);
-  color: var(--sc-app-text-primary);
-  cursor: pointer;
+  white-space: nowrap;
 }
 
 .tab.active {
-  background: var(--sc-semantic-surface-interactive);
-  color: var(--sc-semantic-text-on-interactive);
-  border-color: var(--sc-semantic-surface-interactive);
+  font-weight: 600;
 }
 
 .tab-panel {

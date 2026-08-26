@@ -1,6 +1,8 @@
 <template>
   <header
     class="product-page-header"
+    data-semantic-component="ProductPageHeader"
+    :data-state="model.renderProfile"
     :class="[
       `product-page-header--${model.variant}`,
       `product-page-header--${model.presentationMode}`,
@@ -103,7 +105,15 @@ const model = computed(() => resolveProductPageHeaderModel({
 .product-page-header--title-hidden { min-height:54px; padding-block:var(--sc-space-xs); }
 .product-page-header--title-hidden .product-page-header__identity { position:absolute; width:1px; height:1px; overflow:hidden; }
 .product-page-header--title-hidden .product-page-header__status { margin-left:0; text-align:left; }
-.product-page-header--collection { box-shadow:0 1px 2px color-mix(in srgb,var(--sc-app-shadow) 8%,transparent); }
+.product-page-header--collection {
+  min-height:72px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  padding:12px 8px;
+}
+.product-page-header--collection h1 { font-size:24px; letter-spacing:-.01em; }
 .product-page-header--task,.product-page-header--workspace { border-color:var(--sc-app-border-strong); }
 .product-page-header--dialog { box-shadow:none; border-width:0 0 1px; border-radius:0; }
 @media(max-width:860px){.product-page-header{align-items:stretch;flex-direction:column}.product-page-header--title-hidden{align-items:stretch}.product-page-header__status{width:100%;margin-left:0;text-align:left}.product-page-header__actions{width:100%}.product-page-header h1{font-size:20px}}

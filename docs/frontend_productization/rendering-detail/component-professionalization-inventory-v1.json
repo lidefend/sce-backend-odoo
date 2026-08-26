@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceCommit": "c63c2dea9fdb7d2385e0d23a8276dc0cd033838e",
-  "generatorDigest": "402294a985dc4630e129c28e8f3474b2145e8729eab1dd9be24f6b2a97d2effd",
-  "ownershipDigest": "ce22fc0b050dca31185a64f7793b5bff9f2f82ff99999a154d4ea88cc7a37b3d",
-  "inputDigest": "e1e6fbbcb7cdedb94621ee426f6a3348e728137e43f4afe7ef3600f087ae8b78",
+  "sourceCommit": "376bbfb229afa995f8d5f16e7fca4ec8131e29b9",
+  "generatorDigest": "5ce5dcd991f127ad806d5e18386a8e2e82ed891a98c753430d6f69e028ebad5a",
+  "ownershipDigest": "138582376e6038ec7d4de5d40956e7e1def8398b0b0fc052d3922db6a36ce304",
+  "inputDigest": "1fc46915a72f104d33e477997067730cdde6f0953e596447558876488b3d6356",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,43 +20,26 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 135,
-    "deliberate_native_composite": 6,
-    "gap": 63,
-    "governed_composite": 23,
-    "governed_primitive": 25,
+    "surfaceCount": 138,
+    "p0P1RawControlBypassSurfaceCount": 0,
+    "p0P1RawControlBypassControlCount": 0,
+    "deliberate_native_composite": 0,
+    "gap": 0,
+    "governed_composite": 93,
+    "governed_primitive": 27,
     "p3_out_of_scope": 18
   },
-  "nextBatch": {
-    "key": "p0-inline-full-state-completion-v1",
-    "targetSurfaceCount": 8,
-    "targetSources": [
-      "frontend/apps/web/src/components/GlobalMessagePanel.vue",
-      "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue",
-      "frontend/apps/web/src/components/page/BlockRenderer.vue",
-      "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
-      "frontend/apps/web/src/layouts/AppShell.vue",
-      "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
-      "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
-      "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue"
-    ],
-    "commitBudget": {
-      "minimum": 12,
-      "maximum": 20
-    }
-  },
+  "nextBatch": null,
   "surfaces": [
     {
       "source": "frontend/apps/web/src/components/DevContextPanel.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/GlobalMessagePanel.vue",
@@ -70,40 +53,35 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/GroupSummaryBar.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 4
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/MenuTree.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "empty",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/StatusPanel.vue",
@@ -122,44 +100,38 @@
     {
       "source": "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "collection disclosure and facet controls retain native button semantics under the collection toolbar guard",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 15,
-        "input": 2,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
         "error",
         "focus"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -167,19 +139,17 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -187,27 +157,23 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue",
@@ -243,20 +209,20 @@
     {
       "source": "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -264,14 +230,11 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "input": 1,
-        "textarea": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/design-system/ScBadge.vue",
@@ -294,18 +257,17 @@
         "loading",
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
     {
-      "source": "frontend/apps/web/src/components/design-system/ScDataTable.vue",
+      "source": "frontend/apps/web/src/components/design-system/ScCheckbox.vue",
       "formalProductLayer": "P0",
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
+        "disabled",
         "focus"
       ],
       "rawControls": {},
@@ -332,6 +294,7 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
+        "loading",
         "focus"
       ],
       "rawControls": {},
@@ -465,9 +428,7 @@
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -529,6 +490,30 @@
       "targetBatch": null
     },
     {
+      "source": "frontend/apps/web/src/components/design-system/ScRadio.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScRadioGroup.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
       "source": "frontend/apps/web/src/components/design-system/ScRelationField.vue",
       "formalProductLayer": "P0",
       "status": "governed_primitive",
@@ -549,11 +534,10 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "error",
-        "disabled"
+        "disabled",
+        "focus"
       ],
-      "rawControls": {
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -563,7 +547,8 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
-        "loading"
+        "loading",
+        "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -592,9 +577,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "textarea": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -627,26 +610,24 @@
     {
       "source": "frontend/apps/web/src/components/page/PageRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/page/ZoneRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/page/blocks/BlockAccordionGroup.vue",
@@ -781,207 +762,209 @@
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
+        "empty",
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "column sorting and disclosure are a registered collection composite",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/product-list/CollectionFilterChip.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
+        "empty",
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
-      "stateTypes": [
-        "focus"
-      ],
-      "rawControls": {},
-      "governedStatePrimitives": [],
-      "targetBatch": null
-    },
-    {
-      "source": "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
-      "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled",
         "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "row-cell interaction is owned by the collection row-cell guard",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "native checkbox semantics are owned by the collection selection guard",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "input": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "error",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1,
-        "input": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "input": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-record/ProductFormErrorSummary.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "error",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
@@ -991,195 +974,173 @@
       "stateTypes": [
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
-      "stateTypes": [
-        "focus"
-      ],
-      "rawControls": {
-        "button": 1
-      },
-      "governedStatePrimitives": [],
-      "targetBatch": null
-    },
-    {
-      "source": "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
-      "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
         "error"
       ],
-      "rawControls": {
-        "input": 1,
-        "textarea": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "error",
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
         "error",
         "focus"
       ],
-      "rawControls": {
-        "button": 5
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
-      "stateTypes": [],
-      "rawControls": {
-        "button": 5
-      },
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty"
+      ],
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/template/FormSection.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
         "error",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2,
-        "input": 4
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled",
         "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "empty",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2,
-        "input": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/template/NativeSmartAction.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "native smart action semantics are owned by the native action presentation guard",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
@@ -1192,52 +1153,44 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2,
-        "input": 2,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "input": 1,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "deliberate_native_composite",
-      "reason": "native notebook interaction is owned by the structured form renderer",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
+        "empty",
         "error",
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/layouts/AppShell.vue",
@@ -1251,9 +1204,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 17
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
@@ -1268,9 +1219,7 @@
         "error",
         "focus"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScLoading",
         "ScEmptyState",
@@ -1281,8 +1230,8 @@
     {
       "source": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1290,17 +1239,15 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/KanbanPage.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1308,13 +1255,13 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/ListPage.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1326,59 +1273,56 @@
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/ModelListPage.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "error"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
-    },
-    {
-      "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
-      "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
-      "stateTypes": [
-        "disabled"
-      ],
-      "rawControls": {
-        "button": 1
-      },
-      "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
-      "rawControls": {
-        "button": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
@@ -1390,9 +1334,7 @@
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScErrorState"
       ],
@@ -1401,60 +1343,55 @@
     {
       "source": "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
         "error",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 1,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "disabled"
       ],
-      "rawControls": {
-        "button": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue",
@@ -1505,8 +1442,8 @@
     {
       "source": "frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1515,7 +1452,7 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/ProfessionalAuditTimeline.vue",
@@ -1534,15 +1471,15 @@
     {
       "source": "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
@@ -1570,9 +1507,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "input": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScLoading",
         "ScEmptyState"
@@ -1582,8 +1517,8 @@
     {
       "source": "frontend/apps/web/src/views/AccessDeniedView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "error"
       ],
@@ -1591,30 +1526,28 @@
       "governedStatePrimitives": [
         "ScErrorState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/AccountActivationView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "error",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 2,
-        "input": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/ActionView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1622,29 +1555,25 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 14
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/ApiKeyManagementView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
         "error"
       ],
-      "rawControls": {
-        "input": 7
-      },
+      "rawControls": {},
       "governedStatePrimitives": [
         "ScEmptyState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
@@ -1664,20 +1593,17 @@
     {
       "source": "frontend/apps/web/src/views/LoginView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "error",
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 3,
-        "input": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/MenuConfigView.vue",
@@ -1697,24 +1623,22 @@
     {
       "source": "frontend/apps/web/src/views/MenuView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/MyWorkView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1723,13 +1647,13 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/NotFoundView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "error"
       ],
@@ -1737,31 +1661,29 @@
       "governedStatePrimitives": [
         "ScErrorState"
       ],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/PasswordRecoveryView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "error"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/PlaceholderView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [],
-      "rawControls": {
-        "button": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
@@ -1774,25 +1696,22 @@
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "button": 12,
-        "select": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
     {
       "source": "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "error"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/SceneHealthView.vue",
@@ -1835,8 +1754,8 @@
     {
       "source": "frontend/apps/web/src/views/SceneView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
         "empty",
@@ -1844,11 +1763,9 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "button": 4
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/UsageAnalyticsView.vue",
@@ -1872,18 +1789,16 @@
     {
       "source": "frontend/apps/web/src/views/WorkbenchView.vue",
       "formalProductLayer": "P0",
-      "status": "gap",
-      "reason": "relevant state or native interaction has no explicit professionalization ownership declaration",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "button": 4
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
-      "targetBatch": null
+      "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigAdvancedAuditPanels.vue",
@@ -2032,6 +1947,7 @@
   ],
   "completionPolicy": {
     "formalP0P1UntreatedGapTarget": 0,
+    "formalP0P1RawControlBypassTarget": 0,
     "gapIsFailClosed": true,
     "nativeControlRequiresExplicitCompositeOwnership": true,
     "p3DoesNotBlockP0P1Completion": true

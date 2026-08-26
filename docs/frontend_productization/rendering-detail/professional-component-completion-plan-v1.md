@@ -46,18 +46,26 @@
 
 本批验收后，8 个 `targetBatch=p0-inline-full-state-completion-v1` 项必须全部退出 `gap`。
 
-## Batch 2：P0 Collection and Navigation Composite Authority
+## Batch 2：P0 Collection, Navigation and Hierarchy Completion
 
-目标：将 Collection、层级浏览、Shell 导航和上下文交互逐项绑定正式复合组件权威；保留确有语义价值的原生按钮、checkbox 和 disclosure。
+分支：`feature/p0-collection-state-control-completion-v1`
 
-预计 16–20 个责任提交，覆盖：
+目标：将 Collection 页面、查询、分组、分页、批量操作、kanban、移动行、
+Shell 导航和层级浏览绑定正式复合组件权威，不修改 action、route 或 Contract 权威。
+
+责任提交预算 12–20，覆盖：
 
 - Action/Collection headers、pagination、grouping、batch actions；
 - kanban/mobile row、row cell、selection、column header；
-- hierarchy browser/planner/worksheet；
 - MenuTree、breadcrumb、mobile drawer、workspace context；
-- loading/disabled/focus/Escape/返回焦点/390px；
-- 明确 `deliberate_native_composite` 清单和逐项 guard。
+- hierarchy browser、planner、worksheet 和 recursive tree node；
+- loading/empty/error/disabled/focus 状态身份；
+- 真实生产组件的 desktop/390px 抽样；
+- 结构化 ownership binding 和 fail-closed guard。
+
+本 PR 容纳两个相邻、同风险的机器 ownership batch：Collection 15 个与
+Navigation/Hierarchy 9 个，共 24 个表面必须全部退出 `gap`。
+二者共享前端 primitive、state guard 和无 mutation 浏览器证据，因此不机械拆 PR。
 
 禁止把 native control 数量直接当成缺陷，也禁止用目录级 allowlist 跳过扫描。
 
@@ -75,6 +83,9 @@
 - create/edit/readonly × task/workspace 组合；
 - mutation 精确值与记录级权限降级不变。
 
+状态：已纳入当前扩展 PR。19 个
+`targetBatch=p0-form-relation-workflow-completion-v1` 表面已全部退出 `gap`。
+
 ## Batch 4：P0 Utility/Scene State and Final Coverage Closure
 
 目标：处理仍在正式产品范围内的认证、错误页、workbench、scene host 和通用 utility 表面，并完成最终机器审计。
@@ -87,6 +98,10 @@
 - loading skeleton、error summary、page identity 状态；
 - 对余下每个 `gap` 作实现、明确复合归属或正式层级重分类；
 - 最终 P0/P1 `gap = 0` 的机器断言和受管代表旅程。
+
+状态：已纳入当前扩展 PR。21 个
+`targetBatch=p0-shared-utility-scene-completion-v1` 表面已全部退出 `gap`；
+当前机器清单为 137 个表面、P0/P1 `gap = 0`。
 
 ## P3 独立计划
 

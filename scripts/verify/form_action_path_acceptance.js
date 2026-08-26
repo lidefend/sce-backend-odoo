@@ -128,7 +128,7 @@ async function exerciseSmartButton(page) {
 }
 
 async function exerciseBodyActionButton(page) {
-  const tab = page.locator('button.native-tab').filter({ hasText: /^工程量清单$/ }).first();
+  const tab = page.locator('.native-tab').filter({ hasText: /^工程量清单$/ }).first();
   if (await tab.count().catch(() => 0)) {
     await tab.click();
   }

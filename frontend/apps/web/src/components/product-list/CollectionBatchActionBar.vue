@@ -2,6 +2,8 @@
   <section
     class="batch-bar sc-product-feedback-layer"
     data-semantic-component="CollectionBatchActionBar"
+    :data-state="loading ? 'loading' : selectedCount ? 'ready' : 'empty'"
+    :aria-busy="loading || undefined"
     :data-action-count="String(actionLayout.actionKeys.length)"
     :data-direct-action-keys="actionLayout.direct.map((action) => action.key).join(',')"
     :data-overflow-action-keys="actionLayout.overflow.map((action) => action.key).join(',')"

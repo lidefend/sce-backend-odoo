@@ -1,5 +1,5 @@
 <template>
-  <section class="page-renderer">
+  <section class="page-renderer" data-semantic-component="PageRenderer" data-state="ready">
     <header class="page-renderer-header">
       <div class="page-renderer-title">
         <component :is="primaryHeading ? 'h1' : 'h2'">{{ pageTitle }}</component>
@@ -17,15 +17,16 @@
           </span>
         </div>
         <div v-if="globalActions.length" class="page-renderer-actions">
-          <button
+          <ScButton
             v-for="action in globalActions"
             :key="`global-${action.key}`"
             type="button"
             class="page-renderer-action"
+            variant="secondary"
             @click="emitAction(action, '', '', {})"
           >
             {{ action.label || action.key }}
-          </button>
+          </ScButton>
         </div>
       </div>
     </header>
@@ -44,6 +45,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import ScButton from '../design-system/ScButton.vue';
 import ZoneRenderer from './ZoneRenderer.vue';
 import type {
   PageBlockActionEvent,

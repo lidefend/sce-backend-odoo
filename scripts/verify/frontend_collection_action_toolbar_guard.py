@@ -36,8 +36,10 @@ def validate(
         'import ScInput',
         '<ScInput',
         'import ScSelect',
-        '<ScSelect v-model="customFilterField" size="small">',
-        '<ScSelect v-model="customFilterOperator" size="small">',
+        '<ScSelect v-model="customFilterField" size="small" :placeholder=',
+        ':options="customFilterFields.map(',
+        '<ScSelect v-model="customFilterOperator" size="small" :options=',
+        ':options="activeCustomFilterOperators.map(',
         '<ScButton type="button" variant="primary" size="small" :disabled="!canApplyCustomFilter || loading"',
         '<ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading"',
         '<ScButton\n          v-if="hasStructuredConditions"\n          class="toolbar-clear-all"',
@@ -57,17 +59,19 @@ def validate(
     )
     if any(marker in text for marker in forbidden_legacy_actions):
         failures.append("collection toolbar retains a generic legacy action control")
-    stateful_native_controls = (
+    stateful_semantic_controls = (
         'class="contract-chip"',
         'class="search-facet"',
         'class="search-menu-toggle"',
         'class="search-menu-item"',
         'class="toolbar-overflow-toggle"',
-        'type="checkbox"',
+        '<ScCheckbox',
     )
-    for marker in stateful_native_controls:
+    for marker in stateful_semantic_controls:
         if marker not in text:
-            failures.append(f"collection toolbar lost stateful native control {marker}")
+            failures.append(f"collection toolbar lost stateful semantic control {marker}")
+    if any(marker in text for marker in ("<button", "<input", "<select", "<textarea")):
+        failures.append("collection toolbar retains a raw control outside primitive adapters")
     if 'role="menu"' in text or 'role="menuitem"' in text:
         failures.append("collection toolbar disclosure must preserve native button semantics")
     required_list = (

@@ -1,46 +1,54 @@
 <template>
-  <section v-if="items.length" class="group-summary">
+  <section v-if="items.length" class="group-summary" data-semantic-component="GroupSummaryBar" data-state="ready">
     <header class="group-summary-head">
       <p>分组摘要</p>
       <div class="group-summary-head-actions">
         <span v-if="windowInfo">{{ windowInfo }}</span>
-        <button
+        <ScButton
           v-if="onPrevWindow"
           class="page-btn"
           :disabled="!canPrevWindow"
           @click="onPrevWindow?.()"
+          variant="secondary"
+          size="small"
         >
           上一组
-        </button>
-        <button
+        </ScButton>
+        <ScButton
           v-if="onNextWindow"
           class="page-btn"
           :disabled="!canNextWindow"
           @click="onNextWindow?.()"
+          variant="secondary"
+          size="small"
         >
           下一组
-        </button>
+        </ScButton>
         <span>{{ groupByLabel }}</span>
-        <button v-if="activeKey" class="clear-btn" @click="onClear?.()">清除下钻</button>
+        <ScButton v-if="activeKey" class="clear-btn" variant="ghost" size="small" @click="onClear?.()">清除下钻</ScButton>
       </div>
     </header>
     <div class="group-summary-items">
-      <button
+      <ScButton
         v-for="item in items"
         :key="`group-summary-${item.key}`"
         class="group-summary-item"
         :class="{ active: activeKey === item.key }"
+        variant="ghost"
+        size="small"
+        :aria-pressed="activeKey === item.key"
         @click="onPick?.(item)"
       >
         <span class="name">{{ item.label }}</span>
         <span class="count">{{ item.count }}</span>
-      </button>
+      </ScButton>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import ScButton from './design-system/ScButton.vue';
 
 type GroupSummaryItem = {
   key: string;

@@ -4,6 +4,7 @@
     data-semantic-component="CollectionMobileRecordRow"
     :data-record-key="recordKey"
     :data-selection-state="selected ? 'selected' : 'unselected'"
+    :data-state="selectionDisabled ? 'selection-disabled' : 'ready'"
     :class="{ 'is-selected': selected }"
     :role="selectionEnabled ? 'option' : undefined"
     :aria-selected="selectionEnabled ? selected : undefined"
@@ -15,6 +16,7 @@
       :checked="selected"
       :disabled="selectionDisabled"
       :label="selectionLabel"
+      :title="selectionDisabled ? selectionDisabledReason : undefined"
       @click.stop
       @change="emit('selection-change', $event)"
     />
@@ -77,6 +79,7 @@ const props = withDefaults(defineProps<{
   selected?: boolean;
   selectionEnabled?: boolean;
   selectionDisabled?: boolean;
+  selectionDisabledReason?: string;
   selectionLabel?: string;
   openLabel: string;
 }>(), {
@@ -87,6 +90,7 @@ const props = withDefaults(defineProps<{
   selected: false,
   selectionEnabled: false,
   selectionDisabled: false,
+  selectionDisabledReason: '',
   selectionLabel: '',
 });
 

@@ -1,5 +1,5 @@
 <template>
-  <button
+  <TDesignButton
     data-semantic-component="ScButton"
     data-semantic-layer="primitive"
     :data-size="size"
@@ -7,22 +7,27 @@
     :data-loading="loading || undefined"
     :type="type"
     :class="['sc-btn', `sc-btn-${variant}`]"
+    :theme="presentation.theme"
+    :variant="presentation.variant"
+    :size="size"
+    :loading="loading"
     :disabled="disabled || loading"
     :aria-disabled="disabled || loading || undefined"
     :aria-busy="loading || undefined"
   >
-    <span v-if="loading" class="sc-btn__spinner" aria-hidden="true" />
     <span class="sc-btn__content"><slot /></span>
     <span v-if="loading" class="sc-visually-hidden">{{ loadingLabel }}</span>
-  </button>
+  </TDesignButton>
 </template>
 
 <script setup lang="ts">
-import type { ScPrimitiveSize, ScPrimitiveStatus } from './primitiveAdapter';
+import { computed } from 'vue';
+import { TDesignButton } from './tdesignPrimitiveBridge';
+import { tdesignButtonPresentation, type ScButtonVariant, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   type?: 'button' | 'submit' | 'reset';
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: ScButtonVariant;
   size?: ScPrimitiveSize;
   status?: ScPrimitiveStatus;
   disabled?: boolean;
@@ -35,4 +40,6 @@ withDefaults(defineProps<{
   status: 'default',
   loadingLabel: '处理中',
 });
+
+const presentation = computed(() => tdesignButtonPresentation(props.variant, props.status));
 </script>

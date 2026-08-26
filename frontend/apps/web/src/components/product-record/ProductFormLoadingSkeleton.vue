@@ -1,6 +1,8 @@
 <template>
   <section
     class="product-form-loading"
+    data-semantic-component="ProductFormLoadingSkeleton"
+    data-state="loading"
     role="status"
     aria-live="polite"
     aria-busy="true"

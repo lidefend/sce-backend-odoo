@@ -1,5 +1,5 @@
 <template>
-  <section class="zone-renderer" :class="[`zone-${zone.zone_type || 'supporting'}`, `zone-key-${zone.key || 'unknown'}`]">
+  <section class="zone-renderer" :class="[`zone-${zone.zone_type || 'supporting'}`, `zone-key-${zone.key || 'unknown'}`]" data-semantic-component="ZoneRenderer" data-state="ready">
     <header v-if="zone.title || zone.description" class="zone-renderer-header">
       <h3 v-if="zone.title">{{ zone.title }}</h3>
       <p v-if="zone.description">{{ zone.description }}</p>

@@ -12,7 +12,7 @@ BRIDGE = DESIGN_SYSTEM / "tdesignPrimitiveBridge.ts"
 UI_PRIMITIVES = ROOT / "frontend/packages/ui/src/primitives.ts"
 
 PRIMITIVES = (
-    "ScButton", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
+    "ScButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
     "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
 )
 FORBIDDEN_PRIVATE_TDESIGN = re.compile(r"tdesign-vue-next/(?:lib|cjs|src)/")
@@ -49,8 +49,9 @@ def validate(root: Path = ROOT) -> list[str]:
 
     for modal in ("ScDialog", "ScDrawer"):
         text = (design / f"{modal}.vue").read_text(encoding="utf-8") if (design / f"{modal}.vue").is_file() else ""
-        if "useModalLifecycle" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
-            errors.append(f"{modal} must use the shared modal lifecycle and dialog semantics")
+        driver = f"TDesign{modal.removeprefix('Sc')}"
+        if f"<{driver}" not in text or 'role="dialog"' not in text or 'aria-modal="true"' not in text:
+            errors.append(f"{modal} must use its TDesign overlay driver and preserve dialog semantics")
         overlay_kind = modal.removeprefix("Sc").lower()
         if f'data-overlay-kind="{overlay_kind}"' not in text or 'data-state="open"' not in text:
             errors.append(f"{modal} must expose deterministic overlay state")
@@ -58,25 +59,62 @@ def validate(root: Path = ROOT) -> list[str]:
             errors.append(f"{modal} must consume its registered overlay stacking token")
 
     input_text = (design / "ScInput.vue").read_text(encoding="utf-8") if (design / "ScInput.vue").is_file() else ""
-    if "<input" not in input_text or ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:
-        errors.append("ScInput must place accessible state on the native input control")
+    if "<TDesignInput" not in input_text or "v-native-control-projection" not in input_text or 'data-primitive-driver="browser-specialized"' not in input_text:
+        errors.append("ScInput must use the TDesign driver with an explicit browser-specialized fallback")
+    if ':aria-describedby="describedBy"' not in input_text or ':aria-invalid=' not in input_text:
+        errors.append("ScInput must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in input_text or ':aria-busy="loading || undefined"' not in input_text:
         errors.append("ScInput must expose loading state on the native input control")
 
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
-    if "<textarea" not in textarea_text or ':aria-describedby="describedBy"' not in textarea_text or ':aria-invalid=' not in textarea_text:
-        errors.append("ScTextarea must place accessible state on the native textarea control")
+    if "<TDesignTextarea" not in textarea_text or "v-native-control-projection" not in textarea_text:
+        errors.append("ScTextarea must use the TDesign driver and native accessibility projection")
+    if ':aria-describedby="describedBy"' not in textarea_text or ':aria-invalid=' not in textarea_text:
+        errors.append("ScTextarea must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in textarea_text or ':aria-busy="loading || undefined"' not in textarea_text:
         errors.append("ScTextarea must expose loading state on the native textarea control")
 
     button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
-    for marker in (':data-loading="loading || undefined"', ':aria-disabled="disabled || loading || undefined"', 'class="sc-btn__spinner"'):
+    for marker in (
+        '<TDesignButton',
+        ':data-loading="loading || undefined"',
+        ':aria-disabled="disabled || loading || undefined"',
+        ':loading="loading"',
+        'tdesignButtonPresentation',
+    ):
         if marker not in button_text:
             errors.append(f"ScButton missing governed interaction-state marker: {marker}")
+    if "TDesignButton" not in bridge or "TDesignButton" not in ui_primitives:
+        errors.append("ScButton must consume the public project TDesign button authority")
+
+    checkbox_text = (design / "ScCheckbox.vue").read_text(encoding="utf-8") if (design / "ScCheckbox.vue").is_file() else ""
+    for marker in (
+        '<TDesignCheckbox',
+        'v-native-control-projection',
+        ':data-checked="checked || undefined"',
+        ':data-indeterminate="indeterminate || undefined"',
+        ':data-disabled="disabled || undefined"',
+        "'aria-checked': props.indeterminate ? 'mixed' : String(props.checked)",
+        "'aria-label': props.label",
+    ):
+        if marker not in checkbox_text:
+            errors.append(f"ScCheckbox missing governed selection marker: {marker}")
+
+    radio_text = (design / "ScRadioGroup.vue").read_text(encoding="utf-8") if (design / "ScRadioGroup.vue").is_file() else ""
+    for marker in ('<TDesignRadioGroup', "semanticPrimitiveIdentity('ScRadioGroup')", ':options="options"', ':aria-required="required || undefined"'):
+        if marker not in radio_text:
+            errors.append(f"ScRadioGroup missing governed selection marker: {marker}")
+
+    radio_item_text = (design / "ScRadio.vue").read_text(encoding="utf-8") if (design / "ScRadio.vue").is_file() else ""
+    for marker in ('<TDesignRadio', "semanticPrimitiveIdentity('ScRadio')", ':checked="checked"', ':aria-required="required || undefined"'):
+        if marker not in radio_item_text:
+            errors.append(f"ScRadio missing governed selection marker: {marker}")
 
     select_text = (design / "ScSelect.vue").read_text(encoding="utf-8") if (design / "ScSelect.vue").is_file() else ""
     if ':data-readonly="readonly || undefined"' not in select_text or ':aria-readonly="readonly || undefined"' not in select_text:
         errors.append("ScSelect must expose readonly state without inventing write authority")
+    if "<TDesignSelect" not in select_text or ':options="tdesignOptions"' not in select_text or "v-native-control-projection" not in select_text:
+        errors.append("ScSelect must use the TDesign option driver and native accessibility projection")
 
     state_contracts = {
         "ScLoading": ('data-state', 'aria-busy'),
@@ -90,12 +128,19 @@ def validate(root: Path = ROOT) -> list[str]:
         for marker in markers:
             if marker not in text:
                 errors.append(f"{component} missing deterministic state marker: {marker}")
+    if "<TDesignEmpty" not in (design / "ScEmptyState.vue").read_text(encoding="utf-8"):
+        errors.append("ScEmptyState must use the TDesign empty-state driver")
+    if "<TDesignAlert" not in (design / "ScErrorState.vue").read_text(encoding="utf-8"):
+        errors.append("ScErrorState must use the TDesign alert driver")
 
     if not bridge:
         errors.append("missing TDesign primitive bridge")
     else:
         if "@sc/ui/primitives" not in bridge or "tdesign-vue-next" in bridge:
             errors.append("web primitive bridge must consume the project UI authority")
+        for driver in ("TDesignAlert", "TDesignButton", "TDesignCheckbox", "TDesignRadioGroup", "TDesignRadio", "TDesignDialog", "TDesignDrawer", "TDesignEmpty", "TDesignInput", "TDesignSelect", "TDesignTextarea"):
+            if driver not in bridge or driver not in ui_primitives:
+                errors.append(f"missing public project primitive driver: {driver}")
         for path in design.glob("*.vue"):
             text = path.read_text(encoding="utf-8")
             if "tdesign-vue-next" in text:

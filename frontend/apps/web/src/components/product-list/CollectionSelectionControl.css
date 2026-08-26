@@ -14,77 +14,9 @@
   height: var(--sc-touch-target-min);
 }
 
-.collection-selection-control input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  border: 0;
-  white-space: nowrap;
-}
-
-.collection-selection-control__indicator {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: 4px;
-  background: var(--sc-app-panel);
-  color: var(--sc-semantic-text-on-interactive);
-  transition: border-color var(--sc-motion-fast) ease, background-color var(--sc-motion-fast) ease;
-}
-
-.size-touch .collection-selection-control__indicator {
-  width: 20px;
-  height: 20px;
-}
-
-.collection-selection-control[data-selection-state='checked'] .collection-selection-control__indicator,
-.collection-selection-control[data-selection-state='mixed'] .collection-selection-control__indicator {
-  border-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-semantic-surface-interactive);
-}
-
-.collection-selection-control[data-selection-state='checked'] .collection-selection-control__indicator::after {
-  width: 8px;
-  height: 4px;
-  border-bottom: 2px solid currentColor;
-  border-left: 2px solid currentColor;
-  content: '';
-  transform: translateY(-1px) rotate(-45deg);
-}
-
-.collection-selection-control[data-selection-state='mixed'] .collection-selection-control__indicator::after {
-  width: 9px;
-  height: 2px;
-  border-radius: 1px;
-  background: currentColor;
-  content: '';
-}
-
-.collection-selection-control:hover .collection-selection-control__indicator {
-  border-color: var(--sc-semantic-surface-interactive);
-}
-
-.collection-selection-control:focus-within {
-  outline: 2px solid var(--sc-app-focus-ring);
-  outline-offset: 1px;
-}
-
-.collection-selection-control:has(input:disabled) {
+.collection-selection-control[data-selection-interactive='false'] {
   cursor: not-allowed;
   opacity: 0.55;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .collection-selection-control__indicator { transition: none; }
 }
 
 @media (max-width: 768px) {

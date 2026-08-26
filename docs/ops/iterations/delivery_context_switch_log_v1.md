@@ -6538,3 +6538,47 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   with browser errors 0, overflow 0, reduced motion honored and mutation 0.
 - Excluded: P3 low-code/admin surfaces, business model productization, backend
   contracts, permissions, routes, fixtures and database writes.
+
+## 2026-08-26 — Collection state and control completion v1
+
+- Branch / baseline: `feature/p0-collection-state-control-completion-v1` /
+  `376bbfb229afa995f8d5f16e7fca4ec8131e29b9`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  collection state and control presentation / `frontend/apps/web`.
+- Product result: collection search, saved/group filters, column settings,
+  grouping, pagination, batch actions, kanban activation and mobile selection
+  use governed controls and publish explicit loading, ready, empty and disabled
+  state identities.
+- Authority boundary: action, menu, route, Contract V2, permissions, record
+  capabilities, task/workspace selection and mutation semantics are unchanged.
+- Machine evidence: 15 collection targets and 9 navigation/hierarchy targets
+  have parsed SFC bindings and leave `gap`; the formal gap count falls from 63
+  to 40. The component browser harness
+  covers desktop and 390px, disabled reasons, focus/reduced-motion, browser
+  errors 0, overflow 0 and mutation 0.
+- Excluded: form/relation/workflow productization, P3 low-code/admin surfaces,
+  business-model special cases, and all navigation/route authority changes.
+
+## 2026-08-26 — Rendering detail zero-gap candidate
+
+- Branch / baseline: `feature/p0-collection-state-control-completion-v1` /
+  `376bbfb229afa995f8d5f16e7fca4ec8131e29b9`.
+- Expanded responsibility: one low-risk frontend presentation PR contains
+  independently reversible commits for Collection, Navigation/Hierarchy,
+  Form/Relation/Workflow and Shared Utility/Scene surfaces.
+- Machine result: 138 relevant Vue surfaces; 27 governed primitives, 93
+  governed composites, zero deliberate native composites, 18 separately
+  scoped P3 surfaces, zero untreated P0/P1 gaps and zero P0/P1 raw-control
+  bypasses outside the primitive adapter layer.
+- Product changes: shared controls replace private page actions where safe;
+  loading/empty/error/disabled/focus identities are explicit; relation and role
+  home local states use governed primitives; all owned surfaces have parsed SFC
+  bindings with fail-closed negative tests.
+- Authority boundary: Contract V2, permissions, route/menu/action authority,
+  task/workspace selection, record capabilities and mutation semantics remain
+  unchanged.
+- Candidate validation: governed Frontend Quick and development build pass;
+  the frozen candidate browser samples AppShell, collection, task and workspace
+  at 1440px and 390px with governed TDesign drivers, overflow 0, browser errors
+  0 and business mutation 0. Stable fingerprint and independent read-only
+  review remain the final publication gates.

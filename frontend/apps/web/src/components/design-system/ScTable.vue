@@ -8,8 +8,21 @@
     :loading="loading"
     :hover="hover"
     :stripe="stripe"
+    :row-class-name="rowClassName"
+    :row-attributes="tdesignRowAttributes"
+    :keyboard-row-hover="keyboardRowHover"
+    :disable-data-page="disableDataPage"
+    :table-content-width="tableContentWidth"
+    :foot-data="footData"
+    :selected-row-keys="selectedRowKeys"
+    :row-selection-type="rowSelectionType"
+    :select-on-row-click="selectOnRowClick"
     :aria-label="label"
+    :data-row-count="data.length"
+    data-semantic-driver="tdesign-table"
     @row-click="emit('rowClick', $event)"
+    @row-dblclick="emit('rowDblclick', $event)"
+    @select-change="onSelectChange"
   >
     <template v-for="(_, name) in $slots" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps ?? {}" />
@@ -18,10 +31,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { TDesignTable } from './tdesignPrimitiveBridge';
 import { normalizePrimitiveSize, semanticPrimitiveIdentity, type ScPrimitiveSize } from './primitiveAdapter';
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   data?: Record<string, unknown>[];
   columns?: Record<string, unknown>[];
   rowKey?: string;
@@ -29,6 +43,15 @@ withDefaults(defineProps<{
   loading?: boolean;
   hover?: boolean;
   stripe?: boolean;
+  rowClassName?: string | ((context: unknown) => unknown);
+  rowAttributes?: Record<string, unknown> | ((context: unknown) => Record<string, unknown>);
+  keyboardRowHover?: boolean;
+  disableDataPage?: boolean;
+  tableContentWidth?: string;
+  footData?: Record<string, unknown>[];
+  selectedRowKeys?: Array<string | number>;
+  rowSelectionType?: 'single' | 'multiple';
+  selectOnRowClick?: boolean;
   label: string;
 }>(), {
   data: () => [],
@@ -36,6 +59,21 @@ withDefaults(defineProps<{
   rowKey: 'id',
   size: 'medium',
   hover: true,
+  keyboardRowHover: true,
+  disableDataPage: true,
+  selectedRowKeys: () => [],
+  footData: () => [],
 });
-const emit = defineEmits<{ rowClick: [context: unknown] }>();
+function stringAttributes(attributes: Record<string, unknown> | undefined): Record<string, string> {
+  return Object.fromEntries(Object.entries(attributes || {}).map(([name, value]) => [name, String(value ?? '')]));
+}
+const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
+  ? (context: unknown) => stringAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
+  : stringAttributes(props.rowAttributes));
+const emit = defineEmits<{
+  rowClick: [context: unknown];
+  rowDblclick: [context: unknown];
+  selectChange: [keys: Array<string | number>, context: unknown];
+}>();
+function onSelectChange(keys: Array<string | number>, context: unknown) { emit('selectChange', keys, context); }
 </script>

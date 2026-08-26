@@ -1,6 +1,8 @@
 <template>
   <div
     class="professional-business-value"
+    data-semantic-component="ProfessionalBusinessValueControl"
+    :data-state="field.invalid ? 'error' : field.readonly ? 'readonly' : 'editable'"
     data-professional-field-family="business-value"
     :data-business-value-kind="kind"
     :data-presentation-mode="field.presentationMode"
@@ -23,11 +25,10 @@
       :model-value="String(field.inputValue ?? '')"
       :disabled="field.readonly"
       :status="field.invalid ? 'error' : 'default'"
+      :placeholder="placeholder || '请选择'"
+      :options="choiceOptions.map((option) => ({ value: option.value, label: option.label }))"
       @update:model-value="$emit('update:value', $event)"
-    >
-      <option value="">{{ placeholder || '请选择' }}</option>
-      <option v-for="option in choiceOptions" :key="String(option.value)" :value="option.value">{{ option.label }}</option>
-    </ScSelect>
+    />
     <ScInput
       v-else
       :id="controlId"

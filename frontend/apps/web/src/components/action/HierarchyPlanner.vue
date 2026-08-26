@@ -1,5 +1,5 @@
 <template>
-  <section ref="plannerElement" class="hierarchy-planner" :aria-label="labels.surface_aria">
+  <section ref="plannerElement" class="hierarchy-planner" :aria-label="labels.surface_aria" data-semantic-component="HierarchyPlanner" :data-state="loading ? 'loading' : errorMessage ? 'error' : records.size ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <ProductListHeader
       class="planner-head"
       :loading="loading"
@@ -60,38 +60,10 @@
 
       <div v-if="loading" class="planner-state">{{ labels.loading }}</div>
       <ScEmptyState v-else-if="!visibleEntries.length" class="planner-state" :title="String(config.empty_title || '')" :description="String(config.empty_hint || '')" />
-      <ScDataTable v-else class="planner-grid" :label="title" :table-style="tableStyle">
-        <colgroup><col v-for="column in columns" :key="column.field" :style="columnStyle(column)" /></colgroup>
-        <thead><tr><th v-for="column in columns" :key="column.field">{{ column.label }}</th></tr></thead>
-        <tbody>
-          <tr
-            v-for="entry in visibleEntries"
-            :key="entry.node.key"
-            :class="{ selected: Number(selectedRecord?.id) === entry.node.id, parent: entry.node.children.length }"
-            tabindex="0"
-            @click="selectEntry(entry)"
-            @dblclick="openRecord(entry.record)"
-            @keyup.enter="selectEntry(entry)"
-          >
-            <td v-for="column in columns" :key="column.field" :class="{ 'code-column': column.field === codeField }">
-              <div v-if="column.field === codeField" class="code-cell" :style="{ paddingInlineStart: `${entry.depth * indentSize}px` }">
-                <span v-if="entry.depth" class="tree-elbow" aria-hidden="true" /><span>{{ displayValue(entry.record[column.field], column) }}</span>
-              </div>
-              <div v-if="column.field === outlineField" class="outline-cell" :style="{ paddingInlineStart: `${entry.depth * indentSize}px` }">
-                <button
-                  v-if="entry.node.children.length"
-                  class="outline-toggle"
-                  :aria-label="entry.node.label"
-                  @click.stop="toggle(entry.node)"
-                ><ScIcon name="chevron-right" :size="14" :class="{ 'is-expanded': expandedKeys.has(entry.node.key) }" /></button>
-                <span v-else class="outline-toggle-spacer" />
-                <span>{{ displayValue(entry.record[column.field], column) }}</span>
-              </div>
-              <template v-else-if="column.field !== codeField">{{ displayValue(entry.record[column.field], column) }}</template>
-            </td>
-          </tr>
-        </tbody>
-      </ScDataTable>
+      <ScTable v-else class="planner-grid" :label="title" :data="plannerTableRows" :columns="plannerTableColumns"
+        row-key="__rowKey" size="small" :table-content-width="plannerTableWidth"
+        :row-class-name="plannerRowClassName" :row-attributes="plannerRowAttributes"
+        @row-click="selectPlannerRow" @row-dblclick="openPlannerRow" />
       <aside v-if="showDetail && selectedRecord" class="planner-drawer" :aria-label="labels.details">
         <header><strong>{{ selectedEntry?.node.code }} {{ selectedEntry?.node.label }}</strong><ScIconButton :label="labels.close_details" @click="showDetail = false"><ScIcon name="close" :size="16" /></ScIconButton></header>
         <div class="planner-drawer-body">
@@ -106,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
   executeHierarchyCommand,
   hierarchyCommandHasExecutableAuthority,
@@ -119,7 +91,7 @@ import {
 } from '../../app/action_runtime/hierarchyCollectionDataSource';
 import { formatDisplayValue } from '../../utils/display';
 import ScButton from '../design-system/ScButton.vue';
-import ScDataTable from '../design-system/ScDataTable.vue';
+import ScTable from '../design-system/ScTable.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
@@ -240,12 +212,47 @@ const visibleEntries = computed<OutlineEntry[]>(() => {
   return output;
 });
 const displayedTotal = computed(() => keyword.value.trim() ? visibleEntries.value.length : allPlannerNodes.value.length);
-const tableStyle = computed(() => ({ minWidth: `${Math.max(900, columns.value.length * 150)}px` }));
+const plannerTableWidth = computed(() => `${Math.max(900, columns.value.length * 150)}px`);
 const headerLayoutStyle = computed(() => ({ gridTemplateColumns: 'minmax(240px, auto) 0 minmax(320px, 1fr) 0 max-content' }));
+const plannerTableRows = computed(() => visibleEntries.value.map((entry) => ({ ...entry, __rowKey: entry.node.key })));
+const plannerTableColumns = computed(() => columns.value.map((column) => ({
+  colKey: column.field,
+  title: column.label,
+  width: column.field === outlineField.value ? 360 : 150,
+  cell: (_h: unknown, { row }: { row: OutlineEntry }) => {
+    const text = displayValue(row.record[column.field], column);
+    const indent = { paddingInlineStart: `${row.depth * indentSize}px` };
+    if (column.field === codeField.value) return h('div', { class: 'code-cell', style: indent }, [
+      row.depth ? h('span', { class: 'tree-elbow', 'aria-hidden': 'true' }) : null,
+      h('span', text),
+    ]);
+    if (column.field === outlineField.value) return h('div', { class: 'outline-cell', style: indent }, [
+      row.node.children.length
+        ? h(ScIconButton, { label: row.node.label, class: 'outline-toggle', onClick: (event: Event) => { event.stopPropagation(); toggle(row.node); } }, () => h(ScIcon, { name: 'chevron-right', size: 14, class: { 'is-expanded': expandedKeys.value.has(row.node.key) } }))
+        : h('span', { class: 'outline-toggle-spacer' }),
+      h('span', text),
+    ]);
+    return text;
+  },
+})));
 
 function displayValue(value: unknown, column: Column): string { return formatDisplayValue(value, column); }
-function columnStyle(column: Column): Record<string, string> { return { width: column.field === outlineField.value ? 'min(36vw, 520px)' : '150px' }; }
-function onSearchInput(event: Event): void { keyword.value = String((event.target as HTMLInputElement | null)?.value || ''); }
+function plannerEntry(context: unknown): OutlineEntry | null {
+  if (!context || typeof context !== 'object') return null;
+  const row = (context as { row?: unknown }).row;
+  return row && typeof row === 'object' && 'node' in row ? row as OutlineEntry : null;
+}
+function plannerRowClassName(context: unknown) {
+  const entry = plannerEntry(context);
+  return { selected: Number(selectedRecord.value?.id) === entry?.node.id, parent: Boolean(entry?.node.children.length) };
+}
+function plannerRowAttributes(context: unknown): Record<string, unknown> {
+  const entry = plannerEntry(context);
+  return { tabindex: 0, onKeyup: (event: KeyboardEvent) => { if (event.key === 'Enter' && entry) selectEntry(entry); } };
+}
+function selectPlannerRow(context: unknown) { const entry = plannerEntry(context); if (entry) selectEntry(entry); }
+function openPlannerRow(context: unknown) { const entry = plannerEntry(context); if (entry) openRecord(entry.record); }
+function onSearchInput(value: string): void { keyword.value = value; }
 function selectEntry(entry: OutlineEntry): void { selectedRecord.value = entry.record; }
 function openRecord(record: Dict): void { if (Number(record.id || 0)) emit('open-record', record); }
 function openSelected(): void { if (selectedRecord.value) openRecord(selectedRecord.value); }

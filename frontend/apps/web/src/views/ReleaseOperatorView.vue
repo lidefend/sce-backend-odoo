@@ -7,40 +7,31 @@
         <p>{{ copy.description || '查看当前发布状态、候选快照、待审批动作与回滚目标。' }}</p>
       </div>
       <div class="release-operator__actions">
-        <select v-model="selectedProduct" class="release-operator__select" @change="loadSurface">
-          <option v-for="product in products" :key="product.product_key" :value="product.product_key">
-            {{ product.label || product.product_key }} · {{ product.product_key }}
-          </option>
-        </select>
-        <button class="sc-btn sc-btn-ghost" type="button" :disabled="loading" @click="loadSurface">
-          {{ copy.action_refresh || '刷新' }}
-        </button>
-        <button
+        <ScSelect v-model="selectedProduct" class="release-operator__select" :options="productOptions" @change="loadSurface" />
+        <ScButton variant="ghost" :disabled="loading" @click="loadSurface">{{ copy.action_refresh || '刷新' }}</ScButton>
+        <ScButton
           v-for="action in pageGlobalActions"
           :key="action.key"
-          class="sc-btn sc-btn-ghost"
-          type="button"
+          variant="ghost"
           :disabled="action.disabled"
           @click="executeGlobalPageAction(action.key)"
         >
           {{ action.label }}
-        </button>
-        <button
-          class="sc-btn sc-btn-ghost"
-          type="button"
+        </ScButton>
+        <ScButton
+          variant="ghost"
           :disabled="busyKey === 'sync_policy' || !syncPolicyAction.enabled"
           @click="syncPolicy"
         >
           {{ copy.sync_policy_action_label || '同步已实现能力' }}
-        </button>
-        <button
-          class="sc-btn sc-btn-primary"
-          type="button"
+        </ScButton>
+        <ScButton
+          variant="primary"
           :disabled="busyKey === 'freeze' || !freezeAction.enabled"
           @click="freeze"
         >
           {{ copy.freeze_action_label || '冻结候选快照' }}
-        </button>
+        </ScButton>
       </div>
     </section>
 
@@ -183,29 +174,19 @@
         <div class="release-operator__policy-control">
           <label>
             <span>{{ copy.policy_state_label || '发布状态' }}</span>
-            <select v-model="policyState" class="release-operator__select">
-              <option value="draft">draft</option>
-              <option value="preview">preview</option>
-              <option value="stable">stable</option>
-              <option value="archived">archived</option>
-            </select>
+            <ScSelect v-model="policyState" class="release-operator__select" :options="policyStateOptions" />
           </label>
           <label>
             <span>{{ copy.policy_access_label || '访问级别' }}</span>
-            <select v-model="policyAccessLevel" class="release-operator__select">
-              <option value="public">public</option>
-              <option value="internal">internal</option>
-              <option value="role_restricted">role_restricted</option>
-            </select>
+            <ScSelect v-model="policyAccessLevel" class="release-operator__select" :options="policyAccessOptions" />
           </label>
-          <button
-            class="sc-btn sc-btn-ghost"
-            type="button"
+          <ScButton
+            variant="ghost"
             :disabled="busyKey === 'update_policy' || !updatePolicyAction.enabled"
             @click="savePolicy"
           >
             {{ copy.save_policy_action_label || '保存策略' }}
-          </button>
+          </ScButton>
         </div>
         <div v-if="controlDefinitions.length" class="release-operator__definition-grid">
           <article v-for="item in controlDefinitions" :key="definitionKey(item)">
@@ -228,69 +209,7 @@
           </article>
         </div>
         <div v-if="controlledPages.length" class="release-operator__table-wrap release-operator__page-table">
-          <ScDataTable class="release-operator__table" label="受控页面">
-            <thead>
-              <tr>
-                <th>用户菜单</th>
-                <th>页面</th>
-                <th>路由</th>
-                <th>发布阶段</th>
-                <th>可见范围</th>
-                <th>来源</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="page in controlledPages" :key="pageKey(page)">
-                <td>{{ page.visible_menu_path || page.group_label || '-' }}</td>
-                <td>{{ page.page_label || page.label || page.page_key || '-' }}</td>
-                <td>{{ page.route || '-' }}</td>
-                <td>
-                  <span :class="['release-operator__pill', releaseStateClass(page)]">
-                    {{ releaseStateLabel(page) }}
-                  </span>
-                </td>
-                <td>{{ accessLevelLabel(page) }}</td>
-                <td>{{ sourceLabel(page) }}</td>
-                <td>
-                  <div class="release-operator__row-actions">
-                    <button
-                      class="sc-btn sc-btn-ghost release-operator__row-action"
-                      type="button"
-                      :disabled="busyKey === `page:${pageKey(page)}:released` || !updatePagePolicyAction.enabled"
-                      @click="updatePagePolicy(page, { release_state: 'released', enabled: true })"
-                    >
-                      发布
-                    </button>
-                    <button
-                      class="sc-btn sc-btn-ghost release-operator__row-action"
-                      type="button"
-                      :disabled="busyKey === `page:${pageKey(page)}:preview` || !updatePagePolicyAction.enabled"
-                      @click="updatePagePolicy(page, { release_state: 'preview', enabled: true })"
-                    >
-                      预览
-                    </button>
-                    <button
-                      class="sc-btn sc-btn-ghost release-operator__row-action"
-                      type="button"
-                      :disabled="busyKey === `page:${pageKey(page)}:hidden` || !updatePagePolicyAction.enabled"
-                      @click="updatePagePolicy(page, { release_state: 'hidden', enabled: false })"
-                    >
-                      下线
-                    </button>
-                    <button
-                      class="sc-btn sc-btn-ghost release-operator__row-action"
-                      type="button"
-                      :disabled="busyKey === `page:${pageKey(page)}:internal` || !updatePagePolicyAction.enabled"
-                      @click="updatePagePolicy(page, { access_level: page.access_level === 'internal' ? 'public' : 'internal' })"
-                    >
-                      {{ page.access_level === 'internal' ? '转公开' : '内部' }}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="release-operator__table" label="受控页面" :data="controlledPageTableRows" :columns="controlledPageColumns" row-key="__rowKey" size="small" />
         </div>
       </section>
 
@@ -300,45 +219,7 @@
           <p>{{ copy.hint_candidate || '仅展示当前产品下 candidate / approved 状态的候选快照。' }}</p>
         </div>
         <div v-if="candidateSnapshots.length" class="release-operator__table-wrap">
-          <ScDataTable class="release-operator__table" label="可发布候选">
-            <thead>
-              <tr>
-                <th>版本</th>
-                <th>状态</th>
-                <th>通道</th>
-                <th>草案范围</th>
-                <th>差异</th>
-                <th>门禁</th>
-                <th>冻结时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="snapshot in candidateSnapshots" :key="`candidate-${snapshot.id}`">
-                <td>{{ snapshot.version || '-' }}</td>
-                <td><span class="release-operator__pill">{{ snapshot.state || '-' }}</span></td>
-                <td>{{ snapshot.channel || '-' }}</td>
-                <td>{{ snapshotDraftLabel(snapshot) }}</td>
-                <td>{{ snapshotDiffLabel(snapshot) }}</td>
-                <td>
-                  <span :class="['release-operator__pill', candidateReady(snapshot) ? '' : 'release-operator__pill--muted']">
-                    {{ candidateReady(snapshot) ? '可发布' : '需重新冻结' }}
-                  </span>
-                </td>
-                <td>{{ snapshot.frozen_at || '-' }}</td>
-                <td>
-                  <button
-                    class="sc-btn sc-btn-primary release-operator__row-action"
-                    type="button"
-                    :disabled="busyKey === `promote:${snapshot.id}` || !candidateReady(snapshot)"
-                    @click="promote(snapshot)"
-                  >
-                    发布
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="release-operator__table" label="可发布候选" :data="candidateTableRows" :columns="candidateColumns" row-key="id" size="small" />
         </div>
         <p v-else class="release-operator__empty">{{ copy.empty_candidate || '当前没有可 Promote 的候选快照。' }}</p>
       </section>
@@ -349,35 +230,7 @@
           <p>{{ copy.hint_pending_count_prefix || '当前数量：' }}{{ pendingActions.length }}</p>
         </div>
         <div v-if="pendingActions.length" class="release-operator__table-wrap">
-          <ScDataTable class="release-operator__table" label="待审批动作">
-            <thead>
-              <tr>
-                <th>动作</th>
-                <th>产品</th>
-                <th>审批</th>
-                <th>请求时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="action in pendingActions" :key="`pending-${action.id}`">
-                <td>{{ action.action_type || '-' }}</td>
-                <td>{{ action.product_key || '-' }}</td>
-                <td>{{ action.approval_state || '-' }}</td>
-                <td>{{ action.requested_at || '-' }}</td>
-                <td>
-                  <button
-                    class="sc-btn sc-btn-primary release-operator__row-action"
-                    type="button"
-                    :disabled="busyKey === `approve:${action.id}` || action.can_approve === false"
-                    @click="approve(action)"
-                  >
-                    {{ copy.approve_action_label || '审批并执行' }}
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </ScDataTable>
+          <ScTable class="release-operator__table" label="待审批动作" :data="pendingTableRows" :columns="pendingActionColumns" row-key="id" size="small" />
         </div>
         <p v-else class="release-operator__empty">{{ copy.empty_pending || '当前没有待审批动作。' }}</p>
       </section>
@@ -387,14 +240,13 @@
           <h2>{{ copy.section_rollback || '回滚' }}</h2>
           <p>{{ copy.hint_rollback || '仅当当前 active released snapshot 存在 rollback target 时可执行。' }}</p>
         </div>
-        <button
-          class="sc-btn sc-btn-ghost"
-          type="button"
+        <ScButton
+          variant="ghost"
           :disabled="!rollbackAction.enabled || busyKey === 'rollback'"
           @click="rollback"
         >
           {{ copy.rollback_action_label || '执行回滚' }}
-        </button>
+        </ScButton>
       </section>
 
       <section class="release-operator__section">
@@ -428,10 +280,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
-import ScDataTable from '../components/design-system/ScDataTable.vue';
+import ScButton from '../components/design-system/ScButton.vue';
+import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
+import ScTable from '../components/design-system/ScTable.vue';
 import { intentRequest } from '../api/intents';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
@@ -537,6 +392,21 @@ const copy = computed<Record<string, string>>(() => {
 });
 const identity = computed(() => surface.value?.identity || {});
 const products = computed(() => surface.value?.products || []);
+const productOptions = computed(() => products.value.map((product) => ({
+  value: product.product_key,
+  label: `${product.label || product.product_key} · ${product.product_key}`,
+})));
+const policyStateOptions = [
+  { value: 'draft', label: 'draft' },
+  { value: 'preview', label: 'preview' },
+  { value: 'stable', label: 'stable' },
+  { value: 'archived', label: 'archived' },
+];
+const policyAccessOptions = [
+  { value: 'public', label: 'public' },
+  { value: 'internal', label: 'internal' },
+  { value: 'role_restricted', label: 'role_restricted' },
+];
 const productConsole = computed(() => surface.value?.product_delivery_console || {});
 const productProfile = computed(() => (productConsole.value.profile || {}) as AnyRecord);
 const productBundle = computed(() => (productConsole.value.bundle || {}) as AnyRecord);
@@ -601,6 +471,51 @@ const updatePagePolicyAction = computed(() => {
   const actions = surface.value?.available_actions || {};
   return (actions.update_page_policy || {}) as { enabled?: boolean; params?: AnyRecord };
 });
+const controlledPageTableRows = computed(() => controlledPages.value.map((page) => ({ ...page, __rowKey: pageKey(page) })));
+const candidateTableRows = computed(() => candidateSnapshots.value.map((snapshot) => ({ ...snapshot })));
+const pendingTableRows = computed(() => pendingActions.value.map((action) => ({ ...action })));
+
+function tableText(value: unknown) { return String(value ?? '').trim() || '-'; }
+function statusNode(value: string, label: string, semantic: 'default'|'info'|'success'|'warning'|'danger' = 'default') {
+  return h(ScStatusBadge, { value, label, semantic });
+}
+function actionNode(label: string, disabled: boolean, onClick: () => void, variant: 'primary'|'ghost' = 'ghost') {
+  return h(ScButton, { variant, size: 'small', disabled, onClick }, () => label);
+}
+const controlledPageColumns = computed(() => [
+  { colKey: 'visible_menu_path', title: '用户菜单', cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.visible_menu_path || row.group_label) },
+  { colKey: 'page_label', title: '页面', cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.page_label || row.label || row.page_key) },
+  { colKey: 'route', title: '路由', ellipsis: true, cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.route) },
+  { colKey: 'release_state', title: '发布阶段', cell: (_h: unknown, { row }: { row: AnyRecord }) => {
+    const state = String(row.release_state || (row.enabled === false ? 'hidden' : 'released'));
+    return statusNode(state, releaseStateLabel(row), state === 'released' ? 'success' : state === 'preview' ? 'warning' : 'default');
+  } },
+  { colKey: 'access_level', title: '可见范围', cell: (_h: unknown, { row }: { row: AnyRecord }) => accessLevelLabel(row) },
+  { colKey: 'source', title: '来源', ellipsis: true, cell: (_h: unknown, { row }: { row: AnyRecord }) => sourceLabel(row) },
+  { colKey: 'actions', title: '操作', width: 260, cell: (_h: unknown, { row }: { row: AnyRecord }) => h('div', { class: 'release-operator__row-actions' }, [
+    actionNode('发布', busyKey.value === `page:${pageKey(row)}:released` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'released', enabled: true })),
+    actionNode('预览', busyKey.value === `page:${pageKey(row)}:preview` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'preview', enabled: true })),
+    actionNode('下线', busyKey.value === `page:${pageKey(row)}:hidden` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'hidden', enabled: false })),
+    actionNode(row.access_level === 'internal' ? '转公开' : '内部', busyKey.value === `page:${pageKey(row)}:internal` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { access_level: row.access_level === 'internal' ? 'public' : 'internal' })),
+  ]) },
+]);
+const candidateColumns = computed(() => [
+  { colKey: 'version', title: '版本', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.version) },
+  { colKey: 'state', title: '状态', cell: (_h: unknown, { row }: { row: SnapshotRow }) => statusNode(String(row.state || ''), tableText(row.state), 'info') },
+  { colKey: 'channel', title: '通道', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.channel) },
+  { colKey: 'draft', title: '草案范围', cell: (_h: unknown, { row }: { row: SnapshotRow }) => snapshotDraftLabel(row) },
+  { colKey: 'diff', title: '差异', cell: (_h: unknown, { row }: { row: SnapshotRow }) => snapshotDiffLabel(row) },
+  { colKey: 'gate', title: '门禁', cell: (_h: unknown, { row }: { row: SnapshotRow }) => statusNode(candidateReady(row) ? 'ready' : 'refreeze', candidateReady(row) ? '可发布' : '需重新冻结', candidateReady(row) ? 'success' : 'warning') },
+  { colKey: 'frozen_at', title: '冻结时间', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.frozen_at) },
+  { colKey: 'actions', title: '操作', width: 96, cell: (_h: unknown, { row }: { row: SnapshotRow }) => actionNode('发布', busyKey.value === `promote:${row.id}` || !candidateReady(row), () => promote(row), 'primary') },
+]);
+const pendingActionColumns = computed(() => [
+  { colKey: 'action_type', title: '动作', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => tableText(row.action_type) },
+  { colKey: 'product_key', title: '产品', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => tableText(row.product_key) },
+  { colKey: 'approval_state', title: '审批', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => statusNode(String(row.approval_state || ''), tableText(row.approval_state), 'warning') },
+  { colKey: 'requested_at', title: '请求时间', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => tableText(row.requested_at) },
+  { colKey: 'actions', title: '操作', width: 128, cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => actionNode(copy.value.approve_action_label || '审批并执行', busyKey.value === `approve:${row.id}` || row.can_approve === false, () => approve(row), 'primary') },
+]);
 
 function pageKey(page: AnyRecord) {
   return String(page.page_key || page.scene_key || page.menu_key || page.capability_key || '').trim();
@@ -632,12 +547,6 @@ function releaseStateLabel(page: AnyRecord) {
     retired: '已下线',
   };
   return labels[state] || state || '-';
-}
-function releaseStateClass(page: AnyRecord) {
-  const state = String(page.release_state || (page.enabled === false ? 'hidden' : 'released'));
-  if (state === 'preview') return 'release-operator__pill--preview';
-  if (state === 'hidden' || state === 'retired' || page.enabled === false) return 'release-operator__pill--muted';
-  return '';
 }
 function accessLevelLabel(page: AnyRecord) {
   const level = String(page.access_level || 'public');

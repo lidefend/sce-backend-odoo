@@ -1,16 +1,18 @@
 <template>
-  <aside v-if="visible" class="hud">
+  <aside v-if="visible" class="hud" data-semantic-component="DevContextPanel" data-state="visible">
     <h3>{{ title }}</h3>
     <div v-if="actions?.length" class="actions">
-      <button
+      <ScButton
         v-for="action in actions"
         :key="action.key"
         type="button"
         class="action-btn"
+        size="small"
+        variant="secondary"
         @click="action.onClick()"
       >
         {{ action.label }}
-      </button>
+      </ScButton>
     </div>
     <p v-if="message" class="message">{{ message }}</p>
     <div class="grid">
@@ -23,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import ScButton from './design-system/ScButton.vue';
 defineProps<{
   title?: string;
   entries: Array<{ label: string; value?: unknown }>;

@@ -1,5 +1,5 @@
 <template>
-  <th
+  <div
     class="cell-sortable"
     data-semantic-component="CollectionColumnHeaderControl"
     :class="[densityClass, { 'is-sorted': sorted, 'is-dragging': dragging, 'is-sort-disabled': !sortable }]"
@@ -15,17 +15,19 @@
     @keydown.enter.prevent="$emit('sort')"
     @keydown.space.prevent="$emit('sort')"
   >
-    <button type="button" class="column-drag-handle" :title="dragLabel" :aria-label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')" />
-    <button type="button" class="column-sort-btn" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="$emit('sort')">
+    <ScIconButton class="column-drag-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')" />
+    <ScButton type="button" class="column-sort-btn" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="$emit('sort')">
       <span>{{ label }}</span>
       <ScIcon v-if="sorted" class="sort-indicator" :name="sortIcon" :size="14" />
-    </button>
-    <button type="button" class="column-resize-handle" :title="resizeLabel" :aria-label="resizeLabel" draggable="false" @click.stop @dragstart.stop.prevent @mousedown.stop.prevent="$emit('resize-start', $event)" />
-  </th>
+    </ScButton>
+    <ScIconButton class="column-resize-handle" :label="resizeLabel" draggable="false" @click.stop @dragstart.stop.prevent @mousedown.stop.prevent="$emit('resize-start', $event)" />
+  </div>
 </template>
 
 <script setup lang="ts">
 import ScIcon from '../design-system/ScIcon.vue';
+import ScButton from '../design-system/ScButton.vue';
+import ScIconButton from '../design-system/ScIconButton.vue';
 
 defineProps<{
   field: string;
@@ -33,7 +35,7 @@ defineProps<{
   sortable: boolean;
   sorted: boolean;
   dragging: boolean;
-  sortIcon: string;
+  sortIcon: 'chevron-down' | 'chevron-up';
   sortTitle: string;
   ariaSort?: 'none' | 'ascending' | 'descending';
   dragLabel: string;

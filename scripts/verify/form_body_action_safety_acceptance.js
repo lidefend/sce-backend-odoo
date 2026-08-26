@@ -109,7 +109,7 @@ async function openFormAndCaptureContract(page) {
 }
 
 async function openBoqTab(page) {
-  await page.locator('button.native-tab').filter({ hasText: /^工程量清单$/ }).first().click();
+  await page.locator('.native-tab').filter({ hasText: /^工程量清单$/ }).first().click();
   await page.locator('.native-tab-panel button.native-action-btn').filter({ hasText: /^工程量清单分析$/ }).first().waitFor({ timeout: 15000 });
 }
 

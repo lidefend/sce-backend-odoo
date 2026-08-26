@@ -1,5 +1,5 @@
 <template>
-  <ScPage content-layout="record-grid" class="api-key-page">
+  <ScPage content-layout="record-grid" class="api-key-page" data-semantic-component="ApiKeyManagementView" :data-state="loading ? 'loading' : credentials.length ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <ScPageHeader
       eyebrow="集成与开发者"
       title="API Key 管理"
@@ -67,26 +67,24 @@
       <form id="create-api-key-form" class="sc-form credential-form" autocomplete="off" @submit.prevent="createCredential">
         <label class="sc-form-label">
           用途名称
-          <input v-model.trim="createForm.name" class="sc-input" maxlength="120" required placeholder="例如：报表集成（只读）" />
+          <ScInput v-model="createForm.name" :max-length="120" required placeholder="例如：报表集成（只读）" />
         </label>
         <fieldset>
           <legend>权限范围</legend>
-          <label><input v-model="createForm.scopes" type="checkbox" value="intent.read" /> 读取 Intent</label>
-          <label><input v-model="createForm.scopes" type="checkbox" value="intent.write" /> 写入 Intent</label>
+          <ScCheckbox :checked="createForm.scopes.includes('intent.read')" label="读取 Intent" @change="setScope('intent.read', $event)" />
+          <ScCheckbox :checked="createForm.scopes.includes('intent.write')" label="写入 Intent" @change="setScope('intent.write', $event)" />
         </fieldset>
         <fieldset v-if="companyOptions.length">
           <legend>允许公司</legend>
-          <label v-for="company in companyOptions" :key="company.id">
-            <input v-model="createForm.companyIds" type="checkbox" :value="company.id" /> {{ company.label }}
-          </label>
+          <ScCheckbox v-for="company in companyOptions" :key="company.id" :checked="createForm.companyIds.includes(company.id)" :label="company.label" @change="setCompany(company.id, $event)" />
         </fieldset>
         <label class="sc-form-label">
           到期时间（可选）
-          <input v-model="createForm.expiresAt" class="sc-input" type="datetime-local" />
+          <ScInput v-model="createForm.expiresAt" type="datetime-local" />
         </label>
         <label class="sc-form-label">
           当前账号密码
-          <input v-model="createForm.password" class="sc-input" type="password" required autocomplete="current-password" />
+          <ScInput v-model="createForm.password" type="password" required autocomplete="current-password" />
         </label>
         <p class="credential-hint">密码仅用于本次敏感操作确认，不会成为 API Key，也不会被保存。</p>
       </form>
@@ -101,7 +99,7 @@
         <p>轮换后旧 Key 立即撤销，原有机器会话随即失效。</p>
         <label class="sc-form-label">
           当前账号密码
-          <input v-model="rotatePassword" class="sc-input" type="password" required autocomplete="current-password" />
+          <ScInput v-model="rotatePassword" type="password" required autocomplete="current-password" />
         </label>
       </form>
       <template #actions>
@@ -141,6 +139,7 @@ import {
 import { useSessionStore } from '../stores/session';
 import {
   ScButton,
+  ScCheckbox,
   ScDialog,
   ScEmptyState,
   ScPage,
@@ -148,6 +147,7 @@ import {
   ScPanel,
   ScSection,
   ScStatusBadge,
+  ScInput,
 } from '../components/design-system';
 
 type CompanyOption = { id: number; label: string };
@@ -177,6 +177,20 @@ function defaultCompanyIds(): number[] {
   const selected = Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0);
   if (selected > 0) return [selected];
   return companyOptions.value.length === 1 ? [companyOptions.value[0].id] : [];
+}
+
+function setScope(scope: string, checked: boolean) {
+  const next = new Set(createForm.scopes);
+  if (checked) next.add(scope);
+  else next.delete(scope);
+  createForm.scopes = [...next];
+}
+
+function setCompany(companyId: number, checked: boolean) {
+  const next = new Set(createForm.companyIds);
+  if (checked) next.add(companyId);
+  else next.delete(companyId);
+  createForm.companyIds = [...next];
 }
 
 function stateLabel(state: CredentialState): string {

@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "frontend.visual-parity.inventory.v1",
+  "generatedAt": "2026-08-26T15:02:00+08:00",
+  "scope": "formal P0/P1 frontend visual and interaction presentation",
+  "authorityBoundary": {
+    "reference": {
+      "kind": "daily-server mature frontend read-only observation",
+      "url": "http://1.95.85.92:18082/m-root-system_menu/m-group-construction-888942523/m-system-policy-550",
+      "viewport": { "width": 1440, "height": 1000 }
+    },
+    "candidate": {
+      "branch": "feature/p0-collection-state-control-completion-v1",
+      "head": "8822ebfff6a48c8c529ec6bed4e0a5204d72a3b7",
+      "url": "http://127.0.0.1:5176/a/807?menu_id=558",
+      "viewport": { "width": 1440, "height": 1000 }
+    },
+    "comparisonPolicy": "Reuse presentation details, density and hierarchy principles only. Do not copy business data, permissions, routes, model rules or infer missing Contract authority from the reference implementation."
+  },
+  "measuredCollectionBaseline": {
+    "reference": {
+      "sidebarWidth": 232,
+      "topbarHeight": 48,
+      "tableHeaderHeight": 47,
+      "medianTableRowHeight": 49,
+      "renderedRows": 20,
+      "singlePageActivityTabCount": 0,
+      "pagePrimaryActionPlacement": "page-header"
+    },
+    "candidateBeforeVisibleParity": {
+      "sidebarWidth": 248,
+      "topbarHeight": 52,
+      "tableHeaderHeight": 44,
+      "medianTableRowHeight": 57,
+      "renderedRows": 10,
+      "singlePageActivityTabCount": 1,
+      "pagePrimaryActionPlacement": "query-toolbar"
+    },
+    "candidateCurrent": {
+      "sidebarWidth": 248,
+      "topbarHeight": 52,
+      "tableHeaderHeight": 44,
+      "medianTableRowHeight": 46,
+      "renderedRows": 10,
+      "singlePageActivityTabCount": 0,
+      "pagePrimaryActionPlacement": "page-header",
+      "workspaceInlineGutter": 24
+    },
+    "nonComparableFacts": [
+      "rendered row count is controlled by each environment's authoritative list contract and page size",
+      "visible columns and status tones depend on authoritative contract payloads and are not copied from the reference"
+    ]
+  },
+  "gaps": [
+    {
+      "key": "collection.page-identity-and-primary-action",
+      "layer": "P0",
+      "status": "closed",
+      "target": "one visible page identity and one header-level primary action",
+      "evidence": ["singlePageActivityTabCount=0", "pagePrimaryActionPlacement=page-header"]
+    },
+    {
+      "key": "collection.workspace-gutter-and-ledger-density",
+      "layer": "P0",
+      "status": "closed",
+      "target": "continuous professional ledger with stable gutter and single-line rows",
+      "evidence": ["workspaceInlineGutter=24", "medianTableRowHeight=46"]
+    },
+    {
+      "key": "collection.query-filter-view-toolbar-hierarchy",
+      "layer": "P1",
+      "status": "open",
+      "target": "search, filter, saved filters, grouping and view switching form one compact, discoverable toolbar without duplicating the primary action"
+    },
+    {
+      "key": "collection.authoritative-status-tone",
+      "layer": "P1",
+      "status": "open",
+      "target": "status cells use explicit contract tone authority; unknown tones remain neutral and are never inferred from labels"
+    },
+    {
+      "key": "shell.context-and-navigation-density",
+      "layer": "P1",
+      "status": "open",
+      "target": "global context and navigation consume less visual weight while retaining canonical menu/action identity"
+    },
+    {
+      "key": "form.task-field-hierarchy",
+      "layer": "P0",
+      "status": "open",
+      "target": "task create/edit/readonly field labels, controls, validation and primary action have a consistent professional hierarchy"
+    },
+    {
+      "key": "form.workspace-native-structure-density",
+      "layer": "P0",
+      "status": "open",
+      "target": "workspace notebook, groups, smart actions and x2many regions retain native structure with coherent density"
+    },
+    {
+      "key": "relations-x2many.lifecycle-and-table-detail",
+      "layer": "P0",
+      "status": "open",
+      "target": "relation search, create, inline detail rows and settlement states share one visual and focus lifecycle"
+    },
+    {
+      "key": "workflow.action-status-disabled-reason",
+      "layer": "P0",
+      "status": "open",
+      "target": "statusbar, primary/overflow actions and disabled reasons form one authoritative workflow surface"
+    },
+    {
+      "key": "overlay.dialog-drawer-focus-density",
+      "layer": "P1",
+      "status": "open",
+      "target": "dialog and drawer spacing, actions, focus entry/return and mobile settlement are visually consistent"
+    },
+    {
+      "key": "collaboration.chatter-activity-attachment",
+      "layer": "P1",
+      "status": "open",
+      "target": "collaboration timeline, composer, attachment and activity states use the shared professional component language"
+    },
+    {
+      "key": "states.loading-empty-error-disabled-focus",
+      "layer": "P0",
+      "status": "open",
+      "target": "all state semantics already governed; visual density, recovery hierarchy and representative runtime parity remain to be proven"
+    },
+    {
+      "key": "dashboard.metric-risk-todo-drilldown",
+      "layer": "P1",
+      "status": "open",
+      "target": "metrics, risk, todo and drill-down blocks share hierarchy, density and readable fallbacks"
+    },
+    {
+      "key": "responsive.390-no-overflow-and-action-settlement",
+      "layer": "P0",
+      "status": "open",
+      "target": "390px navigation, collection, task and workspace surfaces have no overflow and preserve unique actions and focus settlement"
+    }
+  ],
+  "summary": {
+    "formalGapCount": 12,
+    "closedCount": 2,
+    "p0OpenCount": 6,
+    "p1OpenCount": 6,
+    "completionRule": "Both component-professionalization inventory and this visual-parity inventory must have zero untreated formal P0/P1 gaps."
+  }
+}

@@ -3,6 +3,8 @@
     class="group-page"
     data-semantic-component="CollectionGroupPageControls"
     :data-group-key="groupKey"
+    :data-state="loading ? 'loading' : 'ready'"
+    :aria-busy="loading || undefined"
     :aria-label="regionLabel"
   >
     <ScButton size="small" variant="secondary" :disabled="loading || !canPrevious" @click="$emit('previous')">

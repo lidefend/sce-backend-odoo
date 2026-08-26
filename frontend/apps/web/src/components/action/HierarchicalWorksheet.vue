@@ -1,5 +1,5 @@
 <template>
-  <section class="worksheet" :aria-label="labels.surface_aria">
+  <section class="worksheet" :aria-label="labels.surface_aria" data-semantic-component="HierarchicalWorksheet" :data-state="loading ? 'loading' : errorMessage ? 'error' : sourceRows.length ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <ProductListHeader
       class="worksheet-head"
       :loading="loading"
@@ -20,7 +20,7 @@
     <div class="worksheet-layout" :style="layoutStyle">
       <aside class="worksheet-navigation">
         <h3>{{ navigationTitle }}</h3>
-        <button class="navigation-all" :class="{ active: !selectedNavigationNode }" @click="selectNavigation(null)">{{ labels.all }}</button>
+        <ScButton class="navigation-all" variant="ghost" size="small" :class="{ active: !selectedNavigationNode }" @click="selectNavigation(null)">{{ labels.all }}</ScButton>
         <HierarchyTreeNode
           v-for="node in navigationRoots"
           :key="node.key"
@@ -45,36 +45,24 @@
           <div v-if="loading" class="worksheet-state">{{ labels.loading }}</div>
           <div v-else-if="!visibleRows.length" class="worksheet-state">{{ labels.empty }}</div>
           <div v-else class="worksheet-table-scroll">
-            <table :style="tableStyle">
-              <colgroup><col v-for="column in columns" :key="column.field" :style="{ width: `${column.width}px` }" /></colgroup>
-              <thead><tr><th v-for="column in columns" :key="column.field" :class="`align-${column.align}`">{{ column.label }}</th></tr></thead>
-              <tbody>
-                <tr
-                  v-for="entry in visibleRows"
-                  :key="entry.key"
-                  :class="{ 'group-row': !entry.record, 'record-row': entry.record, 'item-row': itemValues.has(entry.rowKind), 'heading-row': entry.rowKind === 'heading', 'summary-row': summaryValues.has(entry.rowKind), selected: selectedRecord?.id === entry.record?.id }"
-                  tabindex="0"
-                  @click="selectEntry(entry)"
-                  @dblclick="entry.record && emit('open-record', entry.record)"
-                  @keyup="openRecordFromKeyboard($event, entry.record)"
-                >
-                  <td v-for="column in columns" :key="column.field" :class="[`align-${column.align}`, { 'variance-nonzero': isVarianceCell(entry, column) }]">
-                    <div v-if="column.field === treeColumn" class="tree-cell" :style="{ paddingLeft: `${entry.node.depth * 18}px` }">
-                      <button v-if="!sourceOrderMode && entry.node.children.length" class="row-toggle" :aria-label="entry.node.label" @click.stop="toggleSheet(entry.node)">{{ sheetExpandedKeys.has(entry.node.key) ? '▾' : '▸' }}</button>
-                      <span v-else class="row-toggle-spacer" />
-                      <span>{{ displayCell(entry, column) }}</span>
-                    </div>
-                    <template v-else>{{ displayCell(entry, column) }}</template>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <ScTable
+              :data="worksheetTableData"
+              :columns="worksheetTableColumns"
+              row-key="key"
+              size="small"
+              :table-content-width="tableContentWidth"
+              :row-class-name="worksheetRowClassName"
+              :row-attributes="worksheetRowAttributes"
+              :label="currentScopeTitle"
+              @row-click="onWorksheetRowClick"
+              @row-dblclick="onWorksheetRowDblclick"
+            />
           </div>
         </section>
         <div class="worksheet-resizer worksheet-resizer-detail" role="separator" aria-orientation="horizontal" :aria-label="labels.resize_detail" tabindex="0" @pointerdown="startDetailResize" />
         <section class="worksheet-detail">
           <nav class="worksheet-tabs" aria-label="detail tabs">
-            <button v-for="tab in detailTabs" :key="tab.key" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">{{ tab.label }}</button>
+            <ScButton v-for="tab in detailTabs" :key="tab.key" variant="ghost" size="small" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">{{ tab.label }}</ScButton>
             <ScButton
               v-if="selectedRecord"
               class="worksheet-open-record"
@@ -96,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import { formatDisplayValue } from '../../utils/display';
 import {
   collectNodeIds,
@@ -109,6 +97,7 @@ import {
 } from '../../app/action_runtime/hierarchicalWorksheetDataSource';
 import { shouldOpenWorksheetRecordFromKeyboard } from '../../app/action_runtime/hierarchicalWorksheetInteraction';
 import ScButton from '../design-system/ScButton.vue';
+import ScTable from '../design-system/ScTable.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
 import HierarchyTreeNode from './HierarchyTreeNode.vue';
 
@@ -225,7 +214,59 @@ const visibleLeafCount = computed(() => {
 const activeTabFields = computed(() => detailTabs.value.find((tab) => tab.key === activeTab.value)?.fields || []);
 const layoutStyle = computed(() => ({ gridTemplateColumns: `${navigationWidth.value}px 1px minmax(0, 1fr)` }));
 const mainStyle = computed(() => ({ gridTemplateRows: `minmax(320px, 1fr) 1px ${detailHeight.value}px` }));
-const tableStyle = computed(() => ({ minWidth: `${columns.value.reduce((sum, column) => sum + Number(column.width || 120), 0)}px` }));
+const tableContentWidth = computed(() => `${columns.value.reduce((sum, column) => sum + Number(column.width || 120), 0)}px`);
+const worksheetTableData = computed(() => visibleRows.value as unknown as Array<Record<string, unknown>>);
+const worksheetTableColumns = computed(() => columns.value.map((column) => ({
+  colKey: column.field,
+  title: column.label,
+  width: column.width,
+  className: ({ row }: { row: VisibleEntry }) => [`align-${column.align}`, { 'variance-nonzero': isVarianceCell(row, column) }],
+  cell: (_h: unknown, { row }: { row: VisibleEntry }) => worksheetCell(row, column),
+})));
+
+function worksheetCell(entry: VisibleEntry, column: Column) {
+  if (column.field !== treeColumn.value) return displayCell(entry, column);
+  const toggle = !sourceOrderMode.value && entry.node.children.length
+    ? h('button', {
+      class: 'row-toggle',
+      'aria-label': entry.node.label,
+      onClick: (event: MouseEvent) => { event.stopPropagation(); toggleSheet(entry.node); },
+    }, sheetExpandedKeys.value.has(entry.node.key) ? '▾' : '▸')
+    : h('span', { class: 'row-toggle-spacer' });
+  return h('div', { class: 'tree-cell', style: { paddingLeft: `${entry.node.depth * 18}px` } }, [
+    toggle,
+    h('span', displayCell(entry, column)),
+  ]);
+}
+function worksheetRowClassName({ row }: { row: VisibleEntry }) {
+  return {
+    'group-row': !row.record,
+    'record-row': Boolean(row.record),
+    'item-row': itemValues.value.has(row.rowKind),
+    'heading-row': row.rowKind === 'heading',
+    'summary-row': summaryValues.value.has(row.rowKind),
+    selected: selectedRecord.value?.id === row.record?.id,
+  };
+}
+function worksheetRowAttributes({ row }: { row: VisibleEntry }) {
+  return {
+    tabindex: 0,
+    onKeyup: (event: KeyboardEvent) => openRecordFromKeyboard(event, row.record),
+  };
+}
+function worksheetContextRow(context: unknown): VisibleEntry | null {
+  if (!context || typeof context !== 'object') return null;
+  const row = (context as { row?: unknown }).row;
+  return row && typeof row === 'object' ? row as VisibleEntry : null;
+}
+function onWorksheetRowClick(context: unknown) {
+  const row = worksheetContextRow(context);
+  if (row) selectEntry(row);
+}
+function onWorksheetRowDblclick(context: unknown) {
+  const row = worksheetContextRow(context);
+  if (row?.record) emit('open-record', row.record);
+}
 
 function groupValue(node: WorksheetNode, field: string): unknown {
   const source = hierarchyConfig.value.group_field_map?.[field];
@@ -295,7 +336,7 @@ function expandAll() {
   sheetExpandedKeys.value = keys;
 }
 function collapseAll() { sheetExpandedKeys.value = new Set(); }
-function onSearchInput(event: Event) { keyword.value = String((event.target as HTMLInputElement | null)?.value || ''); }
+function onSearchInput(value: string) { keyword.value = value; }
 function storageKey() { return `sc:hierarchical-worksheet:${props.preferenceScope}:layout`; }
 function persistLayout() { window.localStorage.setItem(storageKey(), JSON.stringify({ navigationWidth: navigationWidth.value, detailHeight: detailHeight.value })); }
 function restoreLayout() {
@@ -351,18 +392,17 @@ onBeforeUnmount(() => stopResize());
 .worksheet-grid-actions { display: flex; gap: var(--sc-space-xs); }
 .worksheet-state { display: grid; place-items: center; color: var(--sc-app-text-secondary); }
 .worksheet-table-scroll { min-height: 0; overflow: auto; }
-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: var(--sc-product-text-body); }
-th { position: sticky; top: 0; z-index: 1; height: 38px; padding: 0 var(--sc-space-xs); border-right: 1px solid var(--sc-app-border); border-bottom: 1px solid var(--sc-app-border); background: var(--sc-app-subtle-bg); color: var(--sc-app-text-secondary); text-align: left; white-space: nowrap; }
-td { height: 38px; padding: var(--sc-space-2xs) var(--sc-space-xs); overflow: hidden; border-right: 1px solid var(--sc-app-border); border-bottom: 1px solid var(--sc-app-border); background: var(--sc-app-panel); text-overflow: ellipsis; }
-tr:hover td, tr.selected td { background: var(--sc-app-selected-bg); }
-.group-row td { background: var(--sc-app-subtle-bg); font-weight: 600; }
-.heading-row td { background: var(--sc-app-subtle-bg); font-weight: 600; }
-.summary-row td { background: var(--sc-app-selected-bg); font-weight: 600; }
-.align-right { text-align: right; font-variant-numeric: tabular-nums; }
-.variance-nonzero { color: var(--sc-app-warning-text); font-weight: 600; }
-.tree-cell { display: flex; align-items: center; gap: var(--sc-space-2xs); min-width: 220px; }
-.row-toggle { width: 20px; padding: 0; border: 0; background: transparent; color: var(--sc-app-text-secondary); cursor: pointer; }
-.row-toggle-spacer { display: inline-block; width: 20px; }
+:deep(.t-table) { width: 100%; font-size: var(--sc-product-text-body); }
+:deep(.t-table th) { position: sticky; top: 0; white-space: nowrap; }
+:deep(.t-table td) { overflow: hidden; text-overflow: ellipsis; }
+:deep(.t-table tr.selected td) { background: var(--sc-app-selected-bg); }
+:deep(.t-table .group-row td), :deep(.t-table .heading-row td) { background: var(--sc-app-subtle-bg); font-weight: 600; }
+:deep(.t-table .summary-row td) { background: var(--sc-app-selected-bg); font-weight: 600; }
+:deep(.align-right) { text-align: right; font-variant-numeric: tabular-nums; }
+:deep(.variance-nonzero) { color: var(--sc-app-warning-text); font-weight: 600; }
+:deep(.tree-cell) { display: flex; align-items: center; gap: var(--sc-space-2xs); min-width: 220px; }
+:deep(.row-toggle) { width: 20px; padding: 0; border: 0; background: transparent; color: var(--sc-app-text-secondary); cursor: pointer; }
+:deep(.row-toggle-spacer) { display: inline-block; width: 20px; }
 .worksheet-resizer-detail { cursor: row-resize; }
 .worksheet-detail { min-height: 0; overflow: hidden; background: var(--sc-app-panel); }
 .worksheet-tabs { display: flex; min-height: 38px; padding: 0 var(--sc-space-sm); border-bottom: 1px solid var(--sc-app-border); }

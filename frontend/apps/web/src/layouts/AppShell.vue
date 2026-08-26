@@ -26,15 +26,15 @@
     >
       <nav class="workspace-activity-rail" aria-label="工作空间切换">
         <span class="workspace-activity-brand" aria-hidden="true">{{ shellLogoText }}</span>
-        <button type="button" :class="{ active: workspacePanelMode === 'navigation' }" title="业务导航" aria-label="业务导航" @click="openWorkspacePanel('navigation')">
+        <ScIconButton label="业务导航" :class="{ active: workspacePanelMode === 'navigation' }" @click="openWorkspacePanel('navigation')">
           <ScIcon name="apps" :size="20" />
-        </button>
-        <button type="button" :class="{ active: workspacePanelMode === 'company' }" title="切换公司" aria-label="公司空间：切换公司" @click="openWorkspacePanel('company')">
+        </ScIconButton>
+        <ScIconButton label="公司空间：切换公司" :class="{ active: workspacePanelMode === 'company' }" @click="openWorkspacePanel('company')">
           <ScIcon name="building" :size="20" />
-        </button>
-        <button type="button" :class="{ active: workspacePanelMode === 'record' }" :title="switchRecordContextLabel" :aria-label="`${recordContextSpaceLabel}：${switchRecordContextLabel}`" :disabled="!showRecordContext" @click="openWorkspacePanel('record')">
+        </ScIconButton>
+        <ScIconButton :label="`${recordContextSpaceLabel}：${switchRecordContextLabel}`" :class="{ active: workspacePanelMode === 'record' }" :disabled="!showRecordContext" @click="openWorkspacePanel('record')">
           <ScIcon :name="recordContextIcon" :size="20" />
-        </button>
+        </ScIconButton>
       </nav>
 
       <div class="workspace-sidebar-panel">
@@ -54,17 +54,18 @@
           </header>
           <ScInput v-model="companySearch" class="workspace-scope-search sc-search" type="search" placeholder="搜索公司" aria-label="搜索公司" />
           <div class="workspace-scope-options">
-            <button
+            <ScButton
               v-for="company in filteredCompanyOptions"
               :key="`company-space-${company.company_id}`"
               type="button"
+              variant="ghost"
               :class="{ active: company.company_id === selectedCompanyId }"
               :aria-current="company.company_id === selectedCompanyId ? 'true' : undefined"
               @click="selectCompanyScope(company.company_id)"
             >
               <span>{{ company.company_name || `公司 ${company.company_id}` }}</span>
               <small v-if="company.company_id === selectedCompanyId">当前公司</small>
-            </button>
+            </ScButton>
             <ScInlineState v-if="!filteredCompanyOptions.length" class="record-context-empty" state="empty" label="无匹配公司" />
           </div>
         </section>
@@ -72,18 +73,20 @@
         <section v-else-if="workspacePanelMode === 'record'" class="workspace-scope-panel" aria-labelledby="record-context-space-title">
           <header>
             <div><small>{{ currentCompanyLabel || '全部公司' }}</small><h2 id="record-context-space-title">{{ recordContextSpaceLabel }}</h2></div>
-            <button v-if="selectedRecordContext" class="workspace-scope-clear" type="button" @click="clearRecordContextSelection">{{ recordContextAllLabel }}</button>
+            <ScButton v-if="selectedRecordContext" class="workspace-scope-clear" type="button" variant="ghost" size="small" @click="clearRecordContextSelection">{{ recordContextAllLabel }}</ScButton>
           </header>
           <div v-if="operationOptions.length" class="business-scope-segments" role="group" :aria-label="recordContextLabel">
-            <button
+            <ScButton
               v-for="operation in operationOptions"
               :key="`operation-${operation.operation_strategy || 'all'}`"
               type="button"
+              variant="ghost"
+              size="small"
               :class="{ active: operation.operation_strategy === selectedOperationStrategy }"
               :disabled="operation.disabled"
               :title="operation.disabled_reason || operationScopeLabel(operation)"
               @click.stop="changeOperationScope(operation.operation_strategy)"
-            >{{ operationScopeLabel(operation) }}</button>
+            >{{ operationScopeLabel(operation) }}</ScButton>
           </div>
           <ScInput
             v-model="recordContextSearch"
@@ -95,17 +98,18 @@
             @keydown.enter.prevent="submitRecordContextSearch"
           />
           <div class="workspace-scope-options">
-            <button
+            <ScButton
               v-for="option in recordContextOptions"
               :key="`record-context-space-${option.id}`"
               type="button"
+              variant="ghost"
               :class="{ active: option.id === selectedRecordContext?.id }"
               :aria-current="option.id === selectedRecordContext?.id ? 'true' : undefined"
               @click="selectRecordContext(option)"
             >
               <span>{{ recordContextOptionLabel(option) }}</span>
               <small v-if="option.code">{{ option.code }}</small>
-            </button>
+            </ScButton>
             <ScInlineState v-if="recordContextSearching" class="record-context-empty" state="loading" label="搜索中..." />
             <ScInlineState v-else-if="recordContextError" class="record-context-empty" state="error" :label="recordContextError" />
             <ScInlineState v-else-if="!recordContextOptions.length" class="record-context-empty" state="empty" :label="recordContextEmptyText" />
@@ -118,19 +122,20 @@
           <small v-if="appCatalogLoading">同步中</small>
         </div>
         <div class="published-apps__list">
-          <button
+          <ScButton
             v-for="app in visiblePublishedApps"
             :key="app.key"
             class="published-app"
             :class="{ active: app.appId === activeAppId, 'published-app--loading': app.appId === openingAppId }"
             type="button"
+            variant="ghost"
             :disabled="Boolean(openingAppId)"
             @click="openPublishedApp(app)"
           >
             <span class="published-app__mark">{{ appMark(app) }}</span>
             <span class="published-app__label">{{ app.label }}</span>
             <small v-if="appBadge(app)">{{ appBadge(app) }}</small>
-          </button>
+          </ScButton>
         </div>
       </div>
 
@@ -160,15 +165,15 @@
       </div>
 
         <div class="footer">
-          <button v-if="showRefresh" class="ghost sc-btn sc-btn-ghost" @click="refreshInit">刷新</button>
-          <button class="ghost sc-btn sc-btn-ghost" @click="logout">退出登录</button>
+          <ScButton v-if="showRefresh" variant="ghost" @click="refreshInit">刷新</ScButton>
+          <ScButton variant="ghost" @click="logout">退出登录</ScButton>
         </div>
       </div>
     </ProductMobileNavigationDrawer>
 
     <section
       class="content"
-      :class="{ 'content--with-activity-tabs': activityPages.length }"
+      :class="{ 'content--with-activity-tabs': activityPages.length > 1 }"
       :inert="mobileViewport && mobileSidebarOpen ? true : undefined"
     >
       <header
@@ -200,10 +205,12 @@
             @record="openWorkspacePanel('record')"
           />
           <div class="topbar-account" @click.stop>
-            <button
+            <ScButton
               ref="roleContextTrigger"
               class="topbar-context topbar-context-trigger"
               type="button"
+              variant="ghost"
+              size="small"
               aria-haspopup="true"
               :aria-label="`账户与岗位：${roleLabel}`"
               :title="`账户与岗位：${roleLabel}`"
@@ -215,7 +222,7 @@
               <span class="topbar-context-kicker">当前岗位</span>
               <strong>{{ roleLabel }}</strong>
               <ScIcon name="chevron-right" :size="14" class="topbar-context-caret" />
-            </button>
+            </ScButton>
             <section
               v-if="roleContextOpen"
               id="role-context-panel"
@@ -236,30 +243,34 @@
                   <dd>{{ currentCompanyLabel }}</dd>
                 </div>
               </dl>
-              <button class="sc-btn sc-btn-sm sc-btn-ghost" type="button" @click="openApiKeyManagement">
+              <ScButton variant="ghost" size="small" type="button" @click="openApiKeyManagement">
                 集成与 API Key
-              </button>
-              <button class="sc-btn sc-btn-sm sc-btn-ghost" type="button" @click="logout">
+              </ScButton>
+              <ScButton variant="ghost" size="small" type="button" @click="logout">
                 退出登录
-              </button>
+              </ScButton>
             </section>
           </div>
           <GlobalMessagePanel />
-          <button
+          <ScButton
             v-if="showMobileWorkShortcut"
             class="mobile-work-shortcut sc-btn sc-btn-sm"
             type="button"
+            variant="ghost"
+            size="small"
             title="我的工作"
             aria-label="我的工作"
             @click="router.push('/my-work')"
           >
             <ScIcon name="briefcase" :size="16" />
             <span class="topbar-tool-label">我的工作</span>
-          </button>
-          <button
+          </ScButton>
+          <ScButton
             ref="sidebarToggleButton"
             class="sidebar-toggle sc-btn sc-btn-sm"
             type="button"
+            variant="ghost"
+            size="small"
             :title="mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏')"
             :aria-label="mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏')"
             aria-controls="primary-sidebar"
@@ -268,19 +279,21 @@
           >
             <ScIcon name="panel-left" :size="16" />
             <span class="topbar-tool-label">{{ mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏') }}</span>
-          </button>
-          <button
+          </ScButton>
+          <ScButton
             v-if="isConfigurationRoute"
             class="config-return sc-btn sc-btn-sm"
             type="button"
+            variant="ghost"
+            size="small"
             @click="returnToBusinessSurface"
           >
             返回业务办理
-          </button>
-          <button class="theme-switch sc-btn sc-btn-sm" type="button" :title="`切换主题，当前${themeLabel}`" :aria-label="`切换主题，当前${themeLabel}`" @click="toggleTheme">
+          </ScButton>
+          <ScButton class="theme-switch" variant="ghost" size="small" type="button" :title="`切换主题，当前${themeLabel}`" :aria-label="`切换主题，当前${themeLabel}`" @click="toggleTheme">
             <ScIcon name="sun" :size="16" />
             <span class="topbar-tool-label">主题：{{ themeLabel }}</span>
-          </button>
+          </ScButton>
         </div>
       </header>
 
@@ -336,7 +349,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue';
-import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
+import { useRoute, useRouter, type LocationQueryRaw, type RouteLocationRaw } from 'vue-router';
 import ProductSideNavigation from '../components/product-shell/ProductSideNavigation.vue';
 import ProductAppShell from '../components/product-shell/ProductAppShell.vue';
 import ProductMobileNavigationDrawer from '../components/product-shell/ProductMobileNavigationDrawer.vue';
@@ -347,7 +360,9 @@ import ActivityPageTabs from '../components/product-shell/ActivityPageTabs.vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import GlobalMessagePanel from '../components/GlobalMessagePanel.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
+import ScIconButton from '../components/design-system/ScIconButton.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
 import { useSessionStore, type ActivityPage } from '../stores/session';
@@ -1413,7 +1428,7 @@ function handleSelect(node: CanonicalNavigationNode) {
       query: menuQuery,
       menuId: selection.menuId,
       actionId: selection.actionId,
-    })).catch(() => {});
+    }) as RouteLocationRaw).catch(() => {});
     return;
   }
   if (selection.targetKind === 'scene' && selection.sceneKey) {

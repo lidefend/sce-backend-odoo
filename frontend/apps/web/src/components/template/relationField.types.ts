@@ -20,6 +20,8 @@ export type RelationFieldColumn = {
   selection?: Array<[string, string]>;
 };
 
+export type RelationFieldInputType = 'text' | 'search' | 'number' | 'url' | 'tel' | 'password' | 'email' | 'date' | 'datetime-local' | 'time';
+
 export type RelationFieldAdapter = {
   busy: boolean;
   showOne2manyErrors: boolean;
@@ -54,10 +56,10 @@ export type RelationFieldAdapter = {
   restoreOne2manyRow: (name: string, rowKey: string) => void;
   one2manyRowLabel: (name: string, row: RelationFieldRow) => string;
   selectPlaceholder: (label: string) => string;
-  one2manyColumnInputType: (column: RelationFieldColumn) => string;
+  one2manyColumnInputType: (column: RelationFieldColumn) => RelationFieldInputType;
   one2manyColumnDisplayValue: (column: RelationFieldColumn, value: unknown) => string;
   inputFieldValue: (name: string) => string;
-  fieldInputType: (type: string) => string;
+  fieldInputType: (type: string) => RelationFieldInputType;
   inputPlaceholder: (label: string) => string;
   setTextField: (name: string, value: string) => void;
 };

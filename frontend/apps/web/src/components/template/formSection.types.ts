@@ -14,7 +14,7 @@ export type TemplateFieldType =
   | string;
 
 export type TemplateSelectOption = {
-  value: string;
+  value: string | number;
   label: string;
 };
 

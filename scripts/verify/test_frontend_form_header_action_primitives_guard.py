@@ -17,9 +17,9 @@ class FormHeaderActionPrimitivesGuardTests(unittest.TestCase):
 
         self.assertTrue(any("shared ScButton" in error or "status step" in error for error in validate(read_text)))
 
-    def test_status_step_primitive_replacement_fails(self):
+    def test_status_step_cannot_regress_to_private_button(self):
         def read_text(path: str) -> str:
-            return (ROOT / path).read_text(encoding="utf-8").replace("<button\n                type=\"button\"", "<ScButton\n                type=\"button\"", 1)
+            return (ROOT / path).read_text(encoding="utf-8").replace("<ScButton\n                type=\"button\"\n                class=\"native-statusbar-step\"", "<button\n                type=\"button\"\n                class=\"native-statusbar-step\"", 1)
 
         self.assertTrue(any("status step" in error for error in validate(read_text)))
 

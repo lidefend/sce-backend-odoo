@@ -1,18 +1,21 @@
 <template>
-  <button
+  <ScButton
     data-semantic-component="NativeSmartAction"
     data-semantic-role="smart-action"
     type="button"
+    variant="ghost"
     class="native-smart-action native-action-btn native-action-btn--smart"
     :disabled="disabled"
     :title="title"
   >
     <span v-if="icon" :class="['native-smart-action__icon', icon]" aria-hidden="true" />
     <span class="native-smart-action__label">{{ label }}</span>
-  </button>
+  </ScButton>
 </template>
 
 <script setup lang="ts">
+import ScButton from '../design-system/ScButton.vue';
+
 defineProps<{
   label: string;
   icon?: string;

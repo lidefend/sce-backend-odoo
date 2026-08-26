@@ -5,18 +5,7 @@
     </header>
 
     <div v-if="rows.length" class="table-wrap">
-      <ScDataTable class="mini-table" :label="block.title || '表格'">
-        <thead>
-          <tr>
-            <th v-for="(col, index) in columns" :key="`col-${col}`">{{ columnLabel(col, index) }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, idx) in rows" :key="`row-${idx}`">
-            <td v-for="col in columns" :key="`cell-${idx}-${col}`">{{ stringify(row[col]) }}</td>
-          </tr>
-        </tbody>
-      </ScDataTable>
+      <ScTable class="mini-table" :label="block.title || '表格'" :data="rows" :columns="tableColumns" row-key="__rowKey" size="small" stripe />
     </div>
     <ScEmptyState v-else density="compact" :heading-level="5" :title="emptyMessage" />
   </article>
@@ -25,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
-import ScDataTable from '../../design-system/ScDataTable.vue';
+import ScTable from '../../design-system/ScTable.vue';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{
@@ -51,8 +40,14 @@ const rows = computed<DataRow[]>(() => {
   if (!Array.isArray(raw)) return [];
   return raw
     .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
-    .map((item) => item as DataRow);
+    .map((item, index) => ({ ...(item as DataRow), __rowKey: index }));
 });
+
+const tableColumns = computed(() => columns.value.map((col, index) => ({
+  colKey: col,
+  title: columnLabel(col, index),
+  cell: (_h: unknown, { row }: { row: DataRow }) => stringify(row[col]),
+})));
 
 const emptyMessage = computed(() => String(source.value.empty_message || '暂无数据'));
 
@@ -74,10 +69,6 @@ function stringify(value: unknown) {
 .block { border: 1px solid var(--sc-app-border); border-radius: 8px; background: var(--sc-app-panel); padding: 10px; min-height: 170px; }
 .block-header h4 { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
 .table-wrap { max-width: 100%; overflow: auto; }
-.mini-table :deep(table) { width: max(100%, 560px); min-width: 560px; font-size: 13px; }
-.mini-table :deep(th),
-.mini-table :deep(td) { border: 1px solid var(--sc-app-border); padding: 8px 10px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
-.mini-table :deep(th) { background: var(--sc-app-muted-bg); font-weight: 700; color: var(--sc-app-text-primary); }
-.mini-table :deep(tbody tr:nth-child(2n) td) { background: var(--sc-app-muted-bg); }
+.mini-table { min-width: 560px; }
 
 </style>

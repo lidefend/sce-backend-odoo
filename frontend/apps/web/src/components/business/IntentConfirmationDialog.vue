@@ -5,6 +5,8 @@
     close-label="取消操作"
     panel-class="intent-confirmation"
     data-professional-workflow-component="confirm-dialog"
+    data-semantic-component="IntentConfirmationDialog"
+    :data-state="open ? 'open' : 'closed'"
     @close="settle(false)"
   >
     <p class="intent-confirmation__eyebrow">业务状态将发生变化</p>

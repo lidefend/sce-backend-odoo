@@ -1,5 +1,5 @@
 <template>
-  <ScPage class="page">
+  <ScPage class="page" data-semantic-component="NotFoundView" data-state="error">
     <ScPageHeader :title="pageIdentity.title.value" />
     <ScErrorState
       :title="pageIdentity.title.value"

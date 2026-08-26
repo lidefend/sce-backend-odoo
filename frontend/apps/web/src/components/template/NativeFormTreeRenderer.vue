@@ -1,6 +1,6 @@
 /* eslint-disable vue/no-dupe-keys */
 <template>
-  <div class="native-form-tree">
+  <div class="native-form-tree" data-semantic-component="NativeFormTreeRenderer" :data-state="visibleNodes.length ? 'ready' : 'empty'">
     <template v-for="(node, index) in visibleNodes" :key="nodeKey(node, index)">
       <section
         v-if="isContainerNode(node)"
@@ -38,21 +38,17 @@
         <p v-if="nodeText(node)" class="native-static-text">{{ nodeText(node) }}</p>
 
         <template v-if="nodeType(node) === 'notebook'">
-          <div class="native-tabs">
-            <button
-              v-for="(page, pageIndex) in notebookPages(node)"
-              :key="nodeKey(page, pageIndex)"
-              type="button"
-              class="native-tab"
-              :class="{ 'native-tab--active': pageIndex === activePageIndex }"
-              @click="activePageIndex = pageIndex"
-            >
-              {{ containerTitle(page) || `页签 ${pageIndex + 1}` }}
-            </button>
-          </div>
-          <div class="native-tab-panel">
+          <ScTabs
+            class="native-tabs"
+            :model-value="activePageIndex"
+            :items="notebookTabItems(node)"
+            size="small"
+            @update:model-value="activePageIndex = Number($event)"
+          >
+            <template #panel="{ item }">
+          <div v-if="Number(item.value) === activePageIndex" class="native-tab-panel">
             <NativeFormTreeRenderer
-              :nodes="activeNotebookChildren(node)"
+              :nodes="notebookPageChildren(node, activePageIndex)"
               :field-schemas-for-nodes="fieldSchemasForNodes"
               :is-node-visible="isNodeVisible"
               :button-label-resolver="buttonLabelResolver"
@@ -94,30 +90,30 @@
               </template>
             </NativeFormTreeRenderer>
           </div>
+            </template>
+          </ScTabs>
         </template>
 
         <template v-else-if="nodeType(node) === 'h1' && titleFieldForNode(node)">
           <div class="native-title-row">
-            <button
+            <ScIconButton
               v-if="titleFieldForNode(node)?.favoriteToggle"
-              type="button"
               class="native-title-favorite"
               :class="{ 'native-title-favorite--active': titleFieldForNode(node)?.favoriteToggle?.active }"
-              :aria-label="titleFieldForNode(node)?.favoriteToggle?.label"
               :aria-pressed="titleFieldForNode(node)?.favoriteToggle?.active"
-              :title="titleFieldForNode(node)?.favoriteToggle?.label"
+              :label="titleFieldForNode(node)?.favoriteToggle?.label || '切换收藏'"
               :disabled="titleFieldForNode(node)?.favoriteToggle?.readonly"
               @click="emitTitleFavoriteToggle(titleFieldForNode(node))"
             >
               <ScIcon :name="titleFieldForNode(node)?.favoriteToggle?.active ? 'star' : 'star-outline'" :size="18" />
-            </button>
-            <input
+            </ScIconButton>
+            <ScInput
               v-if="!titleFieldForNode(node)?.readonly"
               class="native-title-input"
               type="text"
-              :value="titleFieldValue(titleFieldForNode(node))"
+              :model-value="titleFieldValue(titleFieldForNode(node))"
               :aria-label="titleFieldForNode(node)?.label"
-              @input="emitTitleFieldChange(titleFieldForNode(node), ($event.target as HTMLInputElement).value)"
+              @update:model-value="emitTitleFieldChange(titleFieldForNode(node), $event)"
             />
             <h2 v-else class="native-title-text">{{ titleFieldValue(titleFieldForNode(node)) || titleFieldForNode(node)?.label }}</h2>
           </div>
@@ -371,7 +367,9 @@ import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import type {
   FormSectionFieldAction,
@@ -610,9 +608,21 @@ function notebookPages(node: NativeFormLayoutNode) {
   return pages.length ? pages : rawChildren(node).filter((child) => isNodeRenderable(child));
 }
 
-function activeNotebookChildren(node: NativeFormLayoutNode) {
-  const page = notebookPages(node)[activePageIndex.value] || notebookPages(node)[0];
+function notebookPageChildren(node: NativeFormLayoutNode, pageIndex: number) {
+  const page = notebookPages(node)[pageIndex] || notebookPages(node)[0];
   return page ? rawChildren(page) : [];
+}
+
+function notebookTabItems(node: NativeFormLayoutNode): ScTabItem[] {
+  return notebookPages(node).map((page, pageIndex) => {
+    const label = containerTitle(page) || `页签 ${pageIndex + 1}`;
+    return {
+      value: pageIndex,
+      label,
+      labelClass: `native-tab${pageIndex === activePageIndex.value ? ' native-tab--active' : ''}`,
+      labelAttributes: { 'data-section-tab': label },
+    };
+  });
 }
 
 function fieldSectionTitle(node?: NativeFormLayoutNode, index = 0) {
@@ -918,31 +928,15 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-tabs {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
   max-width: 100%;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-muted-bg);
-  border-radius: 8px 8px 0 0;
-  padding: 6px 6px 0;
+  min-width: 0;
 }
 
 .native-tab {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  padding: 8px 10px;
-  font-size: 13px;
-  cursor: pointer;
   white-space: nowrap;
 }
 
 .native-tab--active {
-  color: var(--sc-app-text-primary);
-  border-bottom-color: var(--sc-semantic-surface-interactive);
-  background: var(--sc-app-panel);
   font-weight: 600;
 }
 

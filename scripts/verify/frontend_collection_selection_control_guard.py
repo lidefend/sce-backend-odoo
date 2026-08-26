@@ -16,17 +16,23 @@ def validate(list_source: str | None = None, control_source: str | None = None, 
     visual_text = visual_source if visual_source is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
     mobile_row_text = mobile_row_source if mobile_row_source is not None else MOBILE_ROW.read_text(encoding="utf-8")
     failures: list[str] = []
-    if list_text.count("<CollectionSelectionControl") + mobile_row_text.count("<CollectionSelectionControl") != 5:
-        failures.append("collection list must project exactly five shared selection-control adapters")
+    if list_text.count(':columns="collectionTableColumns(') != 2:
+        failures.append("collection desktop surfaces must project exactly two TDesign selection adapters")
+    if list_text.count(':selected-row-keys="selectedIds || []"') != 2:
+        failures.append("collection desktop surfaces must bind exactly two selected-row-keys authorities")
+    if mobile_row_text.count("<CollectionSelectionControl") != 1:
+        failures.append("collection mobile row must retain one touch selection adapter")
     if 'type="checkbox"' in list_text:
         failures.append("ListPage retains parallel native checkbox DOM")
     required_list = (
-        ':indeterminate="someSelected"',
-        ':indeterminate="isGroupSomeSelected(group)"',
-        ':selection-label="rowSelectionLabel(row)"',
-        'function onSelectAllChange(checked: boolean)',
-        'function onRowCheckboxChange(row: Record<string, unknown>, checked: boolean)',
-        'function onGroupSelectAllChange(group: { sampleRows?: Array<Record<string, unknown>> }, selected: boolean)',
+        "type: 'multiple'",
+        'checkProps:',
+        '@select-change="onTableSelectionChange($event, group.sampleRows)"',
+        '@select-change="onTableSelectionChange($event, records)"',
+        'function onTableSelectionChange(keys: Array<string | number>, sourceRows: Array<Record<string, unknown>>)',
+        'if (!changed.length) return;',
+        'props.onToggleSelectionAll(sourceIds, sourceIds.every((id) => next.has(id)))',
+        'props.onToggleSelection?.(id, next.has(id))',
     )
     for marker in required_list:
         if marker not in list_text:
@@ -35,27 +41,25 @@ def validate(list_source: str | None = None, control_source: str | None = None, 
         if marker not in mobile_row_text:
             failures.append(f"mobile collection selection adapter missing {marker}")
     required_control = (
+        '<ScCheckbox',
         'data-semantic-component="CollectionSelectionControl"',
         ':data-selection-state="presentation.state"',
         ':data-selection-interactive="presentation.interactive"',
         ':data-selection-scope="scope"',
-        'type="checkbox"',
-        ':aria-label="label"',
+        ':checked="checked"',
+        ':indeterminate="indeterminate"',
+        ':label="label"',
+        'hide-label',
         '@click.stop',
-        'inputRef.value.indeterminate = props.indeterminate',
         'resolveCollectionSelectionPresentation(props)',
-        "emit('change', Boolean((event.target as HTMLInputElement | null)?.checked))",
+        "@change=\"emit('change', $event)\"",
     )
     for marker in required_control:
         if marker not in control_text:
             failures.append(f"CollectionSelectionControl missing {marker}")
     required_css = (
-        "[data-selection-state='checked']",
-        "[data-selection-state='mixed']",
-        ':focus-within',
-        ':has(input:disabled)',
-        'var(--sc-semantic-surface-interactive)',
-        '@media (prefers-reduced-motion: reduce)',
+        "[data-selection-interactive='false']",
+        'var(--sc-touch-target-min)',
     )
     for marker in required_css:
         if marker not in css_text:
@@ -81,4 +85,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_collection_selection_control_guard] PASS owner=1 adapters=5 states=4")
+    print("[frontend_collection_selection_control_guard] PASS desktop_driver=tdesign adapters=2 mobile_touch_adapter=1 states=4")

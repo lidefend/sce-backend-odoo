@@ -3,6 +3,8 @@
     class="pagination-footer"
     data-semantic-component="CollectionPaginationFooter"
     :data-pagination-mode="mode"
+    :data-state="loading ? 'loading' : 'ready'"
+    :aria-busy="loading || undefined"
     :aria-label="labels.region"
   >
     <div class="pagination-actions pagination-actions--bottom">
@@ -59,11 +61,10 @@
               :model-value="pageLimitOptions.includes(listLimit) ? String(listLimit) : ''"
               :disabled="loading"
               :aria-label="labels.pageSizeSelect"
+              :placeholder="labels.pageSizeSelect"
+              :options="pageLimitOptions.map((option) => ({ value: String(option), label: String(option) }))"
               @change="(value) => $emit('page-limit-select', value)"
-            >
-              <option value="" disabled>{{ labels.pageSizeSelect }}</option>
-              <option v-for="option in pageLimitOptions" :key="`page-limit-${option}`" :value="String(option)">{{ option }}</option>
-            </ScSelect>
+            />
           </span>
         </label>
       </template>

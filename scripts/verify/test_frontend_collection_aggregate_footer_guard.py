@@ -20,8 +20,8 @@ class CollectionAggregateFooterGuardTest(unittest.TestCase):
         self.assertTrue(any("parallel" in item for item in validate(altered, self.footer_source, self.css_source)))
 
     def test_missing_group_adapter_fails(self):
-        altered = self.list_source.replace('context="group"', 'context="flat"')
-        self.assertTrue(any('context="group"' in item for item in validate(altered, self.footer_source, self.css_source)))
+        altered = self.list_source.replace(':foot-data="collectionFootData(groupAggregateFooterRows(group))"', '')
+        self.assertTrue(any('groupAggregateFooterRows' in item for item in validate(altered, self.footer_source, self.css_source)))
 
     def test_missing_scope_marker_fails(self):
         altered = self.footer_source.replace(':data-aggregate-scope="row.scope"', '')

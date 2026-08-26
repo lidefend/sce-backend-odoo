@@ -27,7 +27,7 @@ class LowCodeFieldCreateDialogGuardTests(unittest.TestCase):
     def test_field_type_option_fails(self):
         def read_text(path: str) -> str:
             value = (ROOT / path).read_text(encoding="utf-8")
-            return value.replace('value="datetime"', 'value="date"') if path.endswith(".vue") else value
+            return value.replace("{ value: 'datetime',", "{ value: 'date',") if path.endswith(".vue") else value
 
         self.assertTrue(any("field type options" in error for error in validate(read_text)))
 

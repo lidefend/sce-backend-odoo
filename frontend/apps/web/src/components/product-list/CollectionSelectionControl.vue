@@ -1,28 +1,26 @@
 <template>
-  <label
+  <ScCheckbox
     class="collection-selection-control"
     :class="`size-${size}`"
     data-semantic-component="CollectionSelectionControl"
     :data-selection-state="presentation.state"
     :data-selection-interactive="presentation.interactive"
     :data-selection-scope="scope"
+    :checked="checked"
+    :indeterminate="indeterminate"
+    :disabled="disabled"
+    :label="label"
+    hide-label
+    :size="size === 'touch' ? 'medium' : 'small'"
     @click.stop
-  >
-    <input
-      ref="inputRef"
-      type="checkbox"
-      :checked="checked"
-      :disabled="disabled"
-      :aria-label="label"
-      @change="emitChange"
-    />
-    <span class="collection-selection-control__indicator" aria-hidden="true"></span>
-  </label>
+    @change="emit('change', $event)"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue';
+import { computed } from 'vue';
 import { resolveCollectionSelectionPresentation } from '../../app/presentation/collectionSelectionPresentation';
+import ScCheckbox from '../design-system/ScCheckbox.vue';
 
 const props = withDefaults(defineProps<{
   checked: boolean;
@@ -39,16 +37,7 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{ change: [checked: boolean] }>();
-const inputRef = ref<HTMLInputElement | null>(null);
 const presentation = computed(() => resolveCollectionSelectionPresentation(props));
-
-watchEffect(() => {
-  if (inputRef.value) inputRef.value.indeterminate = props.indeterminate;
-});
-
-function emitChange(event: Event) {
-  emit('change', Boolean((event.target as HTMLInputElement | null)?.checked));
-}
 </script>
 
 <style scoped src="./CollectionSelectionControl.css"></style>

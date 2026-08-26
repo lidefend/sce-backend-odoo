@@ -1,5 +1,5 @@
 <template>
-  <ScSection class="product-work" label="我的工作事项">
+  <ScSection class="product-work" label="我的工作事项" data-semantic-component="MyWorkApprovalWorkspace" :data-state="busy ? 'loading' : 'ready'" :aria-busy="busy || undefined">
     <header class="product-work__header">
       <p>{{ workspace.presentation.description }}</p>
       <ScButton variant="ghost" :disabled="busy" @click="$emit('refresh')">刷新</ScButton>
@@ -24,12 +24,10 @@
 
     <section class="product-work__filters" aria-label="筛选和排序工作事项">
       <ScField v-slot="{ controlId, describedBy }" :label="workspace.presentation.search_label" field-key="my-work-search">
-        <input :id="controlId" v-model.trim="searchText" type="search" :aria-describedby="describedBy" :placeholder="workspace.presentation.search_placeholder" />
+        <ScInput :id="controlId" v-model="searchText" type="search" :described-by="describedBy" :placeholder="workspace.presentation.search_placeholder" />
       </ScField>
       <ScField v-slot="{ controlId, describedBy }" label="排序方式" field-key="my-work-sort">
-        <ScSelect :id="controlId" v-model="sortMode" :described-by="describedBy">
-          <option v-for="option in workspace.presentation.sort_options" :key="option.key" :value="option.key">{{ option.label }}</option>
-        </ScSelect>
+        <ScSelect :id="controlId" v-model="sortMode" :described-by="describedBy" :options="workspace.presentation.sort_options.map((option) => ({ value: option.key, label: option.label }))" />
       </ScField>
       <ScButton v-if="searchText" variant="ghost" @click="searchText = ''">清除查找</ScButton>
     </section>
@@ -85,7 +83,7 @@
         <p v-if="pendingItem">{{ confirmationSummary(pendingItem) }}</p>
         <label v-if="pendingAction?.requires_reason">
           {{ pendingAction.reason_label || '操作原因' }}
-          <textarea ref="reasonRef" v-model.trim="reason" rows="3" required aria-describedby="reason-help" />
+          <ScTextarea ref="reasonRef" v-model="reason" :rows="3" required described-by="reason-help" />
           <small id="reason-help">{{ pendingAction.reason_help || '请说明本次操作原因。' }}</small>
         </label>
         <p v-if="dialogError" class="feedback error" role="alert">{{ dialogError }}</p>
@@ -114,6 +112,8 @@ import ScPanel from '../design-system/ScPanel.vue';
 import ScSection from '../design-system/ScSection.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
+import ScInput from '../design-system/ScInput.vue';
+import ScTextarea from '../design-system/ScTextarea.vue';
 
 const props = defineProps<{ workspace: ProductMyWorkWorkspace }>();
 const emit = defineEmits<{ refresh: [] }>();
@@ -129,7 +129,7 @@ const reason = ref('');
 const pendingItem = ref<ProductMyWorkItem | null>(null);
 const pendingAction = ref<ProductMyWorkAction | null>(null);
 const dialogOpen = ref(false);
-const reasonRef = ref<HTMLTextAreaElement | null>(null);
+const reasonRef = ref<{ focus: () => void } | null>(null);
 let actionTrigger: HTMLElement | null = null;
 
 const visibleSections = computed(() => {

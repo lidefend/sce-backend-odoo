@@ -4,12 +4,15 @@
     :class="`tone-${tone}`"
     data-semantic-component="CollectionKanbanRecordCard"
     :data-record-key="recordKey"
+    :data-state="disabled ? 'disabled' : 'ready'"
     role="button"
-    tabindex="0"
+    :tabindex="disabled ? -1 : 0"
     :aria-label="openAriaLabel"
-    @click="emit('open')"
-    @keydown.enter="emit('open')"
-    @keydown.space.prevent="emit('open')"
+    :aria-disabled="disabled || undefined"
+    :title="disabledReason || undefined"
+    @click="openRecord"
+    @keydown.enter="openRecord"
+    @keydown.space.prevent="openRecord"
   >
     <h3 class="collection-kanban-record-card__title">{{ title }}</h3>
     <div v-if="statuses.length" class="collection-kanban-record-card__statuses" aria-label="记录状态">
@@ -49,10 +52,24 @@ const props = withDefaults(defineProps<{
   primaryFacts?: CollectionKanbanFact[];
   secondaryFacts?: CollectionKanbanFact[];
   openLabel?: string;
-}>(), { tone: 'default', statuses: () => [], primaryFacts: () => [], secondaryFacts: () => [], openLabel: '打开记录' });
+  disabled?: boolean;
+  disabledReason?: string;
+}>(), {
+  tone: 'default',
+  statuses: () => [],
+  primaryFacts: () => [],
+  secondaryFacts: () => [],
+  openLabel: '打开记录',
+  disabled: false,
+  disabledReason: '',
+});
 
 const emit = defineEmits<{ open: [] }>();
 const openAriaLabel = computed(() => `${props.openLabel}：${props.title}`);
+
+function openRecord() {
+  if (!props.disabled) emit('open');
+}
 </script>
 
 <style scoped src="./CollectionKanbanRecordCard.css"></style>

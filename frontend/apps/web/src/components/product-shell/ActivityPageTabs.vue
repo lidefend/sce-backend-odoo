@@ -1,9 +1,11 @@
 <template>
-  <nav v-if="pages.length" ref="tablistRef" class="activity-tabs" role="tablist" :aria-label="label">
+  <nav v-if="pages.length > 1" ref="tablistRef" class="activity-tabs" role="tablist" :aria-label="label">
     <div v-for="page in pages" :key="page.key" class="activity-tab" :class="{active:page.key===activeKey}" role="presentation">
-      <button
+      <ScButton
         class="activity-tab-main"
         type="button"
+        variant="ghost"
+        size="small"
         role="tab"
         :title="page.title"
         :aria-selected="page.key === activeKey"
@@ -20,13 +22,14 @@
           :title="`${closeLabel} ${page.title}`"
           @click.stop="$emit('close', page)"
         ><ScIcon name="close" :size="14" /></span>
-      </button>
+      </ScButton>
     </div>
   </nav>
 </template>
 <script setup lang="ts">
 import { nextTick, ref } from 'vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScButton from '../design-system/ScButton.vue';
 import type { ActivityPage } from '../../stores/session';
 import { resolveActivityTabKeyboardIndex } from './activityPageTabKeyboard';
 
@@ -109,14 +112,18 @@ function activateFromKeyboard(page: ActivityPage, event: KeyboardEvent) {
 }
 
 .activity-tab-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 20px;
-  align-items: center;
   width: 100%;
   padding: 0 4px;
   text-align: left;
   font-size: 12px;
   font-weight: 500;
+}
+
+.activity-tab-main :deep(.sc-btn__content) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  align-items: center;
+  width: 100%;
 }
 
 .activity-tab.active .activity-tab-main {

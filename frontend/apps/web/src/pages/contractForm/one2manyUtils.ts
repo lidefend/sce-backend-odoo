@@ -528,7 +528,7 @@ export function normalizeOne2manyColumnValue(column: One2ManyColumn, value: unkn
   return String(value ?? '');
 }
 
-export function one2manyColumnInputType(column: One2ManyColumn) {
+export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'number' | 'date' | 'datetime-local' {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (ttype === 'integer' || ttype === 'float' || ttype === 'monetary') return 'number';
   if (ttype === 'date') return 'date';

@@ -1,5 +1,11 @@
 <template>
-  <section class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" :data-list-status="status">
+  <section
+    class="page sc-page sc-product-workspace-stack"
+    data-product-page-mode="list"
+    data-semantic-component="ListPage"
+    :data-list-status="status"
+    :aria-busy="loading || undefined"
+  >
     <ScPageHeader
       v-if="status === 'error'"
       :title="title"
@@ -123,7 +129,7 @@
       <CollectionSummaryStrip
         v-if="enableSummaryStrip || summaryItems.length"
         class="summary-strip sc-product-summary-strip"
-        :aria-label="uiLabel('list_summary', '列表摘要')"
+        :ariaLabel="uiLabel('list_summary', '列表摘要')"
         :items="summaryItems"
       />
       <section
@@ -198,94 +204,13 @@
             />
             </template>
           </CollectionGroupHeader>
-          <ScDataTable
-            v-if="!isGroupCollapsed(group.key)"
-            class="group-table"
-            :class="{ 'has-selection-column': showSelectionColumn }"
-            :table-style="tableWidthStyle"
-          >
-            <colgroup>
-              <col v-if="showSelectionColumn" class="col-select" />
-              <col v-if="showRowNumberColumn" class="col-row-number" />
-              <col v-for="col in displayedColumns" :key="`group-col-width-${group.key}-${col}`" :style="columnWidthStyle(col)" :class="columnDensityClass(col)" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th v-if="showSelectionColumn" class="cell-select">
-                  <CollectionSelectionControl
-                    scope="group"
-                    :checked="isGroupAllSelected(group)"
-                    :indeterminate="isGroupSomeSelected(group)"
-                    :disabled="loading || !groupSelectableRows(group).length"
-                    :label="uiLabel('select_group_rows', `选择${group.label}当前页记录`)"
-                    @change="onGroupSelectAllChange(group, $event)"
-                  />
-                </th>
-                <th v-if="showRowNumberColumn" class="cell-row-number">{{ uiLabel('row_number', '序号') }}</th>
-                <CollectionColumnHeaderControl
-                  v-for="col in displayedColumns"
-                  :key="`group-col-${group.key}-${col}`"
-                  :field="col"
-                  :label="columnLabel(col)"
-                  :sortable="isColumnSortable(col)"
-                  :sorted="isSortedColumn(col)"
-                  :dragging="draggingColumn === col"
-                  :sort-icon="columnSortIcon(col)"
-                  :sort-title="columnSortTitle(col)"
-                  :aria-sort="columnAriaSort(col)"
-                  :drag-label="uiLabel('column_drag_reorder', '拖动调整列顺序')"
-                  :resize-label="uiLabel('column_resize', '调整列宽')"
-                  :density-class="columnDensityClass(col)"
-                  :column-style="columnWidthStyle(col)"
-                  @drag-over="onColumnDragOver(col, $event)"
-                  @drop-column="onColumnDrop(col, $event)"
-                  @drag-end="onColumnDragEnd"
-                  @sort="toggleColumnSort(col)"
-                  @drag-start="onColumnDragStart(col, $event)"
-                  @resize-start="startColumnResize(col, $event)"
-                />
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(row, index) in group.sampleRows"
-                :key="`group-row-${group.key}-${String(row.id ?? index)}`"
-                @click="handleRowClick(row, $event)"
-              >
-                <td v-if="showSelectionColumn" class="cell-select" @click.stop>
-                  <CollectionSelectionControl
-                    v-if="rowId(row)"
-                    :checked="isSelected(row)"
-                    :disabled="loading"
-                    :label="rowSelectionLabel(row)"
-                    @change="onRowCheckboxChange(row, $event)"
-                  />
-                </td>
-                <td v-if="showRowNumberColumn" class="cell-row-number">{{ groupedRowNumber(group.key, index) }}</td>
-                <td
-                  v-for="col in displayedColumns"
-                  :key="`group-cell-${group.key}-${String(row.id ?? index)}-${col}`"
-                  :style="columnWidthStyle(col)"
-                  :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, columnValue(row, col)).text === '--' }]"
-                  :title="semanticCell(col, columnValue(row, col)).text"
-                >
-                  <CollectionRowCell
-                    v-bind="collectionRowCellProps(row, col)"
-                    @toggle-favorite="toggleRecordFavorite(row, col)"
-                    @open-record="handleRow(row)"
-                    @open-attachment="previewAttachmentLink($event, row)"
-                    @open-attachment-count="previewRecordAttachmentCount(row, columnValue(row, col))"
-                  />
-                </td>
-              </tr>
-            </tbody>
-            <CollectionAggregateFooter
-              context="group"
-              :label-colspan="footerLabelColspan"
-              :columns="aggregateFooterColumns"
-              :rows="groupAggregateFooterRows(group)"
-            />
-          </ScDataTable>
+          <ScTable v-if="!isGroupCollapsed(group.key)" class="group-table"
+            :class="{ 'has-selection-column': showSelectionColumn }" :label="group.label"
+            :data="group.sampleRows" :columns="collectionTableColumns(group.key)"
+            :foot-data="collectionFootData(groupAggregateFooterRows(group))" row-key="id" size="small"
+            :table-content-width="tableContentWidth" :selected-row-keys="selectedIds || []"
+            @select-change="onTableSelectionChange($event, group.sampleRows)"
+            @row-click="handleTableRowClick" />
         </article>
       </section>
       <section
@@ -323,90 +248,13 @@
         :columns="aggregateFooterColumns"
         :rows="flatAggregateFooterRows"
       />
-      <ScDataTable
-        v-if="!showGroupedRows"
-        class="flat-table desktop-record-table"
-        :class="{ 'has-selection-column': showSelectionColumn }"
-        :table-style="tableWidthStyle"
-      >
-          <colgroup>
-            <col v-if="showSelectionColumn" class="col-select" />
-          <col v-if="showRowNumberColumn" class="col-row-number" />
-            <col v-for="col in displayedColumns" :key="`col-width-${col}`" :style="columnWidthStyle(col)" :class="columnDensityClass(col)" />
-          </colgroup>
-        <thead>
-          <tr>
-            <th v-if="showSelectionColumn" class="cell-select">
-              <CollectionSelectionControl
-                scope="page"
-                :checked="allSelected"
-                :indeterminate="someSelected"
-                :disabled="loading || !selectableRows.length"
-                :label="uiLabel('select_page_rows', '选择当前页记录')"
-                @change="onSelectAllChange"
-              />
-            </th>
-            <th v-if="showRowNumberColumn" class="cell-row-number">{{ uiLabel('row_number', '序号') }}</th>
-            <CollectionColumnHeaderControl
-              v-for="col in displayedColumns"
-              :key="col"
-              :field="col"
-              :label="columnLabel(col)"
-              :sortable="isColumnSortable(col)"
-              :sorted="isSortedColumn(col)"
-              :dragging="draggingColumn === col"
-              :sort-icon="columnSortIcon(col)"
-              :sort-title="columnSortTitle(col)"
-              :aria-sort="columnAriaSort(col)"
-              :drag-label="uiLabel('column_drag_reorder', '拖动调整列顺序')"
-              :resize-label="uiLabel('column_resize', '调整列宽')"
-              :density-class="columnDensityClass(col)"
-              :column-style="columnWidthStyle(col)"
-              @drag-over="onColumnDragOver(col, $event)"
-              @drop-column="onColumnDrop(col, $event)"
-              @drag-end="onColumnDragEnd"
-              @sort="toggleColumnSort(col)"
-              @drag-start="onColumnDragStart(col, $event)"
-              @resize-start="startColumnResize(col, $event)"
-            />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(row, index) in records"
-            :key="String(row.id ?? index)"
-            @click="handleRowClick(row, $event)"
-          >
-            <td v-if="showSelectionColumn" class="cell-select" @click.stop>
-              <CollectionSelectionControl
-                v-if="rowId(row)"
-                :checked="isSelected(row)"
-                :disabled="loading"
-                :label="rowSelectionLabel(row)"
-                @change="onRowCheckboxChange(row, $event)"
-              />
-            </td>
-            <td v-if="showRowNumberColumn" class="cell-row-number">{{ flatRowNumber(index) }}</td>
-            <td v-for="col in displayedColumns" :key="col" :style="columnWidthStyle(col)"
-              :class="[columnDensityClass(col), { 'is-empty-value': semanticCell(col, columnValue(row, col)).text === '--' }]"
-              :title="semanticCell(col, columnValue(row, col)).text">
-              <CollectionRowCell
-                v-bind="collectionRowCellProps(row, col)"
-                @toggle-favorite="toggleRecordFavorite(row, col)"
-                @open-record="handleRow(row)"
-                @open-attachment="previewAttachmentLink($event, row)"
-                @open-attachment-count="previewRecordAttachmentCount(row, columnValue(row, col))"
-              />
-            </td>
-          </tr>
-        </tbody>
-        <CollectionAggregateFooter
-          context="flat"
-          :label-colspan="footerLabelColspan"
-          :columns="aggregateFooterColumns"
-          :rows="flatAggregateFooterRows"
-        />
-      </ScDataTable>
+      <ScTable v-if="!showGroupedRows" class="flat-table desktop-record-table"
+        :class="{ 'has-selection-column': showSelectionColumn }" :label="title"
+        :data="records" :columns="collectionTableColumns()"
+        :foot-data="collectionFootData(flatAggregateFooterRows)" row-key="id" size="small"
+        :table-content-width="tableContentWidth" :selected-row-keys="selectedIds || []"
+        @select-change="onTableSelectionChange($event, records)"
+        @row-click="handleTableRowClick" />
 
       <CollectionPaginationFooter
         :mode="collectionPaginationMode"
@@ -436,7 +284,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
+import { computed, h, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import AttachmentViewer from '../components/attachment/AttachmentViewer.vue';
 import ListSurfaceHeader from '../components/product-list/ListSurfaceHeader.vue';
@@ -449,13 +297,12 @@ import CollectionMobileRecordRow, { type CollectionMobileRecordFact } from '../c
 import CollectionPaginationFooter from '../components/product-list/CollectionPaginationFooter.vue';
 import CollectionGroupingToolbar from '../components/product-list/CollectionGroupingToolbar.vue';
 import CollectionRowCell, { type CollectionRowCellKind } from '../components/product-list/CollectionRowCell.vue';
-import CollectionSelectionControl from '../components/product-list/CollectionSelectionControl.vue';
 import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
-import ScDataTable from '../components/design-system/ScDataTable.vue';
+import ScTable from '../components/design-system/ScTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
@@ -1332,8 +1179,8 @@ function applyPageLimit() {
 
 function onPageLimitSelectChange(value: string) { applyPageLimitValue(Number(value || 0)); }
 
-function onPlainSearchInput(event: Event) {
-  plainSearchDraft.value = String((event.target as HTMLInputElement | null)?.value || '');
+function onPlainSearchInput(value: string) {
+  plainSearchDraft.value = String(value || '');
 }
 
 function onPlainSearchCompositionEnd(event: CompositionEvent) {
@@ -1618,9 +1465,103 @@ const tableMinWidthPx = computed(() => {
   }, 0);
   return Math.max(0, fixedWidth + dynamicWidth);
 });
-const tableWidthStyle = computed(() => ({
-  minWidth: `max(100%, ${tableMinWidthPx.value}px)`,
-}));
+const tableContentWidth = computed(() => `max(100%, ${tableMinWidthPx.value}px)`);
+function collectionFootData(rows: readonly CollectionAggregateRow[]): Array<Record<string, unknown>> {
+  const labelIndex = Math.max(0, Math.min(displayedColumns.value.length - 1, footerLabelFieldCount.value - 1));
+  return rows.map((aggregate) => {
+    const row: Record<string, unknown> = {
+      id: `aggregate-${aggregate.key}`,
+      __aggregate: true,
+      __aggregateLabel: aggregate.label,
+    };
+    displayedColumns.value.forEach((field, index) => {
+      row[field] = index === labelIndex ? aggregate.label : aggregate.values[field] || '';
+    });
+    return row;
+  });
+}
+function collectionHeader(field: string) {
+  return h(CollectionColumnHeaderControl, {
+    field,
+    label: columnLabel(field),
+    sortable: isColumnSortable(field),
+    sorted: isSortedColumn(field),
+    dragging: draggingColumn.value === field,
+    sortIcon: columnSortIcon(field),
+    sortTitle: columnSortTitle(field),
+    ariaSort: columnAriaSort(field),
+    dragLabel: uiLabel('column_drag_reorder', '拖动调整列顺序'),
+    resizeLabel: uiLabel('column_resize', '调整列宽'),
+    densityClass: columnDensityClass(field),
+    columnStyle: columnWidthStyle(field),
+    onDragOver: (event: DragEvent) => onColumnDragOver(field, event),
+    onDropColumn: (event: DragEvent) => onColumnDrop(field, event),
+    onDragEnd: onColumnDragEnd,
+    onSort: () => toggleColumnSort(field),
+    onDragStart: (event: DragEvent) => onColumnDragStart(field, event),
+    onResizeStart: (event: MouseEvent) => startColumnResize(field, event),
+  });
+}
+function collectionCell(row: Record<string, unknown>, field: string) {
+  if (row.__aggregate === true) return String(row[field] || '');
+  return h(CollectionRowCell, {
+    ...collectionRowCellProps(row, field),
+    onToggleFavorite: () => toggleRecordFavorite(row, field),
+    onOpenRecord: () => handleRow(row),
+    onOpenAttachment: (link: { name: string; url: string }) => previewAttachmentLink(link, row),
+    onOpenAttachmentCount: () => previewRecordAttachmentCount(row, columnValue(row, field)),
+  });
+}
+function collectionTableColumns(groupKey = '') {
+  const columns: Array<Record<string, unknown>> = [];
+  if (showSelectionColumn.value) {
+    columns.push({
+      colKey: 'row-select',
+      type: 'multiple',
+      width: 40,
+      checkProps: ({ row }: { row: Record<string, unknown> }) => ({
+        disabled: props.loading || !rowId(row),
+        title: rowSelectionLabel(row),
+        'aria-label': rowSelectionLabel(row),
+      }),
+    });
+  }
+  if (showRowNumberColumn.value) {
+    columns.push({
+      colKey: '__rowNumber',
+      title: uiLabel('row_number', '序号'),
+      width: 52,
+      cell: (_h: unknown, { row, rowIndex }: { row: Record<string, unknown>; rowIndex: number }) => (
+        row.__aggregate === true ? '' : groupKey ? groupedRowNumber(groupKey, rowIndex) : flatRowNumber(rowIndex)
+      ),
+    });
+  }
+  displayedColumns.value.forEach((field) => columns.push({
+    colKey: field,
+    title: () => collectionHeader(field),
+    width: resolvedColumnWidth(field),
+    className: (_context: unknown) => columnDensityClass(field),
+    cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => collectionCell(row, field),
+  }));
+  return columns;
+}
+function handleTableRowClick(context: unknown) {
+  if (!context || typeof context !== 'object') return;
+  const row = (context as { row?: unknown }).row;
+  const event = (context as { e?: unknown }).e;
+  if (row && typeof row === 'object' && event instanceof MouseEvent) handleRowClick(row as Record<string, unknown>, event);
+}
+function onTableSelectionChange(keys: Array<string | number>, sourceRows: Array<Record<string, unknown>>) {
+  const sourceIds = sourceRows.map(rowId).filter((id): id is number => Boolean(id));
+  const next = new Set(keys.map(Number).filter(Number.isFinite));
+  const changed = sourceIds.filter((id) => next.has(id) !== selectedIdSet.value.has(id));
+  if (!changed.length) return;
+  if (changed.length > 1 && props.onToggleSelectionAll) {
+    props.onToggleSelectionAll(sourceIds, sourceIds.every((id) => next.has(id)));
+    return;
+  }
+  changed.forEach((id) => props.onToggleSelection?.(id, next.has(id)));
+}
 function firstSortClause(value: string) {
   return String(value || '').split(',')[0]?.trim() || '';
 }

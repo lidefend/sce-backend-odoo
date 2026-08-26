@@ -12,6 +12,8 @@
     ref="canvasRef"
     class="contract-form-canvas-shell"
     data-form-canvas
+    data-semantic-component="ContractFormNativeCanvas"
+    :data-state="mode"
     :class="{ 'contract-form-designer-canvas': designerMode }"
     aria-label="表单配置画布"
   >
@@ -29,28 +31,27 @@
     >
       <nav ref="sectionNavRef" class="form-section-nav" aria-label="表单章节导航" @scroll="updateSectionOverflow">
         <span class="form-section-nav-label">章节</span>
-        <button
+        <ScButton
           v-for="item in sectionItems"
           :key="item.title"
           type="button"
+          variant="ghost"
+          size="small"
           :data-section-tab="item.title"
           :class="{ 'is-active': activeSection === item.title, 'has-error': item.hasError }"
           :aria-current="activeSection === item.title ? 'location' : undefined"
           @click="scrollToSection(item.title)"
-        >{{ item.title }}<span v-if="item.hasError" class="section-error-dot" aria-label="本章节存在错误"></span></button>
+        >{{ item.title }}<span v-if="item.hasError" class="section-error-dot" aria-label="本章节存在错误"></span></ScButton>
       </nav>
       <label class="form-section-nav-mobile">
         <span>当前章节</span>
-        <select
+        <ScSelect
           data-mobile-section-selector
-          :value="activeSection"
+          :model-value="activeSection"
+          :options="sectionItems.map((item) => ({ value: item.title, label: `${item.title}${item.hasError ? '（有错误）' : ''}` }))"
           aria-label="选择表单章节"
-          @change="scrollToSection(($event.target as HTMLSelectElement).value)"
-        >
-          <option v-for="item in sectionItems" :key="`mobile-${item.title}`" :value="item.title">
-            {{ item.title }}{{ item.hasError ? '（有错误）' : '' }}
-          </option>
-        </select>
+          @change="scrollToSection(String($event))"
+        />
       </label>
       <span class="form-section-progress" aria-live="polite">
         {{ activeSectionIndex + 1 }}/{{ sectionItems.length }}<span v-if="sectionHasMoreBefore || sectionHasMoreAfter"> · 横向滑动</span>
@@ -118,6 +119,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue';
 import FieldValue from '../../components/FieldValue.vue';
+import ScButton from '../../components/design-system/ScButton.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
 import NativeFormTreeRenderer, { type NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type {
   FormSectionFieldAction,

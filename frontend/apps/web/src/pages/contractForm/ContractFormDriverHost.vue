@@ -18,9 +18,13 @@
   >
     <div v-if="allowUserOverride" class="sc-form-driver-chooser">
       <label for="contract-form-driver-kit">界面风格</label>
-      <select id="contract-form-driver-kit" :value="activeKit" data-contract-form-driver-chooser @change="changeKit">
-        <option v-for="kit in allowedKits" :key="kit" :value="kit">{{ kitLabel(kit) }}</option>
-      </select>
+      <ScSelect
+        id="contract-form-driver-kit"
+        :model-value="activeKit"
+        :options="allowedKits.map((kit) => ({ value: kit, label: kitLabel(kit) }))"
+        data-contract-form-driver-chooser
+        @change="changeKit"
+      />
     </div>
     <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" density="compact">
       <TaskFormPattern v-if="renderModel.identity.presentationMode === 'task'" :render-profile="renderModel.identity.mode">
@@ -136,6 +140,7 @@ import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../.
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import ScErrorState from '../../components/design-system/ScErrorState.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
@@ -247,8 +252,8 @@ function kitLabel(kit: SceneUiKitId) {
   return SCENE_UI_KITS[kit]?.label || kit;
 }
 
-function changeKit(event: Event) {
-  const kit = String((event.target as HTMLSelectElement).value || '') as SceneUiKitId;
+function changeKit(value: string) {
+  const kit = String(value || '') as SceneUiKitId;
   if (allowedKits.value.includes(kit)) emit('driver-change', kit);
 }
 </script>

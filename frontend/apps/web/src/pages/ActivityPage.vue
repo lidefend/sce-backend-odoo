@@ -20,11 +20,12 @@
       :description="model.reasonCode"
     />
     <div v-else-if="model.records.length" class="activity-page__grid">
-      <button
+      <ScButton
         v-for="(record, recordIndex) in model.records"
         :key="String(record.id || recordIndex)"
         :data-record-id="record.id || undefined"
         type="button"
+        variant="ghost"
         class="activity-card"
         @click="$emit('open-record', record)"
       >
@@ -35,7 +36,7 @@
           :node="node"
           :record="record"
         />
-      </button>
+      </ScButton>
     </div>
     <ScEmptyState v-else class="activity-page__state" :title="labels.emptyTitle" :description="labels.emptyHint" />
   </section>
@@ -45,6 +46,7 @@
 import type { ActivitySurfaceModel } from '../app/contracts/actionViewActivityContract';
 import ActivityTemplateNode from './ActivityTemplateNode.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
+import ScButton from '../components/design-system/ScButton.vue';
 import ScErrorState from '../components/design-system/ScErrorState.vue';
 import ScLoading from '../components/design-system/ScLoading.vue';
 

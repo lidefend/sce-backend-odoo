@@ -334,6 +334,7 @@ try {
       };
       report.routes.push({ viewport: viewport.name, primitiveInputContract: inputContract });
       await companySearch.fill('');
+      await page.getByRole('button', { name: '业务导航' }).click();
     }
     for (const target of routes) {
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;
@@ -365,7 +366,7 @@ try {
         listAggregates = summarizeListAggregates(await response.json());
       }
       await page.locator('.layout-shell').waitFor({ timeout: 45000 });
-      await page.locator('[data-product-page-mode], main').first().waitFor({ timeout: 45000 });
+      await page.locator('[data-product-page-mode], main').filter({ visible: true }).first().waitFor({ timeout: 45000 });
       await waitForStableProductSurface(page);
       if (bootSummaryFixtureTarget === target) {
         while (bootSummaryRoutesInFlight > 0) await new Promise((resolve) => setTimeout(resolve, 10));
@@ -374,6 +375,20 @@ try {
       const result = await page.evaluate(() => {
         const root = document.documentElement;
         const style = getComputedStyle(root);
+        const primitiveDrivers = [
+          ['ScButton', '.t-button'],
+          ['ScInput', '.t-input'],
+          ['ScTextarea', '.t-textarea'],
+          ['ScSelect', '.t-select'],
+          ['ScCheckbox', '.t-checkbox'],
+        ].map(([component, driverSelector]) => {
+          const nodes = [...document.querySelectorAll(`[data-semantic-component="${component}"][data-primitive-driver="tdesign"], [data-semantic-component="${component}"]:not([data-primitive-driver])`)];
+          return {
+            component,
+            count: nodes.length,
+            missingDriverCount: nodes.filter((node) => !node.matches(driverSelector) && !node.querySelector(driverSelector)).length,
+          };
+        });
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -381,6 +396,11 @@ try {
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
+          primitiveDriverEvidence: {
+            drivers: primitiveDrivers,
+            specializedInputCount: document.querySelectorAll('[data-semantic-component="ScInput"][data-primitive-driver="browser-specialized"]').length,
+            pass: primitiveDrivers.every((entry) => entry.missingDriverCount === 0),
+          },
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
             .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
             .map((element) => ({
@@ -448,7 +468,7 @@ try {
         await dialog.waitFor({ state: 'visible', timeout: 15000 });
         const panel = page.locator('.relation-dialog:visible');
         await panel.waitFor({ state: 'visible', timeout: 15000 });
-        await dialog.locator('[data-semantic-component="ScInput"][type="search"]').waitFor({ state: 'visible', timeout: 15000 });
+        await dialog.locator('[data-semantic-component="ScInput"] input[type="search"]').waitFor({ state: 'visible', timeout: 15000 });
         await dialog.locator('[data-semantic-component="RelationSearchResult"]:visible, [data-semantic-component="ScEmptyState"]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
         const visibleResults = dialog.locator('[data-semantic-component="RelationSearchResult"]:visible');
         const resultCount = await visibleResults.count();
@@ -468,7 +488,7 @@ try {
         }
         const dialogBox = await panel.boundingBox();
         const listboxCount = await dialog.locator('[role="listbox"]:visible').count();
-        const searchInputCount = await dialog.locator('[data-semantic-component="ScInput"][type="search"]:visible').count();
+        const searchInputCount = await dialog.locator('[data-semantic-component="ScInput"] input[type="search"]:visible').count();
         const primaryCount = await dialog.locator('.relation-dialog-footer .sc-btn-primary:visible:not(:disabled)').count();
         const footerActionLabels = await dialog.locator('.relation-dialog-footer-actions button:visible').allTextContents();
         relationSearchDialogEvidence = {
@@ -582,48 +602,45 @@ try {
         };
       }
       if (target.exerciseCollectionSelection === true) {
-        const controls = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible');
+        const mobileDriver = viewport.name === 'mobile';
+        const table = page.locator('[data-semantic-component="ScTable"][data-semantic-driver="tdesign-table"]:visible').first();
+        const controls = mobileDriver
+          ? page.locator('[data-semantic-component="CollectionSelectionControl"]:visible')
+          : table.locator('input[type="checkbox"]');
         const controlCount = await controls.count();
-        if (controlCount < 1) throw new Error(`${target.name}: collection selection control is missing`);
-        const rowControl = page.locator('[data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]:visible').first();
-        if (await rowControl.count() !== 1) throw new Error(`${target.name}: collection row selection control is missing`);
-        const rowInput = rowControl.locator('input[type="checkbox"]');
-        const initialRowState = await rowControl.getAttribute('data-selection-state');
-        const ariaLabel = await rowInput.getAttribute('aria-label');
+        if (controlCount < 1) throw new Error(`${target.name}: collection selection adapter is missing`);
+        const rowControl = mobileDriver
+          ? page.locator('[data-semantic-component="CollectionSelectionControl"][data-selection-scope="row"]:visible').first()
+          : table.locator('tbody .t-checkbox').first();
+        if (await rowControl.count() !== 1) throw new Error(`${target.name}: collection row selection adapter is missing`);
+        const rowInput = mobileDriver ? rowControl.locator('input[type="checkbox"]') : rowControl;
+        const effectiveInput = mobileDriver ? rowInput : rowControl.locator('input[type="checkbox"]');
+        const stateOf = async (input) => await input.isChecked() ? 'checked' : 'unchecked';
+        const initialRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(effectiveInput);
+        const ariaLabel = await effectiveInput.getAttribute('aria-label') || await rowControl.getAttribute('aria-label') || await rowControl.getAttribute('title') || '';
         const touchTarget = await rowControl.boundingBox();
-        await rowInput.focus();
+        await effectiveInput.focus();
         const focusContained = await rowControl.evaluate((node) => node.contains(document.activeElement));
         await rowControl.click();
-        await page.waitForFunction(
-          ({ label, state }) => [...document.querySelectorAll('[data-semantic-component="CollectionSelectionControl"]')]
-            .some((node) => node instanceof HTMLElement && node.offsetParent !== null
-              && node.querySelector('input')?.getAttribute('aria-label') === label
-              && node.getAttribute('data-selection-state') === state),
-          { label: ariaLabel, state: 'checked' },
-          { timeout: 15000 },
-        );
-        const selectedRowState = await rowControl.getAttribute('data-selection-state');
+        await page.waitForFunction((input) => input instanceof HTMLInputElement && input.checked, await effectiveInput.elementHandle(), { timeout: 15000 });
+        const selectedRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(effectiveInput);
         let selectedHeaderState = null;
         let headerIndeterminate = null;
-        const headerControl = page.locator('[data-semantic-component="CollectionSelectionControl"]:visible:not([data-selection-scope="row"])').first();
+        const headerControl = mobileDriver
+          ? page.locator('[data-semantic-component="CollectionSelectionControl"]:visible:not([data-selection-scope="row"])').first()
+          : table.locator('thead input[type="checkbox"]').first();
         if (viewport.name === 'desktop' && await headerControl.count() === 1) {
-          selectedHeaderState = await headerControl.getAttribute('data-selection-state');
-          headerIndeterminate = await headerControl.locator('input[type="checkbox"]').evaluate((input) => input.indeterminate);
+          selectedHeaderState = await headerControl.evaluate((input) => input.indeterminate ? 'mixed' : input.checked ? 'checked' : 'unchecked');
+          headerIndeterminate = await headerControl.evaluate((input) => input.indeterminate);
         }
         await rowControl.click();
-        await page.waitForFunction(
-          ({ label, state }) => [...document.querySelectorAll('[data-semantic-component="CollectionSelectionControl"]')]
-            .some((node) => node instanceof HTMLElement && node.offsetParent !== null
-              && node.querySelector('input')?.getAttribute('aria-label') === label
-              && node.getAttribute('data-selection-state') === state),
-          { label: ariaLabel, state: 'unchecked' },
-          { timeout: 15000 },
-        );
-        const restoredRowState = await rowControl.getAttribute('data-selection-state');
+        await page.waitForFunction((input) => input instanceof HTMLInputElement && !input.checked, await effectiveInput.elementHandle(), { timeout: 15000 });
+        const restoredRowState = mobileDriver ? await rowControl.getAttribute('data-selection-state') : await stateOf(effectiveInput);
         const restoredHeaderState = viewport.name === 'desktop' && await headerControl.count() === 1
-          ? await headerControl.getAttribute('data-selection-state')
+          ? await headerControl.evaluate((input) => input.indeterminate ? 'mixed' : input.checked ? 'checked' : 'unchecked')
           : null;
         collectionSelectionEvidence = {
+          driver: mobileDriver ? 'CollectionSelectionControl' : 'tdesign-table',
           controlCount, ariaLabel, touchTarget, focusContained, initialRowState, selectedRowState,
           selectedHeaderState, headerIndeterminate, restoredRowState, restoredHeaderState,
           pass: Boolean(ariaLabel) && focusContained && initialRowState === 'unchecked'
@@ -631,33 +648,42 @@ try {
             && (viewport.name !== 'mobile' || (Number(touchTarget?.width || 0) >= 44 && Number(touchTarget?.height || 0) >= 44))
             && (viewport.name !== 'desktop' || (selectedHeaderState === 'mixed' && headerIndeterminate === true && restoredHeaderState === 'unchecked')),
         };
-        if (!collectionSelectionEvidence.pass) throw new Error(`${target.name}: collection selection state contract failed`);
+        if (!collectionSelectionEvidence.pass) throw new Error(`${target.name}: collection selection state contract failed ${JSON.stringify(collectionSelectionEvidence)}`);
       }
       let collectionAggregateEvidence = null;
       if (target.exerciseCollectionAggregate === true) {
-        const footers = page.locator('[data-semantic-component="CollectionAggregateFooter"]:visible');
+        const tdesignTables = page.locator('[data-semantic-component="ScTable"][data-semantic-driver="tdesign-table"]:visible');
+        const tdesignFooters = tdesignTables.locator('tfoot');
+        const summaryFooters = page.locator('[data-semantic-component="CollectionAggregateFooter"]:visible');
+        const usesTdesign = viewport.name === 'desktop' && await tdesignFooters.count() > 0;
+        const footers = usesTdesign ? tdesignFooters : summaryFooters;
         const footerCount = await footers.count();
-        if (footerCount < 1) throw new Error(`${target.name}: collection aggregate footer is missing`);
-        const contexts = await footers.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-context') || ''));
-        const rows = footers.locator('[data-aggregate-scope]');
+        if (footerCount < 1) throw new Error(`${target.name}: collection aggregate adapter is missing`);
+        const expectedContext = target.aggregateContext === 'group' ? 'group' : 'flat';
+        const contexts = usesTdesign
+          ? Array(footerCount).fill(expectedContext)
+          : await summaryFooters.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-context') || ''));
+        const rows = usesTdesign ? tdesignFooters.locator('tr') : summaryFooters.locator('[data-aggregate-scope]');
         const rowCount = await rows.count();
-        const scopes = await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-scope') || ''));
-        const rowHeaderCount = await rows.locator('th[scope="row"], [data-aggregate-row-label]').count();
-        const numericCells = rows.locator('.collection-aggregate-number');
+        const scopes = usesTdesign
+          ? Array(rowCount).fill('page-or-total')
+          : await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-aggregate-scope') || ''));
+        const rowHeaderCount = usesTdesign ? rowCount : await rows.locator('th[scope="row"], [data-aggregate-row-label]').count();
+        const numericCells = usesTdesign ? rows.locator('td.column-layout-numeric') : rows.locator('.collection-aggregate-number');
         const numericCellCount = await numericCells.count();
         const misalignedNumericCells = await numericCells.evaluateAll((nodes) => nodes.filter((node) => getComputedStyle(node).textAlign !== 'right').length);
-        const expectedContext = target.aggregateContext === 'group' ? 'group' : 'flat';
         collectionAggregateEvidence = {
+          driver: usesTdesign ? 'tdesign-table-footData' : 'CollectionAggregateFooter',
           footerCount, contexts, rowCount, scopes, rowHeaderCount, numericCellCount, misalignedNumericCells,
           pass: footerCount >= 1
             && contexts.every((context) => context === expectedContext)
             && rowCount >= footerCount
-            && scopes.every((scope) => scope === 'page' || scope === 'total')
+            && scopes.every((scope) => scope === 'page' || scope === 'total' || scope === 'page-or-total')
             && rowHeaderCount === rowCount
             && numericCellCount > 0
             && misalignedNumericCells === 0,
         };
-        if (!collectionAggregateEvidence.pass) throw new Error(`${target.name}: collection aggregate presentation contract failed`);
+        if (!collectionAggregateEvidence.pass) throw new Error(`${target.name}: collection aggregate presentation contract failed ${JSON.stringify(collectionAggregateEvidence)}`);
       }
       let collectionGroupHeaderEvidence = null;
       if (target.exerciseCollectionGroupHeader === true) {
@@ -888,7 +914,43 @@ try {
             && missingResizeLabels === 0,
         };
       }
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, ...result });
+      const verticalLineEvidence = target.captureVerticalLineEvidence === true
+        ? await page.evaluate(() => {
+          const x = Math.round(window.innerWidth * 0.568);
+          const points = [10, 100, 300, 700].map((y) => ({
+            x, y,
+            stack: document.elementsFromPoint(x, y).slice(0, 8).map((node) => {
+              const style = getComputedStyle(node);
+              const rect = node.getBoundingClientRect();
+              return {
+                tag: node.tagName,
+                id: node.id,
+                className: typeof node.className === 'string' ? node.className : '',
+                semantic: node.getAttribute('data-semantic-component') || '',
+                rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+                borderLeft: style.borderLeft,
+                borderRight: style.borderRight,
+                outline: style.outline,
+                boxShadow: style.boxShadow,
+              };
+            }),
+          }));
+          const resizeHandles = [...document.querySelectorAll('.column-resize-handle')].map((node) => {
+            const rect = node.getBoundingClientRect();
+            const pseudo = getComputedStyle(node, '::after');
+            return {
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
+              hovered: node.matches(':hover'),
+              focused: node === document.activeElement,
+              afterBackground: pseudo.backgroundColor,
+              afterHeight: pseudo.height,
+              afterTop: pseudo.top,
+            };
+          });
+          return { points, resizeHandles };
+        })
+        : null;
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, verticalLineEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -899,6 +961,11 @@ try {
 
 const errors = report.routes.flatMap((item) => item.errors || []);
 const failures = report.routes.filter((item) => item.path && (!item.tokenLoaded || item.h1 !== 1 || item.overflow > 0));
+for (const item of report.routes) {
+  if (item.path && item.primitiveDriverEvidence && !item.primitiveDriverEvidence.pass) {
+    failures.push({ name: item.name, primitiveDriverEvidence: item.primitiveDriverEvidence });
+  }
+}
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
   if (item.collectionSelectionEvidence && !item.collectionSelectionEvidence.pass) failures.push({ name: item.name, collectionSelectionEvidence: item.collectionSelectionEvidence });

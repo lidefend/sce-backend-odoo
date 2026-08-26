@@ -3,22 +3,26 @@
     v-if="node.visible && hasContent"
     :class="['canonical-form-node', `canonical-form-node--${nodeKind}`, nativeClass]"
     :data-canonical-node-id="node.nodeId"
+    data-semantic-component="CanonicalFormNodeRenderer"
+    :data-state="preferReadonlyFacts ? 'readonly-preferred' : 'structured'"
     :data-canonical-node-kind="node.kind"
     :data-native-class="nativeClass || undefined"
     :data-section-navigation-role="node.zoneRole"
     :data-group-title="node.title || undefined"
   >
     <span v-if="presentableNodeText" class="canonical-form-native-text">{{ presentableNodeText }}</span>
-    <button
+    <ScButton
       v-if="node.action"
       type="button"
+      variant="ghost"
+      size="small"
       class="canonical-form-native-action"
       :disabled="!node.action.enabled"
       :title="node.action.reasonCode || undefined"
       :data-action-ref="node.action.actionRef.actionId"
       :data-backend-identity="node.action.actionRef.backendIdentity"
       @click="node.action.enabled && emit('action-ref', node.action.actionRef)"
-    >{{ node.title || node.action.label }}</button>
+    >{{ node.title || node.action.label }}</ScButton>
     <div v-else-if="node.nativeWidget" class="canonical-form-native-widget" :data-native-widget="node.nativeWidget" role="status">
       {{ node.title || node.nativeWidget }}
     </div>
@@ -50,6 +54,7 @@ import { computed } from 'vue';
 import type { CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import FormSection from '../../components/template/FormSection.vue';
+import ScButton from '../../components/design-system/ScButton.vue';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import {

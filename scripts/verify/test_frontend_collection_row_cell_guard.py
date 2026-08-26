@@ -18,11 +18,11 @@ class CollectionRowCellGuardTest(unittest.TestCase):
         self.assertTrue(any("parallel row-cell DOM" in item for item in validate(altered, self.cell_source, self.css_source)))
 
     def test_missing_group_adapter_fails(self):
-        altered = self.list_source.replace("<CollectionRowCell", "<LegacyRowCell", 1)
-        self.assertTrue(any("exactly two" in item for item in validate(altered, self.cell_source, self.css_source)))
+        altered = self.list_source.replace(':columns="collectionTableColumns(group.key)"', ':columns="legacyGroupColumns"')
+        self.assertTrue(any("TDesign column" in item for item in validate(altered, self.cell_source, self.css_source)))
 
     def test_missing_event_contract_fails(self):
-        altered = self.list_source.replace('@open-record="handleRow(row)"', '@open-record="noop"', 1)
+        altered = self.list_source.replace("onOpenRecord: () => handleRow(row)", "onOpenRecord: noop", 1)
         self.assertTrue(any("shared event contract" in item for item in validate(altered, self.cell_source, self.css_source)))
 
     def test_missing_semantic_identity_fails(self):

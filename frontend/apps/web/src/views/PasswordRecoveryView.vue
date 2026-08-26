@@ -1,5 +1,5 @@
 <template>
-  <main class="recovery-page sc-page">
+  <main class="recovery-page sc-page" data-semantic-component="PasswordRecoveryView" data-state="ready">
     <section class="recovery-card sc-panel" aria-labelledby="recovery-title">
       <h1 id="recovery-title">忘记密码</h1>
       <p>{{ message }}</p>

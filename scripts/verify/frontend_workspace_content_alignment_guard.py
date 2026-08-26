@@ -130,7 +130,16 @@ for forbidden in (
 require(list_css, "overflow-x: auto", "table local overflow")
 if "overflow-x: scroll" in list_css or "overflow-x: hidden" in list_css or "overflow-x: clip" in list_css:
     fail("ListPage uses unconditional or masking overflow")
-require(list_vue, "minWidth: `max(100%, ${tableMinWidthPx.value}px)`", "table used-width algorithm")
+require(
+    list_vue,
+    "const tableContentWidth = computed(() => `max(100%, ${tableMinWidthPx.value}px)`)",
+    "table used-width algorithm",
+)
+if list_vue.count(':table-content-width="tableContentWidth"') < 2:
+    fail("flat and grouped tables must both project the governed used width through ScTable")
+require(list_vue, "import ScTable from '../components/design-system/ScTable.vue'", "table adapter authority")
+if "<table" in list_vue:
+    fail("ListPage bypasses the governed ScTable adapter")
 for token in ("rowPrimary.value", "option?.cellRole", "option?.type", "columnLayoutRole"):
     require(list_vue, token, "contract-driven column layout")
 require(list_css, ".column-layout-identity", "contract-driven column CSS")

@@ -1,5 +1,5 @@
 <template>
-  <div class="role-home-surface" data-role-home data-role-home-renderer="workspace-contract">
+  <div class="role-home-surface" data-role-home data-role-home-renderer="workspace-contract" data-semantic-component="WorkspaceHome" :data-state="loading ? 'loading' : error ? 'error' : 'ready'" :aria-busy="loading || undefined">
     <h1 class="sc-visually-hidden">{{ title }}</h1>
     <p class="sc-visually-hidden">{{ subtitle }}</p>
 
@@ -9,23 +9,22 @@
           <p>当前事项</p>
           <h2 id="role-home-task-title">待我处理</h2>
         </div>
-        <button type="button" @click="navigate('/my-work')">查看全部</button>
+        <ScButton type="button" variant="ghost" @click="navigate('/my-work')">查看全部</ScButton>
       </div>
-      <p v-if="loading" class="role-home-surface__state" role="status" aria-live="polite">正在加载当前事项。</p>
-      <div v-else-if="error" class="role-home-surface__state" role="alert">
-        <p>{{ error }}</p>
-        <button type="button" @click="load">重试</button>
-      </div>
+      <ScInlineState v-if="loading" state="loading" label="正在加载当前事项。" />
+      <ScInlineState v-else-if="error" state="error" :label="error">
+        <template #actions><ScButton type="button" variant="secondary" @click="load">重试</ScButton></template>
+      </ScInlineState>
       <div v-else-if="tasks.length" class="role-home-surface__task-list">
         <article v-for="task in tasks" :key="task.key">
           <div>
             <h3>{{ task.label }}</h3>
             <p v-if="task.detail">{{ task.detail }}</p>
           </div>
-          <button type="button" @click="navigate(task.route)">打开</button>
+          <ScButton type="button" variant="ghost" @click="navigate(task.route)">打开</ScButton>
         </article>
       </div>
-      <p v-else class="role-home-surface__state">当前没有待处理事项。</p>
+      <ScInlineState v-else state="empty" label="当前没有待处理事项。" />
     </section>
 
     <section class="role-home-surface__overview" aria-labelledby="role-home-overview-title">
@@ -55,20 +54,20 @@
         <div>
           <h3>常用入口</h3>
           <div v-if="quickLinks.length" class="role-home-surface__link-list role-home-surface__link-list--quick">
-            <button v-for="link in quickLinks" :key="link.key" type="button" @click="navigate(link.route)">
+            <ScButton v-for="link in quickLinks" :key="link.key" type="button" variant="ghost" @click="navigate(link.route)">
               <ScIcon :name="entryIcon(link.key)" :size="18" />
               <span><strong>{{ link.label }}</strong><small v-if="link.detail && link.detail !== link.label">{{ link.detail }}</small></span>
               <ScIcon name="arrow-right" :size="16" />
-            </button>
+            </ScButton>
           </div>
           <p v-else class="role-home-surface__state">当前没有可用入口。</p>
         </div>
         <div>
           <h3>最近访问</h3>
           <div v-if="recentItems.length" class="role-home-surface__link-list role-home-surface__link-list--recent">
-            <button v-for="item in recentItems" :key="item.key" type="button" @click="navigate(item.route)">
+            <ScButton v-for="item in recentItems" :key="item.key" type="button" variant="ghost" @click="navigate(item.route)">
               <strong>{{ item.label }}</strong>
-            </button>
+            </ScButton>
           </div>
           <p v-else class="role-home-surface__state">打开业务页面后，最近访问会显示在这里。</p>
         </div>
@@ -79,7 +78,9 @@
 
 <script setup lang="ts">
 import { useWorkspaceHome } from '../../composables/shared-surface/useWorkspaceHome';
+import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 
 type HomeIconName = 'briefcase' | 'folder' | 'building' | 'apps';
 

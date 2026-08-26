@@ -1,5 +1,8 @@
 export const SC_PRIMITIVE_KEYS = [
   'ScButton',
+  'ScCheckbox',
+  'ScRadioGroup',
+  'ScRadio',
   'ScInput',
   'ScInlineState',
   'ScTextarea',
@@ -20,6 +23,12 @@ export const SC_PRIMITIVE_KEYS = [
 export type ScPrimitiveKey = (typeof SC_PRIMITIVE_KEYS)[number];
 export type ScPrimitiveSize = 'small' | 'medium' | 'large';
 export type ScPrimitiveStatus = 'default' | 'success' | 'warning' | 'error';
+export type ScButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+
+export interface TDesignButtonPresentation {
+  theme: 'default' | 'primary' | 'danger' | 'warning' | 'success';
+  variant: 'base' | 'outline' | 'text';
+}
 
 export interface ScPrimitiveStateProps {
   size?: ScPrimitiveSize;
@@ -41,6 +50,19 @@ export function normalizePrimitiveSize(size?: ScPrimitiveSize): ScPrimitiveSize 
 
 export function normalizePrimitiveStatus(status?: ScPrimitiveStatus): ScPrimitiveStatus {
   return status ?? 'default';
+}
+
+export function tdesignButtonPresentation(
+  variant: ScButtonVariant,
+  status: ScPrimitiveStatus = 'default',
+): TDesignButtonPresentation {
+  if (status === 'success') return { theme: 'success', variant: variant === 'ghost' ? 'text' : 'base' };
+  if (status === 'warning') return { theme: 'warning', variant: variant === 'ghost' ? 'text' : 'base' };
+  if (status === 'error') return { theme: 'danger', variant: variant === 'ghost' ? 'text' : 'base' };
+  if (variant === 'primary') return { theme: 'primary', variant: 'base' };
+  if (variant === 'danger') return { theme: 'danger', variant: 'base' };
+  if (variant === 'ghost') return { theme: 'default', variant: 'text' };
+  return { theme: 'default', variant: 'outline' };
 }
 
 export function resolvePrimitiveControlUpdate(input: {
