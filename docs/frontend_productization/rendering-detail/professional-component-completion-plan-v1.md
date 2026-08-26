@@ -46,18 +46,23 @@
 
 本批验收后，8 个 `targetBatch=p0-inline-full-state-completion-v1` 项必须全部退出 `gap`。
 
-## Batch 2：P0 Collection and Navigation Composite Authority
+## Batch 2：P0 Collection State and Control Completion
 
-目标：将 Collection、层级浏览、Shell 导航和上下文交互逐项绑定正式复合组件权威；保留确有语义价值的原生按钮、checkbox 和 disclosure。
+分支：`feature/p0-collection-state-control-completion-v1`
 
-预计 16–20 个责任提交，覆盖：
+目标：将 Collection 页面、查询、分组、分页、批量操作、kanban 和移动行绑定正式复合组件权威，不修改 action、route 或 Contract 权威。
+
+责任提交预算 12–20，覆盖：
 
 - Action/Collection headers、pagination、grouping、batch actions；
 - kanban/mobile row、row cell、selection、column header；
-- hierarchy browser/planner/worksheet；
-- MenuTree、breadcrumb、mobile drawer、workspace context；
-- loading/disabled/focus/Escape/返回焦点/390px；
-- 明确 `deliberate_native_composite` 清单和逐项 guard。
+- loading/empty/error/disabled/focus 状态身份；
+- 真实生产组件的 desktop/390px 抽样；
+- 结构化 ownership binding 和 fail-closed guard。
+
+本批的 13 个 `targetBatch=p0-collection-state-control-completion-v1`
+表面必须全部退出 `gap`。层级浏览和 Shell 导航留给后续独立批次，
+避免一个 PR 同时修改 Collection 和全局导航权威。
 
 禁止把 native control 数量直接当成缺陷，也禁止用目录级 allowlist 跳过扫描。
 
