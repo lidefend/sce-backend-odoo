@@ -53,7 +53,7 @@ Generated from repository source files. This report is informational during the 
 | 1595 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1547 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 602 | YAML workflow | `scripts/verify/registry.yaml` |
+| 614 | YAML workflow | `scripts/verify/registry.yaml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
