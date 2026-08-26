@@ -413,7 +413,7 @@ try {
             .filter((node) => node instanceof HTMLElement && node.offsetParent !== null).length,
           presentationModes: [...new Set([...document.querySelectorAll('[data-product-page-pattern][data-presentation-mode]')].map((node) => node.getAttribute('data-presentation-mode')).filter(Boolean))],
           nativeStructureCount: document.querySelectorAll('[data-native-contract-structure]').length,
-          nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] [role="tab"], [data-native-contract-structure] [data-container-kind="page"]').length,
+          nativeNotebookPageCount: document.querySelectorAll('[data-native-contract-structure] .t-tabs__nav-item').length,
           overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth,
           tokenLoaded: Boolean(style.getPropertyValue('--sc-semantic-surface-interactive').trim()),
           nativeTitle: document.querySelector('.native-title-text')?.textContent?.trim() || '',
