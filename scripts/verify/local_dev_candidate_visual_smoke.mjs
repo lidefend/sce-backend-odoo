@@ -321,20 +321,22 @@ try {
     if (bootSummaryFixtureTarget) await page.route(bootContractRoutePattern, bootContractRouteHandler);
     await loginPage(page);
     if (viewport.name === 'desktop') {
-      const companyTrigger = page.getByRole('button', { name: '公司空间：切换公司' });
-      await companyTrigger.click();
-      const companySearchRoot = page.locator('[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"]');
-      const companySearch = page.locator('input[data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"], [data-semantic-component="ScInput"][data-semantic-layer="primitive"][aria-label="搜索公司"] input');
-      await companySearch.waitFor({ state: 'visible', timeout: 15000 });
-      await companySearch.fill('__primitive_adapter_probe__');
+      const revealSidebar = page.getByRole('button', { name: '显示侧边栏', exact: true });
+      if (await revealSidebar.count() === 1) {
+        await revealSidebar.click();
+        await page.locator('#primary-sidebar').waitFor({ state: 'visible', timeout: 15000 });
+      }
+      const navigationSearchRoot = page.locator('#primary-sidebar [data-semantic-component="ScInput"][data-semantic-layer="primitive"]').filter({ visible: true }).first();
+      const navigationSearch = navigationSearchRoot.locator('input').first();
+      await navigationSearch.waitFor({ state: 'visible', timeout: 15000 });
+      await navigationSearch.fill('__primitive_adapter_probe__');
       const inputContract = {
-        rootCount: await companySearchRoot.count(),
-        inputCount: await companySearch.count(),
-        value: await companySearch.inputValue(),
+        rootCount: await navigationSearchRoot.count(),
+        inputCount: await navigationSearch.count(),
+        value: await navigationSearch.inputValue(),
       };
       report.routes.push({ viewport: viewport.name, primitiveInputContract: inputContract });
-      await companySearch.fill('');
-      await page.getByRole('button', { name: '业务导航' }).click();
+      await navigationSearch.fill('');
     }
     for (const target of routes) {
       const summaryFixture = Array.isArray(target.summaryFixture) ? target.summaryFixture : null;

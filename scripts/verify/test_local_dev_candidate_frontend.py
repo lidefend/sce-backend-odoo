@@ -124,6 +124,8 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("report.mutationCount += 1", browser)
         self.assertIn("--sc-semantic-surface-interactive", browser)
         self.assertIn("waitForStableProductSurface", browser)
+        self.assertIn("显示侧边栏", browser)
+        self.assertIn("#primary-sidebar", browser)
         self.assertIn('[data-workspace-primary-content][aria-busy="true"]', browser)
         self.assertIn('.product-loading-shell[aria-busy="true"]', browser)
         self.assertIn("requestAnimationFrame(() => requestAnimationFrame(resolve))", browser)
