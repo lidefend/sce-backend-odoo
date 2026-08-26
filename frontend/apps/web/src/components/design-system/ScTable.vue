@@ -8,8 +8,12 @@
     :loading="loading"
     :hover="hover"
     :stripe="stripe"
+    :row-class-name="rowClassName"
+    :row-attributes="rowAttributes"
+    :keyboard-row-hover="keyboardRowHover"
     :aria-label="label"
     @row-click="emit('rowClick', $event)"
+    @row-dblclick="emit('rowDblclick', $event)"
   >
     <template v-for="(_, name) in $slots" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps ?? {}" />
@@ -29,6 +33,9 @@ withDefaults(defineProps<{
   loading?: boolean;
   hover?: boolean;
   stripe?: boolean;
+  rowClassName?: string | ((context: unknown) => unknown);
+  rowAttributes?: Record<string, unknown> | ((context: unknown) => Record<string, unknown>);
+  keyboardRowHover?: boolean;
   label: string;
 }>(), {
   data: () => [],
@@ -36,6 +43,7 @@ withDefaults(defineProps<{
   rowKey: 'id',
   size: 'medium',
   hover: true,
+  keyboardRowHover: true,
 });
-const emit = defineEmits<{ rowClick: [context: unknown] }>();
+const emit = defineEmits<{ rowClick: [context: unknown]; rowDblclick: [context: unknown] }>();
 </script>

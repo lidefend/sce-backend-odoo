@@ -53,14 +53,10 @@
         </div>
         <div v-if="loading && !rows.length" class="list-state">{{ labels.loading }}</div>
         <ScEmptyState v-else-if="!rows.length" class="list-state" :title="String(config.empty_title || '')" :description="String(config.empty_hint || '')" />
-        <ScDataTable v-else class="table-scroll" :label="String(config.title || labels.surface_aria)">
-            <thead><tr><th v-for="column in listConfig.columns" :key="column.field">{{ column.label }}</th></tr></thead>
-            <tbody>
-              <tr v-for="row in rows" :key="Number(row.id)" tabindex="0" :class="{ selected: Number(selectedRow?.id) === Number(row.id) }" @click="selectedRow = row" @dblclick="openRow(row.id)" @keyup.enter="selectedRow = row">
-                <td v-for="column in listConfig.columns" :key="column.field">{{ displayValue(row[column.field], column) }}</td>
-              </tr>
-            </tbody>
-        </ScDataTable>
+        <ScTable v-else class="table-scroll" :label="String(config.title || labels.surface_aria)"
+          :data="rows" :columns="hierarchyTableColumns" row-key="id" size="small"
+          :row-class-name="hierarchyRowClassName" :row-attributes="hierarchyRowAttributes"
+          @row-click="selectTableRow" @row-dblclick="openTableRow" />
         <footer v-if="total > pageSize" class="pager">
           <ScButton :disabled="offset <= 0 || loading" @click="loadRows(Math.max(0, offset - pageSize))">{{ labels.previous }}</ScButton>
           <span>{{ labels.page_prefix }} {{ Math.floor(offset / pageSize) + 1 }} / {{ Math.ceil(total / pageSize) }} {{ labels.page_suffix }}</span>
@@ -119,7 +115,7 @@ import {
 } from '../../app/action_runtime/hierarchyCollectionDataSource';
 import { formatDisplayValue } from '../../utils/display';
 import ScButton from '../design-system/ScButton.vue';
-import ScDataTable from '../design-system/ScDataTable.vue';
+import ScTable from '../design-system/ScTable.vue';
 import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
 import HierarchyTreeNode from './HierarchyTreeNode.vue';
@@ -174,7 +170,27 @@ const columnGridStyle = computed(() => ({ gridTemplateColumns: `${leftWidth.valu
 const layoutGridStyle = computed(() => ({ ...columnGridStyle.value, height: `${workspaceHeight.value}px` }));
 const pageSize = computed(() => listConfig.value.pageSize);
 const currentTitle = computed(() => selectedNode.value ? [selectedNode.value.code, selectedNode.value.label].filter(Boolean).join(' ') : labels.value.all);
+const hierarchyTableColumns = computed(() => listConfig.value.columns.map((column) => ({
+  colKey: column.field,
+  title: column.label,
+  cell: ({ row }: { row: Dict }) => displayValue(row[column.field], column),
+})));
 function displayValue(value: unknown, field?: Column): string { return formatDisplayValue(value, field); }
+function tableEventRow(context: unknown): Dict | null {
+  if (!context || typeof context !== 'object') return null;
+  const row = (context as { row?: unknown }).row;
+  return row && typeof row === 'object' && !Array.isArray(row) ? row as Dict : null;
+}
+function hierarchyRowClassName(context: unknown): string {
+  const row = tableEventRow(context);
+  return row && Number(selectedRow.value?.id) === Number(row.id) ? 'selected' : '';
+}
+function hierarchyRowAttributes(context: unknown): Record<string, unknown> {
+  const row = tableEventRow(context);
+  return { tabindex: 0, onKeyup: (event: KeyboardEvent) => { if (event.key === 'Enter' && row) selectedRow.value = row; } };
+}
+function selectTableRow(context: unknown): void { const row = tableEventRow(context); if (row) selectedRow.value = row; }
+function openTableRow(context: unknown): void { const row = tableEventRow(context); if (row) openRow(row.id); }
 async function loadTree(): Promise<void> {
   rootNodes.value = await loadHierarchyTree(levels.value);
   expandedKeys.value = new Set(rootNodes.value.slice(0, 1).map((node) => node.key));
