@@ -58,6 +58,10 @@ class NativeFormActionPresentationGuardTest(unittest.TestCase):
         altered = self.overflow_menu.replace("const instanceId = useId()", "const instanceId = props.identity")
         self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
 
+    def test_overflow_focus_must_use_the_sc_button_adapter_api(self):
+        altered = self.overflow_menu.replace("trigger.value?.focus?.()", "trigger.value?.$el?.focus()")
+        self.assertTrue(any("overflow" in error for error in validate(self.source, self.smart_action, altered)))
+
     def test_overflow_state_cannot_return_to_renderer(self):
         altered = f"{self.source}\nconst openMoreKeys = ref({{}});"
         self.assertTrue(any("private overflow" in error for error in validate(altered, self.smart_action, self.overflow_menu)))

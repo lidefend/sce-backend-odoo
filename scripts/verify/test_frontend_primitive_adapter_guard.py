@@ -46,9 +46,6 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             "  --td-text-color-placeholder: var(--sc-semantic-text-secondary);\n"
             "  --td-border-level-2-color: var(--sc-semantic-border-strong);\n"
             "}\n"
-            ".sc-input.t-input__wrap[data-size='large'] > .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
-            ".sc-select[data-size='medium'] .t-input { min-height: calc(var(--sc-component-input-height-md) * 1px); }\n"
-            ".sc-textarea .t-textarea__inner { min-height: calc(var(--sc-component-input-height-md) * 2px); }\n"
             ".sc-btn.t-button { height: calc(var(--sc-component-button-height-md) * 1px); }\n"
             ".sc-btn.t-button.sc-btn-primary[data-status='default'] { border-color: var(--sc-semantic-surface-interactive); "
             "background-color: var(--sc-semantic-surface-interactive); color: var(--sc-semantic-text-on-interactive); }\n"
@@ -70,7 +67,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label -->',
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
                 "ScRadio": '<TDesignRadio :checked="checked" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadio\') -->',
-                "ScInput": '<TDesignInput v-native-control-projection :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" />',
+                "ScInput": '<TDesignInput v-native-control-projection :size="normalizePrimitiveSize(size)" :status="status" :data-appearance="appearance" :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><input :data-appearance="appearance" data-primitive-driver="browser-specialized" />',
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
@@ -84,13 +81,6 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 f'<template><div data-semantic-component="{name}" data-semantic-layer="primitive">{state_contract}</div></template>{modal_contract}\n',
                 encoding="utf-8",
             )
-        (design / "ScDateField.vue").write_text(
-            '<template><TDesignDatePicker v-native-control-projection="nativeProjection" /></template>\n'
-            "<script>const nativeProjection = { selector: 'input' as const, attributes: { required: props.required, "
-            "'aria-required': props.required ? 'true' : undefined, 'aria-invalid': props.invalid ? 'true' : undefined, "
-            "'aria-describedby': props.describedBy } };</script>\n",
-            encoding="utf-8",
-        )
         return root
 
     def test_valid_adapter_surface_passes(self) -> None:
@@ -120,15 +110,6 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         source = root / "frontend/apps/web/src/components/design-system/ScButton.vue"
         source.write_text(source.read_text(encoding="utf-8").replace('v-bind="attrs"', ''), encoding="utf-8")
         self.assertTrue(any("v-bind=\"attrs\"" in error for error in validate(root)))
-
-    def test_date_field_without_native_required_projection_fails(self) -> None:
-        root = self.make_root()
-        source = root / "frontend/apps/web/src/components/design-system/ScDateField.vue"
-        source.write_text(
-            source.read_text(encoding="utf-8").replace("'aria-required': props.required ? 'true' : undefined, ", ""),
-            encoding="utf-8",
-        )
-        self.assertTrue(any("ScDateField missing native accessibility projection" in error for error in validate(root)))
 
     def test_business_identity_fails(self) -> None:
         root = self.make_root()

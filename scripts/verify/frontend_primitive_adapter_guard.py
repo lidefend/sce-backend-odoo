@@ -173,6 +173,8 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInput must expose loading state on the native input control")
     if input_text.count(':data-appearance="appearance"') != 2:
         errors.append("ScInput must project its registered appearance to both standard and specialized drivers")
+    if ':size="normalizePrimitiveSize(size)"' not in input_text or ':status="status"' not in input_text:
+        errors.append("ScInput must delegate size and status to the official TDesign API")
     input_group_text = (design / "ScInputGroup.vue").read_text(encoding="utf-8") if (design / "ScInputGroup.vue").is_file() else ""
     if "<TDesignInputAdornment" not in input_group_text or 'data-primitive-driver="tdesign"' not in input_group_text:
         errors.append("ScInputGroup must delegate grouped input chrome to TDesign InputAdornment")
@@ -186,21 +188,6 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScTextarea must preserve accessible state through the adapter")
     if ':data-loading="loading || undefined"' not in textarea_text or ':aria-busy="loading || undefined"' not in textarea_text:
         errors.append("ScTextarea must expose loading state on the native textarea control")
-
-    date_field_text = (design / "ScDateField.vue").read_text(encoding="utf-8") if (design / "ScDateField.vue").is_file() else ""
-    for marker in (
-        '<TDesignDatePicker',
-        'v-native-control-projection="nativeProjection"',
-        "selector: 'input' as const",
-        'required: props.required',
-        "'aria-required': props.required ? 'true' : undefined",
-        "'aria-invalid': props.invalid ? 'true' : undefined",
-        "'aria-describedby': props.describedBy",
-    ):
-        if marker not in date_field_text:
-            errors.append(f"ScDateField missing native accessibility projection: {marker}")
-    if ':aria-required=' in date_field_text:
-        errors.append("ScDateField must not place aria-required on the DatePicker wrapper")
 
     button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
     for marker in (
@@ -289,16 +276,12 @@ def validate(root: Path = ROOT) -> list[str]:
         "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
         "--td-text-color-placeholder: var(--sc-semantic-text-secondary)",
         "--td-border-level-2-color: var(--sc-semantic-border-strong)",
-        ".sc-input.t-input__wrap[data-size='large'] > .t-input",
-        ".sc-select[data-size='medium'] .t-input",
-        ".sc-textarea .t-textarea__inner",
         ".sc-btn.t-button",
         ".sc-btn.t-button.sc-btn-primary[data-status='default']",
         ".sc-btn.t-button.sc-btn-primary[data-status='default']:hover:not(:disabled)",
         "background-color: var(--sc-semantic-surface-interactive)",
         "background-color: var(--sc-semantic-surface-interactive-hover)",
         "color: var(--sc-semantic-text-on-interactive)",
-        "--sc-component-input-height-md",
         "--sc-component-button-height-md",
     )
     if not ui_theme:

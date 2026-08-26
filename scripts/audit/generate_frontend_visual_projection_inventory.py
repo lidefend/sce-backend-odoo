@@ -52,11 +52,11 @@ CONSUMER_PRIMITIVE_CHROME_RE = re.compile(
 VISUAL_CHROME_PROPERTY_RE = re.compile(r"(?:^|;)\s*(?:border(?!-(?:collapse|spacing))(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.M)
 
 ADAPTER_MARKERS = {
-    "ScInput": ".sc-input.t-input__wrap[data-size='large'] > .t-input",
+    "ScInput": "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
     "ScInputGroup": ".sc-input-group",
     "ScButton": ".sc-btn.t-button",
-    "ScSelect": ".sc-select[data-size='medium'] .t-input",
-    "ScTextarea": ".sc-textarea .t-textarea__inner",
+    "ScSelect": "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
+    "ScTextarea": "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
     "ScTable": "[data-semantic-component='ScTable']",
     "ScDialog": ".sc-dialog",
     "ScDrawer": ".sc-design-drawer",
