@@ -2,7 +2,11 @@
 <template>
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" data-semantic-component="ActionView" :data-collection-state="status" :aria-busy="status === 'loading' || undefined" :content-layout="actionContentLayoutMode">
     <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
-      <template v-if="vm.header.actions.length" #actions>
+      <template v-if="canCreateRecord || vm.header.actions.length" #actions>
+        <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord">
+          <ScIcon name="plus" :size="16" />
+          {{ toolbarUiLabel('create', '新建') }}
+        </ScButton>
         <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
       </template>
     </ProductPageHeader>
@@ -338,7 +342,7 @@
           :active-custom-filter-label="activeCustomFilterLabel"
           :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
           :active-group-key="toolbarActiveGroupKey"
-          :can-create-record="canCreateRecord"
+          :can-create-record="false"
           :create-label="toolbarUiLabel('create', '新建')"
           :ui-labels="toolbarUiLabels"
           @switch-view="switchViewMode"
@@ -414,7 +418,7 @@
       :can-group-window-next="groupWindowNextOffset !== null"
       :on-group-window-prev="handleGroupWindowPrev"
       :on-group-window-next="handleGroupWindowNext"
-      :can-create-record="canCreateRecord"
+      :can-create-record="false"
       :create-label="toolbarUiLabel('create', '新建')"
       :on-open-group="handleOpenGroupedRows"
       :group-sample-limit="groupSampleLimit"
@@ -481,7 +485,7 @@
           :active-custom-filter-label="activeCustomFilterLabel"
           :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
           :active-group-key="toolbarActiveGroupKey"
-          :can-create-record="canCreateRecord"
+          :can-create-record="false"
           :create-label="toolbarUiLabel('create', '新建')"
           :active-condition-count="toolbarActiveConditionCount"
           :ui-labels="toolbarUiLabels"
@@ -662,6 +666,7 @@ import { useRoute, useRouter } from 'vue-router';
 import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScDialog from '../components/design-system/ScDialog.vue';
+import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import CollectionPattern from '../components/product-page-patterns/CollectionPattern.vue';

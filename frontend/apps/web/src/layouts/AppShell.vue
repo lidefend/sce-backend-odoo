@@ -168,7 +168,7 @@
 
     <section
       class="content"
-      :class="{ 'content--with-activity-tabs': activityPages.length }"
+      :class="{ 'content--with-activity-tabs': activityPages.length > 1 }"
       :inert="mobileViewport && mobileSidebarOpen ? true : undefined"
     >
       <header

@@ -1,5 +1,5 @@
 <template>
-  <nav v-if="pages.length" ref="tablistRef" class="activity-tabs" role="tablist" :aria-label="label">
+  <nav v-if="pages.length > 1" ref="tablistRef" class="activity-tabs" role="tablist" :aria-label="label">
     <div v-for="page in pages" :key="page.key" class="activity-tab" :class="{active:page.key===activeKey}" role="presentation">
       <button
         class="activity-tab-main"
