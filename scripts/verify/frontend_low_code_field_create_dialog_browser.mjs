@@ -1,61 +1,84 @@
+import { createServer } from '../../frontend/apps/web/node_modules/vite/dist/node/index.js';
 import { launchChromium } from './playwright_runtime.mjs';
 
 const expectedTypes = ['char', 'text', 'integer', 'float', 'boolean', 'date', 'datetime', 'html'];
+const entryId = '\0low-code-field-dialog-browser-entry';
+const server = await createServer({
+  root: new URL('../../frontend/apps/web', import.meta.url).pathname,
+  logLevel: 'error',
+  server: { host: '127.0.0.1', port: 0 },
+  plugins: [{
+    name: 'low-code-field-dialog-browser-harness',
+    configureServer(vite) {
+      vite.middlewares.use('/__low_code_field_dialog.html', (_request, response) => {
+        response.setHeader('content-type', 'text/html');
+        response.end('<!doctype html><html><body><div id="app"></div><script type="module" src="/__low_code_field_dialog.js"></script></body></html>');
+      });
+    },
+    resolveId(id) {
+      return id === '/__low_code_field_dialog.js' ? entryId : undefined;
+    },
+    load(id) {
+      if (id !== entryId) return undefined;
+      return `
+        import { createApp, h, reactive } from 'vue';
+        import Dialog from '/src/pages/contractForm/LowCodeFieldCreateDialog.vue';
+        import '/src/styles/design-system.css';
+        import '/src/styles/product-patterns.css';
+        const state = reactive({ open: true, afterFieldKey: '', groupTitle: '', sequence: 1, label: '', ttype: 'char' });
+        window.fieldCreateEvidence = { submits: 0, closes: 0, labelUpdates: [], typeUpdates: [] };
+        createApp({ render() { return h(Dialog, {
+          dialog: state,
+          busy: false,
+          onClose: () => { window.fieldCreateEvidence.closes += 1; },
+          onSubmit: () => { window.fieldCreateEvidence.submits += 1; },
+          'onUpdate:label': (value) => { state.label = value; window.fieldCreateEvidence.labelUpdates.push(value); },
+          'onUpdate:ttype': (value) => { state.ttype = value; window.fieldCreateEvidence.typeUpdates.push(value); },
+        }); } }).mount('#app');
+      `;
+    },
+  }],
+});
+
+await server.listen();
+const address = server.httpServer?.address();
+if (!address || typeof address === 'string') throw new Error('Vite browser harness did not expose a TCP port');
 const browser = await launchChromium({ headless: true });
 try {
   const page = await browser.newPage();
-  await page.setContent(`
-    <!doctype html><html><body>
-      <div role="dialog" aria-labelledby="title">
-        <h2 id="title">新增字段</h2>
-        <form id="field-create" data-semantic-component="LowCodeFieldCreateForm">
-          <label for="field-label">字段标题</label>
-          <input id="field-label" name="label" required autofocus>
-          <label for="field-type">字段类型</label>
-          <select id="field-type" name="ttype" required>
-            <option value="char">单行文本</option><option value="text">多行文本</option>
-            <option value="integer">整数</option><option value="float">小数</option>
-            <option value="boolean">是/否</option><option value="date">日期</option>
-            <option value="datetime">日期时间</option><option value="html">富文本</option>
-          </select>
-          <footer data-semantic-component="LowCodeFieldCreateActions">
-            <button type="button">取消</button><button type="submit">创建字段</button>
-          </footer>
-        </form>
-      </div>
-      <script>
-        window.fieldCreateEvidence = { submits: 0 };
-        document.querySelector('#field-create').addEventListener('submit', (event) => {
-          event.preventDefault(); window.fieldCreateEvidence.submits += 1;
-        });
-      </script>
-    </body></html>
-  `);
-  const form = page.locator('#field-create');
-  const label = form.locator('#field-label');
-  const type = form.locator('#field-type');
+  await page.goto(`http://127.0.0.1:${address.port}/__low_code_field_dialog.html`);
+  const form = page.locator('[data-semantic-component="LowCodeFieldCreateForm"]');
+  await form.waitFor();
+  const label = form.locator('input');
+  const type = form.locator('select');
   const submit = form.getByRole('button', { name: '创建字段' });
+  const cancel = form.getByRole('button', { name: '取消' });
+  const initialFocus = await page.evaluate(() => document.activeElement?.id || '');
   await submit.click();
   const emptySubmits = await page.evaluate(() => window.fieldCreateEvidence.submits);
   await label.fill('专业字段');
   await type.selectOption('datetime');
   await submit.click();
+  await cancel.click();
   const evidence = await page.evaluate(() => window.fieldCreateEvidence);
   const options = await type.locator('option').evaluateAll((nodes) => nodes.map((node) => node.value));
   const labels = await form.locator('label').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('for')));
-  const primaryCount = await form.getByRole('button', { name: '创建字段' }).count();
-  const cancelCount = await form.getByRole('button', { name: '取消' }).count();
+  const controlIds = [await label.getAttribute('id'), await type.getAttribute('id')];
   const pass = emptySubmits === 0
     && evidence.submits === 1
+    && evidence.closes === 1
+    && evidence.labelUpdates.at(-1) === '专业字段'
+    && evidence.typeUpdates.at(-1) === 'datetime'
     && JSON.stringify(options) === JSON.stringify(expectedTypes)
-    && JSON.stringify(labels) === JSON.stringify(['field-label', 'field-type'])
-    && await label.getAttribute('autofocus') === ''
+    && JSON.stringify(labels) === JSON.stringify(controlIds)
+    && initialFocus === controlIds[0]
     && await label.getAttribute('required') === ''
     && await type.getAttribute('required') === ''
-    && primaryCount === 1
-    && cancelCount === 1;
-  console.log(JSON.stringify({ pass, emptySubmits, evidence, options, labels, primaryCount, cancelCount }, null, 2));
+    && await submit.count() === 1
+    && await cancel.count() === 1;
+  console.log(JSON.stringify({ pass, emptySubmits, evidence, options, labels, controlIds, initialFocus }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();
+  await server.close();
 }

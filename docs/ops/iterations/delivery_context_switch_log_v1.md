@@ -6386,8 +6386,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   required constraints and `submit` / `close` / value-update events are
   preserved. Field creation, contract publication, permissions and database
   mutation remain owned by the existing P3 runtime and are unchanged.
-- Evidence: six source guard cases and a Chromium constraint check prove empty
-  required input submits zero times, completed input submits exactly once,
-  label associations and field-type order remain exact, and the action group
-  contains one create and one cancel action. Frontend Quick, strict typecheck,
-  development build, style-system and delivery-hardening guards pass.
+- Evidence: six source guard cases and a Vite-mounted production-component
+  Chromium check prove initial focus reaches the title input, empty required
+  input submits zero times, completed input submits exactly once, close and
+  value-update emits remain exact, label associations and field-type order
+  remain exact, and the action group contains one create and one cancel action.
+  Frontend Quick, strict typecheck, development build, style-system and
+  delivery-hardening guards pass.
