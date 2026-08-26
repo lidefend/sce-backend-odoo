@@ -426,7 +426,7 @@
     },
     {
       "category": "overlay",
-      "digest": "046d0f63e4835852e8b4a22fdce38f666d54586788124dc982953510ac019a69",
+      "digest": "6c971990db144d8653db4888c31953c20f3baf0bd92eb8fa984f5896357bee19",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDrawer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1464,7 +1464,7 @@
     },
     {
       "category": "collection",
-      "digest": "8a2f95f8018c9306c6f932b43df728daf212d3783e681faabffb59f226a214c7",
+      "digest": "81130f3e32dcf9fce05c0f0ea8db540c0a536337fbf10fe3b4d15e365160bb4e",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2003,7 +2003,7 @@
       ]
     }
   ],
-  "currentInputDigest": "466d512d09c578e8421d91be67359f40cc3a014ebf75c69f4382f6294762fcc5",
+  "currentInputDigest": "0834a8ff0f833d1fc744ecd31e1a26234a5c51697b60731b1d2b74b32459a626",
   "excludedScopes": [
     "runtime permissions",
     "Contract authority",
