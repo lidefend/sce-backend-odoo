@@ -20,6 +20,7 @@ const server = await createServer({
       return `
         import { createApp, h } from 'vue';
         import ScButton from '/src/components/design-system/ScButton.vue';
+        import ScCheckbox from '/src/components/design-system/ScCheckbox.vue';
         import ScEmptyState from '/src/components/design-system/ScEmptyState.vue';
         import ScErrorState from '/src/components/design-system/ScErrorState.vue';
         import ScInlineState from '/src/components/design-system/ScInlineState.vue';
@@ -37,6 +38,7 @@ const server = await createServer({
           h(ScInlineState, { state: 'loading', label: '正在加载', id: 'loading-state' }),
           h(ScInlineState, { state: 'empty', label: '暂无记录' }),
           h(ScInlineState, { state: 'error', label: '读取失败' }),
+          h(ScCheckbox, { indeterminate: true, label: '部分选择' }),
           h(ScEmptyState, { density: 'compact', headingLevel: 5, title: '暂无内容' }),
           h(ScErrorState, { density: 'compact', headingLevel: 5, title: '区块失败', description: '请稍后重试' }, {
             actions: () => h(ScButton, { id: 'retry-action', variant: 'primary' }, () => '重试'),
@@ -95,6 +97,17 @@ try {
     state: node.getAttribute('data-state'),
     busy: node.getAttribute('aria-busy'),
   })));
+  const mixedCheckbox = await page.locator('[data-semantic-component="ScCheckbox"][data-indeterminate="true"]').evaluate((node) => {
+    const input = node.querySelector('input[type="checkbox"]');
+    const indicator = node.querySelector('.sc-checkbox__indicator');
+    const pseudo = indicator ? getComputedStyle(indicator, '::after') : null;
+    return {
+      ariaChecked: input?.getAttribute('aria-checked'),
+      nativeIndeterminate: input instanceof HTMLInputElement && input.indeterminate,
+      markerWidth: pseudo?.inlineSize,
+      markerHeight: pseudo?.blockSize,
+    };
+  });
   await page.locator('#retry-action').focus();
   const focusVisible = await page.locator('#retry-action').evaluate((node) => getComputedStyle(node).outlineStyle !== 'none');
   await page.setViewportSize({ width: 390, height: 844 });
@@ -113,9 +126,11 @@ try {
     && collectionDisabledReasons.includes('记录不可打开') && collectionDisabledReasons.includes('无选择权限')
     && formStates.some((state) => state.component === 'ProductFormLoadingSkeleton' && state.state === 'loading' && state.busy === 'true')
     && formStates.some((state) => state.component === 'ProductFormErrorSummary' && state.state === 'error')
+    && mixedCheckbox.ariaChecked === 'mixed' && mixedCheckbox.nativeIndeterminate
+    && mixedCheckbox.markerWidth === '8px' && mixedCheckbox.markerHeight === '2px'
     && loadingMotion === 'none' && focusVisible
     && !desktopOverflow && !mobileOverflow && errors.length === 0;
-  console.log(JSON.stringify({ pass, inlineStates, collectionStates, collectionDisabledReasons, formStates, compactHeadings, unexpectedHeadings, unsupportedConsumerErrors, blockConsumerErrors, loadingMotion, focusVisible, desktopOverflow, mobileOverflow, errors, mutation: 0 }, null, 2));
+  console.log(JSON.stringify({ pass, inlineStates, collectionStates, collectionDisabledReasons, formStates, mixedCheckbox, compactHeadings, unexpectedHeadings, unsupportedConsumerErrors, blockConsumerErrors, loadingMotion, focusVisible, desktopOverflow, mobileOverflow, errors, mutation: 0 }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();
