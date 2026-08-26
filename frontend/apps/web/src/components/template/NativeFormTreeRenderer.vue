@@ -35,7 +35,14 @@
         >
           <span v-if="fieldOrderDraggingKey">拖到这里加入此分组</span>
         </div>
-        <p v-if="nodeText(node)" class="native-static-text">{{ nodeText(node) }}</p>
+        <p
+          v-if="nodeText(node)"
+          class="native-static-text"
+          :class="nativeTextPresentationClass(node)"
+          :data-native-text-presentation="nativeTextPresentation(node).kind"
+          :data-tone="nativeTextPresentation(node).tone"
+          :role="nativeTextPresentation(node).role"
+        >{{ nodeText(node) }}</p>
 
         <template v-if="nodeType(node) === 'notebook'">
           <ScTabs
@@ -167,7 +174,7 @@
         <template v-else>
           <FormSection
             v-if="fieldSchemasForNodes(fieldChildren(node)).length"
-            :title="fieldSectionTitle(node, index)"
+            :title="fieldSectionTitle(node)"
             :columns="nodeColumns(node)"
             :fields="fieldSchemasForNodes(fieldChildren(node))"
             :relation-adapter="relationAdapter"
@@ -373,6 +380,7 @@ import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScTabs, { type ScTabItem } from '../design-system/ScTabs.vue';
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
+import { resolveNativeTextPresentation } from './nativeTextPresentation';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -524,6 +532,18 @@ function nodeText(node: NativeFormLayoutNode) {
   return String(node?.text || '').trim();
 }
 
+function nativeTextPresentation(node: NativeFormLayoutNode) {
+  return resolveNativeTextPresentation(node);
+}
+
+function nativeTextPresentationClass(node: NativeFormLayoutNode) {
+  const presentation = nativeTextPresentation(node);
+  return [
+    `native-static-text--${presentation.kind}`,
+    `native-static-text--${presentation.tone}`,
+  ];
+}
+
 function isContainerNode(node: NativeFormLayoutNode) {
   return ['header', 'footer', 'sheet', 'group', 'notebook', 'page', 'container', 'div', 'span', 'h1', 'h2', 'h3'].includes(nodeType(node));
 }
@@ -627,7 +647,7 @@ function notebookTabItems(node: NativeFormLayoutNode): ScTabItem[] {
   });
 }
 
-function fieldSectionTitle(node?: NativeFormLayoutNode, index = 0) {
+function fieldSectionTitle(node?: NativeFormLayoutNode) {
   if (node && nodeType(node) === 'group') {
     const raw = String(node.string || node.label || '').trim();
     return isReadablePolicyTitle(raw) ? raw : '';
@@ -855,8 +875,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-container--group > .native-container-head {
-  border-left: 3px solid var(--sc-app-accent);
-  padding-left: 10px;
+  padding-left: 0;
 }
 
 .native-container--group > .native-container-head h3 {
@@ -903,14 +922,49 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 
 .native-static-text {
   margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.native-static-text--inline {
+  color: var(--sc-app-text-secondary);
+  padding: 2px 0;
+}
+
+.native-static-text--callout {
   border-radius: 6px;
   border: 1px solid var(--sc-app-info-border);
   background: var(--sc-app-info-bg);
   color: var(--sc-app-info-text);
   padding: 10px 12px;
-  font-size: 13px;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
+}
+
+.native-static-text--danger {
+  color: var(--sc-app-danger-text);
+}
+
+.native-static-text--callout.native-static-text--danger {
+  border-color: var(--sc-app-danger-border);
+  background: var(--sc-app-danger-bg);
+}
+
+.native-static-text--warning {
+  color: var(--sc-app-warning-text);
+}
+
+.native-static-text--callout.native-static-text--warning {
+  border-color: var(--sc-app-warning-border);
+  background: var(--sc-app-warning-bg);
+}
+
+.native-static-text--success {
+  color: var(--sc-app-success-text);
+}
+
+.native-static-text--callout.native-static-text--success {
+  border-color: var(--sc-app-success-border);
+  background: var(--sc-app-success-bg);
 }
 
 .native-ribbon {

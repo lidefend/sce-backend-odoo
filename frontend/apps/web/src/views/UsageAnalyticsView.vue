@@ -8,74 +8,61 @@
       <div class="actions">
         <label>
           {{ pageText('label_top', 'Top') }}
-          <select v-model="topN" :disabled="loading">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-          </select>
+          <ScSelect :model-value="topN" :disabled="loading" :options="topOptions" @update:model-value="topN = Number($event)" />
         </label>
         <label>
           {{ pageText('label_daily_range', '趋势范围') }}
-          <select v-model="dailyRange" :disabled="loading">
-            <option :value="3">{{ pageText('option_recent_3_days', '最近 3 天') }}</option>
-            <option :value="7">{{ pageText('option_recent_7_days', '最近 7 天') }}</option>
-          </select>
+          <ScSelect :model-value="dailyRange" :disabled="loading" :options="dailyRangeOptions" @update:model-value="dailyRange = Number($event)" />
         </label>
         <label>
           {{ pageText('label_hidden_reason', '隐藏原因') }}
-          <select v-model="hiddenReasonFilter" :disabled="loading">
-            <option value="ALL">{{ pageText('option_all', '全部') }}</option>
-            <option v-for="item in reasonCounts" :key="`reason-filter-${item.reason_code}`" :value="item.reason_code">
-              {{ item.reason_code }} ({{ item.count }})
-            </option>
-          </select>
+          <ScSelect v-model="hiddenReasonFilter" :disabled="loading" :options="hiddenReasonOptions" />
         </label>
         <label>
           {{ pageText('label_role_slice', '角色切片') }}
-          <select v-model="roleSlice" :disabled="loading">
-            <option value="">{{ pageText('option_all_roles', '全部角色') }}</option>
-            <option v-for="code in roleCodeOptions" :key="`role-${code}`" :value="code">
-              {{ code }}
-            </option>
-          </select>
+          <ScSelect v-model="roleSlice" :disabled="loading" :options="roleSliceOptions" />
         </label>
         <label>
           {{ pageText('label_user_slice', '用户切片') }}
-          <input
-            v-model.number="userSlice"
+          <ScInput
+            :model-value="userSlice"
             type="number"
             min="0"
             step="1"
             :placeholder="pageText('placeholder_user_slice', '0=全部')"
             :disabled="loading"
+            @update:model-value="userSlice = Number($event)"
           />
         </label>
         <label>
           {{ pageText('label_scene_prefix', 'Scene 前缀') }}
-          <input
-            v-model.trim="scenePrefix"
+          <ScInput
+            :model-value="scenePrefix"
             type="text"
             :placeholder="pageText('placeholder_scene_prefix', '如 workspace.')"
             :disabled="loading"
+            @update:model-value="scenePrefix = $event.trim()"
           />
         </label>
         <label>
           {{ pageText('label_capability_prefix', 'Capability 前缀') }}
-          <input
-            v-model.trim="capabilityPrefix"
+          <ScInput
+            :model-value="capabilityPrefix"
             type="text"
             :placeholder="pageText('placeholder_capability_prefix', '如 contract.')"
             :disabled="loading"
+            @update:model-value="capabilityPrefix = $event.trim()"
           />
         </label>
         <label class="export-scope">
-          <input v-model="exportFilteredOnly" type="checkbox" />
-          {{ pageText('label_export_filtered_only', '仅导出当前筛选') }}
+          <ScCheckbox v-model:checked="exportFilteredOnly">
+            {{ pageText('label_export_filtered_only', '仅导出当前筛选') }}
+          </ScCheckbox>
         </label>
-        <button class="secondary" :disabled="loading" @click="copyExportParams">{{ pageText('action_copy_export_params', '复制导出参数') }}</button>
-        <button class="secondary" :disabled="loading" @click="resetFilters">{{ pageText('action_reset_filters', '重置筛选') }}</button>
-        <button class="secondary" :disabled="loading || !canExport" @click="exportCsv">{{ pageText('action_export_csv', '导出 CSV') }}</button>
-        <button
+        <ScButton class="secondary" :disabled="loading" @click="copyExportParams">{{ pageText('action_copy_export_params', '复制导出参数') }}</ScButton>
+        <ScButton class="secondary" :disabled="loading" @click="resetFilters">{{ pageText('action_reset_filters', '重置筛选') }}</ScButton>
+        <ScButton class="secondary" :disabled="loading || !canExport" @click="exportCsv">{{ pageText('action_export_csv', '导出 CSV') }}</ScButton>
+        <ScButton
           v-for="action in headerActions"
           :key="action.key"
           class="secondary"
@@ -83,7 +70,7 @@
           @click="executeHeaderAction(action.key)"
         >
           {{ action.label }}
-        </button>
+        </ScButton>
       </div>
     </header>
 
@@ -120,95 +107,87 @@
       </section>
 
       <section v-if="pageSectionEnabled('summary_usage', true) && pageSectionTagIs('summary_usage', 'section')" class="summary-grid" :style="pageSectionStyle('summary_usage')">
-        <article class="summary-card">
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_scene_open_total', 'Scene Open Total') }}</p>
           <p class="count">{{ report?.totals.scene_open_total ?? 0 }}</p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_capability_open_total', 'Capability Open Total') }}</p>
           <p class="count">{{ report?.totals.capability_open_total ?? 0 }}</p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_generated_at', 'Generated At') }}</p>
           <p class="count small">{{ report?.generated_at || '-' }}</p>
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('summary_visibility', true) && pageSectionTagIs('summary_visibility', 'section')" class="summary-grid" :style="pageSectionStyle('summary_visibility')">
-        <article class="summary-card">
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_capability_total', 'Capability Total') }}</p>
           <p class="count">{{ visibility?.summary.total ?? 0 }}</p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_visible_hidden', 'Visible / Hidden') }}</p>
           <p class="count small">{{ visibility?.summary.visible ?? 0 }} / {{ visibility?.summary.hidden ?? 0 }}</p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_ready_preview_locked', 'Ready / Preview / Locked') }}</p>
           <p class="count small">
             {{ visibility?.summary.ready ?? 0 }} / {{ visibility?.summary.preview ?? 0 }} / {{ visibility?.summary.locked ?? 0 }}
           </p>
-        </article>
-        <article class="summary-card">
+        </ScCard>
+        <ScCard class="summary-card" appearance="metric">
           <p class="label">{{ pageText('summary_role_codes', 'Role Codes') }}</p>
           <p class="count small">{{ (visibility?.role_codes || []).join(', ') || '-' }}</p>
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_top', true) && pageSectionTagIs('tables_top', 'section')" class="tables" :style="pageSectionStyle('tables_top')">
-        <article class="table-card">
-          <h3>{{ pageText('table_top_scenes', 'Top Scenes') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_top_scenes', 'Top Scenes')">
           <ScTable class="usage-table" :label="pageText('table_top_scenes', 'Top Scenes')" :data="sceneTop" row-key="key"
             :columns="usageColumns([['key', pageText('table_scene_key', 'Scene Key')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
 
-        <article class="table-card">
-          <h3>{{ pageText('table_top_capabilities', 'Top Capabilities') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_top_capabilities', 'Top Capabilities')">
           <ScTable class="usage-table" :label="pageText('table_top_capabilities', 'Top Capabilities')" :data="capabilityTop" row-key="key"
             :columns="usageColumns([['key', pageText('table_capability_key', 'Capability Key')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_daily', true) && pageSectionTagIs('tables_daily', 'section')" class="tables" :style="pageSectionStyle('tables_daily')">
-        <article class="table-card">
-          <h3>{{ pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')">
           <ScTable class="usage-table" :label="pageText('table_scene_open_last_7_days', 'Scene Open (Last 7 Days)')" :data="sceneDaily" row-key="day"
             :columns="usageColumns([['day', pageText('table_date', 'Date')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
 
-        <article class="table-card">
-          <h3>{{ pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')">
           <ScTable class="usage-table" :label="pageText('table_capability_open_last_7_days', 'Capability Open (Last 7 Days)')" :data="capabilityDaily" row-key="day"
             :columns="usageColumns([['day', pageText('table_date', 'Date')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_visibility', true) && pageSectionTagIs('tables_visibility', 'section')" class="tables" :style="pageSectionStyle('tables_visibility')">
-        <article class="table-card">
-          <h3>{{ pageText('table_visibility_reason_counts', 'Visibility Reason Counts') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')">
           <ScTable class="usage-table" :label="pageText('table_visibility_reason_counts', 'Visibility Reason Counts')" :data="reasonCounts" row-key="reason_code"
             :columns="usageColumns([['reason_code', pageText('table_reason_code', 'Reason Code')], ['count', pageText('table_count', 'Count')]])" size="small" />
-        </article>
+        </ScCard>
 
-        <article class="table-card">
-          <h3>{{ pageText('table_hidden_capability_samples', 'Hidden Capability Samples') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')">
           <ScTable class="usage-table" :label="pageText('table_hidden_capability_samples', 'Hidden Capability Samples')" :data="hiddenSampleRows" row-key="key"
             :columns="usageColumns([['key', pageText('table_key', 'Key')], ['reasonLabel', pageText('table_reason', 'Reason')]])" size="small" />
-        </article>
+        </ScCard>
       </section>
 
       <section v-if="pageSectionEnabled('tables_role_user', true) && pageSectionTagIs('tables_role_user', 'section')" class="tables" :style="pageSectionStyle('tables_role_user')">
-        <article class="table-card">
-          <h3>{{ pageText('table_role_top', 'Role Top') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_role_top', 'Role Top')">
           <ScTable class="usage-table" :label="pageText('table_role_top', 'Role Top')" :data="roleTop" row-key="role_code"
             :columns="usageColumns([['role_code', pageText('table_role_code', 'Role Code')], ['scene_open_total', pageText('table_scene', 'Scene')], ['capability_open_total', pageText('table_capability', 'Capability')], ['combined_total', pageText('table_total', 'Total')]])" size="small" />
-        </article>
+        </ScCard>
 
-        <article class="table-card">
-          <h3>{{ pageText('table_user_top', 'User Top') }}</h3>
+        <ScCard class="table-card" appearance="table" :title="pageText('table_user_top', 'User Top')">
           <ScTable class="usage-table" :label="pageText('table_user_top', 'User Top')" :data="userTop" row-key="user_id"
             :columns="usageColumns([['user_id', pageText('table_user_id', 'User ID')], ['scene_open_total', pageText('table_scene', 'Scene')], ['capability_open_total', pageText('table_capability', 'Capability')], ['combined_total', pageText('table_total', 'Total')]])" size="small" />
-        </article>
+        </ScCard>
       </section>
     </template>
   </section>
@@ -219,6 +198,11 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { exportUsageCsv, fetchCapabilityVisibilityReport, fetchUsageReport, type CapabilityVisibilityReport, type UsageReport } from '../api/usage';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScCard from '../components/design-system/ScCard.vue';
+import ScButton from '../components/design-system/ScButton.vue';
+import ScCheckbox from '../components/design-system/ScCheckbox.vue';
+import ScInput from '../components/design-system/ScInput.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
 import ScTable from '../components/design-system/ScTable.vue';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { collectErrorContextIssue, issueScopeLabel } from '../app/errorContext';
@@ -257,6 +241,19 @@ const sceneDaily = computed(() => report.value?.daily?.scene_open || []);
 const capabilityDaily = computed(() => report.value?.daily?.capability_open || []);
 const reasonCounts = computed(() => visibility.value?.reason_counts || []);
 const roleCodeOptions = computed(() => visibility.value?.role_codes || []);
+const topOptions = [5, 10, 20].map((value) => ({ value, label: String(value) }));
+const dailyRangeOptions = computed(() => [
+  { value: 3, label: pageText('option_recent_3_days', '最近 3 天') },
+  { value: 7, label: pageText('option_recent_7_days', '最近 7 天') },
+]);
+const hiddenReasonOptions = computed(() => [
+  { value: 'ALL', label: pageText('option_all', '全部') },
+  ...reasonCounts.value.map((item) => ({ value: item.reason_code, label: `${item.reason_code} (${item.count})` })),
+]);
+const roleSliceOptions = computed(() => [
+  { value: '', label: pageText('option_all_roles', '全部角色') },
+  ...roleCodeOptions.value.map((code) => ({ value: code, label: code })),
+]);
 const hiddenSamples = computed(() => visibility.value?.hidden_samples || []);
 const filteredHiddenSamples = computed(() => {
   if (hiddenReasonFilter.value === 'ALL') return hiddenSamples.value;
@@ -459,10 +456,7 @@ onMounted(load);
 }
 
 .summary-card {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  padding: 12px;
-  background: var(--sc-app-panel);
+  min-width: 0;
 }
 
 .summary-card .label {
@@ -488,17 +482,7 @@ onMounted(load);
 }
 
 .table-card {
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-panel-radius);
-  background: var(--sc-app-panel);
   overflow: hidden;
-}
-
-.table-card h3 {
-  margin: 0;
-  padding: 12px;
-  border-bottom: 1px solid var(--sc-app-border);
-  color: var(--sc-app-text-primary);
 }
 
 .usage-table :deep(table) {

@@ -93,10 +93,6 @@
 
 .card {
   position: relative;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-panel-radius);
-  padding: 16px 18px 18px;
-  background: var(--sc-app-panel);
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -127,12 +123,6 @@
   line-height: 1.35;
 }
 
-.page[data-product-page-mode='form'] .card {
-  border-radius: 4px;
-  padding: 14px 16px 16px;
-  box-shadow: none;
-}
-
 .page[data-product-page-mode='form'] .form-grid {
   gap: 12px;
 }
@@ -158,21 +148,6 @@
   box-shadow: 0 8px 24px color-mix(in srgb, var(--sc-app-shadow) 14%, transparent);
 }
 
-.page[data-product-page-mode='form'] .card {
-  padding: 0 20px 24px;
-  border-color: var(--sc-app-border);
-  border-radius: 12px;
-  background: var(--sc-app-panel);
-  box-shadow: 0 10px 30px color-mix(in srgb, var(--sc-app-shadow) 16%, transparent);
-}
-
-.page[data-product-page-mode='form'] .card--flow {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
-}
-
 .page[data-product-page-mode='form'] .form-grid {
   gap: 12px;
 }
@@ -182,18 +157,9 @@
     gap: 10px;
   }
 
-  .page[data-product-page-mode='form'] .header--flow,
-  .page[data-product-page-mode='form'] .card {
+  .page[data-product-page-mode='form'] .header--flow {
     border-radius: 10px;
     padding: 12px;
-  }
-
-  .page[data-product-page-mode='form'] .card:not(.card--flow) {
-    padding: 0 0 18px;
-  }
-
-  .page[data-product-page-mode='form'] .card--flow {
-    padding: 0;
   }
 }
 
@@ -234,10 +200,6 @@
 
 .card--flow {
   width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -824,7 +786,6 @@
   min-height: 34px;
   margin: calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) 0;
   padding: 0 var(--sc-surface-padding);
-  border-left: 2px solid var(--sc-app-accent);
   border-bottom: 1px solid var(--sc-app-border);
   background: color-mix(in srgb, var(--sc-app-info-bg) 24%, var(--sc-app-panel));
 }
@@ -846,31 +807,6 @@
 .contract-form-native-shell :deep(.native-container--group > .template-form-section > .template-form-section-head) {
   margin: calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) var(--sc-field-row-gap);
   border-radius: 0;
-}
-
-.contract-form-native-shell :deep(.native-tabs) {
-  gap: 18px;
-  border: 0;
-  border-bottom: 1px solid var(--sc-app-border);
-  border-radius: 0;
-  padding: 0;
-  background: transparent;
-}
-
-.contract-form-native-shell :deep(.native-tab) {
-  min-height: 38px;
-  padding: 8px 2px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-}
-
-.contract-form-native-shell :deep(.native-tab--active) {
-  border-bottom-color: var(--sc-app-accent);
-  background: transparent;
-  box-shadow: none;
-  color: var(--sc-app-text-primary);
-  font-weight: 600;
 }
 
 .contract-mode-actions {

@@ -27,9 +27,10 @@
           </ScButton>
         </section>
 
-        <section
+        <ScCard
           v-if="pageSectionEnabled('card', true) && pageSectionTagIs('card', 'section')"
           class="login-card sc-panel"
+          appearance="auth"
           :style="pageSectionStyle('card')"
         >
           <header class="brand-header">
@@ -111,7 +112,7 @@
               {{ action.label || action.key }}
             </ScButton>
           </nav>
-        </section>
+        </ScCard>
       </section>
     </section>
 
@@ -132,6 +133,7 @@ import { isConfiguredDbPinned, isPlatformAdminEntryRuntime, resolveConfiguredDb 
 import { config } from '../config';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScCard from '../components/design-system/ScCard.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 
 const router = useRouter();
@@ -321,9 +323,6 @@ async function executeHeaderAction(actionKey: string) {
 
 .login-card {
   width: 100%;
-  padding: 32px;
-  display: grid;
-  gap: 18px;
 }
 
 .brand-header {
@@ -467,7 +466,6 @@ label {
   }
 
   .login-card {
-    padding: 22px;
     border-radius: 16px;
   }
 

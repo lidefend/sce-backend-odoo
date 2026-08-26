@@ -15,7 +15,7 @@ OWNERSHIP = ROOT / "docs/frontend_productization/rendering-detail/rendering-surf
 
 PRIMITIVES = (
     "ScButton", "ScIconButton", "ScCheckbox", "ScRadioGroup", "ScRadio", "ScInput", "ScInputGroup", "ScLayout", "ScAside", "ScHeader", "ScContent", "ScInlineState", "ScTextarea", "ScSelect", "ScDialog", "ScDrawer", "ScTabs", "ScTable",
-    "ScBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
+    "ScBadge", "ScStatusBadge", "ScTooltip", "ScDropdown", "ScFormField", "ScLoading", "ScEmptyState", "ScErrorState",
     "ScActionBar", "ScAutoComplete", "ScNumberInput", "ScDatePicker", "ScUpload", "ScForm", "ScFormItem",
     "ScCard", "ScCollapse", "ScDisclosure", "ScProgress", "ScSkeleton", "ScDescriptions", "ScList", "ScTimeline",
     "ScSteps", "ScPagination", "ScSwitch", "ScTimePicker", "ScPopconfirm",
@@ -38,6 +38,7 @@ ALL_STATIC_CLASS = re.compile(r"(?<!:)\bclass\s*=\s*['\"](?P<value>[^'\"]+)['\"]
 STYLE_RULE = re.compile(r"(?P<selector>[^{}]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
 STYLE_SOURCE = re.compile(r"<style\b[^>]*\bsrc\s*=\s*['\"](?P<value>[^'\"]+)['\"][^>]*>", re.IGNORECASE)
 PROFESSIONAL_COMPOSITE_OWNERS: set[str] = set()
+RAW_INTERACTIVE_CONTROL = re.compile(r"<(?:button|input|select|textarea|table)(?:\s|>)", re.IGNORECASE)
 
 
 def p3_scope(root: Path) -> tuple[set[str], tuple[str, ...]]:
@@ -121,11 +122,15 @@ def validate(root: Path = ROOT) -> list[str]:
     if source_root.is_dir():
         for path in sorted(source_root.rglob("*.vue")):
             relative = path.relative_to(root).as_posix()
-            if "/components/design-system/" in f"/{relative}" or relative in PROFESSIONAL_COMPOSITE_OWNERS:
+            if "/components/design-system/" in f"/{relative}":
+                continue
+            source_text = path.read_text(encoding="utf-8")
+            if RAW_INTERACTIVE_CONTROL.search(source_text):
+                errors.append(f"business surface bypasses the professional primitive adapter: {relative}")
+            if relative in PROFESSIONAL_COMPOSITE_OWNERS:
                 continue
             if relative in p3_files or relative.startswith(p3_prefixes):
                 continue
-            source_text = path.read_text(encoding="utf-8")
             style_text = component_style_text(path, source_text)
             if any(VISUAL_CHROME_PROPERTY.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME.finditer(style_text)):
                 errors.append(f"consumer primitive visual chrome must move to an adapter appearance: {relative}")
@@ -180,6 +185,22 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("ScInputGroup must delegate grouped input chrome to TDesign InputAdornment")
     if "TDesignInputAdornment" not in bridge or "TDesignInputAdornment" not in ui_primitives:
         errors.append("ScInputGroup must consume the public project TDesign InputAdornment authority")
+
+    tabs_text = (design / "ScTabs.vue").read_text(encoding="utf-8") if (design / "ScTabs.vue").is_file() else ""
+    if "<TDesignTabs" not in tabs_text or ':list="items.length ? tdesignItems : undefined"' not in tabs_text:
+        errors.append("ScTabs must delegate tab navigation and panels through the TDesign list driver")
+    if "label: tabLabel(item)" not in tabs_text or "return (render: typeof h) => render('span'" not in tabs_text:
+        errors.append("ScTabs must project the formal label prop as measurable semantic content")
+
+    status_badge_text = (design / "ScStatusBadge.vue").read_text(encoding="utf-8") if (design / "ScStatusBadge.vue").is_file() else ""
+    for marker in (
+        ':data-semantic-status="semantic"',
+        ".sc-status-badge[data-semantic-status='info']",
+        "color: var(--sc-app-info-text)",
+        "background-color: var(--sc-app-info-bg)",
+    ):
+        if marker not in status_badge_text:
+            errors.append(f"ScStatusBadge missing accessible semantic status projection: {marker}")
 
     textarea_text = (design / "ScTextarea.vue").read_text(encoding="utf-8") if (design / "ScTextarea.vue").is_file() else ""
     if "<TDesignTextarea" not in textarea_text or "v-native-control-projection" not in textarea_text:

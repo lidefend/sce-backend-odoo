@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "4c1fc1c6e70df52e4c505d56cd14c03818a2d0c10e67bb0a3d67229af3caac13",
-  "generatorDigest": "d0b11965e4397c1bfab52898dfb2fc4b6820d3c701ca1fc86644b7f5b210e9f4",
+  "sourceIdentity": "00e60abb1b024b2a50d2682fd807cfcf4d4a3a3f2048b0337f9fee5ef2041816",
+  "generatorDigest": "9a0537491ed7c94e1801009ba5e1ff407b9b41d3439e9011bbdba242e01cd27c",
   "ownershipDigest": "6349644dec46ae7c415f217a04ba9cf89c2524787cf8bfc07aa62ce1401b9d1f",
-  "inputDigest": "bc58988a83b627f63cec9654d7f7f05f7e0ac147ffc61d26766594e85fcd3ca3",
+  "inputDigest": "4a47b382c6d0fe5d5603d3d8a60b84983eec4cb0c9e885f84382223cd58ed986",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -1545,14 +1545,9 @@
       "reason": "low-code or administration product surface; handled by a separate P3 batch",
       "stateTypes": [
         "empty",
-        "disabled",
-        "focus"
+        "disabled"
       ],
-      "rawControls": {
-        "button": 12,
-        "input": 6,
-        "select": 6
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -1868,11 +1863,7 @@
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "button": 5,
-        "input": 1,
-        "select": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -1886,12 +1877,7 @@
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "button": 4,
-        "input": 4,
-        "select": 2,
-        "textarea": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -1921,11 +1907,7 @@
         "error",
         "disabled"
       ],
-      "rawControls": {
-        "button": 4,
-        "input": 4,
-        "select": 4
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -1953,9 +1935,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "textarea": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -1969,10 +1949,7 @@
         "empty",
         "disabled"
       ],
-      "rawControls": {
-        "input": 4,
-        "select": 3
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -2013,9 +1990,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "input": 2
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     },
@@ -2080,10 +2055,7 @@
         "disabled",
         "focus"
       ],
-      "rawControls": {
-        "input": 2,
-        "select": 1
-      },
+      "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
     }

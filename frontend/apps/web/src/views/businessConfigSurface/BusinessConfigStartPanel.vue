@@ -1,5 +1,5 @@
 <template>
-  <section class="workbench-start sc-product-main-surface" data-lowcode-workbench-ia="start">
+  <ScCard appearance="main-surface" class="workbench-start sc-product-main-surface" data-lowcode-workbench-ia="start">
     <div class="workbench-start-main">
       <div class="workbench-start-lead">
         <div class="workbench-start-copy">
@@ -28,7 +28,7 @@
           </div>
         </div>
         <div class="section-grid section-grid--start" data-lowcode-config-task-grid="v1">
-          <article v-for="section in sections" :key="`start-${section.key}`" class="config-card" data-lowcode-config-task-card="v1">
+          <ScCard v-for="section in sections" :key="`start-${section.key}`" class="config-card" appearance="config" data-lowcode-config-task-card="v1">
             <div class="config-card-head">
               <div>
                 <span>{{ sectionTaskKindLabel(section.key) }}</span>
@@ -107,7 +107,7 @@
                 {{ approvalLoading ? '读取中...' : sectionPrimaryActionLabel(section.key) }}
               </ScButton>
             </div>
-          </article>
+          </ScCard>
         </div>
       </div>
     </div>
@@ -135,12 +135,13 @@
       </div>
       <div v-if="!visibleDeliveryReadinessItems.length" class="workbench-status-empty">状态读取中</div>
     </aside>
-  </section>
+  </ScCard>
 </template>
 
 <script setup lang="ts">
 import type { BusinessConfigSurfacePayload } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScCard from '../../components/design-system/ScCard.vue';
 
 type SurfaceSection = BusinessConfigSurfacePayload['sections'][number];
 type DeliveryItem = NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number];

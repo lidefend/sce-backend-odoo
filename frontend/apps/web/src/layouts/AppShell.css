@@ -11,7 +11,7 @@
   display: flex;
   background: var(--sc-app-bg);
   color: var(--ink);
-  font-family: "Inter", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  font-family: var(--sc-semantic-font-family-sans);
 }
 
 .shell--sidebar-hidden { display: flex; }

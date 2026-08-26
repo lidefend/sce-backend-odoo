@@ -7,11 +7,7 @@
     <p class="field-chip-action-hint">拖动手柄或使用上移、下移调整顺序，移除会从当前配置中取消显示。</p>
     <label v-if="showGraphType" class="inline-select">
       图表类型
-      <select :value="graphType" @change="$emit('update:graphType', ($event.target as HTMLSelectElement).value)">
-        <option value="bar">柱状图</option>
-        <option value="line">折线图</option>
-        <option value="pie">饼图</option>
-      </select>
+      <ScSelect :model-value="graphType" :options="graphTypeOptions" @update:model-value="$emit('update:graphType', $event)" />
     </label>
     <div class="field-chip-list">
       <span
@@ -43,21 +39,21 @@
       </span>
     </div>
     <form v-if="advancedPanelOpen" class="field-chip-add" @submit.prevent="$emit('addName')">
-      <input
+      <ScInput
         :value="draftValue"
         type="text"
         placeholder="输入字段名"
-        @input="$emit('update:draftValue', ($event.target as HTMLInputElement).value)"
+        @update:model-value="$emit('update:draftValue', $event)"
       />
       <ScButton type="submit" class="ghost small">添加</ScButton>
     </form>
-    <input
+    <ScInput
       v-if="fieldOptions.length || searchValue"
       :value="searchValue"
       class="field-option-search"
       type="search"
       placeholder="搜索可选字段"
-      @input="$emit('update:searchValue', ($event.target as HTMLInputElement).value)"
+      @update:model-value="$emit('update:searchValue', $event)"
     />
     <div class="field-option-summary">
       <span>可添加字段 {{ fieldOptionTotal }}，当前显示 {{ fieldOptions.length }}</span>
@@ -86,6 +82,14 @@
 
 <script setup lang="ts">
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScInput from '../../components/design-system/ScInput.vue';
+import ScSelect from '../../components/design-system/ScSelect.vue';
+
+const graphTypeOptions = [
+  { value: 'bar', label: '柱状图' },
+  { value: 'line', label: '折线图' },
+  { value: 'pie', label: '饼图' },
+];
 
 type FieldOption = {
   name: string;

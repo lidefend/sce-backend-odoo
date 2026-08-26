@@ -25,7 +25,7 @@
     <IntentConfirmationDialog ref="confirmationRef" />
 
     <div v-if="editorVisible" class="relational-editor">
-      <div class="editor-card">
+      <ScCard appearance="record" class="editor-card">
         <div class="editor-title">{{ editorTitle }}</div>
         <div v-if="editTxState === 'saved'" class="editor-banner">Saved.</div>
         <div v-else-if="editTxState === 'saving'" class="editor-banner">Saving…</div>
@@ -38,7 +38,7 @@
           <ScButton class="relational-cancel" type="button" variant="ghost" @click="cancelEdit">Cancel</ScButton>
         </div>
         <ScInlineState v-if="editorError" state="error" :label="editorError" />
-      </div>
+      </ScCard>
     </div>
   </div>
 </template>
@@ -47,6 +47,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ScButton from '../design-system/ScButton.vue';
+import ScCard from '../design-system/ScCard.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import IntentConfirmationDialog from '../business/IntentConfirmationDialog.vue';

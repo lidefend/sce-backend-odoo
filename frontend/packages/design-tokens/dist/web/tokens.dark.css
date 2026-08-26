@@ -66,6 +66,7 @@
   --sc-base-color-teal-900: #134e4a;
   --sc-base-color-transparent: transparent;
   --sc-base-color-white: #ffffff;
+  --sc-base-font-family-sans: Inter, PingFang SC, Microsoft YaHei, Noto Sans SC, system-ui, sans-serif;
   --sc-base-font-size-2xl: 24;
   --sc-base-font-size-lg: 16;
   --sc-base-font-size-md: 14;
@@ -256,6 +257,7 @@
   --sc-semantic-border-subtle: rgba(148, 163, 184, 0.18);
   --sc-semantic-border-table: rgba(148, 163, 184, 0.22);
   --sc-semantic-focus-ring: #00b6fe;
+  --sc-semantic-font-family-sans: Inter, PingFang SC, Microsoft YaHei, Noto Sans SC, system-ui, sans-serif;
   --sc-semantic-shadow-modal: 0 24px 70px rgba(0, 0, 0, 0.42);
   --sc-semantic-shadow-panel: 0 16px 36px rgba(0, 0, 0, 0.28);
   --sc-semantic-shadow-popover: 0 18px 44px rgba(0, 0, 0, 0.34);

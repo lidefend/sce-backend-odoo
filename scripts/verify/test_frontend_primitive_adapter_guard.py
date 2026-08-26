@@ -71,6 +71,8 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<TDesignSelect v-native-control-projection :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
+                "ScTabs": "<TDesignTabs :list=\"items.length ? tdesignItems : undefined\" />\nlabel: tabLabel(item)\nreturn (render: typeof h) => render('span', {}, item.label)",
+                "ScStatusBadge": "<div :data-semantic-status=\"semantic\" />\n<style>.sc-status-badge[data-semantic-status='info'] { color: var(--sc-app-info-text); background-color: var(--sc-app-info-bg); }</style>",
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
                 "ScInlineState": '<div :data-state="state" :aria-busy="state === \'loading\' || undefined" />',
                 "ScEmptyState": '<TDesignEmpty data-state="empty" role="status" />',
@@ -153,6 +155,25 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("native input control" in error for error in validate(root)))
+
+    def test_tabs_without_formal_label_projection_fails(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScTabs.vue"
+        source.write_text(source.read_text(encoding="utf-8").replace("label: tabLabel(item)", "label: item.label"), encoding="utf-8")
+        self.assertTrue(any("formal label prop" in error for error in validate(root)))
+
+    def test_status_badge_requires_accessible_semantic_projection(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/components/design-system/ScStatusBadge.vue"
+        source.write_text(source.read_text(encoding="utf-8").replace("color: var(--sc-app-info-text);", ""), encoding="utf-8")
+        self.assertTrue(any("accessible semantic status projection" in error for error in validate(root)))
+
+    def test_business_surface_cannot_bypass_primitive_adapter(self) -> None:
+        root = self.make_root()
+        source = root / "frontend/apps/web/src/views/ExampleView.vue"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text('<template><button type="button">Save</button></template>\n', encoding="utf-8")
+        self.assertTrue(any("bypasses the professional primitive adapter" in error for error in validate(root)))
 
     def test_interaction_state_markers_are_required(self) -> None:
         root = self.make_root()

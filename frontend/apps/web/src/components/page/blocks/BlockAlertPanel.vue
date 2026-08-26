@@ -1,5 +1,5 @@
 <template>
-  <article class="block block-alert-panel">
+  <ScCard appearance="section" class="block block-alert-panel">
     <header class="block-header">
       <h4>{{ block.title || '提醒' }}</h4>
       <div class="block-header-actions">
@@ -33,13 +33,14 @@
       </article>
     </div>
     <ScEmptyState v-else density="compact" :heading-level="5" title="当前无风险提醒" />
-  </article>
+  </ScCard>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScButton from '../../design-system/ScButton.vue';
+import ScCard from '../../design-system/ScCard.vue';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
 const props = defineProps<{

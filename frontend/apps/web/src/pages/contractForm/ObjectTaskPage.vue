@@ -9,30 +9,36 @@
     data-object-task-page
     data-canonical-form-zones
   >
-    <section
+    <ScCard
       v-if="summaryNodes.length"
       class="object-task-page__summary"
       aria-label="关键业务摘要"
       data-floorplan-region="summary"
       data-canonical-zone="primary"
+      :bordered="true"
+      appearance="summary"
     >
-      <CanonicalFormNodeRenderer
-        v-for="node in summaryNodes"
-        :key="node.nodeId"
-        :node="node"
-        :relation-adapter="relationAdapter"
-        prefer-readonly-facts
-        @field-change="emit('field-change', $event)"
-      />
-    </section>
-    <section
+      <div class="object-task-page__summary-grid">
+        <CanonicalFormNodeRenderer
+          v-for="node in summaryNodes"
+          :key="node.nodeId"
+          :node="node"
+          :relation-adapter="relationAdapter"
+          prefer-readonly-facts
+          @field-change="emit('field-change', $event)"
+        />
+      </div>
+    </ScCard>
+    <ScCard
       v-if="decisionMode && (taskNodes.length || riskNodes.length || $slots.actions || $slots.blocking)"
       class="object-task-page__current-task"
       aria-label="当前任务"
       data-floorplan-region="current-task"
+      title="当前任务"
+      :bordered="true"
+      appearance="task"
     >
       <div class="object-task-page__current-task-copy">
-        <strong class="object-task-page__current-task-title">当前任务</strong>
         <slot name="blocking" />
         <CanonicalFormNodeRenderer
           v-for="node in taskNodes"
@@ -53,23 +59,22 @@
           />
         </div>
       </div>
-      <div
-        v-if="$slots.actions"
-        class="object-task-page__current-task-actions"
-        data-floorplan-region="action-bar"
-        data-mobile-action-surface
-      >
-        <slot name="actions" />
-      </div>
-    </section>
-    <section
+      <template v-if="$slots.actions" #actions>
+        <div class="object-task-page__current-task-actions" data-floorplan-region="action-bar" data-mobile-action-surface>
+          <slot name="actions" />
+        </div>
+      </template>
+    </ScCard>
+    <ScCard
       v-if="coreInputNodes.length"
       class="object-task-page__core-input"
       aria-label="核心申请信息"
       data-floorplan-region="core-input"
       data-canonical-zone="primary"
+      title="核心申请信息"
+      :bordered="true"
+      appearance="section"
     >
-      <strong class="object-task-page__section-title">核心申请信息</strong>
       <CanonicalFormNodeRenderer
         v-for="node in coreInputNodes"
         :key="node.nodeId"
@@ -78,15 +83,17 @@
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
-    </section>
-    <section
+    </ScCard>
+    <ScCard
       v-if="conditionInputNodes.length"
       class="object-task-page__condition-input"
       aria-label="当前办理条件"
       data-floorplan-region="condition-input"
       data-canonical-zone="primary"
+      title="当前办理条件"
+      :bordered="true"
+      appearance="section"
     >
-      <strong class="object-task-page__section-title">当前办理条件</strong>
       <CanonicalFormNodeRenderer
         v-for="node in conditionInputNodes"
         :key="node.nodeId"
@@ -95,15 +102,17 @@
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
-    </section>
-    <section
+    </ScCard>
+    <ScCard
       v-if="preExecutionInputTitle && preExecutionInputNodes.length"
       class="object-task-page__pre-execution-input"
       :aria-label="preExecutionInputTitle"
       data-floorplan-region="pre-execution-input"
       data-canonical-zone="primary"
+      :title="preExecutionInputTitle"
+      :bordered="true"
+      appearance="section"
     >
-      <strong class="object-task-page__section-title">{{ preExecutionInputTitle }}</strong>
       <CanonicalFormNodeRenderer
         v-for="node in preExecutionInputNodes"
         :key="node.nodeId"
@@ -112,7 +121,7 @@
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
-    </section>
+    </ScCard>
     <ScDisclosure
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
@@ -158,12 +167,15 @@
           />
         </template>
       </main>
-      <aside
+      <ScCard
         v-if="contextNodes.length"
         class="object-task-page__context"
         aria-label="业务上下文"
         data-floorplan-region="business-context"
         data-canonical-zone="primary"
+        title="业务上下文"
+        :bordered="true"
+        appearance="context"
       >
         <CanonicalFormNodeRenderer
           v-for="node in contextNodes"
@@ -173,7 +185,7 @@
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
         />
-      </aside>
+      </ScCard>
     </div>
     <ScDisclosure
       v-if="overflowContextNodes.length"
@@ -190,12 +202,15 @@
         @field-change="emit('field-change', $event)"
       />
     </ScDisclosure>
-    <section
+    <ScCard
       v-if="relationNodes.length"
       class="object-task-page__relation"
       aria-label="关系明细"
       data-floorplan-region="relation"
       data-canonical-zone="primary"
+      title="关系明细"
+      :bordered="true"
+      appearance="relation"
     >
       <CanonicalFormNodeRenderer
         v-for="node in relationNodes"
@@ -205,7 +220,7 @@
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
-    </section>
+    </ScCard>
     <section
       v-if="subordinateNodes.length"
       class="object-task-page__subordinate"
@@ -255,6 +270,7 @@ import type { FormSectionFieldChange } from '../../components/template/formSecti
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
+import ScCard from '../../components/design-system/ScCard.vue';
 import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
 
 defineProps<{
@@ -284,13 +300,13 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 <style scoped>
 .object-task-page {
   display: grid;
-  gap: 12px;
+  gap: 20px;
   min-width: 0;
 }
 .object-task-page__body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: 20px;
   min-width: 0;
 }
 .object-task-page--with-context .object-task-page__body {
@@ -325,17 +341,12 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__subordinate {
   min-width: 0;
 }
-.object-task-page__summary {
+.object-task-page__summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
-  padding: 0;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-panel);
-  background: var(--sc-app-panel);
-  overflow: hidden;
 }
-.object-task-page__summary :deep(.canonical-form-node) {
+.object-task-page__summary-grid :deep(.canonical-form-node) {
   height: 100%;
   padding: 12px 16px;
   border: 0;
@@ -343,19 +354,11 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   border-radius: 0;
   background: transparent;
 }
-.object-task-page__summary :deep(.canonical-form-node:last-child) { border-right:0; }
+.object-task-page__summary-grid :deep(.canonical-form-node:last-child) { border-right:0; }
 .object-task-page__current-task {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 16px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-panel);
-  background: var(--sc-app-panel);
+  min-width: 0;
 }
 .object-task-page__current-task-copy { display: grid; gap: 8px; }
-.object-task-page__current-task-title { color: var(--sc-app-text-primary); font-size: 16px; }
 .object-task-page__current-task-facts {
   color: var(--sc-app-text-secondary);
 }
@@ -369,18 +372,13 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__core-input,
 .object-task-page__condition-input,
 .object-task-page__pre-execution-input {
-  padding: 14px 16px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-panel);
-  background: var(--sc-app-panel);
+  overflow: hidden;
 }
 .object-task-page__condition-input {
   border-color: var(--sc-app-warning-border);
-  background: color-mix(in srgb, var(--sc-app-warning-bg) 45%, var(--sc-app-panel));
 }
 .object-task-page__pre-execution-input {
   border-color: var(--sc-app-info-border);
-  background: color-mix(in srgb, var(--sc-app-info-bg) 35%, var(--sc-app-panel));
 }
 .object-task-page__supplementary-input {
   padding: 12px 16px;
@@ -389,12 +387,6 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   background: var(--sc-app-panel);
 }
 .object-task-page__supplementary-input > summary { cursor: pointer; font-weight: 600; }
-.object-task-page__section-title {
-  display: block;
-  margin-bottom: 12px;
-  color: var(--sc-app-text-primary);
-  font-size: 16px;
-}
 .object-task-page__audit {
   padding: 12px 16px;
   border: 1px solid var(--sc-app-border);
@@ -431,16 +423,12 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__audit-event p { color: var(--sc-app-text-secondary); }
 .object-task-page__audit-event p { grid-column: 1 / -1; margin: 4px 0 0; }
 .object-task-page__context {
-  padding: 14px 16px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-panel);
-  background: var(--sc-app-panel);
+  min-width: 0;
 }
 .object-task-page__subordinate {
   padding-top: 16px;
   border-top: 1px solid var(--sc-app-border);
 }
-.object-task-page__relation,
 .object-task-page__activity {
   padding: 14px 16px;
   border: 1px solid var(--sc-app-border);
@@ -457,10 +445,9 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   backdrop-filter: blur(8px);
 }
 @media (max-width: 960px) {
-  .object-task-page__summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .object-task-page__summary :deep(.canonical-form-node:nth-child(2n)) { border-right:0; }
-  .object-task-page__summary :deep(.canonical-form-node:nth-child(n + 3)) { border-top:1px solid var(--sc-app-border); }
-  .object-task-page__current-task { grid-template-columns: minmax(0, 1fr); }
+  .object-task-page__summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .object-task-page__summary-grid :deep(.canonical-form-node:nth-child(2n)) { border-right:0; }
+  .object-task-page__summary-grid :deep(.canonical-form-node:nth-child(n + 3)) { border-top:1px solid var(--sc-app-border); }
   .object-task-page__current-task-actions { min-width: 0; }
   .object-task-page--with-context .object-task-page__body {
     grid-template-columns: minmax(0, 1fr);
@@ -471,12 +458,12 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
   .object-task-page--decision .object-task-page__current-task { order: -1; }
-  .object-task-page__summary {
+  .object-task-page__summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     padding: 10px;
   }
-  .object-task-page__summary :deep(.canonical-form-node) {
+  .object-task-page__summary-grid :deep(.canonical-form-node) {
     padding: 10px;
     overflow-wrap: anywhere;
   }

@@ -1,9 +1,9 @@
 <template>
-<section v-if="coverageScan" class="scan-panel">
+<ScCard v-if="coverageScan" appearance="main-surface" class="scan-panel">
   <div class="scan-toolbar">
     <label class="page-search">
       <span>页面搜索</span>
-      <input :value="pageSearch" type="search" placeholder="输入页面名称" @input="$emit('update:pageSearch', ($event.target as HTMLInputElement).value)" />
+      <ScInput :model-value="pageSearch" type="search" placeholder="输入页面名称" @update:model-value="$emit('update:pageSearch', $event)" />
     </label>
     <div class="page-type-tabs" role="group" aria-label="页面类型筛选">
       <ScButton
@@ -20,10 +20,7 @@
       <span>配置状态</span>
       <ScSelect :model-value="configStatusFilter" :options="configStatusOptions.map((option) => ({ value: option.key, label: option.label }))" @update:model-value="$emit('update:configStatusFilter', $event as ConfigStatusFilter)" />
     </label>
-    <label v-if="advancedPanelOpen" class="scan-toggle">
-      <input :checked="showOnlyIssues" type="checkbox" @change="$emit('update:showOnlyIssues', ($event.target as HTMLInputElement).checked)" />
-      <span>只看需处理</span>
-    </label>
+    <ScCheckbox v-if="advancedPanelOpen" class="scan-toggle" :checked="showOnlyIssues" @update:checked="$emit('update:showOnlyIssues', $event)">只看需处理</ScCheckbox>
     <ScButton v-if="advancedPanelOpen" variant="ghost" @click="$emit('copyCoverageSummary')">
       复制配置摘要
     </ScButton>
@@ -108,7 +105,7 @@
       <div v-else class="empty-state">当前没有匹配的业务页面，可调整搜索条件或取消“只看需处理”。</div>
     </aside>
 
-    <section v-if="(!loading || surface) && (currentModel || visibleConfigSections.length)" class="page-config-panel" aria-label="已选页面配置">
+    <ScCard v-if="(!loading || surface) && (currentModel || visibleConfigSections.length)" appearance="main-surface" class="page-config-panel" aria-label="已选页面配置">
       <div class="selected-page-overview">
         <div>
           <span>正在配置</span>
@@ -142,7 +139,7 @@
         </ScButton>
       </div>
       <div v-if="activeSection" class="section-grid section-grid--active" data-lowcode-config-task-grid="v1">
-        <article :key="activeSection.key" class="config-card" data-lowcode-config-task-card="v1">
+        <ScCard :key="activeSection.key" class="config-card" appearance="config" data-lowcode-config-task-card="v1">
           <div class="config-card-head">
             <div>
               <span>{{ sectionTaskKindLabel(activeSection.key) }}</span>
@@ -224,9 +221,9 @@
               打开完整规则
             </ScButton>
           </div>
-        </article>
+        </ScCard>
       </div>
-    </section>
+    </ScCard>
     <aside v-if="surface" class="workbench-status-rail" aria-label="交付状态" data-lowcode-delivery-readiness="low_code_delivery_readiness.v1">
       <div class="delivery-readiness-head">
         <div>
@@ -257,7 +254,7 @@
       </div>
     </aside>
   </div>
-</section>
+</ScCard>
 </template>
 
 <script setup lang="ts">
@@ -270,8 +267,11 @@ import type {
   BusinessConfigSurfacePayload,
 } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScCard from '../../components/design-system/ScCard.vue';
 import ScStatusBadge from '../../components/design-system/ScStatusBadge.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScInput from '../../components/design-system/ScInput.vue';
+import ScCheckbox from '../../components/design-system/ScCheckbox.vue';
 
 type SurfaceSection = BusinessConfigSurfacePayload['sections'][number];
 type DeliveryItem = NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number];

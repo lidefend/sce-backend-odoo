@@ -87,7 +87,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue": {"section": {"attrs": {"data-semantic-component": "CollectionBatchActionBar", ":data-state": "loading ? 'loading' : selectedCount ? 'ready' : 'empty'"}}},
         "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue": {"nav": {"attrs": {"data-semantic-component": "CollectionGroupPageControls", ":data-state": "loading ? 'loading' : 'ready'"}}},
         "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue": {"header": {"attrs": {"data-semantic-component": "CollectionGroupingToolbar"}}},
-        "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue": {"article": {"attrs": {"data-semantic-component": "CollectionKanbanRecordCard", ":aria-disabled": "disabled || undefined"}}},
+        "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue": {"sccard": {"attrs": {"data-semantic-component": "CollectionKanbanRecordCard", ":aria-disabled": "disabled || undefined"}}},
         "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue": {"article": {"attrs": {"data-semantic-component": "CollectionMobileRecordRow", ":data-state": "selectionDisabled ? 'selection-disabled' : 'ready'"}}},
         "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue": {"nav": {"attrs": {"data-semantic-component": "CollectionPaginationFooter", ":data-state": "loading ? 'loading' : 'ready'"}}},
         "frontend/apps/web/src/components/product-list/CollectionFilterChip.vue": {"scbutton": {"attrs": {"data-semantic-component": "CollectionFilterChip", ":aria-pressed": "active"}}},
@@ -117,7 +117,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue": {"section": {"attrs": {"data-semantic-component": "ProductFormLoadingSkeleton", "data-state": "loading"}}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalBaseFieldControl", ":data-state": "model.controlState"}}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalBusinessValueControl"}}},
-        "frontend/apps/web/src/components/template/FormSection.vue": {"section": {"attrs": {"data-semantic-component": "FormSection"}}},
+        "frontend/apps/web/src/components/template/FormSection.vue": {"sccard": {"attrs": {"data-semantic-component": "FormSection"}}},
         "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue": {"div": {"attrs": {"data-semantic-component": "NativeActionOverflowMenu"}}},
         "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": {"div": {"attrs": {"data-semantic-component": "NativeFormTreeRenderer"}}},
         "frontend/apps/web/src/components/template/NativeSmartAction.vue": {"scbutton": {"minimum": 1}},
@@ -167,6 +167,7 @@ OWNED_BINDINGS = {
 NEXT_BATCH_GAPS = set(BATCH_BINDINGS["p0-inline-full-state-completion-v1"])
 NEXT_BATCH_BINDINGS = BATCH_BINDINGS["p0-inline-full-state-completion-v1"]
 COMPONENT_IMPORTS = {
+    "sccard": "ScCard",
     "scinlinestate": "ScInlineState",
     "scerrorstate": "ScErrorState",
 }

@@ -15,6 +15,7 @@ class CollectionKanbanRecordCardGuardTest(unittest.TestCase):
     def test_duplicate_adapter_fails(self): self.assertTrue(any("exactly one" in item for item in validate(self.page + "\n<CollectionKanbanRecordCard />", self.card, self.style)))
     def test_inline_card_fails(self): self.assertTrue(any("inline" in item for item in validate(self.page + '\n<article class="card" />', self.card, self.style)))
     def test_missing_semantic_owner_fails(self): self.assertTrue(validate(self.page, self.card.replace('data-semantic-component="CollectionKanbanRecordCard"', ''), self.style))
+    def test_missing_professional_card_driver_fails(self): self.assertTrue(validate(self.page, self.card.replace('<ScCard', '<article', 1), self.style))
     def test_missing_keyboard_open_fails(self): self.assertTrue(validate(self.page, self.card.replace('@keydown.enter="openRecord"', ''), self.style))
     def test_disabled_activation_guard_fails(self): self.assertTrue(validate(self.page, self.card.replace("if (!props.disabled) emit('open')", "emit('open')"), self.style))
     def test_missing_focus_style_fails(self): self.assertTrue(validate(self.page, self.card, self.style.replace('var(--sc-semantic-focus-ring)', 'none')))

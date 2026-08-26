@@ -6607,3 +6607,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   evidence and never self-assert runtime closure.
 - Excluded: Contract V2, permissions, routes, action/menu authority, business
   models, database data, fixtures and P3 low-code administration surfaces.
+
+## 2026-08-27 — Native inline text presentation semantics
+
+- Branch / baseline: `fix/p0-native-inline-text-presentation-semantics-v1` /
+  `398905280f7e0928d18b0456f5e3d3d96bd2b9d2`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  generic Native form text presentation / `frontend/apps/web`.
+- Reason: the generic renderer styled every effective-arch text node as an
+  information callout, so ordinary workspace labels and separators acquired
+  blue borders and backgrounds. The renderer now reserves callout presentation
+  for the existing authoritative `alert` class or `role=alert`; ordinary and
+  inline status text stays in native document flow.
+- Boundary: no model, field, label, action or menu special case; Contract V2,
+  permissions, routes, view ownership and business data remain unchanged.
+- Blast radius and evidence: all Native form text nodes, with project workspace
+  desktop/mobile as the positive correction and an explicit effective-arch
+  alert as the counterexample that must retain callout presentation.

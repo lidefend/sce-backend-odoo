@@ -1,5 +1,5 @@
 <template>
-  <article
+  <ScCard
     class="collection-kanban-record-card"
     :class="`tone-${tone}`"
     data-semantic-component="CollectionKanbanRecordCard"
@@ -10,6 +10,7 @@
     :aria-label="openAriaLabel"
     :aria-disabled="disabled || undefined"
     :title="disabledReason || undefined"
+    appearance="kanban-record"
     @click="openRecord"
     @keydown.enter="openRecord"
     @keydown.space.prevent="openRecord"
@@ -34,11 +35,12 @@
         <dt>{{ fact.label }}</dt><dd>{{ fact.value }}</dd>
       </div>
     </dl>
-  </article>
+  </ScCard>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import ScCard from '../design-system/ScCard.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
 
 export type CollectionKanbanFact = { key: string; label: string; value: string };

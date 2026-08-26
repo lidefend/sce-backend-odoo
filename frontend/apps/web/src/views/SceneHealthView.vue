@@ -8,21 +8,16 @@
       <div class="actions">
         <label>
           <span>Company</span>
-          <select v-model="companyIdText" @change="loadHealth">
-            <option value="">Current</option>
-            <option v-for="company in companies" :key="company.id" :value="String(company.id)">
-              {{ company.name }}
-            </option>
-          </select>
+          <ScSelect v-model="companyIdText" :options="companyOptions" @change="loadHealth" />
         </label>
-        <button
+        <ScButton
           v-for="action in headerActions"
           :key="action.key"
           class="secondary"
           @click="executeHeaderAction(action.key)"
         >
           {{ action.label }}
-        </button>
+        </ScButton>
       </div>
     </header>
 
@@ -64,18 +59,18 @@
       </article>
 
       <section v-if="pageSectionEnabled('cards', true) && pageSectionTagIs('cards', 'section')" class="cards" :style="pageSectionStyle('cards')">
-        <article class="card danger">
+        <ScCard class="card danger" appearance="metric">
           <h3>Critical Resolve Errors</h3>
           <p>{{ health.summary.critical_resolve_errors_count }}</p>
-        </article>
-        <article class="card danger">
+        </ScCard>
+        <ScCard class="card danger" appearance="metric">
           <h3>Critical Drift Warn</h3>
           <p>{{ health.summary.critical_drift_warn_count }}</p>
-        </article>
-        <article class="card">
+        </ScCard>
+        <ScCard class="card" appearance="metric">
           <h3>Non-Critical Debt</h3>
           <p>{{ health.summary.non_critical_debt_count }}</p>
-        </article>
+        </ScCard>
       </section>
 
       <article v-if="pageSectionEnabled('meta', true) && pageSectionTagIs('meta', 'section')" class="meta" :style="pageSectionStyle('meta')">
@@ -103,22 +98,18 @@
         <div class="governance-grid">
           <label>
             <span>Target Channel</span>
-            <select v-model="targetChannel">
-              <option value="stable">stable</option>
-              <option value="beta">beta</option>
-              <option value="dev">dev</option>
-            </select>
+            <ScSelect v-model="targetChannel" :options="channelOptions" />
           </label>
           <label class="reason">
             <span>Reason (required)</span>
-            <input v-model="governanceReason" type="text" placeholder="input reason" />
+            <ScInput v-model="governanceReason" type="text" placeholder="input reason" />
           </label>
         </div>
         <div class="governance-actions">
-          <button class="secondary" :disabled="governanceBusy" @click="runGovernance('set_channel')">Set Channel</button>
-          <button class="danger" :disabled="governanceBusy" @click="runGovernance('rollback')">Rollback</button>
-          <button class="secondary" :disabled="governanceBusy" @click="runGovernance('pin_stable')">Pin Stable</button>
-          <button class="secondary" :disabled="governanceBusy" @click="runGovernance('export_contract')">Export Contract</button>
+          <ScButton class="secondary" :disabled="governanceBusy" @click="runGovernance('set_channel')">Set Channel</ScButton>
+          <ScButton class="danger" :disabled="governanceBusy" @click="runGovernance('rollback')">Rollback</ScButton>
+          <ScButton class="secondary" :disabled="governanceBusy" @click="runGovernance('pin_stable')">Pin Stable</ScButton>
+          <ScButton class="secondary" :disabled="governanceBusy" @click="runGovernance('export_contract')">Export Contract</ScButton>
         </div>
       </section>
 
@@ -154,6 +145,10 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
+import ScCard from '../components/design-system/ScCard.vue';
+import ScButton from '../components/design-system/ScButton.vue';
+import ScInput from '../components/design-system/ScInput.vue';
+import ScSelect from '../components/design-system/ScSelect.vue';
 import { intentRequest } from '../api/intents';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { usePageContract } from '../app/pageContract';
@@ -168,6 +163,12 @@ import {
 import type { SceneChannel, SceneHealthContract } from '../contracts/scene';
 import { useSessionStore } from '../stores/session';
 
+const channelOptions = [
+  { value: 'stable', label: 'stable' },
+  { value: 'beta', label: 'beta' },
+  { value: 'dev', label: 'dev' },
+];
+
 const loading = ref(false);
 const governanceBusy = ref(false);
 const health = ref<SceneHealthContract | null>(null);
@@ -176,6 +177,10 @@ const errorTraceId = ref('');
 const statusError = ref<StatusError | null>(null);
 const companyIdText = ref('');
 const companies = ref<Array<{ id: number; name: string }>>([]);
+const companyOptions = computed(() => [
+  { value: '', label: 'Current' },
+  ...companies.value.map((company) => ({ value: String(company.id), label: company.name })),
+]);
 const targetChannel = ref<SceneChannel>('stable');
 const governanceReason = ref('');
 const governanceTraceId = ref('');
@@ -471,10 +476,7 @@ onMounted(async () => {
 }
 
 .card {
-  border-radius: var(--sc-component-panel-radius);
-  padding: 16px;
-  background: var(--sc-app-panel);
-  border: 1px solid var(--sc-app-border);
+  min-width: 0;
 }
 
 .card.danger {
