@@ -430,9 +430,6 @@ defineEmits<{
   reset: [];
 }>();
 
-function inputValue(event: Event) {
-  return String((event.target as HTMLInputElement | HTMLSelectElement).value || '');
-}
 </script>
 
 <style src="./CurrentFormFieldSettingsPanel.css"></style>
