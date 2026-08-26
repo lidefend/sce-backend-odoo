@@ -16,9 +16,10 @@ FILES = {
 def validate(sources: dict[str, str] | None = None) -> list[str]:
     values = sources or {key: path.read_text(encoding="utf-8") for key, path in FILES.items()}
     failures: list[str] = []
+    drivers = {"dialog": "TDesignDialog", "drawer": "TDesignDrawer"}
     for key in ("dialog", "drawer"):
         source = values[key]
-        for marker in ("<Teleport to=\"body\">", "useModalLifecycle", 'aria-modal="true"', ':data-dismissible="dismissible"', "closeOnEscape: () => props.dismissible", "closeFromBackdrop"):
+        for marker in (f"<{drivers[key]}", ':close-on-esc-keydown="dismissible"', ':close-on-overlay-click="dismissible && closeOnBackdrop"', 'aria-modal="true"', ':data-dismissible="dismissible"', "inheritAttrs: false", "@close=\"emit('close')\""):
             if marker not in source:
                 failures.append(f"{key} lost canonical overlay lifecycle marker: {marker}")
     lifecycle = values["lifecycle"]

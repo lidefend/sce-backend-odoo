@@ -16,11 +16,11 @@ class OverlayLifecycleGuardTest(unittest.TestCase):
     def test_repository_contract_passes(self):
         self.assertEqual(validate(self.sources), [])
 
-    def test_dialog_cannot_lose_teleport(self):
-        self.assertTrue(any("Teleport" in error for error in validate(self.altered("dialog", '<Teleport to="body">'))))
+    def test_dialog_cannot_lose_tdesign_driver(self):
+        self.assertTrue(any("TDesignDialog" in error for error in validate(self.altered("dialog", "<TDesignDialog"))))
 
     def test_dismissible_policy_cannot_be_bypassed(self):
-        errors = validate(self.altered("drawer", "closeOnEscape: () => props.dismissible", "closeOnEscape: () => true"))
+        errors = validate(self.altered("drawer", ':close-on-esc-keydown="dismissible"', ':close-on-esc-keydown="true"'))
         self.assertTrue(any("dismissible" in error for error in errors))
 
     def test_action_view_cannot_restore_private_dialog(self):
