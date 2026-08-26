@@ -6483,3 +6483,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   disclosure while preserving backend action authority and execution semantics.
 - Excluded: Contract, permissions, routes, task Floorplan, business models and
   database state.
+
+## 2026-08-26 — Overlay and collaboration presentation convergence v1
+
+- Branch: `feature/p0-overlay-collaboration-convergence-v1`
+- Baseline: `d1cf011276fd6436ddca6515acebb4984f640905`
+- Formal Product Layer: P0 platform kernel product
+- Layer Target: generic overlay lifecycle and collaboration input presentation
+- Module: `frontend/apps/web`
+- Reason: converge dialogs, drawers, collaboration text input and attachment
+  selection on governed primitives while preserving the existing runtime
+  authority and user-event contracts.
+- Blast radius: shared `ScDialog`, `ScDrawer`, `ScTextarea` and existing
+  `ScFileField` consumers in collection, attachment and collaboration surfaces.
+- Excluded: Contract V2, permissions, routes, task/workspace selection,
+  business models, message/attachment APIs and mutation semantics.
+- Evidence: targeted guards, strict typecheck, one governed Frontend Quick,
+  overlay lifecycle browser and collaboration primitive browser pass with
+  browser errors 0 and no business mutation.
