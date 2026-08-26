@@ -11,7 +11,7 @@ import {
 import { resolveModalKeyboardAction } from '../src/composables/modalKeyboard.ts';
 
 const expected = [
-  'ScButton', 'ScInput', 'ScSelect', 'ScDialog', 'ScDrawer', 'ScTabs', 'ScTable',
+  'ScButton', 'ScInput', 'ScTextarea', 'ScSelect', 'ScDialog', 'ScDrawer', 'ScTabs', 'ScTable',
   'ScBadge', 'ScTooltip', 'ScDropdown', 'ScFormField', 'ScLoading', 'ScEmptyState', 'ScErrorState',
 ];
 

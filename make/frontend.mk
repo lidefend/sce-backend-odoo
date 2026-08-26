@@ -228,7 +228,7 @@ verify.frontend.professional_collaboration.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_professional_collaboration_guard.py
 	@python3 scripts/verify/frontend_professional_collaboration_guard.py
 
-.PHONY: verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.contract_prompt_action_presentation.browser verify.frontend.low_code_field_create_dialog.unit verify.frontend.low_code_field_create_dialog.browser verify.frontend.overlay_lifecycle.unit verify.frontend.overlay_lifecycle.browser
+.PHONY: verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.contract_prompt_action_presentation.browser verify.frontend.low_code_field_create_dialog.unit verify.frontend.low_code_field_create_dialog.browser verify.frontend.overlay_lifecycle.unit verify.frontend.overlay_lifecycle.browser verify.frontend.collaboration_primitives.browser
 verify.frontend.professional_relation_lifecycle.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-relation-lifecycle-model-test.mjs >/dev/null
 	@node /tmp/professional-relation-lifecycle-model-test.mjs
@@ -255,6 +255,9 @@ verify.frontend.overlay_lifecycle.unit: guard.prod.forbid
 
 verify.frontend.overlay_lifecycle.browser: guard.prod.forbid
 	@node scripts/verify/frontend_overlay_lifecycle_browser.mjs
+
+verify.frontend.collaboration_primitives.browser: guard.prod.forbid
+	@node scripts/verify/frontend_collaboration_primitives_browser.mjs
 
 .PHONY: verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit
 verify.frontend.form_header_action_primitives.unit: guard.prod.forbid

@@ -37,6 +37,13 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         for marker in (forbidden_one, forbidden_two):
             if marker in source:
                 failures.append(f"{key} retains parallel overlay authority: {marker}")
+    messages = values["messages"]
+    for marker in ("<ScButton", "<ScInput", "<ScTextarea"):
+        if marker not in messages:
+            failures.append(f"messages drawer bypasses governed collaboration control: {marker}")
+    for marker in ("<textarea", "<input"):
+        if marker in messages:
+            failures.append(f"messages drawer retains raw generic control: {marker}")
     if "useModalLifecycle" not in values["mobile_navigation"]:
         failures.append("mobile navigation lost shared modal lifecycle regression coverage")
     return failures

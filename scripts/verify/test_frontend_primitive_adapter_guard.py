@@ -34,6 +34,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             state_contract = {
                 "ScButton": '<button :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined"><span class="sc-btn__spinner" /></button>',
                 "ScInput": '<input :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
+                "ScTextarea": '<textarea :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" />',
                 "ScSelect": '<select :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" />',
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
                 "ScEmptyState": '<section data-state="empty" role="status" />',
