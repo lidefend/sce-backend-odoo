@@ -7,7 +7,7 @@
     :data-audit-event-count="events.length"
     :title="summary"
   >
-    <ScTimeline v-if="events.length" aria-label="审计事件" :items="events.map((event) => ({ ...event, key: event.key }))">
+    <ScTimeline v-if="events.length" class="professional-audit-timeline__events" aria-label="审计事件" :items="events.map((event) => ({ ...event, key: event.key }))">
       <template #item="{ item }"><ProfessionalAuditEvent :event="item as CanonicalAuditEvent" /></template>
     </ScTimeline>
     <div v-else-if="fallbackAvailable" data-audit-readable-fallback><slot /></div>
@@ -31,5 +31,5 @@ withDefaults(defineProps<{
 </script>
 
 <style scoped>
-.professional-audit-timeline :deep(.t-timeline) { margin-top: var(--sc-product-space-2); }
+.professional-audit-timeline__events { margin-top: var(--sc-product-space-2); }
 </style>

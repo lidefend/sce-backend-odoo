@@ -137,9 +137,11 @@
             :disabled="Boolean(openingAppId)"
             @click="openPublishedApp(app)"
           >
-            <span class="published-app__mark">{{ appMark(app) }}</span>
-            <span class="published-app__label">{{ app.label }}</span>
-            <small v-if="appBadge(app)">{{ appBadge(app) }}</small>
+            <span class="published-app__content">
+              <span class="published-app__mark">{{ appMark(app) }}</span>
+              <span class="published-app__label">{{ app.label }}</span>
+              <small v-if="appBadge(app)">{{ appBadge(app) }}</small>
+            </span>
           </ScButton>
         </div>
       </div>

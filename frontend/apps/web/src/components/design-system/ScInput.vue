@@ -15,6 +15,8 @@
     data-primitive-driver="tdesign"
     :model-value="modelValue"
     :type="tdesignType"
+    :size="normalizePrimitiveSize(size)"
+    :status="status"
     :disabled="disabled || loading"
     :readonly="readonly"
     :placeholder="placeholder"

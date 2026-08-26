@@ -92,21 +92,4 @@ watchEffect(() => {
   background: transparent;
 }
 
-.sc-navigation-menu :deep(.t-menu__item),
-.sc-navigation-menu :deep(.t-submenu__title) {
-  min-height: var(--sc-shell-navigation-item-height);
-  margin: 1px 0;
-  border-radius: var(--sc-product-radius-control);
-}
-
-.sc-navigation-menu :deep(.t-menu__item.t-is-active) {
-  color: var(--sc-app-accent);
-  background: var(--sc-app-accent-soft);
-}
-
-.sc-navigation-menu :deep(.t-menu__item:hover),
-.sc-navigation-menu :deep(.t-submenu__title:hover) {
-  background: var(--sc-app-hover-bg);
-}
-
 </style>

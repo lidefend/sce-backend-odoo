@@ -28,7 +28,7 @@
       </div>
       <p v-if="dialog.error" class="validation-error" role="alert">{{ dialog.error }}</p>
       <div class="relation-dialog-table-wrap">
-        <ScLoading :loading="dialog.loading" :label="dialog.labels.loading || '正在加载关系记录'">
+        <ScLoading class="relation-dialog-loading" :loading="dialog.loading" :label="dialog.labels.loading || '正在加载关系记录'">
         <ScTable class="relation-dialog-table" appearance="flush" :aria-busy="dialog.loading || undefined"
           :label="dialog.title" :data="relationTableRows" :columns="relationTableColumns" row-key="id" size="small"
           role="listbox"

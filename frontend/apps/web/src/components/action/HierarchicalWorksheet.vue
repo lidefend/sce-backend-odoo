@@ -46,6 +46,7 @@
           <div v-else-if="!visibleRows.length" class="worksheet-state">{{ labels.empty }}</div>
           <div v-else class="worksheet-table-scroll">
             <ScTable
+              appearance="worksheet"
               :data="worksheetTableData"
               :columns="worksheetTableColumns"
               row-key="key"
@@ -391,12 +392,6 @@ onBeforeUnmount(() => stopResize());
 .worksheet-grid-actions { display: flex; gap: var(--sc-space-xs); }
 .worksheet-state { display: grid; place-items: center; color: var(--sc-app-text-secondary); }
 .worksheet-table-scroll { min-height: 0; overflow: auto; }
-:deep(.t-table) { width: 100%; font-size: var(--sc-product-text-body); }
-:deep(.t-table th) { position: sticky; top: 0; white-space: nowrap; }
-:deep(.t-table td) { overflow: hidden; text-overflow: ellipsis; }
-:deep(.t-table tr.selected td) { background: var(--sc-app-selected-bg); }
-:deep(.t-table .group-row td), :deep(.t-table .heading-row td) { background: var(--sc-app-subtle-bg); font-weight: 600; }
-:deep(.t-table .summary-row td) { background: var(--sc-app-selected-bg); font-weight: 600; }
 :deep(.align-right) { text-align: right; font-variant-numeric: tabular-nums; }
 :deep(.variance-nonzero) { color: var(--sc-app-warning-text); font-weight: 600; }
 :deep(.tree-cell) { display: flex; align-items: center; gap: var(--sc-space-2xs); min-width: 220px; }
