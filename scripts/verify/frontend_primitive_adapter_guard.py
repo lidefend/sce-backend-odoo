@@ -189,6 +189,21 @@ def validate(root: Path = ROOT) -> list[str]:
     if ':data-loading="loading || undefined"' not in textarea_text or ':aria-busy="loading || undefined"' not in textarea_text:
         errors.append("ScTextarea must expose loading state on the native textarea control")
 
+    date_field_text = (design / "ScDateField.vue").read_text(encoding="utf-8") if (design / "ScDateField.vue").is_file() else ""
+    for marker in (
+        '<TDesignDatePicker',
+        'v-native-control-projection="nativeProjection"',
+        "selector: 'input' as const",
+        'required: props.required',
+        "'aria-required': props.required ? 'true' : undefined",
+        "'aria-invalid': props.invalid ? 'true' : undefined",
+        "'aria-describedby': props.describedBy",
+    ):
+        if marker not in date_field_text:
+            errors.append(f"ScDateField missing native accessibility projection: {marker}")
+    if ':aria-required=' in date_field_text:
+        errors.append("ScDateField must not place aria-required on the DatePicker wrapper")
+
     button_text = (design / "ScButton.vue").read_text(encoding="utf-8") if (design / "ScButton.vue").is_file() else ""
     for marker in (
         '<TDesignButton',
