@@ -60,7 +60,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 if name in {"ScDialog", "ScDrawer"} else ""
             )
             state_contract = {
-                "ScButton": '<TDesignButton v-bind="attrs" :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation inheritAttrs: false -->',
+                "ScButton": '<TDesignButton v-bind="attrs" :data-appearance="appearance" :data-loading="loading || undefined" :aria-disabled="disabled || loading || undefined" :loading="loading" /><!-- tdesignButtonPresentation inheritAttrs: false -->',
                 "ScCheckbox": '<TDesignCheckbox v-native-control-projection :data-checked="checked || undefined" :data-indeterminate="indeterminate || undefined" :data-disabled="disabled || undefined" /><!-- \'aria-checked\': props.indeterminate ? \'mixed\' : String(props.checked) \'aria-label\': props.label -->',
                 "ScRadioGroup": '<TDesignRadioGroup :options="options" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadioGroup\') -->',
                 "ScRadio": '<TDesignRadio :checked="checked" :aria-required="required || undefined" /><!-- semanticPrimitiveIdentity(\'ScRadio\') -->',
@@ -168,6 +168,13 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         theme = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
         theme.write_text(theme.read_text(encoding="utf-8") + "/* payment.request */\n", encoding="utf-8")
         self.assertTrue(any("visual projection bridge contains business-specific identity" in error for error in validate(root)))
+
+    def test_consumer_cannot_reintroduce_primitive_visual_chrome(self) -> None:
+        root = self.make_root()
+        consumer = root / "frontend/apps/web/src/pages/LegacyPage.vue"
+        consumer.parent.mkdir(parents=True, exist_ok=True)
+        consumer.write_text("<style scoped>.legacy :deep(.sc-input) { border: 1px solid red; }</style>\n", encoding="utf-8")
+        self.assertTrue(any("adapter appearance" in error for error in validate(root)))
 
 
 if __name__ == "__main__":

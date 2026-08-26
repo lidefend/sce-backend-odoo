@@ -37,6 +37,7 @@
           type="button"
           variant="ghost"
           size="small"
+          appearance="section-tab"
           :data-section-tab="item.title"
           :class="{ 'is-active': activeSection === item.title, 'has-error': item.hasError }"
           :aria-current="activeSection === item.title ? 'location' : undefined"
@@ -377,37 +378,6 @@ const emit = defineEmits<{
 
 .form-section-nav-mobile { display: none; }
 
-.form-section-nav :deep(.sc-btn) {
-  flex: 0 0 auto;
-  position: relative;
-  min-height: 28px;
-  padding: 4px 9px;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  line-height: 1.25;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.form-section-nav :deep(.sc-btn:hover) {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text-primary);
-}
-
-.form-section-nav :deep(.sc-btn:focus-visible) {
-  outline: 2px solid var(--sc-semantic-surface-interactive);
-  outline-offset: -2px;
-}
-
-.form-section-nav :deep(.sc-btn.is-active) {
-  background: var(--sc-navigation-active-bg);
-  color: var(--sc-app-selected-text);
-  font-weight: 650;
-}
-
 .section-error-dot {
   display: inline-block;
   width: 6px;
@@ -476,11 +446,6 @@ const emit = defineEmits<{
   .form-section-nav-mobile :deep(.sc-select) {
     width: 100%;
     min-width: 0;
-    min-height: 34px;
-    border: 1px solid var(--sc-app-border);
-    border-radius: 5px;
-    background: var(--sc-app-panel);
-    color: var(--sc-app-text-primary);
   }
   .form-section-progress { text-align: left; }
   .form-section-progress span { display: none; }

@@ -40,6 +40,7 @@
               class="global-message__conversation sc-list-item"
               type="button"
               variant="ghost"
+              appearance="menu-item"
               :class="{ active: conversation.key === activeConversationKey && !composeMode }"
               @click="selectConversation(conversation)"
             >
@@ -97,6 +98,7 @@
                 class="sc-list-item"
                 type="button"
                 variant="ghost"
+                appearance="menu-item"
                 :disabled="isSelected(user.id)"
                 @click="selectUser(user)"
               >
@@ -630,25 +632,6 @@ onUnmounted(() => {
   gap: 0;
   max-height: 84px;
   overflow: auto;
-}
-
-.global-message__options :deep(.sc-btn) {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  border: none;
-  padding: 7px 8px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.global-message__options :deep(.sc-btn:hover:not(:disabled)) {
-  background: var(--sc-app-hover-bg);
-}
-
-.global-message__options :deep(.sc-btn:disabled) {
-  opacity: 0.45;
-  cursor: default;
 }
 
 .global-message__options small {

@@ -8,6 +8,7 @@
     :data-size="size"
     :data-status="status"
     :data-loading="loading || undefined"
+    :data-appearance="appearance"
     :type="type"
     :class="['sc-btn', `sc-btn-${variant}`]"
     :theme="presentation.theme"
@@ -40,12 +41,14 @@ const props = withDefaults(defineProps<{
   disabled?: boolean;
   loading?: boolean;
   loadingLabel?: string;
+  appearance?: 'default' | 'section-tab' | 'menu-item' | 'dashboard-action' | 'dashboard-quick-link' | 'dashboard-recent-link';
 }>(), {
   type: 'button',
   variant: 'secondary',
   size: 'medium',
   status: 'default',
   loadingLabel: '处理中',
+  appearance: 'default',
 });
 
 const presentation = computed(() => tdesignButtonPresentation(props.variant, props.status));

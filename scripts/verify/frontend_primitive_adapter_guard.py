@@ -24,6 +24,14 @@ FORBIDDEN_BUSINESS_IDENTITY = re.compile(
     r"\b(?:project\.project|payment\.request|construction\.contract|action_id|menu_id|role_code)\b",
     re.IGNORECASE,
 )
+CONSUMER_PRIMITIVE_CHROME = re.compile(
+    r":deep\(\.sc-(?:input|btn|select|textarea|checkbox|radio|dialog|drawer|tabs|table)[^)]*\)\s*\{(?P<body>[^}]*)\}",
+    re.DOTALL,
+)
+VISUAL_CHROME_PROPERTY = re.compile(r"(?:^|;)\s*(?:border(?:-[a-z]+)?|background|border-radius|box-shadow|outline|color)\s*:", re.MULTILINE)
+PROFESSIONAL_COMPOSITE_OWNERS = {
+    "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+}
 
 
 def validate(root: Path = ROOT) -> list[str]:
@@ -35,6 +43,16 @@ def validate(root: Path = ROOT) -> list[str]:
     ui_theme_path = root / "frontend/packages/ui/src/kits/tdesign/theme.css"
     ui_theme = ui_theme_path.read_text(encoding="utf-8") if ui_theme_path.is_file() else ""
     errors: list[str] = []
+
+    source_root = root / "frontend/apps/web/src"
+    if source_root.is_dir():
+        for path in sorted(source_root.rglob("*.vue")):
+            relative = path.relative_to(root).as_posix()
+            if "/components/design-system/" in f"/{relative}" or relative in PROFESSIONAL_COMPOSITE_OWNERS:
+                continue
+            source_text = path.read_text(encoding="utf-8")
+            if any(VISUAL_CHROME_PROPERTY.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME.finditer(source_text)):
+                errors.append(f"consumer primitive visual chrome must move to an adapter appearance: {relative}")
 
     for component in PRIMITIVES:
         source = design / f"{component}.vue"
@@ -96,6 +114,7 @@ def validate(root: Path = ROOT) -> list[str]:
         'tdesignButtonPresentation',
         'v-bind="attrs"',
         'inheritAttrs: false',
+        ':data-appearance="appearance"',
     ):
         if marker not in button_text:
             errors.append(f"ScButton missing governed interaction-state marker: {marker}")

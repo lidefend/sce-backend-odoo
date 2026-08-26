@@ -966,12 +966,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   color: var(--sc-app-danger-text);
 }
 
-.field :deep(.sc-input[aria-invalid='true']),
-.field :deep(.sc-select[aria-invalid='true']),
-.field :deep(.sc-textarea[aria-invalid='true']) {
-  border-color: var(--sc-app-danger-border);
-}
-
 .template-form-section-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

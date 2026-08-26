@@ -334,11 +334,6 @@ function changeKit(value: string) {
   font-size: 12px;
 }
 .sc-form-driver-chooser :deep(.sc-select) {
-  min-height: 32px;
-  padding: 0 30px 0 10px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
+  min-width: 180px;
 }
 </style>
