@@ -3,7 +3,7 @@
   "sourceCommit": "ea0170d2652188083146c5423ed9dcbb20a170d7",
   "generatorDigest": "1e87572d9aec6f551595555e0e36b12a7417776d9a359a4a3fd7692dee0a9e14",
   "ownershipDigest": "6349644dec46ae7c415f217a04ba9cf89c2524787cf8bfc07aa62ce1401b9d1f",
-  "inputDigest": "26fc3691bb8e394ca960ea03162c5958dbe0a7f2f30b33c27f5ada8558d52e47",
+  "inputDigest": "a6b1dc7af0d66d49d9ed4fd61cb6b69ed6a90969db807d3f293df2834cebb353",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",

@@ -409,7 +409,7 @@
     },
     {
       "category": "other",
-      "digest": "9a0b5355fe5f85233f1b4e9abb9cba3a63714cc89130ba74ec8b67e1d80ea1d9",
+      "digest": "0745a6d8d4628784582ace127a3a87887f52978fd799929cc4e582db06074119",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScButton.vue",
       "referenceNativeStyleSelectors": [],
@@ -2273,7 +2273,7 @@
       ]
     }
   ],
-  "currentInputDigest": "ebf256a19f617c1f5b19c676f883a85fafa35dbf802d851c0c19c0ae732444c4",
+  "currentInputDigest": "e6adcc01c7d0c303fe53fd96864ee1240cd3147bb66b551823584f1d96e15f45",
   "excludedScopes": [
     "runtime permissions",
     "Contract authority",
