@@ -739,6 +739,51 @@ try {
         const searchLayer = toolbar.locator('[data-collection-toolbar-layer="search"]');
         await searchLayer.waitFor({ state: 'visible', timeout: 15000 });
         const searchFocusContained = await searchLayer.evaluate((node) => node.contains(document.activeElement));
+        const primitiveOwners = {
+          buttons: await toolbar.locator('[data-semantic-component="ScButton"]').count(),
+          inputs: await toolbar.locator('[data-semantic-component="ScInput"]').count(),
+          selects: await toolbar.locator('[data-semantic-component="ScSelect"]').count(),
+        };
+        let customFilterPrimitiveEvidence = null;
+        if (target.exerciseCustomFilterPrimitives === true) {
+          const customFilterToggle = searchLayer.getByRole('button', { name: /自定义/ }).first();
+          await customFilterToggle.click();
+          const customPanel = searchLayer.locator('.custom-search-panel').first();
+          await customPanel.waitFor({ state: 'visible', timeout: 15000 });
+          const fieldSelect = customPanel.locator('[data-semantic-component="ScSelect"]').first();
+          const nonEmptyOptions = await fieldSelect.locator('option').evaluateAll((nodes) => (
+            nodes.map((node) => node.value).filter(Boolean)
+          ));
+          if (!nonEmptyOptions.length) throw new Error('custom filter has no selectable field');
+          await fieldSelect.selectOption(nonEmptyOptions[0]);
+          const valueInput = customPanel.locator('[data-semantic-component="ScInput"]');
+          const valueSelects = customPanel.locator('[data-semantic-component="ScSelect"]');
+          let valueSettled = false;
+          if (await valueInput.count()) {
+            await valueInput.fill('验收');
+            valueSettled = await valueInput.inputValue() === '验收';
+          } else if (await valueSelects.count() > 2) {
+            const valueSelect = valueSelects.nth(2);
+            const values = await valueSelect.locator('option').evaluateAll((nodes) => nodes.map((node) => node.value).filter(Boolean));
+            if (values.length) {
+              await valueSelect.selectOption(values[0]);
+              valueSettled = await valueSelect.inputValue() === values[0];
+            }
+          }
+          customFilterPrimitiveEvidence = {
+            scButtons: await customPanel.locator('[data-semantic-component="ScButton"]').count(),
+            scInputs: await customPanel.locator('[data-semantic-component="ScInput"]').count(),
+            scSelects: await customPanel.locator('[data-semantic-component="ScSelect"]').count(),
+            selectedField: await fieldSelect.inputValue(),
+            valueSettled,
+          };
+          if (customFilterPrimitiveEvidence.scButtons !== 2
+            || customFilterPrimitiveEvidence.scSelects < 2
+            || !customFilterPrimitiveEvidence.selectedField
+            || !customFilterPrimitiveEvidence.valueSettled) {
+            throw new Error(`custom filter primitive settlement failed: ${JSON.stringify(customFilterPrimitiveEvidence)}`);
+          }
+        }
         await page.keyboard.press('Escape');
         await searchLayer.waitFor({ state: 'hidden', timeout: 15000 });
         const searchFocusRestored = await searchToggle.evaluate((node) => node === document.activeElement);
@@ -769,8 +814,11 @@ try {
         const uniqueKeys = [...new Set([...directKeys, ...overflowKeys])];
         collectionToolbarEvidence = {
           actionCount, directKeys, overflowKeys, projectedKeys,
+          primitiveOwners, customFilterPrimitiveEvidence,
           searchFocusContained, searchFocusRestored, batchFocusContained, batchFocusRestored,
           pass: searchFocusContained && searchFocusRestored && batchFocusContained && batchFocusRestored
+            && primitiveOwners.buttons >= 1 && primitiveOwners.inputs >= 1
+            && (target.exerciseCustomFilterPrimitives !== true || customFilterPrimitiveEvidence?.valueSettled === true)
             && directKeys.length <= 1
             && actionCount === directKeys.length + overflowKeys.length
             && uniqueKeys.length === actionCount
