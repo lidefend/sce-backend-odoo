@@ -8,11 +8,11 @@
       <div class="actions">
         <label>
           {{ pageText('label_top', 'Top') }}
-          <ScSelect v-model="topN" :disabled="loading" :options="topOptions" />
+          <ScSelect :model-value="topN" :disabled="loading" :options="topOptions" @update:model-value="topN = Number($event)" />
         </label>
         <label>
           {{ pageText('label_daily_range', '趋势范围') }}
-          <ScSelect v-model="dailyRange" :disabled="loading" :options="dailyRangeOptions" />
+          <ScSelect :model-value="dailyRange" :disabled="loading" :options="dailyRangeOptions" @update:model-value="dailyRange = Number($event)" />
         </label>
         <label>
           {{ pageText('label_hidden_reason', '隐藏原因') }}
@@ -25,30 +25,33 @@
         <label>
           {{ pageText('label_user_slice', '用户切片') }}
           <ScInput
-            v-model.number="userSlice"
+            :model-value="userSlice"
             type="number"
             min="0"
             step="1"
             :placeholder="pageText('placeholder_user_slice', '0=全部')"
             :disabled="loading"
+            @update:model-value="userSlice = Number($event)"
           />
         </label>
         <label>
           {{ pageText('label_scene_prefix', 'Scene 前缀') }}
           <ScInput
-            v-model.trim="scenePrefix"
+            :model-value="scenePrefix"
             type="text"
             :placeholder="pageText('placeholder_scene_prefix', '如 workspace.')"
             :disabled="loading"
+            @update:model-value="scenePrefix = $event.trim()"
           />
         </label>
         <label>
           {{ pageText('label_capability_prefix', 'Capability 前缀') }}
           <ScInput
-            v-model.trim="capabilityPrefix"
+            :model-value="capabilityPrefix"
             type="text"
             :placeholder="pageText('placeholder_capability_prefix', '如 contract.')"
             :disabled="loading"
+            @update:model-value="capabilityPrefix = $event.trim()"
           />
         </label>
         <label class="export-scope">
