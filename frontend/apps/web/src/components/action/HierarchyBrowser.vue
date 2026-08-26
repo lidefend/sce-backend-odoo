@@ -1,5 +1,5 @@
 <template>
-  <section class="hierarchy-browser" :aria-label="labels.surface_aria">
+  <section class="hierarchy-browser" :aria-label="labels.surface_aria" data-semantic-component="HierarchyBrowser" :data-state="loading ? 'loading' : errorMessage ? 'error' : rows.length ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <ProductListHeader
       class="hierarchy-head"
       :loading="loading"

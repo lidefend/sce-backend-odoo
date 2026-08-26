@@ -1,5 +1,5 @@
 <template>
-  <section ref="plannerElement" class="hierarchy-planner" :aria-label="labels.surface_aria">
+  <section ref="plannerElement" class="hierarchy-planner" :aria-label="labels.surface_aria" data-semantic-component="HierarchyPlanner" :data-state="loading ? 'loading' : errorMessage ? 'error' : records.size ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <ProductListHeader
       class="planner-head"
       :loading="loading"

@@ -1,5 +1,5 @@
 <template>
-  <section class="worksheet" :aria-label="labels.surface_aria">
+  <section class="worksheet" :aria-label="labels.surface_aria" data-semantic-component="HierarchicalWorksheet" :data-state="loading ? 'loading' : errorMessage ? 'error' : sourceRows.length ? 'ready' : 'empty'" :aria-busy="loading || undefined">
     <ProductListHeader
       class="worksheet-head"
       :loading="loading"

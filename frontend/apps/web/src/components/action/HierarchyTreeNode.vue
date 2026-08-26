@@ -1,5 +1,5 @@
 <template>
-  <div class="tree-branch">
+  <div class="tree-branch" data-semantic-component="HierarchyTreeNode" :data-state="node.children.length ? 'branch' : 'leaf'">
     <button class="tree-node" :class="{ active: selectedKey === node.key }" @click="$emit('select', node)">
       <span v-if="node.children.length" class="tree-arrow" @click.stop="$emit('toggle', node)">{{ expandedKeys.has(node.key) ? '▾' : '▸' }}</span>
       <span v-else class="tree-arrow" />

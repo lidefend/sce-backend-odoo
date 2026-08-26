@@ -1,5 +1,5 @@
 <template>
-  <ul class="tree" :class="[`depth-${level}`, { 'tree--root': level === 0 }]">
+  <ul class="tree" :class="[`depth-${level}`, { 'tree--root': level === 0 }]" data-semantic-component="MenuTree" :data-state="nodes.length ? 'ready' : 'empty'">
     <li
       v-for="node in nodes"
       :key="node.key"
