@@ -48,6 +48,30 @@
         "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue"
       ]
     },
+    "p0-form-relation-workflow-completion-v1": {
+      "formalProductLayer": "P0",
+      "sources": [
+        "frontend/apps/web/src/components/product-record/ProductFormErrorSummary.vue",
+        "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
+        "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.vue",
+        "frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue",
+        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue"
+      ]
+    },
     "p3-low-code-administration": {
       "formalProductLayer": "P3",
       "sources": [
