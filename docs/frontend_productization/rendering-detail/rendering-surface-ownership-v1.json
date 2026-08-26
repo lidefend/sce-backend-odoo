@@ -14,6 +14,24 @@
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue"
       ]
     },
+    "p0-collection-state-control-completion-v1": {
+      "formalProductLayer": "P0",
+      "sources": [
+        "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue",
+        "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue",
+        "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue",
+        "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue",
+        "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue",
+        "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue",
+        "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
+        "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/ModelListPage.vue",
+        "frontend/apps/web/src/views/ActionView.vue"
+      ]
+    },
     "p3-low-code-administration": {
       "formalProductLayer": "P3",
       "sources": [
