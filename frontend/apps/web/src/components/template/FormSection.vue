@@ -218,42 +218,50 @@
                         </button>
                       </div>
                       <div class="many2one-actions">
-                        <button
+                        <ScButton
                           v-if="field.many2oneOpenToken"
                           type="button"
                           class="many2one-action many2one-action--record"
+                          size="small"
+                          variant="ghost"
                           @mousedown.prevent
                           @click="emitMany2oneAction(field, field.many2oneOpenToken || '', $event)"
                         >
                           {{ field.many2oneOpenLabel || '维护当前项' }}
-                        </button>
-                        <button
+                        </ScButton>
+                        <ScButton
                           v-if="field.many2oneSearchToken"
                           type="button"
                           class="many2one-action"
+                          size="small"
+                          variant="ghost"
                           @mousedown.prevent
                           @click="emitMany2oneAction(field, field.many2oneSearchToken || '', $event)"
                         >
                           {{ field.many2oneSearchLabel }}
-                        </button>
-                        <button
+                        </ScButton>
+                        <ScButton
                           v-if="['page', 'dialog'].includes(field.relationCreateMode || '') && field.many2oneCreateToken"
                           type="button"
                           class="many2one-action"
+                          size="small"
+                          variant="ghost"
                           @mousedown.prevent
                           @click="emitMany2oneAction(field, field.many2oneCreateToken || '', $event)"
                         >
                           {{ field.many2oneCreateLabel }}
-                        </button>
-                        <button
+                        </ScButton>
+                        <ScButton
                           v-if="showMany2oneInlineCreate(field)"
                           type="button"
                           class="many2one-action"
+                          size="small"
+                          variant="ghost"
                           @mousedown.prevent
                           @click="emitMany2oneInlineCreate(field, $event)"
                         >
                           {{ field.many2oneInlineCreateLabel }}
-                        </button>
+                        </ScButton>
                       </div>
                     </div>
                   </div>
@@ -325,6 +333,7 @@
 import { computed, ref, useId, useSlots } from 'vue';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScDateField from '../design-system/ScDateField.vue';
+import ScButton from '../design-system/ScButton.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
@@ -1521,28 +1530,14 @@ select.input {
 }
 
 .many2one-action {
-  min-height: 30px;
-  border: 0;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  color: var(--sc-app-success-text);
-  padding: 6px 10px;
-  font-size: 12px;
-  line-height: 1.2;
-  text-align: left;
-  cursor: pointer;
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: 0;
   max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .many2one-action--record {
   font-weight: 600;
-}
-
-.many2one-action:hover {
-  background: var(--sc-app-success-bg);
 }
 
 .many2one-avatar {

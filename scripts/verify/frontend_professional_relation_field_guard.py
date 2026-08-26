@@ -22,6 +22,20 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"professional relation field missing marker {marker}")
     if section.count("<ProfessionalRelationFieldControl") < 2:
         failures.append("FormSection does not route many2one and many2many through the relation family")
+    if "import ScButton from '../design-system/ScButton.vue'" not in section or section.count("<ScButton") != 4:
+        failures.append("many2one lifecycle commands must consume four shared ScButton primitives")
+    for marker in (
+        'v-if="field.many2oneOpenToken"',
+        'v-if="field.many2oneSearchToken"',
+        'field.many2oneCreateToken',
+        'v-if="showMany2oneInlineCreate(field)"',
+    ):
+        if marker not in section:
+            failures.append(f"many2one lifecycle command authority is incomplete: {marker}")
+    if ".many2one-action:hover" in section or ".many2one-action {\n  min-height:" in section:
+        failures.append("many2one lifecycle commands override shared ScButton presentation")
+    if '<button\n                          v-for="(option, optionIndex)' not in section:
+        failures.append("many2one stateful listbox options must remain native option controls")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")
