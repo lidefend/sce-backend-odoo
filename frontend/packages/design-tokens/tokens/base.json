@@ -81,6 +81,7 @@
     "pill": 999
   },
   "font": {
+    "family_sans": "Inter, PingFang SC, Microsoft YaHei, Noto Sans SC, system-ui, sans-serif",
     "size_xs": 11,
     "size_sm": 12,
     "size_md": 14,

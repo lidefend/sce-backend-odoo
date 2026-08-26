@@ -1,4 +1,7 @@
 {
+  "font": {
+    "family_sans": "{font.family_sans}"
+  },
   "surface": {
     "page": "#f3f6f9",
     "panel": "{color.white}",

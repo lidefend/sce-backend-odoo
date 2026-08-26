@@ -40,8 +40,8 @@
   --td-shadow-3: var(--sc-semantic-shadow-modal);
   --td-radius-default: var(--sc-component-input-radius);
   --td-radius-medium: var(--sc-component-panel-radius);
-  --td-font-family: inherit;
-  --td-font-family-medium: inherit;
+  --td-font-family: var(--sc-semantic-font-family-sans);
+  --td-font-family-medium: var(--sc-semantic-font-family-sans);
 }
 
 .sc-btn.t-button {
@@ -171,8 +171,8 @@
   --td-component-stroke: var(--sc-scene-component-stroke, var(--sc-bridge-tdesign-component-stroke));
   --td-radius-default: var(--sc-scene-control-radius, var(--sc-bridge-tdesign-radius-default));
   --td-radius-medium: var(--sc-scene-surface-radius, var(--sc-bridge-tdesign-radius-medium));
-  --td-font-family: inherit;
-  --td-font-family-medium: inherit;
+  --td-font-family: var(--sc-semantic-font-family-sans);
+  --td-font-family-medium: var(--sc-semantic-font-family-sans);
 }
 
 .sc-input[data-appearance='navigation-search'] {
