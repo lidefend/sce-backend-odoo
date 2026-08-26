@@ -31,93 +31,93 @@
     {
       "component": "ScTable",
       "driverPresent": true,
-      "projectionMarker": ".sc-table",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScTable']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScDialog",
       "driverPresent": true,
       "projectionMarker": ".sc-dialog",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScDrawer",
       "driverPresent": true,
       "projectionMarker": ".sc-design-drawer",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScTabs",
       "driverPresent": true,
-      "projectionMarker": ".sc-tabs",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScTabs']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScCheckbox",
       "driverPresent": true,
-      "projectionMarker": ".sc-checkbox",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScCheckbox']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScRadio",
       "driverPresent": true,
-      "projectionMarker": ".sc-radio",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScRadio']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScRadioGroup",
       "driverPresent": true,
-      "projectionMarker": ".sc-radio-group",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScRadioGroup']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScLoading",
       "driverPresent": true,
-      "projectionMarker": ".sc-loading",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScLoading']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScEmptyState",
       "driverPresent": true,
-      "projectionMarker": ".sc-empty",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScEmptyState']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScErrorState",
       "driverPresent": true,
-      "projectionMarker": ".sc-error-state",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScErrorState']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScBadge",
       "driverPresent": true,
-      "projectionMarker": ".sc-badge",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScBadge']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScDropdown",
       "driverPresent": true,
-      "projectionMarker": ".sc-dropdown",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScDropdown']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     },
     {
       "component": "ScTooltip",
       "driverPresent": true,
-      "projectionMarker": ".sc-tooltip",
-      "projectionMarkerPresent": false,
-      "status": "projection_unassessed"
+      "projectionMarker": "[data-semantic-component='ScTooltip']",
+      "projectionMarkerPresent": true,
+      "status": "projected"
     }
   ],
   "changedSourceProjection": [
@@ -2268,9 +2268,9 @@
     "changedSourceCount": 136,
     "currentSourceCount": 178,
     "openFormalVisualGapCount": 12,
-    "projectedAdapterCount": 4,
+    "projectedAdapterCount": 17,
     "referenceSourceCount": 132,
     "scAdapterWithNativeSelectorCandidateCount": 10,
-    "unassessedAdapterCount": 13
+    "unassessedAdapterCount": 0
   }
 }
