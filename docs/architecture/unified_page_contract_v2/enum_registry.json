@@ -71,7 +71,9 @@
     "tree",
     "gantt",
     "relation",
-    "display"
+    "display",
+    "binary",
+    "many2many_tags"
   ],
   "componentCapability": [
     "clearable",

@@ -465,15 +465,15 @@ function snapshot(): ContractV2Snapshot {
           containerId: 'field.name', containerType: 'field', type: 'field', name: 'name', title: '', span: 12,
           label: 'Name', nolabel: true,
           children: [], widgetList: [{
-            widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
-            componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+            widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
+            componentKey: 'sc.input.text', capabilities: [], componentConfig: { fieldType: 'char' },
             ownerContainerId: 'field.name',
           }],
         }, {
           containerId: 'field.state', containerType: 'field', type: 'field', name: 'state', title: '', span: 12,
           children: [], widgetList: [{
-            widgetId: 'field.state', widgetType: 'selection', fieldCode: 'state', label: 'State', span: 12,
-            componentKey: 'sc.display.status', capabilities: [], componentConfig: {}, fieldType: 'selection',
+            widgetId: 'field.state', widgetType: 'select', fieldCode: 'state', label: 'State', span: 12,
+            componentKey: 'sc.display.status', capabilities: [], componentConfig: { fieldType: 'selection' },
             ownerContainerId: 'field.state',
           }],
         }],
@@ -484,8 +484,8 @@ function snapshot(): ContractV2Snapshot {
         children: [{
           containerId: 'field.line_ids', containerType: 'field', type: 'field', name: 'line_ids', title: '', span: 24,
           children: [], widgetList: [{
-            widgetId: 'field.line_ids', widgetType: 'one2many', fieldCode: 'line_ids', label: 'Lines', span: 24,
-            componentKey: 'sc.relation.table', capabilities: [], componentConfig: {}, fieldType: 'one2many',
+            widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
+            componentKey: 'sc.relation.table', capabilities: [], componentConfig: { fieldType: 'one2many' },
             ownerContainerId: 'field.line_ids',
           }],
         }], widgetList: [],
@@ -905,6 +905,22 @@ assert.throws(
       && message.includes('dataContract.dataSource.primary must be an object');
   },
   'invalid object and row-map carriers must fail closed instead of becoming empty authority',
+);
+const invalidWidgetAuthoritySnapshot = snapshot();
+const invalidWidget = invalidWidgetAuthoritySnapshot.layoutContract.containerTree[0].children[0]
+  .widgetList[0] as unknown as Record<string, unknown>;
+invalidWidget.widgetType = 'char';
+invalidWidget.fieldType = 'char';
+invalidWidget.occurrenceIndex = '1';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidWidgetAuthoritySnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('unsupported widget type char')
+      && message.includes('fieldType is not allowed')
+      && message.includes('occurrenceIndex must be a positive integer');
+  },
+  'widget projection must accept only the formal schema vocabulary and typed occurrence identity',
 );
 const nativeStaticConstraintSnapshot = snapshot();
 nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = true;
@@ -1518,8 +1534,8 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
   const children = fieldCodes.map((fieldCode) => ({
     containerId: `field.${fieldCode}`, containerType: 'field', type: 'field', name: fieldCode, title: '', span: 12,
     children: [], widgetList: [{
-      widgetId: `field.${fieldCode}`, widgetType: 'char', fieldCode, label: fieldCode, span: 12,
-      componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+      widgetId: `field.${fieldCode}`, widgetType: 'input', fieldCode, label: fieldCode, span: 12,
+      componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
       ownerContainerId: `field.${fieldCode}`,
     }],
   }));
@@ -1613,8 +1629,8 @@ const createFloorplanSnapshot = snapshot();
 createFloorplanSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.empty_context', containerType: 'field', type: 'field', name: 'empty_context', title: '', span: 12,
   children: [], widgetList: [{
-    widgetId: 'field.empty_context', widgetType: 'char', fieldCode: 'empty_context', label: 'Empty context', span: 12,
-    componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+    widgetId: 'field.empty_context', widgetType: 'input', fieldCode: 'empty_context', label: 'Empty context', span: 12,
+    componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
     ownerContainerId: 'field.empty_context',
   }],
 });
@@ -1719,8 +1735,8 @@ contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
   children: [{
     containerId: 'field.reference', containerType: 'field', type: 'field', name: 'reference', title: '', span: 24,
     children: [], widgetList: [{
-      widgetId: 'field.reference', widgetType: 'char', fieldCode: 'reference', label: 'Reference', span: 24,
-      componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+      widgetId: 'field.reference', widgetType: 'input', fieldCode: 'reference', label: 'Reference', span: 24,
+      componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
       ownerContainerId: 'field.reference',
     }],
   }], widgetList: [],
@@ -1750,9 +1766,9 @@ const relationSnapshot = snapshot();
 relationSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.project_id', containerType: 'field', type: 'field', name: 'project_id', title: '', span: 12,
   children: [], widgetList: [{
-    widgetId: 'field.project_id', widgetType: 'many2one', fieldCode: 'project_id', label: 'Project', span: 12,
+    widgetId: 'field.project_id', widgetType: 'select', fieldCode: 'project_id', label: 'Project', span: 12,
     componentKey: 'sc.relation.many2one', capabilities: [],
-    componentConfig: { relation: 'project.project' }, fieldType: 'many2one',
+    componentConfig: { relation: 'project.project', fieldType: 'many2one' },
     ownerContainerId: 'field.project_id',
   }],
 });
@@ -1924,8 +1940,8 @@ const duplicateAcrossRoots = snapshot();
 duplicateAcrossRoots.layoutContract.containerTree.splice(1, 0, {
   containerId: 'legacy.identity.mirror', containerType: 'group', type: 'group', title: 'Legacy mirror', span: 24,
   children: [], widgetList: [{
-    widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
-    componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+    widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
+    componentKey: 'sc.input.text', capabilities: [], componentConfig: { fieldType: 'char' },
     ownerContainerId: 'legacy.identity.mirror',
   }],
 });

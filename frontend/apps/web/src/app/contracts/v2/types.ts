@@ -12,6 +12,9 @@ export type ContractV2CachePolicy = 'none' | 'etag' | 'snapshot';
 export type ContractV2RenderStrategy = 'sync' | 'scheduled' | 'virtualized';
 export type ContractV2PatchOperation = 'replace' | 'merge' | 'append' | 'remove' | 'reorder' | 'invalidate';
 export type ContractV2PageRenderMode = 'governed';
+export type ContractV2WidgetType = 'input' | 'select' | 'date' | 'datetime' | 'number' | 'table'
+  | 'upload' | 'button' | 'textarea' | 'checkbox' | 'radio' | 'tree' | 'gantt' | 'relation'
+  | 'display' | 'binary' | 'many2many_tags';
 export type ContractV2Dictionary = Record<string, unknown>;
 
 export type ContractV2CanonicalFormSemanticRole =
@@ -135,7 +138,7 @@ export interface ContractV2PageInfo {
 
 export interface ContractV2Widget {
   widgetId: string;
-  widgetType: string;
+  widgetType: ContractV2WidgetType;
   fieldCode: string;
   label: string;
   span: number;
@@ -147,8 +150,6 @@ export interface ContractV2Widget {
   occurrenceIndex?: number;
   sourcePosition?: number;
   fieldDescriptor?: ContractV2Dictionary;
-  fieldType?: string;
-  relation?: string;
   formStructureRole?: ContractV2FormStructureRole;
 }
 

@@ -48,6 +48,7 @@ import type {
   ContractV2VisibleFields,
   ContractV2ViewType,
   ContractV2Widget,
+  ContractV2WidgetType,
   ContractV2WidgetStatus,
 } from './types';
 import { CONTRACT_V2_FORM_STRUCTURE_ROLES } from './formStructureRoles';
@@ -220,6 +221,17 @@ function decodeAdaptMode(value: string, path: string, issues: DecodeIssue[]): Co
   }
   issues.push({ path, message: `unsupported adapt mode ${value || '<empty>'}` });
   return 'pc';
+}
+
+const CONTRACT_V2_WIDGET_TYPES = new Set<ContractV2WidgetType>([
+  'input', 'select', 'date', 'datetime', 'number', 'table', 'upload', 'button', 'textarea',
+  'checkbox', 'radio', 'tree', 'gantt', 'relation', 'display', 'binary', 'many2many_tags',
+]);
+
+function decodeWidgetType(value: string, path: string, issues: DecodeIssue[]): ContractV2WidgetType {
+  if (CONTRACT_V2_WIDGET_TYPES.has(value as ContractV2WidgetType)) return value as ContractV2WidgetType;
+  issues.push({ path, message: `unsupported widget type ${value || '<empty>'}` });
+  return 'display';
 }
 
 function decodeTriggerType(value: string, path: string, issues: DecodeIssue[]): ContractV2TriggerType {
@@ -521,21 +533,25 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
   }
   rejectUnknownKeys(raw, [
     'widgetId', 'widgetType', 'fieldCode', 'label', 'span', 'componentKey', 'capabilities',
-    'componentConfig', 'fieldDescriptor', 'fieldType', 'relation', 'formStructureRole',
+    'componentConfig', 'fieldDescriptor', 'formStructureRole',
     'ownerContainerId', 'nativeLocator', 'occurrenceIndex', 'sourcePosition',
   ], path, issues);
   const componentConfig = requiredRecord(raw, 'componentConfig', path, issues);
+  const fieldDescriptor = optionalRecord(raw, 'fieldDescriptor', path, issues);
   const fieldCode = requiredString(raw, 'fieldCode', path, issues);
   const widgetId = requiredString(raw, 'widgetId', path, issues);
-  const widgetType = requiredString(raw, 'widgetType', path, issues);
+  const widgetType = decodeWidgetType(requiredString(raw, 'widgetType', path, issues), `${path}.widgetType`, issues);
   const componentKey = requiredString(raw, 'componentKey', path, issues);
   const ownerContainerId = requiredString(raw, 'ownerContainerId', path, issues);
   const formStructureRole = raw.formStructureRole === undefined
     ? null
     : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
   const nativeLocator = optionalString(raw, 'nativeLocator');
-  const occurrenceIndex = typeof raw.occurrenceIndex === 'number' ? raw.occurrenceIndex : undefined;
-  const sourcePosition = typeof raw.sourcePosition === 'number' ? raw.sourcePosition : undefined;
+  if (raw.nativeLocator !== undefined && !nativeLocator) {
+    issues.push({ path: `${path}.nativeLocator`, message: 'must be a non-empty string' });
+  }
+  const occurrenceIndex = raw.occurrenceIndex;
+  const sourcePosition = raw.sourcePosition;
   if (occurrenceIndex !== undefined && (
     typeof occurrenceIndex !== 'number' || !Number.isInteger(occurrenceIndex) || occurrenceIndex < 1
   )) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
@@ -559,9 +575,7 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     ...(nativeLocator ? { nativeLocator } : {}),
     ...(typeof occurrenceIndex === 'number' && Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
     ...(typeof sourcePosition === 'number' && Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
-    ...(isRecord(raw.fieldDescriptor) ? { fieldDescriptor: raw.fieldDescriptor } : {}),
-    ...(asString(raw.fieldType || raw.field_type) ? { fieldType: asString(raw.fieldType || raw.field_type) } : {}),
-    ...(asString(raw.relation) ? { relation: asString(raw.relation) } : {}),
+    ...(fieldDescriptor ? { fieldDescriptor } : {}),
     ...(formStructureRole ? { formStructureRole } : {}),
   };
 }

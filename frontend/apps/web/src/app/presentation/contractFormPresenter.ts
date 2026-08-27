@@ -129,10 +129,10 @@ function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
 }
 
 function relationModel(widget: ContractV2Widget): string {
-  return text(widget.relation
-    || widget.componentConfig.relation
+  return text(widget.componentConfig.relation
     || widget.componentConfig.relationModel
-    || widget.componentConfig.relation_model);
+    || widget.componentConfig.relation_model
+    || widget.fieldDescriptor?.relation);
 }
 
 function relationParts(value: unknown): { id: string | number; displayName: string } | null {
@@ -153,7 +153,10 @@ function presentFieldValue(
   runtimeValue: unknown,
   hasRuntimeValue: boolean,
 ): unknown | CanonicalRelationValue {
-  const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type).toLowerCase();
+  const fieldType = text(
+    widget.componentConfig.fieldType || widget.componentConfig.field_type
+    || widget.fieldDescriptor?.type || widget.fieldDescriptor?.ttype,
+  ).toLowerCase();
   const selected = hasRuntimeValue ? runtimeValue : contractValue;
   if (fieldType === 'many2one') {
     const runtimeRelation = relationParts(runtimeValue);
@@ -193,7 +196,10 @@ function fieldFromWidget(
   store: ContractV2NormalizedStore,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
-  const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type);
+  const fieldType = text(
+    widget.componentConfig.fieldType || widget.componentConfig.field_type
+    || widget.fieldDescriptor?.type || widget.fieldDescriptor?.ttype,
+  );
   const componentResolution = resolveContractProfessionalComponent({
     componentKey: widget.componentKey,
     fieldType,
