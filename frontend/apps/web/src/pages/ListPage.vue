@@ -2,8 +2,6 @@
   <ScPage
     class="page sc-page sc-product-workspace-stack"
     data-product-page-mode="list"
-    data-semantic-component="ListPage"
-    :data-list-status="status"
     :aria-busy="loading || undefined"
   >
     <ScPageHeader
@@ -140,6 +138,8 @@
         :class="{ 'is-refreshing': loading }"
         data-workspace-primary-content
         data-collection-presentation="table"
+        data-semantic-component="ListPage"
+        :data-list-status="status"
         role="region"
         aria-label="业务列表，可横向滚动"
         :aria-busy="loading || undefined"

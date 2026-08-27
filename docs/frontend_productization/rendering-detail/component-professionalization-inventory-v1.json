@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "cfd02ba5b9460b808d45119dfa571581b2762f8c923819b1dd7d7d55cedac467",
+  "sourceIdentity": "03129c70a3fa6cd35ae068eb58289a2ae6f492e458ea659d5725be05a3c58ef7",
   "generatorDigest": "9a0537491ed7c94e1801009ba5e1ff407b9b41d3439e9011bbdba242e01cd27c",
   "ownershipDigest": "6349644dec46ae7c415f217a04ba9cf89c2524787cf8bfc07aa62ce1401b9d1f",
-  "inputDigest": "a19d7260e8b94ea8aee6c7c1bf7e9395f543550617ab0eb2157e44b0042923fd",
+  "inputDigest": "dad4e2376fe16437ca696310f32b3e9a2389eacf53498d6e850ddebb9d6b69dc",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -1737,6 +1737,7 @@
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "loading",
+        "empty",
         "error",
         "disabled"
       ],
