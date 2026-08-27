@@ -38,6 +38,10 @@ REQUIREMENTS = {
         "text-overflow: ellipsis",
         "white-space: nowrap",
     ),
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue": (
+        "grid-template-columns: minmax(72px, max-content) minmax(0, 1fr)",
+        ".o2m-readonly-row:last-child",
+    ),
     "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": (
         "grid-auto-rows: max-content",
         "align-content: start",

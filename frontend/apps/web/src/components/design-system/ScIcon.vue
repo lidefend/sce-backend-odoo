@@ -20,7 +20,7 @@
 import { computed } from 'vue';
 
 const props = withDefaults(defineProps<{
-  name: 'apps' | 'arrow-left' | 'arrow-right' | 'bell' | 'briefcase' | 'building' | 'check' | 'chevron-down' | 'chevron-right' | 'chevron-up' | 'clipboard' | 'close' | 'columns' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'lock' | 'menu' | 'panel-left' | 'plus' | 'project' | 'search' | 'settings' | 'star' | 'star-outline' | 'sun' | 'user';
+  name: 'apps' | 'arrow-left' | 'arrow-right' | 'bell' | 'briefcase' | 'building' | 'check' | 'chevron-down' | 'chevron-right' | 'chevron-up' | 'clipboard' | 'close' | 'columns' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'lock' | 'menu' | 'panel-left' | 'plus' | 'project' | 'refresh' | 'search' | 'settings' | 'star' | 'star-outline' | 'sun' | 'user';
   size?: 14 | 16 | 18 | 20 | 24;
 }>(), { size: 20 });
 
@@ -48,6 +48,7 @@ const paths = {
   'panel-left': 'M4 4h16v16H4V4Zm5 0v16',
   plus: 'M12 5v14M5 12h14',
   project: 'M3 6h7l2 2h9v13H3V6Zm4 9h2v2H7v-2Zm4-3h2v5h-2v-5Zm4-2h2v7h-2v-7Z',
+  refresh: 'M20 6v5h-5M4 18v-5h5m10.2-3A8 8 0 0 0 5.3 7M4.8 15A8 8 0 0 0 18.7 17',
   search: 'm21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z',
   settings: 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.56V20h-3v-.08a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 14.7a1.7 1.7 0 0 0-1.56-1H5v-3h.08a1.7 1.7 0 0 0 1.56-1A1.7 1.7 0 0 0 6.3 7.82l-.06-.06 2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.56V4h3v.08a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1H20v3h-.08a1.7 1.7 0 0 0-1.56 1Z',
   star: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z',
