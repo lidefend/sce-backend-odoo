@@ -1125,7 +1125,7 @@ try {
   await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const listSurface = await requireUnique(
     page,
-    page.locator('[data-product-page-mode="list"][data-list-status]:visible'),
+    page.locator('[data-product-page-mode="list"] [data-list-status]:visible'),
     'active payment list',
     { timeout: 45000 },
   );
@@ -1276,7 +1276,7 @@ try {
       createdId, recordCreates, url: page.url(),
     });
   await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await requireUnique(page, page.locator('[data-product-page-mode="list"][data-list-status]:visible'), 'payment list after create', { timeout: 45000 });
+  await requireUnique(page, page.locator('[data-product-page-mode="list"] [data-list-status]:visible'), 'payment list after create', { timeout: 45000 });
 
   const blocked = candidateInventory.find((item) => item.state === 'draft' && item.submit_enabled === false);
   const terminal = candidateInventory.find((item) => ['done', 'paid'].includes(item.state)
@@ -1363,7 +1363,7 @@ try {
 
   enterStage('main:actionable-edit');
   await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const journeyList = await requireUnique(page, page.locator('[data-product-page-mode="list"][data-list-status]:visible'), 'actionable payment list', { timeout: 45000 });
+  const journeyList = await requireUnique(page, page.locator('[data-product-page-mode="list"] [data-list-status]:visible'), 'actionable payment list', { timeout: 45000 });
   const journeyRow = await requireUnique(
     page,
     journeyList.locator('tbody tr:visible').filter({ hasText: record.name }),
@@ -1457,7 +1457,7 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'edit-after-save-desktop.png'), fullPage: true });
   enterStage('main:post-save-list');
   await page.goto(listUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const postSaveList = await requireUnique(page, page.locator('[data-product-page-mode="list"][data-list-status]:visible'), 'post-save payment list', { timeout: 45000 });
+  const postSaveList = await requireUnique(page, page.locator('[data-product-page-mode="list"] [data-list-status]:visible'), 'post-save payment list', { timeout: 45000 });
   const postSaveRow = await requireUnique(
     page,
     postSaveList.locator('tbody tr:visible').filter({ hasText: record.name }),
@@ -1607,11 +1607,11 @@ try {
   const listRefreshResponse = page.waitForResponse((response) => isListDataResponse(response, 'payment.request'), { timeout: 45000 });
   const readonlyReturn = await requireUnique(page, submittedRecordSurface.getByRole('button', { name: /^返回列表$/ }), 'submitted payment return action', { enabled: true });
   await readonlyReturn.click();
-  const refreshedList = await requireUnique(page, page.locator('[data-product-page-mode="list"][data-list-status]:visible'), 'refreshed payment list', { timeout: 45000 });
+  const refreshedList = await requireUnique(page, page.locator('[data-product-page-mode="list"] [data-list-status]:visible'), 'refreshed payment list', { timeout: 45000 });
   await listRefreshResponse;
   await page.waitForFunction(
     ({ name, before }) => {
-      const row = [...document.querySelectorAll('[data-product-page-mode="list"][data-list-status] tbody tr')]
+      const row = [...document.querySelectorAll('[data-product-page-mode="list"] [data-list-status] tbody tr')]
         .find((node) => String(node.textContent || '').includes(name));
       return row && String(row.textContent || '').replace(/\s+/g, ' ').trim() !== before;
     },

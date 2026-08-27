@@ -172,7 +172,7 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
         helper = source.split(
             "async function openPaymentCreateFromList(", 1
         )[1].split("\n}\n", 1)[0]
-        self.assertIn('[data-product-page-mode="list"][data-list-status]:visible', helper)
+        self.assertIn('[data-product-page-mode="list"] [data-list-status]:visible', helper)
         self.assertIn(
             '[data-product-page-mode="list"][data-semantic-component="ActionView"][data-collection-state]:visible',
             helper,
