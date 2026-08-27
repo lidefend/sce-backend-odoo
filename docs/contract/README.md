@@ -1,5 +1,10 @@
 # Contract Catalog
 
+## Frontend integration handbook
+
+- [Frontend mainline contract integration handbook v2](frontend_mainline_contract_integration_v2.md):
+  current transport, startup, page, data, action, renderer and error contract.
+
 Phase 11.1 introduces two machine-readable contract catalogs so the platform contract is visible and auditable without reading handlers manually.
 
 ## Outputs
