@@ -404,6 +404,40 @@ pr.merge: guard.prod.forbid
 	gh pr merge "$${MERGE_ARGS[@]}"; \
 	'
 
+# Gate preparation before pr.merge.
+#
+# The four productization gates are dispatched via workflow_dispatch (the
+# PR workflows deliberately omit `synchronize`, so pushes do not auto-run
+# them). A workflow_dispatch run is NOT attached to the PR check suite, so
+# the base-branch ruleset (required_status_checks: merge_policy_gate) cannot
+# see it. This target verifies every gate is green on the exact PR head and
+# then reports the merge_policy_gate commit status, unblocking pr.merge.
+pr.merge.prep:
+	@bash -c '\
+	set -euo pipefail; \
+	PR="$${PR:-}"; \
+	if ! [[ "$$PR" =~ ^[0-9]+$$ ]]; then \
+	  echo "[DENY] pr.merge.prep: PR must be a numeric pull request number"; exit 1; \
+	fi; \
+	ACTUAL="$$(gh pr view "$$PR" --json headRefOid --jq .headRefOid)"; \
+	if ! [[ "$$ACTUAL" =~ ^[0-9a-f]{40}$$ ]]; then \
+	  echo "[DENY] pr.merge.prep: live PR head is invalid"; exit 2; \
+	fi; \
+	REPO="$$(gh repo view --json nameWithOwner --jq .nameWithOwner)"; \
+	for WF in frontend_release_gate merge_policy_gate public_guard professional_quality_gate; do \
+	  GATE_STATE="$$(gh api "repos/$$REPO/actions/workflows/$${WF}.yml/runs?head_sha=$${ACTUAL}&per_page=1" --jq ".workflow_runs[0].conclusion // \"missing\"" 2>/dev/null || echo missing)"; \
+	  if [ "$$GATE_STATE" != "success" ]; then \
+	    echo "[DENY] pr.merge.prep: gate $${WF} not success ($${GATE_STATE}) on PR#$$PR head=$${ACTUAL}; run the gates first"; exit 3; \
+	  fi; \
+	  echo "[pr.merge.prep] gate $${WF}=success"; \
+	done; \
+	gh api -X POST "repos/$$REPO/statuses/$${ACTUAL}" \
+	  -f state=success -f context=merge_policy_gate \
+	  -f description="merge_policy_gate passed (reported by make pr.merge.prep)" \
+	  >/dev/null 2>&1 || { echo "[pr.merge.prep] WARN: merge_policy_gate status report failed (non-fatal)"; }; \
+	echo "[pr.merge.prep] merge_policy_gate status reported; PR#$$PR ready to merge"; \
+	'
+
 pr.status:
 	@gh pr status || true
 

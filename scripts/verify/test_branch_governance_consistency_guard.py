@@ -299,5 +299,83 @@ class ControlledReadyExpectedHeadTests(unittest.TestCase):
         self.assertEqual(arguments, ["pr", "ready", "34"])
 
 
+class MergePrepGateTests(unittest.TestCase):
+    """make pr.merge.prep verifies every gate is green on the exact PR head
+    and reports the merge_policy_gate commit status so the base-branch
+    ruleset (required_status_checks: merge_policy_gate) can see the
+    workflow_dispatch runs."""
+
+    def _run_prep(
+        self, *, gate_state: str = "success", gate_fail: str = "0"
+    ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            bin_dir.mkdir(parents=True)
+            status_log = root / "status.log"
+            gh = bin_dir / "gh"
+            gh.write_text(
+                "#!/usr/bin/env bash\n"
+                "set -euo pipefail\n"
+                "if [[ \"$1 $2\" == \"pr view\" ]]; then\n"
+                "  printf '%s\\n' \"${FAKE_ACTUAL_HEAD:?}\"\n"
+                "elif [[ \"$1 $2\" == \"repo view\" ]]; then\n"
+                "  printf '%s\\n' 'lidefend/sce-backend-odoo'\n"
+                "elif [[ \"$1\" == \"api\" && \"$2\" == *\"/runs?\"* ]]; then\n"
+                "  if [ \"${FAKE_GATE_FAIL:-0}\" = 1 ]; then exit 92; fi\n"
+                "  printf '%s\\n' \"${FAKE_GATE_STATE:?}\"\n"
+                "elif [[ \"$1\" == \"api\" && \"$*\" == *\"statuses/\"* ]]; then\n"
+                "  echo \"$*\" >>\"${FAKE_STATUS_LOG:?}\"\n"
+                "else\n"
+                "  echo \"unexpected gh invocation: $*\" >&2\n"
+                "  exit 91\n"
+                "fi\n",
+                encoding="utf-8",
+            )
+            gh.chmod(0o755)
+            environment = dict(os.environ)
+            environment.update(
+                {
+                    "ENV": "test",
+                    "PATH": f"{bin_dir}:{environment['PATH']}",
+                    "FAKE_ACTUAL_HEAD": FULL_SHA,
+                    "FAKE_GATE_STATE": gate_state,
+                    "FAKE_GATE_FAIL": gate_fail,
+                    "FAKE_STATUS_LOG": str(status_log),
+                }
+            )
+            completed = subprocess.run(
+                ["make", "--no-print-directory", "pr.merge.prep", "PR=30"],
+                cwd=ROOT,
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            status_lines = status_log.read_text(encoding="utf-8").splitlines() if status_log.exists() else []
+            return completed, status_lines
+
+    def test_all_gates_success_reports_merge_policy_gate_status(self) -> None:
+        completed, status_lines = self._run_prep()
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertEqual(len(status_lines), 1)
+        self.assertIn("statuses/", status_lines[0])
+        self.assertIn("state=success", status_lines[0])
+        self.assertIn("context=merge_policy_gate", status_lines[0])
+
+    def test_failing_gate_is_rejected_without_status(self) -> None:
+        completed, status_lines = self._run_prep(gate_state="failure")
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("gate frontend_release_gate not success", completed.stdout)
+        self.assertEqual(status_lines, [])
+
+    def test_missing_gate_is_rejected_without_status(self) -> None:
+        completed, status_lines = self._run_prep(gate_fail="1")
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("not success (missing)", completed.stdout)
+        self.assertEqual(status_lines, [])
+
+
 if __name__ == "__main__":
     unittest.main()
