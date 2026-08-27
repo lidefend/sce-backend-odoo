@@ -4,12 +4,6 @@
     data-product-page-mode="list"
     :aria-busy="loading || undefined"
   >
-    <ScPageHeader
-      v-if="status === 'error'"
-      :title="title"
-      :subtitle="subtitle"
-    />
-
     <ProductLoadingSkeleton
       v-if="loading && !hasRetainedContent"
       :title="title"
@@ -307,7 +301,6 @@ import CollectionSummaryStrip from '../components/product-list/CollectionSummary
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScPage from '../components/design-system/ScPage.vue';
-import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
