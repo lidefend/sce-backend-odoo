@@ -223,6 +223,10 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "unified_page_contract_v2",
     "version_no",
     "view_type",
+    "CONTRACT_V2_WIDGET_TYPES",
+    "many2many_tags",
+    "mobile_compact",
+    "mobile_primary",
 }
 
 FORBIDDEN_STRICT_ALIAS_HELPERS = (
@@ -347,35 +351,11 @@ ALLOWED_STRICT_SCHEMA_EXTENSION_FIELDS = {
     # separately from the formal execution rule fields. Keep this set exact so
     # any new schema-external action field still fails closed.
     "ContractV2ActionRule": set(),
-    # Native form shadow rendering still consumes these container presentation
-    # fields while formal V2 fields remain containerId/containerType/title/etc.
-    "ContractV2Container": {
-        "action",
-        "attributes",
-        "buttonType",
-        "cols",
-        "columns",
-        "componentConfig",
-        "componentKey",
-        "fieldInfo",
-        "fieldCode",
-        "formStructure",
-        "formStructureRole",
-        "invisible",
-        "modifiers",
-        "nolabel",
-        "nativeLocator",
-        "occurrenceIndex",
-        "readonly",
-        "required",
-        "sourceAuthority",
-        "sourcePosition",
-        "text",
-        "widget",
-        "widgetId",
-    },
-    # These are display/runtime conveniences for current native-field widgets.
-    "ContractV2Widget": {"fieldType", "relation"},
+    # Container is compared against the explicit union of the formal container
+    # and nativeLayoutNode schema branches below; no ad-hoc extension remains.
+    "ContractV2Container": set(),
+    # Widget fields must be declared by the widget schema itself.
+    "ContractV2Widget": set(),
     # Action presentation keeps UI/navigation metadata outside the formal rule
     # execution contract.
 }
@@ -436,18 +416,28 @@ def _strict_snapshot_fields(source: str) -> set[str]:
 
 
 def _interface_fields(source: str, interface_name: str) -> set[str]:
-    match = re.search(
-        rf"export\s+interface\s+{re.escape(interface_name)}(?:\s+extends\s+[^\{{]+)?\s*\{{(?P<body>.*?)\n\}}",
-        source,
-        re.DOTALL,
-    )
+    match = re.search(rf"export\s+interface\s+{re.escape(interface_name)}(?:\s+extends\s+[^\{{]+)?\s*\{{", source)
     if not match:
         return set()
+    start = match.end()
+    depth = 1
+    index = start
+    while index < len(source) and depth:
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+        index += 1
+    if depth:
+        return set()
+    body = source[start:index - 1]
     fields: set[str] = set()
-    for line in match.group("body").splitlines():
+    brace_depth = 0
+    for line in body.splitlines():
         field = re.match(r"\s*([A-Za-z_$][\w$]*)\??:", line)
-        if field:
+        if field and brace_depth == 0:
             fields.add(field.group(1))
+        brace_depth += line.count("{") - line.count("}")
     return fields
 
 
@@ -686,6 +676,17 @@ def main() -> int:
             if isinstance(schema_def, dict) and "$ref" in schema_def:
                 schema_def = schema_defs.get(str(schema_def["$ref"]).rsplit("/", 1)[-1])
         schema_fields = set(((schema_def or {}).get("properties") or {}).keys())
+        # The normalized Container type represents both the formal container
+        # and nativeLayoutNode branches used by layoutContract.containerTree.
+        # Compare against that explicit schema union instead of treating the
+        # native branch as an undocumented extension.
+        if schema_name == "container":
+            native_def = schema_defs.get("nativeLayoutNode") or {}
+            schema_fields |= set((native_def.get("properties") or {}).keys())
+            # Decoder output uses camelCase for this native attribute while
+            # the wire schema intentionally retains Odoo's source spelling.
+            schema_fields.discard("column_invisible")
+            schema_fields.add("columnInvisible")
         type_fields = _interface_fields(strict_type_source, interface_name)
         if not schema_fields:
             violations.append(f"{_relative(BACKEND_SCHEMA)}: missing schema properties for {schema_name}")
