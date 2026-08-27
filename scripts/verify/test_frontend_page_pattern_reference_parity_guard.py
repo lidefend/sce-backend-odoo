@@ -63,6 +63,13 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
+    def test_embedded_list_cannot_create_a_second_page_header(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/ListPage.vue"
+        values[target] += "\n<ScPageHeader title=\"duplicate\" />\n"
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("duplicate heading owner" in failure and target in failure for failure in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

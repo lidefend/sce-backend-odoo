@@ -40,6 +40,9 @@ REQUIREMENTS = {
         ':title="pageDisplayTitle"',
         ':hide-title="suppressPageHeaderTitle"',
     ),
+    "frontend/apps/web/src/pages/ListPage.vue": (
+        'data-semantic-component="ListPage"',
+    ),
     "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": (
         'class="toolbar-total"',
         "grid-template-areas: 'view search total sort primary'",
@@ -68,6 +71,12 @@ REQUIREMENTS = {
         "workspacePanelMode === 'navigation'",
     ),
 }
+FORBIDDEN_BY_SOURCE = {
+    "frontend/apps/web/src/pages/ListPage.vue": (
+        "ScPageHeader",
+        "ProductPageHeader",
+    ),
+}
 FORBIDDEN_PRODUCT_HINTS = (
     "payment.request",
     "project.project",
@@ -86,6 +95,9 @@ def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8"
         for forbidden in FORBIDDEN_PRODUCT_HINTS:
             if forbidden in text:
                 failures.append(f"page-pattern parity contains product-specific routing hint: {source}: {forbidden}")
+        for forbidden in FORBIDDEN_BY_SOURCE.get(source, ()):
+            if forbidden in text:
+                failures.append(f"page-pattern parity contains duplicate heading owner: {source}: {forbidden}")
     return failures
 
 
