@@ -289,6 +289,10 @@ verify.frontend.rendering_detail_state.browser: guard.prod.forbid
 verify.frontend.form_structure_contract_projection.unit: guard.prod.forbid
 	@python3 scripts/verify/form_structure_contract_projection_matrix.py --check
 
+.PHONY: verify.frontend.contract_v2_render_authority.unit
+verify.frontend.contract_v2_render_authority.unit: guard.prod.forbid
+	@python3 scripts/verify/contract_v2_render_authority_matrix.py --check
+
 # Development feedback only: these entries never build, capture browser
 # evidence, refresh reports, or freeze a candidate fingerprint.
 verify.frontend.dev.incremental: guard.prod.forbid
