@@ -280,6 +280,16 @@ readonly-fact 规则把每个事实节点强制 `inline`（`.field`/form-section
 - 验证：摘要事实 111→69px（4 列布局不变）；办理信息项（下一步办理/办理阻断与修复/往来单位办理提示）91→49px（2 列宽竖排不变）
 - 编辑态 1709 + 只读态 19 均验证；density baseline 11/11 PASS
 
+## 十九.x、表单结构门禁固化（2026-08-28 追加，commit b2037c90）
+
+density baseline 扩展三个表单结构断言，防止 canonical 渲染工作静默回退：
+
+- `form.sheet-spans-card`：canonical sheet 保持 `grid-column: 1 / -1`（占满 task-section 卡，回退会重新出现右半空白）
+- `form.field-two-column`：core-input 字段占用 ≥2 列（两列 canonical 布局）
+- `form.fact-height-compact`：readonly 事实 ≤80px（曾因 line-height 膨胀到 90-111px，基线已收敛到内容高度 69px）
+
+density baseline 扩展后 **14/14 PASS**（list + form + worksheet 三面）。
+
 ## 二十、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
