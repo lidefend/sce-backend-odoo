@@ -244,6 +244,7 @@ export interface ContractV2Container {
   formStructure?: ContractV2Dictionary;
   formStructureRole?: ContractV2FormStructureRole;
   sourceAuthority?: ContractV2Dictionary;
+  fields?: string[];
   children: ContractV2Container[];
   widgetList: ContractV2Widget[];
 }

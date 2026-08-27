@@ -662,6 +662,7 @@ function decodeContainer(
     ...(Object.keys(formStructure).length ? { formStructure } : {}),
     ...(formStructureRole ? { formStructureRole } : {}),
     ...(Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
+    ...(Array.isArray(raw.fields) ? { fields: decodeUniqueStringArray(raw.fields, `${path}.fields`, issues) } : {}),
     children,
     widgetList,
   };

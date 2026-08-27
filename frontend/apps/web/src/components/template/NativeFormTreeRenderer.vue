@@ -424,6 +424,7 @@ export type NativeFormLayoutNode = {
   field_info?: Record<string, unknown>;
   sourceAuthority?: Record<string, unknown>;
   source_authority?: Record<string, unknown>;
+  fields?: readonly string[];
   buttonType?: string;
   action?: Record<string, unknown> | null;
   modifiers?: Record<string, unknown>;

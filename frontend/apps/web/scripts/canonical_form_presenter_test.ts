@@ -848,6 +848,7 @@ const nativeFieldProjectionSnapshot = snapshot();
 Object.assign(nativeFieldProjectionSnapshot.layoutContract.containerTree[0].children[0], {
   filename: 'name_filename', domain: [['active', '=', true]], context: { source: 'contract' },
   options: { no_create: true }, class: 'contract-field-wide', fieldSize: 'large', size: 'lg', col: 2,
+  fields: ['name'],
 });
 const nativeFieldNode = buildCanonicalNativeFormBridge(presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(nativeFieldProjectionSnapshot)), 'edit',
@@ -857,12 +858,12 @@ assert.deepEqual(
     name: nativeFieldNode?.name, filename: nativeFieldNode?.filename, domain: nativeFieldNode?.domain,
     context: nativeFieldNode?.context, options: nativeFieldNode?.options, class: nativeFieldNode?.class,
     attributeClass: nativeFieldNode?.attributes?.class, fieldSize: nativeFieldNode?.fieldSize,
-    size: nativeFieldNode?.size, col: nativeFieldNode?.col,
+    size: nativeFieldNode?.size, col: nativeFieldNode?.col, fields: nativeFieldNode?.fields,
   },
   {
     name: 'name', filename: 'name_filename', domain: [['active', '=', true]], context: { source: 'contract' },
     options: { no_create: true }, class: 'contract-field-wide', attributeClass: 'contract-field-wide',
-    fieldSize: 'large', size: 'lg', col: 2,
+    fieldSize: 'large', size: 'lg', col: 2, fields: ['name'],
   },
   'field containers must keep their formal native metadata through the professional native bridge',
 );

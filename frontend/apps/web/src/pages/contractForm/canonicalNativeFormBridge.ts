@@ -35,6 +35,7 @@ export type CanonicalNativeLayoutNode = {
   size?: string;
   formStructure?: Record<string, unknown>;
   sourceAuthority?: Record<string, unknown>;
+  fields?: readonly string[];
   action?: Record<string, unknown> | null;
   buttonType?: string;
   children?: CanonicalNativeLayoutNode[];

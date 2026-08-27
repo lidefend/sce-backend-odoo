@@ -349,6 +349,7 @@ function presentNode(
       size: text(container.size),
       formStructure: Object.freeze({ ...(container.formStructure || {}) }),
       sourceAuthority: Object.freeze({ ...(container.sourceAuthority || {}) }),
+      fields: Object.freeze([...(container.fields || [])]),
     }),
     span: container.span,
     styleToken: text(container.styleToken),
