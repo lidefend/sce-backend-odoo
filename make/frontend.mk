@@ -284,7 +284,15 @@ verify.frontend.rendering_detail_state.unit: guard.prod.forbid
 verify.frontend.rendering_detail_state.browser: guard.prod.forbid
 	@node scripts/verify/frontend_rendering_detail_state_browser.mjs
 
-.PHONY: verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit
+.PHONY: verify.frontend.dev.incremental verify.frontend.dev.watch verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit
+
+# Development feedback only: these entries never build, capture browser
+# evidence, refresh reports, or freeze a candidate fingerprint.
+verify.frontend.dev.incremental: guard.prod.forbid
+	@python3 scripts/verify/frontend_dev_incremental.py $(foreach path,$(FRONTEND_DEV_CHANGED_PATHS),--path $(path))
+
+verify.frontend.dev.watch: guard.prod.forbid
+	@python3 scripts/verify/frontend_dev_incremental.py --watch
 verify.frontend.form_header_action_primitives.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_form_header_action_primitives_guard.py
 	@python3 scripts/verify/frontend_form_header_action_primitives_guard.py
