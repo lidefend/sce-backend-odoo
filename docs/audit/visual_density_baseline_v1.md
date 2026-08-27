@@ -73,8 +73,19 @@
 
 **最终判定**: worksheet 行高 89px 为 TDesign 1.20.5 `table-layout:fixed` + 树形表格下的行 box 分配行为（空行 46px 基线 + 内容触发 4×line-height）。纯样式层不可达，作为**已知特性**记录；修复需组件层（绕过 PrimaryTable 或自定义行渲染），列独立任务，不阻塞其他渲染细节。
 
-### 2. 公司支出列表空态（数据归属）
-迁移至 company 1 的 25 条 `sc.payment.execution` 全部属于 business_category「往来单位付款」（code=`finance.payment.execution.partner`，id=16），而「公司支出」action 774 的默认 domain 要求 `finance.payment.execution.company`（id=20「公司财务支出」）。数据类别与入口不匹配 → 空态。非渲染缺陷。
+### 2. 公司支出列表空态（数据归属 → fixture 生成缺陷）
+
+**现象**：「公司支出」列表（action 774）空态，无数据可渲染。
+
+**根因（2026-08-28 深挖，非渲染缺陷）**：
+- **产品配置正确**：action 774 domain = `[('source_kind','=','actual_outflow'), ('business_category_id.code','=','finance.payment.execution.company')]`（`menu_business_taxonomy.xml:433`）
+- **数据缺陷**：`frontend_productization_fixture._execution` 创建 `sc.payment.execution` 时未传 `payment_family`/`business_category_id`；`payment_execution.py._resolve_business_category_code` 在无 context code 时按 `payment_family` 兜底——`""` → 默认落 `partner`（往来单位付款）。导致全部 execution 归 partner 类，company 类 0 条 → 公司支出空态
+- **实测**：`sc_dev_demo` 库 4 条 execution 全部 `business_category_id=16`（partner），company（20）0 条；`sc_test` 空表
+
+**修复（2026-08-28，fixture 层）**：
+- `_execution` 新增 `payment_family="往来单位付款"` + `source_kind="actual_outflow"` 参数（默认保持现有 partner 语义，向后兼容）
+- `ensure_fixture` 新增 company 场景：`request A3` + `execution A2`（`payment_family="公司财务支出"`）→ 显式归入 company 类，让公司支出入口有可渲染数据
+- **验证状态**：语法通过（py_compile）；完整跑 fixture 需 acceptance 环境（本地容器为 volume 快照，需重建后验证）
 
 ### 3. 材料/资金类列表 NAVIGATION_AUTHORITY_DENIED
 材料结算/材料调拨/材料损耗/材料价格库/资金划拨/资金台账/项目收付款明细/公司&项目退款 等 9 个列表，uid132（业务配置管理员）访问返回 `NAVIGATION_AUTHORITY_DENIED`（前端路由授权边界）。属角色授权范围，非渲染问题。

@@ -405,7 +405,7 @@ def _request(env, suffix, sequence, project, contract, settlement, partner, stat
     return record
 
 
-def _execution(env, suffix, project, contract, request, partner, finance, state, amount):
+def _execution(env, suffix, project, contract, request, partner, finance, state, amount, payment_family="往来单位付款", source_kind="actual_outflow"):
     name = "FE-%s-PE-001" % suffix
     return _upsert(
         env(user=finance.id),
@@ -418,6 +418,8 @@ def _execution(env, suffix, project, contract, request, partner, finance, state,
             "contract_id": contract.id,
             "payment_request_id": request.id,
             "partner_id": partner.id,
+            "source_kind": source_kind,
+            "payment_family": payment_family,
             "currency_id": project.company_id.currency_id.id,
             "planned_amount": amount,
             "paid_amount": amount if state == "paid" else 0.0,
@@ -1012,6 +1014,17 @@ def ensure_fixture(env) -> Dict[str, Any]:
     request_c.invalidate_recordset(["validation_status", "create_uid"])
     _execution(env, "A", project_a, contract_a, request_a, partner_a, finance, "paid", 1000.0)
     _execution(env, "C", project_c, contract_c, request_c, partner_c, finance, "confirmed", 1000.0)
+    # 公司财务支出（company）场景：公司支出入口（action 774，domain 要求
+    # source_kind=actual_outflow + business_category=finance.payment.execution.company）
+    # 需有可渲染数据。此前 fixture 未传 payment_family，create() 兜底默认落
+    # 往来单位付款（partner），导致公司支出列表空态。这里显式传 company 类别。
+    request_a_company = _request(
+        env, "A", 3, project_a, contract_a, settlement_a, partner_a, "approved", 2000.0
+    )
+    _execution(
+        env, "A2", project_a, contract_a, request_a_company, partner_a, finance,
+        "paid", 2000.0, payment_family="公司财务支出",
+    )
 
     # PFL-035 owns isolated records for authoritative positive and rejection
     # paths.  They must not reuse records that already have an execution.
