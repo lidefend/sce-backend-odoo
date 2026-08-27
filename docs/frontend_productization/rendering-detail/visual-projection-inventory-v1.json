@@ -205,7 +205,7 @@
     },
     {
       "category": "other",
-      "digest": "cc94d4de2f139ba516ecd50cb00bc928b8a9ca475d81d659e3424bb119c30c50",
+      "digest": "93180f25434c97145d8aae51b69842c56be45cf3035e5ed252c1511e8aea914a",
       "nativeStyleSelectors": [],
       "path": "components/action/ActionSurfaceToolbar.vue",
       "referenceNativeStyleSelectors": [
@@ -439,7 +439,7 @@
     },
     {
       "category": "other",
-      "digest": "38b6b161a169af899a582c01d3c080226f521e4723137f76bc8e66dda8594efc",
+      "digest": "4d9c2de28f4bf5e04203bb3f9232b8955688df64d790aab8c316bc65c0aa281c",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScCard.vue",
       "referenceNativeStyleSelectors": [],
@@ -640,6 +640,16 @@
       "path": "components/design-system/ScHeader.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "9556c556182563c4d2a76174b53c28b61eef7c45ffbd79b6bf3c60a15cbb5678",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScIcon.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
       "referenceScComponents": [],
       "scComponents": []
     },
@@ -1229,7 +1239,7 @@
     },
     {
       "category": "collection",
-      "digest": "e732e2eef562dbce9bd5b83540fa4cb5e365c50e946ffaec6f083c5f2bdf0d0a",
+      "digest": "b872d6cb574ee108ad96ff18618216db27c089efac788c9a9b8cf3b8ba9d90d1",
       "nativeStyleSelectors": [],
       "path": "components/product-list/CollectionRowCell.vue",
       "referenceNativeStyleSelectors": [],
@@ -1669,7 +1679,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "37fd2879676e5d43a162d9a8e17f8b7c529cafa559333c8c6f5dfac154dc7172",
+      "digest": "0431aa695fba807527277e6e35a669844010f4af4921660bde8a3862baf822ae",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -1731,7 +1741,7 @@
     },
     {
       "category": "shell",
-      "digest": "42fb24816ed6601354c539497c7c2ed77ed7a28bc134f7b94dbf338b475e58d0",
+      "digest": "bb40f318d5fb9df896c319a0e30fbc2895acaedbd0d205f83dc13de1e9b1b672",
       "nativeStyleSelectors": [],
       "path": "layouts/AppShell.vue",
       "referenceNativeStyleSelectors": [],
@@ -1995,7 +2005,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "53ae9483c5be137d52b467e8235c189863319760178b172716ea04534d080c69",
+      "digest": "33e2d6452eb265ac83aa924dafce5c16aa3802e5eef94fb5595c5f973473b050",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2147,7 +2157,7 @@
     },
     {
       "category": "collection",
-      "digest": "68329c9931a17dc2bb59c594dd6ee2a046f5e86bcde89a214858c3812b61f8ea",
+      "digest": "9fed67bb4cde3ffb5adab945f9950a7830d74c9b7c5850c04340322e850a0012",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2197,7 +2207,7 @@
     },
     {
       "category": "public-entry",
-      "digest": "0f93fd29b2a5d21ef41d58475450c387eef194441da9fe03c65fe60ad63342f2",
+      "digest": "3e5c43798d84638c1922efa9845fdd41f1f3422a8f42047d5143e7a27b41e295",
       "nativeStyleSelectors": [],
       "path": "views/LoginView.vue",
       "referenceNativeStyleSelectors": [
@@ -2209,6 +2219,7 @@
       "scComponents": [
         "ScButton",
         "ScCard",
+        "ScIcon",
         "ScInput"
       ]
     },
@@ -2513,7 +2524,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "75f8fc4b36da4f3ba600b21cc90f0f05eed18d9017b4d1e5c4074764f531736c",
+  "currentInputDigest": "8ef72081c258a8d5f0b2d03917e261e7e3f346cd7973a0547ede5f9c5d4923fe",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2745,7 +2756,7 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 175,
+    "changedSourceCount": 176,
     "consumerPrimitiveVisualChromeCount": 0,
     "currentSourceCount": 203,
     "invalidFormalVisualEvidenceBindingCount": 0,
