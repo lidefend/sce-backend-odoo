@@ -23,6 +23,7 @@ import type {
 } from '../contracts/v2/types';
 import type { ContractV2FormStructureRoleName } from '../contracts/v2/types';
 import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructureRoles';
+import { resolveContractV2SelectorStatus } from '../contracts/v2/store';
 import { resolveContractProfessionalComponent } from './professionalComponentRegistry';
 
 function asDict(value: unknown): ContractV2Dictionary {
@@ -168,10 +169,12 @@ function fieldFromWidget(
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
+  ancestorReadonly: boolean,
   authoritativeFieldLabels: Readonly<Record<string, string>>,
   structure: ContractV2FormStructureContract | undefined,
   componentRegistry: ContractV2Dictionary,
   clientType: string,
+  store: ContractV2NormalizedStore,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
   const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type);
@@ -187,6 +190,13 @@ function fieldFromWidget(
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
   const fieldSemantics = fieldSemanticIdentity(widget, container, structure);
+  const selectorStatus = resolveContractV2SelectorStatus(store, [
+    widget.widgetId,
+    widget.fieldCode,
+    `field.${widget.fieldCode}`,
+    fieldSemantics.slot,
+    fieldSemantics.group,
+  ]);
   const authoritativeRole = structure?.fieldRoles[widget.fieldCode];
   const slotReadonly = authoritativeRole
     ? structureSlot(structure, authoritativeRole)?.readonly === true
@@ -214,13 +224,15 @@ function fieldFromWidget(
     presentationMode,
     renderProfile: mode,
     span: widget.span,
-    visible: ancestorVisible && statusResolved && bool(status?.visible, true),
-    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || slotReadonly
+    visible: ancestorVisible && statusResolved && bool(status?.visible, true) && bool(selectorStatus?.visible, true),
+    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || ancestorReadonly || slotReadonly
       || (Boolean(fieldAuth) && fieldAuth !== 'edit')
+      || selectorStatus?.readonly === true
       || !statusResolved || bool(status?.readonly, false),
-    required: bool(status?.required, false),
-    disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
-    reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
+    required: bool(status?.required, false) || selectorStatus?.required === true,
+    disabled: ancestorDisabled || selectorStatus?.disabled === true || !statusResolved || bool(status?.disabled, false),
+    reasonCode: text(status?.reasonCode || selectorStatus?.reasonCode)
+      || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
     placeholder: text(status?.placeholder),
     auth: fieldAuth,
     semanticRole: fieldSemantics.role,
@@ -243,6 +255,7 @@ function presentNode(
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
+  ancestorReadonly: boolean,
   actionsByIdentity: ReadonlyMap<string, CanonicalFormAction>,
   actionsByNativeOccurrence: ReadonlyMap<string, CanonicalFormAction>,
   authoritativeFieldLabels: Readonly<Record<string, string>>,
@@ -254,8 +267,17 @@ function presentNode(
   const ownRole = zoneRole(container);
   const effectiveRole = ownRole === 'subordinate' ? ownRole : inheritedRole;
   const status: ContractV2ContainerStatus | undefined = store.containerStatusById.get(container.containerId);
-  const visible = ancestorVisible && bool(status?.visible, true);
-  const disabled = ancestorDisabled || bool(status?.disabled, false);
+  const nodeSemantics = semanticIdentity(container.formStructureRole);
+  const selectorStatus = resolveContractV2SelectorStatus(store, [
+    container.containerId,
+    text(container.name),
+    text(container.fieldCode),
+    nodeSemantics.slot,
+    nodeSemantics.group,
+  ]);
+  const visible = ancestorVisible && bool(status?.visible, true) && bool(selectorStatus?.visible, true);
+  const disabled = ancestorDisabled || bool(status?.disabled, false) || selectorStatus?.disabled === true;
+  const readonly = ancestorReadonly || selectorStatus?.readonly === true;
   const widgets = (store.widgetsByOwnerContainerId.get(container.containerId) || []).map((widget) => (
     fieldFromWidget(
       widget,
@@ -268,10 +290,12 @@ function presentNode(
       pageCanEdit,
       visible,
       disabled,
+      readonly,
       authoritativeFieldLabels,
       structure,
       componentRegistry,
       clientType,
+      store,
     )
   ));
   const nodeKind = text(container.type || container.containerType) || 'container';
@@ -288,7 +312,6 @@ function presentNode(
     text(nativeIdentity.type), text(nativeIdentity.name), text(nativeIdentity.native_locator || nativeIdentity.nativeLocator),
     String(Number(nativeIdentity.occurrence_index || nativeIdentity.occurrenceIndex || 0)),
   ].join('|');
-  const nodeSemantics = semanticIdentity(container.formStructureRole);
   const authoritativeNodeIdentity = nodeSemantics.slot && nodeSemantics.group
     ? { slot: nodeSemantics.slot, group: nodeSemantics.group }
     : null;
@@ -310,7 +333,7 @@ function presentNode(
     columns: Number(authoritativeGroup?.columns || container.cols || container.columns || structure?.columns || 1) || 1,
     visible,
     disabled,
-    reasonCode: text(status?.reasonCode),
+    reasonCode: text(status?.reasonCode || selectorStatus?.reasonCode),
     semanticRole: authoritativeRole ? canonicalRoleForFormStructureRole(authoritativeRole) : nodeSemantics.role,
     semanticSlot: nodeSemantics.slot,
     semanticGroup: nodeSemantics.group,
@@ -322,7 +345,7 @@ function presentNode(
     children: container.children.map((child, childIndex) => (
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
-        mode, presentationMode, pageCanEdit, visible, disabled, actionsByIdentity, actionsByNativeOccurrence,
+        mode, presentationMode, pageCanEdit, visible, disabled, readonly, actionsByIdentity, actionsByNativeOccurrence,
         authoritativeFieldLabels, structure, componentRegistry, clientType,
         rawTitle || ancestorTitle,
       )
@@ -483,7 +506,7 @@ export function presentContractV2Form(
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, zoneRole(container), index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
-      pageVisible, pageAuth === 'none', actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
+      pageVisible, pageAuth === 'none', false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
       snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )
   ));

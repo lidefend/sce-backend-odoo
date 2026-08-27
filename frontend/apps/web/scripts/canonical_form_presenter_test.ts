@@ -835,6 +835,40 @@ assert.equal(
   'field auth must reach the professional component adapter and semantic DOM carrier',
 );
 
+const selectorReadonlySnapshot = snapshot();
+selectorReadonlySnapshot.statusContract.selectorStatus = [{
+  selector: 'field.*', readonly: true, reasonCode: 'ROLE_READONLY',
+}];
+const selectorReadonlyFields = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(selectorReadonlySnapshot)),
+  'edit',
+).zones.primary);
+assert.equal(
+  selectorReadonlyFields.find((field) => field.fieldCode === 'name')?.readonly,
+  true,
+  'selector readonly authority must reach every matching canonical field',
+);
+assert.equal(
+  selectorReadonlyFields.find((field) => field.fieldCode === 'name')?.reasonCode,
+  'ROLE_READONLY',
+  'selector denial reason must survive canonical projection',
+);
+
+const selectorHiddenSnapshot = snapshot();
+selectorHiddenSnapshot.statusContract.selectorStatus = [{
+  selector: 'section.identity', visible: false, reasonCode: 'SECTION_HIDDEN',
+}];
+const selectorHiddenModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(selectorHiddenSnapshot)),
+  'edit',
+);
+assert.equal(selectorHiddenModel.zones.primary[0].visible, false, 'selector visibility must govern matching containers');
+assert.equal(
+  collectFields(selectorHiddenModel.zones.primary)[0]?.visible,
+  false,
+  'a selector-hidden container must hide its descendant fields',
+);
+
 const legacyChildCarrierSnapshot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 legacyChildCarrierSnapshot.layoutContract.containerTree[0].tabs = [];
 assert.throws(() => decodeContractV2Snapshot(legacyChildCarrierSnapshot), /tabs is not allowed/);
