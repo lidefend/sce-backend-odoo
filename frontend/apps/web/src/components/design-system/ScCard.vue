@@ -36,6 +36,7 @@ const cardBodyStyle = computed<CardStyle>(() => {
     summary: { padding: '0' },
     task: { display: 'grid', alignContent: 'start', height: 'max-content', padding: '8px 20px 18px' },
     'task-section': { display: 'grid', gridTemplateColumns: 'var(--sc-task-section-columns)', columnGap: '32px', rowGap: '16px', padding: '4px 0 20px' },
+    'form-section': { padding: '0' },
     fact: { padding: '0' },
     auth: { display: 'grid', gap: '18px', padding: 'var(--sc-card-body-padding)' },
     account: { display: 'grid', gap: '16px', padding: '28px' },
@@ -60,6 +61,7 @@ const cardHeaderStyle = computed<CardStyle>(() => {
 <style scoped>
 [data-appearance='summary'] { overflow: hidden; }
 [data-appearance='fact'] { border: 0; background: transparent; box-shadow: none; }
+[data-appearance='form-section'] { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 [data-appearance='task-section'] { --sc-task-section-columns: repeat(2, minmax(0, 1fr)); border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 [data-appearance='auth'] { --sc-card-body-padding: 32px; }
 [data-appearance='main-surface'] { --sc-card-body-padding: 0 20px 24px; width: 100%; min-width: 0; }
