@@ -792,6 +792,11 @@ assert.deepEqual(
   { span: 16, styleToken: 'surface.task.identity' },
   'container geometry and style-token identities must survive canonical projection',
 );
+assert.equal(
+  structurePresentationModel.zones.primary[0].span,
+  16,
+  'the canonical node span must remain available to the professional layout adapter',
+);
 
 const fieldAuthSnapshot = snapshot();
 fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';

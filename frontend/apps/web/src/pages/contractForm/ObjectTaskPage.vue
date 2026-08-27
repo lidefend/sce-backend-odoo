@@ -351,6 +351,7 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   gap: 0;
 }
 .object-task-page__summary-grid :deep(.canonical-form-node) {
+  grid-column: span var(--canonical-node-grid-span, 1);
   height: 100%;
   padding: 12px 16px;
   border: 0;

@@ -9,6 +9,7 @@
     :data-native-class="nativeClass || undefined"
     :data-contract-span="node.span"
     :data-contract-style-token="node.styleToken || undefined"
+    :style="{ '--canonical-node-grid-span': nodeGridSpan }"
     :data-section-navigation-role="node.zoneRole"
     :data-group-title="node.title || undefined"
   >
@@ -88,6 +89,7 @@ const readonlyFactLayout = computed(() => Boolean(
 ));
 const children = computed(() => visibleCanonicalChildren(props.node));
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
+const nodeGridSpan = computed(() => Math.max(1, Math.min(4, Math.ceil(Number(props.node.span || 24) / 6))));
 const hasContent = computed(() => canonicalNodeHasContent(props.node));
 const nativeClass = computed(() => String(props.node.attributes.class || '').trim());
 const presentableNodeText = computed(() => {
