@@ -40,10 +40,10 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 316,
+    "schemaFieldCount": 320,
     "renderedOrInteractionAuthorityCount": 199,
     "validatedNonVisualAuthorityCount": 107,
-    "decodedRuntimeAuthorityGapCount": 10,
+    "decodedRuntimeAuthorityGapCount": 14,
     "unclassifiedCount": 0
   },
   "rows": [
@@ -1367,9 +1367,27 @@
       "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
+      "path": "runtimeContract.fieldSemantics",
+      "classification": "decoded_runtime_authority_gap",
+      "reason": "decoded semantic evidence is consumed only by governed form projection",
+      "consumer": "strict decoder only"
+    },
+    {
+      "path": "runtimeContract.governance",
+      "classification": "decoded_runtime_authority_gap",
+      "reason": "decoded governance evidence is diagnostic and non-executable",
+      "consumer": "strict decoder only"
+    },
+    {
       "path": "runtimeContract.hydration",
       "classification": "decoded_runtime_authority_gap",
       "reason": "opaque policy has no field-level schema or generic consumer",
+      "consumer": "strict decoder only"
+    },
+    {
+      "path": "runtimeContract.intakeAutosave",
+      "classification": "decoded_runtime_authority_gap",
+      "reason": "decoded policy is consumed only by the form intake runtime",
       "consumer": "strict decoder only"
     },
     {
@@ -1417,6 +1435,12 @@
       "path": "runtimeContract.tracePolicy",
       "classification": "decoded_runtime_authority_gap",
       "reason": "opaque policy has no field-level schema or generic consumer",
+      "consumer": "strict decoder only"
+    },
+    {
+      "path": "runtimeContract.validationRules",
+      "classification": "decoded_runtime_authority_gap",
+      "reason": "decoded validation evidence is consumed only by governed form validation",
       "consumer": "strict decoder only"
     },
     {

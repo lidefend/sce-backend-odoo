@@ -1633,6 +1633,21 @@
         },
         "deliveryProfile": {
           "$ref": "#/$defs/deliveryProfile"
+        },
+        "intakeAutosave": {
+          "type": "object"
+        },
+        "fieldSemantics": {
+          "type": "object"
+        },
+        "validationRules": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "governance": {
+          "type": "object"
         }
       }
     },

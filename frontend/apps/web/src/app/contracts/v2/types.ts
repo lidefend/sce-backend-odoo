@@ -496,6 +496,10 @@ export interface ContractV2RuntimeContract {
   businessWorkspace?: ContractV2Dictionary;
   businessActions?: ContractV2Dictionary[];
   deliveryProfile?: ContractV2DeliveryProfile;
+  intakeAutosave?: ContractV2Dictionary;
+  fieldSemantics?: ContractV2Dictionary;
+  validationRules?: ContractV2Dictionary[];
+  governance?: ContractV2Dictionary;
 }
 
 export interface ContractV2Lifecycle {

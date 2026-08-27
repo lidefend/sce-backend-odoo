@@ -66,7 +66,8 @@ EXPECTED = {
     "contractLifecycleIntegrity": "algorithm contractSha256",
     "runtimeContract": (
         "patchStrategy cachePolicy optimistic lazyContainer virtualization retryPolicy renderStrategy hydration patchOperations "
-        "tracePolicy complexityBudget aiEnvelope interactionMode actionTarget collaboration businessWorkspace businessActions deliveryProfile"
+        "tracePolicy complexityBudget aiEnvelope interactionMode actionTarget collaboration businessWorkspace businessActions deliveryProfile "
+        "intakeAutosave fieldSemantics validationRules governance"
     ),
     "meta": "etag snapshotId traceId requestId sourceType lifecycle deliveryTrim",
     "deliveryTrim": "clientType deliveryProfile compact limits original delivered omitted",
@@ -146,6 +147,10 @@ NON_VISUAL = {
 }
 
 DECODED_RUNTIME_GAPS = {
+    "runtimeContract.intakeAutosave": "decoded policy is consumed only by the form intake runtime",
+    "runtimeContract.fieldSemantics": "decoded semantic evidence is consumed only by governed form projection",
+    "runtimeContract.validationRules": "decoded validation evidence is consumed only by governed form validation",
+    "runtimeContract.governance": "decoded governance evidence is diagnostic and non-executable",
     "runtimeContract.patchStrategy": "no generic patch controller consumes this policy yet",
     "runtimeContract.optimistic": "mutation settlement remains explicitly non-optimistic",
     "runtimeContract.lazyContainer": "no lazy-container controller consumes this list yet",
