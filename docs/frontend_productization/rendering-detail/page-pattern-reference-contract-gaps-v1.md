@@ -10,6 +10,7 @@ This ledger records reference details that cannot be implemented safely from the
 - Readonly section metadata: the reference displays section item counts. Contract V2 currently carries nodes and container structure but no authoritative displayed item-count presentation.
 - Collection semantic tones: the payment list currently projects status labels without a `tone_by_value` authority. Neutral badges are correct until the backend declares value-to-semantic-tone mappings; the frontend must not infer tones from Chinese labels.
 - Task slot coverage: the payment task form projects only a subset of the business facts shown by the reference detail. The form-structure producer must explicitly assign the remaining owned fields to task/core/condition/supplementary slots before the task renderer may show them.
+- Task field geometry: the real payment task structure currently projects single-column containers whose widgets retain full-span metadata. `CanonicalFormNodeRenderer` correctly preserves those declared columns and spans. A future producer change must derive compact task geometry from the effective action/view structure; the frontend must not reinterpret `span=24` as half-width merely to imitate the reference readonly drawer.
 
 ## P1/P2 product gaps
 
