@@ -63,6 +63,16 @@
 
 **结论（终版）**: 89px 是 TDesign PrimaryTable 1.20.5 在 worksheet 配置组合（`appearance="worksheet"` + fixed 布局 + 内容驱动）下的固有行高分配，**非样式、非属性、非布局、非 size 可达**。可行修复路径仅剩: ① 深入 TDesign `primary-table.mjs` 行高渲染算法定位 88px 来源（高成本高风险）; ② worksheet 绕过 PrimaryTable 改自定义表格渲染（大改动）; ③ 接受 89px 作为 worksheet 模式行高（记录为已知特性）。建议作为独立组件层任务评估，不阻塞其他渲染细节落地。
 
+**深挖补强（2026-08-28 第四轮，浏览器穷尽）**：
+- 行数实验: 7 行 → 1 行行高恒 89（**非总高均分**）；1 行清空内容 → 46（**每行内容驱动**，非固定分配）
+- 换行排除: 全 td 文本 probe 实测均 1 行（含"批准"2 字），列宽 96-220px——**非文本换行撑高**
+- 结构排除: 全 td `rowSpan/colSpan=1`（无合并单元格）、无 `::before/::after` 伪元素、`childElementCount≤1` 且内容高度 22px、`padding:0 8px`、`min-height:46px`
+- 容器排除: `tbody=7×89=623px` 精确等于行高总和，`table=665=thead42+tbody623`，容器 570px 可溢出滚动——**非容器拉伸**
+- 隔离实验: 仅改 td `line-height:22px` 时行高 88（=4×22），`line-height:40px` 时 160（=4×40）——**行高恒为 4 × line-height**；`line-height:11px` 可压至 45px 但文本重叠（11px < 14px 字号）——**纯 CSS 无实用修复，确认不可达**
+- TDesign 源码: `tbody.mjs`/`base-table.mjs`/`primary-table.mjs` 均无 td 行高 JS 注入（行高由浏览器 table 布局在 fixed 布局下计算）
+
+**最终判定**: worksheet 行高 89px 为 TDesign 1.20.5 `table-layout:fixed` + 树形表格下的行 box 分配行为（空行 46px 基线 + 内容触发 4×line-height）。纯样式层不可达，作为**已知特性**记录；修复需组件层（绕过 PrimaryTable 或自定义行渲染），列独立任务，不阻塞其他渲染细节。
+
 ### 2. 公司支出列表空态（数据归属）
 迁移至 company 1 的 25 条 `sc.payment.execution` 全部属于 business_category「往来单位付款」（code=`finance.payment.execution.partner`，id=16），而「公司支出」action 774 的默认 domain 要求 `finance.payment.execution.company`（id=20「公司财务支出」）。数据类别与入口不匹配 → 空态。非渲染缺陷。
 
