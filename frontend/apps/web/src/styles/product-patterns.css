@@ -450,3 +450,18 @@
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+/* Global reduced-motion fallback.
+ * Honors the OS "reduce motion" preference across every product surface.
+ * Component-local reduced-motion rules (e.g. collection controls) remain as
+ * targeted refinements layered on top of this global floor. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

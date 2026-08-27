@@ -31,6 +31,22 @@ class FrontendRenderingDetailStateGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("remains ungoverned" in failure and target in failure for failure in failures))
 
+    def test_global_accessibility_contracts_are_present(self) -> None:
+        self.assertEqual(validate(), [])
+
+    def test_removing_global_reduced_motion_fails_closed(self) -> None:
+        target = "frontend/apps/web/src/styles/product-patterns.css"
+        original = (INVENTORY.ROOT / target).read_text(encoding="utf-8")
+        removed = original.replace("@media (prefers-reduced-motion: reduce)", "@media (prefers-reduced-motion: missing)")
+
+        def fake(source):
+            if source == target:
+                return removed
+            return (INVENTORY.ROOT / source).read_text(encoding="utf-8")
+
+        failures = validate(fake)
+        self.assertTrue(any("accessibility contract missing" in failure and target in failure for failure in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

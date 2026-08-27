@@ -24,6 +24,22 @@ LEGACY_PRIVATE_STATE_DOM = {
 }
 
 
+# Global rendering-detail accessibility contracts: cross-surface guarantees
+# that are not bound to a single owned surface but must never regress.
+GLOBAL_ACCESSIBILITY_CONTRACTS = (
+    (
+        "frontend/apps/web/src/styles/product-patterns.css",
+        "Global reduced-motion fallback",
+        "@media (prefers-reduced-motion: reduce)",
+    ),
+    (
+        "frontend/apps/web/src/styles/product-patterns.css",
+        "global focus-visible rule",
+        ":is(a, button, input, select, textarea, [tabindex]):focus-visible",
+    ),
+)
+
+
 def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
     for source, (_, requirements) in INVENTORY.OWNED_BINDINGS.items():
@@ -34,6 +50,15 @@ def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8"
         for legacy in LEGACY_PRIVATE_STATE_DOM.get(source, ()):
             if legacy in text:
                 failures.append(f"state surface retains private DOM: {source}: {legacy}")
+    for source, label, marker in GLOBAL_ACCESSIBILITY_CONTRACTS:
+        try:
+            text = read_text(source)
+        except (KeyError, FileNotFoundError):
+            # Injected read_text mocks cover OWNED_BINDINGS only; fall back to
+            # the real file so global contracts are always checked.
+            text = (ROOT / source).read_text(encoding="utf-8")
+        if marker not in text:
+            failures.append(f"global rendering-detail accessibility contract missing: {source}: {label}")
     return failures
 
 
@@ -44,7 +69,10 @@ def main() -> int:
         for failure in failures:
             print(f"- {failure}")
         return 1
-    print(f"[frontend_rendering_detail_state_guard] PASS surfaces={len(INVENTORY.OWNED_BINDINGS)}")
+    print(
+        f"[frontend_rendering_detail_state_guard] PASS surfaces={len(INVENTORY.OWNED_BINDINGS)} "
+        f"accessibility_contracts={len(GLOBAL_ACCESSIBILITY_CONTRACTS)}"
+    )
     return 0
 
 
