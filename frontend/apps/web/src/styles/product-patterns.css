@@ -495,6 +495,17 @@
   box-sizing: border-box;
 }
 
+/* List query-bar search input height (list surface)
+ * The toolbar search input renders through ScInput -> TDesign t-input at its
+ * default medium (32px) next to a 36px search button, so the input looked
+ * shorter than the button it sits beside. Pin the list search input to the
+ * same 36px form-height token so query-bar controls read as one height. */
+[data-product-page-mode='list'] .collection-search-control :is(.t-input, .t-input__inner) {
+  height: var(--sc-component-input-form-height, 36px);
+  min-height: var(--sc-component-input-form-height, 36px);
+  box-sizing: border-box;
+}
+
 /* Read-only value typography consistency (form surface)
  * Within a readonly form section, two render paths coexist: the template's
  * .readonly-value (14px, no explicit weight -> inherits regular 400 per

@@ -90,7 +90,6 @@
           <ScInput
             type="search"
             :model-value="searchValue"
-            size="small"
             :disabled="loading"
             :loading="loading"
             :placeholder="searchPlaceholder"

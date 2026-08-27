@@ -20,7 +20,6 @@
           <span class="sc-visually-hidden">{{ searchLabel }}</span>
           <ScInput
             type="search"
-            size="small"
             :model-value="searchValue"
             :disabled="loading"
             :placeholder="searchPlaceholder"
