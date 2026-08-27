@@ -39,7 +39,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 33,
+      "productionConsumerCount": 35,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 363,
+      "productionConsumerCount": 365,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -363,7 +363,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 65,
+      "productionConsumerCount": 70,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -398,7 +398,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 55,
+      "productionConsumerCount": 60,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -678,7 +678,7 @@
         "TDesignLoading"
       ],
       "officialComponent": "loading",
-      "productionConsumerCount": 29,
+      "productionConsumerCount": 31,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -713,7 +713,7 @@
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 42,
+      "productionConsumerCount": 46,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1255,7 +1255,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 351,
+      "productionConsumerCount": 352,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1272,7 +1272,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "dcfb38009081fcf412a1fae321209229671c8e61cc4cdd29ab28e3992dc944fe",
+  "inputDigest": "44fcdaacfe8bd104c5aa6e3f9b2d60c3cd4364588cfcce2ff603d76e2b2b07e8",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
