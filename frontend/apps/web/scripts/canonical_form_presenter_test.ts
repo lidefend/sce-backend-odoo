@@ -927,13 +927,20 @@ invalidEnvelopeSnapshot.parallelLayout = {};
 const invalidRuntime = invalidEnvelopeSnapshot.runtimeContract as Record<string, unknown>;
 invalidRuntime.lazyContainer = 'section.identity';
 invalidRuntime.hydration = [];
+invalidRuntime.patchOperations = ['replace', 'replace'];
+invalidRuntime.aiEnvelope = { mode: 'execute', executable: true, allowed: 'yes', capabilities: ['summarize', 'summarize'] };
 assert.throws(
   () => decodeContractV2Snapshot(invalidEnvelopeSnapshot),
   (error: unknown) => {
     const message = String(error);
     return message.includes('$.parallelLayout is not allowed')
       && message.includes('runtimeContract.lazyContainer must be an array')
-      && message.includes('runtimeContract.hydration must be an object');
+      && message.includes('runtimeContract.hydration must be an object')
+      && message.includes('runtimeContract.patchOperations[1] duplicates replace')
+      && message.includes('runtimeContract.aiEnvelope.mode must equal suggestion')
+      && message.includes('runtimeContract.aiEnvelope.executable must not be true')
+      && message.includes('runtimeContract.aiEnvelope.allowed must be a boolean')
+      && message.includes('runtimeContract.aiEnvelope.capabilities[1] duplicates summarize');
   },
   'the V2 envelope and runtime policy must reject undeclared or malformed parallel authority',
 );

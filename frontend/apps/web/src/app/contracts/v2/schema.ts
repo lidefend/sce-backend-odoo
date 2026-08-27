@@ -1952,12 +1952,35 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     : Array.isArray(source.patchOperations)
       ? source.patchOperations
       .map((item, index) => decodePatchOperation(asString(item), `runtimeContract.patchOperations[${index}]`, issues))
-      .filter((item): item is ContractV2PatchOperation => Boolean(item))
+      .filter((item, index, rows): item is ContractV2PatchOperation => {
+        if (!item) return false;
+        if (rows.indexOf(item) !== index) {
+          issues.push({ path: `runtimeContract.patchOperations[${index}]`, message: `duplicates ${item}` });
+          return false;
+        }
+        return true;
+      })
       : (issues.push({ path: 'runtimeContract.patchOperations', message: 'must be an array' }), []);
   const hydration = optionalRecord(source, 'hydration', 'runtimeContract', issues);
   const tracePolicy = optionalRecord(source, 'tracePolicy', 'runtimeContract', issues);
   const complexityBudget = optionalRecord(source, 'complexityBudget', 'runtimeContract', issues);
   const aiEnvelope = optionalRecord(source, 'aiEnvelope', 'runtimeContract', issues);
+  if (aiEnvelope) {
+    if (aiEnvelope.mode !== undefined && aiEnvelope.mode !== 'suggestion') {
+      issues.push({ path: 'runtimeContract.aiEnvelope.mode', message: 'must equal suggestion' });
+    }
+    if (aiEnvelope.executable === true) {
+      issues.push({ path: 'runtimeContract.aiEnvelope.executable', message: 'must not be true' });
+    } else if (aiEnvelope.executable !== undefined && typeof aiEnvelope.executable !== 'boolean') {
+      issues.push({ path: 'runtimeContract.aiEnvelope.executable', message: 'must be a boolean' });
+    }
+    if (aiEnvelope.allowed !== undefined && typeof aiEnvelope.allowed !== 'boolean') {
+      issues.push({ path: 'runtimeContract.aiEnvelope.allowed', message: 'must be a boolean' });
+    }
+    if (aiEnvelope.capabilities !== undefined) {
+      decodeUniqueStringArray(aiEnvelope.capabilities, 'runtimeContract.aiEnvelope.capabilities', issues);
+    }
+  }
   const interactionMode = optionalStringField(source, 'interactionMode', 'runtimeContract', issues);
   const actionTarget = optionalStringField(source, 'actionTarget', 'runtimeContract', issues);
   const collaboration = optionalRecord(source, 'collaboration', 'runtimeContract', issues);
