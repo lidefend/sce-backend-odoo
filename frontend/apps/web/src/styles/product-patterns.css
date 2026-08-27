@@ -482,6 +482,20 @@
 }
 
 
+/* TDesign form control density alignment (form surface)
+ * Canonical form fields render through TDesign primitives (t-input / t-select /
+ * t-date-picker / t-textarea). TDesign defaults these to ~32px, but the form token
+ * --sc-component-input-form-height is 36px, so rendered controls drifted from the
+ * token contract. Pin controls to the form token so token changes propagate to
+ * rendering. Scoped to the form surface; shared component tokens keep authority
+ * elsewhere. */
+[data-product-page-mode='form'] :is(.t-input, .t-select, .t-date-picker, .t-textarea__inner) {
+  height: var(--sc-component-input-form-height, 36px);
+  min-height: var(--sc-component-input-form-height, 36px);
+  box-sizing: border-box;
+}
+
+
 /* Global reduced-motion fallback.
  * Honors the OS "reduce motion" preference across every product surface.
  * Component-local reduced-motion rules (e.g. collection controls) remain as
