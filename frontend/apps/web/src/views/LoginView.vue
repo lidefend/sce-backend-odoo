@@ -7,10 +7,20 @@
     <section class="login-layout">
       <section class="brand-panel" aria-label="平台介绍">
         <div class="brand-visual" aria-hidden="true">
+          <span class="brand-visual__wireframe" />
+          <span class="brand-visual__dashboard">
+            <i class="brand-visual__dashboard-line brand-visual__dashboard-line--short" />
+            <i class="brand-visual__dashboard-line" />
+            <i class="brand-visual__dashboard-line" />
+            <i class="brand-visual__dashboard-line brand-visual__dashboard-line--short" />
+          </span>
+          <span class="brand-visual__ring" />
+          <span class="brand-visual__brand-cube"><b>S</b></span>
           <span class="brand-visual__plane brand-visual__plane--primary" />
           <span class="brand-visual__plane brand-visual__plane--secondary" />
           <span class="brand-visual__orb brand-visual__orb--primary" />
           <span class="brand-visual__orb brand-visual__orb--success" />
+          <span class="brand-visual__orb brand-visual__orb--neutral" />
           <span class="brand-visual__grid" />
         </div>
         <div class="brand-copy">
@@ -279,7 +289,7 @@ async function executeHeaderAction(actionKey: string) {
   background: var(--sc-app-panel);
   color: var(--ink);
   font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
-  padding: 64px 0 0 clamp(24px, 5vw, 72px);
+  padding: 56px 0 0;
   position: relative;
   overflow: hidden;
 }
@@ -288,7 +298,7 @@ async function executeHeaderAction(actionKey: string) {
   position: absolute;
   z-index: 2;
   top: 14px;
-  left: clamp(24px, 3vw, 48px);
+  left: 24px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -309,11 +319,11 @@ async function executeHeaderAction(actionKey: string) {
 
 .login-layout {
   width: 100%;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 56px);
   display: grid;
   grid-template-areas: 'auth brand';
-  grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
-  gap: clamp(30px, 4vw, 72px);
+  grid-template-columns: minmax(420px, 39vw) minmax(0, 1fr);
+  gap: 0;
   align-items: center;
   position: relative;
   z-index: 1;
@@ -323,12 +333,24 @@ async function executeHeaderAction(actionKey: string) {
   grid-area: brand;
   position: relative;
   display: grid;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 56px);
   align-items: end;
   overflow: hidden;
-  border-radius: 64px 0 0 0;
-  padding: 64px;
-  background: linear-gradient(145deg, var(--sc-app-panel) 0%, var(--sc-app-subtle-bg) 60%, var(--sc-app-info-bg) 100%);
+  padding: 64px 64px 54px;
+  background:
+    radial-gradient(circle at 42% 44%, color-mix(in srgb, var(--sc-app-panel) 88%, transparent) 0 16%, transparent 43%),
+    linear-gradient(145deg, var(--sc-app-panel) 0%, var(--sc-app-subtle-bg) 54%, var(--sc-app-info-bg) 100%);
+}
+
+.brand-panel::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: -14% auto -18% -22%;
+  width: 34%;
+  background: var(--sc-app-panel);
+  transform: skewX(-17deg);
+  transform-origin: 100% 50%;
 }
 
 .auth-panel {
@@ -337,7 +359,8 @@ async function executeHeaderAction(actionKey: string) {
   display: grid;
   justify-items: stretch;
   align-self: center;
-  padding-bottom: 64px;
+  align-content: start;
+  padding: clamp(130px, 20vh, 190px) clamp(32px, 5vw, 72px) 88px;
 }
 
 .brand-visual { position: absolute; inset: 0; overflow: hidden; }
@@ -350,15 +373,80 @@ async function executeHeaderAction(actionKey: string) {
   background-image: linear-gradient(var(--sc-app-border) 1px, transparent 1px), linear-gradient(90deg, var(--sc-app-border) 1px, transparent 1px);
   background-size: 38px 38px;
 }
+.brand-visual__wireframe {
+  position: absolute;
+  z-index: 1;
+  width: min(68vw, 860px);
+  aspect-ratio: 1.35;
+  left: -18%;
+  top: 9%;
+  border: 1px solid color-mix(in srgb, var(--sc-app-border) 72%, transparent);
+  border-radius: 48% 52% 44% 56%;
+  transform: rotate(18deg);
+  box-shadow:
+    inset 0 0 0 92px color-mix(in srgb, var(--sc-app-panel) 42%, transparent),
+    inset 0 0 0 94px color-mix(in srgb, var(--sc-app-border) 45%, transparent);
+}
+.brand-visual__dashboard {
+  position: absolute;
+  z-index: 2;
+  left: 16%;
+  bottom: -7%;
+  width: 72%;
+  height: 48%;
+  padding: 12% 9%;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--sc-app-panel) 84%, transparent);
+  box-shadow: var(--sc-app-shadow-modal);
+  transform: rotate(30deg) skewX(-7deg);
+}
+.brand-visual__dashboard-line {
+  display: block;
+  width: 72%;
+  height: 12px;
+  margin-bottom: 24px;
+  border-radius: 999px;
+  background: var(--sc-app-border);
+}
+.brand-visual__dashboard-line--short { width: 38%; }
+.brand-visual__ring {
+  position: absolute;
+  z-index: 3;
+  left: 17%;
+  top: 18%;
+  width: min(46vw, 590px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: min(8vw, 106px) solid color-mix(in srgb, var(--sc-app-border) 56%, var(--sc-app-panel));
+  box-shadow: var(--sc-app-shadow-modal);
+}
+.brand-visual__brand-cube {
+  position: absolute;
+  z-index: 7;
+  top: 31%;
+  left: 45%;
+  display: grid;
+  width: 150px;
+  height: 150px;
+  place-items: center;
+  border: 10px solid color-mix(in srgb, var(--sc-app-panel) 72%, transparent);
+  border-radius: 34px;
+  background: linear-gradient(145deg, var(--sc-semantic-surface-interactive), color-mix(in srgb, var(--sc-semantic-surface-interactive) 66%, white));
+  color: var(--sc-semantic-text-on-interactive);
+  box-shadow: 0 30px 52px color-mix(in srgb, var(--sc-semantic-surface-interactive) 30%, transparent);
+  transform: rotate(30deg);
+}
+.brand-visual__brand-cube b { font-size: 82px; line-height: 1; transform: rotate(-30deg); }
 .brand-visual__plane,
-.brand-visual__orb { position: absolute; box-shadow: var(--sc-app-shadow-modal); }
+.brand-visual__orb { position: absolute; z-index: 5; box-shadow: var(--sc-app-shadow-modal); }
 .brand-visual__plane { width: 280px; height: 86px; border-radius: 18px; transform: rotate(32deg); }
-.brand-visual__plane--primary { top: 25%; left: 12%; background: linear-gradient(135deg, var(--sc-app-info-bg), var(--sc-semantic-surface-interactive)); }
-.brand-visual__plane--secondary { right: 5%; bottom: 19%; background: var(--sc-app-panel); }
+.brand-visual__plane--primary { z-index: 6; top: 28%; left: -1%; background: linear-gradient(135deg, var(--sc-app-info-bg), var(--sc-semantic-surface-interactive)); }
+.brand-visual__plane--secondary { z-index: 6; right: 7%; bottom: 17%; background: var(--sc-app-panel); }
 .brand-visual__orb { width: 116px; height: 116px; border-radius: 50%; }
-.brand-visual__orb--primary { top: 32%; right: 18%; background: linear-gradient(145deg, var(--sc-semantic-surface-interactive), var(--sc-app-info-bg)); }
-.brand-visual__orb--success { top: 48%; right: 36%; width: 88px; height: 88px; background: var(--sc-app-success-bg); }
-.brand-copy { position: relative; z-index: 1; max-width: 520px; }
+.brand-visual__orb--primary { top: 39%; left: 27%; background: linear-gradient(145deg, var(--sc-semantic-surface-interactive), var(--sc-app-info-bg)); }
+.brand-visual__orb--success { top: 52%; left: 19%; width: 92px; height: 92px; background: var(--sc-app-success-bg); }
+.brand-visual__orb--neutral { top: 62%; left: 13%; width: 78px; height: 78px; background: var(--sc-app-panel); }
+.brand-copy { position: relative; z-index: 8; max-width: 520px; margin-left: 4%; }
 
 .page-actions {
   width: 100%;
@@ -399,6 +487,7 @@ async function executeHeaderAction(actionKey: string) {
   border: 0;
   box-shadow: none;
   background: transparent;
+  max-width: 400px;
 }
 
 .brand-header {
@@ -511,7 +600,7 @@ label {
 .page-footer {
   position: absolute;
   bottom: 24px;
-  left: clamp(24px, 5vw, 72px);
+  left: clamp(32px, 5vw, 72px);
   text-align: left;
   color: var(--sc-app-text-secondary);
   font-size: 12px;
@@ -534,6 +623,7 @@ label {
 
   .auth-panel {
     justify-items: stretch;
+    padding-top: 96px;
   }
 }
 
