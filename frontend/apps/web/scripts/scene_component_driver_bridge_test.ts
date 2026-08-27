@@ -132,7 +132,7 @@ const enabledFlag = {
   enabled: true,
   read_only_only: true,
   action_ids: [77],
-  allowed_kits: ['sc-native', 'tdesign-modern', 'ui5-horizon'],
+  allowed_kits: ['sc-native', 'tdesign-modern'],
   system_default_kit: 'tdesign-modern',
   allow_user_override: true,
 };
@@ -151,7 +151,7 @@ assert.equal(resolveSceneComponentDriverDecision({
 
 const decision = resolveSceneComponentDriverDecision({
   featureFlag: enabledFlag, actionId: 77, model: 'hr.department', sceneKey: '', viewMode: 'tree', pageAuth: 'read',
-  hasMutationActions: false, selectionEnabled: false, userKit: 'ui5-horizon',
+  hasMutationActions: false, selectionEnabled: false, userKit: 'sc-native',
 });
 assert.equal(decision.eligible, true);
 assert.equal(decision.targeted, true);
@@ -202,11 +202,6 @@ const driverField = {
 };
 assert.equal(usesContractFormDriverField(driverField, 'sc-native'), false);
 assert.equal(usesContractFormDriverField(driverField, 'tdesign-modern'), true);
-assert.equal(
-  usesContractFormDriverField(driverField, 'ui5-horizon'),
-  true,
-  'supported editable fields must remain vendor-neutral',
-);
 assert.deepEqual(toContractFormSceneField(driverField, 'field-name', 'Enter name'), {
   id: 'field-name', label: 'Name', value: 'Draft', kind: 'text', required: true, readonly: false,
   invalid: true, placeholder: 'Enter name', options: [],
@@ -232,11 +227,6 @@ assert.equal(
   'supported readonly fields must be rendered by the selected professional driver',
 );
 assert.equal(
-  usesContractFormDriverField({ ...driverField, readonly: true }, 'ui5-horizon'),
-  true,
-  'readonly driver delegation must remain vendor-neutral',
-);
-assert.equal(
   usesContractFormDriverField({ ...driverField, readonly: true, type: 'html' }, 'tdesign-modern'),
   false,
   'unsupported rich readonly values must retain the safe Native renderer',
@@ -257,8 +247,8 @@ for (let index = 0; index < 65; index += 1) {
     timestamp: index,
     actionId: 77,
     model: 'hr.department',
-    requestedKit: 'ui5-horizon',
-    resolvedKit: 'ui5-horizon',
+    requestedKit: 'tdesign-modern',
+    resolvedKit: 'tdesign-modern',
     source: 'user',
     reasonCode: '',
   });

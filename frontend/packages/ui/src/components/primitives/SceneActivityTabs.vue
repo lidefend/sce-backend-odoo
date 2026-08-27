@@ -16,27 +16,6 @@ function activate(id: string): void {
 </script>
 
 <template>
-  <ui5-tabcontainer v-if="componentModel === 'web-components'" class="scene-primitive-tabs scene-ui5-tabs" fixed>
-    <ui5-tab
-      v-for="(tab, tabIndex) in tabs"
-      :key="tab.id"
-      :text="tab.count === undefined ? tab.label : `${tab.label} ${tab.count}`"
-      :selected="tabIndex === 0"
-      :data-activity-tab="tab.id"
-    >
-      <div v-if="tab.items.length" class="scene-activity-list">
-        <article v-for="item in tab.items" :key="item.id" class="scene-activity-item">
-          <span class="scene-activity-dot" :data-tone="item.tone || 'Neutral'"></span>
-          <div>
-            <div class="scene-activity-item__title"><strong>{{ item.title }}</strong><span>{{ item.meta }}</span></div>
-            <p>{{ item.detail }}</p>
-          </div>
-        </article>
-      </div>
-      <div v-else class="scene-empty-activity">{{ tab.emptyText || '暂无记录' }}</div>
-    </ui5-tab>
-  </ui5-tabcontainer>
-
   <component
     :is="driverTabs"
     v-else-if="componentModel === 'vue' && driverTabs && driverTabPanel"

@@ -8,7 +8,7 @@ from typing import Any
 
 
 SCENE_COMPONENT_DRIVER_FLAG = "scene_component_drivers_v1"
-SCENE_COMPONENT_DRIVER_KITS = frozenset({"sc-native", "tdesign-modern", "ui5-horizon"})
+SCENE_COMPONENT_DRIVER_KITS = frozenset({"sc-native", "tdesign-modern"})
 SCENE_COMPONENT_DRIVER_FORM_MODES = frozenset({"create", "edit", "readonly"})
 
 

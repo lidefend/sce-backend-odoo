@@ -1,23 +1,6 @@
-<script setup lang="ts">
-import { computed } from 'vue';
-import { useSceneUiKit } from '../../kits/context';
-
-const { runtime } = useSceneUiKit();
-const componentModel = computed(() => runtime.value?.componentModel || 'native');
-</script>
 
 <template>
-  <ui5-dynamic-page v-if="componentModel === 'web-components'" class="scene-page-frame" hide-pin-button>
-    <ui5-dynamic-page-title slot="titleArea">
-      <div slot="heading"><slot name="heading" /></div>
-      <div slot="actionsBar"><slot name="actions" /></div>
-      <slot name="snapped" />
-    </ui5-dynamic-page-title>
-    <ui5-dynamic-page-header slot="headerArea"><slot name="header" /></ui5-dynamic-page-header>
-    <slot />
-  </ui5-dynamic-page>
-
-  <section v-else class="scene-page-frame scene-native-page-frame">
+  <section class="scene-page-frame scene-native-page-frame">
     <header class="scene-native-page-title">
       <slot name="heading" />
       <div class="scene-native-page-actions"><slot name="actions" /></div>

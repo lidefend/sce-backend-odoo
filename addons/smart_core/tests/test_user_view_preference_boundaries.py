@@ -280,14 +280,14 @@ class TestUserViewPreferenceBoundaries(unittest.TestCase):
             payload={
                 "model": "hr.department",
                 "preference_key": "scene_ui_driver",
-                "preference": {"kit": "ui5-horizon", "noise": "ignored"},
+                "preference": {"kit": "tdesign-modern", "noise": "ignored"},
             },
         )
 
         result = handler.handle()
 
         self.assertTrue(result["ok"])
-        self.assertEqual(Preference.created_vals["value_json"], {"kit": "ui5-horizon"})
+        self.assertEqual(Preference.created_vals["value_json"], {"kit": "tdesign-modern"})
 
     def test_get_scene_driver_preference_does_not_require_list_action_context(self):
         module = _load_handler()

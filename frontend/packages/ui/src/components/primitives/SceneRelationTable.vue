@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue';
+import { computed } from 'vue';
 import type { SceneRelationTable, SceneTableRow } from '../../contracts/sceneObjectPage';
 import { useSceneUiKit } from '../../kits/context';
 
@@ -36,9 +36,6 @@ function activateTdesignRow(context: unknown): void {
   if (row) activateRow(row);
 }
 
-watchEffect(() => {
-  if (componentModel.value === 'web-components') void runtime.value?.ensurePrimitive?.('table');
-});
 </script>
 
 <template>
@@ -52,33 +49,6 @@ watchEffect(() => {
     </header>
 
     <div v-if="table.rows.length" class="scene-relation-table__viewport">
-      <ui5-table v-if="componentModel === 'web-components'" overflow-mode="Popin" class="scene-ui5-table">
-        <ui5-table-header-row slot="headerRow">
-          <ui5-table-header-cell
-            v-for="column in table.columns"
-            :key="column.key"
-            :width="column.width"
-          >
-            {{ column.label }}
-          </ui5-table-header-cell>
-        </ui5-table-header-row>
-        <ui5-table-row
-          v-for="row in table.rows"
-          :key="row.id"
-          :data-row-id="row.id"
-          :data-row-interactive="interactiveRows ? 'true' : 'false'"
-          :tabindex="interactiveRows ? 0 : undefined"
-          @click="activateRow(row)"
-          @keydown.enter.prevent="activateRow(row)"
-        >
-          <ui5-table-cell v-for="column in table.columns" :key="column.key">
-            <span :data-tone="column.key === 'status' ? row.tone || 'Neutral' : undefined">
-              {{ row.values[column.key] || '无' }}
-            </span>
-          </ui5-table-cell>
-        </ui5-table-row>
-      </ui5-table>
-
       <component
         :is="driverTable"
         class="scene-tdesign-table"
@@ -198,7 +168,6 @@ watchEffect(() => {
   font-weight: 700;
 }
 
-.scene-ui5-table,
 .scene-tdesign-table {
   width: 100%;
 }

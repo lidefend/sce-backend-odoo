@@ -63,7 +63,7 @@ function positiveIntegerList(value: unknown): number[] {
 
 function sceneKitList(value: unknown): SceneUiKitId[] {
   const candidatePolicy: SceneUiPreferencePolicy = {
-    allowedKits: ['sc-native', 'tdesign-modern', 'ui5-horizon'],
+    allowedKits: ['sc-native', 'tdesign-modern'],
     systemDefaultKit: 'sc-native',
   };
   return textList(value).filter((item): item is SceneUiKitId => isSceneUiKitAllowed(candidatePolicy, item));
