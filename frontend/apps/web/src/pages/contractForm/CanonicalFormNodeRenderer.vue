@@ -1,10 +1,10 @@
 <template>
   <section
     v-if="node.visible && hasContent"
-    :class="['canonical-form-node', `canonical-form-node--${nodeKind}`, nativeClass]"
+    :class="['canonical-form-node', `canonical-form-node--${nodeKind}`, nativeClass, { 'canonical-form-node--readonly-fact': readonlyFactLayout }]"
     :data-canonical-node-id="node.nodeId"
     data-semantic-component="CanonicalFormNodeRenderer"
-    :data-state="preferReadonlyFacts ? 'readonly-preferred' : 'structured'"
+    :data-state="readonlyFactLayout ? 'readonly-fact' : 'structured'"
     :data-canonical-node-kind="node.kind"
     :data-native-class="nativeClass || undefined"
     :data-section-navigation-role="node.zoneRole"
@@ -33,7 +33,7 @@
       :columns="columns"
       :fields="fields"
       :relation-adapter="relationAdapter"
-      :prefer-readonly-facts="preferReadonlyFacts"
+      :prefer-readonly-facts="readonlyFactLayout"
       @field-change="emit('field-change', $event)"
       @action-ref="emit('action-ref', $event)"
     />
@@ -79,6 +79,11 @@ const nodeKind = computed(() => String(props.node.kind || 'container').trim().to
 const fields = computed(() => canonicalSectionFields(props.node).map((field) => (
   canonicalFieldToFormSection(field, props.relationAdapter)
 )));
+const readonlyFactLayout = computed(() => Boolean(
+  props.preferReadonlyFacts
+  && fields.value.length
+  && fields.value.every((field) => field.readonly),
+));
 const children = computed(() => visibleCanonicalChildren(props.node));
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
 const hasContent = computed(() => canonicalNodeHasContent(props.node));
@@ -93,15 +98,19 @@ const presentableNodeText = computed(() => {
 <style scoped>
 .canonical-form-node { min-width: 0; }
 .canonical-form-node + .canonical-form-node { margin-top: 16px; }
-.canonical-form-node--field {
+.canonical-form-node--field.canonical-form-node--readonly-fact {
   display: inline-block;
   max-width: 100%;
   vertical-align: baseline;
 }
-.canonical-form-node--field + .canonical-form-node--field,
-.canonical-form-native-text + .canonical-form-node--field,
-.canonical-form-node--field + .canonical-form-native-text { margin-top: 0; }
-.canonical-form-node--field :deep(.template-form-section) {
+.canonical-form-node--field:not(.canonical-form-node--readonly-fact) {
+  display: block;
+  width: 100%;
+}
+.canonical-form-node--readonly-fact + .canonical-form-node--readonly-fact,
+.canonical-form-native-text + .canonical-form-node--readonly-fact,
+.canonical-form-node--readonly-fact + .canonical-form-native-text { margin-top: 0; }
+.canonical-form-node--readonly-fact :deep(.template-form-section) {
   display: inline;
   padding: 0;
   border: 0;
@@ -109,12 +118,12 @@ const presentableNodeText = computed(() => {
   background: transparent;
   box-shadow: none;
 }
-.canonical-form-node--field :deep(.template-form-section-grid),
-.canonical-form-node--field :deep(.field),
-.canonical-form-node--field :deep(.field-control-row),
-.canonical-form-node--field :deep(.field-control-main) { display: inline; }
-.canonical-form-node--field :deep(.readonly-value),
-.canonical-form-node--field :deep(.contract-readonly-value) {
+.canonical-form-node--readonly-fact :deep(.template-form-section-grid),
+.canonical-form-node--readonly-fact :deep(.field),
+.canonical-form-node--readonly-fact :deep(.field-control-row),
+.canonical-form-node--readonly-fact :deep(.field-control-main) { display: inline; }
+.canonical-form-node--readonly-fact :deep(.readonly-value),
+.canonical-form-node--readonly-fact :deep(.contract-readonly-value) {
   min-height: 0;
   font: inherit;
   color: inherit;

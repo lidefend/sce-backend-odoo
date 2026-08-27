@@ -29,6 +29,16 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
+    def test_editable_fields_cannot_be_forced_into_readonly_fact_layout(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        values[target] = values[target].replace(
+            "fields.value.every((field) => field.readonly)",
+            "fields.value.length > 0",
+        )
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
     def test_product_specific_hint_is_rejected(self) -> None:
         values = self.source_map()
         target = "frontend/apps/web/src/components/design-system/ScCard.vue"

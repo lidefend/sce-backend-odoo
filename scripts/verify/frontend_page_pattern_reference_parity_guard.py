@@ -30,6 +30,11 @@ REQUIREMENTS = {
         "grid-auto-rows: max-content",
         "align-content: start",
     ),
+    "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue": (
+        "fields.value.every((field) => field.readonly)",
+        ':prefer-readonly-facts="readonlyFactLayout"',
+        "canonical-form-node--readonly-fact",
+    ),
     "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": (
         'class="toolbar-total"',
         "grid-template-areas: 'view search total sort primary'",
