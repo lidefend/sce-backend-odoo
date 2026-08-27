@@ -506,6 +506,18 @@
   box-sizing: border-box;
 }
 
+/* List query-bar search control renders as one seamless unit (TDesign
+ * InputAdornment shape). The outline search button previously kept its own
+ * full 8px radius and left border, so it read as a separate box next to the
+ * input (right radius 0) - a doubled "two frames" look. Merge them on the
+ * list surface: the submit button drops its left radius/border and joins the
+ * input's right edge. */
+[data-product-page-mode='list'] .collection-search-control .toolbar-search-submit {
+  border-radius: 0 8px 8px 0 !important;
+  border-left-width: 0 !important;
+  height: var(--sc-component-input-form-height, 36px);
+}
+
 /* Read-only value typography consistency (form surface)
  * Within a readonly form section, two render paths coexist: the template's
  * .readonly-value (14px, no explicit weight -> inherits regular 400 per
