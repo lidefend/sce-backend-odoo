@@ -267,7 +267,7 @@
   </LayoutShell>
 </template>
 <script setup lang="ts">
-import { computed, nextTick, onErrorCaptured, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onErrorCaptured, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
@@ -737,7 +737,7 @@ const {
   isActive: () => isComponentActive.value,
   reload: () => reload(),
 });
-const v2ContractStore = ref<ContractV2NormalizedStore | null>(null);
+const v2ContractStore = shallowRef<ContractV2NormalizedStore | null>(null);
 const canonicalFormFields = computed(() => resolveContractV2FormFieldMap(v2ContractStore.value));
 const v2ContractDecodeError = ref('');
 function formRouteIdentity() {
