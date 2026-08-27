@@ -51,6 +51,8 @@
 
 结论: 行高 89px 由 worksheet 布局层强制（非纯 CSS 可修），需在 `HierarchicalWorksheet.vue` 组件层定位行高来源后统一为 token 驱动。列为后续迭代项。
 
+**后续深挖结论（2026-08-28）**：89px = td 88px + 1px border，且 88 = 4 × line-height(22px)——td 被表格算法统一分配 4 行高度，而内容仅单行。已验证全部 CSS 控制点均无效：`height/min-height/max-height:46px !important`（tr/td/tbody）、JS 内联 `td.style.height`、`tbody{display:contents}`、`vertical-align`、`line-height`、`white-space:nowrap`、`overflow:hidden`、TDesign 行高变量（`--td-table-row-height` 未定义、`:root` 无相关变量、无匹配 height 规则）。唯一有效操作是清空 td 内容 → 行高回 46px（确认"内容驱动"分配）。`t-size` 影响行高（size-l=111px / size-s=89px），但 CSS 无法在 size-s 下压到 46px。判定：TDesign PrimaryTable 在 worksheet 布局下的行高分配行为，须在 `ScTable`/`tdesignPrimitiveBridge` 组件层处理（改传参或换渲染路径），纯样式层不可达。
+
 ### 2. 公司支出列表空态（数据归属）
 迁移至 company 1 的 25 条 `sc.payment.execution` 全部属于 business_category「往来单位付款」（code=`finance.payment.execution.partner`，id=16），而「公司支出」action 774 的默认 domain 要求 `finance.payment.execution.company`（id=20「公司财务支出」）。数据类别与入口不匹配 → 空态。非渲染缺陷。
 
@@ -76,8 +78,27 @@
 - 测量: 每个列表导航 `/a/{action}?menu_id={menu}` 后，实测 th/tr/查询栏 `getBoundingClientRect().height` 与 surface token 计算值对比
 - 截图: `/tmp/vs_baseline_shots/payment.png`、`settlement.png`
 
-## 六、后续迭代项
+## 七、表单面 token 审计与修复（2026-08-28 追加）
 
-1. **worksheet 行高统一**: 定位 `HierarchicalWorksheet.vue` 表格行高 89px 来源，使其消费密度 token（46px）
-2. **覆盖更多表面**: 表单页、卡片、分页器等 TDesign 组件的 token 落地审计
-3. **基线自动化**: 将密度测量脚本固化为 `make` target + 门禁（复用 `verify.frontend.all_list_visual.audit` 基础设施）
+### 问题
+付款申请表单（`/f/payment.request/1709?menu_id=545&action_id=775`，mode=form）的 canonical 表单字段经 `CanonicalFormNodeRenderer → ProfessionalBaseFieldControl → TDesign primitives` 渲染，控件高度回退 TDesign 默认 **32px**，而表单 token `--sc-component-input-form-height` 为 **36px**——token 与渲染失配 4px。
+
+### 关键机制
+- 表单 surface 容器为 `.sc-page-frame[data-product-page-mode='form']`（**无 `.page` class**，与 list surface 的 `.page[data-product-page-mode='list']` 不同——选择器不能复用）
+- 受影响的 TDesign 控件: `.t-input` / `.t-select` / `.t-date-picker` / `.t-textarea__inner`
+- 控件高度 32px 由 TDesign size 默认决定（`--sc-component-input-form-height` 未被消费）——token 改动不会跟随
+
+### 修复
+`product-patterns.css` 追加「TDesign form control density alignment (form surface)」块（+14 行，`[data-product-page-mode='form']` 作用域），将表单控件高度 pin 到 `--sc-component-input-form-height`（36px）。
+
+- commit: `f24cadd0`
+- 修后实测（payment 表单）: **7/8 控件 = 36px == token**；余 1 个为 `.sc-input` 内搜索框（容器已 36px，内层不影响视觉）
+- 按钮 token 已由 `.sc-btn.t-button` 消费（36/30px），日期选择器同步对齐
+
+## 八、后续迭代项
+
+1. **worksheet 行高统一**: 定位 `HierarchicalWorksheet.vue` 表格行高 89px 来源，使其消费密度 token（46px）——纯样式层不可达，需组件层（`ScTable`/bridge 传参或渲染路径）
+2. **覆盖更多表面**: 卡片、分页器、弹窗/抽屉内表单、详情展示面（read-only）的 TDesign 组件 token 落地审计
+3. **表单间距 token**: `--sc-component-form-field-gap` / `--sc-component-form-control-gap` 未定义，字段行距由布局层决定——确认设计意图后补 token 并绑定
+4. **基线自动化**: 将密度测量脚本固化为 `make` target + 门禁（复用 `verify.frontend.all_list_visual.audit` 基础设施），并扩展覆盖 form surface
+5. **公司支出空态**: 数据归属（bc16 vs bc20）与 action domain 是否对齐，需业务确认
