@@ -2,8 +2,16 @@
   "schemaVersion": "contract-v2-render-authority-matrix/v1",
   "schemaAuthority": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
   "scope": [
+    "sourceContext",
+    "searchContract",
     "pageInfo",
     "layoutContract",
+    "activityProfile",
+    "activitySourceAuthority",
+    "activityFieldOccurrence",
+    "activityNodeOccurrence",
+    "activityNode",
+    "activityTemplate",
     "container",
     "nativeLayoutNode",
     "widget",
@@ -14,12 +22,24 @@
     "buttonStatus",
     "selectorStatus",
     "actionContract",
-    "actionRule"
+    "actionRule",
+    "dataContract",
+    "dataMeta",
+    "visibleFields",
+    "fieldGroups",
+    "sourceAuthority",
+    "contractLifecycle",
+    "contractLifecycleDefinition",
+    "contractLifecycleGeneration",
+    "contractLifecycleRuntime",
+    "contractLifecycleIntegrity",
+    "runtimeContract",
+    "meta"
   ],
   "summary": {
-    "schemaFieldCount": 164,
-    "renderedOrInteractionAuthorityCount": 122,
-    "validatedNonVisualAuthorityCount": 42,
+    "schemaFieldCount": 300,
+    "renderedOrInteractionAuthorityCount": 201,
+    "validatedNonVisualAuthorityCount": 99,
     "unclassifiedCount": 0
   },
   "rows": [
@@ -251,6 +271,256 @@
       "consumer": "contractFormPresenter.presentAction / action executor"
     },
     {
+      "path": "activityFieldOccurrence.attributes",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.currency_field",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.decorations",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.digits",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.field_type",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.label",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.modifiers",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.name",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.native_locator",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.occurrence_index",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.source_position",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.tail",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.text",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityFieldOccurrence.widget",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNode.attributes",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNode.children",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNode.native_locator",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNode.occurrence_index",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNode.source_position",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNode.tag",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNode.tail",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNode.text",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNodeOccurrence.attributes",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNodeOccurrence.native_locator",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNodeOccurrence.occurrence_index",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNodeOccurrence.source_position",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNodeOccurrence.tag",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNodeOccurrence.tail",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityNodeOccurrence.text",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.actionCount",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.actions",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.activityTypeSlots",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.assigneeSlots",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.deadlineSlots",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.fieldOccurrences",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.nativeAttrs",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.nodeOccurrences",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.sourceAuthority",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.template",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityProfile.templateQwebPresent",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activitySourceAuthority.authorities",
+      "classification": "validated_non_visual_authority",
+      "reason": "activity projection provenance",
+      "consumer": "activity decoder authority guard"
+    },
+    {
+      "path": "activitySourceAuthority.kind",
+      "classification": "validated_non_visual_authority",
+      "reason": "activity projection provenance",
+      "consumer": "activity decoder authority guard"
+    },
+    {
+      "path": "activitySourceAuthority.no_business_fact_authority",
+      "classification": "validated_non_visual_authority",
+      "reason": "activity authority boundary",
+      "consumer": "activity decoder authority guard"
+    },
+    {
+      "path": "activitySourceAuthority.projection_only",
+      "classification": "validated_non_visual_authority",
+      "reason": "activity authority boundary",
+      "consumer": "activity decoder authority guard"
+    },
+    {
+      "path": "activitySourceAuthority.runtime_carrier",
+      "classification": "validated_non_visual_authority",
+      "reason": "activity carrier identity",
+      "consumer": "activity decoder authority guard"
+    },
+    {
+      "path": "activityTemplate.names",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityTemplate.native_locator",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityTemplate.nodes",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
+      "path": "activityTemplate.occurrence_index",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "activity renderer registry"
+    },
+    {
       "path": "buttonStatus.backendIdentity",
       "classification": "validated_non_visual_authority",
       "reason": "action/status binding identity",
@@ -374,6 +644,214 @@
       "consumer": "contractFormPresenter.presentNode"
     },
     {
+      "path": "contractLifecycle.authority",
+      "classification": "validated_non_visual_authority",
+      "reason": "contract lifecycle provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycle.definition",
+      "classification": "validated_non_visual_authority",
+      "reason": "contract lifecycle provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycle.generation",
+      "classification": "validated_non_visual_authority",
+      "reason": "contract lifecycle provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycle.integrity",
+      "classification": "validated_non_visual_authority",
+      "reason": "contract lifecycle provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycle.lifecycleVersion",
+      "classification": "validated_non_visual_authority",
+      "reason": "contract lifecycle provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycle.runtime",
+      "classification": "validated_non_visual_authority",
+      "reason": "contract lifecycle provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycle.stage",
+      "classification": "validated_non_visual_authority",
+      "reason": "contract lifecycle provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleDefinition.contractVersion",
+      "classification": "validated_non_visual_authority",
+      "reason": "schema definition provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleDefinition.normativeStatus",
+      "classification": "validated_non_visual_authority",
+      "reason": "schema definition provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleDefinition.schemaId",
+      "classification": "validated_non_visual_authority",
+      "reason": "schema definition provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleDefinition.schemaSha256",
+      "classification": "validated_non_visual_authority",
+      "reason": "schema definition provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleDefinition.schemaVersion",
+      "classification": "validated_non_visual_authority",
+      "reason": "schema definition provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleGeneration.generator",
+      "classification": "validated_non_visual_authority",
+      "reason": "generation provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleGeneration.generatorVersion",
+      "classification": "validated_non_visual_authority",
+      "reason": "generation provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleGeneration.sourceSha256",
+      "classification": "validated_non_visual_authority",
+      "reason": "generation provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleGeneration.sourceType",
+      "classification": "validated_non_visual_authority",
+      "reason": "generation provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleIntegrity.algorithm",
+      "classification": "validated_non_visual_authority",
+      "reason": "integrity provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleIntegrity.contractSha256",
+      "classification": "validated_non_visual_authority",
+      "reason": "integrity provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleRuntime.clientType",
+      "classification": "validated_non_visual_authority",
+      "reason": "request trace provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleRuntime.requestId",
+      "classification": "validated_non_visual_authority",
+      "reason": "request trace provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleRuntime.traceId",
+      "classification": "validated_non_visual_authority",
+      "reason": "request trace provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleRuntime.traceSource",
+      "classification": "validated_non_visual_authority",
+      "reason": "request trace provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "dataContract.dataMeta",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataContract.dataSource",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataContract.dictData",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataContract.ganttData",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataContract.mainData",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataContract.pagination",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataContract.relationRows",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataContract.tableRows",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataContract.treeData",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / collection and form renderers"
+    },
+    {
+      "path": "dataMeta.businessOperationProfile",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / form and collection policy adapters"
+    },
+    {
+      "path": "dataMeta.fieldGroups",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / form and collection policy adapters"
+    },
+    {
+      "path": "dataMeta.sourceContext",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / form and collection policy adapters"
+    },
+    {
+      "path": "dataMeta.visibleFields",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / form and collection policy adapters"
+    },
+    {
+      "path": "fieldGroups.groups",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "field grouping projection"
+    },
+    {
+      "path": "fieldGroups.sourceAuthority",
+      "classification": "validated_non_visual_authority",
+      "reason": "field-group provenance",
+      "consumer": "field grouping projection"
+    },
+    {
       "path": "layoutContract.activityProfile",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter / ContractFormDriverHost"
@@ -414,6 +892,42 @@
       "classification": "validated_non_visual_authority",
       "reason": "page identity invariant",
       "consumer": "contractFormPresenter / ContractFormDriverHost"
+    },
+    {
+      "path": "meta.etag",
+      "classification": "validated_non_visual_authority",
+      "reason": "snapshot identity and provenance",
+      "consumer": "ContractV2 decoder / trace identity"
+    },
+    {
+      "path": "meta.lifecycle",
+      "classification": "validated_non_visual_authority",
+      "reason": "snapshot identity and provenance",
+      "consumer": "ContractV2 decoder / trace identity"
+    },
+    {
+      "path": "meta.requestId",
+      "classification": "validated_non_visual_authority",
+      "reason": "snapshot identity and provenance",
+      "consumer": "ContractV2 decoder / trace identity"
+    },
+    {
+      "path": "meta.snapshotId",
+      "classification": "validated_non_visual_authority",
+      "reason": "snapshot identity and provenance",
+      "consumer": "ContractV2 decoder / trace identity"
+    },
+    {
+      "path": "meta.sourceType",
+      "classification": "validated_non_visual_authority",
+      "reason": "snapshot identity and provenance",
+      "consumer": "ContractV2 decoder / trace identity"
+    },
+    {
+      "path": "meta.traceId",
+      "classification": "validated_non_visual_authority",
+      "reason": "snapshot identity and provenance",
+      "consumer": "ContractV2 decoder / trace identity"
     },
     {
       "path": "nativeLayoutNode.action",
@@ -715,6 +1229,161 @@
       "consumer": "page runtime / contractFormPresenter.identity"
     },
     {
+      "path": "runtimeContract.actionTarget",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.aiEnvelope",
+      "classification": "validated_non_visual_authority",
+      "reason": "AI authority boundary",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.businessActions",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.businessWorkspace",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.cachePolicy",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime cache policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.collaboration",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.complexityBudget",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime complexity governance",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.hydration",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime hydration policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.interactionMode",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.lazyContainer",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime loading policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.optimistic",
+      "classification": "validated_non_visual_authority",
+      "reason": "mutation settlement policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.patchOperations",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime patch vocabulary",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.patchStrategy",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime patch policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.renderStrategy",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.retryPolicy",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime retry policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.tracePolicy",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime trace policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "runtimeContract.virtualization",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
+    },
+    {
+      "path": "searchContract.custom",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.default_order",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.default_sort",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.defaults",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.favorites",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.fields",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.filters",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.group_by",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.mode",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.saved_filters",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.search_panel",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
+      "path": "searchContract.ui_labels",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
       "path": "selectorStatus.disabled",
       "classification": "rendered_or_interaction_authority",
       "consumer": "resolveContractV2SelectorStatus / contractFormPresenter"
@@ -746,6 +1415,83 @@
       "consumer": "resolveContractV2SelectorStatus / contractFormPresenter"
     },
     {
+      "path": "sourceAuthority.formal_projection",
+      "classification": "validated_non_visual_authority",
+      "reason": "projection provenance boundary",
+      "consumer": "decoder authority guard"
+    },
+    {
+      "path": "sourceAuthority.kind",
+      "classification": "validated_non_visual_authority",
+      "reason": "projection provenance boundary",
+      "consumer": "decoder authority guard"
+    },
+    {
+      "path": "sourceAuthority.no_business_fact_authority",
+      "classification": "validated_non_visual_authority",
+      "reason": "projection provenance boundary",
+      "consumer": "decoder authority guard"
+    },
+    {
+      "path": "sourceAuthority.projection_only",
+      "classification": "validated_non_visual_authority",
+      "reason": "projection provenance boundary",
+      "consumer": "decoder authority guard"
+    },
+    {
+      "path": "sourceAuthority.runtime_carrier",
+      "classification": "validated_non_visual_authority",
+      "reason": "projection provenance boundary",
+      "consumer": "decoder authority guard"
+    },
+    {
+      "path": "sourceAuthority.source_key",
+      "classification": "validated_non_visual_authority",
+      "reason": "projection provenance boundary",
+      "consumer": "decoder authority guard"
+    },
+    {
+      "path": "sourceContext.context",
+      "classification": "validated_non_visual_authority",
+      "reason": "data request context",
+      "consumer": "ContractV2 store / data request runtime"
+    },
+    {
+      "path": "sourceContext.contextRaw",
+      "classification": "validated_non_visual_authority",
+      "reason": "source context trace",
+      "consumer": "ContractV2 store / data request runtime"
+    },
+    {
+      "path": "sourceContext.domain",
+      "classification": "validated_non_visual_authority",
+      "reason": "data request domain",
+      "consumer": "ContractV2 store / data request runtime"
+    },
+    {
+      "path": "sourceContext.domainRaw",
+      "classification": "validated_non_visual_authority",
+      "reason": "source domain trace",
+      "consumer": "ContractV2 store / data request runtime"
+    },
+    {
+      "path": "sourceContext.limit",
+      "classification": "validated_non_visual_authority",
+      "reason": "data pagination policy",
+      "consumer": "ContractV2 store / data request runtime"
+    },
+    {
+      "path": "sourceContext.order",
+      "classification": "validated_non_visual_authority",
+      "reason": "data ordering policy",
+      "consumer": "ContractV2 store / data request runtime"
+    },
+    {
+      "path": "sourceContext.renderProfile",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / data request runtime"
+    },
+    {
       "path": "statusContract.buttonStatus",
       "classification": "rendered_or_interaction_authority",
       "consumer": "ContractV2 store / contractFormPresenter"
@@ -769,6 +1515,17 @@
       "path": "statusContract.widgetStatus",
       "classification": "rendered_or_interaction_authority",
       "consumer": "ContractV2 store / contractFormPresenter"
+    },
+    {
+      "path": "visibleFields.fields",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "field visibility projection"
+    },
+    {
+      "path": "visibleFields.sourceAuthority",
+      "classification": "validated_non_visual_authority",
+      "reason": "visible-field provenance",
+      "consumer": "field visibility projection"
     },
     {
       "path": "widget.capabilities",

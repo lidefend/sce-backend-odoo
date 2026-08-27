@@ -13,8 +13,22 @@ SCHEMA = ROOT / "docs/architecture/unified_page_contract_v2/unified_page_contrac
 OUTPUT = ROOT / "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json"
 
 EXPECTED = {
+    "sourceContext": "context domain contextRaw domainRaw renderProfile order limit",
+    "searchContract": "default_sort default_order mode filters saved_filters group_by fields search_panel favorites custom ui_labels defaults",
     "pageInfo": "pageId sceneKey pageName model viewType layoutType renderMode contractVersion clientType",
     "layoutContract": "pageId layoutType adaptMode containerTree layoutHints componentRegistry listProfile activityProfile",
+    "activityProfile": (
+        "activityTypeSlots deadlineSlots assigneeSlots fieldOccurrences nativeAttrs nodeOccurrences template "
+        "templateQwebPresent actions actionCount sourceAuthority"
+    ),
+    "activitySourceAuthority": "kind authorities projection_only no_business_fact_authority runtime_carrier",
+    "activityFieldOccurrence": (
+        "name label widget native_locator occurrence_index source_position attributes text tail modifiers decorations "
+        "field_type currency_field digits"
+    ),
+    "activityNodeOccurrence": "tag native_locator occurrence_index source_position attributes text tail",
+    "activityNode": "tag native_locator occurrence_index source_position attributes text tail children",
+    "activityTemplate": "native_locator occurrence_index nodes names",
     "container": "containerId containerType title span styleToken type name label string children widgetList",
     "nativeLayoutNode": (
         "type name string label title text displayLabel semanticTitle semanticAnchor containerId containerType span "
@@ -40,6 +54,21 @@ EXPECTED = {
         "backendIdentity nativeIdentity sourceTrace presentationAuthority presentationPriority sourceActionKey sourceChannel "
         "permissionConstraints entitlementEvaluated allowed enabled disabled reasonCode"
     ),
+    "dataContract": "mainData tableRows relationRows treeData ganttData dictData pagination dataSource dataMeta",
+    "dataMeta": "businessOperationProfile visibleFields fieldGroups sourceContext",
+    "visibleFields": "fields sourceAuthority",
+    "fieldGroups": "groups sourceAuthority",
+    "sourceAuthority": "kind runtime_carrier projection_only no_business_fact_authority source_key formal_projection",
+    "contractLifecycle": "lifecycleVersion stage definition generation runtime integrity authority",
+    "contractLifecycleDefinition": "schemaId schemaVersion schemaSha256 contractVersion normativeStatus",
+    "contractLifecycleGeneration": "generator generatorVersion sourceType sourceSha256",
+    "contractLifecycleRuntime": "requestId traceId clientType traceSource",
+    "contractLifecycleIntegrity": "algorithm contractSha256",
+    "runtimeContract": (
+        "patchStrategy cachePolicy optimistic lazyContainer virtualization retryPolicy renderStrategy hydration patchOperations "
+        "tracePolicy complexityBudget aiEnvelope interactionMode actionTarget collaboration businessWorkspace businessActions"
+    ),
+    "meta": "etag snapshotId traceId requestId sourceType lifecycle",
 }
 
 NON_VISUAL = {
@@ -85,11 +114,52 @@ NON_VISUAL = {
     "actionRule.sourceChannel": "source channel identity",
     "actionRule.permissionConstraints": "server permission evidence",
     "actionRule.entitlementEvaluated": "server authorization proof",
+    "sourceContext.context": "data request context",
+    "sourceContext.domain": "data request domain",
+    "sourceContext.contextRaw": "source context trace",
+    "sourceContext.domainRaw": "source domain trace",
+    "sourceContext.order": "data ordering policy",
+    "sourceContext.limit": "data pagination policy",
+    "activitySourceAuthority.kind": "activity projection provenance",
+    "activitySourceAuthority.authorities": "activity projection provenance",
+    "activitySourceAuthority.projection_only": "activity authority boundary",
+    "activitySourceAuthority.no_business_fact_authority": "activity authority boundary",
+    "activitySourceAuthority.runtime_carrier": "activity carrier identity",
+    "visibleFields.sourceAuthority": "visible-field provenance",
+    "fieldGroups.sourceAuthority": "field-group provenance",
+    "runtimeContract.patchStrategy": "runtime patch policy",
+    "runtimeContract.cachePolicy": "runtime cache policy",
+    "runtimeContract.optimistic": "mutation settlement policy",
+    "runtimeContract.lazyContainer": "runtime loading policy",
+    "runtimeContract.retryPolicy": "runtime retry policy",
+    "runtimeContract.hydration": "runtime hydration policy",
+    "runtimeContract.patchOperations": "runtime patch vocabulary",
+    "runtimeContract.tracePolicy": "runtime trace policy",
+    "runtimeContract.complexityBudget": "runtime complexity governance",
+    "runtimeContract.aiEnvelope": "AI authority boundary",
+}
+
+NON_VISUAL_DEFINITIONS = {
+    "sourceAuthority": "projection provenance boundary",
+    "contractLifecycle": "contract lifecycle provenance",
+    "contractLifecycleDefinition": "schema definition provenance",
+    "contractLifecycleGeneration": "generation provenance",
+    "contractLifecycleRuntime": "request trace provenance",
+    "contractLifecycleIntegrity": "integrity provenance",
+    "meta": "snapshot identity and provenance",
 }
 
 CONSUMERS = {
+    "sourceContext": "ContractV2 store / data request runtime",
+    "searchContract": "ActionView search presentation runtime",
     "pageInfo": "page runtime / contractFormPresenter.identity",
     "layoutContract": "contractFormPresenter / ContractFormDriverHost",
+    "activityProfile": "activity renderer registry",
+    "activitySourceAuthority": "activity decoder authority guard",
+    "activityFieldOccurrence": "activity renderer registry",
+    "activityNodeOccurrence": "activity renderer registry",
+    "activityNode": "activity renderer registry",
+    "activityTemplate": "activity renderer registry",
     "container": "contractFormPresenter.presentNode",
     "nativeLayoutNode": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer",
     "widget": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer",
@@ -101,6 +171,18 @@ CONSUMERS = {
     "selectorStatus": "resolveContractV2SelectorStatus / contractFormPresenter",
     "actionContract": "contractFormPresenter / contract action runtime",
     "actionRule": "contractFormPresenter.presentAction / action executor",
+    "dataContract": "ContractV2 store / collection and form renderers",
+    "dataMeta": "ContractV2 store / form and collection policy adapters",
+    "visibleFields": "field visibility projection",
+    "fieldGroups": "field grouping projection",
+    "sourceAuthority": "decoder authority guard",
+    "contractLifecycle": "decoder lifecycle guard",
+    "contractLifecycleDefinition": "decoder lifecycle guard",
+    "contractLifecycleGeneration": "decoder lifecycle guard",
+    "contractLifecycleRuntime": "decoder lifecycle guard",
+    "contractLifecycleIntegrity": "decoder lifecycle guard",
+    "runtimeContract": "form runtime / collaboration and workspace adapters",
+    "meta": "ContractV2 decoder / trace identity",
 }
 
 
@@ -135,11 +217,11 @@ def build() -> dict:
     rows = []
     for path in sorted(expected):
         definition = path.split(".", 1)[0]
-        if path in NON_VISUAL:
+        if path in NON_VISUAL or definition in NON_VISUAL_DEFINITIONS:
             rows.append({
                 "path": path,
                 "classification": "validated_non_visual_authority",
-                "reason": NON_VISUAL[path],
+                "reason": NON_VISUAL[path] if path in NON_VISUAL else NON_VISUAL_DEFINITIONS[definition],
                 "consumer": CONSUMERS[definition],
             })
         else:
