@@ -306,6 +306,18 @@ density baseline 扩展后 **14/14 PASS**（list + form + worksheet 三面）。
   - 表单/只读事实/移动端卡片：此前已对齐
 - density baseline 14/14 PASS（搜索框修复无回归）
 
+## 十九.z、跨表面布局对齐巡检（2026-08-28 追加，分支 feature/p0-visual-density-baseline-v1）
+
+在搜索框无缝化基础上，对**其他列表表面 + 多状态表单**做一致性巡检，确认同一套 TDesign 对齐在跨表面成立（无代码改动，纯验证记录）：
+
+- **收款登记列表（空态）**：`t-empty t-size-m` 浅灰底 222px、grid gap 8px、有占位图——标准 TDesign 空态；查询条搜索 + 共 0 条 + 列设置同付款申请
+- **列设置弹层**：右侧固定面板，"已启用 9 列，共 22 列" + 字段勾选列表——标准 TDesign 列设置面板
+- **表头排序**：`cell-sortable` 排序结构存在（列头含 sort 指示器，点击可触发）
+- **提交态详情表单（FE-JOURNEY-APPROVAL-001）**：与草稿态（1709）同一套 canonical 渲染——事实区两行网格、当前任务/业务上下文/申请识别与状态 section 结构化、只读事实紧凑 69px、两列布局一致
+- **金额列右对齐 14px、状态胶囊、th 42/row 46**：跨表面一致
+
+整体布局特性已完整对齐 TDesign 组件体系（搜索框/查询条/工具栏/表格/状态标签/空态/列设置/导航/表单），跨列表与跨状态一致。
+
 ## 二十、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
