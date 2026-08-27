@@ -42,11 +42,27 @@
 
 **验证**：8 tests OK；`page_pattern_reference_parity_guard` PASS surfaces=13。
 
+### 2.3 全局 reduced-motion 可达性兜底（commit 8f401e4f）
+
+**问题**：`prefers-reduced-motion` 只在 collection 组件内散落处理（5 处），
+其余组件的动画/过渡在系统开启"减少动态效果"时仍会播放——渲染细节的可达性
+契约未跨表面落地。
+
+**修复**：
+- `product-patterns.css` 新增全局 `@media (prefers-reduced-motion: reduce)`
+  兜底，对所有表面禁用 animation/transition/scroll-behavior；
+- `frontend_rendering_detail_state_guard.py` 新增 2 项全局可达性契约校验
+  （reduced-motion 兜底 + 全局 focus-visible 规则），防回归；
+- 新增 2 个单测（存在性 + fail-closed 移除）。
+
+**验证**：rendering_detail_state.unit 44 tests OK；guard PASS surfaces=79
+accessibility_contracts=2。
+
 ## 3. 全量验证结论
 
 | 维度 | 结果 |
 | --- | --- |
-| `verify.frontend.rendering_detail_state.unit` | 42 tests OK；inventory surfaces=151 gaps=0 |
+| `verify.frontend.rendering_detail_state.unit` | 44 tests OK；inventory surfaces=151 gaps=0；可达性契约 2 项 |
 | `verify.frontend.page_pattern_reference_parity.unit` | 8 tests OK；guard PASS surfaces=13 |
 | `verify.frontend.overlay_lifecycle.unit` | PASS canonical=3 consumers=3 formal_gaps=0 |
 | `verify.frontend.state_dashboard.unit` | PASS surfaces=3 states=loading,empty,error,disabled,focus |
@@ -54,7 +70,7 @@
 | `verify.frontend.collection_*.unit`（抽查） | 全部 PASS |
 | `typecheck:strict` | EXIT=0 |
 | `pnpm build` | EXIT=0 |
-| `make verify.frontend.quick.gate` | 全量（后台） |
+| `make verify.frontend.quick.gate` | 全量通过（EXIT=0） |
 
 ## 4. 机器清单刷新
 
