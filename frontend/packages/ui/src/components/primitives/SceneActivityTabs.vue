@@ -18,7 +18,7 @@ function activate(id: string): void {
 <template>
   <component
     :is="driverTabs"
-    v-else-if="componentModel === 'vue' && driverTabs && driverTabPanel"
+    v-if="componentModel === 'vue' && driverTabs && driverTabPanel"
     class="scene-primitive-tabs scene-driver-tabs"
     :value="activeId"
     @change="activate"

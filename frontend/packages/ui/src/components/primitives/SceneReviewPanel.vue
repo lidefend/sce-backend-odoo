@@ -24,7 +24,7 @@ function setOpen(next: boolean): void {
 
     <component
       :is="driverDrawer"
-      v-else-if="componentModel === 'vue' && driverDrawer && open"
+      v-if="componentModel === 'vue' && driverDrawer && open"
       :visible="open"
       :header="panel.title"
       size="520px"

@@ -31,7 +31,7 @@ function updateFromValue(value: unknown): void {
 
 <template>
   <div class="scene-field-control" :data-control-driver="kit">
-    <template v-else-if="componentModel === 'vue' && driverControl">
+    <template v-if="componentModel === 'vue' && driverControl">
       <div v-if="field.kind === 'amount'" class="scene-primitive-amount">
         <component
           :is="driverControl"

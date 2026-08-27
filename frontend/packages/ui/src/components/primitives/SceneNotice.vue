@@ -21,7 +21,7 @@ const tdesignTheme = computed(() => ({
   <div class="scene-notice" :data-notice-id="notice.id" :data-notice-driver="kit">
     <component
       :is="driverAlert"
-      v-else-if="componentModel === 'vue' && driverAlert"
+      v-if="componentModel === 'vue' && driverAlert"
       :theme="tdesignTheme"
       :title="notice.title"
       :message="notice.detail"

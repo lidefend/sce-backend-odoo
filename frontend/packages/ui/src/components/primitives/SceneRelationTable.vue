@@ -52,7 +52,7 @@ function activateTdesignRow(context: unknown): void {
       <component
         :is="driverTable"
         class="scene-tdesign-table"
-        v-else-if="componentModel === 'vue' && driverTable"
+        v-if="componentModel === 'vue' && driverTable"
         :data="tdesignRows"
         :columns="tdesignColumns"
         row-key="id"

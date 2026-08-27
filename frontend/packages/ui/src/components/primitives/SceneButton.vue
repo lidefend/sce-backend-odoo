@@ -25,7 +25,7 @@ function tdesignTheme(): 'primary' | 'default' {
 <template>
   <component
     :is="driverButton"
-    v-else-if="componentModel === 'vue' && driverButton"
+    v-if="componentModel === 'vue' && driverButton"
     v-bind="$attrs"
     :theme="tdesignTheme()"
     :variant="tier === 'transparent' ? 'text' : 'base'"
