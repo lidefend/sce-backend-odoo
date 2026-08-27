@@ -216,10 +216,43 @@
 
 - `frontend_density_baseline_audit.mjs` 新增 `list.pagination-count-single` 断言（分页 footer visible 文本「共 N 条」仅出现 1 次）——density baseline **11/11 PASS**
 
-## 十五、后续迭代项
+## 十五、风格 token 切换验证（2026-08-28 追加）
+
+### 背景
+
+产品化核心设计：收敛到 TDesign 单底层 + `tokenProfile`（token 配置）承载「不同界面风格」。验证「风格」切换是否真实驱动界面变化。
+
+### 验证结果（浏览器实测）
+
+页面右上角「风格」按钮循环切换，三种风格实时生效，`--sc-app-*` token 显著变化：
+
+| 风格 | `--sc-app-border` | `--sc-app-text-primary` | 特征 |
+|---|---|---|---|
+| 企业中性 | `#e2e8f0` | `#2e3133` | 标准浅灰边框 |
+| 柔和商务 | `#d5dfdc` | `#2e3133` | 柔和绿调边框 |
+| 高对比 | `#263746` | `#071526` | 深色高对比、深色文本 |
+
+- 切换实时生效（点击即变，无需刷新）
+- **刷新后持久化**：切到「柔和商务」→ 刷新页面 → 仍保持「柔和商务」（用户偏好已持久化）
+- 已切回默认「企业中性」
+
+### 结论
+
+「界面风格走 token 切换」**验证通过**——单一 TDesign 底层 + tokenProfile 切换足以支撑三种界面风格，无需运行时切换底层组件体系。
+
+## 十六、移动端卡片渲染验证（2026-08-28 追加）
+
+CDP `Emulation.setDeviceMetricsOverride` 715×900 移动视口，付款申请列表自动切换为移动卡片（`sc-design-mobile-record-card`，grid 60 卡片；桌面表格隐藏）。巡检：
+
+- 卡片 token 化：`sc-panel-flat` + 产品 token（白底/1px 边框/无圆角=产品卡片语义）
+- 结构完整：`__header`（单号）+ `__facts`（6 行字段）+ `__actions`（下一步/提交审批/查看详情）
+- facts 排版专业：`<small>` label 11px/400 + `<b>` value 13px/600，label:value 成对
+- 高度自适应内容（269/248/281px），响应式切换（1440 桌面表格 ↔ 715 移动卡片）正常
+
+## 十七、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
 2. **表单间距 token 扩展**: `field_gap`/`column_gap`/`label_row_gap`/`control_row_gap` 已绑定（见十二）；剩余 `field-inline-config` 与 `.label` 内 gap 6px 语义如需独立契约可再拆 token
 3. **readonly 值 weight**: 已统一 400（见八修正）——如设计意图强调关键值（状态等）可再评估 550，需设计确认
 4. ~~基线自动化~~: 已完成（见十一 `verify.frontend.density.baseline`）
-5. **公司支出空态**: 数据归属（bc16 vs bc20）与 action domain 是否对齐，需业务确认
+5. **公司支出空态**: fixture 脚本已修复（commit 91b11152 为 `_execution` 补 `payment_family`/`source_kind`，公司类支出归入 company 分类）——需在 acceptance 栈重跑 fixture 后浏览器复验（当前容器 DB 为旧快照，列表仍空）
