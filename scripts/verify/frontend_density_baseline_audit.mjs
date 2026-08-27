@@ -89,6 +89,7 @@ async function auditForm(page) {
     const ro = [...document.querySelectorAll('.readonly-value, .professional-base-field-control__readonly')]
       .filter((e) => e.getBoundingClientRect().height > 0 && (e.innerText || '').trim().length > 0);
     const roSizes = ro.map((e) => Math.round(parseFloat(getComputedStyle(e).fontSize) * 100) / 100);
+    const roWeights = ro.map((e) => getComputedStyle(e).fontWeight);
     return {
       inputCount: heights.length,
       inputHeight: input,
@@ -96,6 +97,8 @@ async function auditForm(page) {
       readonlyCount: ro.length,
       readonlySizes: [...new Set(roSizes)],
       readonlyUniform: new Set(roSizes).size <= 1,
+      readonlyWeights: [...new Set(roWeights)],
+      readonlyWeightUniform: new Set(roWeights).size <= 1,
     };
   });
 }
@@ -144,6 +147,15 @@ try {
         } else {
           checks.push({ name: 'form.readonly-size', actual: roSize, expected: 14, ok: true });
         }
+      }
+      if (!results.form.readonlyWeightUniform) {
+        console.error(`[density-baseline] FAIL readonly weights not uniform: ${JSON.stringify(results.form.readonlyWeights)}`);
+        checks.push({ name: 'form.readonly-weight-uniform', actual: results.form.readonlyWeights, expected: 'single 400', ok: false });
+      } else if (results.form.readonlyWeights[0] !== '400') {
+        console.error(`[density-baseline] FAIL readonly weight ${results.form.readonlyWeights[0]} != 400`);
+        checks.push({ name: 'form.readonly-weight', actual: results.form.readonlyWeights[0], expected: '400', ok: false });
+      } else {
+        checks.push({ name: 'form.readonly-weight', actual: results.form.readonlyWeights[0], expected: '400', ok: true });
       }
     }
   }
