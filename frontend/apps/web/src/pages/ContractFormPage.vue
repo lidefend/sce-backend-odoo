@@ -267,7 +267,7 @@
   </LayoutShell>
 </template>
 <script setup lang="ts">
-import { computed, nextTick, onErrorCaptured, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onErrorCaptured, provide, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
@@ -321,6 +321,7 @@ import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
 import { executeButton } from '../api/executeButton';
+import { ScTaskActionResolverKey } from '../components/template/taskActionResolver';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
 import type { FieldDescriptor } from '@sc/schema';
@@ -961,6 +962,53 @@ const recordId = computed(() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
+
+/**
+ * 下一步办理 -> backend button method map.
+ *
+ * legal_next_action_display (task semantic role, shown inside the "当前任务"
+ * card) is a plain text hint computed by the backend state machine. The text
+ * is already permission-gated on the backend (a user only sees "提交审批" if
+ * they may submit), so mapping the label back to its backend method is safe.
+ * This turns the dead readonly text into a clickable action entry point.
+ */
+const NEXT_ACTION_METHOD_BY_LABEL: Record<string, string> = {
+  '提交审批': 'action_submit',
+  '重新提交审批': 'action_submit',
+  '审批处理': 'action_approve',
+  '生成付款登记': 'action_create_payment_execution',
+  '查看付款登记': 'action_view_payment_execution',
+  '确认办结': 'action_done',
+};
+
+const taskActionResolver = (field: { name: string; value?: unknown } | null | undefined) => {
+  if (!field || String(field.name || '').trim() !== 'legal_next_action_display') return null;
+  if (!recordId.value) return null;
+  const label = String(field.value ?? '').trim();
+  const methodName = NEXT_ACTION_METHOD_BY_LABEL[label];
+  if (!methodName) return null;
+  return {
+    label,
+    run: async () => {
+      if (!window.confirm(`确认执行「${label}」吗？`)) return;
+      try {
+        await executeButton({
+          model: model.value,
+          res_id: recordId.value as number,
+          button: { name: methodName, type: 'object' },
+          meta: {
+            menu_id: Number(route.query.menu_id || 0) || undefined,
+            action_id: actionId.value || undefined,
+          },
+        });
+      } finally {
+        await reload();
+      }
+    },
+  };
+};
+provide(ScTaskActionResolverKey, taskActionResolver);
+
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));

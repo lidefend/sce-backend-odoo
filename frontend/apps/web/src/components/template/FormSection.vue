@@ -148,6 +148,13 @@
                     class="readonly-value readonly-value--html"
                     v-html="readonlyHtml(field)"
                   />
+                  <button
+                    v-else-if="taskActionFor(field)"
+                    type="button"
+                    class="readonly-value readonly-value--action"
+                    :aria-label="`${taskActionLabel(field)}（办理动作）`"
+                    @click="taskActionRun(field)"
+                  >{{ taskActionLabel(field) }}</button>
                   <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </template>
@@ -327,7 +334,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId, useSlots } from 'vue';
+import { computed, inject, ref, useId, useSlots } from 'vue';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
 import ScDateField from '../design-system/ScDateField.vue';
@@ -365,6 +372,10 @@ import {
   toContractFormSceneField,
   usesContractFormDriverField,
 } from './contractFormDriverField';
+import {
+  ScTaskActionResolverKey,
+  type ScTaskActionDescriptor,
+} from './taskActionResolver';
 
 const props = withDefaults(defineProps<{
   title: string;
@@ -668,6 +679,28 @@ function readonlyText(field: FormSectionFieldSchema) {
     { ...(field.descriptor || {}), type: fieldType || field.descriptor?.type },
     { emptyText: '-' },
   );
+}
+
+const taskActionResolver = inject(ScTaskActionResolverKey, null);
+
+/**
+ * Resolve a readonly fact into a clickable business action, when the page
+ * layer has registered a task-action resolver (see taskActionResolver.ts).
+ * Returns null for plain facts - they keep rendering as readonly text.
+ */
+function taskActionFor(field: FormSectionFieldSchema): ScTaskActionDescriptor | null {
+  if (!taskActionResolver) return null;
+  return taskActionResolver(field);
+}
+
+function taskActionLabel(field: FormSectionFieldSchema): string {
+  const action = taskActionFor(field);
+  return action ? action.label : '';
+}
+
+function taskActionRun(field: FormSectionFieldSchema) {
+  const action = taskActionFor(field);
+  if (action) void action.run();
 }
 
 function readonlyHtml(field: FormSectionFieldSchema) {
@@ -1175,6 +1208,31 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   align-items: center;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* A readonly fact that is actually the next business action (下一步办理).
+ * It is rendered as a pressable action link instead of dead text so the
+ * "当前任务" card is a real entry point, not a static hint. */
+.readonly-value--action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--sc-text-link, var(--sc-app-accent));
+  font-weight: 400;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.readonly-value--action:hover {
+  opacity: 0.8;
+}
+
+.readonly-value--action:focus-visible {
+  outline: 2px solid var(--sc-app-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .readonly-value--html {

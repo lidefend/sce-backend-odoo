@@ -338,6 +338,25 @@ density baseline 扩展后 **14/14 PASS**（list + form + worksheet 三面）。
 
 density baseline **14/14 PASS**（token 扩展 + 标题统一无回归）。
 
+## 二十.y、当前任务办理入口落地（方案 A）（2026-08-28 追加）
+
+**背景**：只读态"当前任务"卡片的"下一步办理"此前是纯文本死值（interactiveCount=0）。它指出的动作（提交审批/审批处理/生成付款登记）看得到办不了，非办理人看它与状态重复。用户选定**方案 A**：让"下一步办理"从纯文本变成可执行入口——点击直接触发后端 action。
+
+**关键设计判断**：`legal_next_action_display` 文本由后端按权限组计算（draft→"提交审批"仅对可提交者显示、submit→"审批处理"仅对可审批者显示），**能见即可执行**——前端按 label 反查后端方法并直接调用是安全的，无需重复鉴权。action 落点全部为 `payment.request` 既有方法（action_submit/action_approve/action_create_payment_execution/action_view_payment_execution/action_done），不新增后端契约。
+
+**实现（纯前端，不动契约内容）**：
+- 新增 `frontend/apps/web/src/components/template/taskActionResolver.ts`：`ScTaskActionResolverKey` 注入键 + `ScTaskActionDescriptor{label,run}` 类型。FormSection/ProfessionalBaseFieldControl 保持通用渲染职责，由页面层可选提供 resolver。
+- `FormSection.vue` 与 `ProfessionalBaseFieldControl.vue`：inject resolver，readonly 值渲染处当 resolver 命中时输出 `<button class="readonly-value--action">`（链接色/下划线/pointer，font-weight 保持 400 以通过 readonly-weight 门禁），否则维持纯文本 span。
+- `ContractFormPage.vue`：provide resolver——`NEXT_ACTION_METHOD_BY_LABEL` 映射（提交审批/重新提交审批→action_submit、审批处理→action_approve、生成付款登记→action_create_payment_execution、查看付款登记→action_view_payment_execution、确认办结→action_done），点击先 `window.confirm` 确认，再 `executeButton({model, res_id, button:{name:method,type:'object'}, meta:{menu_id,action_id}})`，finally 内 reload 刷新状态。
+
+**实测（浏览器）**：
+- 提交态 19（FE-JOURNEY-APPROVAL-001）："审批处理"渲染为可点击按钮（蓝色 #1d4ed8、下划线、pointer、14px/400），其余 readonly（无业务阻断/档案有效）保持纯文本
+- 草稿态 1709（FE-CORE-FORM-CONFLICT-001）："提交审批"渲染为可点击按钮
+- 点击链路：mock confirm（返回 false）→ confirm 触发、业务不执行（stillDraft=true）——取消安全
+- typecheck 0 新增错误；density baseline **14/14 PASS**
+
+**收敛说明**：交互动作保持轻量（原生 confirm + executeButton），确认后直接调后端方法，由后端状态机与权限组做最终保护。后续如需更正式的确认交互（二次确认对话框/办理跳转），可替换 confirm 为 IntentConfirmationDialog。
+
 ## 二十、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。

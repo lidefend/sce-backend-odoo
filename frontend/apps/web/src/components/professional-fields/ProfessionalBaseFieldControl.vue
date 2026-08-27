@@ -18,6 +18,13 @@
           class="professional-base-field-control__readonly professional-base-field-control__readonly--html"
           v-html="readonlyHtml"
         />
+        <button
+          v-else-if="taskActionFor(props.field)"
+          type="button"
+          class="professional-base-field-control__readonly professional-base-field-control__readonly--action"
+          :aria-label="`${taskActionLabel(props.field)}（办理动作）`"
+          @click="taskActionRun(props.field)"
+        >{{ taskActionLabel(props.field) }}</button>
         <span v-else class="professional-base-field-control__readonly">{{ readonlyText }}</span>
       </template>
     </template>
@@ -83,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
@@ -93,6 +100,10 @@ import ScTextarea from '../design-system/ScTextarea.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
+import {
+  ScTaskActionResolverKey,
+  type ScTaskActionDescriptor,
+} from '../template/taskActionResolver';
 import { resolveProfessionalBaseFieldModel } from './professionalBaseFieldModel';
 
 const props = defineProps<{
@@ -108,6 +119,21 @@ const emit = defineEmits<{
 }>();
 
 const normalizedType = computed(() => String(props.field.type || '').trim().toLowerCase());
+
+const taskActionResolver = inject(ScTaskActionResolverKey, null);
+function taskActionFor(field: FormSectionFieldSchema): ScTaskActionDescriptor | null {
+  if (!taskActionResolver) return null;
+  return taskActionResolver(field);
+}
+function taskActionLabel(field: FormSectionFieldSchema): string {
+  const action = taskActionFor(field);
+  return action ? action.label : '';
+}
+function taskActionRun(field: FormSectionFieldSchema) {
+  const action = taskActionFor(field);
+  if (action) void action.run();
+}
+
 const model = computed(() => resolveProfessionalBaseFieldModel({
   fieldType: String(props.field.type || ''),
   widget: props.field.widget,
@@ -170,6 +196,33 @@ function emitValue(value: string | number | boolean | null) {
   font-size: calc(var(--sc-component-input-font-size) * 1px);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* A readonly fact that is actually the next business action (下一步办理).
+ * Pressable action link so the "当前任务" card is a real entry point.
+ * Kept at the readonly weight (400) so the density baseline
+ * (form.readonly-weight-uniform) stays green - the click affordance is
+ * carried by the link color, underline and pointer cursor instead. */
+.professional-base-field-control__readonly--action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--sc-text-link, var(--sc-app-accent)) !important;
+  font-weight: 400 !important;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.professional-base-field-control__readonly--action:hover {
+  opacity: 0.8;
+}
+
+.professional-base-field-control__readonly--action:focus-visible {
+  outline: 2px solid var(--sc-app-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .professional-base-field-control[data-professional-field-type='integer'] :deep(.sc-input),
