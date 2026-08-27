@@ -19,6 +19,22 @@ export type CanonicalNativeLayoutNode = {
   widget?: string;
   visible?: boolean;
   attributes?: Record<string, unknown>;
+  displayLabel?: string;
+  semanticTitle?: string;
+  semanticAnchor?: string;
+  filename?: string;
+  badge?: Record<string, unknown>;
+  column_invisible?: unknown;
+  domain?: unknown;
+  context?: unknown;
+  options?: unknown;
+  col?: number | string;
+  class?: string;
+  className?: string;
+  fieldSize?: string;
+  size?: string;
+  formStructure?: Record<string, unknown>;
+  sourceAuthority?: Record<string, unknown>;
   action?: Record<string, unknown> | null;
   buttonType?: string;
   children?: CanonicalNativeLayoutNode[];
@@ -144,6 +160,7 @@ export function buildCanonicalNativeFormBridge(
       } satisfies CanonicalNativeLayoutNode]
       : mappedChildren;
     return {
+      ...node.nativePresentation,
       type: kind,
       containerType: kind,
       name: node.nodeId,

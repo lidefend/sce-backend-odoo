@@ -210,6 +210,7 @@ function fieldFromWidget(
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
+    widgetType: widget.widgetType,
     label: text(authoritativeFieldLabels[widget.fieldCode]) || widget.label,
     hideLabel: container.nolabel === true,
     value: presentFieldValue(
@@ -224,6 +225,9 @@ function fieldFromWidget(
     presentationMode,
     renderProfile: mode,
     span: widget.span,
+    nativeLocator: text(widget.nativeLocator),
+    occurrenceIndex: widget.occurrenceIndex ?? null,
+    sourcePosition: widget.sourcePosition ?? null,
     visible: ancestorVisible && statusResolved && bool(status?.visible, true) && bool(selectorStatus?.visible, true),
     readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || ancestorReadonly || slotReadonly
       || (Boolean(fieldAuth) && fieldAuth !== 'edit')
@@ -327,6 +331,25 @@ function presentNode(
     title: authoritativeTitle || title,
     text: text(container.text),
     attributes: Object.freeze({ ...container.attributes }),
+    nativePresentation: Object.freeze({
+      displayLabel: text(container.displayLabel),
+      semanticTitle: text(container.semanticTitle),
+      semanticAnchor: text(container.semanticAnchor),
+      filename: text(container.filename),
+      badge: Object.freeze({ ...(container.badge || {}) }),
+      column_invisible: container.columnInvisible,
+      domain: container.domain,
+      context: container.context,
+      options: container.options,
+      visible: container.visible,
+      col: container.col,
+      class: text(container.class),
+      className: text(container.className),
+      fieldSize: text(container.fieldSize),
+      size: text(container.size),
+      formStructure: Object.freeze({ ...(container.formStructure || {}) }),
+      sourceAuthority: Object.freeze({ ...(container.sourceAuthority || {}) }),
+    }),
     span: container.span,
     styleToken: text(container.styleToken),
     zoneRole: effectiveRole,

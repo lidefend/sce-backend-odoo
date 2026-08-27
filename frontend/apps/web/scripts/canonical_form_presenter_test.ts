@@ -730,6 +730,11 @@ structurePresentationSnapshot.layoutContract.containerTree[0].formStructureRole 
 };
 structurePresentationSnapshot.layoutContract.containerTree[0].span = 16;
 structurePresentationSnapshot.layoutContract.containerTree[0].styleToken = 'surface.task.identity';
+Object.assign(structurePresentationSnapshot.layoutContract.containerTree[0], {
+  displayLabel: 'Identity display', semanticTitle: 'Identity semantic', semanticAnchor: 'identity-anchor',
+  filename: 'attachment_name', badge: { field: 'state' }, options: { collapsible: true },
+  class: 'native-identity', fieldSize: 'large', size: 'lg',
+});
 structurePresentationSnapshot.statusContract.widgetStatus[0].placeholder = 'Contract placeholder';
 const structurePresentationModel = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(structurePresentationSnapshot)),
@@ -819,6 +824,26 @@ assert.equal(
   16,
   'the canonical node span must remain available to the professional layout adapter',
 );
+const structureNativeNode = buildCanonicalNativeFormBridge(structurePresentationModel).primaryNodes[0];
+assert.deepEqual(
+  {
+    displayLabel: structureNativeNode.displayLabel,
+    semanticTitle: structureNativeNode.semanticTitle,
+    semanticAnchor: structureNativeNode.semanticAnchor,
+    filename: structureNativeNode.filename,
+    badge: structureNativeNode.badge,
+    options: structureNativeNode.options,
+    class: structureNativeNode.class,
+    fieldSize: structureNativeNode.fieldSize,
+    size: structureNativeNode.size,
+  },
+  {
+    displayLabel: 'Identity display', semanticTitle: 'Identity semantic', semanticAnchor: 'identity-anchor',
+    filename: 'attachment_name', badge: { field: 'state' }, options: { collapsible: true },
+    class: 'native-identity', fieldSize: 'large', size: 'lg',
+  },
+  'formal native presentation metadata must survive decoder, presenter, and the professional native bridge',
+);
 
 const fieldAuthSnapshot = snapshot();
 fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';
@@ -833,6 +858,28 @@ assert.equal(
   canonicalFieldToFormSection(fieldAuthName).auth,
   'read',
   'field auth must reach the professional component adapter and semantic DOM carrier',
+);
+
+const widgetIdentitySnapshot = snapshot();
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].widgetType = 'radio';
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].nativeLocator = '/form/sheet/group/field[1]';
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].occurrenceIndex = 1;
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].sourcePosition = 7;
+const widgetIdentityField = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(widgetIdentitySnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'name')!;
+assert.deepEqual(
+  {
+    widget: canonicalFieldToFormSection(widgetIdentityField).widget,
+    nativeLocator: canonicalFieldToFormSection(widgetIdentityField).nativeLocator,
+    occurrenceIndex: canonicalFieldToFormSection(widgetIdentityField).occurrenceIndex,
+    sourcePosition: canonicalFieldToFormSection(widgetIdentityField).sourcePosition,
+  },
+  {
+    widget: 'radio', nativeLocator: '/form/sheet/group/field[1]', occurrenceIndex: 1, sourcePosition: 7,
+  },
+  'widget kind and native occurrence identity must reach the professional field adapter',
 );
 
 const selectorReadonlySnapshot = snapshot();

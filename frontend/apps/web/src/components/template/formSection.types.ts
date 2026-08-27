@@ -25,6 +25,9 @@ export type FormSectionFieldSchema = {
   hideLabel?: boolean;
   type: TemplateFieldType;
   widget?: string;
+  nativeLocator?: string;
+  occurrenceIndex?: number;
+  sourcePosition?: number;
   widgetSemantics?: Record<string, unknown>;
   componentKey?: string;
   componentReadiness?: 'ready' | 'readable_fallback' | 'fail_closed';

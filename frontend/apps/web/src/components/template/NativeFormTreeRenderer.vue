@@ -399,6 +399,7 @@ export type NativeFormLayoutNode = {
   label?: string;
   displayLabel?: string;
   semanticTitle?: string;
+  semanticAnchor?: string;
   text?: string;
   cols?: number;
   columns?: number;
@@ -409,6 +410,14 @@ export type NativeFormLayoutNode = {
   field_size?: string;
   fieldSize?: string;
   size?: string;
+  filename?: string;
+  badge?: Record<string, unknown>;
+  column_invisible?: unknown;
+  domain?: unknown;
+  context?: unknown;
+  options?: unknown;
+  col?: number | string;
+  formStructure?: Record<string, unknown>;
   attributes?: Record<string, unknown>;
   fieldInfo?: Record<string, unknown>;
   field_info?: Record<string, unknown>;
