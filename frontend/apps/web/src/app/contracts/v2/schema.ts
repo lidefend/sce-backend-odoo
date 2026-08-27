@@ -128,6 +128,18 @@ function optionalString(source: ContractV2Dictionary, key: string): string | und
   return asString(source[key]) || undefined;
 }
 
+function optionalStringField(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): string | undefined {
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
+  if (typeof source[key] === 'string') return source[key] as string;
+  issues.push({ path: `${path}.${key}`, message: 'must be a string' });
+  return undefined;
+}
+
 function optionalRecord(
   source: ContractV2Dictionary,
   key: string,
@@ -509,6 +521,9 @@ function requiredIntegerInRange(
 }
 
 function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2PageInfo {
+  rejectUnknownKeys(source, [
+    'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType',
+  ], 'pageInfo', issues);
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
   if (!/^2\.(0|1|2)\.\d+$/.test(contractVersion)) {
     issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0, 2.1, or 2.2 version' });
@@ -948,6 +963,9 @@ function decodeComponentRegistry(
 }
 
 function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2LayoutContract {
+  rejectUnknownKeys(source, [
+    'pageId', 'layoutType', 'adaptMode', 'containerTree', 'layoutHints', 'componentRegistry', 'listProfile', 'activityProfile',
+  ], 'layoutContract', issues);
   const containerTreeRaw = Array.isArray(source.containerTree) ? source.containerTree : [];
   if (!Array.isArray(source.containerTree)) {
     issues.push({ path: 'layoutContract.containerTree', message: 'must be an array' });
@@ -1457,6 +1475,9 @@ export function decodeContractV2ActionRule(value: unknown): ContractV2ActionRule
 }
 
 function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2ActionContract {
+  rejectUnknownKeys(source, [
+    'actionRuleList', 'dependencyGraph', 'deletePolicy', 'surfacePolicies', 'identityPolicy', 'primaryResolution',
+  ], 'actionContract', issues);
   const actionRuleListRaw = Array.isArray(source.actionRuleList) ? source.actionRuleList : [];
   if (!Array.isArray(source.actionRuleList)) {
     issues.push({ path: 'actionContract.actionRuleList', message: 'must be an array' });
@@ -1627,6 +1648,9 @@ function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMe
 }
 
 function decodeDataContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2DataContract {
+  rejectUnknownKeys(source, [
+    'mainData', 'tableRows', 'relationRows', 'treeData', 'ganttData', 'dictData', 'pagination', 'dataSource', 'dataMeta',
+  ], 'dataContract', issues);
   const treeData = source.treeData === undefined ? undefined : decodeRowsMap(source.treeData, 'dataContract.treeData', issues);
   const ganttData = source.ganttData === undefined ? undefined : decodeRowsMap(source.ganttData, 'dataContract.ganttData', issues);
   return {
@@ -1765,6 +1789,9 @@ function decodeSelectorStatus(raw: unknown, path: string, issues: DecodeIssue[])
 }
 
 function decodeStatusContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2StatusContract {
+  rejectUnknownKeys(source, [
+    'globalStatus', 'containerStatus', 'widgetStatus', 'buttonStatus', 'selectorStatus',
+  ], 'statusContract', issues);
   return {
     globalStatus: decodeGlobalStatus(requiredRecord(source, 'globalStatus', 'statusContract', issues), issues),
     widgetStatus: requiredArray(source, 'widgetStatus', 'statusContract', issues)
@@ -1905,12 +1932,25 @@ function validateFormOccurrenceAuthority(
 }
 
 function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2RuntimeContract {
+  rejectUnknownKeys(source, [
+    'patchStrategy', 'cachePolicy', 'optimistic', 'lazyContainer', 'virtualization', 'retryPolicy',
+    'renderStrategy', 'hydration', 'patchOperations', 'tracePolicy', 'complexityBudget', 'aiEnvelope',
+    'interactionMode', 'actionTarget', 'collaboration', 'businessWorkspace', 'businessActions',
+  ], 'runtimeContract', issues);
   const renderStrategy = decodeRenderStrategy(asString(source.renderStrategy), 'runtimeContract.renderStrategy', issues);
-  const patchOperations = Array.isArray(source.patchOperations)
-    ? source.patchOperations
+  const patchOperations = source.patchOperations === undefined
+    ? undefined
+    : Array.isArray(source.patchOperations)
+      ? source.patchOperations
       .map((item, index) => decodePatchOperation(asString(item), `runtimeContract.patchOperations[${index}]`, issues))
       .filter((item): item is ContractV2PatchOperation => Boolean(item))
-    : [];
+      : (issues.push({ path: 'runtimeContract.patchOperations', message: 'must be an array' }), []);
+  const hydration = optionalRecord(source, 'hydration', 'runtimeContract', issues);
+  const tracePolicy = optionalRecord(source, 'tracePolicy', 'runtimeContract', issues);
+  const complexityBudget = optionalRecord(source, 'complexityBudget', 'runtimeContract', issues);
+  const aiEnvelope = optionalRecord(source, 'aiEnvelope', 'runtimeContract', issues);
+  const interactionMode = optionalStringField(source, 'interactionMode', 'runtimeContract', issues);
+  const actionTarget = optionalStringField(source, 'actionTarget', 'runtimeContract', issues);
   const collaboration = optionalRecord(source, 'collaboration', 'runtimeContract', issues);
   const businessWorkspace = optionalRecord(source, 'businessWorkspace', 'runtimeContract', issues);
   const businessActions = optionalRecordArray(source, 'businessActions', 'runtimeContract', issues);
@@ -1918,17 +1958,17 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     patchStrategy: decodePatchStrategy(requiredString(source, 'patchStrategy', 'runtimeContract', issues), 'runtimeContract.patchStrategy', issues),
     cachePolicy: decodeCachePolicy(requiredString(source, 'cachePolicy', 'runtimeContract', issues), 'runtimeContract.cachePolicy', issues),
     optimistic: requiredBoolean(source, 'optimistic', 'runtimeContract', issues, false),
-    lazyContainer: asStringArray(source.lazyContainer),
+    lazyContainer: decodeUniqueStringArray(source.lazyContainer, 'runtimeContract.lazyContainer', issues),
     virtualization: requiredRecord(source, 'virtualization', 'runtimeContract', issues),
     retryPolicy: requiredRecord(source, 'retryPolicy', 'runtimeContract', issues),
     ...(renderStrategy ? { renderStrategy } : {}),
-    ...(isRecord(source.hydration) ? { hydration: source.hydration } : {}),
-    ...(patchOperations.length ? { patchOperations } : {}),
-    ...(isRecord(source.tracePolicy) ? { tracePolicy: source.tracePolicy } : {}),
-    ...(isRecord(source.complexityBudget) ? { complexityBudget: source.complexityBudget } : {}),
-    ...(isRecord(source.aiEnvelope) ? { aiEnvelope: source.aiEnvelope } : {}),
-    ...(asString(source.interactionMode) ? { interactionMode: asString(source.interactionMode) } : {}),
-    ...(asString(source.actionTarget) ? { actionTarget: asString(source.actionTarget) } : {}),
+    ...(hydration ? { hydration } : {}),
+    ...(patchOperations?.length ? { patchOperations } : {}),
+    ...(tracePolicy ? { tracePolicy } : {}),
+    ...(complexityBudget ? { complexityBudget } : {}),
+    ...(aiEnvelope ? { aiEnvelope } : {}),
+    ...(interactionMode !== undefined ? { interactionMode } : {}),
+    ...(actionTarget !== undefined ? { actionTarget } : {}),
     ...(collaboration ? { collaboration } : {}),
     ...(businessWorkspace ? { businessWorkspace } : {}),
     ...(businessActions ? { businessActions } : {}),
@@ -1936,11 +1976,23 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
 }
 
 function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2Meta {
+  rejectUnknownKeys(source, ['etag', 'snapshotId', 'traceId', 'requestId', 'sourceType', 'lifecycle'], 'meta', issues);
   const lifecycle = requiredRecord(source, 'lifecycle', 'meta', issues);
   const definition = requiredRecord(lifecycle, 'definition', 'meta.lifecycle', issues);
   const generation = requiredRecord(lifecycle, 'generation', 'meta.lifecycle', issues);
   const runtime = requiredRecord(lifecycle, 'runtime', 'meta.lifecycle', issues);
   const integrity = requiredRecord(lifecycle, 'integrity', 'meta.lifecycle', issues);
+  rejectUnknownKeys(lifecycle, [
+    'lifecycleVersion', 'stage', 'definition', 'generation', 'runtime', 'integrity', 'authority',
+  ], 'meta.lifecycle', issues);
+  rejectUnknownKeys(definition, [
+    'schemaId', 'schemaVersion', 'schemaSha256', 'contractVersion', 'normativeStatus',
+  ], 'meta.lifecycle.definition', issues);
+  rejectUnknownKeys(generation, [
+    'generator', 'generatorVersion', 'sourceType', 'sourceSha256',
+  ], 'meta.lifecycle.generation', issues);
+  rejectUnknownKeys(runtime, ['requestId', 'traceId', 'clientType', 'traceSource'], 'meta.lifecycle.runtime', issues);
+  rejectUnknownKeys(integrity, ['algorithm', 'contractSha256'], 'meta.lifecycle.integrity', issues);
   return {
     etag: requiredString(source, 'etag', 'meta', issues),
     snapshotId: requiredString(source, 'snapshotId', 'meta', issues),
@@ -2015,6 +2067,10 @@ function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2
 export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const root = asRecord(normalizeLegacyContractV2Snapshot(value));
   const issues: DecodeIssue[] = [];
+  rejectUnknownKeys(root, [
+    'pageInfo', 'layoutContract', 'statusContract', 'actionContract', 'dataContract', 'runtimeContract',
+    'formStructureContract', 'searchContract', 'workflowContract', 'meta',
+  ], '$', issues);
   const pageInfo = decodePageInfo(readAliasedObject(root, 'pageInfo', [], '$', issues), issues);
   const layoutContract = decodeLayoutContract(readAliasedObject(root, 'layoutContract', [], '$', issues), issues);
   const statusContract = decodeStatusContract(readAliasedObject(root, 'statusContract', [], '$', issues), issues);

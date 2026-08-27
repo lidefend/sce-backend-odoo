@@ -922,6 +922,21 @@ assert.throws(
   },
   'widget projection must accept only the formal schema vocabulary and typed occurrence identity',
 );
+const invalidEnvelopeSnapshot = snapshot() as unknown as Record<string, unknown>;
+invalidEnvelopeSnapshot.parallelLayout = {};
+const invalidRuntime = invalidEnvelopeSnapshot.runtimeContract as Record<string, unknown>;
+invalidRuntime.lazyContainer = 'section.identity';
+invalidRuntime.hydration = [];
+assert.throws(
+  () => decodeContractV2Snapshot(invalidEnvelopeSnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('$.parallelLayout is not allowed')
+      && message.includes('runtimeContract.lazyContainer must be an array')
+      && message.includes('runtimeContract.hydration must be an object');
+  },
+  'the V2 envelope and runtime policy must reject undeclared or malformed parallel authority',
+);
 const nativeStaticConstraintSnapshot = snapshot();
 nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = true;
 nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].required = true;
