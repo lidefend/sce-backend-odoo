@@ -512,9 +512,9 @@ td {
   border-bottom: 1px solid var(--sc-app-border);
   text-align: left;
   font-size: 13px;
-  vertical-align: top;
+  vertical-align: middle;
   min-width: 72px;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 tbody td {

@@ -11,18 +11,32 @@ REQUIREMENTS = {
         'class="brand-visual"',
         "pageText('brand_name', config.appBrand.name)",
         "grid-template-areas: 'auth brand'",
+        'v-if="!dbInputDisabled"',
+        '<ScIcon name="user"',
+        '<ScIcon name="lock"',
     ),
     "frontend/apps/web/src/components/design-system/ScCard.vue": (
         "| 'fact' |",
         "fact: { padding: '0' }",
         "[data-appearance='fact']",
+        "| 'task-section' |",
+        "[data-appearance='task-section']",
     ),
     "frontend/apps/web/src/components/template/FormSection.vue": (
         ":appearance=\"preferReadonlyFacts ? 'fact' : 'form-section'\"",
     ),
     "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue": (
+        'appearance="task-section"',
         "grid-auto-rows: max-content",
         "align-content: start",
+    ),
+    "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": (
+        'class="toolbar-total"',
+        "grid-template-areas: 'view search total sort primary'",
+    ),
+    "frontend/apps/web/src/components/product-list/CollectionRowCell.css": (
+        "text-overflow: ellipsis",
+        "white-space: nowrap",
     ),
     "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue": (
         "grid-auto-rows: max-content",
@@ -33,6 +47,11 @@ REQUIREMENTS = {
         "max-block-size: 100%",
         ".shell :deep(.sidebar--scroll)",
         "overflow: hidden",
+    ),
+    "frontend/apps/web/src/layouts/AppShell.vue": (
+        "workspacePanelMode === 'catalog'",
+        "平台应用",
+        "workspacePanelMode === 'navigation'",
     ),
 }
 FORBIDDEN_PRODUCT_HINTS = (

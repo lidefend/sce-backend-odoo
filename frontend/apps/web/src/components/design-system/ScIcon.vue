@@ -20,7 +20,7 @@
 import { computed } from 'vue';
 
 const props = withDefaults(defineProps<{
-  name: 'apps' | 'arrow-left' | 'arrow-right' | 'bell' | 'briefcase' | 'building' | 'check' | 'chevron-down' | 'chevron-right' | 'chevron-up' | 'clipboard' | 'close' | 'columns' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'menu' | 'panel-left' | 'plus' | 'project' | 'search' | 'settings' | 'star' | 'star-outline' | 'sun' | 'user';
+  name: 'apps' | 'arrow-left' | 'arrow-right' | 'bell' | 'briefcase' | 'building' | 'check' | 'chevron-down' | 'chevron-right' | 'chevron-up' | 'clipboard' | 'close' | 'columns' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'lock' | 'menu' | 'panel-left' | 'plus' | 'project' | 'search' | 'settings' | 'star' | 'star-outline' | 'sun' | 'user';
   size?: 14 | 16 | 18 | 20 | 24;
 }>(), { size: 20 });
 
@@ -43,6 +43,7 @@ const paths = {
   'file-text': 'M6 3h9l3 3v15H6V3Zm9 0v4h4M9 11h6m-6 4h6m-6 4h4',
   folder: 'M3 6h7l2 2h9v11H3V6Z',
   home: 'm3 11 9-8 9 8v10h-6v-6H9v6H3V11Z',
+  lock: 'M6 10V8a6 6 0 0 1 12 0v2m-13 0h14v11H5V10Zm7 5a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-1 1v2',
   menu: 'M4 7h16M4 12h16M4 17h16',
   'panel-left': 'M4 4h16v16H4V4Zm5 0v16',
   plus: 'M12 5v14M5 12h14',

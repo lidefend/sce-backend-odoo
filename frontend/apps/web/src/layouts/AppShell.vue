@@ -29,6 +29,9 @@
         <ScIconButton label="业务导航" appearance="activity-rail" :class="{ active: workspacePanelMode === 'navigation' }" @click="openWorkspacePanel('navigation')">
           <ScIcon name="apps" :size="20" />
         </ScIconButton>
+        <ScIconButton v-if="showPublishedApps" label="平台应用" appearance="activity-rail" :class="{ active: workspacePanelMode === 'catalog' }" @click="openWorkspacePanel('catalog')">
+          <ScIcon name="briefcase" :size="20" />
+        </ScIconButton>
         <ScIconButton label="公司空间：切换公司" appearance="activity-rail" :class="{ active: workspacePanelMode === 'company' }" @click="openWorkspacePanel('company')">
           <ScIcon name="building" :size="20" />
         </ScIconButton>
@@ -120,31 +123,33 @@
           </div>
         </section>
 
-        <div v-if="workspacePanelMode === 'navigation' && showPublishedApps" class="published-apps" data-platform-app-catalog="true">
-        <div class="published-apps__header">
-          <span>平台发布</span>
-          <small v-if="appCatalogLoading">同步中</small>
-        </div>
-        <div class="published-apps__list">
-          <ScButton
-            v-for="app in visiblePublishedApps"
-            :key="app.key"
-            class="published-app"
-            appearance="menu-item"
-            :class="{ active: app.appId === activeAppId, 'published-app--loading': app.appId === openingAppId }"
-            type="button"
-            variant="ghost"
-            :disabled="Boolean(openingAppId)"
-            @click="openPublishedApp(app)"
-          >
-            <span class="published-app__content">
-              <span class="published-app__mark">{{ appMark(app) }}</span>
-              <span class="published-app__label">{{ app.label }}</span>
-              <small v-if="appBadge(app)">{{ appBadge(app) }}</small>
-            </span>
-          </ScButton>
-        </div>
-      </div>
+        <section v-else-if="workspacePanelMode === 'catalog'" class="workspace-scope-panel published-apps" data-platform-app-catalog="true" aria-labelledby="platform-app-catalog-title">
+          <header>
+            <div><small>可访问应用</small><h2 id="platform-app-catalog-title">平台应用</h2></div>
+            <span>{{ visiblePublishedApps.length }}</span>
+          </header>
+          <div class="published-apps__list">
+            <ScButton
+              v-for="app in visiblePublishedApps"
+              :key="app.key"
+              class="published-app"
+              appearance="menu-item"
+              :class="{ active: app.appId === activeAppId, 'published-app--loading': app.appId === openingAppId }"
+              type="button"
+              variant="ghost"
+              :disabled="Boolean(openingAppId)"
+              @click="openPublishedApp(app)"
+            >
+              <span class="published-app__content">
+                <span class="published-app__mark">{{ appMark(app) }}</span>
+                <span class="published-app__label">{{ app.label }}</span>
+                <small v-if="appBadge(app)">{{ appBadge(app) }}</small>
+              </span>
+            </ScButton>
+            <ScInlineState v-if="appCatalogLoading" state="loading" label="正在同步平台应用" />
+            <ScInlineState v-else-if="appCatalogError" state="error" :label="appCatalogError" />
+          </div>
+        </section>
 
         <div
           v-if="workspacePanelMode === 'navigation'"
@@ -414,7 +419,7 @@ type PublishedApp = {
   category: string;
   badges: Record<string, unknown>;
 };
-type WorkspacePanelMode = 'navigation' | 'company' | 'record';
+type WorkspacePanelMode = 'navigation' | 'catalog' | 'company' | 'record';
 const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 const SIDEBAR_HIDDEN_STORAGE_KEY = 'sc_shell_sidebar_hidden';
 

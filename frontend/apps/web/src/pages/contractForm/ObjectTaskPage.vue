@@ -73,7 +73,7 @@
       data-canonical-zone="primary"
       title="核心申请信息"
       :bordered="true"
-      appearance="section"
+      appearance="task-section"
     >
       <CanonicalFormNodeRenderer
         v-for="node in coreInputNodes"
@@ -92,7 +92,7 @@
       data-canonical-zone="primary"
       title="当前办理条件"
       :bordered="true"
-      appearance="section"
+      appearance="task-section"
     >
       <CanonicalFormNodeRenderer
         v-for="node in conditionInputNodes"
@@ -111,7 +111,7 @@
       data-canonical-zone="primary"
       :title="preExecutionInputTitle"
       :bordered="true"
-      appearance="section"
+      appearance="task-section"
     >
       <CanonicalFormNodeRenderer
         v-for="node in preExecutionInputNodes"

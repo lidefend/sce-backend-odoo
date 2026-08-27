@@ -48,7 +48,10 @@
           <header class="brand-header">
             <span v-if="config.appBrand.productBadge" class="product-badge">{{ config.appBrand.productBadge }}</span>
             <p v-if="config.appBrand.kicker" class="brand-kicker">{{ config.appBrand.kicker }}</p>
-            <h1>{{ pageText('title', loginTitleFallback) }}</h1>
+            <h1>
+              <span>{{ pageText('title', loginTitleFallback) }}</span>
+              <strong>{{ pageText('brand_name', config.appBrand.name) }}</strong>
+            </h1>
           </header>
 
           <form
@@ -70,7 +73,9 @@
                 required
                 :status="error ? 'error' : 'default'"
                 :described-by="error ? 'login-error' : undefined"
-              />
+              >
+                <template #prefix><ScIcon name="user" :size="18" /></template>
+              </ScInput>
             </label>
             <label class="sc-form-label">
               {{ pageText('password_label', '密码') }}
@@ -86,9 +91,11 @@
                 required
                 :status="error ? 'error' : 'default'"
                 :described-by="error ? 'login-error' : undefined"
-              />
+              >
+                <template #prefix><ScIcon name="lock" :size="18" /></template>
+              </ScInput>
             </label>
-            <label class="sc-form-label">
+            <label v-if="!dbInputDisabled" class="sc-form-label">
               {{ pageText('db_label', '数据库') }}
               <ScInput
                 v-model="dbName"
@@ -147,6 +154,7 @@ import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScCard from '../components/design-system/ScCard.vue';
 import ScInput from '../components/design-system/ScInput.vue';
+import ScIcon from '../components/design-system/ScIcon.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -266,12 +274,12 @@ async function executeHeaderAction(actionKey: string) {
   --accent: var(--sc-semantic-surface-interactive);
   min-height: 100vh;
   display: grid;
-  place-items: center;
+  place-items: stretch;
   gap: 18px;
-  background: var(--sc-app-bg);
+  background: var(--sc-app-panel);
   color: var(--ink);
   font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
-  padding: 72px clamp(24px, 5vw, 72px) 56px;
+  padding: 64px 0 0 clamp(24px, 5vw, 72px);
   position: relative;
   overflow: hidden;
 }
@@ -300,11 +308,12 @@ async function executeHeaderAction(actionKey: string) {
 }
 
 .login-layout {
-  width: min(1320px, 100%);
+  width: 100%;
+  min-height: calc(100vh - 64px);
   display: grid;
   grid-template-areas: 'auth brand';
-  grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
-  gap: clamp(44px, 7vw, 112px);
+  grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
+  gap: clamp(30px, 4vw, 72px);
   align-items: center;
   position: relative;
   z-index: 1;
@@ -314,11 +323,11 @@ async function executeHeaderAction(actionKey: string) {
   grid-area: brand;
   position: relative;
   display: grid;
-  min-height: 620px;
+  min-height: calc(100vh - 64px);
   align-items: end;
   overflow: hidden;
-  border-radius: 36px 0 36px 36px;
-  padding: 48px;
+  border-radius: 64px 0 0 0;
+  padding: 64px;
   background: linear-gradient(145deg, var(--sc-app-panel) 0%, var(--sc-app-subtle-bg) 60%, var(--sc-app-info-bg) 100%);
 }
 
@@ -327,6 +336,8 @@ async function executeHeaderAction(actionKey: string) {
   width: 100%;
   display: grid;
   justify-items: stretch;
+  align-self: center;
+  padding-bottom: 64px;
 }
 
 .brand-visual { position: absolute; inset: 0; overflow: hidden; }
@@ -416,9 +427,19 @@ async function executeHeaderAction(actionKey: string) {
 
 h1 {
   margin: 0;
-  font-size: 20px;
+  display: grid;
+  gap: 6px;
+  font-size: 16px;
   color: var(--sc-app-text-secondary);
   font-weight: 500;
+  line-height: 1.3;
+}
+
+h1 strong {
+  color: var(--sc-app-text-primary);
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .brand-title {
@@ -519,6 +540,7 @@ label {
 @media (max-width: 640px) {
   .login-page {
     padding: 72px 16px 56px;
+    place-items: center;
   }
 
   .brand-panel {

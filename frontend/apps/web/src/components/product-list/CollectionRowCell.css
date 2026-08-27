@@ -1,3 +1,13 @@
+.collection-row-cell {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 .cell-primary {
   min-width: 0;
   max-width: 100%;
@@ -31,8 +41,7 @@
   font-size: 12px;
   font-weight: 650;
   border: 1px solid var(--sc-app-border);
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .status-badge.tone-success { background: var(--sc-app-success-bg); color: var(--sc-app-success-text); border-color: var(--sc-app-success-border); }

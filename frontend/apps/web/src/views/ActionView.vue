@@ -306,6 +306,7 @@
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
           :loading="isUiBusy"
+          :total-count="listTotalCount"
           :show-view-switch="showViewSwitch"
           :view-label="toolbarUiLabel('view_switch', '视图')"
           :view-modes="vm.page.availableViewModes"
@@ -449,6 +450,7 @@
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
           :loading="isUiBusy"
+          :total-count="listTotalCount"
           :show-view-switch="showViewSwitch"
           :view-label="toolbarUiLabel('view_switch', '视图')"
           :view-modes="vm.page.availableViewModes"
@@ -530,6 +532,7 @@
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
           :loading="isUiBusy"
+          :total-count="listTotalCount"
           :show-view-switch="showViewSwitch"
           :view-label="toolbarUiLabel('view_switch', '视图')"
           :view-modes="vm.page.availableViewModes"

@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<{
   title?: string;
   subtitle?: string;
   bordered?: boolean;
-  appearance?: 'default' | 'summary' | 'task' | 'section' | 'context' | 'relation' | 'form-section' | 'fact' | 'auth' | 'account' | 'main-surface' | 'flow' | 'kanban-record' | 'metric' | 'table' | 'record' | 'config';
+  appearance?: 'default' | 'summary' | 'task' | 'section' | 'task-section' | 'context' | 'relation' | 'form-section' | 'fact' | 'auth' | 'account' | 'main-surface' | 'flow' | 'kanban-record' | 'metric' | 'table' | 'record' | 'config';
 }>(), {
   bordered: true,
   appearance: 'default',
@@ -35,6 +35,7 @@ const cardBodyStyle = computed<CardStyle>(() => {
   const styles: Partial<Record<NonNullable<typeof props.appearance>, CardStyle>> = {
     summary: { padding: '0' },
     task: { display: 'grid', alignContent: 'start', height: 'max-content', padding: '8px 20px 18px' },
+    'task-section': { display: 'grid', gap: '12px', padding: '4px 0 20px' },
     fact: { padding: '0' },
     auth: { display: 'grid', gap: '18px', padding: 'var(--sc-card-body-padding)' },
     account: { display: 'grid', gap: '16px', padding: '28px' },
@@ -51,6 +52,7 @@ const cardBodyStyle = computed<CardStyle>(() => {
 
 const cardHeaderStyle = computed<CardStyle>(() => {
   if (props.appearance === 'task') return { alignItems: 'center', paddingBlock: '14px 8px' } as CardStyle;
+  if (props.appearance === 'task-section') return { alignItems: 'center', padding: '18px 0 10px', borderTop: '1px solid var(--sc-app-border)' } as CardStyle;
   return {} as CardStyle;
 });
 </script>
@@ -58,6 +60,7 @@ const cardHeaderStyle = computed<CardStyle>(() => {
 <style scoped>
 [data-appearance='summary'] { overflow: hidden; }
 [data-appearance='fact'] { border: 0; background: transparent; box-shadow: none; }
+[data-appearance='task-section'] { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 [data-appearance='auth'] { --sc-card-body-padding: 32px; }
 [data-appearance='main-surface'] { --sc-card-body-padding: 0 20px 24px; width: 100%; min-width: 0; }
 [data-appearance='flow'] { width: 100%; min-width: 0; border: 0; background: transparent; box-shadow: none; }
