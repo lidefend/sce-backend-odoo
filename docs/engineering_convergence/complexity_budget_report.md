@@ -18,7 +18,7 @@ Generated from repository source files. This report is informational during the 
 | 4188 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3674 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3663 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3667 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -52,7 +52,7 @@ Generated from repository source files. This report is informational during the 
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1547 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1527 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1532 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 614 | YAML workflow | `scripts/verify/registry.yaml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -101,7 +101,7 @@ Generated from repository source files. This report is informational during the 
 | 1070 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1053 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
-| 1034 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
+| 1038 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1020 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
@@ -150,7 +150,7 @@ Generated from repository source files. This report is informational during the 
 | 4188 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 3674 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
-| 3663 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3667 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -185,7 +185,7 @@ Generated from repository source files. This report is informational during the 
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1547 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1543 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 1527 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1532 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1483 | warning | Python source | `scripts/release/release_publication.py` |
 | 1442 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
