@@ -1787,18 +1787,14 @@ useFormAuxiliaryWatchersRuntime({
   businessCategoryCode: () => currentBusinessCategoryCode.value,
   businessCategoryLabel: () => currentBusinessCategoryLabel.value,
   chatterLoading: () => chatterLoading.value,
-  collaborationReady: () => Boolean(nativeChatterActions.value.length || nativeAttachments.value),
-  currentQuery: () => route.query as Record<string, unknown>,
+  collaborationReady: () => Boolean(nativeChatterActions.value.length || nativeAttachments.value), currentQuery: () => route.query as Record<string, unknown>,
   isActive: () => isComponentActive.value,
   isIntake: () => isIntakeCreateMode.value,
-  loadNativeChatterTimeline: () => loadNativeChatterTimeline(),
-  modelName: () => model.value,
+  loadNativeChatterTimeline: () => loadNativeChatterTimeline(), modelName: () => model.value,
   nativeChatterAutoLoadKey,
-  persistIntakeAutosave: () => persistIntakeAutosave(),
-  primaryReady: () => status.value === 'ok',
+  persistIntakeAutosave: () => persistIntakeAutosave(), primaryReady: () => status.value === 'ok',
   recordId: () => recordId.value,
   router,
 });
 watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
-</script>
-<style scoped src="./contractForm/ContractFormPage.css"></style>
+</script><style scoped src="./contractForm/ContractFormPage.css"></style>

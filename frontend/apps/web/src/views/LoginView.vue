@@ -51,7 +51,7 @@
           v-if="pageSectionEnabled('card', true) && pageSectionTagIs('card', 'section')"
           class="login-card sc-panel"
           appearance="auth"
-          :style="pageSectionStyle('card')"
+          :style="{ ...pageSectionStyle('card'), '--sc-card-body-padding': '0' }"
         >
           <header class="brand-header">
             <span v-if="config.appBrand.productBadge" class="product-badge">{{ config.appBrand.productBadge }}</span>
@@ -292,15 +292,12 @@ async function executeHeaderAction(actionKey: string) {
 
 <style scoped>
 .login-page {
-  --ink: var(--sc-app-text-primary);
-  --muted: var(--sc-app-text-secondary);
-  --accent: var(--sc-semantic-surface-interactive);
   min-height: 100vh;
   display: grid;
   place-items: stretch;
   gap: 18px;
   background: var(--sc-app-panel);
-  color: var(--ink);
+  color: var(--sc-app-text-primary);
   font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
   padding: 56px 0 0;
   position: relative;
@@ -309,7 +306,7 @@ async function executeHeaderAction(actionKey: string) {
 
 .login-masthead {
   position: absolute;
-  z-index: 2;
+  z-index: var(--sc-component-login-layer-content);
   top: 14px;
   left: 24px;
   display: inline-flex;
@@ -339,7 +336,7 @@ async function executeHeaderAction(actionKey: string) {
   gap: 0;
   align-items: stretch;
   position: relative;
-  z-index: 1;
+  z-index: var(--sc-component-login-layer-base);
 }
 
 .brand-panel {
@@ -358,7 +355,7 @@ async function executeHeaderAction(actionKey: string) {
 .brand-panel::before {
   content: '';
   position: absolute;
-  z-index: 2;
+  z-index: var(--sc-component-login-layer-content);
   inset: -14% auto -18% -22%;
   width: 34%;
   background: var(--sc-app-panel);
@@ -388,7 +385,7 @@ async function executeHeaderAction(actionKey: string) {
 }
 .brand-visual__wireframe {
   position: absolute;
-  z-index: 1;
+  z-index: var(--sc-component-login-layer-base);
   width: min(68vw, 860px);
   aspect-ratio: 1.35;
   left: -18%;
@@ -402,7 +399,7 @@ async function executeHeaderAction(actionKey: string) {
 }
 .brand-visual__dashboard {
   position: absolute;
-  z-index: 2;
+  z-index: var(--sc-component-login-layer-content);
   left: 16%;
   bottom: -7%;
   width: 72%;
@@ -424,7 +421,7 @@ async function executeHeaderAction(actionKey: string) {
 .brand-visual__dashboard-line--short { width: 38%; }
 .brand-visual__ring {
   position: absolute;
-  z-index: 3;
+  z-index: var(--sc-component-login-layer-content);
   left: 17%;
   top: 18%;
   width: min(46vw, 590px);
@@ -435,7 +432,7 @@ async function executeHeaderAction(actionKey: string) {
 }
 .brand-visual__brand-cube {
   position: absolute;
-  z-index: 7;
+  z-index: var(--sc-component-login-layer-modal);
   top: 31%;
   left: 45%;
   display: grid;
@@ -451,15 +448,15 @@ async function executeHeaderAction(actionKey: string) {
 }
 .brand-visual__brand-cube b { font-size: 82px; line-height: 1; transform: rotate(-30deg); }
 .brand-visual__plane,
-.brand-visual__orb { position: absolute; z-index: 5; box-shadow: var(--sc-app-shadow-modal); }
+.brand-visual__orb { position: absolute; z-index: var(--sc-component-login-layer-content); box-shadow: var(--sc-app-shadow-modal); }
 .brand-visual__plane { width: 280px; height: 86px; border-radius: 18px; transform: rotate(32deg); }
-.brand-visual__plane--primary { z-index: 6; top: 28%; left: -1%; background: linear-gradient(135deg, var(--sc-app-info-bg), var(--sc-semantic-surface-interactive)); }
-.brand-visual__plane--secondary { z-index: 6; right: 7%; bottom: 17%; background: var(--sc-app-panel); }
+.brand-visual__plane--primary { z-index: var(--sc-component-login-layer-content); top: 28%; left: -1%; background: linear-gradient(135deg, var(--sc-app-info-bg), var(--sc-semantic-surface-interactive)); }
+.brand-visual__plane--secondary { z-index: var(--sc-component-login-layer-content); right: 7%; bottom: 17%; background: var(--sc-app-panel); }
 .brand-visual__orb { width: 116px; height: 116px; border-radius: 50%; }
 .brand-visual__orb--primary { top: 39%; left: 27%; background: linear-gradient(145deg, var(--sc-semantic-surface-interactive), var(--sc-app-info-bg)); }
 .brand-visual__orb--success { top: 52%; left: 19%; width: 92px; height: 92px; background: var(--sc-app-success-bg); }
 .brand-visual__orb--neutral { top: 62%; left: 13%; width: 78px; height: 78px; background: var(--sc-app-panel); }
-.brand-copy { position: relative; z-index: 8; max-width: 520px; margin-left: 4%; }
+.brand-copy { position: relative; z-index: var(--sc-component-login-layer-modal); max-width: 520px; margin-left: 4%; }
 
 .page-actions {
   width: 100%;
@@ -504,7 +501,6 @@ async function executeHeaderAction(actionKey: string) {
 }
 
 .login-card {
-  --sc-card-body-padding: 0;
   width: 100%;
   border: 0;
   box-shadow: none;
@@ -555,7 +551,7 @@ h1 strong {
 
 .brand-title {
   margin: 0 0 12px;
-  color: var(--accent);
+  color: var(--sc-semantic-surface-interactive);
   font-weight: 600;
   font-size: 32px;
   line-height: 1.2;
@@ -564,7 +560,7 @@ h1 strong {
 .brand-subtitle,
 .brand-slogan {
   margin: 0;
-  color: var(--muted);
+  color: var(--sc-app-text-secondary);
   font-size: 16px;
   line-height: 1.45;
 }
@@ -627,7 +623,7 @@ label {
   color: var(--sc-app-text-secondary);
   font-size: 12px;
   line-height: 1.45;
-  z-index: 1;
+  z-index: var(--sc-component-login-layer-base);
 }
 
 .page-footer p {
@@ -670,7 +666,6 @@ label {
   }
 
   .login-card {
-    --sc-card-body-padding: 0;
     border-radius: 16px;
   }
 
