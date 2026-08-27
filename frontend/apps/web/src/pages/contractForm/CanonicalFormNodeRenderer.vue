@@ -92,28 +92,20 @@ const children = computed(() => visibleCanonicalChildren(props.node));
 
 /**
  * Section heading for the field form.
- * 后台逻辑分组（核心申请信息 / 申请识别与状态 / 本次付款事实 …）是开发侧的分组
- * 命名，对填单用户没有帮助。结构化填单模式下隐藏这些标题，字段直接平铺成连续
- * 表单，方便用户直接填单办理业务（分组逻辑保留在 canonical 契约中，不动）。
- * 只读信息卡（当前任务等 readonly-fact 节点）保留标题以便信息组织。
+ * 后台逻辑分组（核心申请信息 / 申请识别与状态 / 本次付款事实 / 业务上下文 /
+ * 结算与来源匹配 …）是开发侧的分组命名，对填单/查看用户都没有帮助。一律隐藏，
+ * 字段直接平铺成连续表单（分组逻辑保留在 canonical 契约中，不动）。
+ * 办理引导区（当前任务等）由 ObjectTaskPage 的卡片结构承载，不经由此处渲染。
  */
-const sectionTitle = computed(() => {
-  if (nodeKind.value === 'field') return '';
-  if (readonlyFactLayout.value) return props.node.title || '';
-  return '';
-});
+const sectionTitle = computed(() => '');
 
 /**
  * Group/container headings for structural nodes (no direct fields).
- * 后台逻辑分组标题在结构化填单模式下隐藏（同 sectionTitle 决策）；只读信息卡与
- * UI 结构（notebook/page）标题保留。
+ * 同样隐藏后台逻辑分组标题（含 notebook/page 包装容器的来源匹配等）。
+ * 当前 notebook 仅作包装容器（无 tab 切换 UI），隐藏标题安全；若未来 notebook
+ * 升级为真实 tab 结构，需在此恢复 page 标题以承载切换标签。
  */
-const groupHeadingVisible = computed(() => {
-  if (!props.node.title) return false;
-  if (readonlyFactLayout.value) return true;
-  if (['notebook', 'page', 'tab'].includes(nodeKind.value)) return true;
-  return false;
-});
+const groupHeadingVisible = computed(() => false);
 
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
 const layoutColumns = computed(() => {

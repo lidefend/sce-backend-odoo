@@ -379,6 +379,23 @@ density baseline **14/14 PASS**（token 扩展 + 标题统一无回归）。
 
 **验证**：typecheck 0 错误；density baseline **14/14 PASS**；编辑态与只读态均无后台分组标题、字段平铺、两列对齐。
 
+## 二十.aa、后台分组标题彻底隐藏（2026-08-28 追加）
+
+**背景**：上一轮仅隐藏了结构化填单分组（核心申请信息/申请识别与状态/本次付款事实），用户反馈"业务上下文，更多业务信息，关系明细，怎么还在？不够彻底"——要求所有后台逻辑/开发语义分组标题一律不出现在界面。
+
+**A. ObjectTaskPage 卡片标题收敛**
+- context 卡（业务上下文）、relation 卡（关系明细）删除硬编码 `title`，卡体直接渲染
+- overflow-context（更多业务信息）、supplementary-input（补充信息）由 `ScDisclosure` 折叠区改为 `<section>` 直接渲染——字段直接平铺，不再有折叠触发标题
+- 删除 unused `ScDisclosure` import
+
+**B. CanonicalFormNodeRenderer 标题规则收口**
+- `sectionTitle` 恒为空——readonly-fact 节点标题（业务上下文等）一并隐藏
+- `groupHeadingVisible` 恒为 false——notebook/page 包装容器标题（结算与来源匹配）也隐藏（当前 notebook 仅作包装无 tab 切换，隐藏安全；注释保留未来 tab 化恢复点）
+
+**保留**：仅"当前任务"办理引导卡（ObjectTaskPage current-task，面向用户的下一步办理/阻断提示）。
+
+**实测**：编辑态（1709）与只读态（19）标题列表均只剩 `['当前任务']`；核心申请信息/申请识别与状态/本次付款事实/业务上下文/关系明细/更多业务信息/补充信息/结算与来源匹配 全部消失，字段连续平铺。typecheck 0 错误；density baseline **14/14 PASS**。
+
 ## 二十、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。

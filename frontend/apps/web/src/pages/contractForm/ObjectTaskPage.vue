@@ -121,11 +121,10 @@
         @field-change="emit('field-change', $event)"
       />
     </ScCard>
-    <ScDisclosure
+    <section
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
       data-floorplan-region="supplementary-input"
-      title="补充信息"
     >
       <CanonicalFormNodeRenderer
         v-for="node in supplementaryInputNodes"
@@ -135,7 +134,7 @@
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
-    </ScDisclosure>
+    </section>
     <slot v-if="!decisionMode" name="blocking" />
     <section
       v-if="!decisionMode && riskNodes.length"
@@ -172,7 +171,6 @@
         aria-label="业务上下文"
         data-floorplan-region="business-context"
         data-canonical-zone="primary"
-        title="业务上下文"
         :bordered="true"
         appearance="context"
       >
@@ -186,11 +184,10 @@
         />
       </ScCard>
     </div>
-    <ScDisclosure
+    <section
       v-if="overflowContextNodes.length"
       class="object-task-page__overflow-context"
       data-floorplan-region="overflow-context"
-      title="更多业务信息"
     >
       <CanonicalFormNodeRenderer
         v-for="node in overflowContextNodes"
@@ -200,14 +197,13 @@
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
       />
-    </ScDisclosure>
+    </section>
     <ScCard
       v-if="relationNodes.length"
       class="object-task-page__relation"
       aria-label="关系明细"
       data-floorplan-region="relation"
       data-canonical-zone="primary"
-      title="关系明细"
       :bordered="true"
       appearance="relation"
     >
@@ -270,7 +266,6 @@ import type { RelationFieldAdapter } from '../../components/template/relationFie
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
-import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
 
 defineProps<{
   summaryNodes: CanonicalFormNode[];
