@@ -35,7 +35,7 @@ const cardBodyStyle = computed<CardStyle>(() => {
   const styles: Partial<Record<NonNullable<typeof props.appearance>, CardStyle>> = {
     summary: { padding: '0' },
     task: { display: 'grid', alignContent: 'start', height: 'max-content', padding: '8px 20px 18px' },
-    'task-section': { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: '32px', rowGap: '16px', padding: '4px 0 20px' },
+    'task-section': { display: 'grid', gridTemplateColumns: 'var(--sc-task-section-columns)', columnGap: '32px', rowGap: '16px', padding: '4px 0 20px' },
     fact: { padding: '0' },
     auth: { display: 'grid', gap: '18px', padding: 'var(--sc-card-body-padding)' },
     account: { display: 'grid', gap: '16px', padding: '28px' },
@@ -60,15 +60,13 @@ const cardHeaderStyle = computed<CardStyle>(() => {
 <style scoped>
 [data-appearance='summary'] { overflow: hidden; }
 [data-appearance='fact'] { border: 0; background: transparent; box-shadow: none; }
-[data-appearance='task-section'] { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-[data-appearance='task-section'] :deep(.t-card__body > .canonical-form-node) { width: 100%; max-width: none; }
-[data-appearance='task-section'] :deep(.t-card__body > .canonical-form-node--container) { grid-column: 1 / -1; }
+[data-appearance='task-section'] { --sc-task-section-columns: repeat(2, minmax(0, 1fr)); border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 [data-appearance='auth'] { --sc-card-body-padding: 32px; }
 [data-appearance='main-surface'] { --sc-card-body-padding: 0 20px 24px; width: 100%; min-width: 0; }
 [data-appearance='flow'] { width: 100%; min-width: 0; border: 0; background: transparent; box-shadow: none; }
 @media (max-width: 640px) {
   [data-appearance='auth'] { --sc-card-body-padding: 22px; }
   [data-appearance='main-surface'] { --sc-card-body-padding: 0 0 18px; }
-  [data-appearance='task-section'] :deep(.t-card__body) { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-appearance='task-section'] { --sc-task-section-columns: minmax(0, 1fr); }
 }
 </style>
