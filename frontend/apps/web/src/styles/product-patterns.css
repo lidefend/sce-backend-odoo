@@ -532,6 +532,21 @@
   font-weight: 400;
 }
 
+/* Unify the template render path's .readonly-value with the professional
+ * render path: same size/weight/color/height so adjacent fields in one
+ * readonly section never look mixed. The template path is inline-flex, so
+ * min-height alone is ignored (reported 0px / content-height 22px vs the
+ * professional path's 32px block) - pin line-height too so both read at the
+ * same control height. Scope to the whole form surface (the readonly grid is
+ * .template-form-section-grid, not .template-form-section--readonly). */
+[data-product-page-mode='form'] .readonly-value {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--sc-app-text-primary);
+  line-height: calc(var(--sc-component-input-height-md) * 1px);
+  min-height: calc(var(--sc-component-input-height-md) * 1px);
+}
+
 
 /* Long-text cell truncation (list surface, TDesign table)
  * ListPage.css declares .column-long-text ellipsis rules, but that file is a

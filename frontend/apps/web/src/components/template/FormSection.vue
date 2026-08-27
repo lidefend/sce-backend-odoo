@@ -1218,9 +1218,10 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .readonly-value {
-  font-size: 13px;
-  color: var(--sc-app-text-secondary);
-  min-height: 36px;
+  font-size: 14px;
+  color: var(--sc-app-text-primary);
+  min-height: 32px;
+  line-height: 22px;
   display: inline-flex;
   align-items: center;
   min-width: 0;
