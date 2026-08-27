@@ -793,6 +793,21 @@ assert.deepEqual(
   'container geometry and style-token identities must survive canonical projection',
 );
 
+const fieldAuthSnapshot = snapshot();
+fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';
+fieldAuthSnapshot.statusContract.widgetStatus[0].readonly = false;
+const fieldAuthName = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(fieldAuthSnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'name')!;
+assert.equal(fieldAuthName.auth, 'read', 'field-level auth must survive canonical projection');
+assert.equal(fieldAuthName.readonly, true, 'field-level read authority must not become editable through page authority');
+assert.equal(
+  canonicalFieldToFormSection(fieldAuthName).auth,
+  'read',
+  'field auth must reach the professional component adapter and semantic DOM carrier',
+);
+
 const legacyChildCarrierSnapshot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 legacyChildCarrierSnapshot.layoutContract.containerTree[0].tabs = [];
 assert.throws(() => decodeContractV2Snapshot(legacyChildCarrierSnapshot), /tabs is not allowed/);

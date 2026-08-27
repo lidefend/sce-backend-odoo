@@ -187,6 +187,7 @@ function fieldFromWidget(
   const slotReadonly = authoritativeRole
     ? structureSlot(structure, authoritativeRole)?.readonly === true
     : false;
+  const fieldAuth = text(status?.auth);
   const componentConfig = { ...widget.componentConfig };
   const currencyField = text(componentConfig.currencyField || componentConfig.currency_field);
   if (fieldType === 'monetary' && currencyField) {
@@ -211,11 +212,13 @@ function fieldFromWidget(
     span: widget.span,
     visible: ancestorVisible && statusResolved && bool(status?.visible, true),
     readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || slotReadonly
+      || (Boolean(fieldAuth) && fieldAuth !== 'edit')
       || !statusResolved || bool(status?.readonly, false),
     required: bool(status?.required, false),
     disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
     placeholder: text(status?.placeholder),
+    auth: fieldAuth,
     semanticRole: fieldSemantics.role,
     semanticSlot: fieldSemantics.slot,
     semanticGroup: fieldSemantics.group,

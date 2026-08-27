@@ -19,6 +19,7 @@
           :data-field-key="field.key"
           :data-field-type="field.type"
           :data-field-state="fieldState(field)"
+          :data-field-auth="field.auth || undefined"
           :data-component-key="field.componentKey || undefined"
           :data-component-readiness="field.componentReadiness || undefined"
           :data-component-renderer="field.componentRenderer || undefined"

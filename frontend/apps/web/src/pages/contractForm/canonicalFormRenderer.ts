@@ -159,6 +159,7 @@ export function canonicalFieldToFormSection(
     currencyLabel: currencyLabel || undefined,
     required: field.required,
     readonly: field.readonly || field.disabled,
+    auth: field.auth || undefined,
     helpText: field.reasonCode,
     inputPlaceholder: field.placeholder || undefined,
     spanClass: field.span >= 24 ? 'field--full' : field.span >= 16 ? 'field--wide' : 'field--normal',

@@ -34,6 +34,7 @@ export type FormSectionFieldSchema = {
   renderProfile?: CanonicalFormRenderMode;
   required: boolean;
   readonly: boolean;
+  auth?: string;
   invalid?: boolean;
   helpText?: string;
   errorText?: string;
