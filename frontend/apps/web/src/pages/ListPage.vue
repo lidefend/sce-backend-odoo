@@ -6,12 +6,6 @@
     :data-list-status="status"
     :aria-busy="loading || undefined"
   >
-    <ScPageHeader
-      v-if="status === 'error'"
-      :title="title"
-      :subtitle="subtitle"
-    />
-
     <ProductLoadingSkeleton
       v-if="loading && !hasRetainedContent"
       :title="title"
@@ -310,7 +304,6 @@ import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectio
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
-import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
