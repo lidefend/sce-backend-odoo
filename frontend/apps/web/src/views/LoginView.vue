@@ -324,7 +324,7 @@ async function executeHeaderAction(actionKey: string) {
   grid-template-areas: 'auth brand';
   grid-template-columns: minmax(420px, 39vw) minmax(0, 1fr);
   gap: 0;
-  align-items: center;
+  align-items: stretch;
   position: relative;
   z-index: 1;
 }
@@ -358,7 +358,7 @@ async function executeHeaderAction(actionKey: string) {
   width: 100%;
   display: grid;
   justify-items: stretch;
-  align-self: center;
+  align-self: stretch;
   align-content: start;
   padding: clamp(130px, 20vh, 190px) clamp(32px, 5vw, 72px) 88px;
 }
@@ -483,6 +483,7 @@ async function executeHeaderAction(actionKey: string) {
 }
 
 .login-card {
+  --sc-card-body-padding: 0;
   width: 100%;
   border: 0;
   box-shadow: none;
@@ -648,6 +649,7 @@ label {
   }
 
   .login-card {
+    --sc-card-body-padding: 0;
     border-radius: 16px;
   }
 
