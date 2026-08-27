@@ -194,7 +194,29 @@
 - 实测: 长文本 206px 内容 → 141px 容器 ellipsis；金额右对齐 + tabular-nums；日期次要色 rgb(92,97,102)
 - 门禁: `frontend_density_baseline_audit.mjs` 新增 `list.long-text-ellipsis` / `list.money-right-align` / `list.date-secondary-color` 断言——density baseline **10/10 PASS**
 
-## 十四、后续迭代项
+## 十四、分页器计数唯一（2026-08-28 追加）
+
+### 问题
+
+分页器（付款申请列表，`mode=paged`）同时渲染两处记录计数——**同一信息重复呈现**：
+
+- `CollectionPaginationFooter.vue` 第 4 行自定义 `<span class="pagination-total">共 N 条</span>`（本地化文案）
+- `ScPagination` → TDesign `t-pagination` **自带**的「共 N 条数据」（`.t-pagination__total`）
+
+实测 visible 文本：`共 15 条 共 15 条数据 15 1`——「共 15 条」出现 2 次。
+
+### 修复
+
+- `CollectionPaginationFooter.vue`: `ScPagination` 增加 `:show-total="false"`（TDesign 新版本直接不渲染内置 total）
+- `CollectionPaginationFooter.css`: 追加 `:deep(.t-pagination__total) { display: none; }`——**兜底旧版本**（`show-total` prop 未生效时隐藏内置 total）
+
+双保险，计数信息由自定义 `pagination-total` 独占。实测 visible 文本收敛为 `共 15 条 1`（页码仍在，分页控件完整）。
+
+### 门禁
+
+- `frontend_density_baseline_audit.mjs` 新增 `list.pagination-count-single` 断言（分页 footer visible 文本「共 N 条」仅出现 1 次）——density baseline **11/11 PASS**
+
+## 十五、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
 2. **表单间距 token 扩展**: `field_gap`/`column_gap`/`label_row_gap`/`control_row_gap` 已绑定（见十二）；剩余 `field-inline-config` 与 `.label` 内 gap 6px 语义如需独立契约可再拆 token

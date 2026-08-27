@@ -87,6 +87,12 @@ async function auditList(page) {
     const dateTd = document.querySelector('.t-table td.column-layout-date');
     const textTd = document.querySelector('.t-table td.column-layout-text');
     const styleOf = (el, prop) => el ? getComputedStyle(el)[prop] : null;
+    // Pagination must render the record count exactly once: the custom
+    // .pagination-total owns "共 N 条" and the TDesign t-pagination's built-in
+    // total ("共 N 条数据") is hidden (see CollectionPaginationFooter.css).
+    const pagFooter = document.querySelector('.pagination-footer');
+    const pagVisible = pagFooter ? pagFooter.innerText.replace(/\s+/g, ' ') : '';
+    const paginationCountMatches = (pagVisible.match(/共\s*\d+\s*条/g) || []).length;
     return {
       th: th ? Math.round(th.getBoundingClientRect().height) : null,
       row: tr ? Math.round(tr.getBoundingClientRect().height) : null,
@@ -96,6 +102,7 @@ async function auditList(page) {
       moneyAlign: moneyTd ? styleOf(moneyTd, 'textAlign') : null,
       dateColor: dateTd ? styleOf(dateTd, 'color') : null,
       textColor: textTd ? styleOf(textTd, 'color') : null,
+      paginationCountMatches,
     };
   });
 }
@@ -194,6 +201,13 @@ try {
     console.warn('[density-baseline] WARN date/text cells not found, skipping date-color check');
   } else {
     checks.push({ name: 'list.date-secondary-color', actual: results.list.dateColor, expected: `!= ${results.list.textColor}`, ok: true });
+  }
+  // Record count must be rendered exactly once in the pagination footer.
+  if (results.list.paginationCountMatches != null && results.list.paginationCountMatches > 1) {
+    console.error(`[density-baseline] FAIL record count rendered ${results.list.paginationCountMatches} times in pagination footer (custom + TDesign built-in duplicate)`);
+    checks.push({ name: 'list.pagination-count-single', actual: results.list.paginationCountMatches, expected: '<= 1', ok: false });
+  } else {
+    checks.push({ name: 'list.pagination-count-single', actual: results.list.paginationCountMatches, expected: '<= 1', ok: true });
   }
 
   if (results.worksheet.firstRowHeight == null) {
