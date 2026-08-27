@@ -124,6 +124,26 @@ async function auditForm(page) {
       .filter((e) => e.getBoundingClientRect().height > 0 && (e.innerText || '').trim().length > 0);
     const roSizes = ro.map((e) => Math.round(parseFloat(getComputedStyle(e).fontSize) * 100) / 100);
     const roWeights = ro.map((e) => getComputedStyle(e).fontWeight);
+
+    // Form-structure contract (canonical render detail, v1):
+    //  - the canonical sheet must span the full task-section card (grid-column
+    //    1 / -1) so its interior reaches the width that triggers the two-column
+    //    form grid
+    //  - fields in the core-input card must occupy at least two columns (the
+    //    two-column canonical layout landed as part of the form-structure work)
+    //  - readonly facts must stay compact (their height collapsed from
+    //    line-height-inflated 90-111px to content-height 49-69px)
+    const sheet = document.querySelector('.object-task-page__core-input .canonical-form-node--sheet');
+    const sheetGridCol = sheet ? getComputedStyle(sheet).gridColumn : null;
+    const coreFields = [...document.querySelectorAll('.object-task-page__core-input .field')]
+      .filter((e) => e.getBoundingClientRect().height > 0 && e.offsetParent !== null);
+    const fieldXs = coreFields.map((e) => Math.round(e.getBoundingClientRect().x));
+    const fieldColumnCount = [...new Set(fieldXs)].length;
+    const facts = [...document.querySelectorAll('.canonical-form-node--readonly-fact')]
+      .filter((e) => e.getBoundingClientRect().height > 0);
+    const factHeights = facts.map((e) => Math.round(e.getBoundingClientRect().height));
+    const factMaxHeight = factHeights.length ? Math.max(...factHeights) : null;
+
     return {
       inputCount: heights.length,
       inputHeight: input,
@@ -133,6 +153,10 @@ async function auditForm(page) {
       readonlyUniform: new Set(roSizes).size <= 1,
       readonlyWeights: [...new Set(roWeights)],
       readonlyWeightUniform: new Set(roWeights).size <= 1,
+      sheetGridCol,
+      fieldColumnCount,
+      factCount: factHeights.length,
+      factMaxHeight,
     };
   });
 }
@@ -247,6 +271,35 @@ try {
       } else {
         checks.push({ name: 'form.readonly-weight', actual: results.form.readonlyWeights[0], expected: '400', ok: true });
       }
+    }
+    // Form structure: the canonical sheet spans the full task-section card.
+    if (results.form.sheetGridCol == null) {
+      console.warn('[density-baseline] WARN canonical sheet not found, skipping sheet-span check');
+    } else if (!String(results.form.sheetGridCol).includes('-1')) {
+      console.error(`[density-baseline] FAIL canonical sheet grid-column ${results.form.sheetGridCol} != 1 / -1 (right half of the task-section card stays empty)`);
+      checks.push({ name: 'form.sheet-spans-card', actual: results.form.sheetGridCol, expected: '1 / -1', ok: false });
+    } else {
+      checks.push({ name: 'form.sheet-spans-card', actual: results.form.sheetGridCol, expected: '1 / -1', ok: true });
+    }
+    // Form structure: core-input fields occupy at least two columns.
+    if (results.form.fieldColumnCount == null || results.form.fieldColumnCount < 1) {
+      console.warn('[density-baseline] WARN no core-input fields found, skipping field-column check');
+    } else if (results.form.fieldColumnCount < 2) {
+      console.error(`[density-baseline] FAIL core-input fields occupy ${results.form.fieldColumnCount} column(s), expected >= 2 (two-column canonical layout regressed to single column)`);
+      checks.push({ name: 'form.field-two-column', actual: results.form.fieldColumnCount, expected: '>= 2', ok: false });
+    } else {
+      checks.push({ name: 'form.field-two-column', actual: results.form.fieldColumnCount, expected: '>= 2', ok: true });
+    }
+    // Form structure: readonly facts stay compact (content height, not
+    // line-height-inflated ~90-111px). Baseline max is 69px; allow headroom.
+    const factMaxBaseline = Math.max(80, Number(process.env.FACT_HEIGHT_MAX_BASELINE || 80));
+    if (results.form.factCount == null || results.form.factCount === 0) {
+      console.warn('[density-baseline] WARN no readonly facts found, skipping fact-height check');
+    } else if (results.form.factMaxHeight > factMaxBaseline) {
+      console.error(`[density-baseline] FAIL readonly fact max height ${results.form.factMaxHeight} > ${factMaxBaseline} (facts line-height inflated again)`);
+      checks.push({ name: 'form.fact-height-compact', actual: results.form.factMaxHeight, expected: `<= ${factMaxBaseline}`, ok: false });
+    } else {
+      checks.push({ name: 'form.fact-height-compact', actual: results.form.factMaxHeight, expected: `<= ${factMaxBaseline}`, ok: true });
     }
   }
 } finally {
