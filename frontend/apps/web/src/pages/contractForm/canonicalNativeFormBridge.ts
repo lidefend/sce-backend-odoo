@@ -104,15 +104,26 @@ function canonicalActionRecord(action: CanonicalFormAction): Record<string, unkn
 function fieldNode(
   field: CanonicalFormField,
   fieldSchemas: WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>,
+  sourceNode?: CanonicalFormNode,
 ): CanonicalNativeLayoutNode {
   const node: CanonicalNativeLayoutNode = {
+    ...(sourceNode?.nativePresentation || {}),
     type: 'field',
     containerType: 'field',
-    name: field.widgetId,
-    visible: field.visible,
+    name: field.fieldCode,
+    string: sourceNode?.title || field.label,
+    text: sourceNode?.text || '',
+    cols: sourceNode?.columns,
+    columns: sourceNode?.columns,
+    visible: field.visible && (sourceNode?.visible ?? true),
     attributes: {
+      ...(sourceNode?.attributes || {}),
       name: field.fieldCode,
       canonicalWidgetId: field.widgetId,
+      canonicalNodeId: sourceNode?.nodeId || field.widgetId,
+      canonicalNodeKind: 'field',
+      sectionNavigationRole: sourceNode?.zoneRole,
+      contractStyleToken: sourceNode?.styleToken,
     },
     children: [],
   };
@@ -132,7 +143,7 @@ export function buildCanonicalNativeFormBridge(
 
   function mapNode(node: CanonicalFormNode): CanonicalNativeLayoutNode {
     if (text(node.kind).toLowerCase() === 'field' && node.fields.length === 1) {
-      return fieldNode(node.fields[0], fieldSchemas);
+      return fieldNode(node.fields[0], fieldSchemas, node);
     }
     const rawKind = text(node.kind).toLowerCase() || 'container';
     const action = node.action;
