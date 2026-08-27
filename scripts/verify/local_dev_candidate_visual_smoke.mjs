@@ -1069,7 +1069,7 @@ try {
         };
       }
       const taskDensityEvidence = target.captureTaskDensity === true
-        ? await page.evaluate(() => {
+        ? await page.evaluate((viewportName) => {
           const selector = '[data-product-page-pattern="task-form"]';
           const root = document.querySelector(selector);
           if (!(root instanceof HTMLElement)) return { present: false, regions: [], nodes: [] };
@@ -1089,13 +1089,34 @@ try {
               rowGap: style.rowGap,
             };
           };
+          const summary = root.querySelector('.object-task-page__summary-grid');
+          const summaryNodes = summary instanceof HTMLElement
+            ? [...summary.children].filter((node) => node instanceof HTMLElement).map(describe)
+            : [];
+          const summaryRows = [...new Set(summaryNodes.map((node) => node.rect[1]))];
+          const summaryColumns = summary instanceof HTMLElement
+            ? getComputedStyle(summary).gridTemplateColumns.split(' ').filter(Boolean).length
+            : 0;
+          const expectedColumns = viewportName === 'mobile' ? 2 : 4;
           return {
             present: true,
             root: describe(root),
+            summary: {
+              columns: summaryColumns,
+              itemCount: summaryNodes.length,
+              rowCount: summaryRows.length,
+              height: summary instanceof HTMLElement ? Math.round(summary.getBoundingClientRect().height) : 0,
+              maxItemHeight: Math.max(0, ...summaryNodes.map((node) => node.rect[3])),
+              pass: summaryNodes.length === 0 || (
+                summaryColumns === expectedColumns
+                && summaryRows.length === Math.ceil(summaryNodes.length / expectedColumns)
+                && Math.max(0, ...summaryNodes.map((node) => node.rect[3])) <= 100
+              ),
+            },
             regions: [...root.querySelectorAll('[data-floorplan-region]')].map(describe),
             nodes: [...root.querySelectorAll('.canonical-form-node')].map(describe),
           };
-        })
+        }, viewport.name)
         : null;
       const verticalLineEvidence = target.captureVerticalLineEvidence === true
         ? await page.evaluate(() => {
@@ -1188,6 +1209,7 @@ for (const item of report.routes) {
     failures.push({ name: item.name, expectedNativeNotebookPageCount: item.expectedNativeNotebookPageCount, actualNativeNotebookPageCount: item.nativeNotebookPageCount });
   }
   if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
+  if (item.taskDensityEvidence && (!item.taskDensityEvidence.present || !item.taskDensityEvidence.summary?.pass)) failures.push({ name: item.name, taskDensityEvidence: item.taskDensityEvidence });
 }
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });
