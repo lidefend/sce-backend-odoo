@@ -9,7 +9,7 @@
     :data-native-class="nativeClass || undefined"
     :data-contract-span="node.span"
     :data-contract-style-token="node.styleToken || undefined"
-    :style="{ '--canonical-node-grid-span': nodeGridSpan }"
+    :style="{ '--canonical-node-grid-span': nodeGridSpan, '--canonical-layout-columns': layoutColumns }"
     :data-section-navigation-role="node.zoneRole"
     :data-group-title="node.title || undefined"
   >
@@ -89,6 +89,19 @@ const readonlyFactLayout = computed(() => Boolean(
 ));
 const children = computed(() => visibleCanonicalChildren(props.node));
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
+const layoutColumns = computed(() => {
+  // Container/group nodes arrange their direct field children on a grid whose
+  // column count follows the canonical contract (node.columns). A container
+  // holding field children gets at least two columns so a single wide row (e.g.
+  // project / counterparty many2one at 1103px full width) is avoided and fields
+  // render at the ~half-width used elsewhere on the form. A node that only
+  // carries structural children (nested groups / pages) stays a single column
+  // so those children stack full-width.
+  const children = visibleCanonicalChildren(props.node);
+  if (!children.length) return 1;
+  if (children.some((child) => child.kind === 'field')) return Math.max(2, columns.value);
+  return 1;
+});
 const nodeGridSpan = computed(() => Math.max(1, Math.min(4, Math.ceil(Number(props.node.span || 24) / 6))));
 const hasContent = computed(() => canonicalNodeHasContent(props.node));
 const nativeClass = computed(() => String(props.node.attributes.class || '').trim());
@@ -102,6 +115,39 @@ const presentableNodeText = computed(() => {
 <style scoped>
 .canonical-form-node { min-width: 0; }
 .canonical-form-node + .canonical-form-node { margin-top: 16px; }
+
+/* Canonical container/group layout (form structure)
+ * The canonical tree contracts a multi-column layout (node.columns, typically 2
+ * on group nodes), but the renderer previously stacked every field node at full
+ * width in a single column, wasting the task-section card's second column
+ * (536px of a 1103px card). Arrange a node's direct children on a grid whose
+ * column count follows --canonical-layout-columns: field children share the
+ * columns; structural children (nested group/page) span all columns and stack.
+ * The sheet spans the full task-section card so its interior reaches the
+ * width that triggers the two-column form grid. */
+.canonical-form-node--sheet { grid-column: 1 / -1; width: 100%; }
+.canonical-form-node--container,
+.canonical-form-node--group {
+  display: grid;
+  grid-template-columns: repeat(var(--canonical-layout-columns, 1), minmax(0, 1fr));
+  gap: 16px 32px;
+}
+.canonical-form-node--container > .canonical-form-node,
+.canonical-form-node--group > .canonical-form-node { grid-column: span 1; }
+.canonical-form-node--container > .canonical-form-node--group,
+.canonical-form-node--group > .canonical-form-node--group,
+.canonical-form-node--container > .canonical-form-node--container,
+.canonical-form-node--group > .canonical-form-node--container,
+.canonical-form-node--container > .canonical-form-node--notebook,
+.canonical-form-node--group > .canonical-form-node--notebook,
+.canonical-form-node--container > .canonical-form-node--sheet,
+.canonical-form-node--group > .canonical-form-node--sheet { grid-column: 1 / -1; }
+.canonical-form-node--notebook,
+.canonical-form-node--page { grid-column: 1 / -1; }
+/* A group/container heading is a block heading, not a grid item - let it span
+ * the full width so the first field starts in the first column. */
+.canonical-form-node--container > .canonical-form-node-title,
+.canonical-form-node--group > .canonical-form-node-title { grid-column: 1 / -1; }
 .canonical-form-node--field.canonical-form-node--readonly-fact {
   display: inline-block;
   max-width: 100%;
