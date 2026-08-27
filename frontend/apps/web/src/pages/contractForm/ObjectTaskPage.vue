@@ -81,7 +81,6 @@
         :node="node"
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
-        presentation-density="task"
         @field-change="emit('field-change', $event)"
       />
     </ScCard>
@@ -101,7 +100,6 @@
         :node="node"
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
-        presentation-density="task"
         @field-change="emit('field-change', $event)"
       />
     </ScCard>
@@ -121,7 +119,6 @@
         :node="node"
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
-        presentation-density="task"
         @field-change="emit('field-change', $event)"
       />
     </ScCard>
@@ -137,7 +134,6 @@
         :node="node"
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
-        presentation-density="task"
         @field-change="emit('field-change', $event)"
       />
     </ScDisclosure>

@@ -44,7 +44,6 @@
       :node="child"
       :relation-adapter="relationAdapter"
       :prefer-readonly-facts="preferReadonlyFacts"
-      :presentation-density="presentationDensity"
       @field-change="emit('field-change', $event)"
       @action-ref="emit('action-ref', $event)"
     />
@@ -70,7 +69,6 @@ const props = defineProps<{
   node: CanonicalFormNode;
   relationAdapter?: RelationFieldAdapter;
   preferReadonlyFacts?: boolean;
-  presentationDensity?: 'contract' | 'task';
 }>();
 const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
@@ -87,10 +85,7 @@ const readonlyFactLayout = computed(() => Boolean(
   && fields.value.every((field) => field.readonly),
 ));
 const children = computed(() => visibleCanonicalChildren(props.node));
-const columns = computed<1 | 2 | 3>(() => {
-  const declared = Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3;
-  return props.presentationDensity === 'task' && declared === 1 ? 2 : declared;
-});
+const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
 const hasContent = computed(() => canonicalNodeHasContent(props.node));
 const nativeClass = computed(() => String(props.node.attributes.class || '').trim());
 const presentableNodeText = computed(() => {

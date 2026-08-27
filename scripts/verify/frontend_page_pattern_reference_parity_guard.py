@@ -27,14 +27,11 @@ REQUIREMENTS = {
     ),
     "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue": (
         'appearance="task-section"',
-        'presentation-density="task"',
         "grid-auto-rows: max-content",
         "align-content: start",
     ),
     "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue": (
         "fields.value.every((field) => field.readonly)",
-        "props.presentationDensity === 'task' && declared === 1 ? 2 : declared",
-        ':presentation-density="presentationDensity"',
         ':prefer-readonly-facts="readonlyFactLayout"',
         "canonical-form-node--readonly-fact",
     ),
