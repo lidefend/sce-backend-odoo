@@ -888,6 +888,24 @@ assert.throws(
   },
   'invalid visual and permission booleans must fail closed across layout, action, and status contracts',
 );
+const invalidObjectAuthoritySnapshot = snapshot();
+(invalidObjectAuthoritySnapshot.layoutContract.containerTree[0] as unknown as Record<string, unknown>).attributes = [];
+(invalidObjectAuthoritySnapshot.actionContract.actionRuleList[0] as unknown as Record<string, unknown>).target = 'record';
+(invalidObjectAuthoritySnapshot.statusContract.globalStatus as unknown as Record<string, unknown>).modelRights = 'write';
+(invalidObjectAuthoritySnapshot.dataContract.tableRows as unknown as Record<string, unknown>).lines = {};
+(invalidObjectAuthoritySnapshot.dataContract.dataSource as unknown as Record<string, unknown>).primary = [];
+assert.throws(
+  () => decodeContractV2Snapshot(invalidObjectAuthoritySnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('layoutContract.containerTree[0].attributes must be an object')
+      && message.includes('actionContract.actionRuleList[0].target must be an object')
+      && message.includes('statusContract.globalStatus.modelRights must be an object')
+      && message.includes('dataContract.tableRows.lines must be an array')
+      && message.includes('dataContract.dataSource.primary must be an object');
+  },
+  'invalid object and row-map carriers must fail closed instead of becoming empty authority',
+);
 
 const fieldAuthSnapshot = snapshot();
 fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';
