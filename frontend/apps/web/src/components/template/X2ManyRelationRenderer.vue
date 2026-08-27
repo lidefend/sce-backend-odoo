@@ -93,6 +93,7 @@
         @update:model-value="adapter.setRelationKeyword(field.name, $event)"
       />
       <div
+        v-if="adapter.filteredRelationOptions(field.name).length"
         class="relation-multi-options"
         role="listbox"
         aria-multiselectable="true"
