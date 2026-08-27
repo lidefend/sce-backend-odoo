@@ -153,12 +153,9 @@
   touch-action: pan-x pan-y;
 }
 
-/* Dense ledger surface: toolbar, rows and pagination read as one business canvas. */
-.page[data-product-page-mode='list'],
-.page.sc-product-workspace-stack {
-  --sc-table-header-height: 42px;
-  --sc-table-row-height: 46px;
-}
+/* Dense ledger surface: toolbar, rows and pagination read as one business canvas.
+ * Density variant is declared on product-level tokens in tokens/pattern.css;
+ * this page only consumes them. */
 
 .page[data-product-page-mode='list'] .list-toolbar,
 .page[data-product-page-mode='list'] .table,
@@ -233,7 +230,7 @@
   }
 
   .page[data-product-page-mode='list'] .table tbody td {
-    height: var(--sc-table-row-height);
+    height: var(--sc-product-table-row-height);
     background: var(--sc-app-panel);
   }
 
@@ -629,7 +626,7 @@ tbody td {
   position: sticky;
   top: 0;
   z-index: 20;
-  height: var(--sc-table-header-height, 40px);
+  height: var(--sc-product-table-header-height, 40px);
   padding: 0 12px;
   border-color: var(--sc-table-divider);
   background: var(--sc-table-header-bg);
@@ -656,7 +653,7 @@ tbody td {
 }
 
 .table tbody tr {
-  height: var(--sc-table-row-height, 44px);
+  height: var(--sc-product-table-row-height, 44px);
   transition: background-color var(--sc-motion-fast, 120ms) ease;
 }
 

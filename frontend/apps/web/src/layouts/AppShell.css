@@ -447,7 +447,7 @@
 
 .topbar {
   box-sizing: border-box;
-  min-height: var(--sc-product-toolbar-height);
+  min-height: var(--sc-shell-topbar-height);
   position: sticky;
   top: 0;
   z-index: 20;

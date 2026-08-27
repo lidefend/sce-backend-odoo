@@ -951,10 +951,10 @@ async function main() {
         performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
       }
       const formSamples = [];
-      await navigateSpa(page, listRoute(TARGETS.payment_request), '[data-product-page-mode="list"][data-list-status]:visible');
+      await navigateSpa(page, listRoute(TARGETS.payment_request), '[data-product-page-mode="list"] [data-list-status]:visible');
       await openPaymentCreateFromList(page, TARGETS.payment_request, 'form_open_warmup');
       for (let i = 0; i < PERF_RUNS; i += 1) {
-        await navigateSpa(page, listRoute(TARGETS.payment_request), '[data-product-page-mode="list"][data-list-status]:visible');
+        await navigateSpa(page, listRoute(TARGETS.payment_request), '[data-product-page-mode="list"] [data-list-status]:visible');
         formSamples.push(await time(async () => {
           await openPaymentCreateFromList(page, TARGETS.payment_request, `form_open_${i + 1}`);
         }));
@@ -1077,7 +1077,7 @@ async function main() {
 }
 
 async function openPaymentCreateFromList(page, target, label) {
-  const listSurface = page.locator('[data-product-page-mode="list"][data-list-status]:visible');
+  const listSurface = page.locator('[data-product-page-mode="list"] [data-list-status]:visible');
   await listSurface.waitFor({ state: 'visible', timeout: 45000 });
   check(await listSurface.count() === 1, `${label}: active payment list identity is not unique`);
   const actionViewSurface = page.locator(

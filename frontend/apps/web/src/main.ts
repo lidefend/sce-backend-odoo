@@ -5,7 +5,7 @@ import { bootstrapApp } from './app/init';
 import App from './App.vue';
 import './styles/design-system.css';
 import './styles/product-patterns.css';
-import { bootTheme } from './styles/theme';
+import { bootTheme, bootThemeProfile } from './styles/theme';
 import { installStaleAssetRecovery } from './app/staleAssetRecovery';
 
 installStaleAssetRecovery();
@@ -16,6 +16,7 @@ app.use(createPinia());
 app.use(router);
 
 bootTheme();
+bootThemeProfile();
 bootstrapApp();
 
 app.mount('#app');

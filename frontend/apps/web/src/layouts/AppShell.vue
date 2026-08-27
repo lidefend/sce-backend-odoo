@@ -308,6 +308,9 @@
             <ScIcon name="sun" :size="16" />
             <span class="topbar-tool-label">主题：{{ themeLabel }}</span>
           </ScButton>
+          <ScButton class="theme-switch" appearance="outline-action" variant="ghost" size="small" type="button" :title="`切换风格，当前${profileLabel}`" :aria-label="`切换风格，当前${profileLabel}`" @click="toggleThemeProfile">
+            <span class="topbar-tool-label">风格：{{ profileLabel }}</span>
+          </ScButton>
         </div>
       </ScHeader>
 
@@ -393,7 +396,18 @@ import { buildCanonicalSceneRouteTarget, buildEntryTargetRouteTarget, parseScene
 import { buildRuntimeNavigationRegistry } from '../app/navigationRegistry';
 import { buildBusinessEntryNavQuery } from '../app/navigationContext';
 import { clearPageIdentity, usePageIdentityRuntime } from '../app/pageIdentityRuntime';
-import { applyTheme, nextTheme, persistTheme, type ScTheme } from '../styles/theme';
+import {
+  applyTheme,
+  nextTheme,
+  persistTheme,
+  type ScTheme,
+  SCENE_THEME_PROFILES,
+  isSceneThemeProfile,
+  type ScThemeProfile,
+  applyThemeProfile,
+  nextThemeProfile,
+  persistThemeProfile,
+} from '../styles/theme';
 import { config } from '../config';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
@@ -944,6 +958,23 @@ provide('pageTitle', pageTitle);
 const showHud = computed(() => isPlatformAdmin.value && hudEnabled.value && !isDeliveryMode.value);
 const themeMode = ref<ScTheme>('system');
 const themeLabel = computed(() => (themeMode.value === 'system' ? '跟随系统' : themeMode.value === 'dark' ? '暗色' : '亮色'));
+const profileMode = ref<ScThemeProfile>('enterprise-neutral');
+const profileLabel = computed(() => SCENE_THEME_PROFILES.find((p) => p.id === profileMode.value)?.label ?? '企业中性');
+
+function loadThemeProfile(): ScThemeProfile {
+  try {
+    const raw = localStorage.getItem('sc_theme_profile');
+    if (isSceneThemeProfile(raw)) return raw;
+  } catch {
+    // ignore
+  }
+  return 'enterprise-neutral';
+}
+
+function toggleThemeProfile(): void {
+  profileMode.value = nextThemeProfile(profileMode.value);
+  persistThemeProfile(profileMode.value);
+}
 
 function loadThemeMode(): ScTheme {
   try {
@@ -1280,6 +1311,8 @@ onMounted(() => {
   themeMode.value = loadThemeMode();
   sidebarHidden.value = loadSidebarHidden();
   applyTheme(themeMode.value);
+  profileMode.value = loadThemeProfile();
+  applyThemeProfile(profileMode.value);
   showExtractionStats.value = String(route.query.hud_stats || '').trim() === '1';
   void loadPublishedApps();
   if (typeof window === 'undefined') return;

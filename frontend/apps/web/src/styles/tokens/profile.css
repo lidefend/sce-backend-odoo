@@ -1,0 +1,71 @@
+/* Theme profile layer — orthogonal to the light/dark mode.
+ *
+ * Profiles override semantic brand / emphasis / border / radius tokens so that
+ * native Scene primitives AND the TDesign variable bridge both follow the
+ * selected style profile at runtime (data-sc-theme-profile on <html>).
+ *
+ * Orthogonality contract:
+ *  - Base surface / text colors stay owned by the light/dark mode layers
+ *    (tokens.light.css / tokens.dark.css). Profiles do NOT override
+ *    --sc-semantic-surface-page/panel or text-primary in dark, so switching a
+ *    profile inside dark mode keeps the dark surface intact.
+ *  - Profiles DO own brand, emphasis (selected), focus, border strength and
+ *    radius — these read the same in both light and dark.
+ *  - The one exception is the high-contrast profile, which additionally raises
+ *    text contrast on non-dark surfaces via :not([data-sc-theme='dark']).
+ */
+
+:root[data-sc-theme-profile='enterprise-neutral'] {
+  /* Explicit baseline anchor. Values intentionally match the semantic
+   * defaults in tokens.light.css; kept as an explicit contract anchor so the
+   * theme-profile guard can assert all three profiles are declared. */
+}
+
+:root[data-sc-theme-profile='business-soft'] {
+  --sc-semantic-surface-interactive: #087f6a;
+  --sc-semantic-surface-interactive-hover: #066b5a;
+  --sc-semantic-surface-selected: #e4f4f0;
+  --sc-semantic-text-selected: #18302a;
+  --sc-semantic-text-on-interactive: #ffffff;
+  --sc-semantic-border-interactive: #087f6a;
+  --sc-semantic-text-link: #087f6a;
+  --sc-semantic-focus-ring: #006fbb;
+  --sc-semantic-border-default: #d5dfdc;
+  --sc-semantic-border-subtle: #e3eae8;
+  --sc-semantic-border-strong: #a9b8b3;
+  --sc-semantic-state-warning-text: #8f4b00;
+  --sc-semantic-state-success-text: #087a43;
+  --sc-bridge-tdesign-radius-default: 10px;
+  --sc-bridge-tdesign-radius-medium: 14px;
+  --sc-bridge-tdesign-brand-hover: #066b5a;
+  --sc-bridge-tdesign-brand-active: #055444;
+  --sc-bridge-tdesign-brand-focus: rgba(8, 127, 106, 0.24);
+}
+
+:root[data-sc-theme-profile='accessible-contrast'] {
+  --sc-semantic-surface-interactive: #004f9e;
+  --sc-semantic-surface-interactive-hover: #003f7d;
+  --sc-semantic-surface-selected: #d9ecff;
+  --sc-semantic-text-selected: #071526;
+  --sc-semantic-text-on-interactive: #ffffff;
+  --sc-semantic-border-interactive: #004f9e;
+  --sc-semantic-text-link: #004f9e;
+  --sc-semantic-focus-ring: #d44900;
+  --sc-semantic-border-default: #263746;
+  --sc-semantic-border-subtle: #3d5164;
+  --sc-semantic-border-strong: #1c2b38;
+  --sc-semantic-state-warning-text: #7a3500;
+  --sc-semantic-state-success-text: #00652e;
+  --sc-bridge-tdesign-radius-default: 5px;
+  --sc-bridge-tdesign-radius-medium: 8px;
+  --sc-bridge-tdesign-brand-hover: #003f7d;
+  --sc-bridge-tdesign-brand-active: #003264;
+  --sc-bridge-tdesign-brand-focus: rgba(212, 73, 0, 0.32);
+}
+
+/* High-contrast profile raises text contrast on non-dark surfaces only. */
+:root[data-sc-theme-profile='accessible-contrast']:not([data-sc-theme='dark']) {
+  --sc-semantic-text-primary: #071526;
+  --sc-semantic-text-secondary: #2f4050;
+  --sc-semantic-text-muted: #2f4050;
+}

@@ -2,16 +2,8 @@
   <ScPage
     class="page sc-page sc-product-workspace-stack"
     data-product-page-mode="list"
-    data-semantic-component="ListPage"
-    :data-list-status="status"
     :aria-busy="loading || undefined"
   >
-    <ScPageHeader
-      v-if="status === 'error'"
-      :title="title"
-      :subtitle="subtitle"
-    />
-
     <ProductLoadingSkeleton
       v-if="loading && !hasRetainedContent"
       :title="title"
@@ -140,6 +132,8 @@
         :class="{ 'is-refreshing': loading }"
         data-workspace-primary-content
         data-collection-presentation="table"
+        data-semantic-component="ListPage"
+        :data-list-status="status"
         role="region"
         aria-label="业务列表，可横向滚动"
         :aria-busy="loading || undefined"
@@ -307,7 +301,6 @@ import CollectionSummaryStrip from '../components/product-list/CollectionSummary
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScPage from '../components/design-system/ScPage.vue';
-import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';

@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "a8b445bae1c998d5d91123ddaa9b5b8eeb7e941e8fe538adaa6c67a8ef306b1f",
+  "inputDigest": "ee2d3b438c2674fbe9fef23b8b0cf99cd776e8d9f790afe535c738d09a32d5d3",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -549,7 +549,7 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 195,
+    "formalStyleSourceCount": 196,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,

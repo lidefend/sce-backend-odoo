@@ -138,7 +138,7 @@ try {
   await page.locator('[data-product-page-mode="list"]').first().waitFor({ timeout: 45000 });
   const targetRow = page.locator('tbody tr').filter({ hasText: String(target.record.name || '') }).first();
   await targetRow.waitFor({ timeout: 45000 });
-  const listSurface = page.locator('[data-product-page-mode="list"][data-list-status]').first();
+  const listSurface = page.locator('[data-product-page-mode="list"] [data-list-status]').first();
   const listText = normalize(await listSurface.innerText());
   const listActions = await listSurface.locator('button:visible, a:visible')
     .allTextContents();
@@ -185,8 +185,8 @@ try {
   const searchInput = listSurface.locator('input[type="search"]:visible').first();
   await searchInput.fill('__floorplan_no_matching_payment_request__');
   await listSurface.getByRole('button', { name: /^搜索$/ }).click();
-  await page.locator('[data-product-page-mode="list"][data-list-status="empty"]').waitFor({ timeout: 45000 });
-  const emptySurface = page.locator('[data-product-page-mode="list"][data-list-status="empty"]').first();
+  await page.locator('[data-product-page-mode="list"] [data-list-status="empty"]').waitFor({ timeout: 45000 });
+  const emptySurface = page.locator('[data-product-page-mode="list"] [data-list-status="empty"]').first();
   const emptyText = normalize(await emptySurface.innerText());
   const emptyCreateCount = await emptySurface.getByRole('button', { name: /^新建$/ }).count();
   report.emptyState = { text: emptyText, createActionCount: emptyCreateCount };
