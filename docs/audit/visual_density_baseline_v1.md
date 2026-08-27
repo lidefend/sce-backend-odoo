@@ -142,7 +142,16 @@
 - **实测**: `th=42 / row=46 / queryBar=46 / form-control=36 / readonly=14`——5/5 PASS，EXIT=0
 - **契约参考**: 本文档（`docs/audit/visual_density_baseline_v1.md`）为 token 契约的权威来源
 
-## 十二、后续迭代项
+## 十二、表单间距 token 绑定（2026-08-28）
+
+表单布局间距从组件硬编码收敛为 token 契约（值=既有视觉，零回归）：
+
+- **契约**: `pattern.json` 已有 `task_form.field_gap = {space.sm}` → 生成 `--sc-pattern-task-form-field-gap: 12`（=space.sm=12px）
+- **改动**: `FormSection.vue` 两处 `row-gap: 12px`（可编辑 grid + readonly grid）改为 `calc(var(--sc-pattern-task-form-field-gap, 12) * 1px)`
+- **实测**: 计算值 row-gap 12px（可编辑/readonly 均正确解析 token），密度基线 5/5 PASS，视觉零回归
+- **未绑定**（保持硬编码，无对应 token）: column-gap（可编辑 20px / readonly 26px）、label-row gap 8px / margin 3px、control-row gap 6px —— 如需契约化需先在设计层定 token 语义
+
+## 十三、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
 2. **表单间距 token**: `--sc-component-form-field-gap` / `--sc-component-form-control-gap` 未定义，`template-form-section-grid` 硬编码 `gap: 12px 26px`——确认设计意图后补 token 并绑定（组件层消费）

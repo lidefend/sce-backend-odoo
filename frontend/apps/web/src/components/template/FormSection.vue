@@ -959,7 +959,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  row-gap: 12px;
+  row-gap: calc(var(--sc-pattern-task-form-field-gap, 12) * 1px);
   column-gap: 20px;
   min-width: 0;
 }
@@ -1205,7 +1205,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section--readonly .template-form-section-grid {
-  row-gap: 12px;
+  row-gap: calc(var(--sc-pattern-task-form-field-gap, 12) * 1px);
   column-gap: 26px;
 }
 
