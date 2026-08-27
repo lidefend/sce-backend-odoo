@@ -439,7 +439,7 @@
     },
     {
       "category": "other",
-      "digest": "7f7876b2bd308f3de04045b37191a7b220b60a8703fb3cb3a7aeda2b141a93bc",
+      "digest": "38b6b161a169af899a582c01d3c080226f521e4723137f76bc8e66dda8594efc",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScCard.vue",
       "referenceNativeStyleSelectors": [],
@@ -1585,7 +1585,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "ac9c60d95eb69477988688c17843d738fca9cf5b114e4f68c2ac90ce549379ce",
+      "digest": "910a7631fc43dc7a27623d691a5869d9e518c56aadeb0a2f5bfe90e93015028e",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1629,7 +1629,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "d9e9fa3b00ec01e9b2af6a082e92afad15b525f5607aa1ed660b911b178ee025",
+      "digest": "61e2c1db82d11603005db66e4c555d5b5823ba7b5fe8474bdf38b54942861714",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1995,7 +1995,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "cd42394c1e186ad530d6c891b4486754223d448696726071004a8116ad97e3c6",
+      "digest": "53ae9483c5be137d52b467e8235c189863319760178b172716ea04534d080c69",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2197,7 +2197,7 @@
     },
     {
       "category": "public-entry",
-      "digest": "e521e22f5695b9809d32ee66b9a015fb2cb14667d4305c4a86c793d48b285711",
+      "digest": "0f93fd29b2a5d21ef41d58475450c387eef194441da9fe03c65fe60ad63342f2",
       "nativeStyleSelectors": [],
       "path": "views/LoginView.vue",
       "referenceNativeStyleSelectors": [
@@ -2513,7 +2513,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "040a967c7e6dd6c2a1155d5e97f502ae96c220a2d487043e6ab541edd0cd3c09",
+  "currentInputDigest": "75f8fc4b36da4f3ba600b21cc90f0f05eed18d9017b4d1e5c4074764f531736c",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
