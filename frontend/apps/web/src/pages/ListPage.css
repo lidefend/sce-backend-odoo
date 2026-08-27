@@ -154,14 +154,8 @@
 }
 
 /* Dense ledger surface: toolbar, rows and pagination read as one business canvas.
- * Density variant lives on product-level tokens; component authority tokens
- * (--sc-table-row-height / --sc-table-header-height) stay untouched so shared
- * components (e.g. pagination footer) keep the authoritative density. */
-.page[data-product-page-mode='list'],
-.page.sc-product-workspace-stack {
-  --sc-product-table-header-height: 42px;
-  --sc-product-table-row-height: 46px;
-}
+ * Density variant is declared on product-level tokens in tokens/pattern.css;
+ * this page only consumes them. */
 
 .page[data-product-page-mode='list'] .list-toolbar,
 .page[data-product-page-mode='list'] .table,

@@ -57,3 +57,13 @@
 @media (max-width: 768px) {
   :root { --sc-page-padding: var(--sc-page-padding-mobile); }
 }
+
+/* Product density variant: dense ledger (list) surface.
+ * Lives on product-level tokens so component authority tokens stay untouched
+ * and shared components (e.g. pagination footer) keep the authoritative
+ * density. */
+.page[data-product-page-mode='list'],
+.page.sc-product-workspace-stack {
+  --sc-product-table-header-height: 42px;
+  --sc-product-table-row-height: 46px;
+}

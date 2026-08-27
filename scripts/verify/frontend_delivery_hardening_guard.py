@@ -295,7 +295,19 @@ diff = subprocess.run(
     capture_output=True,
     text=True,
 ).stdout
-added = "\n".join(line[1:] for line in diff.splitlines() if line.startswith("+") and not line.startswith("+++"))
+added_parts: list[str] = []
+current_path: str | None = None
+for line in diff.splitlines():
+    if line.startswith("+++ b/"):
+        current_path = line[6:]
+        continue
+    if line.startswith("+") and not line.startswith("+++"):
+        # Token v1 source files are the colour/radius authority; their literal
+        # values are legitimate, not business hard-coding.
+        if current_path and current_path.startswith("frontend/apps/web/src/styles/tokens/"):
+            continue
+        added_parts.append(line[1:])
+added = "\n".join(added_parts)
 for label, pattern in {
     "hard-coded color": r"#[0-9a-fA-F]{3,8}\b|rgba?\(",
     "page inline style": r"\sstyle=\"",

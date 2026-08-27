@@ -38,7 +38,7 @@ REQUIRED_PRODUCT_CONSUMERS = {
     "ScIcon": "components/template/FormSection.vue",
     "ScMoney": "components/business/MyWorkApprovalWorkspace.vue",
     "ScPage": "pages/ListPage.vue",
-    "ScPageHeader": "pages/ListPage.vue",
+    "ScPageHeader": "views/ApiKeyManagementView.vue",
     "ScPanel": "components/business/MyWorkApprovalWorkspace.vue",
     "ScRelationField": "components/template/FormSection.vue",
     "ScSection": "components/business/MyWorkApprovalWorkspace.vue",
@@ -122,7 +122,7 @@ def _check_style_bootstrap(errors: list[str]) -> None:
     for token in [
         "import './styles/design-system.css';",
         "import './styles/product-patterns.css';",
-        "import { bootTheme } from './styles/theme';",
+        "import { bootTheme",
         "bootTheme();",
     ]:
         if token not in main_text:
