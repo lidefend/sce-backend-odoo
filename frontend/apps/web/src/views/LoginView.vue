@@ -23,9 +23,7 @@
           <span class="brand-visual__orb brand-visual__orb--neutral" />
           <span class="brand-visual__grid" />
         </div>
-        <div class="brand-copy">
-          <p class="brand-title">{{ pageText('brand_name', config.appBrand.name) }}</p>
-          <p class="brand-subtitle">{{ pageText('brand_subtitle', config.appBrand.subtitle) }}</p>
+        <div v-if="brandSlogan || valueLines.length" class="brand-copy">
           <p v-if="brandSlogan" class="brand-slogan">{{ brandSlogan }}</p>
           <ul v-if="valueLines.length" class="value-list" aria-label="价值主张">
             <li v-for="line in valueLines" :key="line">{{ line }}</li>
@@ -63,6 +61,20 @@
               <strong>{{ pageText('brand_name', config.appBrand.name) }}</strong>
             </h1>
           </header>
+
+          <p v-if="activationAction" class="auth-onboarding">
+            <span>{{ pageText('activation_prompt', '没有账号？') }}</span>
+            <ScButton
+              class="auth-entry-link"
+              appearance="auth-link"
+              type="button"
+              variant="ghost"
+              :disabled="loading"
+              @click="executeHeaderAction(activationAction.key)"
+            >
+              {{ activationAction.label || activationAction.key }}
+            </ScButton>
+          </p>
 
           <form
             v-if="pageSectionEnabled('form', true) && pageSectionTagIs('form', 'section')"
@@ -105,6 +117,18 @@
                 <template #prefix><ScIcon name="lock" :size="18" /></template>
               </ScInput>
             </label>
+            <div v-if="passwordRecoveryAction" class="auth-form-support">
+              <ScButton
+                class="auth-entry-link"
+                appearance="auth-link"
+                type="button"
+                variant="ghost"
+                :disabled="loading"
+                @click="executeHeaderAction(passwordRecoveryAction.key)"
+              >
+                {{ passwordRecoveryAction.label || passwordRecoveryAction.key }}
+              </ScButton>
+            </div>
             <label v-if="!dbInputDisabled" class="sc-form-label">
               {{ pageText('db_label', '数据库') }}
               <ScInput
@@ -127,26 +151,12 @@
             </p>
             <ScButton class="submit" appearance="primary-submit" variant="primary" size="large" type="submit" :disabled="loading" :loading="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</ScButton>
           </form>
-          <nav v-if="authEntryActions.length" class="auth-entry-links" aria-label="账号帮助">
-            <ScButton
-              v-for="action in authEntryActions"
-              :key="`login-auth-${action.key}`"
-              class="auth-entry-link"
-              appearance="auth-link"
-              type="button"
-              variant="ghost"
-              :disabled="loading"
-              @click="executeHeaderAction(action.key)"
-            >
-              {{ action.label || action.key }}
-            </ScButton>
-          </nav>
         </ScCard>
       </section>
     </section>
 
-    <footer v-if="config.appBrand.footerPrimary || config.appBrand.footerSecondary" class="page-footer">
-      <p v-if="config.appBrand.footerPrimary">{{ config.appBrand.footerPrimary }}</p>
+    <footer class="page-footer">
+      <p>{{ footerPrimary }}</p>
       <p v-if="config.appBrand.footerSecondary">{{ config.appBrand.footerSecondary }}</p>
     </footer>
   </main>
@@ -187,11 +197,14 @@ const loading = ref(false);
 const error = ref('');
 const authActionKeys = new Set(['open_account_activation', 'open_password_recovery']);
 const authEntryActions = computed(() => pageGlobalActions.value.filter((action) => authActionKeys.has(action.key)));
+const activationAction = computed(() => authEntryActions.value.find((action) => action.key === 'open_account_activation'));
+const passwordRecoveryAction = computed(() => authEntryActions.value.find((action) => action.key === 'open_password_recovery'));
 const headerActions = computed(() => pageGlobalActions.value.filter((action) => !authActionKeys.has(action.key)));
 const dbInputDisabled = computed(() => loading.value || isConfiguredDbPinned());
-const loginTitleFallback = computed(() => isPlatformAdminEntryRuntime() ? '平台管理员登录' : '登录');
+const loginTitleFallback = computed(() => isPlatformAdminEntryRuntime() ? '登录到平台管理端' : '登录到');
 const brandSlogan = computed(() => pageText('brand_slogan', config.appBrand.slogan).trim());
 const valueLines = computed(() => config.appBrand.valueLines.map((line, index) => pageText(`value_line_${index + 1}`, line)));
+const footerPrimary = computed(() => config.appBrand.footerPrimary || `Copyright © ${new Date().getFullYear()} ${pageText('brand_name', config.appBrand.name)}`);
 
 watch([username, password], () => {
   if (error.value) error.value = '';
@@ -456,11 +469,19 @@ async function executeHeaderAction(actionKey: string) {
   margin-bottom: 8px;
 }
 
-.auth-entry-links {
+.auth-onboarding,
+.auth-form-support {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--sc-app-text-secondary);
+  font-size: 13px;
+}
+
+.auth-form-support {
+  justify-content: flex-end;
+  margin-top: -8px;
 }
 
 .auth-entry-link {
