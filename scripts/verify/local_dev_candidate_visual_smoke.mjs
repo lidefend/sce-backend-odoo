@@ -411,7 +411,7 @@ try {
         const publishedApps = [...document.querySelectorAll('.published-apps__list .published-app')]
           .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
           .map((node) => {
-            const content = node.querySelector('.sc-btn__content');
+            const content = node.querySelector('.published-app__content');
             const mark = node.querySelector('.published-app__mark');
             const label = node.querySelector('.published-app__label');
             const contentStyle = content ? getComputedStyle(content) : null;

@@ -156,6 +156,7 @@ class CandidateFrontendContractTest(unittest.TestCase):
         self.assertIn("openerRestored", browser)
         self.assertIn("overlayResidueEvidence", browser)
         self.assertIn("shellAdapterEvidence", browser)
+        self.assertIn("node.querySelector('.published-app__content')", browser)
         self.assertIn("exerciseShellAdapterProjection", browser)
         self.assertIn(".published-app__label", browser)
         self.assertIn(".t-input__prefix-icon", browser)
