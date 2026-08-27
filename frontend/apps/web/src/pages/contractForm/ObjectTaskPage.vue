@@ -368,8 +368,6 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   align-content: start;
   gap: 8px;
 }
-.object-task-page__current-task :deep(.t-card__header) { padding-block: 14px 8px; }
-.object-task-page__current-task :deep(.t-card__body) { padding: 8px 20px 18px; }
 .object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 12px; }
 .object-task-page__current-task-facts {
   color: var(--sc-app-text-secondary);

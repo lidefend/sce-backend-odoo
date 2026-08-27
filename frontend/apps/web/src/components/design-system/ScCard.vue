@@ -34,7 +34,7 @@ type CardStyle = Record<string, string | number>;
 const cardBodyStyle = computed<CardStyle>(() => {
   const styles: Partial<Record<NonNullable<typeof props.appearance>, CardStyle>> = {
     summary: { padding: '0' },
-    task: { display: 'grid', alignContent: 'start', height: 'max-content', paddingTop: '8px' },
+    task: { display: 'grid', alignContent: 'start', height: 'max-content', padding: '8px 20px 18px' },
     fact: { padding: '0' },
     auth: { display: 'grid', gap: '18px', padding: 'var(--sc-card-body-padding)' },
     account: { display: 'grid', gap: '16px', padding: '28px' },
@@ -50,7 +50,7 @@ const cardBodyStyle = computed<CardStyle>(() => {
 });
 
 const cardHeaderStyle = computed<CardStyle>(() => {
-  if (props.appearance === 'task') return { alignItems: 'center' } as CardStyle;
+  if (props.appearance === 'task') return { alignItems: 'center', paddingBlock: '14px 8px' } as CardStyle;
   return {} as CardStyle;
 });
 </script>
