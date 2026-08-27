@@ -599,6 +599,9 @@ function decodeContainer(
     ? null
     : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
   const sourceAuthority = asRecord(raw.sourceAuthority);
+  const nativeFields = Object.prototype.hasOwnProperty.call(raw, 'fields')
+    ? decodeUniqueStringArray(raw.fields, `${path}.fields`, issues)
+    : undefined;
   const componentConfig = asRecord(raw.componentConfig);
   const fieldCode = asString(raw.fieldCode || raw.name);
   const widgetId = asString(raw.widgetId);
@@ -662,7 +665,7 @@ function decodeContainer(
     ...(Object.keys(formStructure).length ? { formStructure } : {}),
     ...(formStructureRole ? { formStructureRole } : {}),
     ...(Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
-    ...(Array.isArray(raw.fields) ? { fields: decodeUniqueStringArray(raw.fields, `${path}.fields`, issues) } : {}),
+    ...(nativeFields !== undefined ? { fields: nativeFields } : {}),
     children,
     widgetList,
   };

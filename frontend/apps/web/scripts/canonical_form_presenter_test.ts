@@ -867,6 +867,13 @@ assert.deepEqual(
   },
   'field containers must keep their formal native metadata through the professional native bridge',
 );
+const invalidNativeFieldsSnapshot = snapshot();
+(invalidNativeFieldsSnapshot.layoutContract.containerTree[0].children[0] as unknown as Record<string, unknown>).fields = 'name';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidNativeFieldsSnapshot),
+  /layoutContract\.containerTree\[0\]\.children\[0\]\.fields must be an array/,
+  'native field membership must remain strict instead of silently discarding an invalid carrier',
+);
 
 const fieldAuthSnapshot = snapshot();
 fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';
