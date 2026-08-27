@@ -148,9 +148,10 @@
 
 密度测量已固化为可重复、可门禁的审计：
 
-- **脚本**: `scripts/verify/frontend_density_baseline_audit.mjs`——登录后实测列表（th/行/查询栏）与表单（输入框/readonly 字号+字重）密度，逐项断言 token 契约，漂移即非零退出
+- **脚本**: `scripts/verify/frontend_density_baseline_audit.mjs`——登录后实测列表（th/行/查询栏）、表单（输入框/readonly 字号+字重）与 worksheet（行高上限）密度，逐项断言 token 契约，漂移即非零退出
 - **make target**: `verify.frontend.density.baseline`（`make/frontend.mk`，`E2E_PASSWORD` + `FRONTEND_URL` 参数化）
-- **实测**: `th=42 / row=46 / queryBar=46 / form-control=36 / readonly=14px/400`——6/6 PASS，EXIT=0
+- **实测**: `th=42 / row=46 / queryBar=46 / form-control=36 / readonly=14px/400 / worksheet≤89`——7/7 PASS，EXIT=0
+- **worksheet 门禁**: 89px 已知特性以**上限断言**纳入（`WORKSHEET_ROW_MAX_BASELINE=89`）——防行高恶化；未来组件层修复后应下调基线
 - **契约参考**: 本文档（`docs/audit/visual_density_baseline_v1.md`）为 token 契约的权威来源
 
 ## 十二、表单间距 token 绑定（2026-08-28）

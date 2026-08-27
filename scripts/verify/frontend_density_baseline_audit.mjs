@@ -36,6 +36,12 @@ const tolerance = Math.max(0, Number(process.env.TOLERANCE_PX || 1));
 
 const listUrl = process.env.TARGET_LIST_URL || `${baseUrl}/a/775?menu_id=545`;
 const formUrl = process.env.TARGET_FORM_URL || `${baseUrl}/f/payment.request/1709?menu_id=545&action_id=775`;
+// Worksheet surface: the 89px row height is a KNOWN CHARACTERISTIC of TDesign
+// 1.20.5 fixed-layout tree-table (see docs/audit/visual_density_baseline_v1.md
+// section 1). This audit enforces an UPPER bound so the row height cannot
+// regress further; a future component-layer fix should lower the baseline.
+const worksheetUrl = process.env.TARGET_WORKSHEET_URL || `${baseUrl}/a/748?menu_id=664`;
+const worksheetRowMax = Math.max(46, Number(process.env.WORKSHEET_ROW_MAX_BASELINE || 89));
 
 if (!password) {
   console.error('[density-baseline] E2E_PASSWORD is required');
@@ -45,6 +51,12 @@ if (!password) {
 function diff(name, actual, expected, checks) {
   const ok = Math.abs(actual - expected) <= tolerance;
   checks.push({ name, actual, expected, ok });
+  return ok;
+}
+
+function diffMax(name, actual, max, checks) {
+  const ok = actual <= max;
+  checks.push({ name, actual, expected: `<= ${max}`, ok });
   return ok;
 }
 
@@ -103,6 +115,21 @@ async function auditForm(page) {
   });
 }
 
+async function auditWorksheet(page) {
+  await page.goto(worksheetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+  await page.waitForSelector('table tbody tr', { timeout: 20000 });
+  await page.waitForTimeout(3000);
+  return page.evaluate(() => {
+    const trs = [...document.querySelectorAll('table tbody tr')];
+    const heights = trs.map((tr) => Math.round(tr.getBoundingClientRect().height));
+    return {
+      rows: trs.length,
+      rowHeights: [...new Set(heights)],
+      firstRowHeight: heights.length ? heights[0] : null,
+    };
+  });
+}
+
 const browser = await launchChromium({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 960 } });
 const checks = [];
@@ -118,6 +145,10 @@ try {
   results.form = await auditForm(page);
   console.log(`[density-baseline] form -> input=${results.form.inputHeight} (x${results.form.inputCount}, uniform=${results.form.inputsUniform}) readonly=${JSON.stringify(results.form.readonlySizes)}`);
 
+  console.log(`[density-baseline] auditing worksheet ${worksheetUrl}`);
+  results.worksheet = await auditWorksheet(page);
+  console.log(`[density-baseline] worksheet -> rows=${results.worksheet.rows} heights=${JSON.stringify(results.worksheet.rowHeights)} (max baseline ${worksheetRowMax})`);
+
   if (results.list.th == null || results.list.row == null) {
     console.error('[density-baseline] FAIL list table not rendered');
     process.exitCode = 1;
@@ -125,6 +156,13 @@ try {
     diff('list.header-height', results.list.th, 42, checks);
     diff('list.row-height', results.list.row, 46, checks);
     if (results.list.queryBar != null) diff('list.query-bar-height', results.list.queryBar, 46, checks);
+  }
+
+  if (results.worksheet.firstRowHeight == null) {
+    console.error('[density-baseline] FAIL worksheet table not rendered');
+    process.exitCode = 1;
+  } else {
+    diffMax('worksheet.row-height-upper-bound', results.worksheet.firstRowHeight, worksheetRowMax, checks);
   }
 
   if (results.form.inputHeight == null) {
