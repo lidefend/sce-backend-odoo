@@ -119,7 +119,7 @@ def validate_semantic_identity_projection(source: str) -> list[str]:
 
     field_projection = _section(code, "fieldFromWidget", "presentNode")
     field_match = re.search(
-        r"\bconst\s+(\w+)\s*=\s*fieldSemanticIdentity\s*\(\s*widget\s*,\s*container\s*\)",
+        r"\bconst\s+(\w+)\s*=\s*fieldSemanticIdentity\s*\(\s*widget\s*,\s*container(?:\s*,\s*\w+)?\s*\)",
         field_projection,
     )
     if not field_match:
@@ -148,6 +148,12 @@ def validate_semantic_identity_projection(source: str) -> list[str]:
             ("semanticSlot", "slot"),
             ("semanticGroup", "group"),
         ):
-            if not _property_uses(node_projection, property_name, variable, member):
+            preserved = _property_uses(node_projection, property_name, variable, member)
+            if property_name == "semanticRole":
+                preserved = preserved or re.search(
+                    rf"\b{re.escape(property_name)}\s*:\s*\w+\s*\?[^,;}}]*\b{re.escape(variable)}\s*\.\s*{re.escape(member)}\b",
+                    node_projection,
+                ) is not None
+            if not preserved:
                 errors.append(f"canonical node projection loses {property_name}")
     return errors
