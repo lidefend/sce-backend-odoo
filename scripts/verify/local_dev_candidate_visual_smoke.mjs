@@ -1068,6 +1068,35 @@ try {
           visibleError: await page.locator('[role="alert"]:visible, .error-state:visible, .form-error:visible').allTextContents(),
         };
       }
+      const taskDensityEvidence = target.captureTaskDensity === true
+        ? await page.evaluate(() => {
+          const selector = '[data-product-page-pattern="task-form"]';
+          const root = document.querySelector(selector);
+          if (!(root instanceof HTMLElement)) return { present: false, regions: [], nodes: [] };
+          const describe = (node) => {
+            const rect = node.getBoundingClientRect();
+            const style = getComputedStyle(node);
+            return {
+              tag: node.tagName,
+              className: typeof node.className === 'string' ? node.className : '',
+              region: node.getAttribute('data-floorplan-region') || '',
+              text: node.textContent?.replace(/\s+/g, ' ').trim().slice(0, 120) || '',
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.width), Math.round(rect.height)],
+              display: style.display,
+              gridTemplateColumns: style.gridTemplateColumns,
+              gridAutoRows: style.gridAutoRows,
+              alignContent: style.alignContent,
+              rowGap: style.rowGap,
+            };
+          };
+          return {
+            present: true,
+            root: describe(root),
+            regions: [...root.querySelectorAll('[data-floorplan-region]')].map(describe),
+            nodes: [...root.querySelectorAll('.canonical-form-node')].map(describe),
+          };
+        })
+        : null;
       const verticalLineEvidence = target.captureVerticalLineEvidence === true
         ? await page.evaluate(() => {
           const x = Math.round(window.innerWidth * 0.568);
@@ -1122,7 +1151,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, taskDensityEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
