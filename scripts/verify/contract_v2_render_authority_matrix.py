@@ -146,22 +146,7 @@ NON_VISUAL = {
     "meta.deliveryTrim": "client delivery projection evidence",
 }
 
-DECODED_RUNTIME_GAPS = {
-    "runtimeContract.intakeAutosave": "decoded policy is consumed only by the form intake runtime",
-    "runtimeContract.fieldSemantics": "decoded semantic evidence is consumed only by governed form projection",
-    "runtimeContract.validationRules": "decoded validation evidence is consumed only by governed form validation",
-    "runtimeContract.governance": "decoded governance evidence is diagnostic and non-executable",
-    "runtimeContract.patchStrategy": "no generic patch controller consumes this policy yet",
-    "runtimeContract.optimistic": "mutation settlement remains explicitly non-optimistic",
-    "runtimeContract.lazyContainer": "no lazy-container controller consumes this list yet",
-    "runtimeContract.virtualization": "opaque policy has no field-level schema or generic consumer",
-    "runtimeContract.retryPolicy": "opaque policy has no field-level schema or generic consumer",
-    "runtimeContract.renderStrategy": "no render scheduler consumes this policy yet",
-    "runtimeContract.hydration": "opaque policy has no field-level schema or generic consumer",
-    "runtimeContract.patchOperations": "validated vocabulary is not yet bound to a generic patch controller",
-    "runtimeContract.tracePolicy": "opaque policy has no field-level schema or generic consumer",
-    "runtimeContract.complexityBudget": "opaque budget has no generic enforcement consumer",
-}
+DECODED_RUNTIME_GAPS = {}
 
 NON_VISUAL_DEFINITIONS = {
     "sourceAuthority": "projection provenance boundary",

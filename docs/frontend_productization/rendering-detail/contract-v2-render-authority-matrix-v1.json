@@ -41,9 +41,9 @@
   ],
   "summary": {
     "schemaFieldCount": 321,
-    "renderedOrInteractionAuthorityCount": 200,
-    "validatedNonVisualAuthorityCount": 107,
-    "decodedRuntimeAuthorityGapCount": 14,
+    "renderedOrInteractionAuthorityCount": 206,
+    "validatedNonVisualAuthorityCount": 115,
+    "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
   },
   "rows": [
@@ -1356,9 +1356,9 @@
     },
     {
       "path": "runtimeContract.complexityBudget",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "opaque budget has no generic enforcement consumer",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime complexity governance",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.deliveryProfile",
@@ -1368,27 +1368,24 @@
     },
     {
       "path": "runtimeContract.fieldSemantics",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "decoded semantic evidence is consumed only by governed form projection",
-      "consumer": "strict decoder only"
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.governance",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "decoded governance evidence is diagnostic and non-executable",
-      "consumer": "strict decoder only"
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.hydration",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "opaque policy has no field-level schema or generic consumer",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime hydration policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.intakeAutosave",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "decoded policy is consumed only by the form intake runtime",
-      "consumer": "strict decoder only"
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.interactionMode",
@@ -1397,27 +1394,27 @@
     },
     {
       "path": "runtimeContract.lazyContainer",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "no lazy-container controller consumes this list yet",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime loading policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.optimistic",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "mutation settlement remains explicitly non-optimistic",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "mutation settlement policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.patchOperations",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "validated vocabulary is not yet bound to a generic patch controller",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime patch vocabulary",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.patchStrategy",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "no generic patch controller consumes this policy yet",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime patch policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.recordVersionPolicy",
@@ -1426,33 +1423,30 @@
     },
     {
       "path": "runtimeContract.renderStrategy",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "no render scheduler consumes this policy yet",
-      "consumer": "strict decoder only"
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.retryPolicy",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "opaque policy has no field-level schema or generic consumer",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime retry policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.tracePolicy",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "opaque policy has no field-level schema or generic consumer",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime trace policy",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.validationRules",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "decoded validation evidence is consumed only by governed form validation",
-      "consumer": "strict decoder only"
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.virtualization",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "opaque policy has no field-level schema or generic consumer",
-      "consumer": "strict decoder only"
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "searchContract.custom",
