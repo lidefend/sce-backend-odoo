@@ -147,15 +147,20 @@
 
 表单布局间距从组件硬编码收敛为 token 契约（值=既有视觉，零回归）：
 
-- **契约**: `pattern.json` 已有 `task_form.field_gap = {space.sm}` → 生成 `--sc-pattern-task-form-field-gap: 12`（=space.sm=12px）
-- **改动**: `FormSection.vue` 两处 `row-gap: 12px`（可编辑 grid + readonly grid）改为 `calc(var(--sc-pattern-task-form-field-gap, 12) * 1px)`
-- **实测**: 计算值 row-gap 12px（可编辑/readonly 均正确解析 token），密度基线 5/5 PASS，视觉零回归
-- **未绑定**（保持硬编码，无对应 token）: column-gap（可编辑 20px / readonly 26px）、label-row gap 8px / margin 3px、control-row gap 6px —— 如需契约化需先在设计层定 token 语义
+- **契约**: `pattern.json` 的 `task_form` 命名空间补齐表单布局间距 token：
+  - `field_gap = {space.sm}`（→ `--sc-pattern-task-form-field-gap: 12`，row-gap）
+  - `column_gap: "20px"`（可编辑 grid 列间距）
+  - `readonly_column_gap: "26px"`（readonly grid 列间距）
+  - `label_row_gap: "8px"` / `label_row_margin_bottom: "3px"`（label 行）
+  - `control_row_gap: "6px"`（控件行）
+- **改动**: `FormSection.vue` 5 处硬编码间距 → `var(--sc-pattern-task-form-*)`（grid row/column-gap、label-row gap/margin、control-row gap）
+- **实测**: 计算值全部正确解析（row 12px / col 20px / readonly col 26px / label 8+3 / control 6），密度基线 6/6 PASS，视觉零回归
+- **边界**: `field-inline-config`（favorite 内联）gap 6px 与 `.label` 内 gap 6px 未单独 token 化（`control_row_gap` 复用 6px 语义，如设计需区分可再拆）
 
 ## 十三、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
-2. **表单间距 token 扩展**: `task_form.field_gap` 已绑定 row-gap（见十二）；column-gap（可编辑 20px / readonly 26px）、label-row gap 8px / margin 3px、control-row gap 6px 仍硬编码——确认设计 token 语义后补定义并绑定（组件层消费）
+2. **表单间距 token 扩展**: `field_gap`/`column_gap`/`label_row_gap`/`control_row_gap` 已绑定（见十二）；剩余 `field-inline-config` 与 `.label` 内 gap 6px 语义如需独立契约可再拆 token
 3. **readonly 值 weight**: 已统一 400（见八修正）——如设计意图强调关键值（状态等）可再评估 550，需设计确认
 4. ~~基线自动化~~: 已完成（见十一 `verify.frontend.density.baseline`）
 5. **公司支出空态**: 数据归属（bc16 vs bc20）与 action domain 是否对齐，需业务确认

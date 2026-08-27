@@ -11,7 +11,12 @@
   },
   "task_form": {
     "content_max_width": "1200px",
-    "field_gap": "{space.sm}"
+    "field_gap": "{space.sm}",
+    "column_gap": "20px",
+    "readonly_column_gap": "26px",
+    "label_row_gap": "8px",
+    "label_row_margin_bottom": "3px",
+    "control_row_gap": "6px"
   },
   "workspace_form": {
     "content_max_width": "1440px",
