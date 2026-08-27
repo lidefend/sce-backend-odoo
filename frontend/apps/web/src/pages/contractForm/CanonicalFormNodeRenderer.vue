@@ -184,10 +184,16 @@ const presentableNodeText = computed(() => {
   font: inherit;
   color: inherit;
 }
+/* Section heading parity with TDesign card titles (t-card__title 16px/600).
+ * canonical sections (e.g. 申请识别与状态) previously rendered at 15px with
+ * inherited h3 weight (700), reading as a different hierarchy level than
+ * template/t-card sections (当前任务, 业务上下文) at 16px/600 inside the same
+ * form. Align both paths to the same section-heading scale. */
 .canonical-form-node-title {
   margin: 0 0 12px;
   color: var(--sc-app-text-primary);
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: 600;
 }
 .canonical-form-native-action:disabled { cursor: not-allowed; opacity: 0.55; }
 .canonical-form-native-widget { color: var(--sc-app-text-secondary); }
