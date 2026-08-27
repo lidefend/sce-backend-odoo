@@ -215,6 +215,7 @@ function fieldFromWidget(
     required: bool(status?.required, false),
     disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
+    placeholder: text(status?.placeholder),
     semanticRole: fieldSemantics.role,
     semanticSlot: fieldSemantics.slot,
     semanticGroup: fieldSemantics.group,
@@ -285,18 +286,21 @@ function presentNode(
     : undefined;
   const authoritativeSlot = nodeSemantics.slot ? structureSlot(structure, nodeSemantics) : undefined;
   const authoritativeTitle = text(authoritativeGroup?.title || authoritativeSlot?.title);
+  const authoritativeRole = authoritativeGroup?.role || authoritativeSlot?.role;
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
     kind: nodeKind,
     title: authoritativeTitle || title,
     text: text(container.text),
     attributes: Object.freeze({ ...container.attributes }),
+    span: container.span,
+    styleToken: text(container.styleToken),
     zoneRole: effectiveRole,
     columns: Number(authoritativeGroup?.columns || container.cols || container.columns || structure?.columns || 1) || 1,
     visible,
     disabled,
     reasonCode: text(status?.reasonCode),
-    semanticRole: nodeSemantics.role,
+    semanticRole: authoritativeRole ? canonicalRoleForFormStructureRole(authoritativeRole) : nodeSemantics.role,
     semanticSlot: nodeSemantics.slot,
     semanticGroup: nodeSemantics.group,
     action: (actionIdentity ? actionsByIdentity.get(actionIdentity) : undefined)

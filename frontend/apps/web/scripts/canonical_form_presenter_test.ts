@@ -720,8 +720,11 @@ structurePresentationSnapshot.formStructureContract = {
   }],
 };
 structurePresentationSnapshot.layoutContract.containerTree[0].formStructureRole = {
-  role: 'context', slot: 'governed', group: 'identity',
+  role: 'risk', slot: 'governed', group: 'identity',
 };
+structurePresentationSnapshot.layoutContract.containerTree[0].span = 16;
+structurePresentationSnapshot.layoutContract.containerTree[0].styleToken = 'surface.task.identity';
+structurePresentationSnapshot.statusContract.widgetStatus[0].placeholder = 'Contract placeholder';
 const structurePresentationModel = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(structurePresentationSnapshot)),
   'edit',
@@ -753,6 +756,11 @@ assert.equal(
   'the matching formal group column authority must reach the canonical node',
 );
 assert.equal(
+  structurePresentationModel.zones.primary[0].semanticRole,
+  'context',
+  'the formal group role must override a stale duplicated layout role carrier',
+);
+assert.equal(
   structurePresentationFields.find((field) => field.fieldCode === 'name')?.readonly,
   true,
   'a readonly formal slot must remain readonly even when widget status permits editing',
@@ -765,6 +773,24 @@ assert.deepEqual(
   },
   { role: 'context', slot: 'governed', group: 'identity' },
   'top-level fieldRoles must be the semantic identity authority consumed by the presenter',
+);
+assert.equal(
+  structurePresentationFields.find((field) => field.fieldCode === 'name')?.placeholder,
+  'Contract placeholder',
+  'widget status placeholder authority must reach the canonical field',
+);
+assert.equal(
+  canonicalFieldToFormSection(structurePresentationFields.find((field) => field.fieldCode === 'name')!).inputPlaceholder,
+  'Contract placeholder',
+  'canonical placeholder authority must reach the professional field adapter',
+);
+assert.deepEqual(
+  {
+    span: structurePresentationModel.zones.primary[0].span,
+    styleToken: structurePresentationModel.zones.primary[0].styleToken,
+  },
+  { span: 16, styleToken: 'surface.task.identity' },
+  'container geometry and style-token identities must survive canonical projection',
 );
 
 const legacyChildCarrierSnapshot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
@@ -968,7 +994,7 @@ const semanticReadonlySnapshot = snapshot();
 semanticReadonlySnapshot.formStructureContract = governedFormStructure('context');
 semanticReadonlySnapshot.formStructureContract.slots = [{
   slot: 'identity', title: 'Identity', role: 'context',
-  groups: [{ name: 'identity', title: 'Identity', role: 'context', fieldRefs: ['name', 'state'] }],
+  groups: [{ name: 'identity', title: 'Identity', role: 'summary', fieldRefs: ['name', 'state'] }],
 }];
 semanticReadonlySnapshot.formStructureContract.fieldRoles = {
   name: { role: 'summary', slot: 'identity', group: 'identity' },

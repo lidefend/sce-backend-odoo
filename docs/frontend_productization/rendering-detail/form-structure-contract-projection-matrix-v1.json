@@ -1,0 +1,438 @@
+{
+  "schemaVersion": "form-structure-contract-projection-matrix/v1",
+  "schemaAuthority": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+  "scope": [
+    "formStructureContract",
+    "formStructureObjectProfile",
+    "formStructureNavigation",
+    "formStructureSlot",
+    "formStructureGroup",
+    "formStructureRole",
+    "formStructureSourceAuthority",
+    "formStructureGovernanceSource",
+    "formStructureGovernanceContract",
+    "formStructureConfiguredSection"
+  ],
+  "summary": {
+    "schemaFieldCount": 69,
+    "renderedAuthorityCount": 22,
+    "validatedNonVisualAuthorityCount": 47,
+    "unclassifiedCount": 0
+  },
+  "rows": [
+    {
+      "path": "formStructureConfiguredSection.fields",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; selected fieldRefs carry membership",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureConfiguredSection.identity",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureConfiguredSection.key",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureConfiguredSection.title",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; selected group title carries render fact",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.columns",
+      "classification": "rendered_authority",
+      "semantic": "geometry",
+      "consumer": "presentNode.columns"
+    },
+    {
+      "path": "formStructureContract.fieldLabels",
+      "classification": "rendered_authority",
+      "semantic": "field-label",
+      "consumer": "formStructureFieldLabels"
+    },
+    {
+      "path": "formStructureContract.fieldRoles",
+      "classification": "rendered_authority",
+      "semantic": "semantic-identity",
+      "consumer": "fieldSemanticIdentity"
+    },
+    {
+      "path": "formStructureContract.layoutPolicy",
+      "classification": "validated_non_visual_authority",
+      "reason": "producer policy trace; concrete slots/groups/columns carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.mode",
+      "classification": "validated_non_visual_authority",
+      "reason": "legacy producer classification retained for trace compatibility",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.model",
+      "classification": "validated_non_visual_authority",
+      "reason": "model identity invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.navigation",
+      "classification": "rendered_authority",
+      "semantic": "shell",
+      "consumer": "presentContractV2Form.shell"
+    },
+    {
+      "path": "formStructureContract.objectProfile",
+      "classification": "validated_non_visual_authority",
+      "reason": "business fact authority invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.presentationMode",
+      "classification": "rendered_authority",
+      "semantic": "presentation",
+      "consumer": "presentContractV2Form.identity.presentationMode"
+    },
+    {
+      "path": "formStructureContract.slots",
+      "classification": "rendered_authority",
+      "semantic": "structure",
+      "consumer": "structureSlot"
+    },
+    {
+      "path": "formStructureContract.source",
+      "classification": "validated_non_visual_authority",
+      "reason": "runtime carrier identity",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.sourceAuthority",
+      "classification": "validated_non_visual_authority",
+      "reason": "server authority and provenance proof",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.sourceSectionTitles",
+      "classification": "validated_non_visual_authority",
+      "reason": "source trace; slots/groups carry the selected titles",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.structureVersion",
+      "classification": "validated_non_visual_authority",
+      "reason": "decoder compatibility boundary",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureContract.viewType",
+      "classification": "validated_non_visual_authority",
+      "reason": "view identity invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceContract.id",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceContract.name",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceContract.priority",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceContract.version_no",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceContract.view_type",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.businessConfigContracts",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.categoryCode",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.categoryId",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.configuredSections",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; slots/groups carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.fieldGroups",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; slots/groups carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.fieldLabels",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; selected fieldLabels carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.fieldNames",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.fieldSemanticRoles",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; fieldRoles carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.formColumns",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; selected columns carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.formLayoutOverlay",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.formStructureAuthority",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.groupColumns",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; selected group columns carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.groupVisibility",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; status carries visibility facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.hiddenFieldNames",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; layout/status carry visibility facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.legacyFieldPolicyOverlay",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.ownerLayer",
+      "classification": "validated_non_visual_authority",
+      "reason": "server provenance trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.sectionSemanticRoles",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; slots/groups carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.sectionTitles",
+      "classification": "validated_non_visual_authority",
+      "reason": "server projection trace; slots/groups carry render facts",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.source",
+      "classification": "validated_non_visual_authority",
+      "reason": "server provenance trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGovernanceSource.targetModel",
+      "classification": "validated_non_visual_authority",
+      "reason": "server selection trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureGroup.columns",
+      "classification": "rendered_authority",
+      "semantic": "geometry",
+      "consumer": "presentNode.columns"
+    },
+    {
+      "path": "formStructureGroup.fieldLabels",
+      "classification": "rendered_authority",
+      "semantic": "field-label",
+      "consumer": "formStructureFieldLabels"
+    },
+    {
+      "path": "formStructureGroup.fieldRefs",
+      "classification": "rendered_authority",
+      "semantic": "field-membership",
+      "consumer": "decodeFormStructureContract closure"
+    },
+    {
+      "path": "formStructureGroup.name",
+      "classification": "rendered_authority",
+      "semantic": "semantic-identity",
+      "consumer": "structureGroup"
+    },
+    {
+      "path": "formStructureGroup.role",
+      "classification": "rendered_authority",
+      "semantic": "semantic-region",
+      "consumer": "presentNode.semanticRole"
+    },
+    {
+      "path": "formStructureGroup.title",
+      "classification": "rendered_authority",
+      "semantic": "section-title",
+      "consumer": "presentNode.title"
+    },
+    {
+      "path": "formStructureNavigation.title",
+      "classification": "rendered_authority",
+      "semantic": "shell-title",
+      "consumer": "presentContractV2Form.shell.title"
+    },
+    {
+      "path": "formStructureObjectProfile.factAuthority",
+      "classification": "validated_non_visual_authority",
+      "reason": "business fact provenance",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureObjectProfile.kind",
+      "classification": "validated_non_visual_authority",
+      "reason": "object-kind invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureObjectProfile.model",
+      "classification": "validated_non_visual_authority",
+      "reason": "model identity invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureRole.group",
+      "classification": "rendered_authority",
+      "semantic": "semantic-identity",
+      "consumer": "fieldSemanticIdentity"
+    },
+    {
+      "path": "formStructureRole.role",
+      "classification": "rendered_authority",
+      "semantic": "semantic-region",
+      "consumer": "fieldSemanticIdentity"
+    },
+    {
+      "path": "formStructureRole.slot",
+      "classification": "rendered_authority",
+      "semantic": "semantic-identity",
+      "consumer": "fieldSemanticIdentity"
+    },
+    {
+      "path": "formStructureSlot.fieldRefs",
+      "classification": "rendered_authority",
+      "semantic": "field-membership",
+      "consumer": "decodeFormStructureContract closure"
+    },
+    {
+      "path": "formStructureSlot.groups",
+      "classification": "rendered_authority",
+      "semantic": "structure",
+      "consumer": "structureGroup"
+    },
+    {
+      "path": "formStructureSlot.readonly",
+      "classification": "rendered_authority",
+      "semantic": "interaction",
+      "consumer": "fieldFromWidget.readonly"
+    },
+    {
+      "path": "formStructureSlot.role",
+      "classification": "rendered_authority",
+      "semantic": "semantic-region",
+      "consumer": "presentNode.semanticRole"
+    },
+    {
+      "path": "formStructureSlot.slot",
+      "classification": "rendered_authority",
+      "semantic": "semantic-identity",
+      "consumer": "structureSlot"
+    },
+    {
+      "path": "formStructureSlot.title",
+      "classification": "rendered_authority",
+      "semantic": "section-title",
+      "consumer": "presentNode.title"
+    },
+    {
+      "path": "formStructureSourceAuthority.governance_source",
+      "classification": "validated_non_visual_authority",
+      "reason": "server provenance trace",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureSourceAuthority.governed_form_structure",
+      "classification": "validated_non_visual_authority",
+      "reason": "authority boundary invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureSourceAuthority.kind",
+      "classification": "validated_non_visual_authority",
+      "reason": "authority invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureSourceAuthority.no_business_fact_authority",
+      "classification": "validated_non_visual_authority",
+      "reason": "authority boundary invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureSourceAuthority.projection_only",
+      "classification": "validated_non_visual_authority",
+      "reason": "authority boundary invariant",
+      "consumer": "decodeFormStructureContract"
+    },
+    {
+      "path": "formStructureSourceAuthority.runtime_carrier",
+      "classification": "validated_non_visual_authority",
+      "reason": "authority invariant",
+      "consumer": "decodeFormStructureContract"
+    }
+  ]
+}

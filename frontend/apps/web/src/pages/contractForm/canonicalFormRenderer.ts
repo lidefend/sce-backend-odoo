@@ -160,6 +160,7 @@ export function canonicalFieldToFormSection(
     required: field.required,
     readonly: field.readonly || field.disabled,
     helpText: field.reasonCode,
+    inputPlaceholder: field.placeholder || undefined,
     spanClass: field.span >= 24 ? 'field--full' : field.span >= 16 ? 'field--wide' : 'field--normal',
     value: relation ? relation.displayName : field.value,
     inputValue: relation ? relation.id : inputValue(field.value),

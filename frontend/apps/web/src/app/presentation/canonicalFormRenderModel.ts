@@ -19,6 +19,7 @@ export type CanonicalFormAction = {
   visible: boolean;
   enabled: boolean;
   reasonCode: string;
+  placeholder: string;
   visibleProfiles: CanonicalFormRenderMode[];
   safety: Readonly<Record<string, unknown>>;
   actionRef: ContractV2ActionRule;
@@ -63,6 +64,8 @@ export type CanonicalFormNode = {
   title: string;
   text: string;
   attributes: Readonly<Record<string, unknown>>;
+  span: number;
+  styleToken: string;
   zoneRole: CanonicalFormZoneRole;
   columns: number;
   visible: boolean;

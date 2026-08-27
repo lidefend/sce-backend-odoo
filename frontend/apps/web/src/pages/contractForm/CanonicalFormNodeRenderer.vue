@@ -7,6 +7,8 @@
     :data-state="readonlyFactLayout ? 'readonly-fact' : 'structured'"
     :data-canonical-node-kind="node.kind"
     :data-native-class="nativeClass || undefined"
+    :data-contract-span="node.span"
+    :data-contract-style-token="node.styleToken || undefined"
     :data-section-navigation-role="node.zoneRole"
     :data-group-title="node.title || undefined"
   >

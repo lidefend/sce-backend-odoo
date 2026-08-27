@@ -151,6 +151,7 @@ export function buildCanonicalNativeFormBridge(
       text: node.text,
       cols: node.columns,
       columns: node.columns,
+      span: node.span,
       widget: node.nativeWidget,
       visible: node.visible && (kind !== 'button' || Boolean(action)) && actionVisible,
       attributes: {
@@ -159,6 +160,7 @@ export function buildCanonicalNativeFormBridge(
         canonicalNodeId: node.nodeId,
         canonicalNodeKind: rawKind,
         sectionNavigationRole: node.zoneRole,
+        contractStyleToken: node.styleToken,
       },
       action: action ? canonicalActionRecord(action) : null,
       buttonType: text(action?.actionRef.button?.type) || 'object',
