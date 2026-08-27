@@ -1994,7 +1994,7 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     'patchStrategy', 'cachePolicy', 'optimistic', 'lazyContainer', 'virtualization', 'retryPolicy',
     'renderStrategy', 'hydration', 'patchOperations', 'tracePolicy', 'complexityBudget', 'aiEnvelope',
     'interactionMode', 'actionTarget', 'collaboration', 'businessWorkspace', 'businessActions', 'deliveryProfile',
-    'intakeAutosave', 'fieldSemantics', 'validationRules', 'governance',
+    'intakeAutosave', 'fieldSemantics', 'validationRules', 'governance', 'recordVersionPolicy',
   ], 'runtimeContract', issues);
   const renderStrategy = decodeRenderStrategy(asString(source.renderStrategy), 'runtimeContract.renderStrategy', issues);
   const patchOperations = source.patchOperations === undefined
@@ -2041,6 +2041,7 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
   const fieldSemantics = optionalRecord(source, 'fieldSemantics', 'runtimeContract', issues);
   const validationRules = optionalRecordArray(source, 'validationRules', 'runtimeContract', issues);
   const governance = optionalRecord(source, 'governance', 'runtimeContract', issues);
+  const recordVersionPolicy = optionalRecord(source, 'recordVersionPolicy', 'runtimeContract', issues);
   return {
     patchStrategy: decodePatchStrategy(requiredString(source, 'patchStrategy', 'runtimeContract', issues), 'runtimeContract.patchStrategy', issues),
     cachePolicy: decodeCachePolicy(requiredString(source, 'cachePolicy', 'runtimeContract', issues), 'runtimeContract.cachePolicy', issues),
@@ -2064,6 +2065,7 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     ...(fieldSemantics ? { fieldSemantics } : {}),
     ...(validationRules ? { validationRules } : {}),
     ...(governance ? { governance } : {}),
+    ...(recordVersionPolicy ? { recordVersionPolicy } : {}),
   };
 }
 

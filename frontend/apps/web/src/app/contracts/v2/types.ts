@@ -500,6 +500,7 @@ export interface ContractV2RuntimeContract {
   fieldSemantics?: ContractV2Dictionary;
   validationRules?: ContractV2Dictionary[];
   governance?: ContractV2Dictionary;
+  recordVersionPolicy?: ContractV2Dictionary;
 }
 
 export interface ContractV2Lifecycle {

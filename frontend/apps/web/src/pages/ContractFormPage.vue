@@ -1047,7 +1047,7 @@ const {
   },
 });
 function recordVersionPolicy() {
-  const raw = (contract.value as Record<string, unknown> | null)?.record_version;
+  const raw = v2ContractStore.value?.snapshot.runtimeContract.recordVersionPolicy;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const policy = raw as Record<string, unknown>;
   if (policy.enabled !== true) return null;

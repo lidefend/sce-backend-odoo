@@ -67,7 +67,7 @@ EXPECTED = {
     "runtimeContract": (
         "patchStrategy cachePolicy optimistic lazyContainer virtualization retryPolicy renderStrategy hydration patchOperations "
         "tracePolicy complexityBudget aiEnvelope interactionMode actionTarget collaboration businessWorkspace businessActions deliveryProfile "
-        "intakeAutosave fieldSemantics validationRules governance"
+        "intakeAutosave fieldSemantics validationRules governance recordVersionPolicy"
     ),
     "meta": "etag snapshotId traceId requestId sourceType lifecycle deliveryTrim",
     "deliveryTrim": "clientType deliveryProfile compact limits original delivered omitted",

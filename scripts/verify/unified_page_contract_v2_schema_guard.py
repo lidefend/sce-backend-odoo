@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import copy
 import json
 import re
@@ -113,6 +114,60 @@ FORBIDDEN_FORMAL_SCHEMA_KEYS = {
     "legacyContractProjection",
     "legacy_contract_projection",
 }
+
+
+def validate_runtime_producer_keys(schema: dict[str, Any], errors: list[str]) -> None:
+    """Keep literal runtimeContract producers inside the strict wire schema."""
+    root = Path(__file__).resolve().parents[2]
+    producer_paths = (
+        root / "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        root / "addons/smart_core/core/unified_page_contract_v2_client.py",
+    )
+    produced: set[str] = set()
+
+    def string_key(node: ast.AST) -> str:
+        return str(node.value) if isinstance(node, ast.Constant) and isinstance(node.value, str) else ""
+
+    for producer_path in producer_paths:
+        tree = ast.parse(producer_path.read_text(encoding="utf-8"), filename=str(producer_path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Dict):
+                pairs = list(zip(node.keys, node.values))
+                for key_node, value_node in pairs:
+                    key = string_key(key_node) if key_node is not None else ""
+                    if key == "runtimeContract" and isinstance(value_node, ast.Dict):
+                        produced.update(string_key(item) for item in value_node.keys if item is not None)
+                parent_names = {
+                    target.id
+                    for target in getattr(getattr(node, "parent", None), "targets", [])
+                    if isinstance(target, ast.Name)
+                }
+                if "runtime_extensions" in parent_names:
+                    produced.update(string_key(item) for item in node.keys if item is not None)
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if not isinstance(target, ast.Subscript):
+                        continue
+                    key = string_key(target.slice)
+                    owner = target.value
+                    if isinstance(owner, ast.Subscript) and string_key(owner.slice) == "runtimeContract":
+                        produced.add(key)
+                    elif isinstance(owner, ast.Name) and owner.id == "runtime":
+                        produced.add(key)
+        # Attach parents only for the small runtime_extensions ownership check.
+        for parent in ast.walk(tree):
+            for child in ast.iter_child_nodes(parent):
+                child.parent = parent
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Dict):
+                continue
+            if any(isinstance(target, ast.Name) and target.id == "runtime_extensions" for target in node.targets):
+                produced.update(string_key(item) for item in node.value.keys if item is not None)
+
+    allowed = set(schema["$defs"]["runtimeContract"].get("properties", {}))
+    unknown = sorted(key for key in produced if key and key not in allowed)
+    if unknown:
+        fail(errors, f"runtimeContract producer keys missing from strict schema: {unknown}")
 
 FORBIDDEN_SCHEMA_ALIAS_CASES = {
     "$.delete_policy": ("delete_policy",),
@@ -354,6 +409,7 @@ def main() -> int:
     schema = load_json(args.schema)
     registry = load_json(args.enum_registry)
     validate_schema(schema, registry, errors)
+    validate_runtime_producer_keys(schema, errors)
     validator = Draft202012Validator(schema)
 
     example_paths = sorted(args.examples.glob("*.json"))

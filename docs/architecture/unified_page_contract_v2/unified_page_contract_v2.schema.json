@@ -1648,6 +1648,9 @@
         },
         "governance": {
           "type": "object"
+        },
+        "recordVersionPolicy": {
+          "type": "object"
         }
       }
     },
