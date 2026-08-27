@@ -874,6 +874,20 @@ assert.throws(
   /layoutContract\.containerTree\[0\]\.children\[0\]\.fields must be an array/,
   'native field membership must remain strict instead of silently discarding an invalid carrier',
 );
+const invalidBooleanAuthoritySnapshot = snapshot();
+(invalidBooleanAuthoritySnapshot.actionContract.actionRuleList[0] as unknown as Record<string, unknown>).allowed = 'true';
+(invalidBooleanAuthoritySnapshot.statusContract.widgetStatus[0] as unknown as Record<string, unknown>).readonly = 0;
+(invalidBooleanAuthoritySnapshot.layoutContract.containerTree[0] as unknown as Record<string, unknown>).visible = 'true';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidBooleanAuthoritySnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('actionContract.actionRuleList[0].allowed must be a boolean')
+      && message.includes('statusContract.widgetStatus[0].readonly must be a boolean')
+      && message.includes('layoutContract.containerTree[0].visible must be a boolean');
+  },
+  'invalid visual and permission booleans must fail closed across layout, action, and status contracts',
+);
 
 const fieldAuthSnapshot = snapshot();
 fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';
