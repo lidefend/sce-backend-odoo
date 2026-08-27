@@ -28,9 +28,9 @@
   gap: 0;
   border-right: 1px solid var(--sc-app-border);
   background: var(--sc-navigation-bg);
-  height: 100dvh;
+  height: 100%;
   min-height: 0;
-  max-height: 100dvh;
+  max-height: 100%;
   overflow: hidden;
   position: sticky;
   top: 0;
@@ -1027,9 +1027,9 @@
   }
 
   .shell :deep(.sidebar) {
-    block-size: 100dvh;
+    block-size: 100%;
     min-block-size: 0;
-    max-block-size: 100dvh;
+    max-block-size: 100%;
     grid-template-columns: minmax(0, 1fr);
     border-right-color: var(--sc-app-border);
     background:

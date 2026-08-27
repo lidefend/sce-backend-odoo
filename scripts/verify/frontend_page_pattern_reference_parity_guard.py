@@ -29,8 +29,8 @@ REQUIREMENTS = {
         "align-content: start",
     ),
     "frontend/apps/web/src/layouts/AppShell.css": (
-        "max-height: 100dvh",
-        "max-block-size: 100dvh",
+        "max-height: 100%",
+        "max-block-size: 100%",
         ".shell :deep(.sidebar--scroll)",
         "overflow: hidden",
     ),

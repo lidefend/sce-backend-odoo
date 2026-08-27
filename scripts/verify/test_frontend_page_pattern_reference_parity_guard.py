@@ -39,7 +39,7 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
     def test_sidebar_must_be_capped_to_the_viewport(self) -> None:
         values = self.source_map()
         target = "frontend/apps/web/src/layouts/AppShell.css"
-        values[target] = values[target].replace("max-block-size: 100dvh", "max-block-size: none", 1)
+        values[target] = values[target].replace("max-block-size: 100%", "max-block-size: none", 1)
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
