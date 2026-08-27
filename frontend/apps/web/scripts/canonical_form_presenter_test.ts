@@ -856,11 +856,13 @@ assert.deepEqual(
   {
     name: nativeFieldNode?.name, filename: nativeFieldNode?.filename, domain: nativeFieldNode?.domain,
     context: nativeFieldNode?.context, options: nativeFieldNode?.options, class: nativeFieldNode?.class,
-    fieldSize: nativeFieldNode?.fieldSize, size: nativeFieldNode?.size, col: nativeFieldNode?.col,
+    attributeClass: nativeFieldNode?.attributes?.class, fieldSize: nativeFieldNode?.fieldSize,
+    size: nativeFieldNode?.size, col: nativeFieldNode?.col,
   },
   {
     name: 'name', filename: 'name_filename', domain: [['active', '=', true]], context: { source: 'contract' },
-    options: { no_create: true }, class: 'contract-field-wide', fieldSize: 'large', size: 'lg', col: 2,
+    options: { no_create: true }, class: 'contract-field-wide', attributeClass: 'contract-field-wide',
+    fieldSize: 'large', size: 'lg', col: 2,
   },
   'field containers must keep their formal native metadata through the professional native bridge',
 );

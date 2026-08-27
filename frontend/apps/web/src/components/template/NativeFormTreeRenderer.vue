@@ -300,6 +300,7 @@
 
       <FormSection
         v-else-if="nodeType(node) === 'field' && fieldSchemasForNodes([node]).length"
+        :class="nodeClassList(node)"
         :title="fieldSectionTitle(node)"
         :columns="nodeColumns(node)"
         :fields="fieldSchemasForNodes([node])"

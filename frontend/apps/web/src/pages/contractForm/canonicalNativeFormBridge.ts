@@ -118,6 +118,11 @@ function fieldNode(
     visible: field.visible && (sourceNode?.visible ?? true),
     attributes: {
       ...(sourceNode?.attributes || {}),
+      class: text(
+        sourceNode?.attributes.class
+        || sourceNode?.nativePresentation.class
+        || sourceNode?.nativePresentation.className,
+      ),
       name: field.fieldCode,
       canonicalWidgetId: field.widgetId,
       canonicalNodeId: sourceNode?.nodeId || field.widgetId,
@@ -184,7 +189,7 @@ export function buildCanonicalNativeFormBridge(
       visible: node.visible && (kind !== 'button' || Boolean(action)) && actionVisible,
       attributes: {
         ...node.attributes,
-        class: text(node.attributes.class),
+        class: text(node.attributes.class || node.nativePresentation.class || node.nativePresentation.className),
         canonicalNodeId: node.nodeId,
         canonicalNodeKind: rawKind,
         sectionNavigationRole: node.zoneRole,
