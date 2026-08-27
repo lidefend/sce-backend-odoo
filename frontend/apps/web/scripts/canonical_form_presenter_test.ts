@@ -867,6 +867,10 @@ assert.deepEqual(
   'native fieldDescriptor selection must remain available to statusbar rendering',
 );
 const model = presentContractV2Form(store, 'edit');
+assert.deepEqual(model.responsive, {
+  adaptMode: 'pc',
+  layoutHints: { mobileColumns: 1 },
+}, 'canonical responsive authority must preserve the delivered adapt mode and layout hints');
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
 assert.deepEqual(model.zones.subordinate.map((node) => node.kind), ['notebook', 'attachment', 'chatter']);
