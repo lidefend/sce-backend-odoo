@@ -24,6 +24,7 @@ import type {
 import type { ContractV2FormStructureRoleName } from '../contracts/v2/types';
 import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructureRoles';
 import { resolveContractV2SelectorStatus } from '../contracts/v2/store';
+import { evaluateNativeModifierValue } from '../modifierEngine';
 import { resolveContractProfessionalComponent } from './professionalComponentRegistry';
 
 function asDict(value: unknown): ContractV2Dictionary {
@@ -449,6 +450,7 @@ function presentAction(
   status: ContractV2ButtonStatus | undefined,
   mode: CanonicalFormRenderMode,
   identityUnique: boolean,
+  values: ContractV2Dictionary,
 ): CanonicalFormAction {
   const profiles = (action.visibleProfiles || ['create', 'edit', 'readonly'])
     .filter((profile): profile is CanonicalFormRenderMode => ['create', 'edit', 'readonly'].includes(profile));
@@ -461,9 +463,21 @@ function presentAction(
     && typeof action.enabled === 'boolean'
     && typeof action.disabled === 'boolean'
     && (!status?.backendIdentity || status.backendIdentity === text(action.backendIdentity));
+  const resolveFieldValue = (field: string) => values[field];
+  const visibleAttrs = asDict(action.visible?.attrs);
+  const invisibleModifier = Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'invisible')
+    ? action.modifiers?.invisible
+    : Object.prototype.hasOwnProperty.call(visibleAttrs, 'invisible')
+      ? visibleAttrs.invisible
+      : action.invisible;
+  const disabledModifier = Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'disabled')
+    ? action.modifiers?.disabled
+    : action.modifiers?.readonly;
+  const definitionInvisible = evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
+  const definitionDisabled = evaluateNativeModifierValue(disabledModifier, resolveFieldValue);
   const allowed = explicitAuthority && action.allowed === true;
-  const enabled = action.enabled === true && action.disabled !== true && status?.disabled !== true;
-  const definitionVisible = action.visible !== false && action.invisible !== true;
+  const enabled = action.enabled === true && action.disabled !== true
+    && status?.disabled !== true && !definitionDisabled;
   if (!text(action.actionId) || !text(action.backendIdentity)) {
     throw new Error('CANONICAL_FORM_ACTION_REFERENCE_MISSING');
   }
@@ -473,7 +487,7 @@ function presentAction(
     icon: text(action.presentation?.icon),
     tier: actionTier(action),
     visible: explicitAuthority
-      && definitionVisible
+      && !definitionInvisible
       && profiles.includes(mode)
       && status?.visible !== false
       && !(mode === 'readonly' && action.actionId === 'form.save'),
@@ -519,6 +533,7 @@ export function presentContractV2Form(
       mode,
       actionIdentityCounts.get(text(action.backendIdentity)) === 1
         && actionIdCounts.get(text(action.actionId)) === 1,
+      { ...contractValues, ...(runtimeValues || {}) },
     )
   ));
   const visibleActions = allActions.filter((action) => action.visible);

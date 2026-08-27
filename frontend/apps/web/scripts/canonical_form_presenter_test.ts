@@ -1037,6 +1037,29 @@ assert.deepEqual(
   [],
   'an explicitly hidden action definition must not be revived by a visible button status',
 );
+const conditionalActionSnapshot = snapshot();
+conditionalActionSnapshot.actionContract.actionRuleList[0].invisible = {
+  kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
+};
+conditionalActionSnapshot.actionContract.actionRuleList[0].modifiers = {
+  disabled: { kind: 'field_truthy', field: 'blocked' },
+};
+const conditionalActionStore = createContractV2Store(decodeContractV2Snapshot(conditionalActionSnapshot));
+assert.equal(
+  presentContractV2Form(conditionalActionStore, 'edit').actionBar.length,
+  1,
+  'a conditional action must remain visible while its formal invisible AST evaluates false',
+);
+assert.equal(
+  presentContractV2Form(conditionalActionStore, 'edit', { state: 'approved' }).actionBar.length,
+  0,
+  'the action invisible AST must react to current form values without a model-specific branch',
+);
+assert.equal(
+  presentContractV2Form(conditionalActionStore, 'edit', { blocked: true }).actionBar[0]?.enabled,
+  false,
+  'the action disabled AST must constrain an otherwise enabled action',
+);
 const actionReasonSnapshot = snapshot();
 actionReasonSnapshot.actionContract.actionRuleList[0].enabled = false;
 actionReasonSnapshot.actionContract.actionRuleList[0].disabled = true;
