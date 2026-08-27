@@ -290,6 +290,22 @@ density baseline 扩展三个表单结构断言，防止 canonical 渲染工作�
 
 density baseline 扩展后 **14/14 PASS**（list + form + worksheet 三面）。
 
+## 十九.y、列表搜索框无缝化 + 整体布局对齐巡检（2026-08-28 追加，commit 88085f48）
+
+用户反馈「列表搜索框视角还是双重框」。根因：查询条搜索控件（ScInput + outline 搜索按钮 + 方形菜单按钮）渲染为多个独立框——输入框右圆角 0 而 outline 按钮保留全 8px 圆角 + 左边框，视觉上像一个框接一个框；`search-menu-toggle`（方形 text 按钮）默认 min-height 44px（`--sc-component-button-touch-target`）高出 36px 控件。
+
+- 修复（`product-patterns.css` 全局层 + `ActionSurfaceToolbar.vue` scoped）：
+  - 搜索按钮 `border-radius: 0 8px 8px 0` + `border-left-width: 0`，与输入框右缘无缝（全局层以压过 TDesign `.t-button` 的 radius 规则）
+  - search-menu-toggle 钉到 36px（scoped，覆盖 `--sc-component-button-touch-target` min-height）
+  - 实测：input 36px / submit 36px / toggle 36px，input↔submit gap -1（无缝），submit radius `0 8px 8px 0`
+- **整体布局对齐巡检**（付款申请列表 775 + 表单 1709/19）：
+  - 查询条：搜索框 36px + 列设置 36px 统一；「共 N 条」文本对齐
+  - 页面头：刷新/新建 30px 一致（层级紧凑工具栏）
+  - 表格：th 42px / row 46px / 状态胶囊（浅蓝 999px 28px 12px）/ 金额右对齐 14px / 日期次色
+  - 导航：`t-menu__item` 36px、选中态浅蓝底深蓝字（TDesign 标准）
+  - 表单/只读事实/移动端卡片：此前已对齐
+- density baseline 14/14 PASS（搜索框修复无回归）
+
 ## 二十、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
