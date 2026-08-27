@@ -55,6 +55,14 @@ workflow:
     development:
       target_duration: 1_to_5_minutes
       loop: [modify_current_responsibility, run_nonzero_targeted_tests, run_relevant_lint_or_typecheck, inspect_one_local_surface, commit_small_responsibility]
+      automatic_executor:
+        watch_entry: make verify.frontend.dev.watch
+        one_shot_entry: make verify.frontend.dev.incremental FRONTEND_DEV_CHANGED_PATHS='<paths>'
+        selection_authority: repository_path_to_registered_make_target_map
+        debounce_related_changes: true
+        merge_and_deduplicate_targets: true
+        status: .runtime/frontend-dev-validation/status.json
+        evidence_class: development_only
       excludes: [full_frontend_quick, production_build, complete_browser_matrix, complete_candidate_fingerprint, generated_report_refresh, pull_request_ci_wait]
     candidate:
       run_once_when_batch_complete: [targeted_tests, strict_typecheck, lint, frontend_quick, production_build, required_readonly_browser_journeys, complete_candidate_fingerprint, independent_readonly_review]

@@ -452,22 +452,28 @@ function snapshot(): ContractV2Snapshot {
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
-      layoutHints: { mobileColumns: 1 }, componentRegistry: {},
+      layoutHints: { mobileColumns: 1 }, componentRegistry: {
+        'sc.input.text': { version: '1.0', adapter: { web_pc: 'ElInput' }, selectedAdapter: 'TDesignInput' },
+        'sc.display.status': { version: '1.0', adapter: { web_pc: 'ElInput' } },
+        'sc.display.text': { version: '1.0', adapter: { web_pc: 'ElInput' } },
+        'sc.relation.many2one': { version: '1.0', adapter: { web_pc: 'ElSelect' } },
+        'sc.relation.table': { version: '1.0', adapter: { web_pc: 'ElTable' } },
+      },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,
         children: [{
           containerId: 'field.name', containerType: 'field', type: 'field', name: 'name', title: '', span: 12,
           label: 'Name', nolabel: true,
           children: [], widgetList: [{
-            widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
-            componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+            widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
+            componentKey: 'sc.input.text', capabilities: [], componentConfig: { fieldType: 'char' },
             ownerContainerId: 'field.name',
           }],
         }, {
           containerId: 'field.state', containerType: 'field', type: 'field', name: 'state', title: '', span: 12,
           children: [], widgetList: [{
-            widgetId: 'field.state', widgetType: 'selection', fieldCode: 'state', label: 'State', span: 12,
-            componentKey: 'sc.display.status', capabilities: [], componentConfig: {}, fieldType: 'selection',
+            widgetId: 'field.state', widgetType: 'select', fieldCode: 'state', label: 'State', span: 12,
+            componentKey: 'sc.display.status', capabilities: [], componentConfig: { fieldType: 'selection' },
             ownerContainerId: 'field.state',
           }],
         }],
@@ -478,8 +484,8 @@ function snapshot(): ContractV2Snapshot {
         children: [{
           containerId: 'field.line_ids', containerType: 'field', type: 'field', name: 'line_ids', title: '', span: 24,
           children: [], widgetList: [{
-            widgetId: 'field.line_ids', widgetType: 'one2many', fieldCode: 'line_ids', label: 'Lines', span: 24,
-            componentKey: 'sc.relation.table', capabilities: [], componentConfig: {}, fieldType: 'one2many',
+            widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
+            componentKey: 'sc.relation.table', capabilities: [], componentConfig: { fieldType: 'one2many' },
             ownerContainerId: 'field.line_ids',
           }],
         }], widgetList: [],
@@ -702,6 +708,389 @@ assert.throws(
   'a store constructed outside the decoder must not silently default a missing presentation authority',
 );
 
+const structurePresentationSnapshot = snapshot();
+structurePresentationSnapshot.formStructureContract = {
+  ...governedFormStructure('context'),
+  navigation: { title: 'Authoritative task title' },
+  fieldLabels: { name: 'Contract name' },
+  fieldRoles: {
+    name: { role: 'context', slot: 'governed', group: 'identity' },
+    state: { role: 'context', slot: 'governed', group: 'identity' },
+  },
+  slots: [{
+    slot: 'governed', title: 'Governed', role: 'context', readonly: true, fieldRefs: ['name', 'state'],
+    groups: [{
+      name: 'identity', title: 'Contract identity', role: 'context', fieldRefs: ['name', 'state'],
+      fieldLabels: { state: 'Contract status' }, columns: 2,
+    }],
+  }],
+};
+structurePresentationSnapshot.layoutContract.containerTree[0].formStructureRole = {
+  role: 'risk', slot: 'governed', group: 'identity',
+};
+structurePresentationSnapshot.layoutContract.containerTree[0].span = 16;
+structurePresentationSnapshot.layoutContract.containerTree[0].styleToken = 'surface.task.identity';
+Object.assign(structurePresentationSnapshot.layoutContract.containerTree[0], {
+  displayLabel: 'Identity display', semanticTitle: 'Identity semantic', semanticAnchor: 'identity-anchor',
+  filename: 'attachment_name', badge: { field: 'state' }, options: { collapsible: true },
+  class: 'native-identity', fieldSize: 'large', size: 'lg',
+});
+structurePresentationSnapshot.statusContract.widgetStatus[0].placeholder = 'Contract placeholder';
+const structurePresentationModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(structurePresentationSnapshot)),
+  'edit',
+);
+assert.equal(
+  structurePresentationModel.shell.title,
+  'Authoritative task title',
+  'the formal form-structure navigation title must reach the canonical shell',
+);
+const structurePresentationFields = collectFields(structurePresentationModel.zones.primary);
+assert.equal(
+  structurePresentationFields.find((field) => field.fieldCode === 'name')?.label,
+  'Contract name',
+  'top-level form-structure field labels must override layout widget display labels',
+);
+assert.equal(
+  structurePresentationFields.find((field) => field.fieldCode === 'state')?.label,
+  'Contract status',
+  'group-scoped form-structure field labels must reach their canonical fields',
+);
+assert.equal(
+  structurePresentationModel.zones.primary[0].title,
+  'Contract identity',
+  'the matching formal group title must override the repeated native container title',
+);
+assert.equal(
+  structurePresentationModel.zones.primary[0].columns,
+  2,
+  'the matching formal group column authority must reach the canonical node',
+);
+assert.equal(
+  structurePresentationModel.zones.primary[0].semanticRole,
+  'context',
+  'the formal group role must override a stale duplicated layout role carrier',
+);
+assert.equal(
+  structurePresentationFields.find((field) => field.fieldCode === 'name')?.readonly,
+  true,
+  'a readonly formal slot must remain readonly even when widget status permits editing',
+);
+assert.deepEqual(
+  {
+    role: structurePresentationFields.find((field) => field.fieldCode === 'name')?.semanticRole,
+    slot: structurePresentationFields.find((field) => field.fieldCode === 'name')?.semanticSlot,
+    group: structurePresentationFields.find((field) => field.fieldCode === 'name')?.semanticGroup,
+  },
+  { role: 'context', slot: 'governed', group: 'identity' },
+  'top-level fieldRoles must be the semantic identity authority consumed by the presenter',
+);
+assert.equal(
+  structurePresentationFields.find((field) => field.fieldCode === 'name')?.placeholder,
+  'Contract placeholder',
+  'widget status placeholder authority must reach the canonical field',
+);
+assert.equal(
+  canonicalFieldToFormSection(structurePresentationFields.find((field) => field.fieldCode === 'name')!).inputPlaceholder,
+  'Contract placeholder',
+  'canonical placeholder authority must reach the professional field adapter',
+);
+assert.deepEqual(
+  {
+    adapter: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractAdapter,
+    version: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractVersion,
+  },
+  { adapter: 'TDesignInput', version: '1.0' },
+  'the delivered client adapter binding must reach the professional component resolution',
+);
+
+const missingComponentRegistrySnapshot = snapshot();
+delete missingComponentRegistrySnapshot.layoutContract.componentRegistry['sc.input.text'];
+assert.throws(
+  () => presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(missingComponentRegistrySnapshot)), 'edit'),
+  /PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING:sc\.input\.text/,
+  'a widget without its delivered component registry authority must fail closed',
+);
+assert.deepEqual(
+  {
+    span: structurePresentationModel.zones.primary[0].span,
+    styleToken: structurePresentationModel.zones.primary[0].styleToken,
+  },
+  { span: 16, styleToken: 'surface.task.identity' },
+  'container geometry and style-token identities must survive canonical projection',
+);
+assert.equal(
+  structurePresentationModel.zones.primary[0].span,
+  16,
+  'the canonical node span must remain available to the professional layout adapter',
+);
+const structureNativeNode = buildCanonicalNativeFormBridge(structurePresentationModel).primaryNodes[0];
+assert.deepEqual(
+  {
+    displayLabel: structureNativeNode.displayLabel,
+    semanticTitle: structureNativeNode.semanticTitle,
+    semanticAnchor: structureNativeNode.semanticAnchor,
+    filename: structureNativeNode.filename,
+    badge: structureNativeNode.badge,
+    options: structureNativeNode.options,
+    class: structureNativeNode.class,
+    fieldSize: structureNativeNode.fieldSize,
+    size: structureNativeNode.size,
+  },
+  {
+    displayLabel: 'Identity display', semanticTitle: 'Identity semantic', semanticAnchor: 'identity-anchor',
+    filename: 'attachment_name', badge: { field: 'state' }, options: { collapsible: true },
+    class: 'native-identity', fieldSize: 'large', size: 'lg',
+  },
+  'formal native presentation metadata must survive decoder, presenter, and the professional native bridge',
+);
+const nativeFieldProjectionSnapshot = snapshot();
+Object.assign(nativeFieldProjectionSnapshot.layoutContract.containerTree[0].children[0], {
+  filename: 'name_filename', domain: [['active', '=', true]], context: { source: 'contract' },
+  options: { no_create: true }, class: 'contract-field-wide', fieldSize: 'large', size: 'lg', col: 2,
+  fields: ['name'],
+});
+const nativeFieldNode = buildCanonicalNativeFormBridge(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(nativeFieldProjectionSnapshot)), 'edit',
+)).primaryNodes[0].children?.[0];
+assert.deepEqual(
+  {
+    name: nativeFieldNode?.name, filename: nativeFieldNode?.filename, domain: nativeFieldNode?.domain,
+    context: nativeFieldNode?.context, options: nativeFieldNode?.options, class: nativeFieldNode?.class,
+    attributeClass: nativeFieldNode?.attributes?.class, fieldSize: nativeFieldNode?.fieldSize,
+    size: nativeFieldNode?.size, col: nativeFieldNode?.col, fields: nativeFieldNode?.fields,
+  },
+  {
+    name: 'name', filename: 'name_filename', domain: [['active', '=', true]], context: { source: 'contract' },
+    options: { no_create: true }, class: 'contract-field-wide', attributeClass: 'contract-field-wide',
+    fieldSize: 'large', size: 'lg', col: 2, fields: ['name'],
+  },
+  'field containers must keep their formal native metadata through the professional native bridge',
+);
+const invalidNativeFieldsSnapshot = snapshot();
+(invalidNativeFieldsSnapshot.layoutContract.containerTree[0].children[0] as unknown as Record<string, unknown>).fields = 'name';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidNativeFieldsSnapshot),
+  /layoutContract\.containerTree\[0\]\.children\[0\]\.fields must be an array/,
+  'native field membership must remain strict instead of silently discarding an invalid carrier',
+);
+const invalidBooleanAuthoritySnapshot = snapshot();
+(invalidBooleanAuthoritySnapshot.actionContract.actionRuleList[0] as unknown as Record<string, unknown>).allowed = 'true';
+(invalidBooleanAuthoritySnapshot.statusContract.widgetStatus[0] as unknown as Record<string, unknown>).readonly = 0;
+(invalidBooleanAuthoritySnapshot.layoutContract.containerTree[0] as unknown as Record<string, unknown>).visible = 'true';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidBooleanAuthoritySnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('actionContract.actionRuleList[0].allowed must be a boolean')
+      && message.includes('statusContract.widgetStatus[0].readonly must be a boolean')
+      && message.includes('layoutContract.containerTree[0].visible must be a boolean');
+  },
+  'invalid visual and permission booleans must fail closed across layout, action, and status contracts',
+);
+const invalidObjectAuthoritySnapshot = snapshot();
+(invalidObjectAuthoritySnapshot.layoutContract.containerTree[0] as unknown as Record<string, unknown>).attributes = [];
+(invalidObjectAuthoritySnapshot.actionContract.actionRuleList[0] as unknown as Record<string, unknown>).target = 'record';
+(invalidObjectAuthoritySnapshot.statusContract.globalStatus as unknown as Record<string, unknown>).modelRights = 'write';
+(invalidObjectAuthoritySnapshot.dataContract.tableRows as unknown as Record<string, unknown>).lines = {};
+(invalidObjectAuthoritySnapshot.dataContract.dataSource as unknown as Record<string, unknown>).primary = [];
+assert.throws(
+  () => decodeContractV2Snapshot(invalidObjectAuthoritySnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('layoutContract.containerTree[0].attributes must be an object')
+      && message.includes('actionContract.actionRuleList[0].target must be an object')
+      && message.includes('statusContract.globalStatus.modelRights must be an object')
+      && message.includes('dataContract.tableRows.lines must be an array')
+      && message.includes('dataContract.dataSource.primary must be an object');
+  },
+  'invalid object and row-map carriers must fail closed instead of becoming empty authority',
+);
+const invalidWidgetAuthoritySnapshot = snapshot();
+const invalidWidget = invalidWidgetAuthoritySnapshot.layoutContract.containerTree[0].children[0]
+  .widgetList[0] as unknown as Record<string, unknown>;
+invalidWidget.widgetType = 'char';
+invalidWidget.fieldType = 'char';
+invalidWidget.occurrenceIndex = '1';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidWidgetAuthoritySnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('unsupported widget type char')
+      && message.includes('fieldType is not allowed')
+      && message.includes('occurrenceIndex must be a positive integer');
+  },
+  'widget projection must accept only the formal schema vocabulary and typed occurrence identity',
+);
+const invalidEnvelopeSnapshot = snapshot() as unknown as Record<string, unknown>;
+invalidEnvelopeSnapshot.parallelLayout = {};
+const invalidRuntime = invalidEnvelopeSnapshot.runtimeContract as Record<string, unknown>;
+invalidRuntime.lazyContainer = 'section.identity';
+invalidRuntime.hydration = [];
+invalidRuntime.patchOperations = ['replace', 'replace'];
+invalidRuntime.aiEnvelope = { mode: 'execute', executable: true, allowed: 'yes', capabilities: ['summarize', 'summarize'] };
+assert.throws(
+  () => decodeContractV2Snapshot(invalidEnvelopeSnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('$.parallelLayout is not allowed')
+      && message.includes('runtimeContract.lazyContainer must be an array')
+      && message.includes('runtimeContract.hydration must be an object')
+      && message.includes('runtimeContract.patchOperations[1] duplicates replace')
+      && message.includes('runtimeContract.aiEnvelope.mode must equal suggestion')
+      && message.includes('runtimeContract.aiEnvelope.executable must not be true')
+      && message.includes('runtimeContract.aiEnvelope.allowed must be a boolean')
+      && message.includes('runtimeContract.aiEnvelope.capabilities[1] duplicates summarize');
+  },
+  'the V2 envelope and runtime policy must reject undeclared or malformed parallel authority',
+);
+const deliveredSnapshot = snapshot();
+deliveredSnapshot.pageInfo.deliveryProfile = 'full';
+deliveredSnapshot.runtimeContract.deliveryProfile = 'full';
+deliveredSnapshot.meta.deliveryTrim = {
+  clientType: 'web_pc', deliveryProfile: 'full', compact: false,
+  limits: { containers: null, widgets: null, actions: null },
+  original: { containers: 2, widgets: 3, actions: 1 },
+  delivered: { containers: 2, widgets: 3, actions: 1 },
+  omitted: { containers: 0, widgets: 0, actions: 0 },
+};
+assert.equal(decodeContractV2Snapshot(deliveredSnapshot).meta.deliveryTrim?.deliveryProfile, 'full');
+const mismatchedDeliverySnapshot = structuredClone(deliveredSnapshot);
+mismatchedDeliverySnapshot.runtimeContract.deliveryProfile = 'mobile_compact';
+assert.throws(
+  () => decodeContractV2Snapshot(mismatchedDeliverySnapshot),
+  /delivery profile identities must match/,
+  'client delivery identity must remain consistent across page, runtime, and trim evidence',
+);
+const invalidActionCollectionsSnapshot = snapshot();
+const invalidActionCollections = (
+  invalidActionCollectionsSnapshot.actionContract.actionRuleList[0] as unknown as Record<string, unknown>
+);
+invalidActionCollections.targetIds = ['page.root', 'page.root'];
+invalidActionCollections.visibleProfiles = 'edit';
+invalidActionCollections.presentationPriority = '100';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidActionCollectionsSnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('targetIds[1] duplicates page.root')
+      && message.includes('visibleProfiles must be an array')
+      && message.includes('presentationPriority must be an integer');
+  },
+  'action target, profile, and priority authority must remain strictly typed and unambiguous',
+);
+const nativeStaticConstraintSnapshot = snapshot();
+nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = true;
+nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].required = true;
+nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[1].invisible = true;
+const nativeStaticConstraintFields = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(nativeStaticConstraintSnapshot)), 'edit',
+).zones.primary[0].children.flatMap((node) => node.fields);
+assert.deepEqual(
+  {
+    nameReadonly: nativeStaticConstraintFields.find((field) => field.fieldCode === 'name')?.readonly,
+    nameRequired: nativeStaticConstraintFields.find((field) => field.fieldCode === 'name')?.required,
+    stateVisible: nativeStaticConstraintFields.find((field) => field.fieldCode === 'state')?.visible,
+  },
+  { nameReadonly: true, nameRequired: true, stateVisible: false },
+  'explicit static native constraints must not be revived by permissive runtime status',
+);
+const nativeDynamicConstraintSnapshot = snapshot();
+nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = {
+  kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
+};
+nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[0].required = {
+  kind: 'field_truthy', field: 'needs_name',
+};
+nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[1].invisible = {
+  kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
+};
+const nativeDynamicFields = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(nativeDynamicConstraintSnapshot)),
+  'edit',
+  { state: 'approved', needs_name: true },
+).zones.primary[0].children.flatMap((node) => node.fields);
+assert.deepEqual(
+  {
+    nameReadonly: nativeDynamicFields.find((field) => field.fieldCode === 'name')?.readonly,
+    nameRequired: nativeDynamicFields.find((field) => field.fieldCode === 'name')?.required,
+    stateVisible: nativeDynamicFields.find((field) => field.fieldCode === 'state')?.visible,
+  },
+  { nameReadonly: true, nameRequired: true, stateVisible: false },
+  'native modifier ASTs must consume current form values through the shared modifier engine',
+);
+
+const fieldAuthSnapshot = snapshot();
+fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';
+fieldAuthSnapshot.statusContract.widgetStatus[0].readonly = false;
+const fieldAuthName = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(fieldAuthSnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'name')!;
+assert.equal(fieldAuthName.auth, 'read', 'field-level auth must survive canonical projection');
+assert.equal(fieldAuthName.readonly, true, 'field-level read authority must not become editable through page authority');
+assert.equal(
+  canonicalFieldToFormSection(fieldAuthName).auth,
+  'read',
+  'field auth must reach the professional component adapter and semantic DOM carrier',
+);
+
+const widgetIdentitySnapshot = snapshot();
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].widgetType = 'radio';
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].nativeLocator = '/form/sheet/group/field[1]';
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].occurrenceIndex = 1;
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].sourcePosition = 7;
+const widgetIdentityField = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(widgetIdentitySnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'name')!;
+assert.deepEqual(
+  {
+    widget: canonicalFieldToFormSection(widgetIdentityField).widget,
+    nativeLocator: canonicalFieldToFormSection(widgetIdentityField).nativeLocator,
+    occurrenceIndex: canonicalFieldToFormSection(widgetIdentityField).occurrenceIndex,
+    sourcePosition: canonicalFieldToFormSection(widgetIdentityField).sourcePosition,
+  },
+  {
+    widget: 'radio', nativeLocator: '/form/sheet/group/field[1]', occurrenceIndex: 1, sourcePosition: 7,
+  },
+  'widget kind and native occurrence identity must reach the professional field adapter',
+);
+
+const selectorReadonlySnapshot = snapshot();
+selectorReadonlySnapshot.statusContract.selectorStatus = [{
+  selector: 'field.*', readonly: true, reasonCode: 'ROLE_READONLY',
+}];
+const selectorReadonlyFields = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(selectorReadonlySnapshot)),
+  'edit',
+).zones.primary);
+assert.equal(
+  selectorReadonlyFields.find((field) => field.fieldCode === 'name')?.readonly,
+  true,
+  'selector readonly authority must reach every matching canonical field',
+);
+assert.equal(
+  selectorReadonlyFields.find((field) => field.fieldCode === 'name')?.reasonCode,
+  'ROLE_READONLY',
+  'selector denial reason must survive canonical projection',
+);
+
+const selectorHiddenSnapshot = snapshot();
+selectorHiddenSnapshot.statusContract.selectorStatus = [{
+  selector: 'section.identity', visible: false, reasonCode: 'SECTION_HIDDEN',
+}];
+const selectorHiddenModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(selectorHiddenSnapshot)),
+  'edit',
+);
+assert.equal(selectorHiddenModel.zones.primary[0].visible, false, 'selector visibility must govern matching containers');
+assert.equal(
+  collectFields(selectorHiddenModel.zones.primary)[0]?.visible,
+  false,
+  'a selector-hidden container must hide its descendant fields',
+);
+
 const legacyChildCarrierSnapshot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 legacyChildCarrierSnapshot.layoutContract.containerTree[0].tabs = [];
 assert.throws(() => decodeContractV2Snapshot(legacyChildCarrierSnapshot), /tabs is not allowed/);
@@ -734,6 +1123,51 @@ assert.deepEqual(
   'native fieldDescriptor selection must remain available to statusbar rendering',
 );
 const model = presentContractV2Form(store, 'edit');
+assert.deepEqual(model.responsive, {
+  adaptMode: 'pc',
+  layoutHints: { mobileColumns: 1 },
+}, 'canonical responsive authority must preserve the delivered adapt mode and layout hints');
+const hiddenActionSnapshot = snapshot();
+hiddenActionSnapshot.actionContract.actionRuleList[0].invisible = true;
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(hiddenActionSnapshot)), 'edit').actionBar,
+  [],
+  'an explicitly hidden action definition must not be revived by a visible button status',
+);
+const conditionalActionSnapshot = snapshot();
+conditionalActionSnapshot.actionContract.actionRuleList[0].invisible = {
+  kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
+};
+conditionalActionSnapshot.actionContract.actionRuleList[0].modifiers = {
+  disabled: { kind: 'field_truthy', field: 'blocked' },
+};
+const conditionalActionStore = createContractV2Store(decodeContractV2Snapshot(conditionalActionSnapshot));
+assert.equal(
+  presentContractV2Form(conditionalActionStore, 'edit').actionBar.length,
+  1,
+  'a conditional action must remain visible while its formal invisible AST evaluates false',
+);
+assert.equal(
+  presentContractV2Form(conditionalActionStore, 'edit', { state: 'approved' }).actionBar.length,
+  0,
+  'the action invisible AST must react to current form values without a model-specific branch',
+);
+assert.equal(
+  presentContractV2Form(conditionalActionStore, 'edit', { blocked: true }).actionBar[0]?.enabled,
+  false,
+  'the action disabled AST must constrain an otherwise enabled action',
+);
+const actionReasonSnapshot = snapshot();
+actionReasonSnapshot.actionContract.actionRuleList[0].enabled = false;
+actionReasonSnapshot.actionContract.actionRuleList[0].disabled = true;
+actionReasonSnapshot.actionContract.actionRuleList[0].reasonCode = 'WORKFLOW_BLOCKED';
+actionReasonSnapshot.statusContract.buttonStatus[0].reasonCode = '';
+assert.equal(
+  presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit')
+    .actionBar[0]?.reasonCode,
+  'WORKFLOW_BLOCKED',
+  'the formal action denial reason must survive when status does not provide a more specific reason',
+);
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
 assert.deepEqual(model.zones.subordinate.map((node) => node.kind), ['notebook', 'attachment', 'chatter']);
@@ -901,6 +1335,14 @@ assert.deepEqual(readonlyFloorplan.contextNodes, []);
 
 const semanticReadonlySnapshot = snapshot();
 semanticReadonlySnapshot.formStructureContract = governedFormStructure('context');
+semanticReadonlySnapshot.formStructureContract.slots = [{
+  slot: 'identity', title: 'Identity', role: 'context',
+  groups: [{ name: 'identity', title: 'Identity', role: 'summary', fieldRefs: ['name', 'state'] }],
+}];
+semanticReadonlySnapshot.formStructureContract.fieldRoles = {
+  name: { role: 'summary', slot: 'identity', group: 'identity' },
+  state: { role: 'risk', slot: 'identity', group: 'identity' },
+};
 semanticReadonlySnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
   role: 'summary', slot: 'identity', group: 'identity',
 };
@@ -1088,7 +1530,7 @@ assert.deepEqual(
 );
 
 const businessFactSnapshot = structuredClone(semanticReadonlySnapshot);
-businessFactSnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
+businessFactSnapshot.formStructureContract!.fieldRoles.name = {
   role: 'context', slot: 'identity', group: 'identity',
 };
 const businessFactModel = presentContractV2Form(createContractV2Store(businessFactSnapshot), 'edit');
@@ -1149,8 +1591,8 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
   const children = fieldCodes.map((fieldCode) => ({
     containerId: `field.${fieldCode}`, containerType: 'field', type: 'field', name: fieldCode, title: '', span: 12,
     children: [], widgetList: [{
-      widgetId: `field.${fieldCode}`, widgetType: 'char', fieldCode, label: fieldCode, span: 12,
-      componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+      widgetId: `field.${fieldCode}`, widgetType: 'input', fieldCode, label: fieldCode, span: 12,
+      componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
       ownerContainerId: `field.${fieldCode}`,
     }],
   }));
@@ -1244,8 +1686,8 @@ const createFloorplanSnapshot = snapshot();
 createFloorplanSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.empty_context', containerType: 'field', type: 'field', name: 'empty_context', title: '', span: 12,
   children: [], widgetList: [{
-    widgetId: 'field.empty_context', widgetType: 'char', fieldCode: 'empty_context', label: 'Empty context', span: 12,
-    componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+    widgetId: 'field.empty_context', widgetType: 'input', fieldCode: 'empty_context', label: 'Empty context', span: 12,
+    componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
     ownerContainerId: 'field.empty_context',
   }],
 });
@@ -1350,8 +1792,8 @@ contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
   children: [{
     containerId: 'field.reference', containerType: 'field', type: 'field', name: 'reference', title: '', span: 24,
     children: [], widgetList: [{
-      widgetId: 'field.reference', widgetType: 'char', fieldCode: 'reference', label: 'Reference', span: 24,
-      componentKey: 'sc.display.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+      widgetId: 'field.reference', widgetType: 'input', fieldCode: 'reference', label: 'Reference', span: 24,
+      componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
       ownerContainerId: 'field.reference',
     }],
   }], widgetList: [],
@@ -1381,9 +1823,9 @@ const relationSnapshot = snapshot();
 relationSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.project_id', containerType: 'field', type: 'field', name: 'project_id', title: '', span: 12,
   children: [], widgetList: [{
-    widgetId: 'field.project_id', widgetType: 'many2one', fieldCode: 'project_id', label: 'Project', span: 12,
+    widgetId: 'field.project_id', widgetType: 'select', fieldCode: 'project_id', label: 'Project', span: 12,
     componentKey: 'sc.relation.many2one', capabilities: [],
-    componentConfig: { relation: 'project.project' }, fieldType: 'many2one',
+    componentConfig: { relation: 'project.project', fieldType: 'many2one' },
     ownerContainerId: 'field.project_id',
   }],
 });
@@ -1555,8 +1997,8 @@ const duplicateAcrossRoots = snapshot();
 duplicateAcrossRoots.layoutContract.containerTree.splice(1, 0, {
   containerId: 'legacy.identity.mirror', containerType: 'group', type: 'group', title: 'Legacy mirror', span: 24,
   children: [], widgetList: [{
-    widgetId: 'field.name', widgetType: 'char', fieldCode: 'name', label: 'Name', span: 12,
-    componentKey: 'sc.input.text', capabilities: [], componentConfig: {}, fieldType: 'char',
+    widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
+    componentKey: 'sc.input.text', capabilities: [], componentConfig: { fieldType: 'char' },
     ownerContainerId: 'legacy.identity.mirror',
   }],
 });

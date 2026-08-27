@@ -6624,3 +6624,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Blast radius and evidence: all Native form text nodes, with project workspace
   desktop/mobile as the positive correction and an explicit effective-arch
   alert as the counterexample that must retain callout presentation.
+
+## 2026-08-27 — Frontend mainline contract integration handbook v2
+
+- Branch / baseline: `feature/p0-page-pattern-reference-parity-v1` /
+  `782f2617ebcbdd66d14185946e69f63c272b3abc`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  contract integration documentation / `docs/contract`.
+- Reason: give frontend integrators one evidence-bound description of the
+  current intent transport, startup chain, Unified Page Contract v2 fields,
+  menu and route authority, list/filter/detail interaction, CRUD, approval,
+  role-driven projection, error semantics and fail-closed consumption rules.
+- Why here / why not elsewhere: the document explains the shared platform
+  contract without adding construction semantics, customer preferences,
+  runtime configuration, frontend inference or delivery-tool behavior.
+- Blast radius: the handbook and Contract Catalog index only; no handler, schema, frontend runtime,
+  database, fixture, API behavior or external state changes.
+- Follow-up scope: documented the current `frontend/apps/web` renderer pipeline,
+  including collection semantic/registry selection, readable fallback,
+  canonical form presentation, component adapter validation, status/action
+  conjunction, onchange patch application, exact action execution mapping and
+  role-driven fail-closed boundaries. Runtime policy fields that are decoded
+  but not yet backed by a production consumer are explicitly recorded as an
+  implementation gap rather than completed behavior. This remains
+  documentation-only.

@@ -64,7 +64,7 @@
   },
   "shell": {
     "topbar_height": 48,
-    "sidebar_width": 248,
+    "sidebar_width": 232,
     "sidebar_collapsed_width": 56,
     "navigation_item_height": 44,
     "navigation_search_icon_z_index": 1,

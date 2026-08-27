@@ -202,7 +202,42 @@ export function resolveContractV2SelectorStatus(store: ContractV2NormalizedStore
 }
 
 export function resolveContractV2RuntimeContract(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
-  return store ? asDict(store.snapshot.runtimeContract) : {};
+  return resolveContractV2RuntimePolicy(store);
+}
+
+/**
+ * Materialize the complete runtime policy as one normalized authority.  Each
+ * schema field is copied explicitly so decoded policy cannot disappear at the
+ * store boundary or remain an unconsumed opaque payload.
+ */
+export function resolveContractV2RuntimePolicy(store: ContractV2NormalizedStore | null): ContractV2Dictionary {
+  if (!store) return {};
+  const runtime = store.snapshot.runtimeContract;
+  return Object.freeze({
+    patchStrategy: runtime.patchStrategy,
+    cachePolicy: runtime.cachePolicy,
+    optimistic: runtime.optimistic,
+    lazyContainer: runtime.lazyContainer,
+    virtualization: runtime.virtualization,
+    retryPolicy: runtime.retryPolicy,
+    ...(runtime.renderStrategy !== undefined ? { renderStrategy: runtime.renderStrategy } : {}),
+    ...(runtime.hydration !== undefined ? { hydration: runtime.hydration } : {}),
+    ...(runtime.patchOperations !== undefined ? { patchOperations: runtime.patchOperations } : {}),
+    ...(runtime.tracePolicy !== undefined ? { tracePolicy: runtime.tracePolicy } : {}),
+    ...(runtime.complexityBudget !== undefined ? { complexityBudget: runtime.complexityBudget } : {}),
+    ...(runtime.aiEnvelope !== undefined ? { aiEnvelope: runtime.aiEnvelope } : {}),
+    ...(runtime.interactionMode !== undefined ? { interactionMode: runtime.interactionMode } : {}),
+    ...(runtime.actionTarget !== undefined ? { actionTarget: runtime.actionTarget } : {}),
+    ...(runtime.collaboration !== undefined ? { collaboration: runtime.collaboration } : {}),
+    ...(runtime.businessWorkspace !== undefined ? { businessWorkspace: runtime.businessWorkspace } : {}),
+    ...(runtime.businessActions !== undefined ? { businessActions: runtime.businessActions } : {}),
+    ...(runtime.deliveryProfile !== undefined ? { deliveryProfile: runtime.deliveryProfile } : {}),
+    ...(runtime.intakeAutosave !== undefined ? { intakeAutosave: runtime.intakeAutosave } : {}),
+    ...(runtime.fieldSemantics !== undefined ? { fieldSemantics: runtime.fieldSemantics } : {}),
+    ...(runtime.validationRules !== undefined ? { validationRules: runtime.validationRules } : {}),
+    ...(runtime.governance !== undefined ? { governance: runtime.governance } : {}),
+    ...(runtime.recordVersionPolicy !== undefined ? { recordVersionPolicy: runtime.recordVersionPolicy } : {}),
+  });
 }
 
 export function resolveContractV2ListProfile(store: ContractV2NormalizedStore | null): ContractV2Dictionary {

@@ -15,13 +15,17 @@ import type {
   ContractV2Container,
   ContractV2ContainerStatus,
   ContractV2Dictionary,
+  ContractV2FormStructureContract,
+  ContractV2FormStructureRole,
   ContractV2NormalizedStore,
   ContractV2Widget,
   ContractV2WidgetStatus,
 } from '../contracts/v2/types';
 import type { ContractV2FormStructureRoleName } from '../contracts/v2/types';
 import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructureRoles';
-import { resolveProfessionalComponent } from './professionalComponentRegistry';
+import { resolveContractV2SelectorStatus } from '../contracts/v2/store';
+import { evaluateNativeModifierValue } from '../modifierEngine';
+import { resolveContractProfessionalComponent } from './professionalComponentRegistry';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -33,6 +37,20 @@ function text(value: unknown): string {
 
 function bool(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+function containerModifierValue(container: ContractV2Container, key: 'invisible' | 'readonly' | 'required'): unknown {
+  const attributes = asDict(container.attributes);
+  const fieldInfo = asDict(container.fieldInfo);
+  const attributeModifiers = asDict(attributes.modifiers);
+  const fieldInfoModifiers = asDict(fieldInfo.modifiers);
+  const modifiers = asDict(container.modifiers);
+  if (Object.prototype.hasOwnProperty.call(modifiers, key)) return modifiers[key];
+  if (Object.prototype.hasOwnProperty.call(attributeModifiers, key)) return attributeModifiers[key];
+  if (Object.prototype.hasOwnProperty.call(container, key)) return container[key];
+  if (Object.prototype.hasOwnProperty.call(fieldInfoModifiers, key)) return fieldInfoModifiers[key];
+  if (Object.prototype.hasOwnProperty.call(fieldInfo, key)) return fieldInfo[key];
+  return attributes[key];
 }
 
 function semanticRole(value: unknown): CanonicalFormSemanticRole | '' {
@@ -50,7 +68,19 @@ function semanticIdentity(value: unknown): { role: CanonicalFormSemanticRole | '
   };
 }
 
-function fieldSemanticIdentity(widget: ContractV2Widget, container: ContractV2Container) {
+function fieldSemanticIdentity(
+  widget: ContractV2Widget,
+  container: ContractV2Container,
+  structure: ContractV2FormStructureContract | undefined,
+) {
+  const authoritativeIdentity = structure?.fieldRoles[widget.fieldCode];
+  if (authoritativeIdentity) {
+    return {
+      role: canonicalRoleForFormStructureRole(authoritativeIdentity.role),
+      slot: authoritativeIdentity.slot,
+      group: authoritativeIdentity.group,
+    };
+  }
   const widgetIdentity = semanticIdentity(widget.formStructureRole);
   const containerIdentity = semanticIdentity(container.formStructureRole);
   return {
@@ -58,6 +88,35 @@ function fieldSemanticIdentity(widget: ContractV2Widget, container: ContractV2Co
     slot: widgetIdentity.slot || containerIdentity.slot,
     group: widgetIdentity.group || containerIdentity.group,
   };
+}
+
+function structureSlot(
+  structure: ContractV2FormStructureContract | undefined,
+  identity: Pick<ContractV2FormStructureRole, 'slot'>,
+) {
+  return structure?.slots.find((slot) => slot.slot === identity.slot);
+}
+
+function structureGroup(
+  structure: ContractV2FormStructureContract | undefined,
+  identity: Pick<ContractV2FormStructureRole, 'slot' | 'group'>,
+) {
+  return structureSlot(structure, identity)?.groups?.find((group) => group.name === identity.group);
+}
+
+function formStructureFieldLabels(
+  structure: ContractV2NormalizedStore['snapshot']['formStructureContract'],
+): Readonly<Record<string, string>> {
+  if (!structure) return Object.freeze({});
+  const labels: Record<string, string> = { ...(structure.fieldLabels || {}) };
+  structure.slots.forEach((slot) => {
+    (slot.groups || []).forEach((group) => {
+      Object.entries(group.fieldLabels || {}).forEach(([fieldCode, label]) => {
+        labels[fieldCode] = label;
+      });
+    });
+  });
+  return Object.freeze(labels);
 }
 
 function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
@@ -70,10 +129,10 @@ function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
 }
 
 function relationModel(widget: ContractV2Widget): string {
-  return text(widget.relation
-    || widget.componentConfig.relation
+  return text(widget.componentConfig.relation
     || widget.componentConfig.relationModel
-    || widget.componentConfig.relation_model);
+    || widget.componentConfig.relation_model
+    || widget.fieldDescriptor?.relation);
 }
 
 function relationParts(value: unknown): { id: string | number; displayName: string } | null {
@@ -94,7 +153,10 @@ function presentFieldValue(
   runtimeValue: unknown,
   hasRuntimeValue: boolean,
 ): unknown | CanonicalRelationValue {
-  const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type).toLowerCase();
+  const fieldType = text(
+    widget.componentConfig.fieldType || widget.componentConfig.field_type
+    || widget.fieldDescriptor?.type || widget.fieldDescriptor?.ttype,
+  ).toLowerCase();
   const selected = hasRuntimeValue ? runtimeValue : contractValue;
   if (fieldType === 'many2one') {
     const runtimeRelation = relationParts(runtimeValue);
@@ -125,19 +187,43 @@ function fieldFromWidget(
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
+  ancestorReadonly: boolean,
+  containerRequired: boolean,
+  authoritativeFieldLabels: Readonly<Record<string, string>>,
+  structure: ContractV2FormStructureContract | undefined,
+  componentRegistry: ContractV2Dictionary,
+  clientType: string,
+  store: ContractV2NormalizedStore,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
-  const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type);
-  const componentResolution = resolveProfessionalComponent({
+  const fieldType = text(
+    widget.componentConfig.fieldType || widget.componentConfig.field_type
+    || widget.fieldDescriptor?.type || widget.fieldDescriptor?.ttype,
+  );
+  const componentResolution = resolveContractProfessionalComponent({
     componentKey: widget.componentKey,
     fieldType,
     presentationMode,
     renderProfile: mode,
     capabilities: widget.capabilities,
+    clientType,
+    contractRegistryEntry: componentRegistry[widget.componentKey],
   });
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
-  const fieldSemantics = fieldSemanticIdentity(widget, container);
+  const fieldSemantics = fieldSemanticIdentity(widget, container, structure);
+  const selectorStatus = resolveContractV2SelectorStatus(store, [
+    widget.widgetId,
+    widget.fieldCode,
+    `field.${widget.fieldCode}`,
+    fieldSemantics.slot,
+    fieldSemantics.group,
+  ]);
+  const authoritativeRole = structure?.fieldRoles[widget.fieldCode];
+  const slotReadonly = authoritativeRole
+    ? structureSlot(structure, authoritativeRole)?.readonly === true
+    : false;
+  const fieldAuth = text(status?.auth);
   const componentConfig = { ...widget.componentConfig };
   const currencyField = text(componentConfig.currencyField || componentConfig.currency_field);
   if (fieldType === 'monetary' && currencyField) {
@@ -146,7 +232,8 @@ function fieldFromWidget(
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
-    label: widget.label,
+    widgetType: widget.widgetType,
+    label: text(authoritativeFieldLabels[widget.fieldCode]) || widget.label,
     hideLabel: container.nolabel === true,
     value: presentFieldValue(
       widget,
@@ -160,11 +247,22 @@ function fieldFromWidget(
     presentationMode,
     renderProfile: mode,
     span: widget.span,
-    visible: ancestorVisible && statusResolved && bool(status?.visible, true),
-    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || !statusResolved || bool(status?.readonly, false),
-    required: bool(status?.required, false),
-    disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
-    reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
+    nativeLocator: text(widget.nativeLocator),
+    occurrenceIndex: widget.occurrenceIndex ?? null,
+    sourcePosition: widget.sourcePosition ?? null,
+    visible: ancestorVisible && container.visible !== false && container.invisible !== true
+      && statusResolved && bool(status?.visible, true) && bool(selectorStatus?.visible, true),
+    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || ancestorReadonly
+      || container.readonly === true || slotReadonly
+      || (Boolean(fieldAuth) && fieldAuth !== 'edit')
+      || selectorStatus?.readonly === true
+      || !statusResolved || bool(status?.readonly, false),
+    required: containerRequired || bool(status?.required, false) || selectorStatus?.required === true,
+    disabled: ancestorDisabled || selectorStatus?.disabled === true || !statusResolved || bool(status?.disabled, false),
+    reasonCode: text(status?.reasonCode || selectorStatus?.reasonCode)
+      || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
+    placeholder: text(status?.placeholder),
+    auth: fieldAuth,
     semanticRole: fieldSemantics.role,
     semanticSlot: fieldSemantics.slot,
     semanticGroup: fieldSemantics.group,
@@ -185,15 +283,35 @@ function presentNode(
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
+  ancestorReadonly: boolean,
   actionsByIdentity: ReadonlyMap<string, CanonicalFormAction>,
   actionsByNativeOccurrence: ReadonlyMap<string, CanonicalFormAction>,
+  authoritativeFieldLabels: Readonly<Record<string, string>>,
+  structure: ContractV2FormStructureContract | undefined,
+  componentRegistry: ContractV2Dictionary,
+  clientType: string,
   ancestorTitle = '',
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
   const effectiveRole = ownRole === 'subordinate' ? ownRole : inheritedRole;
   const status: ContractV2ContainerStatus | undefined = store.containerStatusById.get(container.containerId);
-  const visible = ancestorVisible && bool(status?.visible, true);
-  const disabled = ancestorDisabled || bool(status?.disabled, false);
+  const nodeSemantics = semanticIdentity(container.formStructureRole);
+  const selectorStatus = resolveContractV2SelectorStatus(store, [
+    container.containerId,
+    text(container.name),
+    text(container.fieldCode),
+    nodeSemantics.slot,
+    nodeSemantics.group,
+  ]);
+  const currentValues = { ...contractValues, ...(runtimeValues || {}) };
+  const resolveFieldValue = (field: string) => currentValues[field];
+  const layoutInvisible = evaluateNativeModifierValue(containerModifierValue(container, 'invisible'), resolveFieldValue);
+  const layoutReadonly = evaluateNativeModifierValue(containerModifierValue(container, 'readonly'), resolveFieldValue);
+  const layoutRequired = evaluateNativeModifierValue(containerModifierValue(container, 'required'), resolveFieldValue);
+  const visible = ancestorVisible && container.visible !== false && !layoutInvisible
+    && bool(status?.visible, true) && bool(selectorStatus?.visible, true);
+  const disabled = ancestorDisabled || bool(status?.disabled, false) || selectorStatus?.disabled === true;
+  const readonly = ancestorReadonly || layoutReadonly || selectorStatus?.readonly === true;
   const widgets = (store.widgetsByOwnerContainerId.get(container.containerId) || []).map((widget) => (
     fieldFromWidget(
       widget,
@@ -206,6 +324,13 @@ function presentNode(
       pageCanEdit,
       visible,
       disabled,
+      readonly,
+      layoutRequired,
+      authoritativeFieldLabels,
+      structure,
+      componentRegistry,
+      clientType,
+      store,
     )
   ));
   const nodeKind = text(container.type || container.containerType) || 'container';
@@ -222,19 +347,49 @@ function presentNode(
     text(nativeIdentity.type), text(nativeIdentity.name), text(nativeIdentity.native_locator || nativeIdentity.nativeLocator),
     String(Number(nativeIdentity.occurrence_index || nativeIdentity.occurrenceIndex || 0)),
   ].join('|');
-  const nodeSemantics = semanticIdentity(container.formStructureRole);
+  const authoritativeNodeIdentity = nodeSemantics.slot && nodeSemantics.group
+    ? { slot: nodeSemantics.slot, group: nodeSemantics.group }
+    : null;
+  const authoritativeGroup = authoritativeNodeIdentity
+    ? structureGroup(structure, authoritativeNodeIdentity)
+    : undefined;
+  const authoritativeSlot = nodeSemantics.slot ? structureSlot(structure, nodeSemantics) : undefined;
+  const authoritativeTitle = text(authoritativeGroup?.title || authoritativeSlot?.title);
+  const authoritativeRole = authoritativeGroup?.role || authoritativeSlot?.role;
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
     kind: nodeKind,
-    title,
+    title: authoritativeTitle || title,
     text: text(container.text),
     attributes: Object.freeze({ ...container.attributes }),
+    nativePresentation: Object.freeze({
+      displayLabel: text(container.displayLabel),
+      semanticTitle: text(container.semanticTitle),
+      semanticAnchor: text(container.semanticAnchor),
+      filename: text(container.filename),
+      badge: Object.freeze({ ...(container.badge || {}) }),
+      column_invisible: container.columnInvisible,
+      domain: container.domain,
+      context: container.context,
+      options: container.options,
+      visible: container.visible,
+      col: container.col,
+      class: text(container.class),
+      className: text(container.className),
+      fieldSize: text(container.fieldSize),
+      size: text(container.size),
+      formStructure: Object.freeze({ ...(container.formStructure || {}) }),
+      sourceAuthority: Object.freeze({ ...(container.sourceAuthority || {}) }),
+      fields: Object.freeze([...(container.fields || [])]),
+    }),
+    span: container.span,
+    styleToken: text(container.styleToken),
     zoneRole: effectiveRole,
-    columns: Number(container.cols || container.columns || 1) || 1,
+    columns: Number(authoritativeGroup?.columns || container.cols || container.columns || structure?.columns || 1) || 1,
     visible,
     disabled,
-    reasonCode: text(status?.reasonCode),
-    semanticRole: nodeSemantics.role,
+    reasonCode: text(status?.reasonCode || selectorStatus?.reasonCode),
+    semanticRole: authoritativeRole ? canonicalRoleForFormStructureRole(authoritativeRole) : nodeSemantics.role,
     semanticSlot: nodeSemantics.slot,
     semanticGroup: nodeSemantics.group,
     action: (actionIdentity ? actionsByIdentity.get(actionIdentity) : undefined)
@@ -245,7 +400,8 @@ function presentNode(
     children: container.children.map((child, childIndex) => (
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
-        mode, presentationMode, pageCanEdit, visible, disabled, actionsByIdentity, actionsByNativeOccurrence,
+        mode, presentationMode, pageCanEdit, visible, disabled, readonly, actionsByIdentity, actionsByNativeOccurrence,
+        authoritativeFieldLabels, structure, componentRegistry, clientType,
         rawTitle || ancestorTitle,
       )
     )),
@@ -321,6 +477,7 @@ function presentAction(
   status: ContractV2ButtonStatus | undefined,
   mode: CanonicalFormRenderMode,
   identityUnique: boolean,
+  values: ContractV2Dictionary,
 ): CanonicalFormAction {
   const profiles = (action.visibleProfiles || ['create', 'edit', 'readonly'])
     .filter((profile): profile is CanonicalFormRenderMode => ['create', 'edit', 'readonly'].includes(profile));
@@ -333,8 +490,21 @@ function presentAction(
     && typeof action.enabled === 'boolean'
     && typeof action.disabled === 'boolean'
     && (!status?.backendIdentity || status.backendIdentity === text(action.backendIdentity));
+  const resolveFieldValue = (field: string) => values[field];
+  const visibleAttrs = asDict(action.visible?.attrs);
+  const invisibleModifier = Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'invisible')
+    ? action.modifiers?.invisible
+    : Object.prototype.hasOwnProperty.call(visibleAttrs, 'invisible')
+      ? visibleAttrs.invisible
+      : action.invisible;
+  const disabledModifier = Object.prototype.hasOwnProperty.call(action.modifiers || {}, 'disabled')
+    ? action.modifiers?.disabled
+    : action.modifiers?.readonly;
+  const definitionInvisible = evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
+  const definitionDisabled = evaluateNativeModifierValue(disabledModifier, resolveFieldValue);
   const allowed = explicitAuthority && action.allowed === true;
-  const enabled = action.enabled === true && action.disabled !== true && status?.disabled !== true;
+  const enabled = action.enabled === true && action.disabled !== true
+    && status?.disabled !== true && !definitionDisabled;
   if (!text(action.actionId) || !text(action.backendIdentity)) {
     throw new Error('CANONICAL_FORM_ACTION_REFERENCE_MISSING');
   }
@@ -344,11 +514,12 @@ function presentAction(
     icon: text(action.presentation?.icon),
     tier: actionTier(action),
     visible: explicitAuthority
+      && !definitionInvisible
       && profiles.includes(mode)
       && status?.visible !== false
       && !(mode === 'readonly' && action.actionId === 'form.save'),
     enabled: allowed && enabled,
-    reasonCode: text(status?.reasonCode) || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
+    reasonCode: text(status?.reasonCode || action.reasonCode) || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
     visibleProfiles: profiles,
     safety: Object.freeze({ ...(action.actionSafety || {}) }),
     actionRef: action,
@@ -366,6 +537,7 @@ export function presentContractV2Form(
     throw new Error('CANONICAL_FORM_PRESENTATION_MODE_MISSING');
   }
   const presentationMode: CanonicalFormPresentationMode = structure ? structure.presentationMode : 'workspace';
+  const authoritativeFieldLabels = formStructureFieldLabels(structure);
   const contractValues = Object.keys(snapshot.dataContract.mainData).length
     ? snapshot.dataContract.mainData
     : store.primaryDataSource || {};
@@ -388,6 +560,7 @@ export function presentContractV2Form(
       mode,
       actionIdentityCounts.get(text(action.backendIdentity)) === 1
         && actionIdCounts.get(text(action.actionId)) === 1,
+      { ...contractValues, ...(runtimeValues || {}) },
     )
   ));
   const visibleActions = allActions.filter((action) => action.visible);
@@ -404,7 +577,8 @@ export function presentContractV2Form(
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, zoneRole(container), index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
-      pageVisible, pageAuth === 'none', actionsByIdentity, actionsByNativeOccurrence,
+      pageVisible, pageAuth === 'none', false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
+      snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )
   ));
   const demotedActionIds = new Set(
@@ -436,7 +610,7 @@ export function presentContractV2Form(
       sourceContractSha256: snapshot.meta.lifecycle.integrity.contractSha256,
     },
     shell: {
-      title: snapshot.pageInfo.pageName,
+      title: text(structure?.navigation.title) || snapshot.pageInfo.pageName,
       pageVisible,
       pageAuth,
       reasonCode: text(globalStatus.reasonCode),

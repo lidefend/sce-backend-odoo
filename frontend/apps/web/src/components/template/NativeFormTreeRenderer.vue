@@ -300,6 +300,7 @@
 
       <FormSection
         v-else-if="nodeType(node) === 'field' && fieldSchemasForNodes([node]).length"
+        :class="nodeClassList(node)"
         :title="fieldSectionTitle(node)"
         :columns="nodeColumns(node)"
         :fields="fieldSchemasForNodes([node])"
@@ -399,6 +400,7 @@ export type NativeFormLayoutNode = {
   label?: string;
   displayLabel?: string;
   semanticTitle?: string;
+  semanticAnchor?: string;
   text?: string;
   cols?: number;
   columns?: number;
@@ -409,11 +411,20 @@ export type NativeFormLayoutNode = {
   field_size?: string;
   fieldSize?: string;
   size?: string;
+  filename?: string;
+  badge?: Record<string, unknown>;
+  column_invisible?: unknown;
+  domain?: unknown;
+  context?: unknown;
+  options?: unknown;
+  col?: number | string;
+  formStructure?: Record<string, unknown>;
   attributes?: Record<string, unknown>;
   fieldInfo?: Record<string, unknown>;
   field_info?: Record<string, unknown>;
   sourceAuthority?: Record<string, unknown>;
   source_authority?: Record<string, unknown>;
+  fields?: readonly string[];
   buttonType?: string;
   action?: Record<string, unknown> | null;
   modifiers?: Record<string, unknown>;
@@ -836,6 +847,8 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 <style scoped>
 .native-form-tree {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: var(--sc-field-row-gap);
   grid-column: 1 / -1;
   min-width: 0;
@@ -843,6 +856,8 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 
 .native-container {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: 12px;
   min-width: 0;
   position: relative;

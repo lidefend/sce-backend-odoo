@@ -464,10 +464,9 @@ def main() -> int:
     _assert(
         "extractKanbanFieldsFromContract" in action_view_runtime
         and "extractAdvancedViewFieldsFromContract" in action_view_runtime
-        and "collectDisplayRowLabels" in action_view_runtime
-        and "collectDisplayRowLabels(block.measures" in action_view_runtime
-        and "collectDisplayRowLabels(block.cards" in action_view_runtime
-        and "collectSlotFieldNames" in action_view_runtime
+        and "extractViewFieldLabelsFromContract" in action_view_runtime
+        and "advancedRowMeta" in action_view_runtime
+        and "advancedFields" in action_view_runtime
         and "kanban nested fields and slots" in action_view_shape_smoke
         and "calendar advanced fields" in action_view_shape_smoke
         and "dashboard advanced fields" in action_view_shape_smoke,

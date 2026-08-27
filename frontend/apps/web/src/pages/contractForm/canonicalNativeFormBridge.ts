@@ -19,6 +19,23 @@ export type CanonicalNativeLayoutNode = {
   widget?: string;
   visible?: boolean;
   attributes?: Record<string, unknown>;
+  displayLabel?: string;
+  semanticTitle?: string;
+  semanticAnchor?: string;
+  filename?: string;
+  badge?: Record<string, unknown>;
+  column_invisible?: unknown;
+  domain?: unknown;
+  context?: unknown;
+  options?: unknown;
+  col?: number | string;
+  class?: string;
+  className?: string;
+  fieldSize?: string;
+  size?: string;
+  formStructure?: Record<string, unknown>;
+  sourceAuthority?: Record<string, unknown>;
+  fields?: readonly string[];
   action?: Record<string, unknown> | null;
   buttonType?: string;
   children?: CanonicalNativeLayoutNode[];
@@ -88,15 +105,31 @@ function canonicalActionRecord(action: CanonicalFormAction): Record<string, unkn
 function fieldNode(
   field: CanonicalFormField,
   fieldSchemas: WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>,
+  sourceNode?: CanonicalFormNode,
 ): CanonicalNativeLayoutNode {
   const node: CanonicalNativeLayoutNode = {
+    ...(sourceNode?.nativePresentation || {}),
     type: 'field',
     containerType: 'field',
-    name: field.widgetId,
-    visible: field.visible,
+    name: field.fieldCode,
+    string: sourceNode?.title || field.label,
+    text: sourceNode?.text || '',
+    cols: sourceNode?.columns,
+    columns: sourceNode?.columns,
+    visible: field.visible && (sourceNode?.visible ?? true),
     attributes: {
+      ...(sourceNode?.attributes || {}),
+      class: text(
+        sourceNode?.attributes.class
+        || sourceNode?.nativePresentation.class
+        || sourceNode?.nativePresentation.className,
+      ),
       name: field.fieldCode,
       canonicalWidgetId: field.widgetId,
+      canonicalNodeId: sourceNode?.nodeId || field.widgetId,
+      canonicalNodeKind: 'field',
+      sectionNavigationRole: sourceNode?.zoneRole,
+      contractStyleToken: sourceNode?.styleToken,
     },
     children: [],
   };
@@ -116,7 +149,7 @@ export function buildCanonicalNativeFormBridge(
 
   function mapNode(node: CanonicalFormNode): CanonicalNativeLayoutNode {
     if (text(node.kind).toLowerCase() === 'field' && node.fields.length === 1) {
-      return fieldNode(node.fields[0], fieldSchemas);
+      return fieldNode(node.fields[0], fieldSchemas, node);
     }
     const rawKind = text(node.kind).toLowerCase() || 'container';
     const action = node.action;
@@ -144,6 +177,7 @@ export function buildCanonicalNativeFormBridge(
       } satisfies CanonicalNativeLayoutNode]
       : mappedChildren;
     return {
+      ...node.nativePresentation,
       type: kind,
       containerType: kind,
       name: node.nodeId,
@@ -151,14 +185,16 @@ export function buildCanonicalNativeFormBridge(
       text: node.text,
       cols: node.columns,
       columns: node.columns,
+      span: node.span,
       widget: node.nativeWidget,
       visible: node.visible && (kind !== 'button' || Boolean(action)) && actionVisible,
       attributes: {
         ...node.attributes,
-        class: text(node.attributes.class),
+        class: text(node.attributes.class || node.nativePresentation.class || node.nativePresentation.className),
         canonicalNodeId: node.nodeId,
         canonicalNodeKind: rawKind,
         sectionNavigationRole: node.zoneRole,
+        contractStyleToken: node.styleToken,
       },
       action: action ? canonicalActionRecord(action) : null,
       buttonType: text(action?.actionRef.button?.type) || 'object',

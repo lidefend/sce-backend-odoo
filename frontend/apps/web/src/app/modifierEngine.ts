@@ -30,6 +30,40 @@ function compare(actual: unknown, op: string, expected: unknown): boolean {
   return false;
 }
 
+export function compareNativeModifierValue(actual: unknown, operator: string, expected: unknown) {
+  return compare(actual, operator, expected);
+}
+
+export function isStaticTruthyModifier(value: unknown) {
+  if (value === true || value === 1) return true;
+  if (typeof value !== 'string') return false;
+  return ['1', 'true', 'True'].includes(value.trim());
+}
+
+export function evaluateNativeModifierValue(value: unknown, resolveFieldValue: (field: string) => unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return isStaticTruthyModifier(value);
+  const row = value as Record<string, unknown>;
+  const kind = String(row.kind || '').trim();
+  if (kind === 'static') return Boolean(row.value);
+  if (kind === 'not') return !evaluateNativeModifierValue(row.expr, resolveFieldValue);
+  if (kind === 'all') {
+    const exprs = Array.isArray(row.exprs) ? row.exprs : [];
+    return exprs.every((expr) => evaluateNativeModifierValue(expr, resolveFieldValue));
+  }
+  if (kind === 'any') {
+    const exprs = Array.isArray(row.exprs) ? row.exprs : [];
+    return exprs.some((expr) => evaluateNativeModifierValue(expr, resolveFieldValue));
+  }
+  const field = String(row.field || '').trim();
+  if (!field) return false;
+  if (kind === 'field_truthy') return Boolean(resolveFieldValue(field));
+  if (kind === 'field_compare') {
+    return compareNativeModifierValue(resolveFieldValue(field), String(row.operator || ''), row.value);
+  }
+  return false;
+}
+
 function evalLeaf(expr: unknown, values: Record<string, unknown>): boolean {
   if (!Array.isArray(expr) || expr.length < 3) return false;
   const leaf = expr as DomainLeaf;

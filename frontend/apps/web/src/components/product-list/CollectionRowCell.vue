@@ -12,14 +12,14 @@
   >
     <ScIcon class="favorite-star" :name="favoriteActive ? 'star' : 'star-outline'" :size="16" />
   </ScIconButton>
-  <span v-else-if="kind === 'status'" data-semantic-component="CollectionRowCell" class="status-badge" :class="`tone-${tone}`">
+  <span v-else-if="kind === 'status'" data-semantic-component="CollectionRowCell" class="collection-row-cell status-badge" :class="`tone-${tone}`">
     {{ text }}
   </span>
-  <div v-else-if="kind === 'primary'" data-semantic-component="CollectionRowCell" class="cell-primary">
+  <div v-else-if="kind === 'primary'" data-semantic-component="CollectionRowCell" class="collection-row-cell cell-primary">
     <ScButton type="button" class="cell-primary-link" appearance="auth-link" variant="ghost" size="small" @click.stop="$emit('open-record')">
       {{ text }}
     </ScButton>
-    <div v-if="secondaryText" class="secondary">{{ secondaryText }}</div>
+    <span v-if="secondaryText" class="secondary"> · {{ secondaryText }}</span>
   </div>
   <span v-else-if="kind === 'attachments'" data-semantic-component="CollectionRowCell" class="attachment-links">
     <a
@@ -45,7 +45,7 @@
   >
     {{ text }}
   </ScButton>
-  <span v-else data-semantic-component="CollectionRowCell">{{ text }}</span>
+  <span v-else data-semantic-component="CollectionRowCell" class="collection-row-cell" :title="text">{{ text }}</span>
 </template>
 
 <script setup lang="ts">

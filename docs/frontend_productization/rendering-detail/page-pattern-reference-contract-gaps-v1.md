@@ -1,0 +1,34 @@
+# Page Pattern Reference Contract Gaps v1
+
+This ledger records reference details that cannot be implemented safely from the current authoritative payload. They are not permission to infer values in the frontend.
+
+## P0 contract gaps
+
+- Global search: the reference shell exposes a global search control, while the current payload only authorizes navigation filtering. A future capability must identify search domain, target route, result identity, and authority.
+- Contextual detail drawer: the current record-entry contract expresses record intent and route disposition, but does not explicitly authorize `standalone_page | contextual_drawer`. Existing `/r` and `/f` semantics must not be reinterpreted by appearance.
+- Record actions: copy, delete, disabled reason, and explicit labelled detail actions are not consistently projected for every model/action pair.
+- Readonly section metadata: the reference displays section item counts. Contract V2 currently carries nodes and container structure but no authoritative displayed item-count presentation.
+- Collection semantic tones: the payment list currently projects status labels without a `tone_by_value` authority. Neutral badges are correct until the backend declares value-to-semantic-tone mappings; the frontend must not infer tones from Chinese labels.
+- Task slot coverage: the payment task form projects only a subset of the business facts shown by the reference detail. The form-structure producer must explicitly assign the remaining owned fields to task/core/condition/supplementary slots before the task renderer may show them.
+- Task field geometry: the real payment task structure currently projects single-column containers whose widgets retain full-span metadata. `CanonicalFormNodeRenderer` correctly preserves those declared columns and spans. A future producer change must derive compact task geometry from the effective action/view structure; the frontend must not reinterpret `span=24` as half-width merely to imitate the reference readonly drawer.
+
+## P1/P2 product gaps
+
+- Saved-search favorites need ownership and mutation capability before the favorite control can be universal.
+- The Shell needs a formal user-facing release/version identity if the reference footer version is required.
+- Authentication must declare credential-retention policy before a remember-account option stores any identifier.
+- Authentication page authority must explicitly declare account-registration/help and alternate-login actions; the reference controls are not safe as hard-coded links.
+- Authentication page authority must explicitly declare fullscreen if that reference control is required; the frontend must not render a non-functional icon.
+- Collection view-switch, export, and settings controls remain capability-bound; a single-view action or missing export capability must not acquire decorative controls.
+- Contextual readonly detail header, first-level collaboration tabs, compact relation tabs, description-grid skeleton, and close settlement require the formal contextual-drawer container authority above.
+
+## Evidence gaps
+
+- No authenticated 390px screenshot exists for the reference implementation. Candidate mobile safety can be proven, but mobile visual parity cannot be claimed until the reference evidence is captured.
+
+## Fail-closed rules
+
+- Missing capability hides or disables the control; query parameters never create authority.
+- No model, action, menu, field label, or Chinese-text special case may substitute for a missing contract field.
+- A legacy route cannot silently become drawer authority.
+- Visual similarity cannot override readonly/edit, action, mutation, or record-level permission decisions.

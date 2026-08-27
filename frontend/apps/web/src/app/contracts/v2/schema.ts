@@ -9,11 +9,13 @@ import type {
   ContractV2ButtonStatus,
   ContractV2AdaptMode,
   ContractV2ClientType,
+  ContractV2ComponentRegistryEntry,
   ContractV2Container,
   ContractV2ContainerStatus,
   ContractV2DataContract,
   ContractV2DataMeta,
   ContractV2Dictionary,
+  ContractV2DeliveryProfile,
   ContractV2DispatchMode,
   ContractV2FieldGroups,
   ContractV2FormStructureConfiguredSection,
@@ -47,6 +49,7 @@ import type {
   ContractV2VisibleFields,
   ContractV2ViewType,
   ContractV2Widget,
+  ContractV2WidgetType,
   ContractV2WidgetStatus,
 } from './types';
 import { CONTRACT_V2_FORM_STRUCTURE_ROLES } from './formStructureRoles';
@@ -79,12 +82,20 @@ function asString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.map((item) => asString(item)).filter(Boolean) : [];
-}
-
 function optionalBoolean(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined;
+}
+
+function optionalBooleanField(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): boolean | undefined {
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
+  if (typeof source[key] === 'boolean') return source[key] as boolean;
+  issues.push({ path: `${path}.${key}`, message: 'must be a boolean' });
+  return undefined;
 }
 
 function requiredBoolean(source: ContractV2Dictionary, key: string, path: string, issues: DecodeIssue[], fallback: boolean): boolean {
@@ -114,6 +125,18 @@ function optionalString(source: ContractV2Dictionary, key: string): string | und
   return asString(source[key]) || undefined;
 }
 
+function optionalStringField(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): string | undefined {
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
+  if (typeof source[key] === 'string') return source[key] as string;
+  issues.push({ path: `${path}.${key}`, message: 'must be a string' });
+  return undefined;
+}
+
 function optionalRecord(
   source: ContractV2Dictionary,
   key: string,
@@ -123,6 +146,19 @@ function optionalRecord(
   if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
   if (isRecord(source[key])) return source[key] as ContractV2Dictionary;
   issues.push({ path: `${path}.${key}`, message: 'must be an object' });
+  return undefined;
+}
+
+function optionalNullableRecord(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2Dictionary | null | undefined {
+  if (!Object.prototype.hasOwnProperty.call(source, key)) return undefined;
+  if (source[key] === null) return null;
+  if (isRecord(source[key])) return source[key] as ContractV2Dictionary;
+  issues.push({ path: `${path}.${key}`, message: 'must be an object or null' });
   return undefined;
 }
 
@@ -164,12 +200,57 @@ function readAliasedObject(
   return value;
 }
 
-function decodeClientType(value: string, issues: DecodeIssue[]): ContractV2ClientType {
+function decodeClientType(value: string, path: string, issues: DecodeIssue[]): ContractV2ClientType {
   if (value === 'web_pc' || value === 'wx_mini' || value === 'harmony_h5') {
     return value;
   }
-  issues.push({ path: 'pageInfo.clientType', message: `unsupported client type ${value || '<empty>'}` });
+  issues.push({ path, message: `unsupported client type ${value || '<empty>'}` });
   return 'web_pc';
+}
+
+function decodeDeliveryCountRecord(
+  source: ContractV2Dictionary,
+  path: string,
+  issues: DecodeIssue[],
+  nullable: boolean,
+): Record<'containers' | 'widgets' | 'actions', number | null> {
+  rejectUnknownKeys(source, ['containers', 'widgets', 'actions'], path, issues);
+  const output = {} as Record<'containers' | 'widgets' | 'actions', number | null>;
+  (['containers', 'widgets', 'actions'] as const).forEach((key) => {
+    const value = source[key];
+    if (nullable && value === null) {
+      output[key] = null;
+    } else if (typeof value === 'number' && Number.isInteger(value) && value >= 0) {
+      output[key] = value;
+    } else {
+      issues.push({ path: `${path}.${key}`, message: nullable ? 'must be a non-negative integer or null' : 'must be a non-negative integer' });
+      output[key] = nullable ? null : 0;
+    }
+  });
+  return output;
+}
+
+function decodeDeliveryTrim(source: ContractV2Dictionary, issues: DecodeIssue[]): NonNullable<ContractV2Meta['deliveryTrim']> {
+  const limits = requiredRecord(source, 'limits', 'meta.deliveryTrim', issues);
+  const original = requiredRecord(source, 'original', 'meta.deliveryTrim', issues);
+  const delivered = requiredRecord(source, 'delivered', 'meta.deliveryTrim', issues);
+  const omitted = requiredRecord(source, 'omitted', 'meta.deliveryTrim', issues);
+  return {
+    clientType: decodeClientType(requiredString(source, 'clientType', 'meta.deliveryTrim', issues), 'meta.deliveryTrim.clientType', issues),
+    deliveryProfile: decodeDeliveryProfile(source.deliveryProfile, 'meta.deliveryTrim.deliveryProfile', issues) || 'full',
+    compact: requiredBoolean(source, 'compact', 'meta.deliveryTrim', issues, false),
+    limits: decodeDeliveryCountRecord(limits, 'meta.deliveryTrim.limits', issues, true),
+    original: decodeDeliveryCountRecord(original, 'meta.deliveryTrim.original', issues, false) as Record<'containers' | 'widgets' | 'actions', number>,
+    delivered: decodeDeliveryCountRecord(delivered, 'meta.deliveryTrim.delivered', issues, false) as Record<'containers' | 'widgets' | 'actions', number>,
+    omitted: decodeDeliveryCountRecord(omitted, 'meta.deliveryTrim.omitted', issues, false) as Record<'containers' | 'widgets' | 'actions', number>,
+  };
+}
+
+function decodeDeliveryProfile(value: unknown, path: string, issues: DecodeIssue[]): ContractV2DeliveryProfile | undefined {
+  if (value === undefined) return undefined;
+  if (value === 'full' || value === 'mobile_compact' || value === 'mobile_primary') return value;
+  issues.push({ path, message: `unsupported delivery profile ${typeof value === 'string' ? value : '<non-string>'}` });
+  return undefined;
 }
 
 function decodeViewType(value: string, path: string, issues: DecodeIssue[]): ContractV2ViewType {
@@ -194,6 +275,17 @@ function decodeAdaptMode(value: string, path: string, issues: DecodeIssue[]): Co
   }
   issues.push({ path, message: `unsupported adapt mode ${value || '<empty>'}` });
   return 'pc';
+}
+
+const CONTRACT_V2_WIDGET_TYPES = new Set<ContractV2WidgetType>([
+  'input', 'select', 'date', 'datetime', 'number', 'table', 'upload', 'button', 'textarea',
+  'checkbox', 'radio', 'tree', 'gantt', 'relation', 'display', 'binary', 'many2many_tags',
+]);
+
+function decodeWidgetType(value: string, path: string, issues: DecodeIssue[]): ContractV2WidgetType {
+  if (CONTRACT_V2_WIDGET_TYPES.has(value as ContractV2WidgetType)) return value as ContractV2WidgetType;
+  issues.push({ path, message: `unsupported widget type ${value || '<empty>'}` });
+  return 'display';
 }
 
 function decodeTriggerType(value: string, path: string, issues: DecodeIssue[]): ContractV2TriggerType {
@@ -471,6 +563,9 @@ function requiredIntegerInRange(
 }
 
 function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2PageInfo {
+  rejectUnknownKeys(source, [
+    'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType', 'deliveryProfile',
+  ], 'pageInfo', issues);
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
   if (!/^2\.(0|1|2)\.\d+$/.test(contractVersion)) {
     issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0, 2.1, or 2.2 version' });
@@ -484,7 +579,10 @@ function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): Co
     layoutType: decodeLayoutType(requiredString(source, 'layoutType', 'pageInfo', issues), 'pageInfo.layoutType', issues),
     renderMode: decodePageRenderMode(requiredString(source, 'renderMode', 'pageInfo', issues), 'pageInfo.renderMode', issues),
     contractVersion,
-    clientType: decodeClientType(requiredString(source, 'clientType', 'pageInfo', issues), issues),
+    clientType: decodeClientType(requiredString(source, 'clientType', 'pageInfo', issues), 'pageInfo.clientType', issues),
+    ...(decodeDeliveryProfile(source.deliveryProfile, 'pageInfo.deliveryProfile', issues) ? {
+      deliveryProfile: source.deliveryProfile as ContractV2DeliveryProfile,
+    } : {}),
   };
 }
 
@@ -495,21 +593,25 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
   }
   rejectUnknownKeys(raw, [
     'widgetId', 'widgetType', 'fieldCode', 'label', 'span', 'componentKey', 'capabilities',
-    'componentConfig', 'fieldDescriptor', 'fieldType', 'relation', 'formStructureRole',
+    'componentConfig', 'fieldDescriptor', 'formStructureRole',
     'ownerContainerId', 'nativeLocator', 'occurrenceIndex', 'sourcePosition',
   ], path, issues);
   const componentConfig = requiredRecord(raw, 'componentConfig', path, issues);
+  const fieldDescriptor = optionalRecord(raw, 'fieldDescriptor', path, issues);
   const fieldCode = requiredString(raw, 'fieldCode', path, issues);
   const widgetId = requiredString(raw, 'widgetId', path, issues);
-  const widgetType = requiredString(raw, 'widgetType', path, issues);
+  const widgetType = decodeWidgetType(requiredString(raw, 'widgetType', path, issues), `${path}.widgetType`, issues);
   const componentKey = requiredString(raw, 'componentKey', path, issues);
   const ownerContainerId = requiredString(raw, 'ownerContainerId', path, issues);
   const formStructureRole = raw.formStructureRole === undefined
     ? null
     : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
   const nativeLocator = optionalString(raw, 'nativeLocator');
-  const occurrenceIndex = typeof raw.occurrenceIndex === 'number' ? raw.occurrenceIndex : undefined;
-  const sourcePosition = typeof raw.sourcePosition === 'number' ? raw.sourcePosition : undefined;
+  if (raw.nativeLocator !== undefined && !nativeLocator) {
+    issues.push({ path: `${path}.nativeLocator`, message: 'must be a non-empty string' });
+  }
+  const occurrenceIndex = raw.occurrenceIndex;
+  const sourcePosition = raw.sourcePosition;
   if (occurrenceIndex !== undefined && (
     typeof occurrenceIndex !== 'number' || !Number.isInteger(occurrenceIndex) || occurrenceIndex < 1
   )) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
@@ -533,9 +635,7 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     ...(nativeLocator ? { nativeLocator } : {}),
     ...(typeof occurrenceIndex === 'number' && Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
     ...(typeof sourcePosition === 'number' && Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
-    ...(isRecord(raw.fieldDescriptor) ? { fieldDescriptor: raw.fieldDescriptor } : {}),
-    ...(asString(raw.fieldType || raw.field_type) ? { fieldType: asString(raw.fieldType || raw.field_type) } : {}),
-    ...(asString(raw.relation) ? { relation: asString(raw.relation) } : {}),
+    ...(fieldDescriptor ? { fieldDescriptor } : {}),
     ...(formStructureRole ? { formStructureRole } : {}),
   };
 }
@@ -589,16 +689,22 @@ function decodeContainer(
   const widgetList = widgetRows
     .map((item, index) => decodeWidget(item, `${path}.widgetList[${index}]`, issues))
     .filter((item): item is ContractV2Widget => Boolean(item));
-  const attributes = asRecord(raw.attributes);
-  const fieldInfo = asRecord(raw.fieldInfo);
-  const action = asRecord(raw.action);
-  const modifiers = asRecord(raw.modifiers);
-  const formStructure = asRecord(raw.formStructure);
+  const attributes = optionalRecord(raw, 'attributes', path, issues);
+  const fieldInfo = optionalRecord(raw, 'fieldInfo', path, issues);
+  const action = optionalNullableRecord(raw, 'action', path, issues);
+  const modifiers = optionalRecord(raw, 'modifiers', path, issues);
+  const formStructure = optionalRecord(raw, 'formStructure', path, issues);
   const formStructureRole = raw.formStructureRole === undefined
     ? null
     : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
-  const sourceAuthority = asRecord(raw.sourceAuthority);
-  const componentConfig = asRecord(raw.componentConfig);
+  const sourceAuthority = optionalRecord(raw, 'sourceAuthority', path, issues);
+  const nativeFields = Object.prototype.hasOwnProperty.call(raw, 'fields')
+    ? decodeUniqueStringArray(raw.fields, `${path}.fields`, issues)
+    : undefined;
+  const nolabel = optionalBooleanField(raw, 'nolabel', path, issues);
+  const visible = optionalBooleanField(raw, 'visible', path, issues);
+  const componentConfig = optionalRecord(raw, 'componentConfig', path, issues);
+  const badge = optionalRecord(raw, 'badge', path, issues);
   const fieldCode = asString(raw.fieldCode || raw.name);
   const widgetId = asString(raw.widgetId);
   const nativeLocator = asString(raw.nativeLocator);
@@ -617,8 +723,11 @@ function decodeContainer(
     ...(fieldCode ? { fieldCode } : {}),
     ...(asString(raw.string) ? { string: asString(raw.string) } : {}),
     ...(asString(raw.label) ? { label: asString(raw.label) } : {}),
-    ...(optionalBoolean(raw.nolabel) !== undefined ? { nolabel: optionalBoolean(raw.nolabel) } : {}),
+    ...(nolabel !== undefined ? { nolabel } : {}),
     ...(asString(raw.text) ? { text: asString(raw.text) } : {}),
+    ...(asString(raw.displayLabel) ? { displayLabel: asString(raw.displayLabel) } : {}),
+    ...(asString(raw.semanticTitle) ? { semanticTitle: asString(raw.semanticTitle) } : {}),
+    ...(asString(raw.semanticAnchor) ? { semanticAnchor: asString(raw.semanticAnchor) } : {}),
     title: nestedNativeNode
       ? structuralContainerText(raw, 'title')
       : requiredDisplayString(raw, 'title', path, issues),
@@ -634,18 +743,31 @@ function decodeContainer(
     ...(Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
     ...(Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
     ...(asString(raw.componentKey) ? { componentKey: asString(raw.componentKey) } : {}),
-    ...(Object.keys(componentConfig).length ? { componentConfig } : {}),
-    ...(Object.keys(attributes).length ? { attributes } : {}),
-    ...(Object.keys(fieldInfo).length ? { fieldInfo } : {}),
+    ...(componentConfig && Object.keys(componentConfig).length ? { componentConfig } : {}),
+    ...(attributes && Object.keys(attributes).length ? { attributes } : {}),
+    ...(fieldInfo && Object.keys(fieldInfo).length ? { fieldInfo } : {}),
+    ...(asString(raw.filename) ? { filename: asString(raw.filename) } : {}),
+    ...(badge && Object.keys(badge).length ? { badge } : {}),
     ...(asString(raw.buttonType) ? { buttonType: asString(raw.buttonType) } : {}),
-    ...(raw.action === null ? { action: null } : Object.keys(action).length ? { action } : {}),
-    ...(Object.keys(modifiers).length ? { modifiers } : {}),
+    ...(action === null ? { action: null } : action && Object.keys(action).length ? { action } : {}),
+    ...(modifiers && Object.keys(modifiers).length ? { modifiers } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'invisible') ? { invisible: raw.invisible } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'readonly') ? { readonly: raw.readonly } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'required') ? { required: raw.required } : {}),
-    ...(Object.keys(formStructure).length ? { formStructure } : {}),
+    ...(Object.prototype.hasOwnProperty.call(raw, 'column_invisible') ? { columnInvisible: raw.column_invisible } : {}),
+    ...(Object.prototype.hasOwnProperty.call(raw, 'domain') ? { domain: raw.domain } : {}),
+    ...(Object.prototype.hasOwnProperty.call(raw, 'context') ? { context: raw.context } : {}),
+    ...(Object.prototype.hasOwnProperty.call(raw, 'options') ? { options: raw.options } : {}),
+    ...(visible !== undefined ? { visible } : {}),
+    ...((typeof raw.col === 'number' || typeof raw.col === 'string') ? { col: raw.col } : {}),
+    ...(asString(raw.class) ? { class: asString(raw.class) } : {}),
+    ...(asString(raw.className) ? { className: asString(raw.className) } : {}),
+    ...(asString(raw.fieldSize) ? { fieldSize: asString(raw.fieldSize) } : {}),
+    ...(asString(raw.size) ? { size: asString(raw.size) } : {}),
+    ...(formStructure && Object.keys(formStructure).length ? { formStructure } : {}),
     ...(formStructureRole ? { formStructureRole } : {}),
-    ...(Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
+    ...(sourceAuthority && Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
+    ...(nativeFields !== undefined ? { fields: nativeFields } : {}),
     children,
     widgetList,
   };
@@ -855,7 +977,40 @@ function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2A
   };
 }
 
+function decodeComponentRegistry(
+  raw: unknown,
+  issues: DecodeIssue[],
+): Record<string, ContractV2ComponentRegistryEntry> {
+  if (!isRecord(raw)) {
+    issues.push({ path: 'layoutContract.componentRegistry', message: 'must be an object' });
+    return {};
+  }
+  const out: Record<string, ContractV2ComponentRegistryEntry> = {};
+  Object.entries(raw).forEach(([componentKey, value]) => {
+    const path = `layoutContract.componentRegistry.${componentKey}`;
+    if (!componentKey.trim() || !isRecord(value)) {
+      issues.push({ path, message: 'must be an object keyed by a non-empty component identity' });
+      return;
+    }
+    rejectUnknownKeys(value, ['version', 'adapter', 'fallback', 'selectedAdapter'], path, issues);
+    const adapter = decodeStringMap(value.adapter, `${path}.adapter`, issues);
+    Object.entries(adapter).forEach(([clientType, adapterName]) => {
+      if (!adapterName.trim()) issues.push({ path: `${path}.adapter.${clientType}`, message: 'must be non-empty' });
+    });
+    out[componentKey] = {
+      version: requiredString(value, 'version', path, issues),
+      adapter,
+      ...(optionalString(value, 'fallback') ? { fallback: optionalString(value, 'fallback') } : {}),
+      ...(optionalString(value, 'selectedAdapter') ? { selectedAdapter: optionalString(value, 'selectedAdapter') } : {}),
+    };
+  });
+  return out;
+}
+
 function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2LayoutContract {
+  rejectUnknownKeys(source, [
+    'pageId', 'layoutType', 'adaptMode', 'containerTree', 'layoutHints', 'componentRegistry', 'listProfile', 'activityProfile',
+  ], 'layoutContract', issues);
   const containerTreeRaw = Array.isArray(source.containerTree) ? source.containerTree : [];
   if (!Array.isArray(source.containerTree)) {
     issues.push({ path: 'layoutContract.containerTree', message: 'must be an array' });
@@ -863,15 +1018,16 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
   const containerTree = containerTreeRaw
     .map((item, index) => decodeContainer(item, `layoutContract.containerTree[${index}]`, issues))
     .filter((item): item is ContractV2Container => Boolean(item));
+  const listProfile = optionalRecord(source, 'listProfile', 'layoutContract', issues);
   return {
     pageId: requiredString(source, 'pageId', 'layoutContract', issues),
     layoutType: decodeLayoutType(requiredString(source, 'layoutType', 'layoutContract', issues), 'layoutContract.layoutType', issues),
     adaptMode: decodeAdaptMode(requiredString(source, 'adaptMode', 'layoutContract', issues), 'layoutContract.adaptMode', issues),
     containerTree,
     layoutHints: requiredRecord(source, 'layoutHints', 'layoutContract', issues),
-    componentRegistry: requiredRecord(source, 'componentRegistry', 'layoutContract', issues),
-    ...(Object.keys(asRecord(source.listProfile)).length
-      ? { listProfile: asRecord(source.listProfile) }
+    componentRegistry: decodeComponentRegistry(source.componentRegistry, issues),
+    ...(listProfile && Object.keys(listProfile).length
+      ? { listProfile }
       : {}),
     ...(source.activityProfile !== undefined
       ? { activityProfile: decodeActivityProfile(source.activityProfile, issues) }
@@ -1304,56 +1460,64 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   }
   const actionId = requiredString(raw, 'actionId', path, issues);
   if (!actionId) return null;
-  const target = asRecord(raw.target);
-  const button = asRecord(raw.button);
-  const visible = asRecord(raw.visible);
-  const modifiers = asRecord(raw.modifiers);
-  const presentation = asRecord(raw.presentation);
-  const actionSafety = asRecord(raw.actionSafety);
-  const submitPolicy = asRecord(raw.submitPolicy);
-  const tracePolicy = asRecord(raw.tracePolicy);
-  const sourceTrace = Array.isArray(raw.sourceTrace)
-    ? raw.sourceTrace.map((item) => asRecord(item)).filter((item) => Object.keys(item).length > 0)
-    : [];
-  const permissionConstraints = asRecord(raw.permissionConstraints);
-  const nativeIdentity = asRecord(raw.nativeIdentity);
-  const allowed = optionalBoolean(raw.allowed);
-  const enabled = optionalBoolean(raw.enabled);
-  const disabled = optionalBoolean(raw.disabled);
+  const target = optionalRecord(raw, 'target', path, issues);
+  const button = optionalRecord(raw, 'button', path, issues);
+  const visible = optionalRecord(raw, 'visible', path, issues);
+  const modifiers = optionalRecord(raw, 'modifiers', path, issues);
+  const presentation = optionalRecord(raw, 'presentation', path, issues);
+  const actionSafety = optionalRecord(raw, 'actionSafety', path, issues);
+  const submitPolicy = optionalRecord(raw, 'submitPolicy', path, issues);
+  const tracePolicy = optionalRecord(raw, 'tracePolicy', path, issues);
+  const sourceTrace = optionalRecordArray(raw, 'sourceTrace', path, issues);
+  const permissionConstraints = optionalRecord(raw, 'permissionConstraints', path, issues);
+  const nativeIdentity = optionalRecord(raw, 'nativeIdentity', path, issues);
+  const allowed = optionalBooleanField(raw, 'allowed', path, issues);
+  const enabled = optionalBooleanField(raw, 'enabled', path, issues);
+  const disabled = optionalBooleanField(raw, 'disabled', path, issues);
+  const entitlementEvaluated = optionalBooleanField(raw, 'entitlementEvaluated', path, issues);
+  const visibleProfiles = Object.prototype.hasOwnProperty.call(raw, 'visibleProfiles')
+    ? decodeUniqueStringArray(raw.visibleProfiles, `${path}.visibleProfiles`, issues)
+    : undefined;
+  const presentationPriority = raw.presentationPriority;
+  if (presentationPriority !== undefined && (
+    typeof presentationPriority !== 'number' || !Number.isInteger(presentationPriority)
+  )) issues.push({ path: `${path}.presentationPriority`, message: 'must be an integer' });
   return {
     actionId,
     ...(optionalString(raw, 'backendIdentity') ? { backendIdentity: optionalString(raw, 'backendIdentity') } : {}),
-    ...(Object.keys(nativeIdentity).length ? { nativeIdentity } : {}),
+    ...(nativeIdentity && Object.keys(nativeIdentity).length ? { nativeIdentity } : {}),
     triggerType: decodeTriggerType(requiredString(raw, 'triggerType', path, issues), `${path}.triggerType`, issues),
     sourceWidgetId: requiredString(raw, 'sourceWidgetId', path, issues),
-    targetIds: asStringArray(raw.targetIds),
+    targetIds: decodeUniqueStringArray(raw.targetIds, `${path}.targetIds`, issues),
     dispatchMode: decodeDispatchMode(requiredString(raw, 'dispatchMode', path, issues), `${path}.dispatchMode`, issues),
     targetScope: decodeTargetScope(requiredString(raw, 'targetScope', path, issues), `${path}.targetScope`, issues),
     refreshMode: decodeRefreshMode(requiredString(raw, 'refreshMode', path, issues), `${path}.refreshMode`, issues),
     ...(optionalString(raw, 'actionKey') ? { actionKey: optionalString(raw, 'actionKey') } : {}),
     ...(optionalString(raw, 'label') ? { label: optionalString(raw, 'label') } : {}),
     ...(optionalString(raw, 'intent') ? { intent: optionalString(raw, 'intent') } : {}),
-    ...(Object.keys(target).length ? { target } : {}),
-    ...(Object.keys(button).length ? { button } : {}),
-    ...(Object.keys(visible).length ? { visible } : {}),
-    ...(Object.keys(modifiers).length ? { modifiers } : {}),
+    ...(target && Object.keys(target).length ? { target } : {}),
+    ...(button && Object.keys(button).length ? { button } : {}),
+    ...(visible && Object.keys(visible).length ? { visible } : {}),
+    ...(modifiers && Object.keys(modifiers).length ? { modifiers } : {}),
     ...(Object.prototype.hasOwnProperty.call(raw, 'invisible') ? { invisible: raw.invisible } : {}),
     ...(allowed !== undefined ? { allowed } : {}),
     ...(enabled !== undefined ? { enabled } : {}),
     ...(disabled !== undefined ? { disabled } : {}),
-    ...(asStringArray(raw.visibleProfiles).length ? { visibleProfiles: asStringArray(raw.visibleProfiles) } : {}),
-    ...(Object.keys(presentation).length ? { presentation } : {}),
-    ...(Object.keys(actionSafety).length ? { actionSafety } : {}),
-    ...(Object.keys(submitPolicy).length ? { submitPolicy } : {}),
-    ...(Object.keys(tracePolicy).length ? { tracePolicy } : {}),
-    ...(sourceTrace.length ? { sourceTrace } : {}),
+    ...(visibleProfiles !== undefined ? { visibleProfiles } : {}),
+    ...(presentation && Object.keys(presentation).length ? { presentation } : {}),
+    ...(actionSafety && Object.keys(actionSafety).length ? { actionSafety } : {}),
+    ...(submitPolicy && Object.keys(submitPolicy).length ? { submitPolicy } : {}),
+    ...(tracePolicy && Object.keys(tracePolicy).length ? { tracePolicy } : {}),
+    ...(sourceTrace?.length ? { sourceTrace } : {}),
     ...(optionalString(raw, 'presentationAuthority') ? { presentationAuthority: optionalString(raw, 'presentationAuthority') } : {}),
-    ...(Number.isInteger(raw.presentationPriority) ? { presentationPriority: Number(raw.presentationPriority) } : {}),
+    ...(typeof presentationPriority === 'number' && Number.isInteger(presentationPriority)
+      ? { presentationPriority }
+      : {}),
     ...(optionalString(raw, 'sourceActionKey') ? { sourceActionKey: optionalString(raw, 'sourceActionKey') } : {}),
     ...(optionalString(raw, 'sourceChannel') ? { sourceChannel: optionalString(raw, 'sourceChannel') } : {}),
-    ...(Object.keys(permissionConstraints).length ? { permissionConstraints } : {}),
+    ...(permissionConstraints && Object.keys(permissionConstraints).length ? { permissionConstraints } : {}),
     ...(optionalString(raw, 'reasonCode') ? { reasonCode: optionalString(raw, 'reasonCode') } : {}),
-    ...(optionalBoolean(raw.entitlementEvaluated) !== undefined ? { entitlementEvaluated: optionalBoolean(raw.entitlementEvaluated) } : {}),
+    ...(entitlementEvaluated !== undefined ? { entitlementEvaluated } : {}),
   };
 }
 
@@ -1365,6 +1529,9 @@ export function decodeContractV2ActionRule(value: unknown): ContractV2ActionRule
 }
 
 function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2ActionContract {
+  rejectUnknownKeys(source, [
+    'actionRuleList', 'dependencyGraph', 'deletePolicy', 'surfacePolicies', 'identityPolicy', 'primaryResolution',
+  ], 'actionContract', issues);
   const actionRuleListRaw = Array.isArray(source.actionRuleList) ? source.actionRuleList : [];
   if (!Array.isArray(source.actionRuleList)) {
     issues.push({ path: 'actionContract.actionRuleList', message: 'must be an array' });
@@ -1374,64 +1541,85 @@ function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[
     .filter((item): item is ContractV2ActionRule => Boolean(item));
   const dependencyGraphRaw = requiredRecord(source, 'dependencyGraph', 'actionContract', issues);
   const dependencyGraph = Object.entries(dependencyGraphRaw).reduce<Record<string, string[]>>((acc, [key, value]) => {
-    acc[key] = asStringArray(value);
+    acc[key] = decodeUniqueStringArray(value, `actionContract.dependencyGraph.${key}`, issues);
     return acc;
   }, {});
+  const primaryResolution = optionalRecord(source, 'primaryResolution', 'actionContract', issues);
+  const identityPolicy = optionalRecord(source, 'identityPolicy', 'actionContract', issues);
+  const deletePolicy = optionalRecord(source, 'deletePolicy', 'actionContract', issues);
+  const surfacePolicies = optionalRecord(source, 'surfacePolicies', 'actionContract', issues);
   return {
     actionRuleList,
     dependencyGraph,
-    ...(Object.keys(asRecord(source.primaryResolution)).length
-      ? { primaryResolution: asRecord(source.primaryResolution) }
+    ...(primaryResolution && Object.keys(primaryResolution).length
+      ? { primaryResolution }
       : {}),
-    ...(Object.keys(asRecord(source.identityPolicy)).length
-      ? { identityPolicy: asRecord(source.identityPolicy) }
+    ...(identityPolicy && Object.keys(identityPolicy).length
+      ? { identityPolicy }
       : {}),
-    ...(Object.keys(asRecord(source.deletePolicy)).length
-      ? { deletePolicy: asRecord(source.deletePolicy) }
+    ...(deletePolicy && Object.keys(deletePolicy).length
+      ? { deletePolicy }
       : {}),
-    ...(Object.keys(asRecord(source.surfacePolicies)).length
-      ? { surfacePolicies: asRecord(source.surfacePolicies) }
+    ...(surfacePolicies && Object.keys(surfacePolicies).length
+      ? { surfacePolicies }
       : {}),
   };
 }
 
-function decodeRowsMap(value: unknown): Record<string, unknown[]> {
-  const rows = asRecord(value);
+function decodeRowsMap(value: unknown, path: string, issues: DecodeIssue[]): Record<string, unknown[]> {
+  const rows = isRecord(value) ? value as ContractV2Dictionary : {};
+  if (!isRecord(value)) issues.push({ path, message: 'must be an object' });
   return Object.entries(rows).reduce<Record<string, unknown[]>>((acc, [key, item]) => {
+    if (!Array.isArray(item)) issues.push({ path: `${path}.${key}`, message: 'must be an array' });
     acc[key] = Array.isArray(item) ? item : [];
     return acc;
   }, {});
 }
 
-function decodeDataSources(value: unknown): Record<string, ContractV2Dictionary> {
-  const rows = asRecord(value);
+function decodeDataSources(value: unknown, path: string, issues: DecodeIssue[]): Record<string, ContractV2Dictionary> {
+  const rows = isRecord(value) ? value as ContractV2Dictionary : {};
+  if (!isRecord(value)) issues.push({ path, message: 'must be an object' });
   return Object.entries(rows).reduce<Record<string, ContractV2Dictionary>>((acc, [key, item]) => {
-    acc[key] = asRecord(item);
+    if (!isRecord(item)) issues.push({ path: `${path}.${key}`, message: 'must be an object' });
+    acc[key] = isRecord(item) ? item : {};
     return acc;
   }, {});
 }
 
 function decodeVisibleFields(value: unknown, path: string, issues: DecodeIssue[]): ContractV2VisibleFields | undefined {
-  const row = asRecord(value);
-  const fields = asStringArray(row.fields);
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
+  const fields = decodeUniqueStringArray(row.fields, `${path}.fields`, issues);
   if (!fields.length) {
     if (Object.keys(row).length) {
       issues.push({ path: `${path}.fields`, message: 'must be a non-empty string array' });
     }
     return undefined;
   }
-  const sourceAuthority = asRecord(row.sourceAuthority);
+  const sourceAuthority = optionalRecord(row, 'sourceAuthority', path, issues);
   return {
     fields,
-    ...(Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
+    ...(sourceAuthority && Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
   };
 }
 
 function decodeFieldGroups(value: unknown, path: string, issues: DecodeIssue[]): ContractV2FieldGroups | undefined {
-  const row = asRecord(value);
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  const row = value as ContractV2Dictionary;
   const rawGroups = Array.isArray(row.groups) ? row.groups : [];
   const groups = rawGroups
-    .map((item) => asRecord(item))
+    .map((item, index) => {
+      if (!isRecord(item)) issues.push({ path: `${path}.groups[${index}]`, message: 'must be an object' });
+      return isRecord(item) ? item : {};
+    })
     .filter((item) => Object.keys(item).length > 0);
   if (!groups.length) {
     if (Object.keys(row).length) {
@@ -1439,10 +1627,10 @@ function decodeFieldGroups(value: unknown, path: string, issues: DecodeIssue[]):
     }
     return undefined;
   }
-  const sourceAuthority = asRecord(row.sourceAuthority);
+  const sourceAuthority = optionalRecord(row, 'sourceAuthority', path, issues);
   return {
     groups,
-    ...(Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
+    ...(sourceAuthority && Object.keys(sourceAuthority).length ? { sourceAuthority } : {}),
   };
 }
 
@@ -1488,7 +1676,7 @@ function decodeSourceContext(value: unknown, issues: DecodeIssue[]): ContractV2S
 
 function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMeta {
   const row = asRecord(value);
-  const businessOperationProfile = asRecord(row.businessOperationProfile);
+  const businessOperationProfile = optionalRecord(row, 'businessOperationProfile', 'dataContract.dataMeta', issues);
   const sourceContext = decodeSourceContext(row.sourceContext, issues);
   const forbiddenKeys = [
     'business_operation_profile',
@@ -1506,7 +1694,7 @@ function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMe
   const fieldGroups = decodeFieldGroups(row.fieldGroups, 'dataContract.dataMeta.fieldGroups', issues);
   return {
     ...row,
-    ...(Object.keys(businessOperationProfile).length ? { businessOperationProfile } : {}),
+    ...(businessOperationProfile && Object.keys(businessOperationProfile).length ? { businessOperationProfile } : {}),
     ...(visibleFields ? { visibleFields } : {}),
     ...(fieldGroups ? { fieldGroups } : {}),
     ...(sourceContext ? { sourceContext } : {}),
@@ -1514,38 +1702,46 @@ function decodeDataMeta(value: unknown, issues: DecodeIssue[]): ContractV2DataMe
 }
 
 function decodeDataContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2DataContract {
-  const treeData = decodeRowsMap(source.treeData);
-  const ganttData = decodeRowsMap(source.ganttData);
+  rejectUnknownKeys(source, [
+    'mainData', 'tableRows', 'relationRows', 'treeData', 'ganttData', 'dictData', 'pagination', 'dataSource', 'dataMeta',
+  ], 'dataContract', issues);
+  const treeData = source.treeData === undefined ? undefined : decodeRowsMap(source.treeData, 'dataContract.treeData', issues);
+  const ganttData = source.ganttData === undefined ? undefined : decodeRowsMap(source.ganttData, 'dataContract.ganttData', issues);
   return {
     mainData: requiredRecord(source, 'mainData', 'dataContract', issues),
-    tableRows: decodeRowsMap(requiredRecord(source, 'tableRows', 'dataContract', issues)),
-    relationRows: decodeRowsMap(requiredRecord(source, 'relationRows', 'dataContract', issues)),
+    tableRows: decodeRowsMap(source.tableRows, 'dataContract.tableRows', issues),
+    relationRows: decodeRowsMap(source.relationRows, 'dataContract.relationRows', issues),
     dictData: requiredRecord(source, 'dictData', 'dataContract', issues),
     pagination: requiredRecord(source, 'pagination', 'dataContract', issues),
-    dataSource: decodeDataSources(requiredRecord(source, 'dataSource', 'dataContract', issues)),
+    dataSource: decodeDataSources(source.dataSource, 'dataContract.dataSource', issues),
     dataMeta: decodeDataMeta(requiredRecord(source, 'dataMeta', 'dataContract', issues), issues),
-    ...(Object.keys(treeData).length ? { treeData } : {}),
-    ...(Object.keys(ganttData).length ? { ganttData } : {}),
+    ...(treeData !== undefined ? { treeData } : {}),
+    ...(ganttData !== undefined ? { ganttData } : {}),
   };
 }
 
-function decodeGlobalStatus(source: ContractV2Dictionary): ContractV2GlobalStatus {
-  const modelRights = asRecord(source.modelRights);
-  const recordRights = asRecord(source.recordRights);
-  const viewCapabilities = asRecord(source.viewCapabilities);
-  const entryCapabilities = asRecord(source.entryCapabilities);
-  const effectiveRecordCapabilities = asRecord(source.effectiveRecordCapabilities);
+function decodeGlobalStatus(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2GlobalStatus {
+  const path = 'statusContract.globalStatus';
+  rejectUnknownKeys(source, [
+    'pageVisible', 'pageAuth', 'reasonCode', 'modelRights', 'recordRights', 'viewCapabilities',
+    'entryCapabilities', 'effectiveRecordCapabilities', 'effectiveRenderProfile', 'workflowPhase', 'approvalPhase',
+  ], path, issues);
+  const modelRights = optionalRecord(source, 'modelRights', path, issues);
+  const recordRights = optionalRecord(source, 'recordRights', path, issues);
+  const viewCapabilities = optionalRecord(source, 'viewCapabilities', path, issues);
+  const entryCapabilities = optionalRecord(source, 'entryCapabilities', path, issues);
+  const effectiveRecordCapabilities = optionalRecord(source, 'effectiveRecordCapabilities', path, issues);
   return {
-    pageVisible: optionalBoolean(source.pageVisible),
+    pageVisible: optionalBooleanField(source, 'pageVisible', 'statusContract.globalStatus', issues),
     ...(optionalString(source, 'pageAuth') ? { pageAuth: optionalString(source, 'pageAuth') } : {}),
     ...(optionalString(source, 'reasonCode')
       ? { reasonCode: optionalString(source, 'reasonCode') }
       : {}),
-    ...(Object.keys(modelRights).length ? { modelRights } : {}),
-    ...(Object.keys(recordRights).length ? { recordRights } : {}),
-    ...(Object.keys(viewCapabilities).length ? { viewCapabilities } : {}),
-    ...(Object.keys(entryCapabilities).length ? { entryCapabilities } : {}),
-    ...(Object.keys(effectiveRecordCapabilities).length ? { effectiveRecordCapabilities } : {}),
+    ...(modelRights && Object.keys(modelRights).length ? { modelRights } : {}),
+    ...(recordRights && Object.keys(recordRights).length ? { recordRights } : {}),
+    ...(viewCapabilities && Object.keys(viewCapabilities).length ? { viewCapabilities } : {}),
+    ...(entryCapabilities && Object.keys(entryCapabilities).length ? { entryCapabilities } : {}),
+    ...(effectiveRecordCapabilities && Object.keys(effectiveRecordCapabilities).length ? { effectiveRecordCapabilities } : {}),
     ...(optionalString(source, 'effectiveRenderProfile')
       ? { effectiveRenderProfile: optionalString(source, 'effectiveRenderProfile') }
       : {}),
@@ -1555,16 +1751,23 @@ function decodeGlobalStatus(source: ContractV2Dictionary): ContractV2GlobalStatu
 }
 
 function decodeWidgetStatus(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2WidgetStatus | null {
-  if (!isRecord(raw)) return null;
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['widgetId', 'visible', 'readonly', 'required', 'disabled', 'placeholder', 'auth', 'reasonCode'], path, issues);
   const widgetId = asString(raw.widgetId);
-  if (!widgetId) return null;
+  if (!widgetId) {
+    issues.push({ path: `${path}.widgetId`, message: 'is required' });
+    return null;
+  }
   const auth = decodeAuth(asString(raw.auth), `${path}.auth`, issues);
   return {
     widgetId,
-    visible: optionalBoolean(raw.visible),
-    readonly: optionalBoolean(raw.readonly),
-    required: optionalBoolean(raw.required),
-    disabled: optionalBoolean(raw.disabled),
+    visible: optionalBooleanField(raw, 'visible', path, issues),
+    readonly: optionalBooleanField(raw, 'readonly', path, issues),
+    required: optionalBooleanField(raw, 'required', path, issues),
+    disabled: optionalBooleanField(raw, 'disabled', path, issues),
     ...(optionalString(raw, 'placeholder') ? { placeholder: optionalString(raw, 'placeholder') } : {}),
     ...(auth ? { auth } : {}),
     ...(optionalString(raw, 'reasonCode')
@@ -1573,45 +1776,66 @@ function decodeWidgetStatus(raw: unknown, path: string, issues: DecodeIssue[]): 
   };
 }
 
-function decodeButtonStatus(raw: unknown): ContractV2ButtonStatus | null {
-  if (!isRecord(raw)) return null;
+function decodeButtonStatus(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ButtonStatus | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['btnId', 'backendIdentity', 'visible', 'disabled', 'reasonCode'], path, issues);
   const btnId = asString(raw.btnId);
-  if (!btnId) return null;
+  if (!btnId) {
+    issues.push({ path: `${path}.btnId`, message: 'is required' });
+    return null;
+  }
   return {
     btnId,
     ...(asString(raw.backendIdentity) ? { backendIdentity: asString(raw.backendIdentity) } : {}),
-    visible: optionalBoolean(raw.visible),
-    disabled: optionalBoolean(raw.disabled),
+    visible: optionalBooleanField(raw, 'visible', path, issues),
+    disabled: optionalBooleanField(raw, 'disabled', path, issues),
     ...(optionalString(raw, 'reasonCode')
       ? { reasonCode: optionalString(raw, 'reasonCode') }
       : {}),
   };
 }
 
-function decodeContainerStatus(raw: unknown): ContractV2ContainerStatus | null {
-  if (!isRecord(raw)) return null;
+function decodeContainerStatus(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ContainerStatus | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['containerId', 'visible', 'disabled', 'reasonCode'], path, issues);
   const containerId = asString(raw.containerId);
-  if (!containerId) return null;
+  if (!containerId) {
+    issues.push({ path: `${path}.containerId`, message: 'is required' });
+    return null;
+  }
   return {
     containerId,
-    visible: optionalBoolean(raw.visible),
-    disabled: optionalBoolean(raw.disabled),
+    visible: optionalBooleanField(raw, 'visible', path, issues),
+    disabled: optionalBooleanField(raw, 'disabled', path, issues),
     ...(optionalString(raw, 'reasonCode')
       ? { reasonCode: optionalString(raw, 'reasonCode') }
       : {}),
   };
 }
 
-function decodeSelectorStatus(raw: unknown): ContractV2SelectorStatus | null {
-  if (!isRecord(raw)) return null;
+function decodeSelectorStatus(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2SelectorStatus | null {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return null;
+  }
+  rejectUnknownKeys(raw, ['selector', 'visible', 'readonly', 'required', 'disabled', 'reasonCode'], path, issues);
   const selector = asString(raw.selector);
-  if (!selector) return null;
+  if (!selector) {
+    issues.push({ path: `${path}.selector`, message: 'is required' });
+    return null;
+  }
   return {
     selector,
-    visible: optionalBoolean(raw.visible),
-    readonly: optionalBoolean(raw.readonly),
-    required: optionalBoolean(raw.required),
-    disabled: optionalBoolean(raw.disabled),
+    visible: optionalBooleanField(raw, 'visible', path, issues),
+    readonly: optionalBooleanField(raw, 'readonly', path, issues),
+    required: optionalBooleanField(raw, 'required', path, issues),
+    disabled: optionalBooleanField(raw, 'disabled', path, issues),
     ...(optionalString(raw, 'reasonCode')
       ? { reasonCode: optionalString(raw, 'reasonCode') }
       : {}),
@@ -1619,19 +1843,22 @@ function decodeSelectorStatus(raw: unknown): ContractV2SelectorStatus | null {
 }
 
 function decodeStatusContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2StatusContract {
+  rejectUnknownKeys(source, [
+    'globalStatus', 'containerStatus', 'widgetStatus', 'buttonStatus', 'selectorStatus',
+  ], 'statusContract', issues);
   return {
-    globalStatus: decodeGlobalStatus(requiredRecord(source, 'globalStatus', 'statusContract', issues)),
+    globalStatus: decodeGlobalStatus(requiredRecord(source, 'globalStatus', 'statusContract', issues), issues),
     widgetStatus: requiredArray(source, 'widgetStatus', 'statusContract', issues)
       .map((item, index) => decodeWidgetStatus(item, `statusContract.widgetStatus[${index}]`, issues))
       .filter((item): item is ContractV2WidgetStatus => Boolean(item)),
     buttonStatus: requiredArray(source, 'buttonStatus', 'statusContract', issues)
-      .map(decodeButtonStatus)
+      .map((item, index) => decodeButtonStatus(item, `statusContract.buttonStatus[${index}]`, issues))
       .filter((item): item is ContractV2ButtonStatus => Boolean(item)),
     containerStatus: requiredArray(source, 'containerStatus', 'statusContract', issues)
-      .map(decodeContainerStatus)
+      .map((item, index) => decodeContainerStatus(item, `statusContract.containerStatus[${index}]`, issues))
       .filter((item): item is ContractV2ContainerStatus => Boolean(item)),
     selectorStatus: requiredArray(source, 'selectorStatus', 'statusContract', issues)
-      .map(decodeSelectorStatus)
+      .map((item, index) => decodeSelectorStatus(item, `statusContract.selectorStatus[${index}]`, issues))
       .filter((item): item is ContractV2SelectorStatus => Boolean(item)),
   };
 }
@@ -1759,48 +1986,114 @@ function validateFormOccurrenceAuthority(
 }
 
 function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2RuntimeContract {
+  rejectUnknownKeys(source, [
+    'patchStrategy', 'cachePolicy', 'optimistic', 'lazyContainer', 'virtualization', 'retryPolicy',
+    'renderStrategy', 'hydration', 'patchOperations', 'tracePolicy', 'complexityBudget', 'aiEnvelope',
+    'interactionMode', 'actionTarget', 'collaboration', 'businessWorkspace', 'businessActions', 'deliveryProfile',
+    'intakeAutosave', 'fieldSemantics', 'validationRules', 'governance', 'recordVersionPolicy',
+  ], 'runtimeContract', issues);
   const renderStrategy = decodeRenderStrategy(asString(source.renderStrategy), 'runtimeContract.renderStrategy', issues);
-  const patchOperations = Array.isArray(source.patchOperations)
-    ? source.patchOperations
+  const patchOperations = source.patchOperations === undefined
+    ? undefined
+    : Array.isArray(source.patchOperations)
+      ? source.patchOperations
       .map((item, index) => decodePatchOperation(asString(item), `runtimeContract.patchOperations[${index}]`, issues))
-      .filter((item): item is ContractV2PatchOperation => Boolean(item))
-    : [];
+      .filter((item, index, rows): item is ContractV2PatchOperation => {
+        if (!item) return false;
+        if (rows.indexOf(item) !== index) {
+          issues.push({ path: `runtimeContract.patchOperations[${index}]`, message: `duplicates ${item}` });
+          return false;
+        }
+        return true;
+      })
+      : (issues.push({ path: 'runtimeContract.patchOperations', message: 'must be an array' }), []);
+  const hydration = optionalRecord(source, 'hydration', 'runtimeContract', issues);
+  const tracePolicy = optionalRecord(source, 'tracePolicy', 'runtimeContract', issues);
+  const complexityBudget = optionalRecord(source, 'complexityBudget', 'runtimeContract', issues);
+  const aiEnvelope = optionalRecord(source, 'aiEnvelope', 'runtimeContract', issues);
+  if (aiEnvelope) {
+    if (aiEnvelope.mode !== undefined && aiEnvelope.mode !== 'suggestion') {
+      issues.push({ path: 'runtimeContract.aiEnvelope.mode', message: 'must equal suggestion' });
+    }
+    if (aiEnvelope.executable === true) {
+      issues.push({ path: 'runtimeContract.aiEnvelope.executable', message: 'must not be true' });
+    } else if (aiEnvelope.executable !== undefined && typeof aiEnvelope.executable !== 'boolean') {
+      issues.push({ path: 'runtimeContract.aiEnvelope.executable', message: 'must be a boolean' });
+    }
+    if (aiEnvelope.allowed !== undefined && typeof aiEnvelope.allowed !== 'boolean') {
+      issues.push({ path: 'runtimeContract.aiEnvelope.allowed', message: 'must be a boolean' });
+    }
+    if (aiEnvelope.capabilities !== undefined) {
+      decodeUniqueStringArray(aiEnvelope.capabilities, 'runtimeContract.aiEnvelope.capabilities', issues);
+    }
+  }
+  const interactionMode = optionalStringField(source, 'interactionMode', 'runtimeContract', issues);
+  const actionTarget = optionalStringField(source, 'actionTarget', 'runtimeContract', issues);
   const collaboration = optionalRecord(source, 'collaboration', 'runtimeContract', issues);
   const businessWorkspace = optionalRecord(source, 'businessWorkspace', 'runtimeContract', issues);
   const businessActions = optionalRecordArray(source, 'businessActions', 'runtimeContract', issues);
+  const deliveryProfile = decodeDeliveryProfile(source.deliveryProfile, 'runtimeContract.deliveryProfile', issues);
+  const intakeAutosave = optionalRecord(source, 'intakeAutosave', 'runtimeContract', issues);
+  const fieldSemantics = optionalRecord(source, 'fieldSemantics', 'runtimeContract', issues);
+  const validationRules = optionalRecordArray(source, 'validationRules', 'runtimeContract', issues);
+  const governance = optionalRecord(source, 'governance', 'runtimeContract', issues);
+  const recordVersionPolicy = optionalRecord(source, 'recordVersionPolicy', 'runtimeContract', issues);
   return {
     patchStrategy: decodePatchStrategy(requiredString(source, 'patchStrategy', 'runtimeContract', issues), 'runtimeContract.patchStrategy', issues),
     cachePolicy: decodeCachePolicy(requiredString(source, 'cachePolicy', 'runtimeContract', issues), 'runtimeContract.cachePolicy', issues),
     optimistic: requiredBoolean(source, 'optimistic', 'runtimeContract', issues, false),
-    lazyContainer: asStringArray(source.lazyContainer),
+    lazyContainer: decodeUniqueStringArray(source.lazyContainer, 'runtimeContract.lazyContainer', issues),
     virtualization: requiredRecord(source, 'virtualization', 'runtimeContract', issues),
     retryPolicy: requiredRecord(source, 'retryPolicy', 'runtimeContract', issues),
     ...(renderStrategy ? { renderStrategy } : {}),
-    ...(isRecord(source.hydration) ? { hydration: source.hydration } : {}),
-    ...(patchOperations.length ? { patchOperations } : {}),
-    ...(isRecord(source.tracePolicy) ? { tracePolicy: source.tracePolicy } : {}),
-    ...(isRecord(source.complexityBudget) ? { complexityBudget: source.complexityBudget } : {}),
-    ...(isRecord(source.aiEnvelope) ? { aiEnvelope: source.aiEnvelope } : {}),
-    ...(asString(source.interactionMode) ? { interactionMode: asString(source.interactionMode) } : {}),
-    ...(asString(source.actionTarget) ? { actionTarget: asString(source.actionTarget) } : {}),
+    ...(hydration ? { hydration } : {}),
+    ...(patchOperations?.length ? { patchOperations } : {}),
+    ...(tracePolicy ? { tracePolicy } : {}),
+    ...(complexityBudget ? { complexityBudget } : {}),
+    ...(aiEnvelope ? { aiEnvelope } : {}),
+    ...(interactionMode !== undefined ? { interactionMode } : {}),
+    ...(actionTarget !== undefined ? { actionTarget } : {}),
     ...(collaboration ? { collaboration } : {}),
     ...(businessWorkspace ? { businessWorkspace } : {}),
     ...(businessActions ? { businessActions } : {}),
+    ...(deliveryProfile ? { deliveryProfile } : {}),
+    ...(intakeAutosave ? { intakeAutosave } : {}),
+    ...(fieldSemantics ? { fieldSemantics } : {}),
+    ...(validationRules ? { validationRules } : {}),
+    ...(governance ? { governance } : {}),
+    ...(recordVersionPolicy ? { recordVersionPolicy } : {}),
   };
 }
 
 function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2Meta {
+  rejectUnknownKeys(source, ['etag', 'snapshotId', 'traceId', 'requestId', 'sourceType', 'lifecycle', 'deliveryTrim'], 'meta', issues);
   const lifecycle = requiredRecord(source, 'lifecycle', 'meta', issues);
   const definition = requiredRecord(lifecycle, 'definition', 'meta.lifecycle', issues);
   const generation = requiredRecord(lifecycle, 'generation', 'meta.lifecycle', issues);
   const runtime = requiredRecord(lifecycle, 'runtime', 'meta.lifecycle', issues);
   const integrity = requiredRecord(lifecycle, 'integrity', 'meta.lifecycle', issues);
+  const deliveryTrim = source.deliveryTrim === undefined ? undefined : requiredRecord(source, 'deliveryTrim', 'meta', issues);
+  rejectUnknownKeys(lifecycle, [
+    'lifecycleVersion', 'stage', 'definition', 'generation', 'runtime', 'integrity', 'authority',
+  ], 'meta.lifecycle', issues);
+  rejectUnknownKeys(definition, [
+    'schemaId', 'schemaVersion', 'schemaSha256', 'contractVersion', 'normativeStatus',
+  ], 'meta.lifecycle.definition', issues);
+  rejectUnknownKeys(generation, [
+    'generator', 'generatorVersion', 'sourceType', 'sourceSha256',
+  ], 'meta.lifecycle.generation', issues);
+  rejectUnknownKeys(runtime, ['requestId', 'traceId', 'clientType', 'traceSource'], 'meta.lifecycle.runtime', issues);
+  rejectUnknownKeys(integrity, ['algorithm', 'contractSha256'], 'meta.lifecycle.integrity', issues);
+  if (deliveryTrim) {
+    rejectUnknownKeys(deliveryTrim, ['clientType', 'deliveryProfile', 'compact', 'limits', 'original', 'delivered', 'omitted'], 'meta.deliveryTrim', issues);
+  }
   return {
     etag: requiredString(source, 'etag', 'meta', issues),
     snapshotId: requiredString(source, 'snapshotId', 'meta', issues),
     traceId: requiredString(source, 'traceId', 'meta', issues),
     requestId: requiredString(source, 'requestId', 'meta', issues),
     sourceType: requiredString(source, 'sourceType', 'meta', issues),
+    ...(deliveryTrim ? { deliveryTrim: decodeDeliveryTrim(deliveryTrim, issues) } : {}),
     lifecycle: {
       lifecycleVersion: requiredString(lifecycle, 'lifecycleVersion', 'meta.lifecycle', issues),
       stage: requiredString(lifecycle, 'stage', 'meta.lifecycle', issues),
@@ -1866,9 +2159,33 @@ function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2
   return out;
 }
 
+function validateDeliveryIdentity(
+  pageInfo: ContractV2PageInfo,
+  runtimeContract: ContractV2RuntimeContract,
+  meta: ContractV2Meta,
+  issues: DecodeIssue[],
+): void {
+  const profiles = [pageInfo.deliveryProfile, runtimeContract.deliveryProfile, meta.deliveryTrim?.deliveryProfile];
+  if (!profiles.some(Boolean)) return;
+  if (profiles.some((profile) => !profile)) {
+    issues.push({ path: '$.deliveryProfile', message: 'pageInfo, runtimeContract, and meta.deliveryTrim must declare one complete delivery identity' });
+    return;
+  }
+  if (new Set(profiles).size !== 1) {
+    issues.push({ path: '$.deliveryProfile', message: 'delivery profile identities must match' });
+  }
+  if (meta.deliveryTrim?.clientType !== pageInfo.clientType) {
+    issues.push({ path: 'meta.deliveryTrim.clientType', message: 'must match pageInfo.clientType' });
+  }
+}
+
 export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const root = asRecord(normalizeLegacyContractV2Snapshot(value));
   const issues: DecodeIssue[] = [];
+  rejectUnknownKeys(root, [
+    'pageInfo', 'layoutContract', 'statusContract', 'actionContract', 'dataContract', 'runtimeContract',
+    'formStructureContract', 'searchContract', 'workflowContract', 'meta',
+  ], '$', issues);
   const pageInfo = decodePageInfo(readAliasedObject(root, 'pageInfo', [], '$', issues), issues);
   const layoutContract = decodeLayoutContract(readAliasedObject(root, 'layoutContract', [], '$', issues), issues);
   const statusContract = decodeStatusContract(readAliasedObject(root, 'statusContract', [], '$', issues), issues);
@@ -1885,6 +2202,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const searchContract = decodeSearchContract(root.searchContract, issues);
   const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
+  validateDeliveryIdentity(pageInfo, runtimeContract, meta, issues);
   if (issues.length) {
     throw new ContractV2DecodeError(issues);
   }

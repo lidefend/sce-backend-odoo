@@ -1,5 +1,5 @@
 <template>
-  <section
+  <ScPage
     class="page sc-page sc-product-workspace-stack"
     data-product-page-mode="list"
     data-semantic-component="ListPage"
@@ -285,7 +285,7 @@
     </template>
     <ScInlineState v-if="attachmentPreviewError" state="error" :label="attachmentPreviewError" />
     <AttachmentViewer ref="attachmentViewerRef" />
-  </section>
+  </ScPage>
 </template>
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
@@ -306,11 +306,12 @@ import CollectionSelectionControl from '../components/product-list/CollectionSel
 import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScPage from '../components/design-system/ScPage.vue';
+import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
-import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';

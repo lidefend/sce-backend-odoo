@@ -284,7 +284,27 @@ verify.frontend.rendering_detail_state.unit: guard.prod.forbid
 verify.frontend.rendering_detail_state.browser: guard.prod.forbid
 	@node scripts/verify/frontend_rendering_detail_state_browser.mjs
 
-.PHONY: verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit
+.PHONY: verify.frontend.dev.incremental verify.frontend.dev.watch verify.frontend.form_structure_contract_projection.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_action_presentation.browser verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit
+
+verify.frontend.form_structure_contract_projection.unit: guard.prod.forbid
+	@python3 scripts/verify/form_structure_contract_projection_matrix.py --check
+
+.PHONY: verify.frontend.contract_v2_render_authority.unit
+verify.frontend.contract_v2_render_authority.unit: guard.prod.forbid
+	@python3 scripts/verify/contract_v2_render_authority_matrix.py --check
+
+.PHONY: verify.frontend.contract_v2_runtime_policy.unit
+verify.frontend.contract_v2_runtime_policy.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-v2-runtime-policy-test.mjs >/dev/null
+	@node /tmp/contract-v2-runtime-policy-test.mjs
+
+# Development feedback only: these entries never build, capture browser
+# evidence, refresh reports, or freeze a candidate fingerprint.
+verify.frontend.dev.incremental: guard.prod.forbid
+	@python3 scripts/verify/frontend_dev_incremental.py $(foreach path,$(FRONTEND_DEV_CHANGED_PATHS),--path $(path))
+
+verify.frontend.dev.watch: guard.prod.forbid
+	@python3 scripts/verify/frontend_dev_incremental.py --watch
 verify.frontend.form_header_action_primitives.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_form_header_action_primitives_guard.py
 	@python3 scripts/verify/frontend_form_header_action_primitives_guard.py
@@ -312,7 +332,11 @@ verify.frontend.hierarchical_worksheet.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts --bundle --platform=node --format=esm --outfile=/tmp/hierarchical-worksheet-interaction-test.mjs >/dev/null
 	@node /tmp/hierarchical-worksheet-interaction-test.mjs
 
-verify.frontend.quick.gate: verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.overlay_lifecycle.unit verify.frontend.state_dashboard.unit verify.frontend.rendering_detail_state.unit verify.frontend.hierarchical_worksheet.unit verify.frontend.professional.extensions.unit
+verify.frontend.page_pattern_reference_parity.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_page_pattern_reference_parity_guard
+	@python3 scripts/verify/frontend_page_pattern_reference_parity_guard.py
+
+verify.frontend.quick.gate: verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.overlay_lifecycle.unit verify.frontend.state_dashboard.unit verify.frontend.rendering_detail_state.unit verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit verify.frontend.professional.extensions.unit
 
 verify.frontend.release.unit: verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit
 

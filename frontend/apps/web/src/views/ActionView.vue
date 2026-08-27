@@ -2,7 +2,8 @@
 <template>
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" data-semantic-component="ActionView" :data-collection-state="status" :aria-busy="status === 'loading' || undefined" :content-layout="actionContentLayoutMode">
     <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
-      <template v-if="canCreateRecord || vm.header.actions.length" #actions>
+      <template #actions>
+        <ScButton data-page-action="reload" variant="secondary" size="small" type="button" :disabled="isUiBusy" @click="reload"><ScIcon name="refresh" :size="16" />{{ toolbarUiLabel('refresh', '刷新') }}</ScButton>
         <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord"><ScIcon name="plus" :size="16" />{{ toolbarUiLabel('create', '新建') }}</ScButton>
         <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
       </template>
@@ -306,6 +307,7 @@
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
           :loading="isUiBusy"
+          :total-count="listTotalCount"
           :show-view-switch="showViewSwitch"
           :view-label="toolbarUiLabel('view_switch', '视图')"
           :view-modes="vm.page.availableViewModes"
@@ -449,6 +451,7 @@
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
           :loading="isUiBusy"
+          :total-count="listTotalCount"
           :show-view-switch="showViewSwitch"
           :view-label="toolbarUiLabel('view_switch', '视图')"
           :view-modes="vm.page.availableViewModes"
@@ -530,6 +533,7 @@
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
           :loading="isUiBusy"
+          :total-count="listTotalCount"
           :show-view-switch="showViewSwitch"
           :view-label="toolbarUiLabel('view_switch', '视图')"
           :view-modes="vm.page.availableViewModes"

@@ -5,7 +5,7 @@
     data-semantic-component="FormSection"
     :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
     :title="showHead ? title : undefined"
-    appearance="form-section"
+    :appearance="preferReadonlyFacts ? 'fact' : 'form-section'"
   >
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
     <p v-if="hint" class="template-form-section-hint">{{ hint }}</p>
@@ -18,10 +18,17 @@
           :data-field-name="field.name"
           :data-field-key="field.key"
           :data-field-type="field.type"
+          :data-widget-type="field.widget || undefined"
+          :data-native-locator="field.nativeLocator || undefined"
+          :data-occurrence-index="field.occurrenceIndex || undefined"
+          :data-source-position="field.sourcePosition ?? undefined"
           :data-field-state="fieldState(field)"
+          :data-field-auth="field.auth || undefined"
           :data-component-key="field.componentKey || undefined"
           :data-component-readiness="field.componentReadiness || undefined"
           :data-component-renderer="field.componentRenderer || undefined"
+          :data-contract-adapter="field.contractAdapter || undefined"
+          :data-contract-component-version="field.contractVersion || undefined"
           :data-component-fallback="field.componentFallback || undefined"
           :tabindex="fieldSelectionMode ? 0 : undefined"
           :role="fieldSelectionMode ? 'button' : undefined"

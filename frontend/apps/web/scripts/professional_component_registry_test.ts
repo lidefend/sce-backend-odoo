@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import {
   professionalComponentRegistrations,
+  resolveContractProfessionalComponent,
   resolveProfessionalComponent,
   resolveProfessionalComponentRegistration,
   type ProfessionalComponentRegistration,
@@ -11,6 +12,21 @@ const ready = resolveProfessionalComponent({
 });
 assert.equal(ready.readiness, 'ready');
 assert.equal(ready.renderer, 'ProfessionalBaseFieldControl');
+const contractBound = resolveContractProfessionalComponent({
+  componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
+  clientType: 'web_pc',
+  contractRegistryEntry: { version: '1.0', adapter: { web_pc: 'ElInput' }, selectedAdapter: 'TDesignInput' },
+});
+assert.equal(contractBound.contractAdapter, 'TDesignInput');
+assert.equal(contractBound.contractVersion, '1.0');
+assert.throws(() => resolveContractProfessionalComponent({
+  componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
+  clientType: 'web_pc', contractRegistryEntry: {},
+}), /PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING/);
+assert.throws(() => resolveContractProfessionalComponent({
+  componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
+  clientType: 'web_pc', contractRegistryEntry: { version: '1.0', adapter: {} },
+}), /PROFESSIONAL_COMPONENT_CONTRACT_ADAPTER_MISSING/);
 assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.relation.many2one', fieldType: 'many2one', presentationMode: 'task', renderProfile: 'edit',
 }).renderer, 'ProfessionalRelationFieldControl');
@@ -76,4 +92,4 @@ assert.equal(resolveProfessionalComponentRegistration(testRegistry, {
 }).componentKey, restricted.componentKey);
 
 assert.equal(professionalComponentRegistrations.length, 23);
-console.log('[professional_component_registry_test] PASS cases=20');
+console.log('[professional_component_registry_test] PASS cases=25');

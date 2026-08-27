@@ -276,6 +276,8 @@
       </div>
     </div>
 
+    <span v-if="totalCount !== undefined" class="toolbar-total" aria-live="polite">共 {{ totalCount }} 条</span>
+
     <div v-if="sortOptions.length" class="toolbar-section sort-switch">
       <p class="contract-label">{{ sortLabel }}</p>
       <div class="contract-chips">
@@ -428,6 +430,7 @@ const props = defineProps<{
   activeGroupKey: string;
   canCreateRecord: boolean;
   createLabel: string;
+  totalCount?: number;
   activeConditionCount?: number;
   uiLabels?: Record<string, string>;
 }>();
@@ -682,8 +685,8 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 40;
   display: grid;
-  grid-template-columns: max-content minmax(320px, 1fr) max-content max-content;
-  grid-template-areas: 'view search sort primary';
+  grid-template-columns: max-content minmax(320px, 1fr) max-content max-content max-content;
+  grid-template-areas: 'view search total sort primary';
   justify-content: stretch;
   align-items: center;
   gap: 8px;
@@ -697,8 +700,8 @@ onBeforeUnmount(() => {
 }
 
 .action-toolbar--without-view {
-  grid-template-columns: minmax(320px, 1fr) max-content max-content;
-  grid-template-areas: 'search sort primary';
+  grid-template-columns: minmax(320px, 1fr) max-content max-content max-content;
+  grid-template-areas: 'search total sort primary';
 }
 
 .view-switch { grid-area: view; }
@@ -706,6 +709,7 @@ onBeforeUnmount(() => {
 .sort-switch { grid-area: sort; }
 .toolbar-actions { grid-area: primary; }
 .toolbar-overflow { grid-area: overflow; }
+.toolbar-total { grid-area: total; color: var(--sc-app-text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .toolbar-section,
 .view-switch,

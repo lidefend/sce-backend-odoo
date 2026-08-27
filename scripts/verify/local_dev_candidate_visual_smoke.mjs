@@ -31,10 +31,15 @@ async function loginPage(page) {
 }
 
 async function waitForStableProductSurface(page) {
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.waitForFunction(() => {
     const pendingForm = document.querySelector('[data-workspace-primary-content][aria-busy="true"]');
     const pendingCollection = document.querySelector('.product-loading-shell[aria-busy="true"]');
-    return !pendingForm && !pendingCollection;
+    const formPage = document.querySelector('[data-semantic-component="ContractFormPage"]');
+    const formSettled = !(formPage instanceof HTMLElement) || formPage.dataset.state !== 'loading';
+    const actionPage = document.querySelector('[data-semantic-component="ActionView"]');
+    const actionSettled = !(actionPage instanceof HTMLElement) || actionPage.dataset.collectionState !== 'loading';
+    return !pendingForm && !pendingCollection && formSettled && actionSettled;
   }, undefined, { timeout: 45000 });
   await page.evaluate(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
@@ -411,7 +416,7 @@ try {
         const publishedApps = [...document.querySelectorAll('.published-apps__list .published-app')]
           .filter((node) => node instanceof HTMLElement && node.offsetParent !== null)
           .map((node) => {
-            const content = node.querySelector('.sc-btn__content');
+            const content = node.querySelector('.published-app__content');
             const mark = node.querySelector('.published-app__mark');
             const label = node.querySelector('.published-app__label');
             const contentStyle = content ? getComputedStyle(content) : null;
@@ -489,13 +494,22 @@ try {
           const menuOwner = owner.querySelector('.t-menu--scroll');
           const scrollOwner = menuOwner instanceof HTMLElement ? menuOwner : owner;
           const scrollOwnerStyle = getComputedStyle(scrollOwner);
+          const shell = document.querySelector('.layout-shell');
+          const shellStyle = shell instanceof HTMLElement ? getComputedStyle(shell) : null;
           scrollOwner.scrollTop = scrollOwner.scrollHeight;
           const observedScrollTop = scrollOwner.scrollTop;
           scrollOwner.scrollTop = 0;
           return {
             viewportHeight: window.innerHeight,
             sidebarHeight: sidebar.clientHeight,
+            sidebarComputedHeight: sidebarStyle.height,
+            sidebarMinHeight: sidebarStyle.minHeight,
+            sidebarMaxHeight: sidebarStyle.maxHeight,
+            sidebarBlockSize: sidebarStyle.blockSize,
+            sidebarMaxBlockSize: sidebarStyle.maxBlockSize,
             sidebarDisplay: sidebarStyle.display,
+            shellClientHeight: shell instanceof HTMLElement ? shell.clientHeight : 0,
+            shellComputedHeight: shellStyle?.height || '',
             ownerClientHeight: owner.clientHeight,
             ownerScrollHeight: owner.scrollHeight,
             ownerScrollTop: owner.scrollTop,
@@ -1021,6 +1035,90 @@ try {
             && missingResizeLabels === 0,
         };
       }
+      let recordEntryEvidence = null;
+      if (target.exerciseRecordEntry === true) {
+        const recordId = String(target.recordId || '').trim();
+        if (!recordId) throw new Error(`${target.name}: record entry requires recordId`);
+        const recordOwner = page.locator(`[data-record-key="${recordId}"]:visible`);
+        if (await recordOwner.count() !== 1) throw new Error(`${target.name}: expected exactly one visible record ${recordId}`);
+        const opener = recordOwner.locator('.cell-primary-link, [data-semantic-action="open-record"]');
+        if (await opener.count() !== 1) throw new Error(`${target.name}: expected exactly one record opener for ${recordId}`);
+        const beforeUrl = page.url();
+        const detailContractResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
+        await opener.click();
+        await page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15000 });
+        const response = await detailContractResponse;
+        const payload = await response.json();
+        const widgetTypes = [];
+        const visit = (value) => {
+          if (Array.isArray(value)) return value.forEach(visit);
+          if (!value || typeof value !== 'object') return;
+          if (typeof value.widgetType === 'string') widgetTypes.push(value.widgetType);
+          Object.values(value).forEach(visit);
+        };
+        visit(payload.layoutContract?.containerTree || []);
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        recordEntryEvidence = {
+          recordId,
+          beforeUrl,
+          firstUrl: page.url(),
+          responseStatus: response.status(),
+          pageInfo: payload.pageInfo || null,
+          widgetTypes: [...new Set(widgetTypes)].sort(),
+          visibleError: await page.locator('[role="alert"]:visible, .error-state:visible, .form-error:visible').allTextContents(),
+        };
+      }
+      const taskDensityEvidence = target.captureTaskDensity === true
+        ? await page.evaluate((viewportName) => {
+          const selector = '[data-product-page-pattern="task-form"]';
+          const root = document.querySelector(selector);
+          if (!(root instanceof HTMLElement)) return { present: false, regions: [], nodes: [] };
+          const describe = (node) => {
+            const rect = node.getBoundingClientRect();
+            const style = getComputedStyle(node);
+            return {
+              tag: node.tagName,
+              className: typeof node.className === 'string' ? node.className : '',
+              region: node.getAttribute('data-floorplan-region') || '',
+              text: node.textContent?.replace(/\s+/g, ' ').trim().slice(0, 120) || '',
+              rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.width), Math.round(rect.height)],
+              display: style.display,
+              gridTemplateColumns: style.gridTemplateColumns,
+              gridAutoRows: style.gridAutoRows,
+              alignContent: style.alignContent,
+              rowGap: style.rowGap,
+            };
+          };
+          const summary = root.querySelector('.object-task-page__summary-grid');
+          const summaryNodes = summary instanceof HTMLElement
+            ? [...summary.children].filter((node) => node instanceof HTMLElement).map(describe)
+            : [];
+          const summaryRows = [...new Set(summaryNodes.map((node) => node.rect[1]))];
+          const summaryColumns = summary instanceof HTMLElement
+            ? getComputedStyle(summary).gridTemplateColumns.split(' ').filter(Boolean).length
+            : 0;
+          const expectedColumns = viewportName === 'mobile' ? 2 : 4;
+          const maxSummaryItemHeight = viewportName === 'mobile' ? 150 : 120;
+          return {
+            present: true,
+            root: describe(root),
+            summary: {
+              columns: summaryColumns,
+              itemCount: summaryNodes.length,
+              rowCount: summaryRows.length,
+              height: summary instanceof HTMLElement ? Math.round(summary.getBoundingClientRect().height) : 0,
+              maxItemHeight: Math.max(0, ...summaryNodes.map((node) => node.rect[3])),
+              pass: summaryNodes.length === 0 || (
+                summaryColumns === expectedColumns
+                && summaryRows.length === Math.ceil(summaryNodes.length / expectedColumns)
+                && Math.max(0, ...summaryNodes.map((node) => node.rect[3])) <= maxSummaryItemHeight
+              ),
+            },
+            regions: [...root.querySelectorAll('[data-floorplan-region]')].map(describe),
+            nodes: [...root.querySelectorAll('.canonical-form-node')].map(describe),
+          };
+        }, viewport.name)
+        : null;
       const verticalLineEvidence = target.captureVerticalLineEvidence === true
         ? await page.evaluate(() => {
           const x = Math.round(window.innerWidth * 0.568);
@@ -1075,7 +1173,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, taskDensityEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
@@ -1112,6 +1210,7 @@ for (const item of report.routes) {
     failures.push({ name: item.name, expectedNativeNotebookPageCount: item.expectedNativeNotebookPageCount, actualNativeNotebookPageCount: item.nativeNotebookPageCount });
   }
   if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
+  if (item.taskDensityEvidence && (!item.taskDensityEvidence.present || !item.taskDensityEvidence.summary?.pass)) failures.push({ name: item.name, taskDensityEvidence: item.taskDensityEvidence });
 }
 for (const item of report.routes) {
   if (item.mobileOverflowEvidence && !item.mobileOverflowEvidence.pass) failures.push({ name: item.name, mobileOverflowEvidence: item.mobileOverflowEvidence });

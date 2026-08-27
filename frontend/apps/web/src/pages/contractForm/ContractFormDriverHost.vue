@@ -15,6 +15,9 @@
     :data-source-contract-sha="renderModel.identity.sourceContractSha256"
     :data-render-model-fields="String(fieldCount)"
     :data-render-model-actions="String(renderModel.actionBar.length)"
+    :data-contract-adapt-mode="renderModel.responsive.adaptMode"
+    :data-contract-density="sceneDensity"
+    :data-contract-layout-columns="String(contractLayoutColumns)"
   >
     <div v-if="allowUserOverride" class="sc-form-driver-chooser">
       <label for="contract-form-driver-kit">界面风格</label>
@@ -26,7 +29,7 @@
         @change="changeKit"
       />
     </div>
-    <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" density="compact">
+    <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" :density="sceneDensity">
       <TaskFormPattern v-if="renderModel.identity.presentationMode === 'task'" :render-profile="renderModel.identity.mode">
       <ObjectTaskPage
         :summary-nodes="floorplan.summaryNodes"
@@ -187,6 +190,14 @@ function countFields(nodes: CanonicalFormNode[]): number {
 const fieldCount = computed(() => props.renderModel
   ? countFields([...props.renderModel.zones.primary, ...props.renderModel.zones.subordinate])
   : 0);
+const sceneDensity = computed<'compact' | 'cozy'>(() => {
+  const density = String(props.renderModel?.responsive.layoutHints.clientDensity || '').trim().toLowerCase();
+  return density === 'comfortable' || density === 'cozy' ? 'cozy' : 'compact';
+});
+const contractLayoutColumns = computed(() => Math.max(
+  1,
+  Number(props.renderModel?.responsive.layoutHints.columns || 1) || 1,
+));
 const activeKit = computed<SceneUiKitId>(() => props.driverConfig?.activeKit || 'tdesign-modern');
 const emptyFloorplan: CanonicalFormFloorplan = {
     summaryNodes: [], taskNodes: [], coreInputNodes: [], conditionInputNodes: [], preExecutionInputNodes: [], preExecutionInputTitle: '', supplementaryInputNodes: [],

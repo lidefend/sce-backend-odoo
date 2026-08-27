@@ -4,7 +4,7 @@ import { currentContextEpoch } from '../../contextEpoch';
 import { useSessionStore } from '../../../stores/session';
 import { decodeContractV2Snapshot } from './schema';
 import { createContractV2Store } from './store';
-import type { ContractV2Dictionary, ContractV2NormalizedStore, ContractV2Snapshot } from './types';
+import type { ContractV2Dictionary, ContractV2NormalizedStore, ContractV2RuntimeContract, ContractV2Snapshot } from './types';
 
 export interface ContractV2LoadOptions {
   actionId?: number | null;
@@ -34,6 +34,20 @@ type CachedContractV2LoadResult = Omit<ContractV2LoadResult, 'store'>;
 const CREATE_CONTRACT_CACHE_TTL_MS = 30_000;
 const CREATE_CONTRACT_CACHE_MAX_ENTRIES = 16;
 const createContractCache = new Map<string, { expiresAt: number; result: CachedContractV2LoadResult }>();
+
+/**
+ * create 契约缓存写入策略（仅作用于 loadModelContractV2 的 create 契约缓存）。
+ *
+ * - `snapshot`：后端明确允许本地快照复用，按原设计写入。
+ * - `etag`：后端声明需重新验证，但前端尚未实现 etag 条件请求（If-None-Match/304）
+ *   语义。在 create 场景将其降级为短 TTL 信任窗口：缓存 key 已含 session 与
+ *   context，30s TTL 内契约（字段定义/布局/权限投影）变化的概率极低；收益是
+ *   跳过每次新建表单重复加载 model 契约（实测约 480ms 后端处理）。
+ *   该降级不改变通用 snapshot 复用语义（permitsContractV2SnapshotReuse 保持不变）。
+ */
+function permitsCreateContractCaching(runtime: ContractV2RuntimeContract): boolean {
+  return runtime.cachePolicy === 'snapshot' || runtime.cachePolicy === 'etag';
+}
 
 function cloneJson<T>(value: T): T {
   if (value === undefined || value === null) return value;
@@ -157,10 +171,14 @@ export function loadModelContractV2(model: string, options: ContractV2LoadOption
       traceId: result.traceId,
       rawBody: cloneJson(result.rawBody),
     };
-    createContractCache.set(key, {
-      expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
-      result: cachedResult,
-    });
+    if (permitsCreateContractCaching(result.snapshot.runtimeContract)) {
+      createContractCache.set(key, {
+        expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
+        result: cachedResult,
+      });
+    } else {
+      createContractCache.delete(key);
+    }
     return restoreCachedResult(cachedResult);
   }).catch((error: unknown) => {
     createContractCache.delete(key);

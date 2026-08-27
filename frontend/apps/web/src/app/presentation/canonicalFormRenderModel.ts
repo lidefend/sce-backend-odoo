@@ -19,6 +19,8 @@ export type CanonicalFormAction = {
   visible: boolean;
   enabled: boolean;
   reasonCode: string;
+  placeholder: string;
+  auth: string;
   visibleProfiles: CanonicalFormRenderMode[];
   safety: Readonly<Record<string, unknown>>;
   actionRef: ContractV2ActionRule;
@@ -36,6 +38,7 @@ export type CanonicalAuditEvent = {
 export type CanonicalFormField = {
   widgetId: string;
   fieldCode: string;
+  widgetType: string;
   label: string;
   hideLabel: boolean;
   value: unknown | CanonicalRelationValue;
@@ -45,6 +48,9 @@ export type CanonicalFormField = {
   presentationMode: CanonicalFormPresentationMode;
   renderProfile: CanonicalFormRenderMode;
   span: number;
+  nativeLocator: string;
+  occurrenceIndex: number | null;
+  sourcePosition: number | null;
   visible: boolean;
   readonly: boolean;
   required: boolean;
@@ -63,6 +69,9 @@ export type CanonicalFormNode = {
   title: string;
   text: string;
   attributes: Readonly<Record<string, unknown>>;
+  nativePresentation: Readonly<Record<string, unknown>>;
+  span: number;
+  styleToken: string;
   zoneRole: CanonicalFormZoneRole;
   columns: number;
   visible: boolean;

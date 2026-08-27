@@ -1,4 +1,5 @@
 export type ContractV2ClientType = 'web_pc' | 'wx_mini' | 'harmony_h5';
+export type ContractV2DeliveryProfile = 'full' | 'mobile_compact' | 'mobile_primary';
 export type ContractV2ViewType = 'form' | 'list' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine';
 export type ContractV2LayoutType = 'form' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine';
 export type ContractV2AdaptMode = 'pc' | 'mobile';
@@ -12,6 +13,9 @@ export type ContractV2CachePolicy = 'none' | 'etag' | 'snapshot';
 export type ContractV2RenderStrategy = 'sync' | 'scheduled' | 'virtualized';
 export type ContractV2PatchOperation = 'replace' | 'merge' | 'append' | 'remove' | 'reorder' | 'invalidate';
 export type ContractV2PageRenderMode = 'governed';
+export type ContractV2WidgetType = 'input' | 'select' | 'date' | 'datetime' | 'number' | 'table'
+  | 'upload' | 'button' | 'textarea' | 'checkbox' | 'radio' | 'tree' | 'gantt' | 'relation'
+  | 'display' | 'binary' | 'many2many_tags';
 export type ContractV2Dictionary = Record<string, unknown>;
 
 export type ContractV2CanonicalFormSemanticRole =
@@ -131,11 +135,12 @@ export interface ContractV2PageInfo {
   renderMode: ContractV2PageRenderMode;
   contractVersion: string;
   clientType: ContractV2ClientType;
+  deliveryProfile?: ContractV2DeliveryProfile;
 }
 
 export interface ContractV2Widget {
   widgetId: string;
-  widgetType: string;
+  widgetType: ContractV2WidgetType;
   fieldCode: string;
   label: string;
   span: number;
@@ -147,8 +152,6 @@ export interface ContractV2Widget {
   occurrenceIndex?: number;
   sourcePosition?: number;
   fieldDescriptor?: ContractV2Dictionary;
-  fieldType?: string;
-  relation?: string;
   formStructureRole?: ContractV2FormStructureRole;
 }
 
@@ -205,6 +208,9 @@ export interface ContractV2Container {
   label?: string;
   nolabel?: boolean;
   text?: string;
+  displayLabel?: string;
+  semanticTitle?: string;
+  semanticAnchor?: string;
   title: string;
   span: number;
   styleToken?: string;
@@ -220,17 +226,37 @@ export interface ContractV2Container {
   componentConfig?: ContractV2Dictionary;
   attributes?: ContractV2Dictionary;
   fieldInfo?: ContractV2Dictionary;
+  filename?: string;
+  badge?: ContractV2Dictionary;
   buttonType?: string;
   action?: ContractV2Dictionary | null;
   modifiers?: ContractV2Dictionary;
   invisible?: unknown;
   readonly?: unknown;
   required?: unknown;
+  columnInvisible?: unknown;
+  domain?: unknown;
+  context?: unknown;
+  options?: unknown;
+  visible?: boolean;
+  col?: number | string;
+  class?: string;
+  className?: string;
+  fieldSize?: string;
+  size?: string;
   formStructure?: ContractV2Dictionary;
   formStructureRole?: ContractV2FormStructureRole;
   sourceAuthority?: ContractV2Dictionary;
+  fields?: string[];
   children: ContractV2Container[];
   widgetList: ContractV2Widget[];
+}
+
+export interface ContractV2ComponentRegistryEntry {
+  version: string;
+  adapter: Record<string, string>;
+  fallback?: string;
+  selectedAdapter?: string;
 }
 
 export interface ContractV2ActivityNode {
@@ -304,7 +330,7 @@ export interface ContractV2LayoutContract {
   adaptMode: ContractV2AdaptMode;
   containerTree: ContractV2Container[];
   layoutHints: ContractV2Dictionary;
-  componentRegistry: ContractV2Dictionary;
+  componentRegistry: Record<string, ContractV2ComponentRegistryEntry>;
   listProfile?: ContractV2Dictionary;
   activityProfile?: ContractV2ActivityProfile;
 }
@@ -469,6 +495,12 @@ export interface ContractV2RuntimeContract {
   collaboration?: ContractV2Dictionary;
   businessWorkspace?: ContractV2Dictionary;
   businessActions?: ContractV2Dictionary[];
+  deliveryProfile?: ContractV2DeliveryProfile;
+  intakeAutosave?: ContractV2Dictionary;
+  fieldSemantics?: ContractV2Dictionary;
+  validationRules?: ContractV2Dictionary[];
+  governance?: ContractV2Dictionary;
+  recordVersionPolicy?: ContractV2Dictionary;
 }
 
 export interface ContractV2Lifecycle {
@@ -507,6 +539,15 @@ export interface ContractV2Meta {
   requestId: string;
   sourceType: string;
   lifecycle: ContractV2Lifecycle;
+  deliveryTrim?: {
+    clientType: ContractV2ClientType;
+    deliveryProfile: ContractV2DeliveryProfile;
+    compact: boolean;
+    limits: Record<'containers' | 'widgets' | 'actions', number | null>;
+    original: Record<'containers' | 'widgets' | 'actions', number>;
+    delivered: Record<'containers' | 'widgets' | 'actions', number>;
+    omitted: Record<'containers' | 'widgets' | 'actions', number>;
+  };
 }
 
 export interface ContractV2Snapshot {

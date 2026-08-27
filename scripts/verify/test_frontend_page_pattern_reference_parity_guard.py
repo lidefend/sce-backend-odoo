@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+import unittest
+
+from scripts.verify.frontend_page_pattern_reference_parity_guard import REQUIREMENTS, ROOT, validate
+
+
+class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
+    def source_map(self) -> dict[str, str]:
+        return {source: (ROOT / source).read_text(encoding="utf-8") for source in REQUIREMENTS}
+
+    def test_current_sources_pass(self) -> None:
+        self.assertEqual(validate(), [])
+
+    def test_readonly_fact_must_not_fall_back_to_full_form_card(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/components/template/FormSection.vue"
+        values[target] = values[target].replace(
+            ":appearance=\"preferReadonlyFacts ? 'fact' : 'form-section'\"",
+            'appearance="form-section"',
+        )
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
+    def test_intrinsic_page_tracks_are_required(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"
+        values[target] = values[target].replace("grid-auto-rows: max-content", "grid-auto-rows: auto")
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
+    def test_editable_fields_cannot_be_forced_into_readonly_fact_layout(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
+        values[target] = values[target].replace(
+            "fields.value.every((field) => field.readonly)",
+            "fields.value.length > 0",
+        )
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
+    def test_record_page_must_not_hide_its_authoritative_title(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/ContractFormPage.vue"
+        values[target] = values[target].replace(
+            "const suppressPageHeaderTitle = computed(() => false)",
+            "const suppressPageHeaderTitle = computed(() => true)",
+        )
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
+    def test_product_specific_hint_is_rejected(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/components/design-system/ScCard.vue"
+        values[target] += "/* payment.request */"
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("product-specific routing hint" in failure and target in failure for failure in failures))
+
+    def test_sidebar_must_be_capped_to_the_viewport(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/layouts/AppShell.css"
+        values[target] = values[target].replace("max-block-size: 100%", "max-block-size: none", 1)
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
+    def test_embedded_list_cannot_create_a_second_page_header(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/pages/ListPage.vue"
+        values[target] += "\n<ScPageHeader title=\"duplicate\" />\n"
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("duplicate heading owner" in failure and target in failure for failure in failures))
+
+
+if __name__ == "__main__":
+    unittest.main()

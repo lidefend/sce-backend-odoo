@@ -73,7 +73,7 @@
       data-canonical-zone="primary"
       title="核心申请信息"
       :bordered="true"
-      appearance="section"
+      appearance="task-section"
     >
       <CanonicalFormNodeRenderer
         v-for="node in coreInputNodes"
@@ -92,7 +92,7 @@
       data-canonical-zone="primary"
       title="当前办理条件"
       :bordered="true"
-      appearance="section"
+      appearance="task-section"
     >
       <CanonicalFormNodeRenderer
         v-for="node in conditionInputNodes"
@@ -111,7 +111,7 @@
       data-canonical-zone="primary"
       :title="preExecutionInputTitle"
       :bordered="true"
-      appearance="section"
+      appearance="task-section"
     >
       <CanonicalFormNodeRenderer
         v-for="node in preExecutionInputNodes"
@@ -300,13 +300,17 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 <style scoped>
 .object-task-page {
   display: grid;
-  gap: 20px;
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 16px;
   min-width: 0;
 }
 .object-task-page__body {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  gap: 16px;
   min-width: 0;
 }
 .object-task-page--with-context .object-task-page__body {
@@ -347,8 +351,10 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
   gap: 0;
 }
 .object-task-page__summary-grid :deep(.canonical-form-node) {
-  height: 100%;
-  padding: 12px 16px;
+  grid-column: auto !important;
+  height: auto;
+  margin-top: 0 !important;
+  padding: 10px 14px;
   border: 0;
   border-right: 1px solid var(--sc-app-border);
   border-radius: 0;
@@ -358,7 +364,13 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__current-task {
   min-width: 0;
 }
-.object-task-page__current-task-copy { display: grid; gap: 8px; }
+.object-task-page__current-task-copy {
+  display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 8px;
+}
+.object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 12px; }
 .object-task-page__current-task-facts {
   color: var(--sc-app-text-secondary);
 }

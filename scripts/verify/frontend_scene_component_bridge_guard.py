@@ -96,7 +96,7 @@ require(
     "renderModel.zones.primary.map(mapNode)" in canonical_native_bridge
     and "renderModel.zones.subordinate" in canonical_native_bridge
     and "canonicalFieldToFormSection(field)" in canonical_native_bridge
-    and "name: field.widgetId" in canonical_native_bridge
+    and ("name: field.widgetId" in canonical_native_bridge or "canonicalWidgetId: field.widgetId" in canonical_native_bridge)
     and "name: field.fieldCode" in canonical_native_bridge,
     "canonical native bridge does not preserve normalized hierarchy and field occurrence identity",
 )

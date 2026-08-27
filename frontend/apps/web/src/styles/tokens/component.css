@@ -12,4 +12,7 @@
   --sc-product-radius-control: var(--sc-base-radius-sm);
   --sc-product-radius-panel: var(--sc-component-panel-radius);
   --sc-product-radius-dialog: var(--sc-component-dialog-radius);
+  --sc-component-login-layer-base: var(--sc-base-z-index-base);
+  --sc-component-login-layer-content: var(--sc-base-z-index-dropdown);
+  --sc-component-login-layer-modal: var(--sc-base-z-index-modal);
 }

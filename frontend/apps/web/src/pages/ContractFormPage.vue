@@ -1047,7 +1047,7 @@ const {
   },
 });
 function recordVersionPolicy() {
-  const raw = (contract.value as Record<string, unknown> | null)?.record_version;
+  const raw = v2ContractStore.value?.snapshot.runtimeContract.recordVersionPolicy;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const policy = raw as Record<string, unknown>;
   if (policy.enabled !== true) return null;
@@ -1165,9 +1165,14 @@ const pageIdentityInput = computed(() => buildContractFormPageIdentity({
 }));
 const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () => route.fullPath,
   active: () => isComponentActive.value && isFormPageRouteOwner(route.name), onTitle: (title) => session.updateActiveActivityTitle(title) });
-const pageDisplayTitle = computed(() => pageIdentity.value.title);
-const pageDisplaySubtitle = computed(() => pageIdentity.value.subtitle || '');
-const suppressPageHeaderTitle = computed(() => true);
+const canonicalShellTitle = computed(() => canonicalFormRenderState.value.model?.shell.title || '');
+const pageDisplayTitle = computed(() => canonicalShellTitle.value || pageIdentity.value.title);
+const pageDisplaySubtitle = computed(() => {
+  const recordTitle = pageIdentity.value.title;
+  if (canonicalShellTitle.value && recordTitle && canonicalShellTitle.value !== recordTitle) return recordTitle;
+  return pageIdentity.value.subtitle || '';
+});
+const suppressPageHeaderTitle = computed(() => false);
 const currentRenderProfileLabel = computed(() => renderProfileLabel(renderProfile.value));
 const intakeCreateButtonLabel = computed(() => {
   return busy.value && busyKind.value === 'save' ? formUiLabel('saving') : formUiLabel('save');
@@ -1782,18 +1787,14 @@ useFormAuxiliaryWatchersRuntime({
   businessCategoryCode: () => currentBusinessCategoryCode.value,
   businessCategoryLabel: () => currentBusinessCategoryLabel.value,
   chatterLoading: () => chatterLoading.value,
-  collaborationReady: () => Boolean(nativeChatterActions.value.length || nativeAttachments.value),
-  currentQuery: () => route.query as Record<string, unknown>,
+  collaborationReady: () => Boolean(nativeChatterActions.value.length || nativeAttachments.value), currentQuery: () => route.query as Record<string, unknown>,
   isActive: () => isComponentActive.value,
   isIntake: () => isIntakeCreateMode.value,
-  loadNativeChatterTimeline: () => loadNativeChatterTimeline(),
-  modelName: () => model.value,
+  loadNativeChatterTimeline: () => loadNativeChatterTimeline(), modelName: () => model.value,
   nativeChatterAutoLoadKey,
-  persistIntakeAutosave: () => persistIntakeAutosave(),
-  primaryReady: () => status.value === 'ok',
+  persistIntakeAutosave: () => persistIntakeAutosave(), primaryReady: () => status.value === 'ok',
   recordId: () => recordId.value,
   router,
 });
 watch(() => route.query.config_mode, (mode) => applyRouteConfigMode(mode), { immediate: true });
-</script>
-<style scoped src="./contractForm/ContractFormPage.css"></style>
+</script><style scoped src="./contractForm/ContractFormPage.css"></style>
