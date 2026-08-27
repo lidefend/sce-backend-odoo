@@ -31,10 +31,15 @@ async function loginPage(page) {
 }
 
 async function waitForStableProductSurface(page) {
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.waitForFunction(() => {
     const pendingForm = document.querySelector('[data-workspace-primary-content][aria-busy="true"]');
     const pendingCollection = document.querySelector('.product-loading-shell[aria-busy="true"]');
-    return !pendingForm && !pendingCollection;
+    const formPage = document.querySelector('[data-semantic-component="ContractFormPage"]');
+    const formSettled = !(formPage instanceof HTMLElement) || formPage.dataset.state !== 'loading';
+    const actionPage = document.querySelector('[data-semantic-component="ActionView"]');
+    const actionSettled = !(actionPage instanceof HTMLElement) || actionPage.dataset.collectionState !== 'loading';
+    return !pendingForm && !pendingCollection && formSettled && actionSettled;
   }, undefined, { timeout: 45000 });
   await page.evaluate(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
