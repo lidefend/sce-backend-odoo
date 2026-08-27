@@ -170,7 +170,7 @@ function emitValue(value: string | number | boolean | null) {
   width: 100%;
 }
 
-.professional-base-field-control :deep(.sc-input) {
+.professional-base-field-control :deep(.sc-input):not(.sc-textarea) {
   box-sizing: border-box;
   height: calc(var(--sc-component-input-height-md) * 1px);
   min-height: calc(var(--sc-component-input-height-md) * 1px);
