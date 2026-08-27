@@ -489,13 +489,22 @@ try {
           const menuOwner = owner.querySelector('.t-menu--scroll');
           const scrollOwner = menuOwner instanceof HTMLElement ? menuOwner : owner;
           const scrollOwnerStyle = getComputedStyle(scrollOwner);
+          const shell = document.querySelector('.layout-shell');
+          const shellStyle = shell instanceof HTMLElement ? getComputedStyle(shell) : null;
           scrollOwner.scrollTop = scrollOwner.scrollHeight;
           const observedScrollTop = scrollOwner.scrollTop;
           scrollOwner.scrollTop = 0;
           return {
             viewportHeight: window.innerHeight,
             sidebarHeight: sidebar.clientHeight,
+            sidebarComputedHeight: sidebarStyle.height,
+            sidebarMinHeight: sidebarStyle.minHeight,
+            sidebarMaxHeight: sidebarStyle.maxHeight,
+            sidebarBlockSize: sidebarStyle.blockSize,
+            sidebarMaxBlockSize: sidebarStyle.maxBlockSize,
             sidebarDisplay: sidebarStyle.display,
+            shellClientHeight: shell instanceof HTMLElement ? shell.clientHeight : 0,
+            shellComputedHeight: shellStyle?.height || '',
             ownerClientHeight: owner.clientHeight,
             ownerScrollHeight: owner.scrollHeight,
             ownerScrollTop: owner.scrollTop,
