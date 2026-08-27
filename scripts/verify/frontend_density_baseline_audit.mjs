@@ -77,10 +77,25 @@ async function auditList(page) {
     const th = document.querySelector('.t-table thead th, .t-table__header th');
     const tr = document.querySelector('table tbody tr');
     const qb = document.querySelector('.product-list-query-bar');
+    // Cell presentation contracts. ListPage.css declares these scoped, so they
+    // never reach the TDesign-rendered td; the global list-surface rules in
+    // product-patterns.css must restore them (see visual_density_baseline_v1.md
+    // section "cell presentation").
+    const longTextTd = document.querySelector('.t-table td.column-long-text');
+    const longTextCell = longTextTd && longTextTd.firstElementChild;
+    const moneyTd = document.querySelector('.t-table td.column-layout-money, .t-table td.column-numeric');
+    const dateTd = document.querySelector('.t-table td.column-layout-date');
+    const textTd = document.querySelector('.t-table td.column-layout-text');
+    const styleOf = (el, prop) => el ? getComputedStyle(el)[prop] : null;
     return {
       th: th ? Math.round(th.getBoundingClientRect().height) : null,
       row: tr ? Math.round(tr.getBoundingClientRect().height) : null,
       queryBar: qb ? Math.round(qb.getBoundingClientRect().height) : null,
+      longTextEllipsis: longTextCell ? styleOf(longTextCell, 'textOverflow') : null,
+      longTextOverflow: longTextCell ? styleOf(longTextCell, 'overflow') : null,
+      moneyAlign: moneyTd ? styleOf(moneyTd, 'textAlign') : null,
+      dateColor: dateTd ? styleOf(dateTd, 'color') : null,
+      textColor: textTd ? styleOf(textTd, 'color') : null,
     };
   });
 }
@@ -156,6 +171,29 @@ try {
     diff('list.header-height', results.list.th, 42, checks);
     diff('list.row-height', results.list.row, 46, checks);
     if (results.list.queryBar != null) diff('list.query-bar-height', results.list.queryBar, 46, checks);
+  }
+
+  // Cell presentation contracts (scoped ListPage.css never reaches TDesign td;
+  // the global product-patterns rules restore them).
+  if (results.list.longTextEllipsis !== 'ellipsis') {
+    console.error(`[density-baseline] FAIL long-text cell not truncated: overflow=${results.list.longTextOverflow} text-overflow=${results.list.longTextEllipsis}`);
+    checks.push({ name: 'list.long-text-ellipsis', actual: results.list.longTextEllipsis, expected: 'ellipsis', ok: false });
+  } else {
+    checks.push({ name: 'list.long-text-ellipsis', actual: results.list.longTextEllipsis, expected: 'ellipsis', ok: true });
+  }
+  if (results.list.moneyAlign !== 'right') {
+    console.error(`[density-baseline] FAIL monetary/numeric cell not right-aligned: ${results.list.moneyAlign}`);
+    checks.push({ name: 'list.money-right-align', actual: results.list.moneyAlign, expected: 'right', ok: false });
+  } else {
+    checks.push({ name: 'list.money-right-align', actual: results.list.moneyAlign, expected: 'right', ok: true });
+  }
+  if (results.list.dateColor != null && results.list.textColor != null && results.list.dateColor === results.list.textColor) {
+    console.error(`[density-baseline] FAIL date cell uses primary color (${results.list.dateColor}) instead of secondary token`);
+    checks.push({ name: 'list.date-secondary-color', actual: results.list.dateColor, expected: '!= text primary', ok: false });
+  } else if (results.list.dateColor == null || results.list.textColor == null) {
+    console.warn('[density-baseline] WARN date/text cells not found, skipping date-color check');
+  } else {
+    checks.push({ name: 'list.date-secondary-color', actual: results.list.dateColor, expected: `!= ${results.list.textColor}`, ok: true });
   }
 
   if (results.worksheet.firstRowHeight == null) {

@@ -510,6 +510,54 @@
 }
 
 
+/* Long-text cell truncation (list surface, TDesign table)
+ * ListPage.css declares .column-long-text ellipsis rules, but that file is a
+ * scoped stylesheet and the t-table cells carrying these classes are rendered
+ * by the TDesign table primitive (the td is not inside ListPage's scoped
+ * data-v scope), so the scoped rules never match. Long identity/description
+ * values overflow their column instead of truncating (verified: 164px content
+ * in a 157px cell rendered with overflow visible). Re-declare the truncation
+ * contract globally, scoped to the list surface so it reaches the TDesign td.
+ * The 180px cap mirrors the legacy .column-long-text contract; cell width is
+ * driven by the column budget, and truncation kicks in when content exceeds it. */
+.page[data-product-page-mode='list'] .t-table td.column-long-text {
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+}
+.page[data-product-page-mode='list'] .t-table td.column-long-text > *,
+.page[data-product-page-mode='list'] .t-table td.column-long-text .collection-row-cell,
+.page[data-product-page-mode='list'] .t-table td.column-long-text .cell-primary {
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+}
+
+/* Numeric / monetary / date cell presentation (list surface, TDesign table)
+ * ListPage.css also declares these presentation rules scoped, so they never
+ * reach the TDesign-rendered td: money/numeric cells render left-aligned
+ * instead of right, and date cells render at primary color instead of the
+ * secondary text token (verified: textAlign=left / color=primary on the live
+ * payment.request list). Re-declare the alignment/color/nowrap contract
+ * globally. Column widths stay owned by the column-width budget; only
+ * presentation is normalized here. */
+.page[data-product-page-mode='list'] .t-table td.column-numeric,
+.page[data-product-page-mode='list'] .t-table td.column-layout-money {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.page[data-product-page-mode='list'] .t-table td.column-layout-date {
+  color: var(--sc-app-text-secondary);
+  white-space: nowrap;
+}
+
+
 /* Global reduced-motion fallback.
  * Honors the OS "reduce motion" preference across every product surface.
  * Component-local reduced-motion rules (e.g. collection controls) remain as

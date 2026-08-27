@@ -179,7 +179,22 @@
 - **实测**: 计算值全部正确解析（row 12px / col 20px / readonly col 26px / label 8+3 / control 6），密度基线 6/6 PASS，视觉零回归
 - **边界**: `field-inline-config`（favorite 内联）gap 6px 与 `.label` 内 gap 6px 未单独 token 化（`control_row_gap` 复用 6px 语义，如设计需区分可再拆）
 
-## 十三、后续迭代项
+## 十三、单元格呈现契约修复（2026-08-28 追加）
+
+列表单元格呈现规则（长文本截断 / 数值右对齐 / 日期次要色）此前声明在 `ListPage.css`——它是 **scoped 样式**，而承载这些 class 的 td 由 TDesign table 原语渲染（不在 ListPage 的 data-v 作用域内），规则**永不匹配**。实测（付款申请列表，1440×960 桌面视口）：
+
+- **长文本不截断**: `FE-CORE-FORM-CONFLICT-001` 等 identity 值 164px 内容溢出 157px 容器（overflow:visible / text-overflow:clip / white-space:normal），撑破列
+- **数值不右对齐**: `column-numeric`/`column-layout-money` text-align=left（应 right）——财务表格金额左对齐不专业
+- **日期不用次要色**: `column-layout-date` color=主文本色 rgb(46,49,51)（应 `--sc-app-text-secondary`）
+- **min-width 全部失效**: td min-width=0（列宽由列预算 `resolvedColumnWidth` 兜底，未破坏）
+
+**修复**: `product-patterns.css` 新增两段全局规则（限定 list surface）——「Long-text cell truncation」+「Numeric/monetary/date cell presentation」，让 t-table td 恢复呈现契约；列宽仍由列预算所有，仅呈现规范化：
+
+- commit: `见本次提交`
+- 实测: 长文本 206px 内容 → 141px 容器 ellipsis；金额右对齐 + tabular-nums；日期次要色 rgb(92,97,102)
+- 门禁: `frontend_density_baseline_audit.mjs` 新增 `list.long-text-ellipsis` / `list.money-right-align` / `list.date-secondary-color` 断言——density baseline **10/10 PASS**
+
+## 十四、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
 2. **表单间距 token 扩展**: `field_gap`/`column_gap`/`label_row_gap`/`control_row_gap` 已绑定（见十二）；剩余 `field-inline-config` 与 `.label` 内 gap 6px 语义如需独立契约可再拆 token
