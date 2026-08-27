@@ -84,6 +84,40 @@
         </div>
       </div>
     </div>
+    <div v-else-if="isAttachmentField(field)" class="relation-attachment-editor" data-semantic-component="RelationAttachmentEditor">
+      <div v-if="adapter.selectedRelationOptions(field.name).length" class="attachment-list">
+        <div
+          v-for="att in adapter.selectedRelationOptions(field.name)"
+          :key="`${field.name}-att-${att.id}`"
+          class="attachment-item"
+        >
+          <ScIcon name="file-text" :size="16" />
+          <span class="attachment-name" :title="att.label">{{ att.label }}</span>
+          <ScButton variant="ghost" size="small" @click="downloadAttachment(att)">下载</ScButton>
+          <ScButton
+            variant="ghost"
+            size="small"
+            :disabled="adapter.busy"
+            :aria-label="`移除${att.label}`"
+            @click="toggleRelationId(field.name, att.id, false)"
+          >移除</ScButton>
+        </div>
+      </div>
+      <ScFileField
+        :key="uploadTick"
+        class="attachment-upload"
+        :disabled="adapter.busy"
+        choose-label="上传附件"
+        empty-label="未选择文件"
+        @change="handleAttachmentUpload(field, $event)"
+      />
+      <ScInlineState
+        v-if="attachmentError"
+        class="attachment-error"
+        state="error"
+        :label="attachmentError"
+      />
+    </div>
     <div v-else class="relation-select-editor">
       <ScInput
         class="relation-search"
@@ -258,10 +292,12 @@ import { computed, ref, watch } from 'vue';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
+import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import ScSelect from '../design-system/ScSelect.vue';
+import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { X2ManyRelationRendererProps } from './relationField.types';
 
 const props = defineProps<X2ManyRelationRendererProps>();
@@ -279,6 +315,62 @@ watch(one2manyPageCount, (count) => {
 
 function isMany2manyTags(field: FormSectionFieldSchema) {
   return String(field.widget || '').trim().toLowerCase() === 'many2many_tags';
+}
+
+const attachmentError = ref('');
+const uploadTick = ref(0);
+
+function isAttachmentField(field: FormSectionFieldSchema) {
+  const relation = (field as { descriptor?: { relation?: string } }).descriptor?.relation;
+  return String(relation || '').trim().toLowerCase() === 'ir.attachment';
+}
+
+async function handleAttachmentUpload(field: FormSectionFieldSchema, file: File | null) {
+  attachmentError.value = '';
+  if (!file) return;
+  const model = props.adapter.currentModel;
+  const resId = props.adapter.currentRecordId;
+  if (!model || !resId) {
+    attachmentError.value = '请先保存单据后再上传附件';
+    return;
+  }
+  try {
+    const { data, mimetype } = await fileToBase64(file);
+    const created = await uploadFile({ model, res_id: resId, name: file.name, mimetype, data });
+    const current = props.adapter.relationIds(field.name);
+    props.adapter.setRelationIds(field.name, Array.from(new Set([...current, created.id])));
+    uploadTick.value += 1;
+  } catch (err) {
+    attachmentError.value = err instanceof Error ? err.message : '附件上传失败';
+  }
+}
+
+async function downloadAttachment(att: { id?: number; name?: string }) {
+  if (!att?.id) return;
+  attachmentError.value = '';
+  try {
+    const res = await downloadFile({ id: att.id });
+    if (res?.url && !String(res.url).startsWith('legacy-file')) {
+      window.open(res.url, '_blank', 'noopener');
+      return;
+    }
+    if (res?.datas) {
+      const binary = atob(res.datas);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: res.mimetype || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = res.name || att.name || 'attachment';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  } catch (err) {
+    attachmentError.value = err instanceof Error ? err.message : '附件下载失败';
+  }
 }
 
 function relationIdSet(name: string) {
@@ -448,9 +540,43 @@ function tagColorStyle(color: unknown) {
 }
 
 .relation-tag-picker,
-.relation-select-editor {
+.relation-select-editor,
+.relation-attachment-editor {
   display: grid;
   gap: 8px;
+}
+
+.attachment-list {
+  display: grid;
+  gap: 6px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--sc-app-border-default);
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-app-input-bg);
+}
+
+.attachment-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sc-app-text-primary);
+  font-size: 14px;
+}
+
+.attachment-upload {
+  width: 100%;
+}
+
+.attachment-error {
+  margin-top: 4px;
 }
 
 .relation-multi-options {
