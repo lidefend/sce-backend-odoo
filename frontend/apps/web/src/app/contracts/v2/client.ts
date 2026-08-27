@@ -4,6 +4,7 @@ import { currentContextEpoch } from '../../contextEpoch';
 import { useSessionStore } from '../../../stores/session';
 import { decodeContractV2Snapshot } from './schema';
 import { createContractV2Store } from './store';
+import { permitsContractV2SnapshotReuse } from './runtime';
 import type { ContractV2Dictionary, ContractV2NormalizedStore, ContractV2Snapshot } from './types';
 
 export interface ContractV2LoadOptions {
@@ -157,10 +158,14 @@ export function loadModelContractV2(model: string, options: ContractV2LoadOption
       traceId: result.traceId,
       rawBody: cloneJson(result.rawBody),
     };
-    createContractCache.set(key, {
-      expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
-      result: cachedResult,
-    });
+    if (permitsContractV2SnapshotReuse(result.snapshot.runtimeContract)) {
+      createContractCache.set(key, {
+        expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
+        result: cachedResult,
+      });
+    } else {
+      createContractCache.delete(key);
+    }
     return restoreCachedResult(cachedResult);
   }).catch((error: unknown) => {
     createContractCache.delete(key);

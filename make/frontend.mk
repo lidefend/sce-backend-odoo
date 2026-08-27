@@ -293,6 +293,11 @@ verify.frontend.form_structure_contract_projection.unit: guard.prod.forbid
 verify.frontend.contract_v2_render_authority.unit: guard.prod.forbid
 	@python3 scripts/verify/contract_v2_render_authority_matrix.py --check
 
+.PHONY: verify.frontend.contract_v2_runtime_policy.unit
+verify.frontend.contract_v2_runtime_policy.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-v2-runtime-policy-test.mjs >/dev/null
+	@node /tmp/contract-v2-runtime-policy-test.mjs
+
 # Development feedback only: these entries never build, capture browser
 # evidence, refresh reports, or freeze a candidate fingerprint.
 verify.frontend.dev.incremental: guard.prod.forbid

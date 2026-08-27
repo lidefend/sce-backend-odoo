@@ -139,6 +139,19 @@ NON_VISUAL = {
     "runtimeContract.aiEnvelope": "AI authority boundary",
 }
 
+DECODED_RUNTIME_GAPS = {
+    "runtimeContract.patchStrategy": "no generic patch controller consumes this policy yet",
+    "runtimeContract.optimistic": "mutation settlement remains explicitly non-optimistic",
+    "runtimeContract.lazyContainer": "no lazy-container controller consumes this list yet",
+    "runtimeContract.virtualization": "opaque policy has no field-level schema or generic consumer",
+    "runtimeContract.retryPolicy": "opaque policy has no field-level schema or generic consumer",
+    "runtimeContract.renderStrategy": "no render scheduler consumes this policy yet",
+    "runtimeContract.hydration": "opaque policy has no field-level schema or generic consumer",
+    "runtimeContract.patchOperations": "validated vocabulary is not yet bound to a generic patch controller",
+    "runtimeContract.tracePolicy": "opaque policy has no field-level schema or generic consumer",
+    "runtimeContract.complexityBudget": "opaque budget has no generic enforcement consumer",
+}
+
 NON_VISUAL_DEFINITIONS = {
     "sourceAuthority": "projection provenance boundary",
     "contractLifecycle": "contract lifecycle provenance",
@@ -210,14 +223,24 @@ def build() -> dict:
     missing = sorted(actual - expected)
     stale = sorted(expected - actual)
     invalid_non_visual = sorted(set(NON_VISUAL) - expected)
-    if missing or stale or invalid_non_visual:
+    invalid_runtime_gaps = sorted(set(DECODED_RUNTIME_GAPS) - expected)
+    if missing or stale or invalid_non_visual or invalid_runtime_gaps:
         raise SystemExit(
-            f"render authority matrix mismatch: missing={missing} stale={stale} invalid_non_visual={invalid_non_visual}"
+            "render authority matrix mismatch: "
+            f"missing={missing} stale={stale} invalid_non_visual={invalid_non_visual} "
+            f"invalid_runtime_gaps={invalid_runtime_gaps}"
         )
     rows = []
     for path in sorted(expected):
         definition = path.split(".", 1)[0]
-        if path in NON_VISUAL or definition in NON_VISUAL_DEFINITIONS:
+        if path in DECODED_RUNTIME_GAPS:
+            rows.append({
+                "path": path,
+                "classification": "decoded_runtime_authority_gap",
+                "reason": DECODED_RUNTIME_GAPS[path],
+                "consumer": "strict decoder only",
+            })
+        elif path in NON_VISUAL or definition in NON_VISUAL_DEFINITIONS:
             rows.append({
                 "path": path,
                 "classification": "validated_non_visual_authority",
@@ -241,6 +264,9 @@ def build() -> dict:
             ),
             "validatedNonVisualAuthorityCount": sum(
                 row["classification"] == "validated_non_visual_authority" for row in rows
+            ),
+            "decodedRuntimeAuthorityGapCount": sum(
+                row["classification"] == "decoded_runtime_authority_gap" for row in rows
             ),
             "unclassifiedCount": 0,
         },
