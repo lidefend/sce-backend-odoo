@@ -4,7 +4,7 @@
 include make/frontend_professional_extensions.mk
 
 .PHONY: fe.install fe.dev fe.gate verify.frontend.build prod.frontend.build verify.frontend.typecheck.strict verify.frontend.lint.src verify.frontend.page_width_contract.guard verify.frontend.quick.gate verify.frontend.contract_header_action.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.contract.operation_gateway.guard verify.frontend.suggested_action.contract_guard verify.frontend.suggested_action.catalog verify.frontend.suggested_action.parser_guard verify.frontend.suggested_action.runtime_guard verify.frontend.suggested_action.import_boundary_guard verify.frontend.suggested_action.usage_guard verify.frontend.suggested_action.trace_export_guard verify.frontend.suggested_action.topk_guard verify.frontend.suggested_action.since_filter_guard verify.frontend.suggested_action.hud_export_guard verify.frontend.cross_stack_smoke verify.frontend.no_new_any_guard verify.frontend.suggested_action.all verify.portal.scene_observability.structure_guard verify.portal.scene_observability.structure_guard.update
-.PHONY: fe.install.cached confirm.frontend.release.audit verify.frontend.release.local verify.frontend.ui5_scene_spike verify.frontend.scene_component_drivers verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser verify.frontend.primitive_adapter.unit
+.PHONY: fe.install.cached confirm.frontend.release.audit verify.frontend.release.local verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_component_bridge.browser verify.frontend.primitive_adapter.unit
 
 fe.install:
 	@scripts/dev/pnpm_exec.sh -C frontend install
@@ -52,15 +52,6 @@ prod.frontend.build: guard.prod.danger check-compose-project check-compose-env
 verify.frontend.typecheck.strict: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict
 
-verify.frontend.scene_component_drivers: guard.prod.forbid
-	@python3 scripts/verify/frontend_ui5_scene_spike_guard.py
-	@$(MAKE) --no-print-directory verify.frontend.scene_component_bridge.unit
-	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/scene-ui5-spike/scripts/normalizedCollectionAdapter.test.ts --bundle --platform=node --format=esm --outfile=/tmp/normalized-collection-adapter-test.mjs >/dev/null
-	@node /tmp/normalized-collection-adapter-test.mjs
-	@VITE_FEATURE_FLAGS=scene_collection_pilot scripts/dev/pnpm_exec.sh -C frontend/apps/scene-ui5-spike build
-	@bash scripts/verify/frontend_ui5_scene_spike_browser.sh
-
-verify.frontend.ui5_scene_spike: verify.frontend.scene_component_drivers
 
 verify.frontend.scene_component_bridge.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_component_driver_bridge_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-component-driver-bridge-test.mjs >/dev/null

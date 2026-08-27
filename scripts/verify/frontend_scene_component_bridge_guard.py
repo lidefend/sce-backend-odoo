@@ -27,7 +27,7 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit(f"[verify.frontend.scene_component_bridge.guard] FAIL {message}")
 
 
-vendor_import = re.compile(r"(?:from\s+|import\s*\()['\"](?:@ui5/|tdesign-vue-next)")
+vendor_import = re.compile(r"(?:from\s+|import\s*\()['\"](?:tdesign-vue-next)")
 web_vendor_hits = [
     str(path.relative_to(ROOT))
     for path in source_files(WEB_SRC)
@@ -321,7 +321,7 @@ require(probe_function is not None, "browser probe fixture function missing")
 probe_source = ast.get_source_segment(probe_fixture, probe_function) or ""
 require("\"models\": [model]" in probe_source, "browser probe must consume the action-owned model")
 require(
-    '"allowed_kits": ["sc-native", "tdesign-modern", "ui5-horizon"]' in probe_source,
+    '"allowed_kits": ["sc-native", "tdesign-modern"]' in probe_source,
     "browser probe must exercise all registered production form drivers",
 )
 require("component driver probe requires a non-payment action model" in probe_source, "browser probe lacks its non-payment boundary")

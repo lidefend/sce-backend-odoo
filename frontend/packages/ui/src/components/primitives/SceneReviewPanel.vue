@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue';
+import { computed } from 'vue';
 import type { SceneReviewPanel } from '../../contracts/sceneObjectPage';
 import { useSceneUiKit } from '../../kits/context';
 import SceneButton from './SceneButton.vue';
@@ -14,9 +14,6 @@ function setOpen(next: boolean): void {
   emit('update:open', next);
 }
 
-watchEffect(() => {
-  if (componentModel.value === 'web-components' && props.open) void runtime.value?.ensurePrimitive?.('drawer');
-});
 </script>
 
 <template>
@@ -25,35 +22,9 @@ watchEffect(() => {
       {{ panel.triggerLabel }}
     </SceneButton>
 
-    <ui5-dialog
-      v-if="componentModel === 'web-components' && open"
-      :open="open"
-      :header-text="panel.title"
-      data-review-panel
-      @close="setOpen(false)"
-    >
-      <div class="scene-review-body">
-        <p>{{ panel.description }}</p>
-        <div v-for="group in panel.groups" :key="group.id" class="scene-review-group">
-          <h3>{{ group.title }}</h3>
-          <dl>
-            <div v-for="fact in group.facts" :key="fact.id">
-              <dt>{{ fact.label }}</dt><dd>{{ fact.value }}</dd>
-            </div>
-          </dl>
-        </div>
-        <ul class="scene-review-checklist">
-          <li v-for="fact in panel.checklist" :key="fact.id" :data-tone="fact.tone || 'Neutral'">
-            <span aria-hidden="true">✓</span><strong>{{ fact.label }}</strong><small>{{ fact.value }}</small>
-          </li>
-        </ul>
-      </div>
-      <ui5-button design="Emphasized" @click="setOpen(false)">核对完成</ui5-button>
-    </ui5-dialog>
-
     <component
       :is="driverDrawer"
-      v-else-if="componentModel === 'vue' && driverDrawer && open"
+      v-if="componentModel === 'vue' && driverDrawer && open"
       :visible="open"
       :header="panel.title"
       size="520px"

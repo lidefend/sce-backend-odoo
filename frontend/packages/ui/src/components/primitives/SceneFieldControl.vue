@@ -31,45 +31,7 @@ function updateFromValue(value: unknown): void {
 
 <template>
   <div class="scene-field-control" :data-control-driver="kit">
-    <template v-if="componentModel === 'web-components'">
-      <ui5-date-picker
-        v-if="field.kind === 'date'"
-        :id="field.id"
-        :value="modelValue"
-        format-pattern="yyyy-MM-dd"
-        :placeholder="field.placeholder"
-        :disabled="field.readonly || undefined"
-        :required="field.required || undefined"
-        @input="updateFromEvent"
-      />
-      <ui5-select v-else-if="field.kind === 'select'" :id="field.id" :disabled="field.readonly || undefined" :required="field.required || undefined" @change="updateFromEvent">
-        <ui5-option
-          v-for="option in field.options || []"
-          :key="option.key"
-          :selected="option.key === modelValue"
-        >
-          {{ option.label }}
-        </ui5-option>
-      </ui5-select>
-      <ui5-textarea
-        v-else-if="field.kind === 'textarea'"
-        :id="field.id"
-        :value="modelValue"
-        :placeholder="field.placeholder"
-        :disabled="field.readonly || undefined"
-        :required="field.required || undefined"
-        growing
-        growing-max-rows="5"
-        @input="updateFromEvent"
-      />
-      <div v-else-if="field.kind === 'amount'" class="scene-primitive-amount">
-        <ui5-input :id="field.id" :value="modelValue" :placeholder="field.placeholder" :disabled="field.readonly || undefined" :required="field.required || undefined" inputmode="decimal" @input="updateFromEvent" />
-        <span>CNY</span>
-      </div>
-      <ui5-input v-else :id="field.id" :value="modelValue" :placeholder="field.placeholder" :disabled="field.readonly || undefined" :required="field.required || undefined" @input="updateFromEvent" />
-    </template>
-
-    <template v-else-if="componentModel === 'vue' && driverControl">
+    <template v-if="componentModel === 'vue' && driverControl">
       <div v-if="field.kind === 'amount'" class="scene-primitive-amount">
         <component
           :is="driverControl"
@@ -187,13 +149,6 @@ function updateFromValue(value: unknown): void {
 
 .scene-native-control--textarea {
   resize: vertical;
-}
-
-.scene-field-control :deep(ui5-input),
-.scene-field-control :deep(ui5-select),
-.scene-field-control :deep(ui5-date-picker),
-.scene-field-control :deep(ui5-textarea) {
-  width: 100%;
 }
 
 .scene-primitive-amount {

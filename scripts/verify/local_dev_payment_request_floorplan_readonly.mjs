@@ -358,7 +358,7 @@ try {
   const summaryLabels = await page.locator('[data-floorplan-region="summary"] .field-label').allTextContents();
   check(new Set(summaryLabels.map(normalize)).size === summaryLabels.length, 'summary contains duplicate business facts', summaryLabels);
   check(!bodyText.split('\n').some((line) => /^[.·•:_-]+$/.test(line.trim())), 'native punctuation leaked into the product floorplan');
-  for (const forbidden of ['runtime_status', 'direct delivery', 'payment_entry', 'legacy_source_table', 'legacy_record_id', 'tdesign-modern', 'sc-native', 'ui5-horizon']) {
+  for (const forbidden of ['runtime_status', 'direct delivery', 'payment_entry', 'legacy_source_table', 'legacy_record_id', 'tdesign-modern', 'sc-native']) {
     check(!bodyText.toLowerCase().includes(forbidden), `technical product text is visible: ${forbidden}`);
   }
   check(bodyText.includes('缺少合同或结算依据'), 'authoritative blocker is not visible before the action surface', bodyText);

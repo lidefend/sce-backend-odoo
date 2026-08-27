@@ -142,7 +142,7 @@ class UserViewPreferenceGetHandler(BaseIntentHandler):
         data = value if isinstance(value, dict) else {}
         if preference_key == "scene_ui_driver":
             kit = str(data.get("kit") or "").strip()
-            if kit not in {"sc-native", "tdesign-modern", "ui5-horizon"}:
+            if kit not in {"sc-native", "tdesign-modern"}:
                 kit = ""
             return {"kit": kit}
         if preference_key == "list_columns":

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue';
+import { computed } from 'vue';
 import type { SceneNotice } from '../../contracts/sceneObjectPage';
 import { useSceneUiKit } from '../../kits/context';
 
@@ -15,25 +15,13 @@ const tdesignTheme = computed(() => ({
   Positive: 'success',
 }[props.notice.tone]));
 
-watchEffect(() => {
-  if (componentModel.value === 'web-components') void runtime.value?.ensurePrimitive?.('alert');
-});
 </script>
 
 <template>
   <div class="scene-notice" :data-notice-id="notice.id" :data-notice-driver="kit">
-    <ui5-message-strip
-      v-if="componentModel === 'web-components'"
-      :design="notice.tone"
-      hide-close-button
-    >
-      <strong>{{ notice.title }}</strong>
-      <span>{{ notice.detail }}</span>
-    </ui5-message-strip>
-
     <component
       :is="driverAlert"
-      v-else-if="componentModel === 'vue' && driverAlert"
+      v-if="componentModel === 'vue' && driverAlert"
       :theme="tdesignTheme"
       :title="notice.title"
       :message="notice.detail"
@@ -48,13 +36,8 @@ watchEffect(() => {
 </template>
 
 <style scoped>
-.scene-notice,
-.scene-notice :deep(ui5-message-strip) {
+.scene-notice {
   width: 100%;
-}
-
-.scene-notice :deep(ui5-message-strip) span {
-  margin-left: 8px;
 }
 
 .scene-native-notice {

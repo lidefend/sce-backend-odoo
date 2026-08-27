@@ -60,7 +60,7 @@ def apply_component_driver_probe(env, mode):
                 "read_only_only": False,
                 "form_modes": ["create", "edit", "readonly"],
                 "models": [model],
-                "allowed_kits": ["sc-native", "tdesign-modern", "ui5-horizon"],
+                "allowed_kits": ["sc-native", "tdesign-modern"],
                 "system_default_kit": "tdesign-modern",
                 "allow_user_override": True,
                 "allow_preview_override": False,

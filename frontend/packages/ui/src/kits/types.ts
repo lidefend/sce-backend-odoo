@@ -1,8 +1,8 @@
 import type { Component } from 'vue';
 
-export type SceneUiKitId = 'sc-native' | 'tdesign-modern' | 'ui5-horizon';
+export type SceneUiKitId = 'sc-native' | 'tdesign-modern';
 export type SceneUiDensity = 'compact' | 'cozy';
-export type SceneComponentModel = 'native' | 'vue' | 'web-components';
+export type SceneComponentModel = 'native' | 'vue';
 export type ScenePrimitiveId =
   | 'alert'
   | 'button'
@@ -40,12 +40,6 @@ export const SCENE_UI_KITS: Record<SceneUiKitId, SceneUiKitDescriptor> = {
     id: 'tdesign-modern',
     label: '现代商务',
     vendor: 'TDesign Vue Next',
-    capabilities: ['page-frame', 'button', 'input', 'select', 'date', 'textarea', 'tabs', 'alert', 'table', 'drawer'],
-  },
-  'ui5-horizon': {
-    id: 'ui5-horizon',
-    label: '专业流程',
-    vendor: 'SAP UI5 Web Components',
     capabilities: ['page-frame', 'button', 'input', 'select', 'date', 'textarea', 'tabs', 'alert', 'table', 'drawer'],
   },
 };

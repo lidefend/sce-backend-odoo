@@ -130,7 +130,7 @@ provide(sceneUiKitKey, {
   --sc-scene-field-gap: 15px;
 }
 
-.scene-ui-provider :where(button, [role='button'], input, select, textarea, ui5-button, ui5-input, ui5-select, ui5-date-picker, ui5-textarea):focus-visible {
+.scene-ui-provider :where(button, [role='button'], input, select, textarea):focus-visible {
   outline: 3px solid var(--sc-scene-focus);
   outline-offset: 2px;
 }

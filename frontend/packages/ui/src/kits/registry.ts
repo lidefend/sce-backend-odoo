@@ -11,7 +11,6 @@ const nativeRuntime: SceneUiDriverRuntime = {
 const loaders: Record<SceneUiKitId, () => Promise<SceneUiDriverRuntime>> = {
   'sc-native': async () => nativeRuntime,
   'tdesign-modern': async () => (await import('./tdesign/register')).tdesignRuntime,
-  'ui5-horizon': async () => (await import('./ui5/register')).ui5Runtime,
 };
 
 const cache = new Map<SceneUiKitId, Promise<SceneUiDriverRuntime>>([

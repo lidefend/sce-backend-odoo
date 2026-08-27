@@ -17,24 +17,15 @@ const { runtime } = useSceneUiKit();
 const componentModel = computed(() => runtime.value?.componentModel || 'native');
 const driverButton = computed(() => runtime.value?.components.button);
 
-function ui5Design(): 'Emphasized' | 'Default' | 'Transparent' {
-  if (props.tier === 'primary') return 'Emphasized';
-  if (props.tier === 'transparent') return 'Transparent';
-  return 'Default';
-}
-
 function tdesignTheme(): 'primary' | 'default' {
   return props.tier === 'primary' ? 'primary' : 'default';
 }
 </script>
 
 <template>
-  <ui5-button v-if="componentModel === 'web-components'" v-bind="$attrs" :design="ui5Design()" :disabled="disabled" @click="emit('activate')">
-    <slot />
-  </ui5-button>
   <component
     :is="driverButton"
-    v-else-if="componentModel === 'vue' && driverButton"
+    v-if="componentModel === 'vue' && driverButton"
     v-bind="$attrs"
     :theme="tdesignTheme()"
     :variant="tier === 'transparent' ? 'text' : 'base'"
