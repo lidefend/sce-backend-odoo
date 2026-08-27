@@ -111,16 +111,17 @@
 
 ### 问题
 同一 readonly 表单 section 内两条渲染路径字号混排（实测 payment 表单）：
-- 模板 `.readonly-value`（`.template-form-section--readonly .readonly-value`）: **14px / 550**
+- 模板 `.readonly-value`（`.template-form-section--readonly .readonly-value`）: **14px / 400**（无显式 weight 声明，继承常规 400）
 - 专业控件 `.professional-base-field-control__readonly`（`ProfessionalBaseFieldControl.vue`）: 回退 `--sc-component-input-font-size`（**12px**）
 
 相邻字段"草稿"（14px）与"申请单号/账户信息完整/尚未生成"（12px）上下紧邻，同一卡片内视觉字号不一致。
 
 ### 修复
-`product-patterns.css` form surface 块追加「Read-only value typography consistency」规则，将 readonly section 内专业控件只读值对齐 section 声明的只读排版（14px / 550）。
+`product-patterns.css` form surface 块追加「Read-only value typography consistency」规则，将 readonly section 内专业控件只读值对齐 section 声明的只读排版（14px）。
 
-- commit: `938c027e`
-- 修后实测: **全部 7 个 readonly 值统一 14px**（readonly-value 14px/400 + professional 14px/550——"草稿"状态值有意保持 400 权重，字号一致）
+- commit: `938c027e`（字号统一 14px；weight 误设为 550）
+- commit: 本轮修正（weight 统一回 **400**——模板 `.readonly-value` 无 weight 声明实为 400，550 属误判引入混排）
+- 修后实测: **全部 readonly 值统一 14px / 400**（weight 集合 `{400}`，同 section 内零混排）
 
 ## 九、本轮审计结论（label/卡片/分页器/弹窗）
 
@@ -154,7 +155,7 @@
 ## 十三、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
-2. **表单间距 token**: `--sc-component-form-field-gap` / `--sc-component-form-control-gap` 未定义，`template-form-section-grid` 硬编码 `gap: 12px 26px`——确认设计意图后补 token 并绑定（组件层消费）
-3. **readonly 值 weight 微差异**: readonly-value(400) vs professional readonly(550) 权重不同——状态值语义待设计确认，可后续统一
-4. **基线自动化**: 将密度测量脚本固化为 `make` target + 门禁（复用 `verify.frontend.all_list_visual.audit` 基础设施），并扩展覆盖 form surface
+2. **表单间距 token 扩展**: `task_form.field_gap` 已绑定 row-gap（见十二）；column-gap（可编辑 20px / readonly 26px）、label-row gap 8px / margin 3px、control-row gap 6px 仍硬编码——确认设计 token 语义后补定义并绑定（组件层消费）
+3. **readonly 值 weight**: 已统一 400（见八修正）——如设计意图强调关键值（状态等）可再评估 550，需设计确认
+4. ~~基线自动化~~: 已完成（见十一 `verify.frontend.density.baseline`）
 5. **公司支出空态**: 数据归属（bc16 vs bc20）与 action domain 是否对齐，需业务确认

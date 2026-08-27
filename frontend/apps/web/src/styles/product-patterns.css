@@ -497,15 +497,16 @@
 
 /* Read-only value typography consistency (form surface)
  * Within a readonly form section, two render paths coexist: the template's
- * .readonly-value (14px / 550 per .template-form-section--readonly) and the
- * professional field control's .professional-base-field-control__readonly which
- * falls back to --sc-component-input-font-size (12px). Adjacent fields in the
- * same readonly section rendered at 12px and 14px side by side (e.g. status vs
- * request number). Align the professional readonly to the section's declared
- * readonly typography so values render uniformly. */
+ * .readonly-value (14px, no explicit weight -> inherits regular 400 per
+ * .template-form-section--readonly) and the professional field control's
+ * .professional-base-field-control__readonly which falls back to
+ * --sc-component-input-font-size (12px). Adjacent fields in the same readonly
+ * section rendered at 12px and 14px side by side (e.g. status vs request
+ * number). Align the professional readonly to the section's declared readonly
+ * typography so values render uniformly (14px / 400). */
 [data-product-page-mode='form'] .template-form-section--readonly .professional-base-field-control__readonly {
   font-size: 14px;
-  font-weight: 550;
+  font-weight: 400;
 }
 
 
