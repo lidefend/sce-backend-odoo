@@ -362,7 +362,12 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>(
 .object-task-page__current-task {
   min-width: 0;
 }
-.object-task-page__current-task-copy { display: grid; gap: 8px; }
+.object-task-page__current-task-copy {
+  display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 8px;
+}
 .object-task-page__current-task :deep(.t-card__header) { padding-block: 14px 8px; }
 .object-task-page__current-task :deep(.t-card__body) { padding: 8px 20px 18px; }
 .object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 12px; }

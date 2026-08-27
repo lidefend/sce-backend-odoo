@@ -34,7 +34,7 @@ type CardStyle = Record<string, string | number>;
 const cardBodyStyle = computed<CardStyle>(() => {
   const styles: Partial<Record<NonNullable<typeof props.appearance>, CardStyle>> = {
     summary: { padding: '0' },
-    task: { paddingTop: '8px' },
+    task: { display: 'grid', alignContent: 'start', height: 'max-content', paddingTop: '8px' },
     auth: { display: 'grid', gap: '18px', padding: 'var(--sc-card-body-padding)' },
     account: { display: 'grid', gap: '16px', padding: '28px' },
     'kanban-record': { display: 'grid', gap: 'var(--sc-card-gap)', padding: 'var(--sc-product-space-2)' },
