@@ -272,6 +272,43 @@ def _widget_type_from_field(field: dict[str, Any]) -> str:
     return "input"
 
 
+CANONICAL_WIDGET_TYPES = frozenset({
+    "input", "select", "date", "datetime", "number", "table", "upload", "button",
+    "textarea", "checkbox", "radio", "tree", "gantt", "relation", "display", "binary",
+    "many2many_tags",
+})
+
+NATIVE_WIDGET_TYPE_ALIASES = {
+    "selection": "select",
+    "many2one": "select",
+    "many2many": "table",
+    "one2many": "table",
+    "one2many_list": "table",
+    "boolean": "checkbox",
+    "boolean_toggle": "checkbox",
+    "monetary": "number",
+    "float_time": "number",
+    "percentage": "number",
+    "percentpie": "number",
+    "statusbar": "display",
+    "image": "binary",
+    "html": "textarea",
+    "handle": "number",
+    "phone": "input",
+    "url": "input",
+    "email": "input",
+}
+
+
+def _canonical_widget_type(native_widget: str, field: dict[str, Any]) -> str:
+    normalized = _text(native_widget).lower()
+    if normalized in CANONICAL_WIDGET_TYPES:
+        return normalized
+    if normalized in NATIVE_WIDGET_TYPE_ALIASES:
+        return NATIVE_WIDGET_TYPE_ALIASES[normalized]
+    return _widget_type_from_field(field)
+
+
 def _component_registry(component_keys: set[str]) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for key in sorted(component_keys):
@@ -1459,8 +1496,11 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     if layout_type == "form" and native_locator:
         widget_id = f"field.{field_name}.occ.{_fingerprint({'locator': native_locator, 'occurrence': occurrence_index})}"
     explicit_widget = _text(field.get("widget"))
-    widget_type = "table" if layout_type == "table" else explicit_widget or _widget_type_from_field(field)
-    component_key = _component_key(widget_type, field)
+    widget_type = "table" if layout_type == "table" else _canonical_widget_type(explicit_widget, field)
+    component_widget_type = explicit_widget if explicit_widget in {
+        "monetary", "percentage", "percentpie", "float_time", "statusbar",
+    } else widget_type
+    component_key = _component_key(component_widget_type, field)
     capabilities = ["sortable", "filterable"] if layout_type == "table" else []
     if widget_type == "select":
         capabilities.append("searchable")
@@ -1479,6 +1519,8 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     field_type = _text(field.get("ttype") or field.get("type")).lower()
     if field_type:
         component_config["fieldType"] = field_type
+    if explicit_widget:
+        component_config["nativeWidget"] = explicit_widget
     selection = field.get("selection")
     if field_type == "selection" and isinstance(selection, (list, tuple)):
         component_config["selection"] = deepcopy(list(selection))

@@ -243,6 +243,22 @@ def main() -> int:
     ui_contract = target.assemble_unified_page_contract_v2(ui_source, source_type="ui.contract")
     onchange_patch = target.assemble_unified_page_patch_v2(onchange_source, action_id="project.name.change")
 
+    widget_projection_cases = (
+        ({"name": "state", "type": "selection", "widget": "selection"}, "select", "sc.select.remote"),
+        ({"name": "active", "type": "boolean", "widget": "boolean"}, "checkbox", "sc.input.boolean"),
+        ({"name": "line_ids", "type": "one2many", "widget": "one2many_list", "relation": "x.line"}, "table", "sc.relation.table"),
+        ({"name": "amount", "type": "monetary", "widget": "monetary"}, "number", "sc.value.money"),
+        ({"name": "state", "type": "selection", "widget": "statusbar"}, "display", "sc.display.status"),
+    )
+    for field, expected_widget, expected_component in widget_projection_cases:
+        projected = target._field_widget(field, layout_type="form")
+        if projected.get("widgetType") != expected_widget:
+            fail(errors, f"native widget {field['widget']} must normalize to {expected_widget}")
+        if projected.get("componentKey") != expected_component:
+            fail(errors, f"native widget {field['widget']} must resolve component {expected_component}")
+        if projected.get("componentConfig", {}).get("nativeWidget") != field["widget"]:
+            fail(errors, f"native widget {field['widget']} must remain available as presentation metadata")
+
     validate_contract(
         scene_contract,
         expected_source_type="scene_contract",
