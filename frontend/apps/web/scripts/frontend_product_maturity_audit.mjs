@@ -85,7 +85,7 @@ async function login(page, loginName) {
     const inputs = page.locator('input');
     await inputs.nth(0).fill(loginName);
     await inputs.nth(1).fill(password);
-    if (await inputs.nth(2).isEnabled()) await inputs.nth(2).fill(dbName);
+    if (await inputs.count() > 2 && await inputs.nth(2).isEnabled()) await inputs.nth(2).fill(dbName);
     await page.getByRole('button', { name: /^登录$/ }).click();
     await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
     await page.locator('.layout-shell').waitFor({ timeout: 45000 });
