@@ -33,6 +33,7 @@
   --sc-product-text-title: calc(var(--sc-pattern-page-header-title-size) * 1px);
   --sc-product-line-body: 22px;
   --sc-product-table-row-height: var(--sc-table-row-height);
+  --sc-product-table-header-height: var(--sc-table-header-height);
   --sc-product-toolbar-height: var(--sc-pattern-collection-toolbar-height);
   --sc-product-list-toolbar-height: 46px;
   --sc-touch-target-min: 44px;

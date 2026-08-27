@@ -57,6 +57,29 @@ GLOBAL_SHELL_DENSITY_CONTRACTS = (
 )
 
 
+# Component authority density tokens must be defined ONLY in the tokens layer.
+# Pages express density variants through product-level tokens
+# (--sc-product-table-*) so shared components keep the authoritative density.
+COMPONENT_AUTHORITY_DENSITY_TOKENS = ("--sc-table-row-height:", "--sc-table-header-height:")
+TOKENS_LAYER_PREFIX = "frontend/apps/web/src/styles/tokens/"
+
+
+def authority_density_token_violations(sources: list[tuple[str, str]] | None = None) -> list[str]:
+    if sources is None:
+        sources = []
+        for css in sorted((ROOT / "frontend/apps/web/src").rglob("*.css")):
+            rel = css.relative_to(ROOT).as_posix()
+            if rel.startswith(TOKENS_LAYER_PREFIX):
+                continue
+            sources.append((rel, css.read_text(encoding="utf-8")))
+    violations: list[str] = []
+    for rel, text in sources:
+        for token in COMPONENT_AUTHORITY_DENSITY_TOKENS:
+            if token in text:
+                violations.append(f"component authority density token overridden outside tokens layer: {rel}: {token}")
+    return violations
+
+
 def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
     for source, (_, requirements) in INVENTORY.OWNED_BINDINGS.items():
@@ -76,6 +99,7 @@ def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8"
             text = (ROOT / source).read_text(encoding="utf-8")
         if marker not in text:
             failures.append(f"global rendering-detail contract missing: {source}: {label}")
+    failures.extend(authority_density_token_violations())
     return failures
 
 
@@ -89,7 +113,8 @@ def main() -> int:
     print(
         f"[frontend_rendering_detail_state_guard] PASS surfaces={len(INVENTORY.OWNED_BINDINGS)} "
         f"accessibility_contracts={len(GLOBAL_ACCESSIBILITY_CONTRACTS)} "
-        f"shell_density_contracts={len(GLOBAL_SHELL_DENSITY_CONTRACTS)}"
+        f"shell_density_contracts={len(GLOBAL_SHELL_DENSITY_CONTRACTS)} "
+        f"authority_density_tokens={len(COMPONENT_AUTHORITY_DENSITY_TOKENS)}"
     )
     return 0
 
