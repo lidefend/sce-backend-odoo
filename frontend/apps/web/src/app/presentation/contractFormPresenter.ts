@@ -39,6 +39,20 @@ function bool(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+function containerModifierValue(container: ContractV2Container, key: 'invisible' | 'readonly' | 'required'): unknown {
+  const attributes = asDict(container.attributes);
+  const fieldInfo = asDict(container.fieldInfo);
+  const attributeModifiers = asDict(attributes.modifiers);
+  const fieldInfoModifiers = asDict(fieldInfo.modifiers);
+  const modifiers = asDict(container.modifiers);
+  if (Object.prototype.hasOwnProperty.call(modifiers, key)) return modifiers[key];
+  if (Object.prototype.hasOwnProperty.call(attributeModifiers, key)) return attributeModifiers[key];
+  if (Object.prototype.hasOwnProperty.call(container, key)) return container[key];
+  if (Object.prototype.hasOwnProperty.call(fieldInfoModifiers, key)) return fieldInfoModifiers[key];
+  if (Object.prototype.hasOwnProperty.call(fieldInfo, key)) return fieldInfo[key];
+  return attributes[key];
+}
+
 function semanticRole(value: unknown): CanonicalFormSemanticRole | '' {
   const structure = asDict(value);
   const role = text(structure.role) as ContractV2FormStructureRoleName;
@@ -171,6 +185,7 @@ function fieldFromWidget(
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
   ancestorReadonly: boolean,
+  containerRequired: boolean,
   authoritativeFieldLabels: Readonly<Record<string, string>>,
   structure: ContractV2FormStructureContract | undefined,
   componentRegistry: ContractV2Dictionary,
@@ -236,7 +251,7 @@ function fieldFromWidget(
       || (Boolean(fieldAuth) && fieldAuth !== 'edit')
       || selectorStatus?.readonly === true
       || !statusResolved || bool(status?.readonly, false),
-    required: container.required === true || bool(status?.required, false) || selectorStatus?.required === true,
+    required: containerRequired || bool(status?.required, false) || selectorStatus?.required === true,
     disabled: ancestorDisabled || selectorStatus?.disabled === true || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode || selectorStatus?.reasonCode)
       || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
@@ -282,10 +297,15 @@ function presentNode(
     nodeSemantics.slot,
     nodeSemantics.group,
   ]);
-  const visible = ancestorVisible && container.visible !== false && container.invisible !== true
+  const currentValues = { ...contractValues, ...(runtimeValues || {}) };
+  const resolveFieldValue = (field: string) => currentValues[field];
+  const layoutInvisible = evaluateNativeModifierValue(containerModifierValue(container, 'invisible'), resolveFieldValue);
+  const layoutReadonly = evaluateNativeModifierValue(containerModifierValue(container, 'readonly'), resolveFieldValue);
+  const layoutRequired = evaluateNativeModifierValue(containerModifierValue(container, 'required'), resolveFieldValue);
+  const visible = ancestorVisible && container.visible !== false && !layoutInvisible
     && bool(status?.visible, true) && bool(selectorStatus?.visible, true);
   const disabled = ancestorDisabled || bool(status?.disabled, false) || selectorStatus?.disabled === true;
-  const readonly = ancestorReadonly || container.readonly === true || selectorStatus?.readonly === true;
+  const readonly = ancestorReadonly || layoutReadonly || selectorStatus?.readonly === true;
   const widgets = (store.widgetsByOwnerContainerId.get(container.containerId) || []).map((widget) => (
     fieldFromWidget(
       widget,
@@ -299,6 +319,7 @@ function presentNode(
       visible,
       disabled,
       readonly,
+      layoutRequired,
       authoritativeFieldLabels,
       structure,
       componentRegistry,

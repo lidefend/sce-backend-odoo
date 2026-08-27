@@ -922,6 +922,30 @@ assert.deepEqual(
   { nameReadonly: true, nameRequired: true, stateVisible: false },
   'explicit static native constraints must not be revived by permissive runtime status',
 );
+const nativeDynamicConstraintSnapshot = snapshot();
+nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = {
+  kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
+};
+nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[0].required = {
+  kind: 'field_truthy', field: 'needs_name',
+};
+nativeDynamicConstraintSnapshot.layoutContract.containerTree[0].children[1].invisible = {
+  kind: 'field_compare', field: 'state', operator: '=', value: 'approved',
+};
+const nativeDynamicFields = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(nativeDynamicConstraintSnapshot)),
+  'edit',
+  { state: 'approved', needs_name: true },
+).zones.primary[0].children.flatMap((node) => node.fields);
+assert.deepEqual(
+  {
+    nameReadonly: nativeDynamicFields.find((field) => field.fieldCode === 'name')?.readonly,
+    nameRequired: nativeDynamicFields.find((field) => field.fieldCode === 'name')?.required,
+    stateVisible: nativeDynamicFields.find((field) => field.fieldCode === 'state')?.visible,
+  },
+  { nameReadonly: true, nameRequired: true, stateVisible: false },
+  'native modifier ASTs must consume current form values through the shared modifier engine',
+);
 
 const fieldAuthSnapshot = snapshot();
 fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';
