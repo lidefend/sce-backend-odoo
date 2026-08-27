@@ -94,11 +94,38 @@
 - commit: `f24cadd0`
 - 修后实测（payment 表单）: **7/8 控件 = 36px == token**；余 1 个为 `.sc-input` 内搜索框（容器已 36px，内层不影响视觉）
 - 按钮 token 已由 `.sc-btn.t-button` 消费（36/30px），日期选择器同步对齐
+- 覆盖延伸（本轮复核）: relation field（`ScRelationField` → `t-auto-complete`）实测 **36px**，被同一块规则覆盖，无遗漏
 
-## 八、后续迭代项
+## 八、readonly 值排版统一（2026-08-28 追加）
+
+### 问题
+同一 readonly 表单 section 内两条渲染路径字号混排（实测 payment 表单）：
+- 模板 `.readonly-value`（`.template-form-section--readonly .readonly-value`）: **14px / 550**
+- 专业控件 `.professional-base-field-control__readonly`（`ProfessionalBaseFieldControl.vue`）: 回退 `--sc-component-input-font-size`（**12px**）
+
+相邻字段"草稿"（14px）与"申请单号/账户信息完整/尚未生成"（12px）上下紧邻，同一卡片内视觉字号不一致。
+
+### 修复
+`product-patterns.css` form surface 块追加「Read-only value typography consistency」规则，将 readonly section 内专业控件只读值对齐 section 声明的只读排版（14px / 550）。
+
+- commit: `938c027e`
+- 修后实测: **全部 7 个 readonly 值统一 14px**（readonly-value 14px/400 + professional 14px/550——"草稿"状态值有意保持 400 权重，字号一致）
+
+## 九、本轮审计结论（label/卡片/分页器/弹窗）
+
+| 表面 | 项目 | 实测 | 判定 |
+|---|---|---|---|
+| 表单 | label 字号 | 可编辑 section 13px / readonly section 12px | **有意分层**（`.label` 13px vs `.template-form-section--readonly .label` 12px），非失配 |
+| 表单 | readonly 值字号 | 修复后统一 14px | **已修复**（938c027e） |
+| 卡片 | ScCard padding/radius | 内容层 `.t-card__body` 0/20px/24px、radius 8/12px | 组件内定义，无 token 失配证据 |
+| 列表 | t-table footer 汇总行 | 2×39px（TDesign 默认） | 无 footer 行高 token 契约，非失配 |
+| 列表 | 分页器 | 无独立分页器渲染（t-table__footer 内） | 无失配 |
+| 弹窗 | 新增/列设置/筛选 | 均为全页面导航或内联展开，无 fixed 弹窗 | 系统倾向全页面导航，无弹窗失配 |
+
+## 十、后续迭代项
 
 1. **worksheet 行高统一**: 定位 `HierarchicalWorksheet.vue` 表格行高 89px 来源，使其消费密度 token（46px）——纯样式层不可达，需组件层（`ScTable`/bridge 传参或渲染路径）
-2. **覆盖更多表面**: 卡片、分页器、弹窗/抽屉内表单、详情展示面（read-only）的 TDesign 组件 token 落地审计
-3. **表单间距 token**: `--sc-component-form-field-gap` / `--sc-component-form-control-gap` 未定义，字段行距由布局层决定——确认设计意图后补 token 并绑定
+2. **表单间距 token**: `--sc-component-form-field-gap` / `--sc-component-form-control-gap` 未定义，`template-form-section-grid` 硬编码 `gap: 12px 26px`——确认设计意图后补 token 并绑定（组件层消费）
+3. **readonly 值 weight 微差异**: readonly-value(400) vs professional readonly(550) 权重不同——状态值语义待设计确认，可后续统一
 4. **基线自动化**: 将密度测量脚本固化为 `make` target + 门禁（复用 `verify.frontend.all_list_visual.audit` 基础设施），并扩展覆盖 form surface
 5. **公司支出空态**: 数据归属（bc16 vs bc20）与 action domain 是否对齐，需业务确认
