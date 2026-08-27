@@ -45,7 +45,7 @@
           :logo-text="shellLogoText"
           :title="rootTitle"
           :subtitle="sidebarSubtitle"
-          :show-logo="false"
+          :show-logo="true"
           :show-close="mobileViewport"
           @close="closeMobileSidebar"
         />

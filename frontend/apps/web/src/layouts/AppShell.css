@@ -93,14 +93,6 @@
   background: var(--sc-navigation-bg);
 }
 
-.workspace-sidebar-panel :deep(.brand)::before {
-  width: 4px;
-  height: 34px;
-  border-radius: 2px;
-  background: var(--sc-semantic-surface-interactive);
-  content: '';
-}
-
 .workspace-sidebar-panel :deep(.brand .title) {
   color: var(--sc-app-text-primary);
   font-size: 16px;
