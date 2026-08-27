@@ -51,6 +51,43 @@
       "minLength": 1,
       "pattern": "^[a-zA-Z][a-zA-Z0-9_.:-]*$"
     },
+    "deliveryProfile": {
+      "enum": ["full", "mobile_compact", "mobile_primary"]
+    },
+    "deliveryCountRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["containers", "widgets", "actions"],
+      "properties": {
+        "containers": { "type": "integer", "minimum": 0 },
+        "widgets": { "type": "integer", "minimum": 0 },
+        "actions": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "deliveryLimitRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["containers", "widgets", "actions"],
+      "properties": {
+        "containers": { "type": ["integer", "null"], "minimum": 0 },
+        "widgets": { "type": ["integer", "null"], "minimum": 0 },
+        "actions": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "deliveryTrim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clientType", "deliveryProfile", "compact", "limits", "original", "delivered", "omitted"],
+      "properties": {
+        "clientType": { "enum": ["web_pc", "wx_mini", "harmony_h5"] },
+        "deliveryProfile": { "$ref": "#/$defs/deliveryProfile" },
+        "compact": { "type": "boolean" },
+        "limits": { "$ref": "#/$defs/deliveryLimitRecord" },
+        "original": { "$ref": "#/$defs/deliveryCountRecord" },
+        "delivered": { "$ref": "#/$defs/deliveryCountRecord" },
+        "omitted": { "$ref": "#/$defs/deliveryCountRecord" }
+      }
+    },
     "sourceContext": {
       "type": "object",
       "additionalProperties": false,
@@ -155,6 +192,9 @@
             "wx_mini",
             "harmony_h5"
           ]
+        },
+        "deliveryProfile": {
+          "$ref": "#/$defs/deliveryProfile"
         }
       }
     },
@@ -1590,6 +1630,9 @@
           "items": {
             "type": "object"
           }
+        },
+        "deliveryProfile": {
+          "$ref": "#/$defs/deliveryProfile"
         }
       }
     },
@@ -1622,6 +1665,9 @@
         },
         "lifecycle": {
           "$ref": "#/$defs/contractLifecycle"
+        },
+        "deliveryTrim": {
+          "$ref": "#/$defs/deliveryTrim"
         }
       }
     }

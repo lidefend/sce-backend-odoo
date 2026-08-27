@@ -1,4 +1,5 @@
 export type ContractV2ClientType = 'web_pc' | 'wx_mini' | 'harmony_h5';
+export type ContractV2DeliveryProfile = 'full' | 'mobile_compact' | 'mobile_primary';
 export type ContractV2ViewType = 'form' | 'list' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine';
 export type ContractV2LayoutType = 'form' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine';
 export type ContractV2AdaptMode = 'pc' | 'mobile';
@@ -134,6 +135,7 @@ export interface ContractV2PageInfo {
   renderMode: ContractV2PageRenderMode;
   contractVersion: string;
   clientType: ContractV2ClientType;
+  deliveryProfile?: ContractV2DeliveryProfile;
 }
 
 export interface ContractV2Widget {
@@ -493,6 +495,7 @@ export interface ContractV2RuntimeContract {
   collaboration?: ContractV2Dictionary;
   businessWorkspace?: ContractV2Dictionary;
   businessActions?: ContractV2Dictionary[];
+  deliveryProfile?: ContractV2DeliveryProfile;
 }
 
 export interface ContractV2Lifecycle {
@@ -531,6 +534,15 @@ export interface ContractV2Meta {
   requestId: string;
   sourceType: string;
   lifecycle: ContractV2Lifecycle;
+  deliveryTrim?: {
+    clientType: ContractV2ClientType;
+    deliveryProfile: ContractV2DeliveryProfile;
+    compact: boolean;
+    limits: Record<'containers' | 'widgets' | 'actions', number | null>;
+    original: Record<'containers' | 'widgets' | 'actions', number>;
+    delivered: Record<'containers' | 'widgets' | 'actions', number>;
+    omitted: Record<'containers' | 'widgets' | 'actions', number>;
+  };
 }
 
 export interface ContractV2Snapshot {

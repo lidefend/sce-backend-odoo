@@ -15,6 +15,7 @@ import type {
   ContractV2DataContract,
   ContractV2DataMeta,
   ContractV2Dictionary,
+  ContractV2DeliveryProfile,
   ContractV2DispatchMode,
   ContractV2FieldGroups,
   ContractV2FormStructureConfiguredSection,
@@ -203,12 +204,57 @@ function readAliasedObject(
   return value;
 }
 
-function decodeClientType(value: string, issues: DecodeIssue[]): ContractV2ClientType {
+function decodeClientType(value: string, path: string, issues: DecodeIssue[]): ContractV2ClientType {
   if (value === 'web_pc' || value === 'wx_mini' || value === 'harmony_h5') {
     return value;
   }
-  issues.push({ path: 'pageInfo.clientType', message: `unsupported client type ${value || '<empty>'}` });
+  issues.push({ path, message: `unsupported client type ${value || '<empty>'}` });
   return 'web_pc';
+}
+
+function decodeDeliveryCountRecord(
+  source: ContractV2Dictionary,
+  path: string,
+  issues: DecodeIssue[],
+  nullable: boolean,
+): Record<'containers' | 'widgets' | 'actions', number | null> {
+  rejectUnknownKeys(source, ['containers', 'widgets', 'actions'], path, issues);
+  const output = {} as Record<'containers' | 'widgets' | 'actions', number | null>;
+  (['containers', 'widgets', 'actions'] as const).forEach((key) => {
+    const value = source[key];
+    if (nullable && value === null) {
+      output[key] = null;
+    } else if (typeof value === 'number' && Number.isInteger(value) && value >= 0) {
+      output[key] = value;
+    } else {
+      issues.push({ path: `${path}.${key}`, message: nullable ? 'must be a non-negative integer or null' : 'must be a non-negative integer' });
+      output[key] = nullable ? null : 0;
+    }
+  });
+  return output;
+}
+
+function decodeDeliveryTrim(source: ContractV2Dictionary, issues: DecodeIssue[]): NonNullable<ContractV2Meta['deliveryTrim']> {
+  const limits = requiredRecord(source, 'limits', 'meta.deliveryTrim', issues);
+  const original = requiredRecord(source, 'original', 'meta.deliveryTrim', issues);
+  const delivered = requiredRecord(source, 'delivered', 'meta.deliveryTrim', issues);
+  const omitted = requiredRecord(source, 'omitted', 'meta.deliveryTrim', issues);
+  return {
+    clientType: decodeClientType(requiredString(source, 'clientType', 'meta.deliveryTrim', issues), 'meta.deliveryTrim.clientType', issues),
+    deliveryProfile: decodeDeliveryProfile(source.deliveryProfile, 'meta.deliveryTrim.deliveryProfile', issues) || 'full',
+    compact: requiredBoolean(source, 'compact', 'meta.deliveryTrim', issues, false),
+    limits: decodeDeliveryCountRecord(limits, 'meta.deliveryTrim.limits', issues, true),
+    original: decodeDeliveryCountRecord(original, 'meta.deliveryTrim.original', issues, false) as Record<'containers' | 'widgets' | 'actions', number>,
+    delivered: decodeDeliveryCountRecord(delivered, 'meta.deliveryTrim.delivered', issues, false) as Record<'containers' | 'widgets' | 'actions', number>,
+    omitted: decodeDeliveryCountRecord(omitted, 'meta.deliveryTrim.omitted', issues, false) as Record<'containers' | 'widgets' | 'actions', number>,
+  };
+}
+
+function decodeDeliveryProfile(value: unknown, path: string, issues: DecodeIssue[]): ContractV2DeliveryProfile | undefined {
+  if (value === undefined) return undefined;
+  if (value === 'full' || value === 'mobile_compact' || value === 'mobile_primary') return value;
+  issues.push({ path, message: `unsupported delivery profile ${typeof value === 'string' ? value : '<non-string>'}` });
+  return undefined;
 }
 
 function decodeViewType(value: string, path: string, issues: DecodeIssue[]): ContractV2ViewType {
@@ -522,7 +568,7 @@ function requiredIntegerInRange(
 
 function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2PageInfo {
   rejectUnknownKeys(source, [
-    'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType',
+    'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType', 'deliveryProfile',
   ], 'pageInfo', issues);
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
   if (!/^2\.(0|1|2)\.\d+$/.test(contractVersion)) {
@@ -537,7 +583,10 @@ function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): Co
     layoutType: decodeLayoutType(requiredString(source, 'layoutType', 'pageInfo', issues), 'pageInfo.layoutType', issues),
     renderMode: decodePageRenderMode(requiredString(source, 'renderMode', 'pageInfo', issues), 'pageInfo.renderMode', issues),
     contractVersion,
-    clientType: decodeClientType(requiredString(source, 'clientType', 'pageInfo', issues), issues),
+    clientType: decodeClientType(requiredString(source, 'clientType', 'pageInfo', issues), 'pageInfo.clientType', issues),
+    ...(decodeDeliveryProfile(source.deliveryProfile, 'pageInfo.deliveryProfile', issues) ? {
+      deliveryProfile: source.deliveryProfile as ContractV2DeliveryProfile,
+    } : {}),
   };
 }
 
@@ -1944,7 +1993,7 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
   rejectUnknownKeys(source, [
     'patchStrategy', 'cachePolicy', 'optimistic', 'lazyContainer', 'virtualization', 'retryPolicy',
     'renderStrategy', 'hydration', 'patchOperations', 'tracePolicy', 'complexityBudget', 'aiEnvelope',
-    'interactionMode', 'actionTarget', 'collaboration', 'businessWorkspace', 'businessActions',
+    'interactionMode', 'actionTarget', 'collaboration', 'businessWorkspace', 'businessActions', 'deliveryProfile',
   ], 'runtimeContract', issues);
   const renderStrategy = decodeRenderStrategy(asString(source.renderStrategy), 'runtimeContract.renderStrategy', issues);
   const patchOperations = source.patchOperations === undefined
@@ -1986,6 +2035,7 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
   const collaboration = optionalRecord(source, 'collaboration', 'runtimeContract', issues);
   const businessWorkspace = optionalRecord(source, 'businessWorkspace', 'runtimeContract', issues);
   const businessActions = optionalRecordArray(source, 'businessActions', 'runtimeContract', issues);
+  const deliveryProfile = decodeDeliveryProfile(source.deliveryProfile, 'runtimeContract.deliveryProfile', issues);
   return {
     patchStrategy: decodePatchStrategy(requiredString(source, 'patchStrategy', 'runtimeContract', issues), 'runtimeContract.patchStrategy', issues),
     cachePolicy: decodeCachePolicy(requiredString(source, 'cachePolicy', 'runtimeContract', issues), 'runtimeContract.cachePolicy', issues),
@@ -2004,16 +2054,18 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
     ...(collaboration ? { collaboration } : {}),
     ...(businessWorkspace ? { businessWorkspace } : {}),
     ...(businessActions ? { businessActions } : {}),
+    ...(deliveryProfile ? { deliveryProfile } : {}),
   };
 }
 
 function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2Meta {
-  rejectUnknownKeys(source, ['etag', 'snapshotId', 'traceId', 'requestId', 'sourceType', 'lifecycle'], 'meta', issues);
+  rejectUnknownKeys(source, ['etag', 'snapshotId', 'traceId', 'requestId', 'sourceType', 'lifecycle', 'deliveryTrim'], 'meta', issues);
   const lifecycle = requiredRecord(source, 'lifecycle', 'meta', issues);
   const definition = requiredRecord(lifecycle, 'definition', 'meta.lifecycle', issues);
   const generation = requiredRecord(lifecycle, 'generation', 'meta.lifecycle', issues);
   const runtime = requiredRecord(lifecycle, 'runtime', 'meta.lifecycle', issues);
   const integrity = requiredRecord(lifecycle, 'integrity', 'meta.lifecycle', issues);
+  const deliveryTrim = source.deliveryTrim === undefined ? undefined : requiredRecord(source, 'deliveryTrim', 'meta', issues);
   rejectUnknownKeys(lifecycle, [
     'lifecycleVersion', 'stage', 'definition', 'generation', 'runtime', 'integrity', 'authority',
   ], 'meta.lifecycle', issues);
@@ -2025,12 +2077,16 @@ function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): Contra
   ], 'meta.lifecycle.generation', issues);
   rejectUnknownKeys(runtime, ['requestId', 'traceId', 'clientType', 'traceSource'], 'meta.lifecycle.runtime', issues);
   rejectUnknownKeys(integrity, ['algorithm', 'contractSha256'], 'meta.lifecycle.integrity', issues);
+  if (deliveryTrim) {
+    rejectUnknownKeys(deliveryTrim, ['clientType', 'deliveryProfile', 'compact', 'limits', 'original', 'delivered', 'omitted'], 'meta.deliveryTrim', issues);
+  }
   return {
     etag: requiredString(source, 'etag', 'meta', issues),
     snapshotId: requiredString(source, 'snapshotId', 'meta', issues),
     traceId: requiredString(source, 'traceId', 'meta', issues),
     requestId: requiredString(source, 'requestId', 'meta', issues),
     sourceType: requiredString(source, 'sourceType', 'meta', issues),
+    ...(deliveryTrim ? { deliveryTrim: decodeDeliveryTrim(deliveryTrim, issues) } : {}),
     lifecycle: {
       lifecycleVersion: requiredString(lifecycle, 'lifecycleVersion', 'meta.lifecycle', issues),
       stage: requiredString(lifecycle, 'stage', 'meta.lifecycle', issues),
@@ -2096,6 +2152,26 @@ function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2
   return out;
 }
 
+function validateDeliveryIdentity(
+  pageInfo: ContractV2PageInfo,
+  runtimeContract: ContractV2RuntimeContract,
+  meta: ContractV2Meta,
+  issues: DecodeIssue[],
+): void {
+  const profiles = [pageInfo.deliveryProfile, runtimeContract.deliveryProfile, meta.deliveryTrim?.deliveryProfile];
+  if (!profiles.some(Boolean)) return;
+  if (profiles.some((profile) => !profile)) {
+    issues.push({ path: '$.deliveryProfile', message: 'pageInfo, runtimeContract, and meta.deliveryTrim must declare one complete delivery identity' });
+    return;
+  }
+  if (new Set(profiles).size !== 1) {
+    issues.push({ path: '$.deliveryProfile', message: 'delivery profile identities must match' });
+  }
+  if (meta.deliveryTrim?.clientType !== pageInfo.clientType) {
+    issues.push({ path: 'meta.deliveryTrim.clientType', message: 'must match pageInfo.clientType' });
+  }
+}
+
 export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const root = asRecord(normalizeLegacyContractV2Snapshot(value));
   const issues: DecodeIssue[] = [];
@@ -2119,6 +2195,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const searchContract = decodeSearchContract(root.searchContract, issues);
   const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
+  validateDeliveryIdentity(pageInfo, runtimeContract, meta, issues);
   if (issues.length) {
     throw new ContractV2DecodeError(issues);
   }

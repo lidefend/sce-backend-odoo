@@ -15,7 +15,7 @@ OUTPUT = ROOT / "docs/frontend_productization/rendering-detail/contract-v2-rende
 EXPECTED = {
     "sourceContext": "context domain contextRaw domainRaw renderProfile order limit",
     "searchContract": "default_sort default_order mode filters saved_filters group_by fields search_panel favorites custom ui_labels defaults",
-    "pageInfo": "pageId sceneKey pageName model viewType layoutType renderMode contractVersion clientType",
+    "pageInfo": "pageId sceneKey pageName model viewType layoutType renderMode contractVersion clientType deliveryProfile",
     "layoutContract": "pageId layoutType adaptMode containerTree layoutHints componentRegistry listProfile activityProfile",
     "activityProfile": (
         "activityTypeSlots deadlineSlots assigneeSlots fieldOccurrences nativeAttrs nodeOccurrences template "
@@ -66,9 +66,12 @@ EXPECTED = {
     "contractLifecycleIntegrity": "algorithm contractSha256",
     "runtimeContract": (
         "patchStrategy cachePolicy optimistic lazyContainer virtualization retryPolicy renderStrategy hydration patchOperations "
-        "tracePolicy complexityBudget aiEnvelope interactionMode actionTarget collaboration businessWorkspace businessActions"
+        "tracePolicy complexityBudget aiEnvelope interactionMode actionTarget collaboration businessWorkspace businessActions deliveryProfile"
     ),
-    "meta": "etag snapshotId traceId requestId sourceType lifecycle",
+    "meta": "etag snapshotId traceId requestId sourceType lifecycle deliveryTrim",
+    "deliveryTrim": "clientType deliveryProfile compact limits original delivered omitted",
+    "deliveryCountRecord": "containers widgets actions",
+    "deliveryLimitRecord": "containers widgets actions",
 }
 
 NON_VISUAL = {
@@ -137,6 +140,9 @@ NON_VISUAL = {
     "runtimeContract.tracePolicy": "runtime trace policy",
     "runtimeContract.complexityBudget": "runtime complexity governance",
     "runtimeContract.aiEnvelope": "AI authority boundary",
+    "pageInfo.deliveryProfile": "client delivery identity",
+    "runtimeContract.deliveryProfile": "client delivery identity",
+    "meta.deliveryTrim": "client delivery projection evidence",
 }
 
 DECODED_RUNTIME_GAPS = {
@@ -160,6 +166,9 @@ NON_VISUAL_DEFINITIONS = {
     "contractLifecycleRuntime": "request trace provenance",
     "contractLifecycleIntegrity": "integrity provenance",
     "meta": "snapshot identity and provenance",
+    "deliveryTrim": "client delivery projection evidence",
+    "deliveryCountRecord": "client delivery projection evidence",
+    "deliveryLimitRecord": "client delivery projection limits",
 }
 
 CONSUMERS = {
@@ -196,6 +205,9 @@ CONSUMERS = {
     "contractLifecycleIntegrity": "decoder lifecycle guard",
     "runtimeContract": "form runtime / collaboration and workspace adapters",
     "meta": "ContractV2 decoder / trace identity",
+    "deliveryTrim": "ContractV2 decoder / delivery identity guard",
+    "deliveryCountRecord": "ContractV2 decoder / delivery identity guard",
+    "deliveryLimitRecord": "ContractV2 decoder / delivery identity guard",
 }
 
 

@@ -34,12 +34,15 @@
     "contractLifecycleRuntime",
     "contractLifecycleIntegrity",
     "runtimeContract",
-    "meta"
+    "meta",
+    "deliveryTrim",
+    "deliveryCountRecord",
+    "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 300,
+    "schemaFieldCount": 316,
     "renderedOrInteractionAuthorityCount": 199,
-    "validatedNonVisualAuthorityCount": 91,
+    "validatedNonVisualAuthorityCount": 107,
     "decodedRuntimeAuthorityGapCount": 10,
     "unclassifiedCount": 0
   },
@@ -842,6 +845,84 @@
       "consumer": "ContractV2 store / form and collection policy adapters"
     },
     {
+      "path": "deliveryCountRecord.actions",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryCountRecord.containers",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryCountRecord.widgets",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryLimitRecord.actions",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection limits",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryLimitRecord.containers",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection limits",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryLimitRecord.widgets",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection limits",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryTrim.clientType",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryTrim.compact",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryTrim.delivered",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryTrim.deliveryProfile",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryTrim.limits",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryTrim.omitted",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
+      "path": "deliveryTrim.original",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / delivery identity guard"
+    },
+    {
       "path": "fieldGroups.groups",
       "classification": "rendered_or_interaction_authority",
       "consumer": "field grouping projection"
@@ -893,6 +974,12 @@
       "classification": "validated_non_visual_authority",
       "reason": "page identity invariant",
       "consumer": "contractFormPresenter / ContractFormDriverHost"
+    },
+    {
+      "path": "meta.deliveryTrim",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery projection evidence",
+      "consumer": "ContractV2 decoder / trace identity"
     },
     {
       "path": "meta.etag",
@@ -1193,6 +1280,12 @@
       "consumer": "page runtime / contractFormPresenter.identity"
     },
     {
+      "path": "pageInfo.deliveryProfile",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery identity",
+      "consumer": "page runtime / contractFormPresenter.identity"
+    },
+    {
       "path": "pageInfo.layoutType",
       "classification": "rendered_or_interaction_authority",
       "consumer": "page runtime / contractFormPresenter.identity"
@@ -1266,6 +1359,12 @@
       "classification": "decoded_runtime_authority_gap",
       "reason": "opaque budget has no generic enforcement consumer",
       "consumer": "strict decoder only"
+    },
+    {
+      "path": "runtimeContract.deliveryProfile",
+      "classification": "validated_non_visual_authority",
+      "reason": "client delivery identity",
+      "consumer": "form runtime / collaboration and workspace adapters"
     },
     {
       "path": "runtimeContract.hydration",

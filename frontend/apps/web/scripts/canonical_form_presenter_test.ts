@@ -944,6 +944,24 @@ assert.throws(
   },
   'the V2 envelope and runtime policy must reject undeclared or malformed parallel authority',
 );
+const deliveredSnapshot = snapshot();
+deliveredSnapshot.pageInfo.deliveryProfile = 'full';
+deliveredSnapshot.runtimeContract.deliveryProfile = 'full';
+deliveredSnapshot.meta.deliveryTrim = {
+  clientType: 'web_pc', deliveryProfile: 'full', compact: false,
+  limits: { containers: null, widgets: null, actions: null },
+  original: { containers: 2, widgets: 3, actions: 1 },
+  delivered: { containers: 2, widgets: 3, actions: 1 },
+  omitted: { containers: 0, widgets: 0, actions: 0 },
+};
+assert.equal(decodeContractV2Snapshot(deliveredSnapshot).meta.deliveryTrim?.deliveryProfile, 'full');
+const mismatchedDeliverySnapshot = structuredClone(deliveredSnapshot);
+mismatchedDeliverySnapshot.runtimeContract.deliveryProfile = 'mobile_compact';
+assert.throws(
+  () => decodeContractV2Snapshot(mismatchedDeliverySnapshot),
+  /delivery profile identities must match/,
+  'client delivery identity must remain consistent across page, runtime, and trim evidence',
+);
 const invalidActionCollectionsSnapshot = snapshot();
 const invalidActionCollections = (
   invalidActionCollectionsSnapshot.actionContract.actionRuleList[0] as unknown as Record<string, unknown>
