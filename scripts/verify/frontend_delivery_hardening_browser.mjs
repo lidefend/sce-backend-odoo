@@ -388,8 +388,8 @@ async function login(page, user, keyboard = false) {
   const password = page.locator('#login-password, input[autocomplete="current-password"]').first();
   await username.fill(user);
   await password.fill(PASSWORD);
-  const db = page.locator('input').nth(2);
-  if (await db.isEnabled()) await db.fill(DB_NAME);
+  const inputs = page.locator('input');
+  if (await inputs.count() > 2 && await inputs.nth(2).isEnabled()) await inputs.nth(2).fill(DB_NAME);
   const loginResponsePromise = page.waitForResponse((response) => {
     if (!response.url().includes('/api/v1/intent')) return false;
     try {
