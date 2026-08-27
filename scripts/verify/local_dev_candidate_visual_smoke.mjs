@@ -1030,6 +1030,39 @@ try {
             && missingResizeLabels === 0,
         };
       }
+      let recordEntryEvidence = null;
+      if (target.exerciseRecordEntry === true) {
+        const recordId = String(target.recordId || '').trim();
+        if (!recordId) throw new Error(`${target.name}: record entry requires recordId`);
+        const recordOwner = page.locator(`[data-record-key="${recordId}"]:visible`);
+        if (await recordOwner.count() !== 1) throw new Error(`${target.name}: expected exactly one visible record ${recordId}`);
+        const opener = recordOwner.locator('.cell-primary-link, [data-semantic-action="open-record"]');
+        if (await opener.count() !== 1) throw new Error(`${target.name}: expected exactly one record opener for ${recordId}`);
+        const beforeUrl = page.url();
+        const detailContractResponse = page.waitForResponse(isContractV2Response, { timeout: 45000 });
+        await opener.click();
+        await page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15000 });
+        const response = await detailContractResponse;
+        const payload = await response.json();
+        const widgetTypes = [];
+        const visit = (value) => {
+          if (Array.isArray(value)) return value.forEach(visit);
+          if (!value || typeof value !== 'object') return;
+          if (typeof value.widgetType === 'string') widgetTypes.push(value.widgetType);
+          Object.values(value).forEach(visit);
+        };
+        visit(payload.layoutContract?.containerTree || []);
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        recordEntryEvidence = {
+          recordId,
+          beforeUrl,
+          firstUrl: page.url(),
+          responseStatus: response.status(),
+          pageInfo: payload.pageInfo || null,
+          widgetTypes: [...new Set(widgetTypes)].sort(),
+          visibleError: await page.locator('[role="alert"]:visible, .error-state:visible, .form-error:visible').allTextContents(),
+        };
+      }
       const verticalLineEvidence = target.captureVerticalLineEvidence === true
         ? await page.evaluate(() => {
           const x = Math.round(window.innerWidth * 0.568);
@@ -1084,7 +1117,7 @@ try {
           })),
         };
       }));
-      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
+      report.routes.push({ name: target.name, path: target.path, viewport: viewport.name, finalUrl: initialFinalUrl, expectedPageHeaders: target.expectedPageHeaders ?? null, expectedPrimaryActions: target.expectedPrimaryActions ?? null, expectedPresentationMode: target.expectedPresentationMode ?? null, expectedNativeStructureCount: target.expectedNativeStructureCount ?? null, expectedNativeNotebookPageCount: target.expectedNativeNotebookPageCount ?? null, contractH1Nodes, contractSelections, contractAggregates, contractSummaryItems, listAggregates, nativeActionPresentationEvidence, relationSearchDialogEvidence, collectionSummaryEvidence, collectionMobileRecordEvidence, collectionKanbanEvidence, collectionSelectionEvidence, collectionAggregateEvidence, collectionGroupHeaderEvidence, mobileOverflowEvidence, dialogLifecycleEvidence, collectionToolbarEvidence, collectionNavigationEvidence, recordEntryEvidence, sidebarScrollEvidence, verticalLineEvidence, notebookTabEvidence, ...result });
     }
     report.routes.push({ viewport: viewport.name, errors });
     await context.close();
