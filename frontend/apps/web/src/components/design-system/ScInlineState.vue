@@ -4,7 +4,7 @@
     role="status" aria-live="polite" :aria-busy="state === 'loading' || undefined" size="small" :text="label" />
   <TDesignAlert v-else class="sc-inline-state" data-semantic-component="ScInlineState" data-semantic-driver="tdesign-alert"
     data-semantic-layer="primitive" :data-state="state" :data-density="density"
-    :theme="state === 'error' ? 'error' : state === 'empty' ? 'warning' : 'info'" :message="label"
+    :theme="state === 'error' ? 'error' : 'info'" :message="label"
     :role="state === 'error' ? 'alert' : 'status'" :aria-live="state === 'error' ? 'assertive' : 'polite'"
     :aria-busy="undefined">
     <slot>{{ label }}</slot><template v-if="$slots.actions" #operation><slot name="actions" /></template>
