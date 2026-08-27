@@ -318,6 +318,26 @@ density baseline 扩展后 **14/14 PASS**（list + form + worksheet 三面）。
 
 整体布局特性已完整对齐 TDesign 组件体系（搜索框/查询条/工具栏/表格/状态标签/空态/列设置/导航/表单），跨列表与跨状态一致。
 
+## 二十.x、渲染细节落地：间距 token 扩展 + section 标题统一（2026-08-28 追加）
+
+**A. 表单间距 token 扩展（commit ac4713e7，FormSection.vue）**
+- `field-inline-config`（label 行字段操作簇）硬编码 `gap: 6px` → 抽为 `--sc-pattern-task-form-inline-config-gap`（默认 6px）
+- `field-inline-actions` 硬编码 `gap: 8px` → 抽为 `--sc-pattern-task-form-inline-actions-gap`（默认 8px）
+- 此前两处隐含复用 `control_row_gap` 的 6px 语义；现独立 token 化，主题可分别控制 label 行操作簇与控件行的间距
+- 默认值不变；编译验证 `.field-inline-config[data-v-*]` 含新 token 引用
+
+**B. section 标题统一（commit ca2097d7，CanonicalFormNodeRenderer.vue）**
+- canonical 路径（申请识别与状态/项目与收款对象）标题此前 15px + H3 继承 700；t-card 路径（当前任务/业务上下文/关系明细）为 `t-card__title` 16px/600——同一表单两套标题层级
+- `canonical-form-node-title` 统一为 16px/600，与 TDesign card 标题 scale 一致
+- 实测：四个 section 标题全部 16px/600
+
+**C. 编辑态渲染验证（草稿 1709，无代码改动）**
+- 核心申请信息/本次付款事实字段为 36px 可编辑 `t-input`（placeholder 请选择项目/往来单位/业务分类），非只读
+- 必填标记 5 处 `*` 红色 `#b91c1c` 14px；`field-control-row` gap 6px（token 生效）
+- label 12px/500 次色、readonly 值 14px/400 深色、事实紧凑 69px 均一致
+
+density baseline **14/14 PASS**（token 扩展 + 标题统一无回归）。
+
 ## 二十、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
