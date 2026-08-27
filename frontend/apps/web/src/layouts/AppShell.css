@@ -28,9 +28,9 @@
   gap: 0;
   border-right: 1px solid var(--sc-app-border);
   background: var(--sc-navigation-bg);
-  height: 100vh;
+  height: 100dvh;
   min-height: 0;
-  max-height: 100vh;
+  max-height: 100dvh;
   overflow: hidden;
   position: sticky;
   top: 0;
