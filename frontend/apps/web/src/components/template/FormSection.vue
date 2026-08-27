@@ -1132,7 +1132,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sc-pattern-task-form-inline-config-gap, 6px);
   min-width: 0;
 }
 
@@ -1147,7 +1147,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .field-inline-actions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sc-pattern-task-form-inline-actions-gap, 8px);
   color: var(--sc-semantic-text-muted);
   font-size: 12px;
   line-height: 1;
