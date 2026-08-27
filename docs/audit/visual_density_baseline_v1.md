@@ -105,6 +105,7 @@
 - 修后实测（payment 表单）: **7/8 控件 = 36px == token**；余 1 个为 `.sc-input` 内搜索框（容器已 36px，内层不影响视觉）
 - 按钮 token 已由 `.sc-btn.t-button` 消费（36/30px），日期选择器同步对齐
 - 覆盖延伸（本轮复核）: relation field（`ScRelationField` → `t-auto-complete`）实测 **36px**，被同一块规则覆盖，无遗漏
+- **新建表单验证（2026-08-28）**: `/f/payment.request/new` 实测 **7/8 输入框 = 36px**（ScRelationField×3 / ScDateField×2 / ScInput×2）；唯一 32px 为 `.sc-input` 内 `t-input--prefix` 搜索框（容器 36px，视觉无影响）。修复为 surface 级 CSS 规则（`[data-product-page-mode='form']`），天然覆盖所有表单模型的编辑/新建态。其他模型（费用报销等）在 acceptance 环境无数据，验证面受限，但规则通用性由选择器语义保证。
 
 ## 八、readonly 值排版统一（2026-08-28 追加）
 
