@@ -14,6 +14,10 @@ This ledger records reference details that cannot be implemented safely from the
 - Saved-search favorites need ownership and mutation capability before the favorite control can be universal.
 - The Shell needs a formal user-facing release/version identity if the reference footer version is required.
 - Authentication must declare credential-retention policy before a remember-account option stores any identifier.
+- Authentication page authority must explicitly declare account-registration/help and alternate-login actions; the reference controls are not safe as hard-coded links.
+- Runtime app-brand authority must project user-facing copyright/footer text before the reference footer can be rendered.
+- Collection view-switch, export, and settings controls remain capability-bound; a single-view action or missing export capability must not acquire decorative controls.
+- Contextual readonly detail header, first-level collaboration tabs, compact relation tabs, description-grid skeleton, and close settlement require the formal contextual-drawer container authority above.
 
 ## Evidence gaps
 
