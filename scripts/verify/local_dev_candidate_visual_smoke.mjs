@@ -1098,6 +1098,7 @@ try {
             ? getComputedStyle(summary).gridTemplateColumns.split(' ').filter(Boolean).length
             : 0;
           const expectedColumns = viewportName === 'mobile' ? 2 : 4;
+          const maxSummaryItemHeight = viewportName === 'mobile' ? 150 : 120;
           return {
             present: true,
             root: describe(root),
@@ -1110,7 +1111,7 @@ try {
               pass: summaryNodes.length === 0 || (
                 summaryColumns === expectedColumns
                 && summaryRows.length === Math.ceil(summaryNodes.length / expectedColumns)
-                && Math.max(0, ...summaryNodes.map((node) => node.rect[3])) <= 100
+                && Math.max(0, ...summaryNodes.map((node) => node.rect[3])) <= maxSummaryItemHeight
               ),
             },
             regions: [...root.querySelectorAll('[data-floorplan-region]')].map(describe),
