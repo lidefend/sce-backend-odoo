@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<{
   title?: string;
   subtitle?: string;
   bordered?: boolean;
-  appearance?: 'default' | 'summary' | 'task' | 'section' | 'context' | 'relation' | 'form-section' | 'auth' | 'account' | 'main-surface' | 'flow' | 'kanban-record' | 'metric' | 'table' | 'record' | 'config';
+  appearance?: 'default' | 'summary' | 'task' | 'section' | 'context' | 'relation' | 'form-section' | 'fact' | 'auth' | 'account' | 'main-surface' | 'flow' | 'kanban-record' | 'metric' | 'table' | 'record' | 'config';
 }>(), {
   bordered: true,
   appearance: 'default',
@@ -35,6 +35,7 @@ const cardBodyStyle = computed<CardStyle>(() => {
   const styles: Partial<Record<NonNullable<typeof props.appearance>, CardStyle>> = {
     summary: { padding: '0' },
     task: { display: 'grid', alignContent: 'start', height: 'max-content', paddingTop: '8px' },
+    fact: { padding: '0' },
     auth: { display: 'grid', gap: '18px', padding: 'var(--sc-card-body-padding)' },
     account: { display: 'grid', gap: '16px', padding: '28px' },
     'kanban-record': { display: 'grid', gap: 'var(--sc-card-gap)', padding: 'var(--sc-product-space-2)' },
@@ -56,6 +57,7 @@ const cardHeaderStyle = computed<CardStyle>(() => {
 
 <style scoped>
 [data-appearance='summary'] { overflow: hidden; }
+[data-appearance='fact'] { border: 0; background: transparent; box-shadow: none; }
 [data-appearance='auth'] { --sc-card-body-padding: 32px; }
 [data-appearance='main-surface'] { --sc-card-body-padding: 0 20px 24px; width: 100%; min-width: 0; }
 [data-appearance='flow'] { width: 100%; min-width: 0; border: 0; background: transparent; box-shadow: none; }

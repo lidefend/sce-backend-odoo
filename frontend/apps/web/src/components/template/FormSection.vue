@@ -5,7 +5,7 @@
     data-semantic-component="FormSection"
     :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
     :title="showHead ? title : undefined"
-    appearance="form-section"
+    :appearance="preferReadonlyFacts ? 'fact' : 'form-section'"
   >
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
     <p v-if="hint" class="template-form-section-hint">{{ hint }}</p>
