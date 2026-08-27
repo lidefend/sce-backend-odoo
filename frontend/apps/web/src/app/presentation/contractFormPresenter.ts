@@ -228,12 +228,14 @@ function fieldFromWidget(
     nativeLocator: text(widget.nativeLocator),
     occurrenceIndex: widget.occurrenceIndex ?? null,
     sourcePosition: widget.sourcePosition ?? null,
-    visible: ancestorVisible && statusResolved && bool(status?.visible, true) && bool(selectorStatus?.visible, true),
-    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || ancestorReadonly || slotReadonly
+    visible: ancestorVisible && container.visible !== false && container.invisible !== true
+      && statusResolved && bool(status?.visible, true) && bool(selectorStatus?.visible, true),
+    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || ancestorReadonly
+      || container.readonly === true || slotReadonly
       || (Boolean(fieldAuth) && fieldAuth !== 'edit')
       || selectorStatus?.readonly === true
       || !statusResolved || bool(status?.readonly, false),
-    required: bool(status?.required, false) || selectorStatus?.required === true,
+    required: container.required === true || bool(status?.required, false) || selectorStatus?.required === true,
     disabled: ancestorDisabled || selectorStatus?.disabled === true || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode || selectorStatus?.reasonCode)
       || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
@@ -279,9 +281,10 @@ function presentNode(
     nodeSemantics.slot,
     nodeSemantics.group,
   ]);
-  const visible = ancestorVisible && bool(status?.visible, true) && bool(selectorStatus?.visible, true);
+  const visible = ancestorVisible && container.visible !== false && container.invisible !== true
+    && bool(status?.visible, true) && bool(selectorStatus?.visible, true);
   const disabled = ancestorDisabled || bool(status?.disabled, false) || selectorStatus?.disabled === true;
-  const readonly = ancestorReadonly || selectorStatus?.readonly === true;
+  const readonly = ancestorReadonly || container.readonly === true || selectorStatus?.readonly === true;
   const widgets = (store.widgetsByOwnerContainerId.get(container.containerId) || []).map((widget) => (
     fieldFromWidget(
       widget,

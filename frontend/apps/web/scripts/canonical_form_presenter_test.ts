@@ -906,6 +906,22 @@ assert.throws(
   },
   'invalid object and row-map carriers must fail closed instead of becoming empty authority',
 );
+const nativeStaticConstraintSnapshot = snapshot();
+nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = true;
+nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].required = true;
+nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[1].invisible = true;
+const nativeStaticConstraintFields = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(nativeStaticConstraintSnapshot)), 'edit',
+).zones.primary[0].children.flatMap((node) => node.fields);
+assert.deepEqual(
+  {
+    nameReadonly: nativeStaticConstraintFields.find((field) => field.fieldCode === 'name')?.readonly,
+    nameRequired: nativeStaticConstraintFields.find((field) => field.fieldCode === 'name')?.required,
+    stateVisible: nativeStaticConstraintFields.find((field) => field.fieldCode === 'state')?.visible,
+  },
+  { nameReadonly: true, nameRequired: true, stateVisible: false },
+  'explicit static native constraints must not be revived by permissive runtime status',
+);
 
 const fieldAuthSnapshot = snapshot();
 fieldAuthSnapshot.statusContract.widgetStatus[0].auth = 'read';
