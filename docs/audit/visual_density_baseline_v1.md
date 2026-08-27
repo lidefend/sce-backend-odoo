@@ -249,10 +249,44 @@ CDP `Emulation.setDeviceMetricsOverride` 715×900 移动视口，付款申请列
 - facts 排版专业：`<small>` label 11px/400 + `<b>` value 13px/600，label:value 成对
 - 高度自适应内容（269/248/281px），响应式切换（1440 桌面表格 ↔ 715 移动卡片）正常
 
-## 十七、后续迭代项
+## 十七、列表搜索框高度修复（2026-08-28 追加，commit 417f0a93）
+
+用户点名「列表搜索框高度明显不对」。根因：`ActionSurfaceToolbar.vue` 的 `collection-search-control` 内 ScInput 显式 `size="small"`（24px），与并列的 36px 搜索按钮不一致。
+
+- 修复：`ActionSurfaceToolbar.vue` 与 `ProductListHeader.vue` 两处移除 `size="small"`
+- `product-patterns.css` 新增 `[data-product-page-mode='list'] .collection-search-control .t-input` 固定 36px（`--sc-component-input-form-height`）
+- 实测 input 36px = button 36px（`list.query-bar-height` 仍 46 PASS）
+
+## 十八、表单两列布局落地（2026-08-28 追加，commit 060de10f）
+
+表单结构优化核心一步。体检付款申请表单（FE-CORE-FORM-CONFLICT-001）：
+
+- **发现**：canonical 树契约本为多列（group 节点 `columns=2`），但渲染层把每个 field 节点按全宽单列竖排——task-section 卡（1103px，`--sc-task-section-columns: repeat(2,...)`）只用左列 ~536px，**右半完全空白**，字段读起来像不专业的单列小卡
+- 关键机制：sheet 未跨列（span:24 但宽度仅 536px）→ 未达 `FormSection.vue` 的 `@container (min-width: 680px)` 阈值 → group 的 2 列规则永不触发；每字段独立 `canonical-form-node--field` 节点（各自 FormSection 实例），`--canonical-node-grid-span` 已计算但从未用于 grid-column
+- **修复**（`CanonicalFormNodeRenderer.vue`）：
+  - sheet `grid-column: 1 / -1` 占满 task-section 卡
+  - container/group 含 field 子节点时按 `--canonical-layout-columns`（≥2）栅格排布字段；结构节点（嵌套 group/container/notebook/page）span 全宽竖排
+  - 组标题 span 全宽（避免占 grid 第一列把字段挤到第二列）
+- **验证**（编辑态 1709 + 只读态 19）：
+  - 编辑态：项目|往来单位、单据日期|申请金额 并排 536px（原 1103px 全宽），sheet 高度 447→353
+  - 只读态：facts 4 列紧凑（原稀疏单列）
+  - 表单控件高度保持 36px（density baseline 11/11 PASS，无回归）
+
+## 十九、只读事实紧凑化（2026-08-28 追加，commit 06644cd4）
+
+readonly-fact 规则把每个事实节点强制 `inline`（`.field`/form-section grid/control rows）——inline field 高度跟随周围 line-height，label+value 仅需 ~47px 却渲染 ~90-111px，摘要条与办理信息项读起来稀疏。
+
+- 修复：事实的 form-section grid 与 field 恢复 `display: grid`（control rows 保持 inline），高度收敛到内容
+- 验证：摘要事实 111→69px（4 列布局不变）；办理信息项（下一步办理/办理阻断与修复/往来单位办理提示）91→49px（2 列宽竖排不变）
+- 编辑态 1709 + 只读态 19 均验证；density baseline 11/11 PASS
+
+## 二十、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
 2. **表单间距 token 扩展**: `field_gap`/`column_gap`/`label_row_gap`/`control_row_gap` 已绑定（见十二）；剩余 `field-inline-config` 与 `.label` 内 gap 6px 语义如需独立契约可再拆 token
 3. **readonly 值 weight**: 已统一 400（见八修正）——如设计意图强调关键值（状态等）可再评估 550，需设计确认
 4. ~~基线自动化~~: 已完成（见十一 `verify.frontend.density.baseline`）
 5. **公司支出空态**: fixture 脚本已修复（commit 91b11152 为 `_execution` 补 `payment_family`/`source_kind`，公司类支出归入 company 分类）——需在 acceptance 栈重跑 fixture 后浏览器复验（当前容器 DB 为旧快照，列表仍空）
+6. **更多业务表单布局复验**: 费用报销/收款登记/实付登记等表单需 fixture 写入数据后才能验证两列布局与事实紧凑是否一致（当前列表空态）；fixture 重跑后逐表单巡检
+7. **组内单字段右列空**: 「申请识别与状态」组仅 1 个可见字段（业务分类）时右列空白——渲染层保持半宽（与其他组一致），如需组内字段填满需 canonical 数据侧补字段，属数据/契约问题不阻塞渲染
+8. **canonical 契约字段类型**: typecheck 7 个既有 TS 错误（fieldType/placeholder/auth/span 未入契约类型）属 page-pattern 未完成工作，与本分支渲染改动无冲突
