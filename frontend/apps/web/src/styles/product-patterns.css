@@ -451,6 +451,37 @@
   border: 0 !important;
 }
 
+
+/* TDesign table density alignment (list surface).
+ * ScTable bridges to tdesign-vue-next TTable; the product density tokens are
+ * declared on the list surface but were previously only consumed by the legacy
+ * native-table rules (.table / .sc-product-table). The t-table header/rows were
+ * falling back to TDesign defaults, so rendered heights drifted from the token
+ * contract (header 42px, row 46px, toolbar 46px). Align them here, scoped to
+ * the list surface so shared component tokens keep authority elsewhere. */
+.page[data-product-page-mode='list'] .t-table thead th,
+.page[data-product-page-mode='list'] .t-table thead th.t-table__th {
+  height: var(--sc-product-table-header-height, 42px);
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 22px;
+  vertical-align: middle;
+}
+
+.page[data-product-page-mode='list'] .t-table tbody tr {
+  height: var(--sc-product-table-row-height, 46px);
+}
+
+.page[data-product-page-mode='list'] .t-table tbody td,
+.page[data-product-page-mode='list'] .t-table tbody td.t-table__td {
+  height: var(--sc-product-table-row-height, 46px);
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 22px;
+  vertical-align: middle;
+}
+
+
 /* Global reduced-motion fallback.
  * Honors the OS "reduce motion" preference across every product surface.
  * Component-local reduced-motion rules (e.g. collection controls) remain as
