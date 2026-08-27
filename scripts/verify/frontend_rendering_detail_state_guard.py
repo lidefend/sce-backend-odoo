@@ -40,6 +40,23 @@ GLOBAL_ACCESSIBILITY_CONTRACTS = (
 )
 
 
+# Global shell density contracts: authoritative shell metrics must be consumed
+# by their owning surfaces (never a mis-scoped sibling token such as the
+# collection toolbar height standing in for the top bar height).
+GLOBAL_SHELL_DENSITY_CONTRACTS = (
+    (
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "topbar height",
+        "min-height: var(--sc-shell-topbar-height)",
+    ),
+    (
+        "frontend/apps/web/src/components/design-system/ScAside.vue",
+        "sidebar width",
+        "var(--sc-shell-sidebar-width)",
+    ),
+)
+
+
 def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
     for source, (_, requirements) in INVENTORY.OWNED_BINDINGS.items():
@@ -50,7 +67,7 @@ def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8"
         for legacy in LEGACY_PRIVATE_STATE_DOM.get(source, ()):
             if legacy in text:
                 failures.append(f"state surface retains private DOM: {source}: {legacy}")
-    for source, label, marker in GLOBAL_ACCESSIBILITY_CONTRACTS:
+    for source, label, marker in GLOBAL_ACCESSIBILITY_CONTRACTS + GLOBAL_SHELL_DENSITY_CONTRACTS:
         try:
             text = read_text(source)
         except (KeyError, FileNotFoundError):
@@ -58,7 +75,7 @@ def validate(read_text=lambda source: (ROOT / source).read_text(encoding="utf-8"
             # the real file so global contracts are always checked.
             text = (ROOT / source).read_text(encoding="utf-8")
         if marker not in text:
-            failures.append(f"global rendering-detail accessibility contract missing: {source}: {label}")
+            failures.append(f"global rendering-detail contract missing: {source}: {label}")
     return failures
 
 
@@ -71,7 +88,8 @@ def main() -> int:
         return 1
     print(
         f"[frontend_rendering_detail_state_guard] PASS surfaces={len(INVENTORY.OWNED_BINDINGS)} "
-        f"accessibility_contracts={len(GLOBAL_ACCESSIBILITY_CONTRACTS)}"
+        f"accessibility_contracts={len(GLOBAL_ACCESSIBILITY_CONTRACTS)} "
+        f"shell_density_contracts={len(GLOBAL_SHELL_DENSITY_CONTRACTS)}"
     )
     return 0
 

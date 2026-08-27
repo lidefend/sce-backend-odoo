@@ -45,7 +45,20 @@ class FrontendRenderingDetailStateGuardTest(unittest.TestCase):
             return (INVENTORY.ROOT / source).read_text(encoding="utf-8")
 
         failures = validate(fake)
-        self.assertTrue(any("accessibility contract missing" in failure and target in failure for failure in failures))
+        self.assertTrue(any("contract missing" in failure and target in failure for failure in failures))
+
+    def test_topbar_uses_authoritative_shell_token(self) -> None:
+        target = "frontend/apps/web/src/layouts/AppShell.css"
+        original = (INVENTORY.ROOT / target).read_text(encoding="utf-8")
+        regressed = original.replace("min-height: var(--sc-shell-topbar-height)", "min-height: var(--sc-product-toolbar-height)")
+
+        def fake(source):
+            if source == target:
+                return regressed
+            return (INVENTORY.ROOT / source).read_text(encoding="utf-8")
+
+        failures = validate(fake)
+        self.assertTrue(any("contract missing" in failure and target in failure for failure in failures))
 
 
 if __name__ == "__main__":
