@@ -338,7 +338,7 @@ verify.frontend.release.unit: verify.frontend.component_driver_takeover.unit ver
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 
-.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.action_surface_renderer_registry.unit verify.frontend.auth_credential.guard verify.frontend.all_list_visual.audit verify.frontend.runtime_environment.unit audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard
+.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.action_surface_renderer_registry.unit verify.frontend.auth_credential.guard verify.frontend.all_list_visual.audit verify.frontend.density.baseline verify.frontend.runtime_environment.unit audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard
 
 verify.frontend.auth_credential.guard: guard.prod.forbid
 	@python3 scripts/verify/auth_credential_frontend_guard.py
@@ -378,6 +378,17 @@ verify.frontend.all_list_visual.audit: guard.prod.forbid
 		CONCURRENCY="$${CONCURRENCY:-1}" \
 		ARTIFACT_DIR="$${ARTIFACT_DIR:-/tmp/frontend-all-list-visual-audit}" \
 		node scripts/verify/frontend_all_list_visual_audit.mjs
+
+# Visual density baseline gate: asserts rendered list/form metrics match the
+# product density token contract (list th 42px / row 46px / query-bar 46px;
+# form control 36px / readonly 14px). Requires a reachable frontend (dev server
+# or acceptance stack) at FRONTEND_URL. Contract reference:
+# docs/audit/visual_density_baseline_v1.md
+verify.frontend.density.baseline: guard.prod.forbid
+	@E2E_PASSWORD="$${E2E_PASSWORD:?E2E_PASSWORD is required}" \
+		FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:5175}" \
+		E2E_LOGIN="$${E2E_LOGIN:-fixture_role_activity_accounting}" \
+		node scripts/verify/frontend_density_baseline_audit.mjs
 
 verify.frontend.runtime_environment.unit: guard.prod.forbid
 	@python3 scripts/verify/test_common_env_explicit_path.py

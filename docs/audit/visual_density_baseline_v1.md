@@ -133,7 +133,16 @@
 | 列表 | 分页器 | 无独立分页器渲染（t-table__footer 内） | 无失配 |
 | 弹窗 | 新增/列设置/筛选 | 均为全页面导航或内联展开，无 fixed 弹窗 | 系统倾向全页面导航，无弹窗失配 |
 
-## 十、后续迭代项
+## 十一、基线自动化（2026-08-28）
+
+密度测量已固化为可重复、可门禁的审计：
+
+- **脚本**: `scripts/verify/frontend_density_baseline_audit.mjs`——登录后实测列表（th/行/查询栏）与表单（输入框/readonly）密度，逐项断言 token 契约，漂移即非零退出
+- **make target**: `verify.frontend.density.baseline`（`make/frontend.mk`，`E2E_PASSWORD` + `FRONTEND_URL` 参数化）
+- **实测**: `th=42 / row=46 / queryBar=46 / form-control=36 / readonly=14`——5/5 PASS，EXIT=0
+- **契约参考**: 本文档（`docs/audit/visual_density_baseline_v1.md`）为 token 契约的权威来源
+
+## 十二、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
 2. **表单间距 token**: `--sc-component-form-field-gap` / `--sc-component-form-control-gap` 未定义，`template-form-section-grid` 硬编码 `gap: 12px 26px`——确认设计意图后补 token 并绑定（组件层消费）
