@@ -30,6 +30,7 @@ REQUIREMENTS = {
     ),
     "frontend/apps/web/src/layouts/AppShell.css": (
         "max-height: 100dvh",
+        "max-block-size: 100dvh",
         ".shell :deep(.sidebar--scroll)",
         "overflow: hidden",
     ),
