@@ -53,6 +53,16 @@
 
 **后续深挖结论（2026-08-28）**：89px = td 88px + 1px border，且 88 = 4 × line-height(22px)——td 被表格算法统一分配 4 行高度，而内容仅单行。已验证全部 CSS 控制点均无效：`height/min-height/max-height:46px !important`（tr/td/tbody）、JS 内联 `td.style.height`、`tbody{display:contents}`、`vertical-align`、`line-height`、`white-space:nowrap`、`overflow:hidden`、TDesign 行高变量（`--td-table-row-height` 未定义、`:root` 无相关变量、无匹配 height 规则）。唯一有效操作是清空 td 内容 → 行高回 46px（确认"内容驱动"分配）。`t-size` 影响行高（size-l=111px / size-s=89px），但 CSS 无法在 size-s 下压到 46px。判定：TDesign PrimaryTable 在 worksheet 布局下的行高分配行为，须在 `ScTable`/`tdesignPrimitiveBridge` 组件层处理（改传参或换渲染路径），纯样式层不可达。
 
+**组件层排查结论（2026-08-28 第三轮，穷尽）**：
+- worksheet `ScTable` 传参: `appearance="worksheet"`、`size="small"`、`row-class-name="worksheetRowClassName"`（返回纯分类 class `group/record/item/heading/summary-row` + `selected`，无高度注入）、`row-attributes`（仅 tabindex）、`table-content-width`（2316px 超宽 fixed 布局）
+- 浏览器实测逐一排除: `t-size` 改 m/xs → 仍 89（仅 l=111）；table 宽度改 100% / 移除 `t-table--layout-fixed` → 仍 89（宽度 2316→1488 但行高不变）
+- td 全 DOM 探针: 17 个 td 全部纯文本（childCount=0 或 2 且 maxChildH=22）、无 tag/button/隐藏高内容、`white-space:normal`、`line-height:22px`——无任何内容撑高来源
+- td/tr/table 全 HTML 属性: 无 height 属性、无内联 style、`table-layout: fixed`、td `min-height:46px`（theme.css）但 computed height=89px（table-cell 忽略 max-height，min-height 非上限）
+- TDesign 1.20.5 `es/table/style/index.css` 源码: 无 td height/min-height 规则、无 `--td-table-row-height` 变量、无 size-s 行高声明
+- TDesign `primary-table-props` / `base-table-props`: 无 `rowHeight` 类 prop 可传参覆盖
+
+**结论（终版）**: 89px 是 TDesign PrimaryTable 1.20.5 在 worksheet 配置组合（`appearance="worksheet"` + fixed 布局 + 内容驱动）下的固有行高分配，**非样式、非属性、非布局、非 size 可达**。可行修复路径仅剩: ① 深入 TDesign `primary-table.mjs` 行高渲染算法定位 88px 来源（高成本高风险）; ② worksheet 绕过 PrimaryTable 改自定义表格渲染（大改动）; ③ 接受 89px 作为 worksheet 模式行高（记录为已知特性）。建议作为独立组件层任务评估，不阻塞其他渲染细节落地。
+
 ### 2. 公司支出列表空态（数据归属）
 迁移至 company 1 的 25 条 `sc.payment.execution` 全部属于 business_category「往来单位付款」（code=`finance.payment.execution.partner`，id=16），而「公司支出」action 774 的默认 domain 要求 `finance.payment.execution.company`（id=20「公司财务支出」）。数据类别与入口不匹配 → 空态。非渲染缺陷。
 
@@ -124,7 +134,7 @@
 
 ## 十、后续迭代项
 
-1. **worksheet 行高统一**: 定位 `HierarchicalWorksheet.vue` 表格行高 89px 来源，使其消费密度 token（46px）——纯样式层不可达，需组件层（`ScTable`/bridge 传参或渲染路径）
+1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
 2. **表单间距 token**: `--sc-component-form-field-gap` / `--sc-component-form-control-gap` 未定义，`template-form-section-grid` 硬编码 `gap: 12px 26px`——确认设计意图后补 token 并绑定（组件层消费）
 3. **readonly 值 weight 微差异**: readonly-value(400) vs professional readonly(550) 权重不同——状态值语义待设计确认，可后续统一
 4. **基线自动化**: 将密度测量脚本固化为 `make` target + 门禁（复用 `verify.frontend.all_list_visual.audit` 基础设施），并扩展覆盖 form surface
