@@ -92,7 +92,7 @@
           class="attachment-item"
         >
           <ScIcon name="file-text" :size="16" />
-          <span class="attachment-name" :title="att.label">{{ att.label }}</span>
+          <span class="attachment-name" :title="attachmentDisplayName(att)">{{ attachmentDisplayName(att) }}</span>
           <ScButton variant="ghost" size="small" @click="downloadAttachment(att)">下载</ScButton>
           <ScButton
             variant="ghost"
@@ -319,6 +319,33 @@ function isMany2manyTags(field: FormSectionFieldSchema) {
 
 const attachmentError = ref('');
 const uploadTick = ref(0);
+const attachmentNameMap = ref<Record<number, string>>({});
+const attachmentNameLoading = ref<Set<number>>(new Set());
+
+function attachmentDisplayName(option: { id: number; label: string }) {
+  const cached = attachmentNameMap.value[option.id];
+  if (cached) return cached;
+  const label = String(option.label || '');
+  // label 不是 "#id" 形式（附件名已由选项携带）时直接使用
+  if (!/^#\d+$/.test(label)) return label;
+  void lazyLoadAttachmentName(option.id);
+  return label;
+}
+
+async function lazyLoadAttachmentName(id: number) {
+  if (attachmentNameLoading.value.has(id)) return;
+  attachmentNameLoading.value.add(id);
+  try {
+    const res = await downloadFile({ id });
+    if (res?.name) {
+      attachmentNameMap.value = { ...attachmentNameMap.value, [id]: res.name };
+    }
+  } catch {
+    // 下载失败时保留原 label（#id），不阻塞展示
+  } finally {
+    attachmentNameLoading.value.delete(id);
+  }
+}
 
 function isAttachmentField(field: FormSectionFieldSchema) {
   const relation = (field as { descriptor?: { relation?: string } }).descriptor?.relation;
@@ -339,6 +366,7 @@ async function handleAttachmentUpload(field: FormSectionFieldSchema, file: File 
     const created = await uploadFile({ model, res_id: resId, name: file.name, mimetype, data });
     const current = props.adapter.relationIds(field.name);
     props.adapter.setRelationIds(field.name, Array.from(new Set([...current, created.id])));
+    attachmentNameMap.value = { ...attachmentNameMap.value, [created.id]: created.name || file.name };
     uploadTick.value += 1;
   } catch (err) {
     attachmentError.value = err instanceof Error ? err.message : '附件上传失败';
