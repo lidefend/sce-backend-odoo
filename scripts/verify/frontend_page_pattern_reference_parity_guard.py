@@ -28,6 +28,11 @@ REQUIREMENTS = {
         "grid-auto-rows: max-content",
         "align-content: start",
     ),
+    "frontend/apps/web/src/layouts/AppShell.css": (
+        "max-height: 100vh",
+        ".shell :deep(.sidebar--scroll)",
+        "overflow: hidden",
+    ),
 }
 FORBIDDEN_PRODUCT_HINTS = (
     "payment.request",

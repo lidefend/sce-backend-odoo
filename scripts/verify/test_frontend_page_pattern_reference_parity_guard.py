@@ -36,6 +36,13 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("product-specific routing hint" in failure and target in failure for failure in failures))
 
+    def test_sidebar_must_be_capped_to_the_viewport(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/layouts/AppShell.css"
+        values[target] = values[target].replace("max-height: 100vh", "max-height: none", 1)
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

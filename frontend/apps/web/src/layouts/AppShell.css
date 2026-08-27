@@ -29,6 +29,8 @@
   border-right: 1px solid var(--sc-app-border);
   background: var(--sc-navigation-bg);
   height: 100vh;
+  min-height: 0;
+  max-height: 100vh;
   overflow: hidden;
   position: sticky;
   top: 0;
