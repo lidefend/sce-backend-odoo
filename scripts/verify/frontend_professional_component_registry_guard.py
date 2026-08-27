@@ -21,14 +21,19 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         "PROFESSIONAL_COMPONENT_UNREGISTERED", "PROFESSIONAL_COMPONENT_FIELD_TYPE_MISSING", "PROFESSIONAL_COMPONENT_FIELD_TYPE_MISMATCH",
         "PROFESSIONAL_COMPONENT_PRESENTATION_MODE_MISMATCH", "PROFESSIONAL_COMPONENT_RENDER_PROFILE_MISMATCH",
         "PROFESSIONAL_COMPONENT_CAPABILITY_MISSING",
+        "PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING", "PROFESSIONAL_COMPONENT_CONTRACT_VERSION_MISSING",
+        "PROFESSIONAL_COMPONENT_CONTRACT_ADAPTER_MISSING",
     ):
         if marker not in registry:
             failures.append(f"registry missing fail-closed invariant {marker}")
-    if "resolveProfessionalComponent({" not in presenter:
+    if "resolveContractProfessionalComponent({" not in presenter:
         failures.append("Presenter does not resolve every canonical field through the registry")
     if "componentResolution," not in presenter:
         failures.append("Presenter does not retain the registry resolution")
-    for marker in ("data-component-key", "data-component-readiness", "data-component-renderer", "data-component-fallback"):
+    for marker in (
+        "data-component-key", "data-component-readiness", "data-component-renderer", "data-component-fallback",
+        "data-contract-adapter", "data-contract-component-version",
+    ):
         if marker not in renderer:
             failures.append(f"FormSection missing semantic marker {marker}")
     if "componentResolution" not in canonical_renderer:

@@ -151,6 +151,8 @@ export function canonicalFieldToFormSection(
     componentKey: field.componentResolution.componentKey,
     componentReadiness: field.componentResolution.readiness,
     componentRenderer: field.componentResolution.renderer,
+    contractAdapter: field.componentResolution.contractAdapter,
+    contractVersion: field.componentResolution.contractVersion,
     componentFallback: field.componentResolution.fallback,
     presentationMode: field.presentationMode,
     renderProfile: field.renderProfile,

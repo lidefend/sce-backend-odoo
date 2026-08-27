@@ -452,7 +452,13 @@ function snapshot(): ContractV2Snapshot {
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
-      layoutHints: { mobileColumns: 1 }, componentRegistry: {},
+      layoutHints: { mobileColumns: 1 }, componentRegistry: {
+        'sc.input.text': { version: '1.0', adapter: { web_pc: 'ElInput' }, selectedAdapter: 'TDesignInput' },
+        'sc.display.status': { version: '1.0', adapter: { web_pc: 'ElInput' } },
+        'sc.display.text': { version: '1.0', adapter: { web_pc: 'ElInput' } },
+        'sc.relation.many2one': { version: '1.0', adapter: { web_pc: 'ElSelect' } },
+        'sc.relation.table': { version: '1.0', adapter: { web_pc: 'ElTable' } },
+      },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,
         children: [{
@@ -783,6 +789,22 @@ assert.equal(
   canonicalFieldToFormSection(structurePresentationFields.find((field) => field.fieldCode === 'name')!).inputPlaceholder,
   'Contract placeholder',
   'canonical placeholder authority must reach the professional field adapter',
+);
+assert.deepEqual(
+  {
+    adapter: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractAdapter,
+    version: structurePresentationFields.find((field) => field.fieldCode === 'name')?.componentResolution.contractVersion,
+  },
+  { adapter: 'TDesignInput', version: '1.0' },
+  'the delivered client adapter binding must reach the professional component resolution',
+);
+
+const missingComponentRegistrySnapshot = snapshot();
+delete missingComponentRegistrySnapshot.layoutContract.componentRegistry['sc.input.text'];
+assert.throws(
+  () => presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(missingComponentRegistrySnapshot)), 'edit'),
+  /PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING:sc\.input\.text/,
+  'a widget without its delivered component registry authority must fail closed',
 );
 assert.deepEqual(
   {

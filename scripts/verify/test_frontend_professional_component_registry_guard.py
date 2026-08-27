@@ -11,7 +11,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("contractFormPresenter.ts"):
-                return value.replace("resolveProfessionalComponent({", "bypassRegistry({")
+                return value.replace("resolveContractProfessionalComponent({", "bypassRegistry({")
             return value
 
         self.assertTrue(any("Presenter" in failure for failure in validate(source)))

@@ -17,6 +17,9 @@ export type ProfessionalComponentRegistration = {
 
 export type ProfessionalComponentResolution = ProfessionalComponentRegistration & {
   fieldType: string;
+  contractAdapter: string;
+  contractVersion: string;
+  contractFallback: string | null;
 };
 
 const FORM_MODES = ['task', 'workspace'] as const;
@@ -85,6 +88,29 @@ export type ProfessionalComponentResolutionInput = {
   capabilities?: readonly string[];
 };
 
+export type ContractProfessionalComponentResolutionInput = ProfessionalComponentResolutionInput & {
+  clientType: string;
+  contractRegistryEntry: unknown;
+};
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function contractComponentBinding(input: ContractProfessionalComponentResolutionInput) {
+  const entry = asRecord(input.contractRegistryEntry);
+  if (!Object.keys(entry).length) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING:${input.componentKey}`);
+  const version = String(entry.version || '').trim();
+  if (!version) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_VERSION_MISSING:${input.componentKey}`);
+  const adapters = asRecord(entry.adapter);
+  const fallback = String(entry.fallback || '').trim();
+  const selected = String(
+    entry.selectedAdapter || entry.selected_adapter || adapters[input.clientType] || fallback || adapters.web_pc || '',
+  ).trim();
+  if (!selected) throw new Error(`PROFESSIONAL_COMPONENT_CONTRACT_ADAPTER_MISSING:${input.componentKey}:${input.clientType}`);
+  return Object.freeze({ contractAdapter: selected, contractVersion: version, contractFallback: fallback || null });
+}
+
 export function resolveProfessionalComponentRegistration(
   registry: ReadonlyMap<string, ProfessionalComponentRegistration>,
   input: ProfessionalComponentResolutionInput,
@@ -109,6 +135,9 @@ export function resolveProfessionalComponentRegistration(
     ...entry,
     renderer: entry.rendererByFieldType[fieldType] || entry.renderer,
     fieldType,
+    contractAdapter: '',
+    contractVersion: '',
+    contractFallback: null,
   });
 }
 
@@ -116,4 +145,11 @@ export function resolveProfessionalComponent(
   input: ProfessionalComponentResolutionInput,
 ): ProfessionalComponentResolution {
   return resolveProfessionalComponentRegistration(professionalComponentRegistry, input);
+}
+
+export function resolveContractProfessionalComponent(
+  input: ContractProfessionalComponentResolutionInput,
+): ProfessionalComponentResolution {
+  const local = resolveProfessionalComponentRegistration(professionalComponentRegistry, input);
+  return Object.freeze({ ...local, ...contractComponentBinding(input) });
 }

@@ -23,7 +23,7 @@ import type {
 } from '../contracts/v2/types';
 import type { ContractV2FormStructureRoleName } from '../contracts/v2/types';
 import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructureRoles';
-import { resolveProfessionalComponent } from './professionalComponentRegistry';
+import { resolveContractProfessionalComponent } from './professionalComponentRegistry';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -170,15 +170,19 @@ function fieldFromWidget(
   ancestorDisabled: boolean,
   authoritativeFieldLabels: Readonly<Record<string, string>>,
   structure: ContractV2FormStructureContract | undefined,
+  componentRegistry: ContractV2Dictionary,
+  clientType: string,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
   const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type);
-  const componentResolution = resolveProfessionalComponent({
+  const componentResolution = resolveContractProfessionalComponent({
     componentKey: widget.componentKey,
     fieldType,
     presentationMode,
     renderProfile: mode,
     capabilities: widget.capabilities,
+    clientType,
+    contractRegistryEntry: componentRegistry[widget.componentKey],
   });
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
@@ -243,6 +247,8 @@ function presentNode(
   actionsByNativeOccurrence: ReadonlyMap<string, CanonicalFormAction>,
   authoritativeFieldLabels: Readonly<Record<string, string>>,
   structure: ContractV2FormStructureContract | undefined,
+  componentRegistry: ContractV2Dictionary,
+  clientType: string,
   ancestorTitle = '',
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
@@ -264,6 +270,8 @@ function presentNode(
       disabled,
       authoritativeFieldLabels,
       structure,
+      componentRegistry,
+      clientType,
     )
   ));
   const nodeKind = text(container.type || container.containerType) || 'container';
@@ -315,7 +323,7 @@ function presentNode(
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
         mode, presentationMode, pageCanEdit, visible, disabled, actionsByIdentity, actionsByNativeOccurrence,
-        authoritativeFieldLabels, structure,
+        authoritativeFieldLabels, structure, componentRegistry, clientType,
         rawTitle || ancestorTitle,
       )
     )),
@@ -476,6 +484,7 @@ export function presentContractV2Form(
     presentNode(
       container, zoneRole(container), index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
       pageVisible, pageAuth === 'none', actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
+      snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType,
     )
   ));
   const demotedActionIds = new Set(

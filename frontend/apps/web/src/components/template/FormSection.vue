@@ -23,6 +23,8 @@
           :data-component-key="field.componentKey || undefined"
           :data-component-readiness="field.componentReadiness || undefined"
           :data-component-renderer="field.componentRenderer || undefined"
+          :data-contract-adapter="field.contractAdapter || undefined"
+          :data-contract-component-version="field.contractVersion || undefined"
           :data-component-fallback="field.componentFallback || undefined"
           :tabindex="fieldSelectionMode ? 0 : undefined"
           :role="fieldSelectionMode ? 'button' : undefined"

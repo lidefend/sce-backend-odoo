@@ -9,6 +9,7 @@ import type {
   ContractV2ButtonStatus,
   ContractV2AdaptMode,
   ContractV2ClientType,
+  ContractV2ComponentRegistryEntry,
   ContractV2Container,
   ContractV2ContainerStatus,
   ContractV2DataContract,
@@ -855,6 +856,36 @@ function decodeActivityProfile(raw: unknown, issues: DecodeIssue[]): ContractV2A
   };
 }
 
+function decodeComponentRegistry(
+  raw: unknown,
+  issues: DecodeIssue[],
+): Record<string, ContractV2ComponentRegistryEntry> {
+  if (!isRecord(raw)) {
+    issues.push({ path: 'layoutContract.componentRegistry', message: 'must be an object' });
+    return {};
+  }
+  const out: Record<string, ContractV2ComponentRegistryEntry> = {};
+  Object.entries(raw).forEach(([componentKey, value]) => {
+    const path = `layoutContract.componentRegistry.${componentKey}`;
+    if (!componentKey.trim() || !isRecord(value)) {
+      issues.push({ path, message: 'must be an object keyed by a non-empty component identity' });
+      return;
+    }
+    rejectUnknownKeys(value, ['version', 'adapter', 'fallback', 'selectedAdapter'], path, issues);
+    const adapter = decodeStringMap(value.adapter, `${path}.adapter`, issues);
+    Object.entries(adapter).forEach(([clientType, adapterName]) => {
+      if (!adapterName.trim()) issues.push({ path: `${path}.adapter.${clientType}`, message: 'must be non-empty' });
+    });
+    out[componentKey] = {
+      version: requiredString(value, 'version', path, issues),
+      adapter,
+      ...(optionalString(value, 'fallback') ? { fallback: optionalString(value, 'fallback') } : {}),
+      ...(optionalString(value, 'selectedAdapter') ? { selectedAdapter: optionalString(value, 'selectedAdapter') } : {}),
+    };
+  });
+  return out;
+}
+
 function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2LayoutContract {
   const containerTreeRaw = Array.isArray(source.containerTree) ? source.containerTree : [];
   if (!Array.isArray(source.containerTree)) {
@@ -869,7 +900,7 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
     adaptMode: decodeAdaptMode(requiredString(source, 'adaptMode', 'layoutContract', issues), 'layoutContract.adaptMode', issues),
     containerTree,
     layoutHints: requiredRecord(source, 'layoutHints', 'layoutContract', issues),
-    componentRegistry: requiredRecord(source, 'componentRegistry', 'layoutContract', issues),
+    componentRegistry: decodeComponentRegistry(source.componentRegistry, issues),
     ...(Object.keys(asRecord(source.listProfile)).length
       ? { listProfile: asRecord(source.listProfile) }
       : {}),

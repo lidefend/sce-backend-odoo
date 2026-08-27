@@ -233,6 +233,13 @@ export interface ContractV2Container {
   widgetList: ContractV2Widget[];
 }
 
+export interface ContractV2ComponentRegistryEntry {
+  version: string;
+  adapter: Record<string, string>;
+  fallback?: string;
+  selectedAdapter?: string;
+}
+
 export interface ContractV2ActivityNode {
   tag: string;
   native_locator: string;
@@ -304,7 +311,7 @@ export interface ContractV2LayoutContract {
   adaptMode: ContractV2AdaptMode;
   containerTree: ContractV2Container[];
   layoutHints: ContractV2Dictionary;
-  componentRegistry: ContractV2Dictionary;
+  componentRegistry: Record<string, ContractV2ComponentRegistryEntry>;
   listProfile?: ContractV2Dictionary;
   activityProfile?: ContractV2ActivityProfile;
 }
