@@ -12,9 +12,9 @@
     <div :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
       <template v-if="fields.length">
         <div
-          v-for="field in fields"
+          v-for="(field, index) in fields"
           :key="field.key"
-          :class="fieldClass(field)"
+          :class="fieldClass(field, index)"
           :data-field-name="field.name"
           :data-field-key="field.key"
           :data-field-type="field.type"
@@ -559,16 +559,33 @@ function fieldIdentity(field: FormSectionFieldSchema) {
   return String(field.name || field.key || '').trim();
 }
 
-function fieldSpanClass(field: FormSectionFieldSchema) {
-  return field.spanClass || defaultSpanClass(field.type);
+function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
+  if (field.spanClass) return field.spanClass;
+  const base = defaultSpanClass(field.type);
+  if (base === 'field--full') return base;
+  if (props.columns === 2 && index === props.fields.length - 1) {
+    // Orphan-column fill: when a 2-column grid ends with an isolated normal
+    // field (an even unit count before it means the last field starts a new
+    // row alone), widen the last field so it spans the full row instead of
+    // leaving a large blank half-card. This matches professional form
+    // conventions - a lone field never sits half-width.
+    let units = 0;
+    for (let i = 0; i < index; i++) {
+      const prev = props.fields[i];
+      const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
+      units += prevSpan === 'field--normal' ? 1 : 2;
+    }
+    if (units % 2 === 0) return 'field--wide';
+  }
+  return base;
 }
 
-function fieldClass(field: FormSectionFieldSchema) {
+function fieldClass(field: FormSectionFieldSchema, index: number) {
   const fieldKey = fieldIdentity(field);
   const isDropTarget = props.fieldOrderDropTargetKey === fieldKey && props.fieldOrderDraggingKey !== fieldKey;
   return [
     'field',
-    fieldSpanClass(field),
+    fieldSpanClass(field, index),
     fieldWidgetClass(field),
     {
       'field--order-editable': props.fieldOrderEditable,

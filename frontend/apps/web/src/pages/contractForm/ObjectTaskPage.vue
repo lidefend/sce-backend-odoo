@@ -71,7 +71,6 @@
       aria-label="核心申请信息"
       data-floorplan-region="core-input"
       data-canonical-zone="primary"
-      title="核心申请信息"
       :bordered="true"
       appearance="task-section"
     >

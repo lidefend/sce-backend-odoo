@@ -32,7 +32,7 @@
     </div>
     <FormSection
       v-if="fields.length"
-      :title="nodeKind === 'field' ? '' : node.title"
+      :title="sectionTitle"
       :columns="columns"
       :fields="fields"
       :relation-adapter="relationAdapter"
@@ -40,11 +40,12 @@
       @field-change="emit('field-change', $event)"
       @action-ref="emit('action-ref', $event)"
     />
-    <h3 v-else-if="node.title && children.length" class="canonical-form-node-title">{{ node.title }}</h3>
+    <h3 v-else-if="node.title && children.length && groupHeadingVisible" class="canonical-form-node-title">{{ node.title }}</h3>
     <CanonicalFormNodeRenderer
       v-for="child in children"
       :key="child.nodeId"
       :node="child"
+      :class="fieldChildOrphanClass(child)"
       :relation-adapter="relationAdapter"
       :prefer-readonly-facts="preferReadonlyFacts"
       @field-change="emit('field-change', $event)"
@@ -88,6 +89,32 @@ const readonlyFactLayout = computed(() => Boolean(
   && fields.value.every((field) => field.readonly),
 ));
 const children = computed(() => visibleCanonicalChildren(props.node));
+
+/**
+ * Section heading for the field form.
+ * 后台逻辑分组（核心申请信息 / 申请识别与状态 / 本次付款事实 …）是开发侧的分组
+ * 命名，对填单用户没有帮助。结构化填单模式下隐藏这些标题，字段直接平铺成连续
+ * 表单，方便用户直接填单办理业务（分组逻辑保留在 canonical 契约中，不动）。
+ * 只读信息卡（当前任务等 readonly-fact 节点）保留标题以便信息组织。
+ */
+const sectionTitle = computed(() => {
+  if (nodeKind.value === 'field') return '';
+  if (readonlyFactLayout.value) return props.node.title || '';
+  return '';
+});
+
+/**
+ * Group/container headings for structural nodes (no direct fields).
+ * 后台逻辑分组标题在结构化填单模式下隐藏（同 sectionTitle 决策）；只读信息卡与
+ * UI 结构（notebook/page）标题保留。
+ */
+const groupHeadingVisible = computed(() => {
+  if (!props.node.title) return false;
+  if (readonlyFactLayout.value) return true;
+  if (['notebook', 'page', 'tab'].includes(nodeKind.value)) return true;
+  return false;
+});
+
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
 const layoutColumns = computed(() => {
   // Container/group nodes arrange their direct field children on a grid whose
@@ -110,6 +137,23 @@ const presentableNodeText = computed(() => {
   if (props.preferReadonlyFacts && /^[\s.·•:_-]+$/.test(text)) return '';
   return text;
 });
+
+/**
+ * Orphan-column fill for direct field children of a group/container.
+ * A group whose field children count is odd would otherwise leave its last
+ * field alone in the left half of the second grid row with a large blank
+ * right half (e.g. 申请识别与状态 holding a single 业务分类 field). Widen that
+ * last field to span the full row - a lone field never sits half-width in a
+ * professional form.
+ */
+const fieldChildren = computed(() => visibleCanonicalChildren(props.node)
+  .filter((child) => String(child.kind || '').trim().toLowerCase() === 'field'));
+function fieldChildOrphanClass(child: CanonicalFormNode): string {
+  if (layoutColumns.value < 2) return '';
+  if (fieldChildren.value.length % 2 !== 1) return '';
+  if (fieldChildren.value[fieldChildren.value.length - 1].nodeId !== child.nodeId) return '';
+  return 'canonical-form-node--orphan-full';
+}
 </script>
 
 <style scoped>
@@ -133,7 +177,19 @@ const presentableNodeText = computed(() => {
   gap: 16px 32px;
 }
 .canonical-form-node--container > .canonical-form-node,
-.canonical-form-node--group > .canonical-form-node { grid-column: span 1; }
+.canonical-form-node--group > .canonical-form-node {
+  grid-column: span 1;
+  align-self: start;
+  /* The generic sibling rule (.canonical-form-node + .canonical-form-node)
+   * applies margin-top: 16px to every following node - inside a 2-column
+   * grid that pushes the right/next field down by 16px and misaligns the
+   * row. Grid children are spaced by the container gap, not this margin. */
+  margin-top: 0;
+}
+/* Orphan-column fill: the last direct field child of a group with an odd
+ * field count spans the full row instead of leaving a blank half-card. */
+.canonical-form-node--container > .canonical-form-node--orphan-full,
+.canonical-form-node--group > .canonical-form-node--orphan-full { grid-column: 1 / -1; }
 .canonical-form-node--container > .canonical-form-node--group,
 .canonical-form-node--group > .canonical-form-node--group,
 .canonical-form-node--container > .canonical-form-node--container,

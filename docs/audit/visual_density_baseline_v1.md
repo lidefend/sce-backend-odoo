@@ -357,6 +357,28 @@ density baseline **14/14 PASS**（token 扩展 + 标题统一无回归）。
 
 **收敛说明**：交互动作保持轻量（原生 confirm + executeButton），确认后直接调后端方法，由后端状态机与权限组做最终保护。后续如需更正式的确认交互（二次确认对话框/办理跳转），可替换 confirm 为 IntentConfirmationDialog。
 
+## 二十.z、填单化表单结构：后台分组标题隐藏 + 孤儿字段补全 + 两列对齐（2026-08-28 追加）
+
+**背景**：用户明确产品化决策——"核心申请信息 / 申请识别与状态 / 本次付款事实"等**后台逻辑分组标题**不应出现在填单界面，字段直接平铺成连续表单，方便用户直接填单、办理业务。同时发现两处渲染缺陷：奇数 field 组的孤儿子段占半宽导致右列大块空白、grid 内并排字段被相邻兄弟 margin-top 下推 16px 错位。
+
+**A. 后台逻辑分组标题隐藏（填单化）**
+- `CanonicalFormNodeRenderer.vue`：新增 `sectionTitle` computed——结构化填单模式（非 readonly-fact 节点）下 FormSection 标题置空；`groupHeadingVisible`——纯结构 group 的 h3 标题同样隐藏。后台分组逻辑保留在 canonical 契约，渲染层不显示
+- `ObjectTaskPage.vue`：core-input 卡删除硬编码 `title="核心申请信息"`（保留 aria-label 无障碍）
+- 保留标题：readonly-fact 节点（当前任务 / 业务上下文）与 UI 结构（关系明细 / notebook）——办理引导与数据组织仍需标题
+- 实测（编辑态 1709 / 只读态 19）：核心申请信息 / 申请识别与状态 / 本次付款事实 全部隐藏，当前任务保留；字段连续平铺
+
+**B. 孤儿字段补全（通用规则）**
+- `CanonicalFormNodeRenderer.vue`：`fieldChildren` + `fieldChildOrphanClass`——group/container 直接 field 子节点数为奇数时，最后一个孤立字段 `grid-column: 1/-1` 占满整行（业务分类从半宽 536 → 全宽 1103），消除右列大块空白
+- `FormSection.vue`：同规则下沉到字段网格层（columns=2 时孤儿字段自动 field--wide），作为通用防御
+- 偶数字段组（项目/往来单位、单据日期/申请金额）不受影响
+
+**C. 两列字段顶部对齐**
+- `.canonical-form-node + .canonical-form-node { margin-top: 16px }` 通用相邻兄弟规则误作用于 grid 内并排字段，右列/后续字段被推下 16px（项目 y598 vs 往来单位 y614）
+- container/group 直接子节点规则补 `margin-top: 0; align-self: start`——grid 间距由容器 gap 承担
+- 实测：项目/往来单位、单据日期/申请金额两列 label 完全对齐（diff 0）
+
+**验证**：typecheck 0 错误；density baseline **14/14 PASS**；编辑态与只读态均无后台分组标题、字段平铺、两列对齐。
+
 ## 二十、后续迭代项
 
 1. **worksheet 行高统一（独立组件层任务）**: 89px 行高已终版诊断为 TDesign PrimaryTable 固有行为（穷尽样式/属性/布局/size）。需评估三条路径：深挖 TDesign 渲染算法 / worksheet 绕过 PrimaryTable 自定义渲染 / 接受 89px 为已知特性。不阻塞其他渲染细节。
