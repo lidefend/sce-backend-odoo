@@ -937,6 +937,23 @@ assert.throws(
   },
   'the V2 envelope and runtime policy must reject undeclared or malformed parallel authority',
 );
+const invalidActionCollectionsSnapshot = snapshot();
+const invalidActionCollections = (
+  invalidActionCollectionsSnapshot.actionContract.actionRuleList[0] as unknown as Record<string, unknown>
+);
+invalidActionCollections.targetIds = ['page.root', 'page.root'];
+invalidActionCollections.visibleProfiles = 'edit';
+invalidActionCollections.presentationPriority = '100';
+assert.throws(
+  () => decodeContractV2Snapshot(invalidActionCollectionsSnapshot),
+  (error: unknown) => {
+    const message = String(error);
+    return message.includes('targetIds[1] duplicates page.root')
+      && message.includes('visibleProfiles must be an array')
+      && message.includes('presentationPriority must be an integer');
+  },
+  'action target, profile, and priority authority must remain strictly typed and unambiguous',
+);
 const nativeStaticConstraintSnapshot = snapshot();
 nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].readonly = true;
 nativeStaticConstraintSnapshot.layoutContract.containerTree[0].children[0].required = true;

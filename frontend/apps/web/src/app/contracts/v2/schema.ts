@@ -1430,13 +1430,20 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   const enabled = optionalBooleanField(raw, 'enabled', path, issues);
   const disabled = optionalBooleanField(raw, 'disabled', path, issues);
   const entitlementEvaluated = optionalBooleanField(raw, 'entitlementEvaluated', path, issues);
+  const visibleProfiles = Object.prototype.hasOwnProperty.call(raw, 'visibleProfiles')
+    ? decodeUniqueStringArray(raw.visibleProfiles, `${path}.visibleProfiles`, issues)
+    : undefined;
+  const presentationPriority = raw.presentationPriority;
+  if (presentationPriority !== undefined && (
+    typeof presentationPriority !== 'number' || !Number.isInteger(presentationPriority)
+  )) issues.push({ path: `${path}.presentationPriority`, message: 'must be an integer' });
   return {
     actionId,
     ...(optionalString(raw, 'backendIdentity') ? { backendIdentity: optionalString(raw, 'backendIdentity') } : {}),
     ...(nativeIdentity && Object.keys(nativeIdentity).length ? { nativeIdentity } : {}),
     triggerType: decodeTriggerType(requiredString(raw, 'triggerType', path, issues), `${path}.triggerType`, issues),
     sourceWidgetId: requiredString(raw, 'sourceWidgetId', path, issues),
-    targetIds: asStringArray(raw.targetIds),
+    targetIds: decodeUniqueStringArray(raw.targetIds, `${path}.targetIds`, issues),
     dispatchMode: decodeDispatchMode(requiredString(raw, 'dispatchMode', path, issues), `${path}.dispatchMode`, issues),
     targetScope: decodeTargetScope(requiredString(raw, 'targetScope', path, issues), `${path}.targetScope`, issues),
     refreshMode: decodeRefreshMode(requiredString(raw, 'refreshMode', path, issues), `${path}.refreshMode`, issues),
@@ -1451,14 +1458,16 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
     ...(allowed !== undefined ? { allowed } : {}),
     ...(enabled !== undefined ? { enabled } : {}),
     ...(disabled !== undefined ? { disabled } : {}),
-    ...(asStringArray(raw.visibleProfiles).length ? { visibleProfiles: asStringArray(raw.visibleProfiles) } : {}),
+    ...(visibleProfiles !== undefined ? { visibleProfiles } : {}),
     ...(presentation && Object.keys(presentation).length ? { presentation } : {}),
     ...(actionSafety && Object.keys(actionSafety).length ? { actionSafety } : {}),
     ...(submitPolicy && Object.keys(submitPolicy).length ? { submitPolicy } : {}),
     ...(tracePolicy && Object.keys(tracePolicy).length ? { tracePolicy } : {}),
     ...(sourceTrace?.length ? { sourceTrace } : {}),
     ...(optionalString(raw, 'presentationAuthority') ? { presentationAuthority: optionalString(raw, 'presentationAuthority') } : {}),
-    ...(Number.isInteger(raw.presentationPriority) ? { presentationPriority: Number(raw.presentationPriority) } : {}),
+    ...(typeof presentationPriority === 'number' && Number.isInteger(presentationPriority)
+      ? { presentationPriority }
+      : {}),
     ...(optionalString(raw, 'sourceActionKey') ? { sourceActionKey: optionalString(raw, 'sourceActionKey') } : {}),
     ...(optionalString(raw, 'sourceChannel') ? { sourceChannel: optionalString(raw, 'sourceChannel') } : {}),
     ...(permissionConstraints && Object.keys(permissionConstraints).length ? { permissionConstraints } : {}),
