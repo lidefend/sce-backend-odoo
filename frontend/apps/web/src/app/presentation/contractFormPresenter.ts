@@ -459,6 +459,7 @@ function presentAction(
     && (!status?.backendIdentity || status.backendIdentity === text(action.backendIdentity));
   const allowed = explicitAuthority && action.allowed === true;
   const enabled = action.enabled === true && action.disabled !== true && status?.disabled !== true;
+  const definitionVisible = action.visible !== false && action.invisible !== true;
   if (!text(action.actionId) || !text(action.backendIdentity)) {
     throw new Error('CANONICAL_FORM_ACTION_REFERENCE_MISSING');
   }
@@ -468,11 +469,12 @@ function presentAction(
     icon: text(action.presentation?.icon),
     tier: actionTier(action),
     visible: explicitAuthority
+      && definitionVisible
       && profiles.includes(mode)
       && status?.visible !== false
       && !(mode === 'readonly' && action.actionId === 'form.save'),
     enabled: allowed && enabled,
-    reasonCode: text(status?.reasonCode) || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
+    reasonCode: text(status?.reasonCode || action.reasonCode) || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
     visibleProfiles: profiles,
     safety: Object.freeze({ ...(action.actionSafety || {}) }),
     actionRef: action,

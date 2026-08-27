@@ -952,6 +952,24 @@ assert.deepEqual(model.responsive, {
   adaptMode: 'pc',
   layoutHints: { mobileColumns: 1 },
 }, 'canonical responsive authority must preserve the delivered adapt mode and layout hints');
+const hiddenActionSnapshot = snapshot();
+hiddenActionSnapshot.actionContract.actionRuleList[0].invisible = true;
+assert.deepEqual(
+  presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(hiddenActionSnapshot)), 'edit').actionBar,
+  [],
+  'an explicitly hidden action definition must not be revived by a visible button status',
+);
+const actionReasonSnapshot = snapshot();
+actionReasonSnapshot.actionContract.actionRuleList[0].enabled = false;
+actionReasonSnapshot.actionContract.actionRuleList[0].disabled = true;
+actionReasonSnapshot.actionContract.actionRuleList[0].reasonCode = 'WORKFLOW_BLOCKED';
+actionReasonSnapshot.statusContract.buttonStatus[0].reasonCode = '';
+assert.equal(
+  presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(actionReasonSnapshot)), 'edit')
+    .actionBar[0]?.reasonCode,
+  'WORKFLOW_BLOCKED',
+  'the formal action denial reason must survive when status does not provide a more specific reason',
+);
 assert.equal(JSON.stringify(source), before, 'presenter must not mutate normalized input');
 assert.equal(model.identity.sourceContractSha256, 'contract-sha');
 assert.deepEqual(model.zones.subordinate.map((node) => node.kind), ['notebook', 'attachment', 'chatter']);
