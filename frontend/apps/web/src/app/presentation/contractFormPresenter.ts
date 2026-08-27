@@ -15,6 +15,8 @@ import type {
   ContractV2Container,
   ContractV2ContainerStatus,
   ContractV2Dictionary,
+  ContractV2FormStructureContract,
+  ContractV2FormStructureRole,
   ContractV2NormalizedStore,
   ContractV2Widget,
   ContractV2WidgetStatus,
@@ -50,7 +52,19 @@ function semanticIdentity(value: unknown): { role: CanonicalFormSemanticRole | '
   };
 }
 
-function fieldSemanticIdentity(widget: ContractV2Widget, container: ContractV2Container) {
+function fieldSemanticIdentity(
+  widget: ContractV2Widget,
+  container: ContractV2Container,
+  structure: ContractV2FormStructureContract | undefined,
+) {
+  const authoritativeIdentity = structure?.fieldRoles[widget.fieldCode];
+  if (authoritativeIdentity) {
+    return {
+      role: canonicalRoleForFormStructureRole(authoritativeIdentity.role),
+      slot: authoritativeIdentity.slot,
+      group: authoritativeIdentity.group,
+    };
+  }
   const widgetIdentity = semanticIdentity(widget.formStructureRole);
   const containerIdentity = semanticIdentity(container.formStructureRole);
   return {
@@ -58,6 +72,35 @@ function fieldSemanticIdentity(widget: ContractV2Widget, container: ContractV2Co
     slot: widgetIdentity.slot || containerIdentity.slot,
     group: widgetIdentity.group || containerIdentity.group,
   };
+}
+
+function structureSlot(
+  structure: ContractV2FormStructureContract | undefined,
+  identity: Pick<ContractV2FormStructureRole, 'slot'>,
+) {
+  return structure?.slots.find((slot) => slot.slot === identity.slot);
+}
+
+function structureGroup(
+  structure: ContractV2FormStructureContract | undefined,
+  identity: Pick<ContractV2FormStructureRole, 'slot' | 'group'>,
+) {
+  return structureSlot(structure, identity)?.groups?.find((group) => group.name === identity.group);
+}
+
+function formStructureFieldLabels(
+  structure: ContractV2NormalizedStore['snapshot']['formStructureContract'],
+): Readonly<Record<string, string>> {
+  if (!structure) return Object.freeze({});
+  const labels: Record<string, string> = { ...(structure.fieldLabels || {}) };
+  structure.slots.forEach((slot) => {
+    (slot.groups || []).forEach((group) => {
+      Object.entries(group.fieldLabels || {}).forEach(([fieldCode, label]) => {
+        labels[fieldCode] = label;
+      });
+    });
+  });
+  return Object.freeze(labels);
 }
 
 function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
@@ -125,6 +168,8 @@ function fieldFromWidget(
   pageCanEdit: boolean,
   ancestorVisible: boolean,
   ancestorDisabled: boolean,
+  authoritativeFieldLabels: Readonly<Record<string, string>>,
+  structure: ContractV2FormStructureContract | undefined,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
   const fieldType = text(widget.fieldType || widget.componentConfig.fieldType || widget.componentConfig.field_type);
@@ -137,7 +182,11 @@ function fieldFromWidget(
   });
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
-  const fieldSemantics = fieldSemanticIdentity(widget, container);
+  const fieldSemantics = fieldSemanticIdentity(widget, container, structure);
+  const authoritativeRole = structure?.fieldRoles[widget.fieldCode];
+  const slotReadonly = authoritativeRole
+    ? structureSlot(structure, authoritativeRole)?.readonly === true
+    : false;
   const componentConfig = { ...widget.componentConfig };
   const currencyField = text(componentConfig.currencyField || componentConfig.currency_field);
   if (fieldType === 'monetary' && currencyField) {
@@ -146,7 +195,7 @@ function fieldFromWidget(
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
-    label: widget.label,
+    label: text(authoritativeFieldLabels[widget.fieldCode]) || widget.label,
     hideLabel: container.nolabel === true,
     value: presentFieldValue(
       widget,
@@ -161,7 +210,8 @@ function fieldFromWidget(
     renderProfile: mode,
     span: widget.span,
     visible: ancestorVisible && statusResolved && bool(status?.visible, true),
-    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || !statusResolved || bool(status?.readonly, false),
+    readonly: mode === 'readonly' || !pageCanEdit || ancestorDisabled || slotReadonly
+      || !statusResolved || bool(status?.readonly, false),
     required: bool(status?.required, false),
     disabled: ancestorDisabled || !statusResolved || bool(status?.disabled, false),
     reasonCode: text(status?.reasonCode) || (!statusResolved ? 'WIDGET_STATUS_UNRESOLVED' : ''),
@@ -187,6 +237,8 @@ function presentNode(
   ancestorDisabled: boolean,
   actionsByIdentity: ReadonlyMap<string, CanonicalFormAction>,
   actionsByNativeOccurrence: ReadonlyMap<string, CanonicalFormAction>,
+  authoritativeFieldLabels: Readonly<Record<string, string>>,
+  structure: ContractV2FormStructureContract | undefined,
   ancestorTitle = '',
 ): CanonicalFormNode {
   const ownRole = zoneRole(container);
@@ -206,6 +258,8 @@ function presentNode(
       pageCanEdit,
       visible,
       disabled,
+      authoritativeFieldLabels,
+      structure,
     )
   ));
   const nodeKind = text(container.type || container.containerType) || 'container';
@@ -223,14 +277,22 @@ function presentNode(
     String(Number(nativeIdentity.occurrence_index || nativeIdentity.occurrenceIndex || 0)),
   ].join('|');
   const nodeSemantics = semanticIdentity(container.formStructureRole);
+  const authoritativeNodeIdentity = nodeSemantics.slot && nodeSemantics.group
+    ? { slot: nodeSemantics.slot, group: nodeSemantics.group }
+    : null;
+  const authoritativeGroup = authoritativeNodeIdentity
+    ? structureGroup(structure, authoritativeNodeIdentity)
+    : undefined;
+  const authoritativeSlot = nodeSemantics.slot ? structureSlot(structure, nodeSemantics) : undefined;
+  const authoritativeTitle = text(authoritativeGroup?.title || authoritativeSlot?.title);
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
     kind: nodeKind,
-    title,
+    title: authoritativeTitle || title,
     text: text(container.text),
     attributes: Object.freeze({ ...container.attributes }),
     zoneRole: effectiveRole,
-    columns: Number(container.cols || container.columns || 1) || 1,
+    columns: Number(authoritativeGroup?.columns || container.cols || container.columns || structure?.columns || 1) || 1,
     visible,
     disabled,
     reasonCode: text(status?.reasonCode),
@@ -246,6 +308,7 @@ function presentNode(
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
         mode, presentationMode, pageCanEdit, visible, disabled, actionsByIdentity, actionsByNativeOccurrence,
+        authoritativeFieldLabels, structure,
         rawTitle || ancestorTitle,
       )
     )),
@@ -366,6 +429,7 @@ export function presentContractV2Form(
     throw new Error('CANONICAL_FORM_PRESENTATION_MODE_MISSING');
   }
   const presentationMode: CanonicalFormPresentationMode = structure ? structure.presentationMode : 'workspace';
+  const authoritativeFieldLabels = formStructureFieldLabels(structure);
   const contractValues = Object.keys(snapshot.dataContract.mainData).length
     ? snapshot.dataContract.mainData
     : store.primaryDataSource || {};
@@ -404,7 +468,7 @@ export function presentContractV2Form(
   const nodes = snapshot.layoutContract.containerTree.map((container, index) => (
     presentNode(
       container, zoneRole(container), index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
-      pageVisible, pageAuth === 'none', actionsByIdentity, actionsByNativeOccurrence,
+      pageVisible, pageAuth === 'none', actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
     )
   ));
   const demotedActionIds = new Set(
@@ -436,7 +500,7 @@ export function presentContractV2Form(
       sourceContractSha256: snapshot.meta.lifecycle.integrity.contractSha256,
     },
     shell: {
-      title: snapshot.pageInfo.pageName,
+      title: text(structure?.navigation.title) || snapshot.pageInfo.pageName,
       pageVisible,
       pageAuth,
       reasonCode: text(globalStatus.reasonCode),

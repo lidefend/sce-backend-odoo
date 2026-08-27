@@ -1165,8 +1165,13 @@ const pageIdentityInput = computed(() => buildContractFormPageIdentity({
 }));
 const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () => route.fullPath,
   active: () => isComponentActive.value && isFormPageRouteOwner(route.name), onTitle: (title) => session.updateActiveActivityTitle(title) });
-const pageDisplayTitle = computed(() => pageIdentity.value.title);
-const pageDisplaySubtitle = computed(() => pageIdentity.value.subtitle || '');
+const canonicalShellTitle = computed(() => canonicalFormRenderState.value.model?.shell.title || '');
+const pageDisplayTitle = computed(() => canonicalShellTitle.value || pageIdentity.value.title);
+const pageDisplaySubtitle = computed(() => {
+  const recordTitle = pageIdentity.value.title;
+  if (canonicalShellTitle.value && recordTitle && canonicalShellTitle.value !== recordTitle) return recordTitle;
+  return pageIdentity.value.subtitle || '';
+});
 const suppressPageHeaderTitle = computed(() => false);
 const currentRenderProfileLabel = computed(() => renderProfileLabel(renderProfile.value));
 const intakeCreateButtonLabel = computed(() => {

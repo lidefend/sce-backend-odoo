@@ -702,6 +702,71 @@ assert.throws(
   'a store constructed outside the decoder must not silently default a missing presentation authority',
 );
 
+const structurePresentationSnapshot = snapshot();
+structurePresentationSnapshot.formStructureContract = {
+  ...governedFormStructure('context'),
+  navigation: { title: 'Authoritative task title' },
+  fieldLabels: { name: 'Contract name' },
+  fieldRoles: {
+    name: { role: 'context', slot: 'governed', group: 'identity' },
+    state: { role: 'context', slot: 'governed', group: 'identity' },
+  },
+  slots: [{
+    slot: 'governed', title: 'Governed', role: 'context', readonly: true, fieldRefs: ['name', 'state'],
+    groups: [{
+      name: 'identity', title: 'Contract identity', role: 'context', fieldRefs: ['name', 'state'],
+      fieldLabels: { state: 'Contract status' }, columns: 2,
+    }],
+  }],
+};
+structurePresentationSnapshot.layoutContract.containerTree[0].formStructureRole = {
+  role: 'context', slot: 'governed', group: 'identity',
+};
+const structurePresentationModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(structurePresentationSnapshot)),
+  'edit',
+);
+assert.equal(
+  structurePresentationModel.shell.title,
+  'Authoritative task title',
+  'the formal form-structure navigation title must reach the canonical shell',
+);
+const structurePresentationFields = collectFields(structurePresentationModel.zones.primary);
+assert.equal(
+  structurePresentationFields.find((field) => field.fieldCode === 'name')?.label,
+  'Contract name',
+  'top-level form-structure field labels must override layout widget display labels',
+);
+assert.equal(
+  structurePresentationFields.find((field) => field.fieldCode === 'state')?.label,
+  'Contract status',
+  'group-scoped form-structure field labels must reach their canonical fields',
+);
+assert.equal(
+  structurePresentationModel.zones.primary[0].title,
+  'Contract identity',
+  'the matching formal group title must override the repeated native container title',
+);
+assert.equal(
+  structurePresentationModel.zones.primary[0].columns,
+  2,
+  'the matching formal group column authority must reach the canonical node',
+);
+assert.equal(
+  structurePresentationFields.find((field) => field.fieldCode === 'name')?.readonly,
+  true,
+  'a readonly formal slot must remain readonly even when widget status permits editing',
+);
+assert.deepEqual(
+  {
+    role: structurePresentationFields.find((field) => field.fieldCode === 'name')?.semanticRole,
+    slot: structurePresentationFields.find((field) => field.fieldCode === 'name')?.semanticSlot,
+    group: structurePresentationFields.find((field) => field.fieldCode === 'name')?.semanticGroup,
+  },
+  { role: 'context', slot: 'governed', group: 'identity' },
+  'top-level fieldRoles must be the semantic identity authority consumed by the presenter',
+);
+
 const legacyChildCarrierSnapshot = snapshot() as ContractV2Snapshot & { layoutContract: { containerTree: Array<Record<string, unknown>> } };
 legacyChildCarrierSnapshot.layoutContract.containerTree[0].tabs = [];
 assert.throws(() => decodeContractV2Snapshot(legacyChildCarrierSnapshot), /tabs is not allowed/);
@@ -901,6 +966,14 @@ assert.deepEqual(readonlyFloorplan.contextNodes, []);
 
 const semanticReadonlySnapshot = snapshot();
 semanticReadonlySnapshot.formStructureContract = governedFormStructure('context');
+semanticReadonlySnapshot.formStructureContract.slots = [{
+  slot: 'identity', title: 'Identity', role: 'context',
+  groups: [{ name: 'identity', title: 'Identity', role: 'context', fieldRefs: ['name', 'state'] }],
+}];
+semanticReadonlySnapshot.formStructureContract.fieldRoles = {
+  name: { role: 'summary', slot: 'identity', group: 'identity' },
+  state: { role: 'risk', slot: 'identity', group: 'identity' },
+};
 semanticReadonlySnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
   role: 'summary', slot: 'identity', group: 'identity',
 };
@@ -1088,7 +1161,7 @@ assert.deepEqual(
 );
 
 const businessFactSnapshot = structuredClone(semanticReadonlySnapshot);
-businessFactSnapshot.layoutContract.containerTree[0].children[0].formStructureRole = {
+businessFactSnapshot.formStructureContract!.fieldRoles.name = {
   role: 'context', slot: 'identity', group: 'identity',
 };
 const businessFactModel = presentContractV2Form(createContractV2Store(businessFactSnapshot), 'edit');
