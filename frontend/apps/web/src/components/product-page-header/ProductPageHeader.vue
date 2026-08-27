@@ -94,9 +94,9 @@ const model = computed(() => resolveProductPageHeaderModel({
 .product-page-header__identity { display:grid; flex:1 1 auto; min-width:0; }
 .product-page-header h1,.product-page-header p { margin:0; }
 .product-page-header h1 { color:var(--sc-app-text-primary); font-size:22px; font-weight:700; line-height:1.2; overflow-wrap:anywhere; }
-.product-page-header__eyebrow,.product-page-header__subtitle,.product-page-header__breadcrumb { color:var(--sc-semantic-text-muted); font-size:12px; }
+.product-page-header__eyebrow,.product-page-header__breadcrumb { color:var(--sc-semantic-text-muted); font-size:12px; }
 .product-page-header__eyebrow { margin-bottom:var(--sc-space-2xs); }
-.product-page-header__subtitle { margin-top:2px; }
+.product-page-header__subtitle { margin-top:2px; color:var(--sc-semantic-text-secondary); }
 .product-page-header__breadcrumb { display:flex; flex-wrap:wrap; gap:var(--sc-space-2xs); margin-bottom:var(--sc-space-2xs); }
 .product-page-header__breadcrumb span + span::before { content:'›'; margin-right:var(--sc-space-2xs); }
 .product-page-header__status { display:grid; flex:1 1 auto; min-width:0; margin-left:auto; text-align:right; }
