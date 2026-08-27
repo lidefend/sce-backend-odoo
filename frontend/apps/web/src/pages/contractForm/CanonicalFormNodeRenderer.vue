@@ -149,9 +149,8 @@ const presentableNodeText = computed(() => {
 .canonical-form-node--container > .canonical-form-node-title,
 .canonical-form-node--group > .canonical-form-node-title { grid-column: 1 / -1; }
 .canonical-form-node--field.canonical-form-node--readonly-fact {
-  display: inline-block;
+  display: block;
   max-width: 100%;
-  vertical-align: baseline;
 }
 .canonical-form-node--field:not(.canonical-form-node--readonly-fact) {
   display: block;
@@ -161,15 +160,22 @@ const presentableNodeText = computed(() => {
 .canonical-form-native-text + .canonical-form-node--readonly-fact,
 .canonical-form-node--readonly-fact + .canonical-form-native-text { margin-top: 0; }
 .canonical-form-node--readonly-fact :deep(.template-form-section) {
-  display: inline;
+  display: block;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
 }
+/* Readonly facts keep their compact grid layout. Forcing every fact node
+ * inline made each field's height follow the surrounding line-height (~90px
+ * for a label + value that only need ~47px), so the fact strip and the
+ * handling-info items below it read sparse. Restore grid on the fact's
+ * form-section grid and field so heights collapse to content (49-69px) while
+ * the fact grid (4-across on the summary strip, 2-wide on handling items)
+ * keeps placing them in the same columns. */
 .canonical-form-node--readonly-fact :deep(.template-form-section-grid),
-.canonical-form-node--readonly-fact :deep(.field),
+.canonical-form-node--readonly-fact :deep(.field) { display: grid; }
 .canonical-form-node--readonly-fact :deep(.field-control-row),
 .canonical-form-node--readonly-fact :deep(.field-control-main) { display: inline; }
 .canonical-form-node--readonly-fact :deep(.readonly-value),
