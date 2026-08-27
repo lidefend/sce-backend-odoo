@@ -206,7 +206,7 @@
   --sc-component-shell-navigation-search-shadow-blur: 2px;
   --sc-component-shell-page-gutter: 24;
   --sc-component-shell-sidebar-collapsed-width: 56;
-  --sc-component-shell-sidebar-width: 248;
+  --sc-component-shell-sidebar-width: 232;
   --sc-component-shell-topbar-height: 48;
   --sc-component-table-border-width: 1px;
   --sc-component-table-cell-padding-x: 12;
@@ -237,7 +237,7 @@
   --sc-component-toolbar-radius: 8px;
   --sc-pattern-app-shell-page-gutter: 24;
   --sc-pattern-app-shell-sidebar-collapsed-width: 56;
-  --sc-pattern-app-shell-sidebar-width: 248;
+  --sc-pattern-app-shell-sidebar-width: 232;
   --sc-pattern-app-shell-topbar-height: 48;
   --sc-pattern-collection-table-row-height: 44;
   --sc-pattern-collection-toolbar-height: 52px;
