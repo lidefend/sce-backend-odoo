@@ -8,6 +8,8 @@ This ledger records reference details that cannot be implemented safely from the
 - Contextual detail drawer: the current record-entry contract expresses record intent and route disposition, but does not explicitly authorize `standalone_page | contextual_drawer`. Existing `/r` and `/f` semantics must not be reinterpreted by appearance.
 - Record actions: copy, delete, disabled reason, and explicit labelled detail actions are not consistently projected for every model/action pair.
 - Readonly section metadata: the reference displays section item counts. Contract V2 currently carries nodes and container structure but no authoritative displayed item-count presentation.
+- Collection semantic tones: the payment list currently projects status labels without a `tone_by_value` authority. Neutral badges are correct until the backend declares value-to-semantic-tone mappings; the frontend must not infer tones from Chinese labels.
+- Task slot coverage: the payment task form projects only a subset of the business facts shown by the reference detail. The form-structure producer must explicitly assign the remaining owned fields to task/core/condition/supplementary slots before the task renderer may show them.
 
 ## P1/P2 product gaps
 
@@ -15,7 +17,7 @@ This ledger records reference details that cannot be implemented safely from the
 - The Shell needs a formal user-facing release/version identity if the reference footer version is required.
 - Authentication must declare credential-retention policy before a remember-account option stores any identifier.
 - Authentication page authority must explicitly declare account-registration/help and alternate-login actions; the reference controls are not safe as hard-coded links.
-- Runtime app-brand authority must project user-facing copyright/footer text before the reference footer can be rendered.
+- Authentication page authority must explicitly declare fullscreen if that reference control is required; the frontend must not render a non-functional icon.
 - Collection view-switch, export, and settings controls remain capability-bound; a single-view action or missing export capability must not acquire decorative controls.
 - Contextual readonly detail header, first-level collaboration tabs, compact relation tabs, description-grid skeleton, and close settlement require the formal contextual-drawer container authority above.
 

@@ -14,6 +14,8 @@
   "details": [
     {"key":"login.masthead","surface":"login","detail":"compact brand mark and product name at the top edge","status":"aligned","authority":"runtime app brand"},
     {"key":"login.full-canvas","surface":"login","detail":"full viewport authentication and brand illustration composition","status":"aligned","authority":"page pattern"},
+    {"key":"login.visual-density","surface":"login","detail":"layered wireframe, dashboard, brand object, planes, and semantic orbs provide a professional full-height visual","status":"aligned","authority":"login page pattern"},
+    {"key":"login.fullscreen-action","surface":"login","detail":"top-edge fullscreen action is rendered when formally declared","status":"contract_gap","authority":"login page contract action","gap":"Current anonymous page authority does not declare a fullscreen action; the frontend must not add a decorative inert control."},
     {"key":"login.auth-hierarchy","surface":"login","detail":"login pretitle, product title, account-help line, and form hierarchy","status":"contract_gap","authority":"login page contract plus runtime app brand","gap":"Runtime page authority does not declare the reference account-help line."},
     {"key":"login.username-icon","surface":"login","detail":"account input has semantic leading icon","status":"aligned","authority":"ScInput adapter"},
     {"key":"login.password-icon","surface":"login","detail":"password input has leading lock and trailing visibility control","status":"aligned","authority":"ScInput adapter"},
@@ -21,7 +23,7 @@
     {"key":"login.remember-account","surface":"login","detail":"remember-account choice is available","status":"contract_gap","authority":"authentication page contract","gap":"No formal credential-retention policy is declared; frontend must not invent persistence semantics."},
     {"key":"login.recovery-action","surface":"login","detail":"password recovery action is visible when declared","status":"aligned","authority":"authentication page contract actions"},
     {"key":"login.alternate-actions","surface":"login","detail":"activation and alternate-login actions render when declared","status":"contract_gap","authority":"authentication page contract actions","gap":"Current runtime page contract does not declare the reference alternate-login actions."},
-    {"key":"login.footer","surface":"login","detail":"copyright/product footer is anchored at the lower left","status":"contract_gap","authority":"runtime app brand/footer configuration","gap":"Current runtime app-brand payload has no user-facing footer text."},
+    {"key":"login.footer","surface":"login","detail":"copyright/product footer is anchored at the lower left","status":"aligned","authority":"runtime app brand with generic product fallback"},
 
     {"key":"shell.sidebar-width","surface":"shell","detail":"quiet approximately 232px navigation column","status":"aligned","authority":"design tokens"},
     {"key":"shell.brand","surface":"shell","detail":"brand mark and product name form one compact header","status":"aligned","authority":"runtime app brand"},
@@ -49,7 +51,7 @@
     {"key":"collection.sort-indicator","surface":"collection","detail":"sortable headers show stable bidirectional affordance","status":"aligned","authority":"search/order contract"},
     {"key":"collection.row-density","surface":"collection","detail":"desktop rows remain single-line and ledger-dense","status":"aligned","authority":"collection pattern tokens"},
     {"key":"collection.cell-overflow","surface":"collection","detail":"long values ellipsize instead of increasing row height","status":"aligned","authority":"column presentation metadata"},
-    {"key":"collection.semantic-tones","surface":"collection","detail":"status and completeness values use semantic badges","status":"aligned","authority":"field/status presentation"},
+    {"key":"collection.semantic-tones","surface":"collection","detail":"status and completeness values use semantic badges","status":"contract_gap","authority":"field/status presentation","gap":"The current payment collection provides labels but no tone_by_value mapping, so values correctly remain neutral rather than being colored from Chinese text heuristics."},
     {"key":"collection.record-action","surface":"collection","detail":"row detail/open action is explicit where the action contract declares it","status":"contract_gap","authority":"record-entry action contract","gap":"Some current collections only declare row activation and do not provide an explicit labelled detail action."},
     {"key":"collection.pagination","surface":"collection","detail":"count, page size, current page, and previous/next controls form one footer","status":"aligned","authority":"pagination contract"},
     {"key":"collection.mobile-records","surface":"collection","detail":"390px uses registered mobile record rows without overflow","status":"aligned","authority":"CollectionMobileRecordRow"},
@@ -69,6 +71,8 @@
     {"key":"task.direct-edit","surface":"task","detail":"handling with write authority is editable on the first stable render","status":"aligned","authority":"entry intent and record contract"},
     {"key":"task.single-primary","surface":"task","detail":"exactly one enabled primary action is visible","status":"aligned","authority":"workflow action contract"},
     {"key":"task.flat-sections","surface":"task","detail":"task sections use divider hierarchy rather than stacked nested cards","status":"aligned","authority":"TaskFormPattern"},
+    {"key":"task.field-grid","surface":"task","detail":"task section adapter uses a desktop two-column and mobile one-column field grid","status":"aligned","authority":"ScCard task-section adapter"},
+    {"key":"task.slot-coverage","surface":"task","detail":"all reference business facts are projected into authoritative task/core/condition/supplementary slots","status":"contract_gap","authority":"formStructureContract slots","gap":"The current payment task contract projects only a subset of the facts visible in the reference readonly detail; the renderer cannot manufacture the missing field ownership or slot assignment."},
     {"key":"task.fact-density","surface":"task","detail":"readonly facts do not create nested cards","status":"aligned","authority":"ScCard fact appearance"},
     {"key":"task.blocking-state","surface":"task","detail":"blocking reason is a compact semantic alert adjacent to the current task","status":"aligned","authority":"workflow condition contract"},
 
