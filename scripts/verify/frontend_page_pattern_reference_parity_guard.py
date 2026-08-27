@@ -27,13 +27,21 @@ REQUIREMENTS = {
     ),
     "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue": (
         'appearance="task-section"',
+        'presentation-density="task"',
         "grid-auto-rows: max-content",
         "align-content: start",
     ),
     "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue": (
         "fields.value.every((field) => field.readonly)",
+        "props.presentationDensity === 'task' && declared === 1 ? 2 : declared",
+        ':presentation-density="presentationDensity"',
         ':prefer-readonly-facts="readonlyFactLayout"',
         "canonical-form-node--readonly-fact",
+    ),
+    "frontend/apps/web/src/pages/ContractFormPage.vue": (
+        "const suppressPageHeaderTitle = computed(() => false)",
+        ':title="pageDisplayTitle"',
+        ':hide-title="suppressPageHeaderTitle"',
     ),
     "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": (
         'class="toolbar-total"',

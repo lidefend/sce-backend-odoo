@@ -69,6 +69,7 @@
     {"key":"detail.close-settlement","surface":"readonly-detail","detail":"close/Escape restores list context and focus without mutation","status":"aligned","authority":"overlay lifecycle"},
 
     {"key":"task.direct-edit","surface":"task","detail":"handling with write authority is editable on the first stable render","status":"aligned","authority":"entry intent and record contract"},
+    {"key":"task.visible-page-title","surface":"task","detail":"the authoritative record title is the single visible H1 on first stable render","status":"aligned","authority":"published page identity and ProductPageHeader"},
     {"key":"task.single-primary","surface":"task","detail":"exactly one enabled primary action is visible","status":"aligned","authority":"workflow action contract"},
     {"key":"task.flat-sections","surface":"task","detail":"task sections use divider hierarchy rather than stacked nested cards","status":"aligned","authority":"TaskFormPattern"},
     {"key":"task.field-grid","surface":"task","detail":"task section adapter uses a desktop two-column and mobile one-column field grid","status":"aligned","authority":"ScCard task-section adapter"},

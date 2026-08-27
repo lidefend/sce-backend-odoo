@@ -1167,7 +1167,7 @@ const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () 
   active: () => isComponentActive.value && isFormPageRouteOwner(route.name), onTitle: (title) => session.updateActiveActivityTitle(title) });
 const pageDisplayTitle = computed(() => pageIdentity.value.title);
 const pageDisplaySubtitle = computed(() => pageIdentity.value.subtitle || '');
-const suppressPageHeaderTitle = computed(() => true);
+const suppressPageHeaderTitle = computed(() => false);
 const currentRenderProfileLabel = computed(() => renderProfileLabel(renderProfile.value));
 const intakeCreateButtonLabel = computed(() => {
   return busy.value && busyKind.value === 'save' ? formUiLabel('saving') : formUiLabel('save');
