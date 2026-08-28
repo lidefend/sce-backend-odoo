@@ -311,6 +311,9 @@
           <ScButton class="theme-switch" appearance="outline-action" variant="ghost" size="small" type="button" :title="`切换风格，当前${profileLabel}`" :aria-label="`切换风格，当前${profileLabel}`" @click="toggleThemeProfile">
             <span class="topbar-tool-label">风格：{{ profileLabel }}</span>
           </ScButton>
+          <ScButton class="scene-kit-switch" appearance="outline-action" variant="ghost" size="small" type="button" :title="`切换界面风格，当前${sceneKitLabel}`" :aria-label="`切换界面风格，当前${sceneKitLabel}`" @click="toggleSceneUiKit">
+            <span class="topbar-tool-label">界面：{{ sceneKitLabel }}</span>
+          </ScButton>
         </div>
       </ScHeader>
 
@@ -408,6 +411,14 @@ import {
   nextThemeProfile,
   persistThemeProfile,
 } from '../styles/theme';
+import {
+  sceneUiKitRef,
+  persistSceneUiKit,
+  bootSceneUiKit,
+  sceneUiKitLabel,
+  SCENE_UI_KIT_OPTIONS,
+  type SceneUiKitId,
+} from '../app/renderers/globalSceneKit';
 import { config } from '../config';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
@@ -976,6 +987,14 @@ function toggleThemeProfile(): void {
   persistThemeProfile(profileMode.value);
 }
 
+const sceneKitLabel = computed(() => sceneUiKitLabel(sceneUiKitRef.value));
+
+function toggleSceneUiKit(): void {
+  const index = SCENE_UI_KIT_OPTIONS.findIndex((option) => option.id === sceneUiKitRef.value);
+  const next = SCENE_UI_KIT_OPTIONS[(index + 1) % SCENE_UI_KIT_OPTIONS.length].id as SceneUiKitId;
+  persistSceneUiKit(next);
+}
+
 function loadThemeMode(): ScTheme {
   try {
     const raw = localStorage.getItem('sc_theme');
@@ -1313,6 +1332,7 @@ onMounted(() => {
   applyTheme(themeMode.value);
   profileMode.value = loadThemeProfile();
   applyThemeProfile(profileMode.value);
+  bootSceneUiKit();
   showExtractionStats.value = String(route.query.hud_stats || '').trim() === '1';
   void loadPublishedApps();
   if (typeof window === 'undefined') return;
