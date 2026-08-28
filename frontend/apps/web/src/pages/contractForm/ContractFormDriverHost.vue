@@ -19,7 +19,7 @@
     :data-contract-density="sceneDensity"
     :data-contract-layout-columns="String(contractLayoutColumns)"
   >
-    <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" :density="sceneDensity">
+    <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" :density="sceneDensity" :data-driver-override="allowUserOverride ? 'enabled' : 'closed'">
       <TaskFormPattern v-if="renderModel.identity.presentationMode === 'task'" :render-profile="renderModel.identity.mode">
       <ObjectTaskPage
         :summary-nodes="floorplan.summaryNodes"
@@ -210,7 +210,16 @@ const showProductActions = computed(() => Boolean(
   localSavePrimary.value || productWriteMode.value
   || floorplan.value.directActions.length || floorplan.value.overflowActions.length,
 ));
-const renderKit = computed<SceneUiKitId>(() => activeKit.value);
+const renderKit = computed<SceneUiKitId>(() => floorplan.value.decisionMode ? 'tdesign-modern' : activeKit.value);
+const allowedKits = computed<SceneUiKitId[]>(() => (
+  props.driverConfig?.allowedKits?.length ? props.driverConfig.allowedKits : ['tdesign-modern', 'sc-native']
+));
+const allowUserOverride = computed(() => (
+  !floorplan.value.decisionMode
+  && props.driverConfig?.showUserDriverChooser === true
+  && props.driverConfig?.allowUserOverride === true
+  && allowedKits.value.length > 1
+));
 const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));

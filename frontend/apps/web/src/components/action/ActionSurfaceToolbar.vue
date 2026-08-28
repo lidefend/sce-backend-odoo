@@ -808,12 +808,10 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
 }
 
-/* Search control renders as one seamless unit. The submit button's radius /
- * border are merged with the input in product-patterns.css (global layer, so
- * it can beat TDesign's .t-button radius rule); here only the square
- * search-menu toggle is pinned to the shared 36px control height (its default
- * min-height is 44px via --sc-component-button-touch-target). */
-.collection-search-control button.search-menu-toggle {
+/* Search control renders as one seamless unit. The square search-menu
+ * toggle is pinned to the shared 36px control height, matching the adjacent
+ * field control metrics via the component touch-target token. */
+.collection-search-control .search-menu-toggle {
   height: 36px;
   min-height: 36px;
   max-height: 36px;
