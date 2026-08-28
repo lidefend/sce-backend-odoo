@@ -256,6 +256,27 @@
                   <dd>{{ currentCompanyLabel }}</dd>
                 </div>
               </dl>
+              <div class="topbar-account-pref" data-account-scene-kit>
+                <div class="topbar-account-pref-head">
+                  <span>界面风格</span>
+                  <span class="topbar-account-pref-value">{{ sceneKitLabel }}</span>
+                </div>
+                <div class="topbar-account-pref-options">
+                  <ScButton
+                    v-for="option in SCENE_UI_KIT_OPTIONS"
+                    :key="option.id"
+                    class="scene-kit-option"
+                    variant="ghost"
+                    size="small"
+                    type="button"
+                    :class="{ 'is-active': sceneUiKitRef === option.id }"
+                    :title="option.description"
+                    @click="setSceneUiKit(option.id)"
+                  >
+                    {{ option.label }}
+                  </ScButton>
+                </div>
+              </div>
               <ScButton variant="ghost" size="small" type="button" @click="openApiKeyManagement">
                 集成与 API Key
               </ScButton>
@@ -310,9 +331,6 @@
           </ScButton>
           <ScButton class="theme-switch" appearance="outline-action" variant="ghost" size="small" type="button" :title="`切换风格，当前${profileLabel}`" :aria-label="`切换风格，当前${profileLabel}`" @click="toggleThemeProfile">
             <span class="topbar-tool-label">风格：{{ profileLabel }}</span>
-          </ScButton>
-          <ScButton class="scene-kit-switch" appearance="outline-action" variant="ghost" size="small" type="button" :title="`切换界面风格，当前${sceneKitLabel}`" :aria-label="`切换界面风格，当前${sceneKitLabel}`" @click="toggleSceneUiKit">
-            <span class="topbar-tool-label">界面：{{ sceneKitLabel }}</span>
           </ScButton>
         </div>
       </ScHeader>
@@ -989,10 +1007,8 @@ function toggleThemeProfile(): void {
 
 const sceneKitLabel = computed(() => sceneUiKitLabel(sceneUiKitRef.value));
 
-function toggleSceneUiKit(): void {
-  const index = SCENE_UI_KIT_OPTIONS.findIndex((option) => option.id === sceneUiKitRef.value);
-  const next = SCENE_UI_KIT_OPTIONS[(index + 1) % SCENE_UI_KIT_OPTIONS.length].id as SceneUiKitId;
-  persistSceneUiKit(next);
+function setSceneUiKit(kit: SceneUiKitId): void {
+  if (kit !== sceneUiKitRef.value) persistSceneUiKit(kit);
 }
 
 function loadThemeMode(): ScTheme {
