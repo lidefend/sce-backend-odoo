@@ -38,6 +38,7 @@
       :relation-adapter="relationAdapter"
       :prefer-readonly-facts="readonlyFactLayout"
       @field-change="emit('field-change', $event)"
+      @field-action="emit('field-action', $event)"
       @action-ref="emit('action-ref', $event)"
     />
     <h3 v-else-if="node.title && children.length && groupHeadingVisible" class="canonical-form-node-title">{{ node.title }}</h3>
@@ -49,6 +50,7 @@
       :relation-adapter="relationAdapter"
       :prefer-readonly-facts="preferReadonlyFacts"
       @field-change="emit('field-change', $event)"
+      @field-action="emit('field-action', $event)"
       @action-ref="emit('action-ref', $event)"
     />
   </section>
@@ -60,7 +62,7 @@ import type { CanonicalFormNode } from '../../app/presentation/canonicalFormRend
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import FormSection from '../../components/template/FormSection.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
-import type { FormSectionFieldChange } from '../../components/template/formSection.types';
+import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import {
   canonicalFieldToFormSection,
@@ -76,6 +78,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
+  'field-action': [payload: FormSectionFieldActionPayload];
   'action-ref': [action: ContractV2ActionRule];
 }>();
 

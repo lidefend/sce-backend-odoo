@@ -26,6 +26,7 @@
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
         />
       </div>
     </ScCard>
@@ -47,6 +48,7 @@
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
         />
         <div v-if="riskNodes.length" class="object-task-page__current-task-facts" data-floorplan-region="risk">
           <CanonicalFormNodeRenderer
@@ -56,6 +58,7 @@
             :relation-adapter="relationAdapter"
             prefer-readonly-facts
             @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
           />
         </div>
       </div>
@@ -81,6 +84,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </ScCard>
     <ScCard
@@ -100,6 +104,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </ScCard>
     <ScCard
@@ -119,6 +124,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </ScCard>
     <section
@@ -133,6 +139,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </section>
     <slot v-if="!decisionMode" name="blocking" />
@@ -150,6 +157,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </section>
     <div class="object-task-page__body">
@@ -162,6 +170,7 @@
             :relation-adapter="relationAdapter"
             prefer-readonly-facts
             @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
           />
         </template>
       </main>
@@ -181,6 +190,7 @@
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
         />
       </ScCard>
     </div>
@@ -196,6 +206,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </section>
     <ScCard
@@ -214,6 +225,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </ScCard>
     <section
@@ -230,6 +242,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </section>
     <section
@@ -249,6 +262,7 @@
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
         />
         </div>
       </ProfessionalAuditTimeline>
@@ -261,7 +275,7 @@
 
 <script setup lang="ts">
 import type { CanonicalAuditEvent, CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
-import type { FormSectionFieldChange } from '../../components/template/formSection.types';
+import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
@@ -287,7 +301,7 @@ defineProps<{
   hasAudit?: boolean;
   decisionMode?: boolean;
 }>();
-const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>();
+const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'field-action': [payload: FormSectionFieldActionPayload] }>();
 
 </script>
 

@@ -51,6 +51,7 @@
         :relation-adapter="relationAdapter"
         :has-collaboration="hasCollaboration"
         @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
       >
         <template v-if="floorplan.blockedActions.length" #blocking>
           <ScInlineState class="canonical-form-blocking-notice" state="info" :label="blockedActionMessage" data-canonical-blocking-notice />
@@ -144,7 +145,7 @@ import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRend
 import ScErrorState from '../../components/design-system/ScErrorState.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
-import type { FormSectionFieldChange } from '../../components/template/formSection.types';
+import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
 import CanonicalActionBar from './CanonicalActionBar.vue';
@@ -179,6 +180,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'driver-change': [kit: SceneUiKitId];
   'field-change': [payload: FormSectionFieldChange];
+  'field-action': [payload: FormSectionFieldActionPayload];
   'action-ref': [action: ContractV2ActionRule];
   save: [];
 }>();

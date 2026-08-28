@@ -154,6 +154,7 @@
           :show-collaboration-panel="showNativeCollaborationPanel"
           @driver-change="changeContractFormDriver"
           @field-change="onTemplateFieldChange"
+          @field-action="onContractFieldAction"
           @action-ref="runCanonicalFormAction"
           @save="saveRecord()"
         />

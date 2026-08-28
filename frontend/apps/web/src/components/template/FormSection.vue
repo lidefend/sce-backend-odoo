@@ -127,14 +127,14 @@
                 @update:model-value="emitFieldChange(field, $event)"
               />
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2many(field) && relationAdapter" :field="field">
-                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
+                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
               </ProfessionalRelationFieldControl>
               <ProfessionalDetailCollectionControl
                 v-else-if="usesProfessionalOne2many(field) && relationAdapter"
                 :field="field"
                 :adapter="relationAdapter"
               >
-                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
+                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
               </ProfessionalDetailCollectionControl>
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field) && field.readonly" :field="field">
                 <slot name="readonly" :field="field">
