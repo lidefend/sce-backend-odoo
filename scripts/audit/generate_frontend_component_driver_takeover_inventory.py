@@ -174,6 +174,23 @@ def main() -> int:
     if args.check:
         if not OUTPUT.is_file() or OUTPUT.read_text(encoding="utf-8") != payload:
             print(f"[component_driver_takeover_inventory] FAIL stale={relative(OUTPUT)}")
+            if OUTPUT.is_file():
+                try:
+                    import json as _json
+                    cur = _json.loads(OUTPUT.read_text(encoding="utf-8"))
+                    newp = _json.loads(payload)
+                    for key in ("inputDigest", "components", "directLibraryImportBypasses", "rawBehaviorSurfaces", "summary"):
+                        if cur.get(key) != newp.get(key):
+                            cl = len(str(cur.get(key))) if cur.get(key) is not None else 0
+                            nl = len(str(newp.get(key))) if newp.get(key) is not None else 0
+                            print(f"  DIFF field={key} committed_len={cl} generated_len={nl}")
+                            if key == "components" and isinstance(cur.get(key), list) and isinstance(newp.get(key), list):
+                                cset = {c.get("officialComponent") for c in cur["components"]}
+                                nset = {c.get("officialComponent") for c in newp["components"]}
+                                print(f"    only_committed={sorted(cset-nset)[:8]}")
+                                print(f"    only_generated={sorted(nset-cset)[:8]}")
+                except Exception as exc:
+                    print(f"  (diff inspect failed: {exc})")
             return 1
         report = json.loads(payload)
         print(f"[component_driver_takeover_inventory] PASS required={report['summary']['requiredDrivers']} missing={report['summary']['missing']} bridge_only={report['summary']['bridge_only']} raw={report['summary']['unassessedRawBehaviorSurfaces']}")
