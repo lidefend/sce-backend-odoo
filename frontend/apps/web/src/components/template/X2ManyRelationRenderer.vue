@@ -421,6 +421,22 @@
           <div v-if="!previewLoading && !selectableLines.length" class="settle-hint">该结算单所有明细均已申请完毕</div>
         </div>
 
+        <div v-if="relatedPaymentRequests.length" class="settle-history" data-settle-history>
+          <div class="settle-history-head" @click="historyExpanded = !historyExpanded">
+            <span class="settle-history-title">历史申请记录</span>
+            <span class="settle-history-count">{{ relatedPaymentRequests.length }} 笔</span>
+            <span class="settle-history-toggle">{{ historyExpanded ? '收起' : '展开' }}</span>
+          </div>
+          <div v-if="historyExpanded" class="settle-history-body">
+            <div v-for="req in relatedPaymentRequests" :key="req.id" class="settle-history-row">
+              <span class="settle-history-name" :title="req.name">{{ req.name }}</span>
+              <span class="settle-history-state" :class="'is-' + req.state">{{ req.state_label }}</span>
+              <span class="settle-history-amount">{{ fmtMoney(req.applied_to_settlement || req.amount) }}</span>
+              <span class="settle-history-date">{{ req.date_request || '—' }}</span>
+            </div>
+          </div>
+        </div>
+
         <div class="settle-apply" data-settle-apply>
           <div class="settle-apply-mode">
             <ScButton
@@ -587,6 +603,16 @@ type SettleLineItem = {
   is_fully_applied: boolean;
 };
 
+type SettleRelatedPaymentRequest = {
+  id: number;
+  name: string;
+  state: string;
+  state_label: string;
+  amount: number;
+  applied_to_settlement: number;
+  date_request?: string | null;
+};
+
 type SettlePreviewData = {
   settlement: {
     id: number;
@@ -599,6 +625,7 @@ type SettlePreviewData = {
     amount_total: number;
   };
   lines: SettleLineItem[];
+  related_payment_requests?: SettleRelatedPaymentRequest[];
   totals: { settlement_amount: number; line_amount_total: number; applied_total: number; remaining_total: number };
 };
 
@@ -608,6 +635,7 @@ const settleSearching = ref(false);
 const settleResults = ref<Array<{ id: number; name: string; display_name: string; amount_total: number; contract_name: string; partner_name: string; line_count: number }>>([]);
 const selectedSettlementId = ref<number | null>(null);
 const previewData = ref<SettlePreviewData | null>(null);
+const historyExpanded = ref(false);
 const previewLoading = ref(false);
 const selectedLineIds = ref<Set<number>>(new Set());
 const applyMode = ref<'ratio' | 'amount'>('ratio');
@@ -702,6 +730,7 @@ function toggleLine(id: number) {
 }
 
 const selectableLines = computed(() => (previewData.value?.lines || []).filter((line) => !line.is_fully_applied));
+const relatedPaymentRequests = computed(() => previewData.value?.related_payment_requests || []);
 const allLinesSelected = computed(() => {
   const selectable = selectableLines.value;
   return selectable.length > 0 && selectable.every((line) => selectedLineIds.value.has(line.id));
@@ -1631,9 +1660,101 @@ function tagColorStyle(color: unknown) {
   background: var(--sc-color-bg-2, #f5f6f7);
 }
 
-.settle-apply {
+.settle-history {
+  margin-top: 12px;
+  border: 1px solid var(--sc-color-border-2, #e5e6eb);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.settle-history-head {
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--sc-color-bg-2, #f5f6f7);
+}
+
+.settle-history-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sc-color-text-1, #1d2129);
+}
+
+.settle-history-count {
+  font-size: 12px;
+  color: var(--sc-color-text-3, #8c8c8c);
+}
+
+.settle-history-toggle {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--sc-color-brand, #0b5fff);
+}
+
+.settle-history-body {
+  border-top: 1px solid var(--sc-color-border-2, #e5e6eb);
+}
+
+.settle-history-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.settle-history-row + .settle-history-row {
+  border-top: 1px solid var(--sc-color-border-3, #f0f1f2);
+}
+
+.settle-history-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sc-color-text-1, #1d2129);
+}
+
+.settle-history-state {
+  min-width: 52px;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--sc-color-bg-2, #f5f6f7);
+  color: var(--sc-color-text-3, #8c8c8c);
+}
+
+.settle-history-state.is-approved,
+.settle-history-state.is-done {
+  background: #e8f7ee;
+  color: #1a9c4b;
+}
+
+.settle-history-state.is-draft,
+.settle-history-state.is-submit {
+  background: #e8f3ff;
+  color: #0b5fff;
+}
+
+.settle-history-amount {
+  min-width: 84px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--sc-color-text-1, #1d2129);
+}
+
+.settle-history-date {
+  min-width: 92px;
+  text-align: right;
+  color: var(--sc-color-text-3, #8c8c8c);
+}
+
+.settle-apply {
+  display: flex;  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
   padding: 10px 12px;

@@ -24,6 +24,32 @@ def _settlement_line_applied(env, settlement_line):
     return _pay_amount_currency(sum(lines.mapped("current_pay_amount")))
 
 
+def _settlement_related_payment_requests(env, settlement):
+    """聚合结算单关联的付款申请（主表关联 + 明细关联），用于资金执行追溯展示。"""
+    state_selection = dict(env["payment.request"]._fields["state"].selection)
+    result = []
+    seen = set()
+
+    requests = settlement.payment_request_ids | settlement.payment_request_line_ids.mapped("request_id")
+    for req in requests.sorted(key=lambda r: (r.date_request or r.create_date or r.id, r.id), reverse=True):
+        if not req or req.id in seen:
+            continue
+        seen.add(req.id)
+        applied = _pay_amount_currency(sum(req.outflow_line_ids.filtered(lambda l: l.settlement_id.id == settlement.id).mapped("current_pay_amount")))
+        result.append(
+            {
+                "id": req.id,
+                "name": req.name,
+                "state": req.state,
+                "state_label": state_selection.get(req.state, req.state or ""),
+                "amount": _pay_amount_currency(req.amount),
+                "applied_to_settlement": applied,
+                "date_request": req.date_request.isoformat() if req.date_request else None,
+            }
+        )
+    return result
+
+
 class PaymentRequestSettlementSearchHandler(BaseIntentHandler):
     """按关键词搜索结算单，供明细引入弹窗选择来源。"""
 
@@ -196,6 +222,7 @@ class PaymentRequestSettlementPreviewHandler(BaseIntentHandler):
                 "amount_total": _pay_amount_currency(settlement.amount_total),
             },
             "lines": lines,
+            "related_payment_requests": _settlement_related_payment_requests(self.env, settlement),
             "totals": {
                 "settlement_amount": _pay_amount_currency(settlement.amount_total),
                 "line_amount_total": round(applied_total + remaining_total, 2),
