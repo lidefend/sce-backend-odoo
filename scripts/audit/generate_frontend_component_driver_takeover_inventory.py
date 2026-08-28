@@ -189,6 +189,21 @@ def main() -> int:
                                 nset = {c.get("officialComponent") for c in newp["components"]}
                                 print(f"    only_committed={sorted(cset-nset)[:8]}")
                                 print(f"    only_generated={sorted(nset-cset)[:8]}")
+                            if key == "inputDigest":
+                                from collections import Counter
+                                sf = [relative(p) for p in sources()]
+                                print(f"    source_files count={len(sf)}")
+                                top = Counter(p.split("/")[2] if len(p.split("/")) > 2 else p for p in sf)
+                                print(f"    top_dist={dict(top)}")
+                                try:
+                                    import subprocess
+                                    tracked = set(subprocess.run(["git", "ls-files"], capture_output=True, text=True, cwd=ROOT).stdout.split())
+                                    untracked = [p for p in sf if p not in tracked]
+                                    print(f"    untracked_count={len(untracked)}")
+                                    if untracked:
+                                        print(f"    untracked={untracked[:15]}")
+                                except Exception as e2:
+                                    print(f"    (git ls-files failed: {e2})")
                 except Exception as exc:
                     print(f"  (diff inspect failed: {exc})")
             return 1
