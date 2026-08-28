@@ -485,16 +485,19 @@ function trimActivityPages(pages: ActivityPage[], activeKey: string): ActivityPa
 
 function restoreActivityPages(raw: unknown, recordContext: RecordContextContract | null): ActivityPage[] {
   if (!Array.isArray(raw)) return [];
+  // Fail-closed: without an authoritative company on the current context we
+  // cannot attribute any cached page to it, so nothing is restored. A page
+  // without company metadata is likewise untrusted and is dropped.
   const companyId = Number(recordContext?.company_id || recordContext?.selected?.company_id || 0);
+  if (!companyId) return [];
   return (raw as ActivityPage[])
     .filter((page) => page && typeof page === 'object')
     .filter((page) => asText(page.key) && asText(page.route))
     .filter((page) => {
-      if (!companyId) return true;
       const pageCompanyId = Number(
         page.record_context?.company_id || page.record_context?.selected?.company_id || 0,
       );
-      return !pageCompanyId || pageCompanyId === companyId;
+      return pageCompanyId === companyId;
     })
     .map((page) => ({
       ...page,
@@ -830,13 +833,31 @@ export const useSessionStore = defineStore('session', {
           this.recordContext = recordContextStorageSnapshot(normalizeRecordContext(parsed.recordContext));
           // Recent activity pages are user-owned history and survive reloads
           // (unlike navigation contracts, which stay live). Restore them,
-          // keeping only pages that still match the restored company context.
-          this.activityPages = restoreActivityPages(parsed.activityPages, this.recordContext);
+          // keeping only pages whose company metadata matches the restored
+          // context (fail-closed: pages without authoritative company
+          // metadata, or a context without one, restore nothing).
+          const restoredActivityPages = restoreActivityPages(parsed.activityPages, this.recordContext);
+          this.activityPages = restoredActivityPages;
           const restoredActiveKey = asText(parsed.activeActivityPageKey);
           this.activeActivityPageKey = restoredActiveKey && this.activityPages.some((page) => page.key === restoredActiveKey)
             ? restoredActiveKey
             : '';
-          this.activityPageCacheEpochs = parsed.activityPageCacheEpochs ?? {};
+          // Only keep cache epochs that belong to a restored page (including
+          // its normalized route key); epochs for unknown pages are dropped
+          // rather than carried across companies/contexts.
+          const restoredPageKeys = new Set(restoredActivityPages.map((page) => page.key));
+          const restoredEpochs: Record<string, number> = {};
+          if (parsed.activityPageCacheEpochs && typeof parsed.activityPageCacheEpochs === 'object') {
+            for (const [epochKey, epoch] of Object.entries(parsed.activityPageCacheEpochs as Record<string, number>)) {
+              const numericEpoch = Number(epoch) || 0;
+              if (restoredPageKeys.has(epochKey)) {
+                restoredEpochs[epochKey] = numericEpoch;
+              } else if ([...restoredPageKeys].some((pageKey) => activityPageCacheRouteKey(pageKey) === epochKey)) {
+                restoredEpochs[epochKey] = numericEpoch;
+              }
+            }
+          }
+          this.activityPageCacheEpochs = restoredEpochs;
           this.capabilityCatalog = parsed.capabilityCatalog ?? {};
           this.sceneActionHints = {};
           this.capabilityGroups = parsed.capabilityGroups ?? [];
