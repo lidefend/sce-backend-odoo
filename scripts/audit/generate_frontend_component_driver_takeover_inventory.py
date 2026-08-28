@@ -215,6 +215,13 @@ def main() -> int:
                                 try:
                                     print(f"    src_digest={digest(sources())[:16]}")
                                     print(f"    gen_sha={_hl.sha256(Path(__file__).resolve().read_bytes()).hexdigest()[:16]}")
+                                    extra_str = "tdesign-vue-next@" + str(package["version"])
+                                    print("    locked_version=" + str(package["version"]))
+                                    print("    extra=" + extra_str)
+                                    print("    committed_digest=" + str(cur.get("inputDigest")))
+                                    print("    generated_digest=" + str(newp.get("inputDigest")))
+                                    print("    committed_authority=" + json.dumps(cur.get("authority"), sort_keys=True))
+                                    print("    generated_authority=" + json.dumps(newp.get("authority"), sort_keys=True))
                                 except Exception as e4:
                                     print(f"    (src_digest failed: {e4})")
                 except Exception as exc:
