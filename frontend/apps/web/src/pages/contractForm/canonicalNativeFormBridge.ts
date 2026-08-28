@@ -16,6 +16,7 @@ export type CanonicalNativeLayoutNode = {
   text?: string;
   cols?: number;
   columns?: number;
+  span?: number;
   widget?: string;
   visible?: boolean;
   attributes?: Record<string, unknown>;

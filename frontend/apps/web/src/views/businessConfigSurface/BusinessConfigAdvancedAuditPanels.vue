@@ -56,7 +56,7 @@
     <ScTextarea
       :model-value="snapshotCompareText"
       class="snapshot-input"
-      rows="5"
+      :rows="5"
       placeholder="粘贴从目标环境导出的配置快照内容"
       @update:model-value="$emit('update:snapshotCompareText', $event)"
     />
