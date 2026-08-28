@@ -215,8 +215,9 @@ def main() -> int:
                                 try:
                                     print(f"    src_digest={digest(sources())[:16]}")
                                     print(f"    gen_sha={_hl.sha256(Path(__file__).resolve().read_bytes()).hexdigest()[:16]}")
-                                    extra_str = "tdesign-vue-next@" + str(package["version"])
-                                    print("    locked_version=" + str(package["version"]))
+                                    _pkg_ver = json.loads(PACKAGE.read_text(encoding="utf-8")).get("version", "?")
+                                    extra_str = "tdesign-vue-next@" + str(_pkg_ver)
+                                    print("    locked_version=" + str(_pkg_ver))
                                     print("    extra=" + extra_str)
                                     print("    committed_digest=" + str(cur.get("inputDigest")))
                                     print("    generated_digest=" + str(newp.get("inputDigest")))
