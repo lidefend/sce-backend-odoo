@@ -189,7 +189,7 @@ const headerOverflowItems = computed<ScDropdownItem[]>(() => [
   ...canonicalPresentedOverflowActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
 ]);
 const mobileActionItems = computed<ScDropdownItem[]>(() => [
-  ...(props.showBack !== false ? [{ value: 'builtin:back', label: props.backLabel, disabled: props.busy }] : []),
+  ...(props.showBack === false ? [{ value: 'builtin:back', label: props.backLabel, disabled: props.busy }] : []),
   ...(props.showReturn ? [{ value: 'builtin:return', label: '返回工作台', disabled: props.busy }] : []),
   ...(props.showDraftSave ? [{ value: 'builtin:draft', label: props.draftSaveLabel, disabled: props.draftSaveDisabled }] : []),
   ...mobilePresentedDirectActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, disabled: props.busy || !action.enabled })),
