@@ -35,7 +35,6 @@
                 <field name="sc_contact_name" string="联系人" />
                 <field name="phone" string="电话" />
                 <field name="user_id" string="负责人" />
-                <field name="sc_supplier_type_label" string="供应商类型" optional="hide" />
                 <field name="vat" string="统一社会信用代码" optional="hide" />
                 <field name="sc_default_tax_rate_text" string="主税率" optional="hide" />
                 <field name="mobile" string="手机" optional="hide" />
@@ -44,7 +43,7 @@
                 <field name="sc_bank_account" string="账号" optional="hide" />
                 <field name="sc_default_tax_rate" optional="hide" />
                 <field name="active" string="启用" optional="hide" />
-                <field name="category_id" widget="many2many_tags" string="标签" optional="hide" />
+                <field name="category_id" string="业务分类" optional="hide" />
                 <field name="comment" string="备注" optional="hide" />
                 <field name="is_company" string="企业/组织" optional="hide" />
                 <field name="sc_registered_capital" optional="hide" />
@@ -67,8 +66,7 @@
                             <field name="is_company" string="企业/组织" />
                             <field name="active" string="启用" />
                             <field name="user_id" string="负责人" />
-                            <field name="category_id" widget="many2many_tags" string="标签" />
-                            <field name="sc_supplier_type_label" string="供应商类型" readonly="1" />
+                            <field name="category_id" string="业务分类" />
                         </group>
                         <group string="企业资质与联系" col="3">
                             <field name="vat" string="统一社会信用代码" />
@@ -165,8 +163,7 @@
                 <field name="phone" />
                 <field name="mobile" />
                 <field name="email" />
-                <field name="sc_supplier_type_label" string="供应商类型" />
-                <field name="category_id" string="标签" />
+                <field name="category_id" string="业务分类" />
                 <field name="user_id" string="负责人" />
                 <field name="active" string="启用" />
                 <field name="comment" string="备注" />
@@ -204,7 +201,7 @@
                 <field name="sc_bank_account" string="账号" optional="hide" />
                 <field name="sc_default_tax_rate" optional="hide" />
                 <field name="active" string="启用" optional="hide" />
-                <field name="category_id" widget="many2many_tags" string="标签" optional="hide" />
+                <field name="category_id" string="业务分类" optional="hide" />
                 <field name="comment" string="备注" optional="hide" />
                 <field name="is_company" string="企业/组织" optional="hide" />
                 <field name="sc_registered_capital" optional="hide" />
@@ -229,7 +226,7 @@
                             <field name="sc_supplier_type_ids" widget="many2many_tags" string="业务类型" />
                             <field name="sc_supplier_type_label" string="供应商类型" readonly="1" />
                             <field name="user_id" string="负责人" />
-                            <field name="category_id" widget="many2many_tags" string="标签" />
+                            <field name="category_id" string="业务分类" />
                         </group>
                         <group string="企业资质与联系" col="3">
                             <field name="vat" string="统一社会信用代码" />
@@ -329,7 +326,7 @@
                 <field name="phone" />
                 <field name="mobile" />
                 <field name="email" />
-                <field name="category_id" string="标签" />
+                <field name="category_id" string="业务分类" />
                 <field name="user_id" string="负责人" />
                 <field name="active" string="启用" />
                 <field name="comment" string="备注" />

@@ -113,6 +113,52 @@ def build_projection_cache_key(env, *, namespace, params, model_name, view_types
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+_CODE_FINGERPRINT_LOCK = RLock()
+_CODE_FINGERPRINT_CACHE: dict[str, str | None] = {"value": None}
+_CODE_FINGERPRINT_ROOTS = (
+    "/mnt/source-addons/smart_core",
+    "/mnt/source-addons/smart_construction_core",
+)
+
+
+def contract_code_fingerprint() -> str:
+    """契约组装相关后端代码目录的聚合指纹。
+
+    ``build_projection_source_token`` 只依赖权威表的 ``write_date`` 与部署期
+    环境变量，纯 Python/XML 代码改动不会改变它们，导致旧契约缓存被继续命中。
+    这里对 smart_core / smart_construction_core 的 .py/.xml 文件做聚合指纹；
+    代码改动后重启进程会重算指纹，token 变化使旧缓存立即失效。
+    指纹按进程缓存，首次计算后 O(1) 命中。
+    """
+    with _CODE_FINGERPRINT_LOCK:
+        if _CODE_FINGERPRINT_CACHE["value"]:
+            return _CODE_FINGERPRINT_CACHE["value"]
+        rows: list[tuple[str, int, int]] = []
+        for root in _CODE_FINGERPRINT_ROOTS:
+            if not os.path.isdir(root):
+                continue
+            for dirpath, dirnames, filenames in os.walk(root):
+                dirnames[:] = [
+                    name for name in dirnames
+                    if name not in {"__pycache__", "tests", ".git"}
+                ]
+                for filename in filenames:
+                    if not filename.endswith((".py", ".xml")):
+                        continue
+                    full = os.path.join(dirpath, filename)
+                    try:
+                        stat = os.stat(full)
+                    except OSError:
+                        continue
+                    rows.append((full, stat.st_mtime_ns, stat.st_size))
+        digest = hashlib.sha256()
+        for row in sorted(rows):
+            digest.update(repr(row).encode("utf-8", "replace"))
+        value = digest.hexdigest()
+        _CODE_FINGERPRINT_CACHE["value"] = value
+        return value
+
+
 def build_projection_source_token(env, *, model_name, menu_id=None, action_id=None):
     specifications = [
         ("ir.ui.view", [("model", "=", model_name)]),
@@ -144,6 +190,8 @@ def build_projection_source_token(env, *, model_name, menu_id=None, action_id=No
             "runtime_source",
             str(os.getenv("SC_SOURCE_REVISION") or "").strip().lower(),
             str(os.getenv("SC_SOURCE_FINGERPRINT") or "").strip().lower(),
+            "code_fingerprint",
+            contract_code_fingerprint(),
         ]]
         for model_code, domain in specifications:
             if model_code not in env:

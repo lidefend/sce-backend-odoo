@@ -87,7 +87,7 @@ class ResPartner(models.Model):
     # supplier archives render Chinese labels (contract assembler consumes the
     # field string). Field types are kept identical to the Odoo base module.
     is_company = fields.Boolean(string="企业/组织")
-    category_id = fields.Many2many("res.partner.category", string="标签")
+    category_id = fields.Many2many("res.partner.category", string="业务分类")
     vat = fields.Char(string="统一社会信用代码")
     company_registry = fields.Char(string="工商注册号")
     industry_id = fields.Many2one("res.partner.industry", string="行业")
@@ -342,3 +342,15 @@ class ResPartnerBank(models.Model):
 
     sc_account_holder_name = fields.Char(string="账户名称")
     sc_bank_name = fields.Char(string="开户银行", index=True)
+
+
+class ResPartnerCategory(models.Model):
+    """业务分类（客户/供应商分类实体）。
+
+    Odoo 标准 res.partner.category 的英文模型名为 "Partner Tags"，
+    本项目业务语义为“业务分类”（客户角色/行业/资质类别等），
+    模型显示名统一为中文，供选择器、创建对话框等场景展示。
+    """
+
+    _inherit = "res.partner.category"
+    _description = "业务分类"
