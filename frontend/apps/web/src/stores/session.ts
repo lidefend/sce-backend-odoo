@@ -483,6 +483,28 @@ function trimActivityPages(pages: ActivityPage[], activeKey: string): ActivityPa
   return keep;
 }
 
+function restoreActivityPages(raw: unknown, recordContext: RecordContextContract | null): ActivityPage[] {
+  if (!Array.isArray(raw)) return [];
+  const companyId = Number(recordContext?.company_id || recordContext?.selected?.company_id || 0);
+  return (raw as ActivityPage[])
+    .filter((page) => page && typeof page === 'object')
+    .filter((page) => asText(page.key) && asText(page.route))
+    .filter((page) => {
+      if (!companyId) return true;
+      const pageCompanyId = Number(
+        page.record_context?.company_id || page.record_context?.selected?.company_id || 0,
+      );
+      return !pageCompanyId || pageCompanyId === companyId;
+    })
+    .map((page) => ({
+      ...page,
+      created_at: Number(page.created_at || 0),
+      last_active_at: Number(page.last_active_at || 0),
+    }))
+    .sort((left, right) => left.created_at - right.created_at)
+    .slice(0, MAX_ACTIVITY_PAGES);
+}
+
 function isRetainedActivityPage(page: ActivityPage | null): page is ActivityPage {
   if (!page) return false;
   const key = asText(page.key).toLowerCase();
@@ -806,9 +828,15 @@ export const useSessionStore = defineStore('session', {
           this.roleSurface = null;
           this.roleSurfaceMap = {};
           this.recordContext = recordContextStorageSnapshot(normalizeRecordContext(parsed.recordContext));
-          this.activityPages = [];
-          this.activeActivityPageKey = '';
-          this.activityPageCacheEpochs = {};
+          // Recent activity pages are user-owned history and survive reloads
+          // (unlike navigation contracts, which stay live). Restore them,
+          // keeping only pages that still match the restored company context.
+          this.activityPages = restoreActivityPages(parsed.activityPages, this.recordContext);
+          const restoredActiveKey = asText(parsed.activeActivityPageKey);
+          this.activeActivityPageKey = restoredActiveKey && this.activityPages.some((page) => page.key === restoredActiveKey)
+            ? restoredActiveKey
+            : '';
+          this.activityPageCacheEpochs = parsed.activityPageCacheEpochs ?? {};
           this.capabilityCatalog = parsed.capabilityCatalog ?? {};
           this.sceneActionHints = {};
           this.capabilityGroups = parsed.capabilityGroups ?? [];
@@ -1190,6 +1218,12 @@ export const useSessionStore = defineStore('session', {
       this.sceneReadyContract = null;
       this.sceneGovernance = null;
       this.defaultRoute = null;
+      // Preserve user-owned recent activity pages across this authoritative
+      // bootstrap so the workspace home "最近访问" survives reloads. They are
+      // restored below once the authoritative record context is known; records
+      // for a different company/scope are filtered out then.
+      const pendingActivityRestore = this.activityPages;
+      const pendingActivityRestoreActiveKey = this.activeActivityPageKey;
       this.activityPages = [];
       this.activeActivityPageKey = '';
       this.activityPageCacheEpochs = {};
@@ -1573,6 +1607,21 @@ export const useSessionStore = defineStore('session', {
       this.menuTree = menuTreeWithKeys;
       this.navigationModel = createCanonicalNavigationModel(menuTreeWithKeys, this.routeAuthority);
       this.menuExpandedKeys = filterExpandedKeys(this.menuTree, this.menuExpandedKeys);
+      // Bootstrap succeeded with the authoritative record context. Restore
+      // user-owned recent activity pages that still match this context so the
+      // workspace home "最近访问" survives reloads. Records for a different
+      // company/scope are filtered out by restoreActivityPages.
+      if (!this.activityPages.length && pendingActivityRestore.length) {
+        this.activityPages = trimActivityPages(
+          restoreActivityPages(pendingActivityRestore, this.recordContext),
+          pendingActivityRestoreActiveKey,
+        );
+        const restoredActiveKey = pendingActivityRestoreActiveKey
+          && this.activityPages.some((page) => page.key === pendingActivityRestoreActiveKey)
+          ? pendingActivityRestoreActiveKey
+          : '';
+        this.activeActivityPageKey = restoredActiveKey;
+      }
       this.isReady = true;
       this.initStatus = 'ready';
       this.persist();
