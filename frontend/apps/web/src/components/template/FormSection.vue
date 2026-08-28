@@ -562,22 +562,34 @@ function fieldIdentity(field: FormSectionFieldSchema) {
 }
 
 function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
-  if (field.spanClass) return field.spanClass;
-  const base = defaultSpanClass(field.type);
+  const explicitSpan = field.spanClass || '';
+  const base = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
+    ? 'field--full'
+    : 'field--normal');
   if (base === 'field--full') return base;
-  if (props.columns === 2 && index === props.fields.length - 1) {
-    // Orphan-column fill: when a 2-column grid ends with an isolated normal
-    // field (an even unit count before it means the last field starts a new
-    // row alone), widen the last field so it spans the full row instead of
-    // leaving a large blank half-card. This matches professional form
-    // conventions - a lone field never sits half-width.
+  const colCount = props.columns;
+  if (colCount >= 2) {
+    // Orphan-column fill: a normal (half/third-width) field that starts a new
+    // row alone leaves blank cells when its row has no pairing fields — either
+    // because it is the last field of the section, or because the next field
+    // spans the full row. Widen such a field to span the full row. This
+    // matches professional form conventions and applies to any column count
+    // (2/3-column grids) and even when the field carries an explicit spanClass
+    // (e.g. canonical/component driven forms) so trailing normal fields never
+    // leave a blank half/third.
     let units = 0;
     for (let i = 0; i < index; i++) {
       const prev = props.fields[i];
       const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
-      units += prevSpan === 'field--normal' ? 1 : 2;
+      units += prevSpan === 'field--normal' ? 1 : colCount;
     }
-    if (units % 2 === 0) return 'field--wide';
+    const isLast = index === props.fields.length - 1;
+    const next = props.fields[index + 1];
+    const nextSpan = next ? (next.spanClass || defaultSpanClass(next.type)) : '';
+    const nextIsFullRow = nextSpan === 'field--full' || nextSpan === 'field--wide';
+    if (units % colCount === 0 && (isLast || nextIsFullRow)) {
+      return 'field--wide';
+    }
   }
   return base;
 }

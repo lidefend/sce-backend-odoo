@@ -101,6 +101,8 @@ class ResPartner(models.Model):
     state_id = fields.Many2one("res.country.state", string="省/州")
     zip = fields.Char(string="邮编")
     country_id = fields.Many2one("res.country", string="国家/地区")
+    child_ids = fields.One2many("res.partner", "parent_id", string="联系人")
+    bank_ids = fields.One2many("res.partner.bank", "partner_id", string="账户")
 
     sc_supplier_type = fields.Selection(
         SUPPLIER_TYPE_SELECTION,
