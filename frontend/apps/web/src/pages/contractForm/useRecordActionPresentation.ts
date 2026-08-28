@@ -12,7 +12,7 @@ type PresentationDependencies = Record<string, any>;
 
 /** Owns authoritative action presentation and field interaction adapters. */
 export function useRecordActionPresentation(dependencies: PresentationDependencies) {
-  const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline, confirmActionSafety, contract, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, resolveContractFormFieldLabels, resolveContractV2ActionRules, resolveContractV2RuntimeContract, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveWorkflowContractFromStore, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
+  const { ErrorCodes, actionId, activeChatterLabel, activeChatterMode, activityAssigneeId, activityDeadline, activityNote, activitySummary, activityUpdatingIds, addOne2manyRow, advancedExpanded, applyPageStatusEvent, attachmentError, attachmentUploading, buildContractFormActions, busy, busyKind, canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, chatterError, chatterPosting, chatterTimeline, closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions, collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById, collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline, confirmActionSafety, contract, dispatchTemplateFieldChange, effectiveFieldSize, effectiveGroupVisible, ensureSavedBeforeRecordAction, executeButton, fieldGroupBase, fieldGroupDraft, fieldInputType, fieldMoveTargetDraft, fieldOrderDraft, fieldOrderPreviewActive, fieldVisibilityDraft, filteredRelationOptions, focusProductFormValidationError, formConflict, formData, formLayoutColumnsDraft, inputFieldValue, intentConfirmationRef, isContractFieldOrderEditable, isMissingRequiredValue, isIntakeCreateMode, isQuickIntakeMode, layoutContainsType, loadCollaborationUsers, lowCodeFormLayoutBase, many2oneValue, markFieldChanged, model, nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision, navigateActionResponseResult, normalizeWorkflowEvidenceGateRows, onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyColumnDisplayValue, one2manyColumnInputType, one2manyColumns, one2manyCreateLabel, one2manyRowErrors, one2manyRowHints, one2manyRowLabel, one2manyRowStateLabel, one2manySummary, openNativeAttachment, openNativeChatterAction, openRelationCreateForm, pendingNativeAttachments, policyContext, queryMany2oneInline, recordId, relationCreateMode, relationIds, relationInlineCreate, relationKeyword, relationOptionsForField, relationUiLabel, reload, rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow, removePendingNativeAttachment, removedOne2manyRows, renderProfile, resolveContractFormFieldLabels, resolveContractV2ActionRules, resolveContractV2RuntimeContract, resolveInputPlaceholder, resolvePrimaryCreateFooterAction, resolveSelectPlaceholder, resolveWorkflowContractFromStore, restoreOne2manyRow, rights, route, runAction, runtimeRoleCode, selectMentionUser, selectedMentionUsers, selectedRelationOptions, sendNativeChatter, session, setBooleanField, setMany2oneField, setOne2manyRowField, createContractFormRecord, setRelationIds, setRelationKeyword, setRelationMultiField, setSelectionField, setTextField, showHud, showOne2manyErrors, toDateInputValue, toDatetimeInputValue, updateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics, useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore, validationErrors, visibleOne2manyRows } = dependencies;
   const chatterTimelineHasMore = dependencies.chatterTimelineHasMore;
   const chatterTimelineLoading = dependencies.chatterTimelineLoading;
   const loadMoreNativeChatterTimeline = dependencies.loadMoreNativeChatterTimeline;
@@ -294,6 +294,36 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       const descriptor = formFields.value[fieldName];
       if (!descriptor) return;
       void openRelationCreateForm(fieldName, descriptor);
+    },
+    // 级联维护：many2many 按当前关键词快速创建字典记录并勾选关联。
+    quickCreateRelationMany: async (fieldName: string) => {
+      const descriptor = formFields.value[fieldName];
+      if (!descriptor) return;
+      const keyword = relationKeyword(fieldName).trim();
+      if (!keyword) return;
+      const relation = String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();
+      if (!relation) return;
+      try {
+        const existing = relationOptionsForField(fieldName);
+        if (existing.some((item) => String(item.label).trim().toLowerCase() === keyword.toLowerCase())) {
+          setRelationKeyword(fieldName, '');
+          return;
+        }
+        const inline = relationInlineCreate(descriptor) || {};
+        const nameField = inline.nameField || 'name';
+        const created = await createContractFormRecord({ model: relation, vals: { [nameField]: keyword } });
+        const id = Number(created?.id || 0);
+        if (Number.isFinite(id) && id > 0) {
+          const current = relationIds(fieldName) || [];
+          setRelationIds(fieldName, Array.from(new Set([...current, Math.trunc(id)])));
+          setRelationKeyword(fieldName, '');
+          markFieldChanged(fieldName);
+        }
+      } catch (err) {
+        validationErrors.value = [
+          err instanceof Error ? err.message : relationUiLabel(descriptor, 'quick_create_failed'),
+        ];
+      }
     },
     one2manyCanCreate,
     one2manyCreateLabel,

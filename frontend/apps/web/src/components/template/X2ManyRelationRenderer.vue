@@ -125,6 +125,7 @@
         :model-value="adapter.relationKeyword(field.name)"
         :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
         @update:model-value="adapter.setRelationKeyword(field.name, $event)"
+        @keydown.enter.prevent="commitTagKeyword(field.name)"
       />
       <div
         v-if="adapter.filteredRelationOptions(field.name).length"
@@ -141,6 +142,31 @@
           :label="option.label"
           @change="toggleRelationId(field.name, option.id, $event)"
         />
+      </div>
+      <div v-if="hasTagCreateActions(field.name)" class="relation-select-actions">
+        <span
+          v-if="adapter.canInlineCreateRelation(field.name)"
+          class="relation-select-hint"
+          role="note"
+        >{{ adapter.relationInlineCreateLabel(field.name) }}</span>
+        <ScButton
+          v-if="adapter.canInlineCreateRelation(field.name)"
+          type="button"
+          class="relation-select-quick"
+          variant="secondary"
+          size="small"
+          :disabled="adapter.busy"
+          @click="adapter.quickCreateRelationMany(field.name)"
+        >快速新建</ScButton>
+        <ScButton
+          v-if="['page', 'dialog'].includes(adapter.relationCreateMode(field.name))"
+          type="button"
+          class="relation-select-manage"
+          variant="ghost"
+          size="small"
+          @mousedown.prevent
+          @click="adapter.openRelationCreate(field.name)"
+        >{{ adapter.relationCreateLabel(field.name) || '新建并维护' }}</ScButton>
       </div>
     </div>
   </div>
@@ -328,7 +354,7 @@
     @busy-change="introduceBusy = $event"
   />
   <ScInput
-  v-else
+  v-else-if="field.type !== 'many2many' && field.type !== 'one2many'"
     :model-value="adapter.inputFieldValue(field.name)"
     :type="adapter.fieldInputType(field.type)"
     :placeholder="adapter.inputPlaceholder(field.label)"
@@ -734,6 +760,25 @@ function tagColorStyle(color: unknown) {
   border: 1px solid var(--sc-app-border-strong);
   border-radius: var(--sc-product-radius-control);
   background: var(--sc-app-input-bg);
+}
+
+.relation-select-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border: 1px dashed var(--sc-app-border-strong);
+  border-radius: var(--sc-product-radius-control);
+  background: var(--sc-app-subtle-bg, var(--sc-app-panel));
+}
+
+.relation-select-hint {
+  flex: 1 1 160px;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .relation-tags-control {

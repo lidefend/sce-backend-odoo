@@ -1577,7 +1577,7 @@ const {
   runAction, runtimeRoleCode, selectMentionUser,
   selectedMentionUsers, selectedRelationOptions, sendNativeChatter,
   session, setBooleanField: (...args: Parameters<typeof setBooleanField>) => setBooleanField(...args), setMany2oneField: (...args: Parameters<typeof setMany2oneField>) => setMany2oneField(...args),
-  setOne2manyRowField, setRelationIds: (...args: Parameters<typeof setRelationIds>) => setRelationIds(...args), setRelationKeyword,
+  setOne2manyRowField, createContractFormRecord, setRelationIds: (...args: Parameters<typeof setRelationIds>) => setRelationIds(...args), setRelationKeyword,
   setRelationMultiField: (...args: Parameters<typeof setRelationMultiField>) => setRelationMultiField(...args), setSelectionField: (...args: Parameters<typeof setSelectionField>) => setSelectionField(...args), setTextField: (...args: Parameters<typeof setTextField>) => setTextField(...args),
   shouldShowWorkflowAction, showHud, showOne2manyErrors,
   toDateInputValue, toDatetimeInputValue, toPositiveInt,
