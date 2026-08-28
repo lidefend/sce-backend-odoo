@@ -1099,7 +1099,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-height: 92px;
 }
 
-@container (min-width: 680px) {
+@container (min-width: 560px) {
   .template-form-section-grid--columns-2,
   .template-form-section-grid--columns-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
