@@ -90,7 +90,7 @@
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('reload')">{{ reloadLabel }}</ScButton>
-      <ScDropdown v-if="mobileActionAuthority.count" class="form-header-mobile-actions" aria-label="更多页面操作" :data-mobile-action-count="mobileActionAuthority.count" :data-mobile-action-keys="mobileActionAuthority.keys.join(',')" :items="mobileActionItems" @select="selectMobileAction">
+      <ScDropdown v-if="mobileActionAuthority.count && isNarrowViewport" class="form-header-mobile-actions" aria-label="更多页面操作" :data-mobile-action-count="mobileActionAuthority.count" :data-mobile-action-keys="mobileActionAuthority.keys.join(',')" :items="mobileActionItems" @select="selectMobileAction">
         <template #trigger><ScButton variant="secondary" size="small" aria-label="打开更多页面操作">更多</ScButton></template>
       </ScDropdown>
     </template>
@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
@@ -131,6 +131,15 @@ const props = defineProps<{
   discardLabel: string; reloadLabel: string;
 }>();
 const workflowStatusAuthority = computed(() => resolveWorkflowStatusAuthority(props.statusbar));
+
+/** 窄屏（<=520px）才展示移动端全收敛「更多」下拉，desktop 由「更多操作」收纳 overflow。 */
+const narrowViewportQuery = typeof window !== 'undefined' ? window.matchMedia('(max-width: 520px)') : null;
+const isNarrowViewport = ref(Boolean(narrowViewportQuery?.matches));
+if (narrowViewportQuery) {
+  const applyNarrow = () => { isNarrowViewport.value = Boolean(narrowViewportQuery.matches); };
+  narrowViewportQuery.addEventListener('change', applyNarrow);
+  onBeforeUnmount(() => narrowViewportQuery.removeEventListener('change', applyNarrow));
+}
 
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');

@@ -534,6 +534,7 @@ def assemble_unified_page_contract_v2(
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
     assembled_at = time.monotonic()
     _merge_action_rules_by_backend_identity(contract)
+    _demote_native_inherited_actions_to_overflow(contract)
     actions_merged_at = time.monotonic()
     _bind_native_layout_action_references(contract)
     _finalize_layout_dsl(contract)
@@ -3692,6 +3693,31 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
                 status["reasonCode"] = trace_reason or "ACTION_NOT_ALLOWED"
     contract["statusContract"]["buttonStatus"] = [*status_by_identity.values(), *passthrough_statuses]
     _enforce_single_effective_primary_action(contract)
+
+
+def _demote_native_inherited_actions_to_overflow(contract: dict[str, Any]) -> None:
+    """无产品身份的原生继承按钮默认收敛到 overflow，不进入产品主操作区。
+
+    来自 Odoo 原生模块（web/sms/portal/privacy_lookup 等）的按钮在原生视图中
+    未声明 presentation.tier，前端 actionTier fallback 到 secondary 会把它们
+    全部排进产品主操作区，与「更多」下拉重复。契约在此统一把
+    presentationAuthority 非 product_contract 且无显式 tier 的按钮降级为
+    overflow——即「没有产品身份的操作默认不进入产品主界面」；产品显式
+    声明的 tier 不受影响，仍按产品身份展示。
+    """
+    action_contract = _dict(contract.get("actionContract"))
+    rows = _list(action_contract.get("actionRuleList"))
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        authority = _text(row.get("presentationAuthority"), "native_contract").lower()
+        if authority == "product_contract":
+            continue
+        presentation = _dict(row.get("presentation"))
+        tier = _text(presentation.get("tier")).lower()
+        if tier in {"primary", "secondary", "overflow", "configuration"}:
+            continue
+        row["presentation"] = {**presentation, "tier": "overflow"}
 
 
 def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool | None:
