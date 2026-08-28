@@ -13,7 +13,7 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
         self.assertEqual(validate(self.x2many, self.view_relation), [])
 
     def test_one2many_create_cannot_regress_to_legacy_button(self):
-        altered = self.x2many.replace('<ScButton\n        v-if="adapter.one2manyCanCreate(field.name)"', '<button\n        v-if="adapter.one2manyCanCreate(field.name)"')
+        altered = self.x2many.replace('<ScButton\n          v-if="adapter.one2manyCanCreate(field.name)"', '<button\n          v-if="adapter.one2manyCanCreate(field.name)"')
         self.assertIn("relational surface retains a generic legacy command", validate(altered, self.view_relation))
 
     def test_destructive_commands_keep_danger_variant(self):

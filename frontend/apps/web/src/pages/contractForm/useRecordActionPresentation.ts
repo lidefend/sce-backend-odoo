@@ -252,6 +252,12 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   const relationFieldAdapter = computed<RelationFieldAdapter>(() => ({
     busy: busy.value,
     showOne2manyErrors: showOne2manyErrors.value,
+    currentModel: model.value,
+    currentRecordId: recordId.value,
+    relationModelOf: (fieldName: string) => {
+      const descriptor = formFields.value[fieldName]?.descriptor;
+      return String((descriptor as { relation?: string } | undefined)?.relation || '');
+    },
     relationKeyword,
     setRelationKeyword,
     relationIds,

@@ -26,6 +26,7 @@
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
         />
       </div>
     </ScCard>
@@ -47,6 +48,7 @@
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
         />
         <div v-if="riskNodes.length" class="object-task-page__current-task-facts" data-floorplan-region="risk">
           <CanonicalFormNodeRenderer
@@ -56,6 +58,7 @@
             :relation-adapter="relationAdapter"
             prefer-readonly-facts
             @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
           />
         </div>
       </div>
@@ -71,7 +74,6 @@
       aria-label="核心申请信息"
       data-floorplan-region="core-input"
       data-canonical-zone="primary"
-      title="核心申请信息"
       :bordered="true"
       appearance="task-section"
     >
@@ -82,6 +84,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </ScCard>
     <ScCard
@@ -101,6 +104,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </ScCard>
     <ScCard
@@ -120,13 +124,13 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </ScCard>
-    <ScDisclosure
+    <section
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
       data-floorplan-region="supplementary-input"
-      title="补充信息"
     >
       <CanonicalFormNodeRenderer
         v-for="node in supplementaryInputNodes"
@@ -135,8 +139,9 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
-    </ScDisclosure>
+    </section>
     <slot v-if="!decisionMode" name="blocking" />
     <section
       v-if="!decisionMode && riskNodes.length"
@@ -152,6 +157,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </section>
     <div class="object-task-page__body">
@@ -164,6 +170,7 @@
             :relation-adapter="relationAdapter"
             prefer-readonly-facts
             @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
           />
         </template>
       </main>
@@ -173,7 +180,6 @@
         aria-label="业务上下文"
         data-floorplan-region="business-context"
         data-canonical-zone="primary"
-        title="业务上下文"
         :bordered="true"
         appearance="context"
       >
@@ -184,14 +190,14 @@
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
         />
       </ScCard>
     </div>
-    <ScDisclosure
+    <section
       v-if="overflowContextNodes.length"
       class="object-task-page__overflow-context"
       data-floorplan-region="overflow-context"
-      title="更多业务信息"
     >
       <CanonicalFormNodeRenderer
         v-for="node in overflowContextNodes"
@@ -200,15 +206,15 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
-    </ScDisclosure>
+    </section>
     <ScCard
       v-if="relationNodes.length"
       class="object-task-page__relation"
       aria-label="关系明细"
       data-floorplan-region="relation"
       data-canonical-zone="primary"
-      title="关系明细"
       :bordered="true"
       appearance="relation"
     >
@@ -219,6 +225,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </ScCard>
     <section
@@ -235,6 +242,7 @@
         :relation-adapter="relationAdapter"
         prefer-readonly-facts
         @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
       />
     </section>
     <section
@@ -254,6 +262,7 @@
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
           @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
         />
         </div>
       </ProfessionalAuditTimeline>
@@ -266,12 +275,11 @@
 
 <script setup lang="ts">
 import type { CanonicalAuditEvent, CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
-import type { FormSectionFieldChange } from '../../components/template/formSection.types';
+import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
-import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
 
 defineProps<{
   summaryNodes: CanonicalFormNode[];
@@ -293,7 +301,7 @@ defineProps<{
   hasAudit?: boolean;
   decisionMode?: boolean;
 }>();
-const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange] }>();
+const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'field-action': [payload: FormSectionFieldActionPayload] }>();
 
 </script>
 

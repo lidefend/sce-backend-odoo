@@ -90,7 +90,6 @@
           <ScInput
             type="search"
             :model-value="searchValue"
-            size="small"
             :disabled="loading"
             :loading="loading"
             :placeholder="searchPlaceholder"
@@ -807,6 +806,16 @@ onBeforeUnmount(() => {
 
 .search-menu-toggle {
   flex: 0 0 auto;
+}
+
+/* Search control renders as one seamless unit. The square search-menu
+ * toggle is pinned to the shared 36px control height, matching the adjacent
+ * field control metrics via the component touch-target token. */
+.collection-search-control .search-menu-toggle {
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  width: 36px;
 }
 
 .search-menu-caret {

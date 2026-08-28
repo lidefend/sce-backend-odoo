@@ -183,6 +183,8 @@
                                         <field name="qty"/>
                                         <field name="price_unit"/>
                                         <field name="amount" readonly="1"/>
+                                        <field name="applied_amount" readonly="1" string="已申请"/>
+                                        <field name="remaining_amount" readonly="1" string="剩余可申请"/>
                                         <field name="currency_id" invisible="1"/>
                                     </tree>
                                     <form>

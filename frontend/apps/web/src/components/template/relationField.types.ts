@@ -32,6 +32,11 @@ export type RelationFieldAdapter = {
   filteredRelationOptions: (name: string) => RelationFieldOption[];
   setRelationMultiField: (name: string, target: HTMLSelectElement) => void;
   setRelationIds: (name: string, ids: number[]) => void;
+  /** Current record context (model + res_id) for attachment-field uploads. */
+  currentModel?: string;
+  currentRecordId?: number;
+  /** Resolve the target model of a relation field (e.g. 'ir.attachment'). */
+  relationModelOf?: (name: string) => string;
   relationCreateMode: (name: string) => 'none' | 'quick' | 'page' | 'dialog';
   relationInlineCreate: (name: string) => FormSectionFieldSchema['relationInlineCreate'];
   relationCreateLabel: (name: string) => string;

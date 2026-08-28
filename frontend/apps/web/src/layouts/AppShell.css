@@ -646,6 +646,88 @@
   justify-content: flex-end;
 }
 
+/* 界面风格（风格）切换入口按内容宽度可见，上下文指示器/账户让位压缩 */
+.workspace-context-indicator,
+.topbar-account {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+/* 界面风格选择器：自定义可控，不受 tdesign 按钮裁剪影响 */
+.scene-style-picker {
+  position: relative;
+  flex-shrink: 0;
+}
+.scene-style-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: var(--sc-product-radius-control, 7px);
+  background: transparent;
+  color: var(--sc-app-text-secondary);
+  font: 600 13px/1 var(--sc-app-font, inherit);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.scene-style-picker__trigger:hover {
+  border-color: var(--sc-app-border-strong);
+  background: var(--sc-app-hover-bg);
+}
+.scene-style-picker__label {
+  color: var(--sc-app-text-secondary);
+}
+.scene-style-picker__value {
+  color: var(--sc-app-text);
+}
+.scene-style-picker__caret {
+  color: var(--sc-app-text-muted);
+  transition: transform 120ms ease;
+}
+.scene-style-picker__trigger[aria-expanded='true'] .scene-style-picker__caret {
+  transform: rotate(180deg);
+}
+.scene-style-picker__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--sc-component-overlay-dropdown-z-index);
+  min-width: 170px;
+  padding: 4px;
+  background: var(--sc-app-surface);
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--sc-app-text) 14%, transparent);
+}
+.scene-style-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--sc-app-text);
+  font: 500 13px/1.4 var(--sc-app-font, inherit);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.scene-style-picker__option:hover {
+  background: var(--sc-app-hover-bg);
+}
+.scene-style-picker__option.is-active {
+  color: var(--sc-app-primary);
+  font-weight: 600;
+}
+.scene-style-picker__check {
+  color: var(--sc-app-primary);
+}
+
 .topbar-scope {
   min-width: 0;
   max-width: 300px;

@@ -12,8 +12,8 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     failures: list[str] = []
     x2many_actions = (
         '<ScButton\n              v-if="adapter.relationCreateMode(field.name) === \'page\'"',
-        '<ScButton\n        v-if="adapter.one2manyCanCreate(field.name)"',
-        '<ScButton\n          class="o2m-row-remove"',
+        '<ScButton\n          v-if="adapter.one2manyCanCreate(field.name)"',
+        '<ScButton\n                    class="o2m-row-remove"',
         'v-for="row in adapter.removedOne2manyRows(field.name)"',
         '>上一页</ScButton>',
         '>下一页</ScButton>',
@@ -35,7 +35,7 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
             failures.append(f"View relational governed control missing {marker}")
     forbidden = (
         '<button\n              v-if="adapter.relationCreateMode(field.name)',
-        '<button\n        v-if="adapter.one2manyCanCreate(field.name)"',
+        '<button\n          v-if="adapter.one2manyCanCreate(field.name)"',
         '<button class="relational-add"',
         '<button class="relational-edit"',
         '<button class="relational-delete"',
@@ -64,8 +64,8 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
             failures.append(f"X2Many lost stateful governed relation control {marker}")
     if '<button' in x2m or '<input' in x2m or '<select' in x2m:
         failures.append("X2Many retains a raw interactive control outside the primitive adapter")
-    if x2m.count("<ScButton") != 8:
-        failures.append(f"X2Many expected 8 governed commands, found {x2m.count('<ScButton')}")
+    if x2m.count("<ScButton") != 11:
+        failures.append(f"X2Many expected 11 governed commands, found {x2m.count('<ScButton')}")
     if view.count("<ScButton") != 6:
         failures.append(f"View relational expected 6 governed commands, found {view.count('<ScButton')}")
     return failures

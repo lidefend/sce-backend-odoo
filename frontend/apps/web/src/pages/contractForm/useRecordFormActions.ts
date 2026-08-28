@@ -190,6 +190,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       contractModeFeedback.value = '字段显示设置已调整，保存后生效';
       return;
     }
+    if (actionValue === 'reload-requested') {
+      await reload();
+      return;
+    }
     const raw = payload.action.raw;
     if (!raw) return;
     await runContractRuleAction(raw);

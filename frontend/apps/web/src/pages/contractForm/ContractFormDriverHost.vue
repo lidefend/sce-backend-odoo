@@ -19,17 +19,7 @@
     :data-contract-density="sceneDensity"
     :data-contract-layout-columns="String(contractLayoutColumns)"
   >
-    <div v-if="allowUserOverride" class="sc-form-driver-chooser">
-      <label for="contract-form-driver-kit">界面风格</label>
-      <ScSelect
-        id="contract-form-driver-kit"
-        :model-value="activeKit"
-        :options="allowedKits.map((kit) => ({ value: kit, label: kitLabel(kit) }))"
-        data-contract-form-driver-chooser
-        @change="changeKit"
-      />
-    </div>
-    <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" :density="sceneDensity">
+    <SceneUiProvider :kit="renderKit" fallback-kit="sc-native" :density="sceneDensity" :data-driver-override="allowUserOverride ? 'enabled' : 'closed'">
       <TaskFormPattern v-if="renderModel.identity.presentationMode === 'task'" :render-profile="renderModel.identity.mode">
       <ObjectTaskPage
         :summary-nodes="floorplan.summaryNodes"
@@ -51,6 +41,7 @@
         :relation-adapter="relationAdapter"
         :has-collaboration="hasCollaboration"
         @field-change="emit('field-change', $event)"
+        @field-action="emit('field-action', $event)"
       >
         <template v-if="floorplan.blockedActions.length" #blocking>
           <ScInlineState class="canonical-form-blocking-notice" state="info" :label="blockedActionMessage" data-canonical-blocking-notice />
@@ -136,15 +127,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { SCENE_UI_KITS, SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
+import { SceneButton, SceneUiProvider, type SceneUiKitId } from '@sc/ui/form';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type { CanonicalAuditEvent, CanonicalFormNode, CanonicalFormRenderModel } from '../../app/presentation/canonicalFormRenderModel';
 import { composeCanonicalFormFloorplan, type CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
 import ScErrorState from '../../components/design-system/ScErrorState.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
-import ScSelect from '../../components/design-system/ScSelect.vue';
-import type { FormSectionFieldChange } from '../../components/template/formSection.types';
+import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { buildCanonicalNativeFormBridge } from './canonicalNativeFormBridge';
 import CanonicalActionBar from './CanonicalActionBar.vue';
@@ -179,6 +169,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'driver-change': [kit: SceneUiKitId];
   'field-change': [payload: FormSectionFieldChange];
+  'field-action': [payload: FormSectionFieldActionPayload];
   'action-ref': [action: ContractV2ActionRule];
   save: [];
 }>();
@@ -259,14 +250,6 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
   if (action) emit('action-ref', action);
 }
 
-function kitLabel(kit: SceneUiKitId) {
-  return SCENE_UI_KITS[kit]?.label || kit;
-}
-
-function changeKit(value: string) {
-  const kit = String(value || '') as SceneUiKitId;
-  if (allowedKits.value.includes(kit)) emit('driver-change', kit);
-}
 </script>
 
 <style scoped>
@@ -332,19 +315,5 @@ function changeKit(value: string) {
   border-radius: 8px;
   background: var(--sc-app-panel);
   box-shadow: var(--sc-app-shadow-popover);
-}
-.sc-form-driver-chooser {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 24px;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-.sc-form-driver-chooser :deep(.sc-select) {
-  min-width: 180px;
 }
 </style>

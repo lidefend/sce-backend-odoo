@@ -15,4 +15,6 @@
   --sc-component-login-layer-base: var(--sc-base-z-index-base);
   --sc-component-login-layer-content: var(--sc-base-z-index-dropdown);
   --sc-component-login-layer-modal: var(--sc-base-z-index-modal);
+  --sc-component-overlay-dropdown-z-index: var(--sc-base-z-index-dropdown);
+  --sc-component-sticky-header-z-index: var(--sc-base-z-index-sticky);
 }

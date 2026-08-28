@@ -1241,11 +1241,51 @@ class ScSettlementOrderLine(models.Model):
         store=True,
         readonly=True,
     )
+    reserved_amount = fields.Monetary(
+        string="占用金额",
+        currency_field="currency_id",
+        compute="_compute_reserved_amounts",
+        store=True,
+        compute_sudo=True,
+        help="结算行级资金占用（审批口径）：关联付款申请明细（付款类、submit/approve/approved/done）的本次申请金额合计。",
+    )
+    applied_amount = fields.Monetary(
+        string="已申请金额",
+        currency_field="currency_id",
+        compute="_compute_reserved_amounts",
+        store=True,
+        compute_sudo=True,
+        help="结算行级已申请金额（资金执行展示口径）：含草稿在内的所有有效付款申请明细的本次申请金额合计，随付款申请动态一致。",
+    )
+    remaining_amount = fields.Monetary(
+        string="剩余可申请",
+        currency_field="currency_id",
+        compute="_compute_reserved_amounts",
+        store=True,
+        compute_sudo=True,
+        help="结算行剩余可申请 = 结算行金额 - 已申请金额（含草稿，不为负）。",
+    )
 
     @api.depends("qty", "price_unit")
     def _compute_amount(self):
         for line in self:
             line.amount = (line.qty or 0.0) * (line.price_unit or 0.0)
+
+    @api.depends(
+        "amount",
+        "settlement_id.payment_request_line_ids.settlement_line_id",
+        "settlement_id.payment_request_line_ids.current_pay_amount",
+        "settlement_id.payment_request_line_ids.request_id.state",
+        "settlement_id.payment_request_line_ids.request_id.type",
+    )
+    def _compute_reserved_amounts(self):
+        reserved_map = opm.settlement_line_reserved_amount_map(self.env, self.ids)
+        applied_map = opm.settlement_line_applied_amount_map(self.env, self.ids)
+        for line in self:
+            line.reserved_amount = reserved_map.get(line.id, 0.0)
+            applied = applied_map.get(line.id, 0.0)
+            line.applied_amount = applied
+            line.remaining_amount = max((line.amount or 0.0) - applied, 0.0)
 
     def _ensure_manager_role(self):
         if not self.env.user.has_group("smart_construction_core.group_sc_cap_project_manager"):

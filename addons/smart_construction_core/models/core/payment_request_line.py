@@ -52,6 +52,13 @@ class PaymentRequestLine(models.Model):
         ondelete="set null",
         help="历史付款申请明细关联的结算单；用于保留一张付款申请对应多张结算单的历史事实。",
     )
+    settlement_line_id = fields.Many2one(
+        "sc.settlement.order.line",
+        string="结算行",
+        index=True,
+        ondelete="set null",
+        help="引入的结算单明细行；用于结算行级已申请/剩余金额追踪与从结算单追溯资金执行情况。",
+    )
     currency_id = fields.Many2one(
         "res.currency",
         string="币种",

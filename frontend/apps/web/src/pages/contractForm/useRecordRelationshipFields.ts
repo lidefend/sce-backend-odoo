@@ -137,7 +137,10 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     if (!rows.length) return;
     const columns = one2manyColumns(name);
     if (!columns.length) return;
-    const fields = Array.from(new Set(['id', 'display_name', 'name', ...columns.map((column) => column.name)]));
+    // 注意：不请求 'name' —— 部分子模型（如 payment.request.line）无 name 字段，
+    // 请求会触发后端 ValueError 导致整行 hydrate 失败（catch 静默吞掉后列值全空）。
+    // display_name 已覆盖名称展示需求。
+    const fields = Array.from(new Set(['id', 'display_name', ...columns.map((column) => column.name)]));
     try {
       const response = await readContractFormRecord({
         model: relation,

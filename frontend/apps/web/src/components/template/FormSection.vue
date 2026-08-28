@@ -12,9 +12,9 @@
     <div :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
       <template v-if="fields.length">
         <div
-          v-for="field in fields"
+          v-for="(field, index) in fields"
           :key="field.key"
-          :class="fieldClass(field)"
+          :class="fieldClass(field, index)"
           :data-field-name="field.name"
           :data-field-key="field.key"
           :data-field-type="field.type"
@@ -127,14 +127,14 @@
                 @update:model-value="emitFieldChange(field, $event)"
               />
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2many(field) && relationAdapter" :field="field">
-                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
+                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
               </ProfessionalRelationFieldControl>
               <ProfessionalDetailCollectionControl
                 v-else-if="usesProfessionalOne2many(field) && relationAdapter"
                 :field="field"
                 :adapter="relationAdapter"
               >
-                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" />
+                <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
               </ProfessionalDetailCollectionControl>
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field) && field.readonly" :field="field">
                 <slot name="readonly" :field="field">
@@ -148,6 +148,15 @@
                     class="readonly-value readonly-value--html"
                     v-html="readonlyHtml(field)"
                   />
+                  <div
+                    v-else-if="taskActionFor(field)"
+                    role="button"
+                    tabindex="0"
+                    class="readonly-value readonly-value--action"
+                    :aria-label="`${taskActionLabel(field)}（办理动作）`"
+                    @click="taskActionRun(field)"
+                    @keydown.enter.prevent="taskActionRun(field)"
+                  >{{ taskActionLabel(field) }}</div>
                   <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </template>
@@ -327,7 +336,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId, useSlots } from 'vue';
+import { computed, inject, ref, useId, useSlots } from 'vue';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
 import ScDateField from '../design-system/ScDateField.vue';
@@ -365,6 +374,10 @@ import {
   toContractFormSceneField,
   usesContractFormDriverField,
 } from './contractFormDriverField';
+import {
+  ScTaskActionResolverKey,
+  type ScTaskActionDescriptor,
+} from './taskActionResolver';
 
 const props = withDefaults(defineProps<{
   title: string;
@@ -548,16 +561,33 @@ function fieldIdentity(field: FormSectionFieldSchema) {
   return String(field.name || field.key || '').trim();
 }
 
-function fieldSpanClass(field: FormSectionFieldSchema) {
-  return field.spanClass || defaultSpanClass(field.type);
+function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
+  if (field.spanClass) return field.spanClass;
+  const base = defaultSpanClass(field.type);
+  if (base === 'field--full') return base;
+  if (props.columns === 2 && index === props.fields.length - 1) {
+    // Orphan-column fill: when a 2-column grid ends with an isolated normal
+    // field (an even unit count before it means the last field starts a new
+    // row alone), widen the last field so it spans the full row instead of
+    // leaving a large blank half-card. This matches professional form
+    // conventions - a lone field never sits half-width.
+    let units = 0;
+    for (let i = 0; i < index; i++) {
+      const prev = props.fields[i];
+      const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
+      units += prevSpan === 'field--normal' ? 1 : 2;
+    }
+    if (units % 2 === 0) return 'field--wide';
+  }
+  return base;
 }
 
-function fieldClass(field: FormSectionFieldSchema) {
+function fieldClass(field: FormSectionFieldSchema, index: number) {
   const fieldKey = fieldIdentity(field);
   const isDropTarget = props.fieldOrderDropTargetKey === fieldKey && props.fieldOrderDraggingKey !== fieldKey;
   return [
     'field',
-    fieldSpanClass(field),
+    fieldSpanClass(field, index),
     fieldWidgetClass(field),
     {
       'field--order-editable': props.fieldOrderEditable,
@@ -668,6 +698,28 @@ function readonlyText(field: FormSectionFieldSchema) {
     { ...(field.descriptor || {}), type: fieldType || field.descriptor?.type },
     { emptyText: '-' },
   );
+}
+
+const taskActionResolver = inject(ScTaskActionResolverKey, null);
+
+/**
+ * Resolve a readonly fact into a clickable business action, when the page
+ * layer has registered a task-action resolver (see taskActionResolver.ts).
+ * Returns null for plain facts - they keep rendering as readonly text.
+ */
+function taskActionFor(field: FormSectionFieldSchema): ScTaskActionDescriptor | null {
+  if (!taskActionResolver) return null;
+  return taskActionResolver(field);
+}
+
+function taskActionLabel(field: FormSectionFieldSchema): string {
+  const action = taskActionFor(field);
+  return action ? action.label : '';
+}
+
+function taskActionRun(field: FormSectionFieldSchema) {
+  const action = taskActionFor(field);
+  if (action) void action.run();
 }
 
 function readonlyHtml(field: FormSectionFieldSchema) {
@@ -959,8 +1011,8 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .template-form-section-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  row-gap: 12px;
-  column-gap: 20px;
+  row-gap: calc(var(--sc-pattern-task-form-field-gap, 12) * 1px);
+  column-gap: var(--sc-pattern-task-form-column-gap, 20px);
   min-width: 0;
 }
 
@@ -1069,10 +1121,10 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--sc-pattern-task-form-label-row-gap, 8px);
   flex-wrap: wrap;
   min-width: 0;
-  margin-bottom: 3px;
+  margin-bottom: var(--sc-pattern-task-form-label-row-margin-bottom, 3px);
 }
 
 .label {
@@ -1132,7 +1184,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sc-pattern-task-form-inline-config-gap, 6px);
   min-width: 0;
 }
 
@@ -1147,7 +1199,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 .field-inline-actions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sc-pattern-task-form-inline-actions-gap, 8px);
   color: var(--sc-semantic-text-muted);
   font-size: 12px;
   line-height: 1;
@@ -1157,7 +1209,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: var(--sc-pattern-task-form-control-row-gap, 6px);
   min-width: 0;
 }
 
@@ -1168,13 +1220,39 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .readonly-value {
-  font-size: 13px;
-  color: var(--sc-app-text-secondary);
-  min-height: 36px;
+  font-size: 14px;
+  color: var(--sc-app-text-primary);
+  min-height: 32px;
+  line-height: 22px;
   display: inline-flex;
   align-items: center;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* A readonly fact that is actually the next business action (下一步办理).
+ * It is rendered as a pressable action link instead of dead text so the
+ * "当前任务" card is a real entry point, not a static hint. */
+.readonly-value--action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--sc-text-link, var(--sc-app-accent));
+  font-weight: 400;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.readonly-value--action:hover {
+  opacity: 0.8;
+}
+
+.readonly-value--action:focus-visible {
+  outline: 2px solid var(--sc-app-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .readonly-value--html {
@@ -1205,8 +1283,8 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section--readonly .template-form-section-grid {
-  row-gap: 12px;
-  column-gap: 26px;
+  row-gap: calc(var(--sc-pattern-task-form-field-gap, 12) * 1px);
+  column-gap: var(--sc-pattern-task-form-readonly-column-gap, 26px);
 }
 
 .template-form-section--readonly .field--readonly-empty-relation {

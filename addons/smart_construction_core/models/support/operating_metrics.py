@@ -10,6 +10,14 @@ RESERVED_STATES: Sequence[str] = ("submit", "approve", "approved", "done")
 # the reservation amount "paid". New code must use the explicit reserved name.
 PAID_STATES: Sequence[str] = RESERVED_STATES
 PAYMENT_EXECUTION_ACTUAL_PAID_STATES: Sequence[str] = ("paid",)
+# 已申请口径：包含草稿在内的所有有效申请（不含驳回/取消），用于结算单侧"资金执行"展示。
+APPLIED_STATES: Sequence[str] = ("draft", "submit", "approve", "approved", "done")
+INVALID_APPLIED_STATES: Sequence[str] = ("rejected", "cancel", "cancelled")
+
+
+def get_applied_states() -> Sequence[str]:
+    """Payment-request states counted as "applied" for settlement fund-tracing display."""
+    return APPLIED_STATES
 
 
 def get_reserved_states() -> Sequence[str]:
@@ -81,6 +89,79 @@ def settlement_paid_map(
 ) -> Dict[int, float]:
     """Compatibility alias: historical "paid" fields represent reservation."""
     return settlement_reserved_amount_map(env, settlement_ids, reserved_states=paid_states)
+
+
+def settlement_line_reserved_amount_map(
+    env,
+    line_ids: Iterable[int],
+    reserved_states: Optional[Sequence[str]] = None,
+) -> Dict[int, float]:
+    """Aggregate payment-request reservations by settlement order line.
+
+    结算行级资金占用：按 payment.request.line.settlement_line_id 汇总本次申请金额
+    （current_pay_amount）。仅统计付款类、处于占用状态（submit/approve/approved/done）的申请。
+    """
+    ids = list(line_ids)
+    if not ids:
+        return {}
+    states = tuple(reserved_states or RESERVED_STATES)
+    Line = env["payment.request.line"].sudo()
+    rows = Line.read_group(
+        [
+            ("settlement_line_id", "in", ids),
+            ("request_id.type", "=", "pay"),
+            ("request_id.state", "in", states),
+            ("current_pay_amount", "!=", 0),
+        ],
+        ["current_pay_amount:sum"],
+        ["settlement_line_id"],
+    )
+    res: Dict[int, float] = {}
+    for r in rows:
+        sid = r.get("settlement_line_id")
+        if sid and isinstance(sid, (list, tuple)) and sid[0]:
+            res[sid[0]] = (r.get("current_pay_amount_sum") or r.get("current_pay_amount") or 0.0)
+    return res
+
+
+def settlement_line_applied_amount_map(
+    env,
+    line_ids: Iterable[int],
+    applied_states: Optional[Sequence[str]] = None,
+) -> Dict[int, float]:
+    """Aggregate applied payment-request amounts by settlement line (includes draft).
+
+    结算行级已申请金额（资金执行展示口径）：含草稿在内的所有有效付款申请，
+    不含驳回/取消。用户引入到草稿付款申请后即可在结算单侧看到已申请占用。
+    """
+    ids = list(line_ids)
+    if not ids:
+        return {}
+    states = tuple(applied_states or APPLIED_STATES)
+    Line = env["payment.request.line"].sudo()
+    rows = Line.read_group(
+        [
+            ("settlement_line_id", "in", ids),
+            ("request_id.type", "=", "pay"),
+            ("request_id.state", "in", states),
+            ("current_pay_amount", "!=", 0),
+        ],
+        ["current_pay_amount:sum"],
+        ["settlement_line_id"],
+    )
+    res: Dict[int, float] = {}
+    for r in rows:
+        sid = r.get("settlement_line_id")
+        if sid and isinstance(sid, (list, tuple)) and sid[0]:
+            res[sid[0]] = (r.get("current_pay_amount_sum") or r.get("current_pay_amount") or 0.0)
+    return res
+
+
+def settlement_line_remaining_amount(line) -> float:
+    """Remaining reservable capacity of a settlement line, never negative."""
+    reserved = settlement_line_reserved_amount_map(line.env, line.ids).get(line.id, 0.0)
+    remaining = (line.amount or 0.0) - (reserved or 0.0)
+    return max(_currency_round(line.currency_id, remaining), 0.0)
 
 
 def _currency_rounding(currency) -> float:

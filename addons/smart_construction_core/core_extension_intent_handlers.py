@@ -49,6 +49,11 @@ def get_intent_handler_contributions():
         from odoo.addons.smart_construction_core.handlers.payment_request_execute import (
             PaymentRequestExecuteHandler,
         )
+        from odoo.addons.smart_construction_core.handlers.payment_request_settlement_introduce import (
+            PaymentRequestAddSettlementLinesHandler,
+            PaymentRequestSettlementPreviewHandler,
+            PaymentRequestSettlementSearchHandler,
+        )
         from odoo.addons.smart_construction_core.handlers.project_dashboard import (
             ProjectDashboardHandler,
         )
@@ -175,6 +180,9 @@ def get_intent_handler_contributions():
         ("payment.request.mark_reversed", PaymentRequestCancelByContractHandler),
         ("payment.request.available_actions", PaymentRequestAvailableActionsHandler),
         ("payment.request.execute", PaymentRequestExecuteHandler),
+        ("payment.request.settlement.preview", PaymentRequestSettlementPreviewHandler),
+        ("payment.request.settlement.search", PaymentRequestSettlementSearchHandler),
+        ("payment.request.add.settlement.lines", PaymentRequestAddSettlementLinesHandler),
         ("project.dashboard", ProjectDashboardHandler),
         ("project.dashboard.open", ProjectDashboardOpenHandler),
         ("project.dashboard.enter", ProjectDashboardEnterHandler),
