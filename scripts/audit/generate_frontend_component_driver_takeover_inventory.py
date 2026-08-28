@@ -57,8 +57,11 @@ def relative(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
-def digest(paths: list[Path]) -> str:
+def digest(paths: list[Path], extra: str = "") -> str:
     output = hashlib.sha256()
+    if extra:
+        output.update(extra.encode())
+        output.update(b"\0")
     for path in sorted(set(paths)):
         output.update(relative(path).encode())
         output.update(b"\0")
@@ -83,7 +86,7 @@ def build_inventory() -> dict[str, object]:
     package = json.loads(PACKAGE.read_text(encoding="utf-8"))
     source_files = sources()
     bridge_files = [UI / "src/primitives.ts", DESIGN / "tdesignPrimitiveBridge.ts"]
-    all_inputs = [Path(__file__), PACKAGE, ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json", *bridge_files, *source_files]
+    all_inputs = [Path(__file__), ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json", *bridge_files, *source_files]
     ui_bridge = bridge_files[0].read_text(encoding="utf-8")
     web_bridge = bridge_files[1].read_text(encoding="utf-8")
     adapter_rows: dict[str, list[dict[str, object]]] = {}
@@ -154,7 +157,7 @@ def build_inventory() -> dict[str, object]:
         "schemaVersion": "frontend-component-driver-takeover/v1",
         "authority": {"library": "tdesign-vue-next", "lockedVersion": package["version"], "publicEntrypoint": "tdesign-vue-next/es/<component>"},
         "scope": "repository P0/P1 frontend production sources",
-        "inputDigest": digest(all_inputs),
+        "inputDigest": digest(all_inputs, extra=f"tdesign-vue-next@{package['version']}"),
         "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "directLibraryImportBypasses": len(direct_imports), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
         "components": rows,
         "directLibraryImportBypasses": direct_imports,
