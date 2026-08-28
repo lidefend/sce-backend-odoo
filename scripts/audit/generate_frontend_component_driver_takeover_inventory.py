@@ -191,6 +191,7 @@ def main() -> int:
                                 print(f"    only_generated={sorted(nset-cset)[:8]}")
                             if key == "inputDigest":
                                 from collections import Counter
+                                import hashlib as _hl
                                 sf = [relative(p) for p in sources()]
                                 print(f"    source_files count={len(sf)}")
                                 top = Counter(p.split("/")[2] if len(p.split("/")) > 2 else p for p in sf)
@@ -204,6 +205,18 @@ def main() -> int:
                                         print(f"    untracked={untracked[:15]}")
                                 except Exception as e2:
                                     print(f"    (git ls-files failed: {e2})")
+                                def _fsha(pp):
+                                    return _hl.sha256(pp.read_bytes()).hexdigest()[:16]
+                                for pp in [Path(__file__).resolve(), ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json", UI / "src/primitives.ts", DESIGN / "tdesignPrimitiveBridge.ts"]:
+                                    try:
+                                        print(f"    sha {relative(pp)}={_fsha(pp)}")
+                                    except Exception as e3:
+                                        print(f"    sha {pp} ERR {e3}")
+                                try:
+                                    print(f"    src_digest={digest(sources())[:16]}")
+                                    print(f"    gen_sha={_hl.sha256(Path(__file__).resolve().read_bytes()).hexdigest()[:16]}")
+                                except Exception as e4:
+                                    print(f"    (src_digest failed: {e4})")
                 except Exception as exc:
                     print(f"  (diff inspect failed: {exc})")
             return 1
