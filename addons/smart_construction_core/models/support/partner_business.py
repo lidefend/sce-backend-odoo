@@ -72,6 +72,36 @@ class ResPartner(models.Model):
         "tender.bid",
     )
 
+    # Localize the standard Odoo company_type field so customer/supplier
+    # archives render Chinese labels and selection values.
+    company_type = fields.Selection(
+        [
+            ("person", "个人"),
+            ("company", "公司"),
+        ],
+        string="客户类型",
+        index=True,
+    )
+
+    # Localize other standard Odoo res.partner field labels so the customer/
+    # supplier archives render Chinese labels (contract assembler consumes the
+    # field string). Field types are kept identical to the Odoo base module.
+    is_company = fields.Boolean(string="企业/组织")
+    category_id = fields.Many2many("res.partner.category", string="标签")
+    vat = fields.Char(string="统一社会信用代码")
+    company_registry = fields.Char(string="工商注册号")
+    industry_id = fields.Many2one("res.partner.industry", string="行业")
+    phone = fields.Char(string="电话")
+    mobile = fields.Char(string="手机")
+    email = fields.Char(string="电子邮件")
+    website = fields.Char(string="网站")
+    street = fields.Char(string="街道地址")
+    street2 = fields.Char(string="详细地址")
+    city = fields.Char(string="城市")
+    state_id = fields.Many2one("res.country.state", string="省/州")
+    zip = fields.Char(string="邮编")
+    country_id = fields.Many2one("res.country", string="国家/地区")
+
     sc_supplier_type = fields.Selection(
         SUPPLIER_TYPE_SELECTION,
         string="主供应商类型",

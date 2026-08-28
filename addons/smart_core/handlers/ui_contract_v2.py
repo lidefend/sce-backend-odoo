@@ -2113,6 +2113,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 profile=profile,
                 field_type=field_type,
                 unique=unique,
+                field_label=field_label,
                 governance=form_structure_governance,
             )
             if attachment_field:
@@ -2506,6 +2507,7 @@ class UiContractV2Handler(BaseIntentHandler):
         profile: dict[str, Any],
         field_type,
         unique,
+        field_label,
         governance: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         common_source = (
@@ -2767,7 +2769,11 @@ class UiContractV2Handler(BaseIntentHandler):
 
         def labels_for(items: list[str]) -> dict[str, str]:
             return {
-                name: str(field_labels.get(name) or name).strip()
+                # 字段显示名优先取 profile 配置 label，其次回退到字段定义的权威 string
+                # （field_display_label），而不是直接兜底成字段名 —— 否则 many2many 等
+                # 不在 common/detail 字段列表里的字段（如 res.partner.category_id）
+                # 会以原始字段名展示，覆盖正确的中文显示名。
+                name: str(field_labels.get(name) or field_display_label(name) or name).strip()
                 for name in fields_for(items)
             }
 
