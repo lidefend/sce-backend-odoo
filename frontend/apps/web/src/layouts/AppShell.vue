@@ -256,27 +256,6 @@
                   <dd>{{ currentCompanyLabel }}</dd>
                 </div>
               </dl>
-              <div class="topbar-account-pref" data-account-scene-kit>
-                <div class="topbar-account-pref-head">
-                  <span>界面风格</span>
-                  <span class="topbar-account-pref-value">{{ sceneKitLabel }}</span>
-                </div>
-                <div class="topbar-account-pref-options">
-                  <ScButton
-                    v-for="option in SCENE_UI_KIT_OPTIONS"
-                    :key="option.id"
-                    class="scene-kit-option"
-                    variant="ghost"
-                    size="small"
-                    type="button"
-                    :class="{ 'is-active': sceneUiKitRef === option.id }"
-                    :title="option.description"
-                    @click="setSceneUiKit(option.id)"
-                  >
-                    {{ option.label }}
-                  </ScButton>
-                </div>
-              </div>
               <ScButton variant="ghost" size="small" type="button" @click="openApiKeyManagement">
                 集成与 API Key
               </ScButton>
@@ -327,11 +306,37 @@
           </ScButton>
           <ScButton class="theme-switch" appearance="outline-action" variant="ghost" size="small" type="button" :title="`切换主题，当前${themeLabel}`" :aria-label="`切换主题，当前${themeLabel}`" @click="toggleTheme">
             <ScIcon name="sun" :size="16" />
-            <span class="topbar-tool-label">主题：{{ themeLabel }}</span>
+            <span class="topbar-tool-label">主题</span>
           </ScButton>
-          <ScButton class="theme-switch" appearance="outline-action" variant="ghost" size="small" type="button" :title="`切换风格，当前${profileLabel}`" :aria-label="`切换风格，当前${profileLabel}`" @click="toggleThemeProfile">
-            <span class="topbar-tool-label">风格：{{ profileLabel }}</span>
-          </ScButton>
+          <div ref="stylePickerRef" class="scene-style-picker" data-scene-style-picker @click.stop>
+            <button
+              type="button"
+              class="scene-style-picker__trigger"
+              :title="`切换界面风格，当前${profileLabel}`"
+              :aria-label="`切换界面风格，当前${profileLabel}`"
+              :aria-expanded="stylePickerOpen"
+              aria-haspopup="listbox"
+              @click="stylePickerOpen = !stylePickerOpen"
+            >
+              <span class="scene-style-picker__label">界面风格</span>
+              <span class="scene-style-picker__value">{{ profileLabel }}</span>
+              <ScIcon name="chevron-down" :size="14" class="scene-style-picker__caret" />
+            </button>
+            <div v-if="stylePickerOpen" class="scene-style-picker__menu" role="listbox">
+              <button
+                v-for="profile in SCENE_THEME_PROFILES"
+                :key="profile.id"
+                type="button"
+                role="option"
+                class="scene-style-picker__option"
+                :class="{ 'is-active': profile.id === profileMode }"
+                @click="setThemeProfile(profile.id)"
+              >
+                <span>{{ profile.label }}</span>
+                <ScIcon v-if="profile.id === profileMode" name="check" :size="14" class="scene-style-picker__check" />
+              </button>
+            </div>
+          </div>
         </div>
       </ScHeader>
 
@@ -426,17 +431,8 @@ import {
   isSceneThemeProfile,
   type ScThemeProfile,
   applyThemeProfile,
-  nextThemeProfile,
   persistThemeProfile,
 } from '../styles/theme';
-import {
-  sceneUiKitRef,
-  persistSceneUiKit,
-  bootSceneUiKit,
-  sceneUiKitLabel,
-  SCENE_UI_KIT_OPTIONS,
-  type SceneUiKitId,
-} from '../app/renderers/globalSceneKit';
 import { config } from '../config';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
@@ -989,6 +985,8 @@ const themeMode = ref<ScTheme>('system');
 const themeLabel = computed(() => (themeMode.value === 'system' ? '跟随系统' : themeMode.value === 'dark' ? '暗色' : '亮色'));
 const profileMode = ref<ScThemeProfile>('enterprise-neutral');
 const profileLabel = computed(() => SCENE_THEME_PROFILES.find((p) => p.id === profileMode.value)?.label ?? '企业中性');
+const stylePickerRef = ref<HTMLElement | null>(null);
+const stylePickerOpen = ref(false);
 
 function loadThemeProfile(): ScThemeProfile {
   try {
@@ -1000,15 +998,18 @@ function loadThemeProfile(): ScThemeProfile {
   return 'enterprise-neutral';
 }
 
-function toggleThemeProfile(): void {
-  profileMode.value = nextThemeProfile(profileMode.value);
-  persistThemeProfile(profileMode.value);
+function setThemeProfile(profile: ScThemeProfile): void {
+  if (profile !== profileMode.value) {
+    profileMode.value = profile;
+    persistThemeProfile(profile);
+  }
+  stylePickerOpen.value = false;
 }
 
-const sceneKitLabel = computed(() => sceneUiKitLabel(sceneUiKitRef.value));
-
-function setSceneUiKit(kit: SceneUiKitId): void {
-  if (kit !== sceneUiKitRef.value) persistSceneUiKit(kit);
+function closeStylePicker(event: MouseEvent): void {
+  if (stylePickerRef.value && !stylePickerRef.value.contains(event.target as Node)) {
+    stylePickerOpen.value = false;
+  }
 }
 
 function loadThemeMode(): ScTheme {
@@ -1348,7 +1349,6 @@ onMounted(() => {
   applyTheme(themeMode.value);
   profileMode.value = loadThemeProfile();
   applyThemeProfile(profileMode.value);
-  bootSceneUiKit();
   showExtractionStats.value = String(route.query.hud_stats || '').trim() === '1';
   void loadPublishedApps();
   if (typeof window === 'undefined') return;
@@ -1358,6 +1358,7 @@ onMounted(() => {
   window.addEventListener('keydown', handleShellEscape);
   window.addEventListener(getTraceUpdateEventName(), handleTraceUpdate as (event: Event) => void);
   window.addEventListener('click', closeRecordContextMenu);
+  window.addEventListener('click', closeStylePicker);
   handleTraceUpdate();
 });
 
@@ -1375,6 +1376,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleShellEscape);
   window.removeEventListener(getTraceUpdateEventName(), handleTraceUpdate as (event: Event) => void);
   window.removeEventListener('click', closeRecordContextMenu);
+  window.removeEventListener('click', closeStylePicker);
   if (recordContextSearchTimer) {
     clearTimeout(recordContextSearchTimer);
     recordContextSearchTimer = null;

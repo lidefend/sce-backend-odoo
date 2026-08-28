@@ -3,7 +3,6 @@ import { SCENE_UI_KITS, type SceneUiKitId } from '@sc/ui/form';
 import { getUserViewPreference, setUserViewPreference } from '../../api/preferences';
 import { resolveContractFormComponentDriverDecision } from '../../app/renderers/sceneComponentDriverPolicy';
 import { recordSceneComponentDriverEvent } from '../../app/renderers/sceneComponentDriverTelemetry';
-import { sceneUiKitRef } from '../../app/renderers/globalSceneKit';
 export { resolveCanonicalFormRenderState } from './canonicalFormRenderState';
 
 export type ContractFormComponentDriverRuntimeOptions = {
@@ -33,34 +32,21 @@ export function useContractFormComponentDriverRuntime(options: ContractFormCompo
     userKit: userKit.value,
     previewKit: options.previewKit(),
   }));
-  const driverConfig = computed(() => {
-    const flagEligible = options.isActive() && decision.value.eligible;
-    const allowedKits: SceneUiKitId[] = flagEligible
+  const driverConfig = computed(() => ({
+    activeKit: options.isActive() && decision.value.eligible ? decision.value.resolution.kit : 'tdesign-modern' as SceneUiKitId,
+    allowedKits: options.isActive() && decision.value.eligible
       ? [...decision.value.policy.allowedKits]
-      : ['tdesign-modern', 'sc-native'];
-    const allowOverride = options.isActive()
-      && (flagEligible ? (decision.value.allowUserOverride && !decision.value.policy.lockedKit) : true)
-      && allowedKits.length > 1;
-    const activeKit: SceneUiKitId = (() => {
-      if (!options.isActive()) return sceneUiKitRef.value;
-      if (flagEligible) return decision.value.resolution.kit;
-      const preferred = userKit.value as SceneUiKitId;
-      return preferred && allowedKits.includes(preferred) ? preferred : sceneUiKitRef.value;
-    })();
-    return {
-      activeKit,
-      allowedKits,
-      allowUserOverride: allowOverride,
-      showUserDriverChooser: allowOverride,
-      resolutionSource: flagEligible ? decision.value.resolution.source : 'user-preference',
-      reasonCode: flagEligible ? decision.value.reasonCode : 'SCENE_DRIVER_FEATURE_DISABLED_FALLBACK',
-    };
-  });
+      : ['tdesign-modern', 'sc-native'] as SceneUiKitId[],
+    allowUserOverride: options.isActive() && decision.value.eligible && decision.value.allowUserOverride,
+    showUserDriverChooser: false,
+    resolutionSource: decision.value.resolution.source,
+    reasonCode: decision.value.reasonCode,
+  }));
 
   async function loadPreference(): Promise<void> {
     const seq = ++preferenceLoadSeq;
     const scope = preferenceScope.value;
-    if (!options.isActive() || !driverConfig.value.allowUserOverride || !scope.action_id || !scope.model) {
+    if (!options.isActive() || !decision.value.eligible || !decision.value.allowUserOverride || !scope.action_id || !scope.model) {
       userKit.value = '';
       return;
     }
@@ -81,14 +67,15 @@ export function useContractFormComponentDriverRuntime(options: ContractFormCompo
   }
 
   async function changeDriver(kit: SceneUiKitId): Promise<void> {
-    const cfg = driverConfig.value;
-    if (!cfg.allowUserOverride || !cfg.allowedKits.includes(kit)) return;
+    const before = decision.value;
+    if (!before.eligible || !before.allowUserOverride || !before.policy.allowedKits.includes(kit)) return;
     userKit.value = kit;
     try {
       await setUserViewPreference(preferenceScope.value, { kit });
+      const after = decision.value;
       recordSceneComponentDriverEvent({
         timestamp: Date.now(), actionId: options.actionId(), model: options.model(), requestedKit: kit,
-        resolvedKit: driverConfig.value.activeKit, source: driverConfig.value.resolutionSource, reasonCode: driverConfig.value.reasonCode,
+        resolvedKit: after.resolution.kit, source: after.resolution.source, reasonCode: after.reasonCode,
       });
     } catch (error) {
       userKit.value = '';

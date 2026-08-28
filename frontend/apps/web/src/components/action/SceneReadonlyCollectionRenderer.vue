@@ -23,7 +23,6 @@ import {
   type SceneUiKitId,
 } from '@sc/ui/collection';
 import { sceneCollectionRowToRecord } from '../../app/renderers/sceneReadonlyCollectionBridge';
-import { sceneUiKitRef } from '../../app/renderers/globalSceneKit';
 
 type SceneReadonlyCollectionRendererConfig = {
   contract?: SceneCollectionContract;
@@ -39,7 +38,7 @@ const emit = defineEmits<{
 }>();
 
 const contract = computed(() => props.config.contract as SceneCollectionContract);
-const activeKit = computed<SceneUiKitId>(() => props.config.activeKit || sceneUiKitRef.value || 'tdesign-modern');
+const activeKit = computed<SceneUiKitId>(() => props.config.activeKit || 'tdesign-modern');
 const resolutionSource = computed(() => String(props.config.resolutionSource || 'safe-default'));
 
 function openRow(row: { id: string; values: Record<string, string> }): void {
