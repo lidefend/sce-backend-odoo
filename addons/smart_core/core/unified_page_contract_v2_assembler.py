@@ -3696,14 +3696,13 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
 
 
 def _demote_native_inherited_actions_to_overflow(contract: dict[str, Any]) -> None:
-    """无产品身份的原生继承按钮默认收敛到 overflow，不进入产品主操作区。
+    """无产品身份的操作默认收敛到 overflow，不进入产品主操作区。
 
-    来自 Odoo 原生模块（web/sms/portal/privacy_lookup 等）的按钮在原生视图中
-    未声明 presentation.tier，前端 actionTier fallback 到 secondary 会把它们
-    全部排进产品主操作区，与「更多」下拉重复。契约在此统一把
-    presentationAuthority 非 product_contract 且无显式 tier 的按钮降级为
-    overflow——即「没有产品身份的操作默认不进入产品主界面」；产品显式
-    声明的 tier 不受影响，仍按产品身份展示。
+    判断标准唯一是「产品身份」：presentationAuthority 为 product_contract、
+    或已显式声明 tier 的操作都有产品身份，保留在主操作区；其余来自原生
+    继承、既无产品身份也无显式 tier 的操作（如平台模块的 Download vCard/
+    发短信/授权门户/隐私查询等）统一降级为 overflow——「没有产品身份的
+    操作默认不进入产品主界面」。不管技术上是否原生，产品身份唯一确定。
     """
     action_contract = _dict(contract.get("actionContract"))
     rows = _list(action_contract.get("actionRuleList"))
@@ -3941,14 +3940,30 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                 trace.get("authorizationAllowed") for trace in evaluated_traces
                 if isinstance(trace.get("authorizationAllowed"), bool)
             ]
-            entitlement_evaluated = row.get("entitlementEvaluated") is True or bool(evaluated_traces)
-            authorization_allowed = row.get("authorizationAllowed") is True or (
-                bool(authorization_results) and all(result is True for result in authorization_results)
-            )
             modifier_authoritative = (
                 _text(row.get("sourceChannel")) == "native_form_header"
                 and _text(_dict(row.get("button")).get("type")) == "object"
                 and bool(_text(_dict(row.get("nativeIdentity")).get("native_locator")))
+            )
+            # 原生 header object 按钮（工作流/提交类）的权限由 Odoo 原生评估，
+            # allowed/enabled/disabled 均已确定；其 sourceTrace 未显式标记
+            # entitlementEvaluated 属装配缺口。此处对权限已解析且允许的原生
+            # 按钮补记 entitlement 评估，使前端 explicitAuthority 契约校验通过，
+            # 避免合法的产品主操作（如提交审批）被 explicitAuthority 误过滤。
+            permission_resolved = (
+                isinstance(row.get("allowed"), bool)
+                and isinstance(row.get("enabled"), bool)
+                and isinstance(row.get("disabled"), bool)
+            )
+            entitlement_evaluated = (
+                row.get("entitlementEvaluated") is True
+                or bool(evaluated_traces)
+                or (modifier_authoritative and permission_resolved)
+            )
+            authorization_allowed = (
+                row.get("authorizationAllowed") is True
+                or row.get("allowed") is True
+                or (bool(authorization_results) and all(result is True for result in authorization_results))
             )
             if (
                 runtime_business is None

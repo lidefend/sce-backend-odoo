@@ -8,23 +8,16 @@ export function resolveCanonicalHeaderActionPresentation(input: {
   rendererActive: boolean;
   dirty: boolean;
 }) {
+  // 严格按契约渲染：主操作区 = 契约声明的 primary + secondary（保存修改/保存草稿
+  // 在契约中为 secondary），overflow = 契约声明的 overflow + configuration。
+  // 前端不再发明「保存修改顶替 primary、挤走产品工作流按钮」的 localSave 编排。
   const visible = input.actions.filter((action) => action.visible);
-  const authorizedLocalSave = visible.find((action) => action.actionRef.actionId === 'form.save');
-  const localSavePrimary = Boolean(
-    input.rendererActive
-    && (input.renderProfile === 'create' || input.renderProfile === 'edit')
-    && authorizedLocalSave?.enabled,
-  );
-  const withoutLocalSave = (actions: CanonicalFormAction[]) => localSavePrimary
-    ? actions.filter((action) => action.actionRef.actionId !== 'form.save')
-    : actions;
   return {
-    direct: withoutLocalSave(input.floorplan?.decisionMode
+    direct: input.floorplan?.decisionMode
       ? input.floorplan.directActions
-      : visible.filter((action) => ['primary', 'secondary'].includes(action.tier))),
-    overflow: withoutLocalSave(input.floorplan?.decisionMode
+      : visible.filter((action) => ['primary', 'secondary'].includes(action.tier)),
+    overflow: input.floorplan?.decisionMode
       ? input.floorplan.overflowActions
-      : visible.filter((action) => ['overflow', 'configuration'].includes(action.tier))),
-    localSavePrimary,
+      : visible.filter((action) => ['overflow', 'configuration'].includes(action.tier)),
   };
 }
