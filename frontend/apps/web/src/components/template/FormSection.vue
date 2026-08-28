@@ -148,13 +148,15 @@
                     class="readonly-value readonly-value--html"
                     v-html="readonlyHtml(field)"
                   />
-                  <button
+                  <div
                     v-else-if="taskActionFor(field)"
-                    type="button"
+                    role="button"
+                    tabindex="0"
                     class="readonly-value readonly-value--action"
                     :aria-label="`${taskActionLabel(field)}（办理动作）`"
                     @click="taskActionRun(field)"
-                  >{{ taskActionLabel(field) }}</button>
+                    @keydown.enter.prevent="taskActionRun(field)"
+                  >{{ taskActionLabel(field) }}</div>
                   <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </template>

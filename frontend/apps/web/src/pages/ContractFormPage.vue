@@ -146,12 +146,7 @@
           @selected-group-title-change="onSelectedFormSettingsGroupTitleChange"
           @selected-group-visibility-change="onSelectedFormSettingsGroupVisibilityChange"
         />
-        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig"
-          :busy="busy"
-          :collaboration-panel-listeners="nativeCollaborationPanelListeners"
-          :collaboration-panel-props="nativeCollaborationPanelProps"
-          :relation-adapter="relationFieldAdapter"
-          :show-collaboration-panel="showNativeCollaborationPanel"
+        <ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope" actions-in-header :render-model="canonicalFormRenderState.model" :error="canonicalFormDriverError" :driver-config="contractFormDriverConfig" :busy="busy" :collaboration-panel-listeners="nativeCollaborationPanelListeners" :collaboration-panel-props="nativeCollaborationPanelProps" :relation-adapter="relationFieldAdapter" :show-collaboration-panel="showNativeCollaborationPanel"
           @driver-change="changeContractFormDriver"
           @field-change="onTemplateFieldChange"
           @field-action="onContractFieldAction"
@@ -323,6 +318,7 @@ import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
 import { executeButton } from '../api/executeButton';
 import { ScTaskActionResolverKey } from '../components/template/taskActionResolver';
+import { createNextTaskActionResolver } from '../components/template/nextTaskAction';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
 import type { FieldDescriptor } from '@sc/schema';
@@ -964,52 +960,14 @@ const recordId = computed(() => {
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
 
-/**
- * 下一步办理 -> backend button method map.
- *
- * legal_next_action_display (task semantic role, shown inside the "当前任务"
- * card) is a plain text hint computed by the backend state machine. The text
- * is already permission-gated on the backend (a user only sees "提交审批" if
- * they may submit), so mapping the label back to its backend method is safe.
- * This turns the dead readonly text into a clickable action entry point.
- */
-const NEXT_ACTION_METHOD_BY_LABEL: Record<string, string> = {
-  '提交审批': 'action_submit',
-  '重新提交审批': 'action_submit',
-  '审批处理': 'action_approve',
-  '生成付款登记': 'action_create_payment_execution',
-  '查看付款登记': 'action_view_payment_execution',
-  '确认办结': 'action_done',
-};
-
-const taskActionResolver = (field: { name: string; value?: unknown } | null | undefined) => {
-  if (!field || String(field.name || '').trim() !== 'legal_next_action_display') return null;
-  if (!recordId.value) return null;
-  const label = String(field.value ?? '').trim();
-  const methodName = NEXT_ACTION_METHOD_BY_LABEL[label];
-  if (!methodName) return null;
-  return {
-    label,
-    run: async () => {
-      if (!window.confirm(`确认执行「${label}」吗？`)) return;
-      try {
-        await executeButton({
-          model: model.value,
-          res_id: recordId.value as number,
-          button: { name: methodName, type: 'object' },
-          meta: {
-            menu_id: Number(route.query.menu_id || 0) || undefined,
-            action_id: actionId.value || undefined,
-          },
-        });
-      } finally {
-        await reload();
-      }
-    },
-  };
-};
-provide(ScTaskActionResolverKey, taskActionResolver);
-
+provide(ScTaskActionResolverKey, createNextTaskActionResolver({
+  getRecordId: () => recordId.value ?? undefined,
+  runAction: async (_label: string, methodName: string) => {
+    try {
+      await executeButton({ model: model.value, res_id: recordId.value as number, button: { name: methodName, type: 'object' }, meta: { menu_id: Number(route.query.menu_id || 0) || undefined, action_id: actionId.value || undefined } });
+    } finally { await reload(); }
+  },
+}));
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
@@ -1491,11 +1449,9 @@ const policyContext = computed(() => ({
   roleCodes: runtimeRoleCodes.value,
 }));
 const warnings = computed(() => normalizeContractWarnings(undefined));
-
 const contractAccessPolicy = computed<ContractAccessPolicy>(() => {
   return normalizeContractAccessPolicy(undefined);
 });
-
 const workflowTransitions = computed(() => buildWorkflowTransitions({
   rows: resolveContractV2WorkflowContract(v2ContractStore.value).transitions,
   actions: contractActions.value,
@@ -1503,14 +1459,12 @@ const workflowTransitions = computed(() => buildWorkflowTransitions({
   showHud: showHud.value,
 }));
 const searchFilters = computed(() => normalizeSearchFilters(resolveContractV2SearchContract(v2ContractStore.value).filters));
-
 const showSearchFilters = computed(() => {
   if (useNativeFormTree.value) return false;
   if (!v2ContractStore.value) return true;
   if (renderProfile.value !== 'create') return true;
   return true;
 });
-
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
   one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
@@ -1643,7 +1597,6 @@ const canonicalActionExecutionError = computed(() => {
 const canonicalFormDriverError = computed(() => (
   canonicalFormRenderState.value.error || canonicalActionExecutionError.value
 ));
-
 async function runCanonicalFormAction(actionRef: ContractV2ActionRule) {
   const resolution = resolveCanonicalFormActionExecution(actionRef, contractActions.value);
   if (resolution.kind === 'error') {
@@ -1677,7 +1630,6 @@ const contractReadiness = computed<FormContractReadiness>(() => {
     visibleCandidateCount: layoutFieldCount,
   };
 });
-
 let recordFormStateRuntime: ReturnType<typeof useRecordFormState>;
 function markFieldChanged(name: string) { recordFormStateRuntime.markFieldChanged(name); }
 function inputFieldValue(name: string) { return recordFormStateRuntime.inputFieldValue(name); }
@@ -1717,7 +1669,6 @@ const {
   resolvePendingMany2manyTagCreates, setBooleanField, setMany2oneField, setRelationIds,
   setRelationMultiField, setSelectionField, setTextField,
 } = recordFormStateRuntime;
-
 const {
   resolveNavigationUrl, viewOrchestrationHudSummary, hudEntries, loadContract,
   loadRecord, handleSceneBlockAction, reload, ensureFormInitialReload, preloadFormAuxiliaryData,

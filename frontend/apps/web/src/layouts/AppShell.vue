@@ -309,32 +309,35 @@
             <span class="topbar-tool-label">主题</span>
           </ScButton>
           <div ref="stylePickerRef" class="scene-style-picker" data-scene-style-picker @click.stop>
-            <button
-              type="button"
+            <div
               class="scene-style-picker__trigger"
+              role="button"
+              tabindex="0"
               :title="`切换界面风格，当前${profileLabel}`"
               :aria-label="`切换界面风格，当前${profileLabel}`"
               :aria-expanded="stylePickerOpen"
               aria-haspopup="listbox"
               @click="stylePickerOpen = !stylePickerOpen"
+              @keydown.enter.prevent="stylePickerOpen = !stylePickerOpen"
+              @keydown.space.prevent="stylePickerOpen = !stylePickerOpen"
             >
               <span class="scene-style-picker__label">界面风格</span>
               <span class="scene-style-picker__value">{{ profileLabel }}</span>
               <ScIcon name="chevron-down" :size="14" class="scene-style-picker__caret" />
-            </button>
+            </div>
             <div v-if="stylePickerOpen" class="scene-style-picker__menu" role="listbox">
-              <button
+              <div
                 v-for="profile in SCENE_THEME_PROFILES"
                 :key="profile.id"
-                type="button"
                 role="option"
                 class="scene-style-picker__option"
                 :class="{ 'is-active': profile.id === profileMode }"
                 @click="setThemeProfile(profile.id)"
+                @keydown.enter.prevent="setThemeProfile(profile.id)"
               >
                 <span>{{ profile.label }}</span>
                 <ScIcon v-if="profile.id === profileMode" name="check" :size="14" class="scene-style-picker__check" />
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -992,9 +995,7 @@ function loadThemeProfile(): ScThemeProfile {
   try {
     const raw = localStorage.getItem('sc_theme_profile');
     if (isSceneThemeProfile(raw)) return raw;
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
   return 'enterprise-neutral';
 }
 
@@ -1007,18 +1008,14 @@ function setThemeProfile(profile: ScThemeProfile): void {
 }
 
 function closeStylePicker(event: MouseEvent): void {
-  if (stylePickerRef.value && !stylePickerRef.value.contains(event.target as Node)) {
-    stylePickerOpen.value = false;
-  }
+  if (stylePickerRef.value && !stylePickerRef.value.contains(event.target as Node)) stylePickerOpen.value = false;
 }
 
 function loadThemeMode(): ScTheme {
   try {
     const raw = localStorage.getItem('sc_theme');
     if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
   return 'system';
 }
 
@@ -1038,9 +1035,7 @@ function loadSidebarHidden(): boolean {
 function persistSidebarHidden(hidden: boolean): void {
   try {
     localStorage.setItem(SIDEBAR_HIDDEN_STORAGE_KEY, hidden ? '1' : '0');
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
 const sidebarVisible = computed(() => mobileViewport.value ? mobileSidebarOpen.value : !sidebarHidden.value);

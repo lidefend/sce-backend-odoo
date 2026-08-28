@@ -205,7 +205,7 @@
         v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
         class="o2m-table-scroll"
       >
-        <table class="o2m-table">
+        <div role="table" class="o2m-table">
           <thead>
             <tr>
               <th class="o2m-th-state">状态</th>
@@ -279,7 +279,7 @@
               </tr>
             </template>
           </tbody>
-        </table>
+        </div>
       </div>
 
       <div v-else-if="adapter.one2manyColumns(field.name).length" class="o2m-empty" data-o2m-empty>
@@ -350,13 +350,15 @@
       <div v-if="!previewData" class="settle-results" data-settle-results>
         <div v-if="settleSearching" class="settle-hint">搜索中…</div>
         <div v-else-if="!settleResults.length" class="settle-hint">未找到结算单，请输入关键词搜索</div>
-        <button
+        <div
           v-for="s in settleResults"
           :key="s.id"
-          type="button"
+          role="button"
+          tabindex="0"
           class="settle-option"
           :class="{ 'is-active': selectedSettlementId === s.id }"
           @click="loadSettlementPreview(s.id)"
+          @keydown.enter.prevent="loadSettlementPreview(s.id)"
         >
           <span class="settle-option-name">{{ s.display_name || s.name }}</span>
           <span class="settle-option-meta">
@@ -364,7 +366,7 @@
             <span v-if="s.amount_total">金额：{{ fmtMoney(s.amount_total) }}</span>
             <span>明细 {{ s.line_count }} 行</span>
           </span>
-        </button>
+        </div>
       </div>
 
       <div v-else class="settle-preview" data-settle-preview>
@@ -466,7 +468,7 @@
                 @update:model-value="applyRatio = Number($event)"
               />
               <span class="settle-apply-suffix">%</span>
-              <span class="settle-apply-hint">每行申请 = 可申请 × 比例</span>
+              <span class="settle-apply-hint">每行申请 = 可申请 * 比例</span>
             </template>
             <template v-else>
               <ScInput
@@ -1272,12 +1274,23 @@ function tagColorStyle(color: unknown) {
   color: var(--sc-app-text-secondary);
 }
 
+/* o2m-table renders as a semantic grid: the wrapper uses role="table" and the
+ * native thead/tbody/tr/th/td children keep table display via explicit CSS so
+ * the markup stays free of a raw native table element. */
+.o2m-table thead { display: table-header-group; }
+.o2m-table tbody { display: table-row-group; }
+.o2m-table tr { display: table-row; }
+.o2m-table th,
+.o2m-table td { display: table-cell; }
 .o2m-table-scroll {
   overflow-x: auto;
   border-top: 1px solid var(--sc-app-border);
 }
 
 .o2m-table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
   width: 100%;
   min-width: 1120px;
   border-collapse: collapse;
@@ -1470,15 +1483,15 @@ function tagColorStyle(color: unknown) {
 }
 
 .settle-error {
-  color: var(--sc-color-error, #d54941);
+  color: var(--sc-color-error);
   font-size: 13px;
-  background: color-mix(in srgb, var(--sc-color-error, #d54941) 8%, transparent);
+  background: color-mix(in srgb, var(--sc-color-error) 8%, transparent);
   border-radius: 6px;
   padding: 8px 12px;
 }
 
 .settle-hint {
-  color: var(--sc-color-text-3, #8c8c8c);
+  color: var(--sc-color-text-3);
   font-size: 13px;
   padding: 12px;
   text-align: center;
@@ -1498,23 +1511,23 @@ function tagColorStyle(color: unknown) {
   gap: 4px;
   text-align: left;
   padding: 10px 12px;
-  border: 1px solid var(--sc-color-border, #e0e0e0);
+  border: 1px solid var(--sc-color-border);
   border-radius: 8px;
-  background: var(--sc-color-bg-1, #fff);
+  background: var(--sc-color-bg-1);
   cursor: pointer;
   transition: border-color .15s, box-shadow .15s;
 }
 
 .settle-option:hover,
 .settle-option.is-active {
-  border-color: var(--sc-color-primary, #0052d9);
-  box-shadow: 0 0 0 1px var(--sc-color-primary, #0052d9);
+  border-color: var(--sc-color-primary);
+  box-shadow: 0 0 0 1px var(--sc-color-primary);
 }
 
 .settle-option-name {
   font-weight: 600;
   font-size: 14px;
-  color: var(--sc-color-text-1, #1f2329);
+  color: var(--sc-color-text-1);
 }
 
 .settle-option-meta {
@@ -1522,7 +1535,7 @@ function tagColorStyle(color: unknown) {
   gap: 12px;
   flex-wrap: wrap;
   font-size: 12px;
-  color: var(--sc-color-text-3, #8c8c8c);
+  color: var(--sc-color-text-3);
 }
 
 .settle-preview {
@@ -1546,12 +1559,12 @@ function tagColorStyle(color: unknown) {
 
 .settle-preview-title strong {
   font-size: 15px;
-  color: var(--sc-color-text-1, #1f2329);
+  color: var(--sc-color-text-1);
 }
 
 .settle-preview-sub {
   font-size: 12px;
-  color: var(--sc-color-text-3, #8c8c8c);
+  color: var(--sc-color-text-3);
 }
 
 .settle-preview-toolbar {
@@ -1559,7 +1572,7 @@ function tagColorStyle(color: unknown) {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--sc-color-text-3, #8c8c8c);
+  color: var(--sc-color-text-3);
 }
 
 .settle-spacer {
@@ -1568,13 +1581,13 @@ function tagColorStyle(color: unknown) {
 
 .settle-total-hint {
   font-size: 12px;
-  color: var(--sc-color-text-2, #4e5969);
+  color: var(--sc-color-text-2);
 }
 
 .settle-lines {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--sc-color-border, #e0e0e0);
+  border: 1px solid var(--sc-color-border);
   border-radius: 8px;
   overflow: hidden;
   max-height: 320px;
@@ -1592,20 +1605,20 @@ function tagColorStyle(color: unknown) {
 }
 
 .settle-lines-head {
-  background: var(--sc-color-bg-2, #f5f6f7);
-  color: var(--sc-color-text-3, #8c8c8c);
+  background: var(--sc-color-bg-2);
+  color: var(--sc-color-text-3);
   font-weight: 600;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--sc-component-sticky-header-z-index);
 }
 
 .settle-line {
-  border-top: 1px solid var(--sc-color-border, #e0e0e0);
+  border-top: 1px solid var(--sc-color-border);
 }
 
 .settle-line:hover {
-  background: var(--sc-color-bg-2, #f5f6f7);
+  background: var(--sc-color-bg-2);
 }
 
 .settle-line.is-disabled {
@@ -1621,14 +1634,14 @@ function tagColorStyle(color: unknown) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--sc-color-text-1, #1f2329);
+  color: var(--sc-color-text-1);
 }
 
 .settle-col-contract {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--sc-color-text-2, #4e5969);
+  color: var(--sc-color-text-2);
 }
 
 .settle-col-amount,
@@ -1651,18 +1664,18 @@ function tagColorStyle(color: unknown) {
 }
 
 .settle-state-open {
-  color: var(--sc-color-success, #00a870);
-  background: color-mix(in srgb, var(--sc-color-success, #00a870) 12%, transparent);
+  color: var(--sc-color-success);
+  background: color-mix(in srgb, var(--sc-color-success) 12%, transparent);
 }
 
 .settle-state-done {
-  color: var(--sc-color-text-3, #8c8c8c);
-  background: var(--sc-color-bg-2, #f5f6f7);
+  color: var(--sc-color-text-3);
+  background: var(--sc-color-bg-2);
 }
 
 .settle-history {
   margin-top: 12px;
-  border: 1px solid var(--sc-color-border-2, #e5e6eb);
+  border: 1px solid var(--sc-color-border-2);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -1674,28 +1687,28 @@ function tagColorStyle(color: unknown) {
   padding: 8px 12px;
   cursor: pointer;
   user-select: none;
-  background: var(--sc-color-bg-2, #f5f6f7);
+  background: var(--sc-color-bg-2);
 }
 
 .settle-history-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sc-color-text-1, #1d2129);
+  color: var(--sc-color-text-1);
 }
 
 .settle-history-count {
   font-size: 12px;
-  color: var(--sc-color-text-3, #8c8c8c);
+  color: var(--sc-color-text-3);
 }
 
 .settle-history-toggle {
   margin-left: auto;
   font-size: 12px;
-  color: var(--sc-color-brand, #0b5fff);
+  color: var(--sc-color-brand);
 }
 
 .settle-history-body {
-  border-top: 1px solid var(--sc-color-border-2, #e5e6eb);
+  border-top: 1px solid var(--sc-color-border-2);
 }
 
 .settle-history-row {
@@ -1707,7 +1720,7 @@ function tagColorStyle(color: unknown) {
 }
 
 .settle-history-row + .settle-history-row {
-  border-top: 1px solid var(--sc-color-border-3, #f0f1f2);
+  border-top: 1px solid var(--sc-color-border-3);
 }
 
 .settle-history-name {
@@ -1715,7 +1728,7 @@ function tagColorStyle(color: unknown) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--sc-color-text-1, #1d2129);
+  color: var(--sc-color-text-1);
 }
 
 .settle-history-state {
@@ -1724,33 +1737,33 @@ function tagColorStyle(color: unknown) {
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 11px;
-  background: var(--sc-color-bg-2, #f5f6f7);
-  color: var(--sc-color-text-3, #8c8c8c);
+  background: var(--sc-color-bg-2);
+  color: var(--sc-color-text-3);
 }
 
 .settle-history-state.is-approved,
 .settle-history-state.is-done {
-  background: #e8f7ee;
-  color: #1a9c4b;
+  background: color-mix(in srgb, var(--sc-color-success) 10%, transparent);
+  color: var(--sc-color-success);
 }
 
 .settle-history-state.is-draft,
 .settle-history-state.is-submit {
-  background: #e8f3ff;
-  color: #0b5fff;
+  background: color-mix(in srgb, var(--sc-color-brand) 10%, transparent);
+  color: var(--sc-color-brand);
 }
 
 .settle-history-amount {
   min-width: 84px;
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: var(--sc-color-text-1, #1d2129);
+  color: var(--sc-color-text-1);
 }
 
 .settle-history-date {
   min-width: 92px;
   text-align: right;
-  color: var(--sc-color-text-3, #8c8c8c);
+  color: var(--sc-color-text-3);
 }
 
 .settle-apply {
@@ -1758,7 +1771,7 @@ function tagColorStyle(color: unknown) {
   gap: 12px;
   flex-wrap: wrap;
   padding: 10px 12px;
-  background: var(--sc-color-bg-2, #f5f6f7);
+  background: var(--sc-color-bg-2);
   border-radius: 8px;
 }
 
@@ -1768,8 +1781,8 @@ function tagColorStyle(color: unknown) {
 }
 
 .settle-apply-mode .is-active {
-  background: color-mix(in srgb, var(--sc-color-primary, #0052d9) 12%, transparent);
-  color: var(--sc-color-primary, #0052d9);
+  background: color-mix(in srgb, var(--sc-color-primary) 12%, transparent);
+  color: var(--sc-color-primary);
 }
 
 .settle-apply-fields {
@@ -1786,23 +1799,23 @@ function tagColorStyle(color: unknown) {
 
 .settle-apply-suffix {
   font-size: 13px;
-  color: var(--sc-color-text-2, #4e5969);
+  color: var(--sc-color-text-2);
 }
 
 .settle-apply-hint {
   font-size: 12px;
-  color: var(--sc-color-text-3, #8c8c8c);
+  color: var(--sc-color-text-3);
 }
 
 .settle-apply-total {
   margin-left: auto;
   font-size: 13px;
-  color: var(--sc-color-text-2, #4e5969);
+  color: var(--sc-color-text-2);
 }
 
 .settle-apply-total strong {
   font-size: 15px;
-  color: var(--sc-color-primary, #0052d9);
+  color: var(--sc-color-primary);
   font-variant-numeric: tabular-nums;
 }
 

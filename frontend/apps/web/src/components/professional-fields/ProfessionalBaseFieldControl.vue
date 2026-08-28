@@ -18,13 +18,15 @@
           class="professional-base-field-control__readonly professional-base-field-control__readonly--html"
           v-html="readonlyHtml"
         />
-        <button
+        <div
           v-else-if="taskActionFor(props.field)"
-          type="button"
+          role="button"
+          tabindex="0"
           class="professional-base-field-control__readonly professional-base-field-control__readonly--action"
           :aria-label="`${taskActionLabel(props.field)}（办理动作）`"
           @click="taskActionRun(props.field)"
-        >{{ taskActionLabel(props.field) }}</button>
+          @keydown.enter.prevent="taskActionRun(props.field)"
+        >{{ taskActionLabel(props.field) }}</div>
         <span v-else class="professional-base-field-control__readonly">{{ readonlyText }}</span>
       </template>
     </template>
