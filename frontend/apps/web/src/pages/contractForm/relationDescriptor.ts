@@ -261,7 +261,7 @@ export function dynamicDomainDependencyFields(descriptor?: FieldDescriptor) {
   const raw = (descriptor as Record<string, unknown> | undefined)?.domain;
   if (typeof raw !== 'string' || !raw.trim()) return [];
   const deps = new Set<string>();
-  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
+  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
   let match: RegExpExecArray | null;
   while ((match = tuplePattern.exec(raw.trim()))) {
     const valueField = match[3];
@@ -280,7 +280,7 @@ export function dynamicRelationDomainFromDescriptor(params: {
   if (typeof raw !== 'string' || !raw.trim()) return [];
   const out: unknown[] = [];
   const text = raw.trim();
-  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
+  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
   let match: RegExpExecArray | null;
   let hasDynamicDependency = false;
   let hasUnresolvedDependency = false;
@@ -298,7 +298,8 @@ export function dynamicRelationDomainFromDescriptor(params: {
       hasUnresolvedDependency = true;
       continue;
     }
-    out.push([fieldName, operator, normalizedValue]);
+    const effectiveOperator = operator === '=?' ? '=' : operator;
+    out.push([fieldName, effectiveOperator, normalizedValue]);
   }
   if (hasDynamicDependency && hasUnresolvedDependency) {
     const descriptorRecord = params.descriptor as Record<string, unknown> | undefined;

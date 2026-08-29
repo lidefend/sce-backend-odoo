@@ -6,7 +6,7 @@ import type {
   CanonicalFormRenderModel,
 } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
-import { canonicalFieldToFormSection } from './canonicalFormRenderer';
+import { canonicalFieldToFormSection, type CanonicalRelationProjection } from './canonicalFormRenderer';
 
 export type CanonicalNativeLayoutNode = {
   type: string;
@@ -107,6 +107,7 @@ function fieldNode(
   field: CanonicalFormField,
   fieldSchemas: WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>,
   sourceNode?: CanonicalFormNode,
+  relationProjection?: CanonicalRelationProjection,
 ): CanonicalNativeLayoutNode {
   const node: CanonicalNativeLayoutNode = {
     ...(sourceNode?.nativePresentation || {}),
@@ -134,12 +135,13 @@ function fieldNode(
     },
     children: [],
   };
-  fieldSchemas.set(node, canonicalFieldToFormSection(field));
+  fieldSchemas.set(node, canonicalFieldToFormSection(field, relationProjection));
   return node;
 }
 
 export function buildCanonicalNativeFormBridge(
   renderModel: CanonicalFormRenderModel,
+  relationProjection?: CanonicalRelationProjection,
 ): CanonicalNativeFormBridge {
   const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
   const actionsByIdentity = new Map<string, CanonicalFormAction>();
@@ -150,7 +152,7 @@ export function buildCanonicalNativeFormBridge(
 
   function mapNode(node: CanonicalFormNode): CanonicalNativeLayoutNode {
     if (text(node.kind).toLowerCase() === 'field' && node.fields.length === 1) {
-      return fieldNode(node.fields[0], fieldSchemas, node);
+      return fieldNode(node.fields[0], fieldSchemas, node, relationProjection);
     }
     const rawKind = text(node.kind).toLowerCase() || 'container';
     const action = node.action;

@@ -80,7 +80,7 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
   };
 }
 
-type CanonicalRelationProjection = Pick<
+export type CanonicalRelationProjection = Pick<
   RelationFieldAdapter,
   | 'relationKeyword'
   | 'filteredRelationOptions'

@@ -146,7 +146,7 @@ import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 import ObjectTaskPage from './ObjectTaskPage.vue';
 import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
-import { canonicalNodeHasContent } from './canonicalFormRenderer';
+import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
 
 const props = defineProps<{
   renderModel: CanonicalFormRenderModel | null;
@@ -236,7 +236,7 @@ const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
     },
   };
 });
-const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNativeFormBridge(nativeBridgeModel.value) : null);
+const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNativeFormBridge(nativeBridgeModel.value, props.relationAdapter as CanonicalRelationProjection) : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
