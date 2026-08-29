@@ -532,8 +532,8 @@ def build_financial_workspace_contract(env, model_name, record_id):
             for field_name, label, kind in (
                 ("create_uid", "创建人", "relation"),
                 ("create_date", "创建时间", "datetime"),
-                ("write_uid", "更新人", "relation"),
-                ("write_date", "更新时间", "datetime"),
+                ("write_uid", "最后更新人", "relation"),
+                ("write_date", "最后更新时间", "datetime"),
             )
             if field_name in record._fields
         ],

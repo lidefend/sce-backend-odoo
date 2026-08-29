@@ -44,6 +44,7 @@ export const SC_PRIMITIVE_KEYS = [
   'ScSteps',
   'ScPagination',
   'ScPopconfirm',
+  'ScPopover',
 ] as const;
 
 export type ScPrimitiveKey = (typeof SC_PRIMITIVE_KEYS)[number];

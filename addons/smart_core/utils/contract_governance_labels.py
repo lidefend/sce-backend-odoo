@@ -34,11 +34,24 @@ def _as_dict(value: Any) -> dict:
     return dict(value) if isinstance(value, dict) else {}
 
 
+# 全系统统一的技术/审计字段中文标签映射
+_TECHNICAL_FIELD_LABELS: dict[str, str] = {
+    "create_date": "创建时间",
+    "create_uid": "创建人",
+    "write_date": "最后更新时间",
+    "write_uid": "最后更新人",
+}
+
+
 def business_field_label(field_name: str, current_label: Any = "", model_name: str = "") -> str:
     name = _safe_text(field_name)
     label = _safe_text(current_label)
     if not name:
         return label
+    # 技术/审计字段统一使用中文标签，全系统生效
+    technical_label = _TECHNICAL_FIELD_LABELS.get(name)
+    if technical_label:
+        return technical_label
     presentation = dict(_LEGACY_FIELD_PRESENTATION_REGISTRY.get((_safe_text(model_name), name)) or {})
     if presentation.get("label"):
         return presentation["label"]

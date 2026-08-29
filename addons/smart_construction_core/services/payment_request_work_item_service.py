@@ -180,7 +180,8 @@ class PaymentRequestWorkItemService:
         project = record.project_id
         company = record.company_id
         partner = record.partner_id
-        initiator = record.create_uid
+        create_uid = record.create_uid
+        write_uid = record.write_uid
         amount = record.amount
         money = {
             "value": amount if amount is not None else None,
@@ -188,20 +189,28 @@ class PaymentRequestWorkItemService:
             "currency_symbol": str(currency.symbol or "") if currency else "",
             "digits": int((currency.decimal_places if currency else 2) or 2),
         }
-        facts = [
-            {"key": "project", "label": "项目", "value": str(project.display_name or "") if project else "未关联"},
-            {"key": "company", "label": "公司", "value": str(company.display_name or "") if company else "未关联"},
-            {"key": "partner", "label": "往来方", "value": str(partner.display_name or "") if partner else "未填写"},
-            {"key": "amount", "label": "金额", "display_role": "money", "money": money},
-            {"key": "initiator", "label": "发起人", "value": str(initiator.display_name or "") if initiator else "未知"},
-            {"key": "initiated_at", "label": "发起时间", "display_role": "datetime", "value": str(record.create_date or "")},
+        # 业务字段：与付款申请业务属性相关
+        business_facts = [
+            {"key": "project", "label": "项目", "field_group": "business", "value": str(project.display_name or "") if project else "未关联"},
+            {"key": "company", "label": "公司", "field_group": "business", "value": str(company.display_name or "") if company else "未关联"},
+            {"key": "partner", "label": "往来方", "field_group": "business", "value": str(partner.display_name or "") if partner else "未填写"},
+            {"key": "amount", "label": "金额", "field_group": "business", "display_role": "money", "money": money},
         ]
+        # 审计字段：系统记录的创建/更新信息
+        audit_facts = [
+            {"key": "create_uid", "label": "创建人", "field_group": "audit", "value": str(create_uid.display_name or "") if create_uid else "未知"},
+            {"key": "create_date", "label": "创建时间", "field_group": "audit", "display_role": "datetime", "value": str(record.create_date or "")},
+            {"key": "write_uid", "label": "最后更新人", "field_group": "audit", "value": str(write_uid.display_name or "") if write_uid else "未知"},
+            {"key": "write_date", "label": "最后更新时间", "field_group": "audit", "display_role": "datetime", "value": str(record.write_date or "")},
+        ]
+        facts = business_facts + audit_facts
         if record.state == "rejected":
             facts.insert(
                 0,
                 {
                     "key": "reject_reason",
                     "label": "驳回原因",
+                    "field_group": "business",
                     "value": str(record.reject_reason or "未提供原因"),
                 },
             )
@@ -229,9 +238,10 @@ class PaymentRequestWorkItemService:
             "company": self._ref(company),
             "partner": self._ref(partner),
             "amount": money,
-            "initiator": self._ref(initiator),
-            "initiated_at": str(record.create_date or ""),
-            "updated_at": str(record.write_date or ""),
+            "create_uid": self._ref(create_uid),
+            "create_date": str(record.create_date or ""),
+            "write_uid": self._ref(write_uid),
+            "write_date": str(record.write_date or ""),
             "facts": facts,
             "search_text": search_text,
             "sort_values": {

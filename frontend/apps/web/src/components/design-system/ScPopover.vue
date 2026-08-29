@@ -17,7 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import type { CSSProperties } from 'vue';
 import { TDesignPopup } from './tdesignPrimitiveBridge';
 import { semanticPrimitiveIdentity } from './primitiveAdapter';
 
@@ -37,6 +36,8 @@ export type ScPopoverPlacement =
 
 export type ScPopoverTrigger = 'hover' | 'click' | 'focus' | 'mousedown' | 'context-menu';
 
+export type ScPopoverOverlayStyle = Record<string, string | number>;
+
 withDefaults(
   defineProps<{
     trigger?: ScPopoverTrigger;
@@ -44,7 +45,7 @@ withDefaults(
     showArrow?: boolean;
     disabled?: boolean;
     overlayClassName?: string;
-    overlayStyle?: CSSProperties;
+    overlayStyle?: ScPopoverOverlayStyle;
   }>(),
   {
     trigger: 'click',
