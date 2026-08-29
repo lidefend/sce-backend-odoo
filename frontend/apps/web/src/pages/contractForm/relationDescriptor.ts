@@ -138,7 +138,7 @@ export function relationOptionsFromRecords(records: unknown, descriptor?: FieldD
 }
 
 export function relationOptionsWithSelectedFallback(options: RelationOption[] | undefined, value: unknown): RelationOption[] {
-  const rows = Array.isArray(options) ? options : [];
+  const rows = Array.isArray(options) ? options.filter((item): item is RelationOption => Boolean(item)) : [];
   if (rows.length) return rows;
   const ids = normalizeRelationIds(value);
   return ids.map((id) => ({ id, label: `#${id}` }));

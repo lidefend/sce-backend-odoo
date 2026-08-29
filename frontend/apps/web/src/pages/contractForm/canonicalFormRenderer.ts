@@ -103,10 +103,12 @@ export function canonicalFieldToFormSection(
   const descriptor = fieldDescriptor(field);
   const relation = type === 'many2one' ? relationValue(field.value) : null;
   const runtimeRelationOptions = type === 'many2one' && relationProjection
-    ? relationProjection.filteredRelationOptions(field.fieldCode).map((option) => ({
-      value: option.id,
-      label: option.label,
-    }))
+    ? relationProjection.filteredRelationOptions(field.fieldCode)
+      .filter((option): option is NonNullable<typeof option> => Boolean(option))
+      .map((option) => ({
+        value: option.id,
+        label: option.label,
+      }))
     : [];
   const selectedRelation = type === 'many2one' && relationProjection
     ? relationProjection.selectedRelationOptions(field.fieldCode).find((option) => (

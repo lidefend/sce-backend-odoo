@@ -198,7 +198,7 @@
                     <div v-if="hasMany2oneDropdown(field)" :id="many2oneListboxId(field)" class="many2one-option-panel" role="listbox">
                       <div v-if="field.relationOptions?.length" class="many2one-option-list" role="presentation">
                         <ScButton
-                          v-for="(option, optionIndex) in field.relationOptions.slice(0, 8)"
+                          v-for="(option, optionIndex) in field.relationOptions.filter(Boolean).slice(0, 8)"
                           :id="many2oneOptionId(field, optionIndex)"
                           :key="`${field.name}-option-${option.value}`"
                           type="button"
@@ -655,7 +655,7 @@ function isDateRangeWidget(field: FormSectionFieldSchema) {
 function selectedRelationLabel(field: FormSectionFieldSchema) {
   const value = String(field.inputValue ?? '').trim();
   if (!value) return '';
-  const option = (field.relationOptions || []).find((item) => String(item.value) === value);
+  const option = (field.relationOptions || []).filter(Boolean).find((item) => String(item.value) === value);
   return option?.label || '';
 }
 
@@ -666,7 +666,7 @@ function many2oneTextValue(field: FormSectionFieldSchema) {
 function showMany2oneInlineCreate(field: FormSectionFieldSchema) {
   const text = many2oneTextValue(field);
   if (!text || !field.relationInlineCreate?.enabled || !field.relationInlineCreate.createOnNoMatch) return false;
-  const options = field.relationOptions || [];
+  const options = (field.relationOptions || []).filter(Boolean);
   const normalized = text.trim().toLowerCase();
   const exact = options.some((item) => String(item.label || '').trim().toLowerCase() === normalized);
   if (exact) return false;
@@ -855,7 +855,7 @@ function blurMany2one(field: FormSectionFieldSchema, event: FocusEvent) {
 }
 
 function handleMany2oneKeydown(field: FormSectionFieldSchema, event: KeyboardEvent) {
-  const options = (field.relationOptions || []).slice(0, 8);
+  const options = (field.relationOptions || []).filter(Boolean).slice(0, 8);
   const current = many2oneActiveIndex.value[field.name] ?? -1;
   if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && options.length) {
     event.preventDefault();
