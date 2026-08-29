@@ -515,3 +515,87 @@ data = {
 2. **`nodeVisible` 函数是关键**：`NativeFormTreeRenderer` 组件使用传入的 `isNodeVisible` 函数来判断节点是否可见，不同渲染路径传入的函数可能不同。
 3. **`fieldNode` 函数需要传递完整的字段元数据**：如果 `fieldNode` 函数没有将 `componentConfig.surfaceRole` 传递给节点，那么 `nodeVisible` 函数就无法检查它。
 4. **调试时需要确认当前使用的渲染路径**：可以通过检查 `showCurrentFormFieldConfigScope` 的值来确认当前使用的是哪条渲染路径。
+
+---
+
+## 字段标签本地化机制（继承社区模块的正确方式）
+
+### 核心原则
+
+**我们的模块继承了社区模块，最终生效的应该是我们的设置，而不是原生设置。**
+
+### 问题现象
+
+在 `partner_business.py` 中重新定义了 `res.partner` 模型的字段标签：
+```python
+category_id = fields.Many2many("res.partner.category", string="业务分类")
+```
+
+但前端显示的还是 Odoo 原生的中文翻译"标签"，而不是我们定义的"业务分类"。
+
+### 根因分析
+
+Odoo 的字段标签翻译机制：
+
+1. **`ir.model.fields` 表**中的 `field_description` 字段是一个翻译字段（`jsonb` 类型），存储为 `{"en_US": "...", "zh_CN": "..."}`
+2. **Python 代码中的 `string` 属性**被写入 `field_description` 的 `en_US` 键
+3. **`.po` 翻译文件中的翻译**被写入 `field_description` 的对应语言键
+4. **翻译的匹配是基于 `ir.model.fields` 表中记录的 XML ID**，而不是基于 `msgid`
+
+问题在于：
+- 我们的 Python 代码正确更新了 `en_US` 的值（变成了"业务分类"）
+- 但 Odoo 原生的中文翻译（`zh_CN` = "标签"）没有被覆盖，因为我们的翻译文件引用格式不正确
+
+### 正确的解决方案
+
+**方案：在 Python 代码中定义 `string` + 在翻译文件中提供中文翻译**
+
+1. **Python 代码**（`partner_business.py`）：
+```python
+category_id = fields.Many2many("res.partner.category", string="业务分类")
+```
+
+2. **中文翻译文件**（`i18n/zh_CN.po`）：
+```po
+#: model:ir.model.fields,field_description:base.field_res_partner__category_id
+msgid "业务分类"
+msgstr "业务分类"
+```
+
+**关键点**：翻译文件中的引用必须使用正确的 XML ID（如 `base.field_res_partner__category_id`），而不是字段名（如 `res.partner.category_id`）。
+
+### 验证方法
+
+检查数据库中 `ir.model.fields` 表的 `field_description` 字段：
+```sql
+SELECT name, field_description FROM ir_model_fields 
+WHERE model = 'res.partner' AND name = 'category_id';
+```
+
+正确结果：
+```json
+{"en_US": "业务分类", "zh_CN": "业务分类"}
+```
+
+### 已本地化的字段清单
+
+| 字段名 | 原生中文标签 | 我们的中文标签 |
+|--------|-------------|---------------|
+| `category_id` | 标签 | 业务分类 |
+| `company_type` | 公司类型 | 客户类型 |
+| `industry_id` | 工业 | 行业 |
+| `vat` | 税项ID | 统一社会信用代码 |
+| `is_company` | 是公司 | 企业/组织 |
+| `company_registry` | 公司注册 | 工商注册号 |
+| `bank_ids` | 银行 | 账户 |
+| `child_ids` | 联系人 | 联系人 |
+| `state_id` | 州 | 省/州 |
+| `country_id` | 国家 | 国家/地区 |
+
+### 经验教训
+
+1. **不要使用 `translate=False` 来绕过翻译问题**：这会破坏多语言支持，是一种降级方案。
+2. **继承社区模块的正确方式**：在 Python 代码中重新定义 `string`（覆盖 `en_US`），在翻译文件中提供中文翻译（覆盖 `zh_CN`）。
+3. **翻译文件的引用格式很重要**：必须使用 XML ID（如 `base.field_res_partner__category_id`），而不是字段名。
+4. **模块更新后需要验证**：检查数据库中 `field_description` 字段的 `zh_CN` 值是否被正确覆盖。
+5. **每个字段可能有多个 XML ID**：原生模块的 XML ID（如 `base.field_res_partner__category_id`）和我们模块的 XML ID（如 `smart_construction_core.field_res_partner__category_id`），翻译文件中使用任意一个都可以。

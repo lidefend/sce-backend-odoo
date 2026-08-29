@@ -86,6 +86,7 @@ class ResPartner(models.Model):
     # Localize other standard Odoo res.partner field labels so the customer/
     # supplier archives render Chinese labels (contract assembler consumes the
     # field string). Field types are kept identical to the Odoo base module.
+    # 中文翻译在 i18n/zh_CN.po 中定义，通过 XML ID 引用覆盖原生翻译。
     is_company = fields.Boolean(string="企业/组织")
     category_id = fields.Many2many("res.partner.category", string="业务分类")
     vat = fields.Char(string="统一社会信用代码")
