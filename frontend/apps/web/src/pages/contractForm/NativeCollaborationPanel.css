@@ -522,3 +522,107 @@
     align-items: flex-start;
   }
 }
+
+
+/* ===== 协作日志面板专业化优化 ===== */
+
+/* 面板标题优化 */
+.native-chatter-block > h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sc-app-text-primary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--sc-app-border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.native-chatter-block > h3::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--sc-app-primary, #1677ff);
+  border-radius: 2px;
+}
+
+/* 操作按钮区域优化 */
+.native-chatter-block .chips {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--sc-app-muted-bg, #fafafa);
+  border-radius: 6px;
+  border: 1px solid var(--sc-app-border);
+}
+
+/* 时间线区域优化 */
+.native-chatter-timeline {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* 时间线条目 hover 效果 */
+.native-chatter-entry {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.native-chatter-entry:hover {
+  border-color: var(--sc-app-primary, #1677ff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 加载更多按钮优化 */
+.native-chatter-load-more {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--sc-app-text-secondary);
+  background: var(--sc-app-muted-bg, #fafafa);
+  border: 1px dashed var(--sc-app-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.native-chatter-load-more:hover {
+  color: var(--sc-app-primary, #1677ff);
+  border-color: var(--sc-app-primary, #1677ff);
+  background: var(--sc-app-primary-bg, #e6f4ff);
+}
+
+/* 附件管理器区域优化 */
+.native-chatter-block .native-attachment-tools {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: var(--sc-app-muted-bg, #fafafa);
+  border-radius: 6px;
+  border: 1px solid var(--sc-app-border);
+}
+
+/* 错误消息优化 */
+.native-chatter-message.validation-error {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: var(--sc-app-error-bg, #fff2f0);
+  border: 1px solid var(--sc-app-error, #f5222d);
+  border-radius: 6px;
+  color: var(--sc-app-error, #f5222d);
+  font-size: 12px;
+}
+
+/* 空状态优化 */
+.native-chatter-empty {
+  margin: 12px 0 0;
+  padding: 20px 10px;
+  text-align: center;
+  background: var(--sc-app-muted-bg, #fafafa);
+  border: 1px dashed var(--sc-app-border);
+  border-radius: 8px;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
