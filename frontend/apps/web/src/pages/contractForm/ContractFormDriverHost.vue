@@ -105,7 +105,7 @@
             @field-change="emit('field-change', $event)"
           />
         </section>
-        <section v-if="showCollaborationPanel && hasCollaborationNode" class="sc-native-contract-collaboration">
+        <section v-if="showCollaborationPanel" class="sc-native-contract-collaboration">
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
             :show-audit-timeline="true"
