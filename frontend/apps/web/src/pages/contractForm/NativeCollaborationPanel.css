@@ -683,3 +683,51 @@
   height: 16px;
   background: var(--sc-app-primary-hover, #4096ff);
 }
+
+
+/* ===== 附件拖拽上传样式 ===== */
+
+.native-attachment-tools {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.native-attachment-tools.native-attachment-drag-over {
+  border-color: var(--sc-app-primary, #1677ff);
+  background: var(--sc-app-primary-bg, #e6f4ff);
+  border-style: dashed;
+  border-width: 2px;
+}
+
+.native-attachment-drag-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+  color: var(--sc-app-primary, #1677ff);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.native-attachment-drag-icon {
+  font-size: 32px;
+  line-height: 1;
+  animation: native-attachment-bounce 1s ease-in-out infinite;
+}
+
+@keyframes native-attachment-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* 拖拽时隐藏原有的上传按钮 */
+.native-attachment-drag-over .native-attachment-upload {
+  display: none;
+}
