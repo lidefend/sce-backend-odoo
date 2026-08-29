@@ -848,7 +848,8 @@ function focusMany2one(field: FormSectionFieldSchema) {
 
 function blurMany2one(field: FormSectionFieldSchema, event: FocusEvent) {
   if (many2oneFocusedField.value !== field.name) return;
-  emitMany2oneCommit(field, (event.target as HTMLInputElement).value);
+  const targetValue = event.target instanceof HTMLInputElement ? event.target.value : '';
+  emitMany2oneCommit(field, targetValue);
   window.setTimeout(() => {
     if (many2oneFocusedField.value === field.name) many2oneFocusedField.value = '';
   }, 0);
@@ -866,11 +867,12 @@ function handleMany2oneKeydown(field: FormSectionFieldSchema, event: KeyboardEve
   if (event.key === 'Enter') {
     event.preventDefault();
     const option = current >= 0 ? options[current] : undefined;
+    const inputEl = event.target instanceof HTMLInputElement ? event.target : null;
     if (option) emitFieldChange(field, option.value);
-    else emitMany2oneCommit(field, (event.target as HTMLInputElement).value);
+    else emitMany2oneCommit(field, inputEl ? inputEl.value : '');
     many2oneFocusedField.value = '';
     many2oneActiveIndex.value[field.name] = -1;
-    (event.target as HTMLInputElement).blur();
+    inputEl?.blur();
     return;
   }
   if (event.key === 'Escape') {
