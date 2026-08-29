@@ -98,7 +98,7 @@ class ResPartner(models.Model):
     street = fields.Char(string="街道地址")
     street2 = fields.Char(string="详细地址")
     city = fields.Char(string="城市")
-    state_id = fields.Many2one("res.country.state", string="省/州")
+    state_id = fields.Many2one("res.country.state", string="省/州", domain="[('country_id', '=?', country_id)]")
     zip = fields.Char(string="邮编")
     country_id = fields.Many2one("res.country", string="国家/地区")
     child_ids = fields.One2many("res.partner", "parent_id", string="联系人")
