@@ -1,90 +1,6 @@
 <template>
   <div v-if="field.type === 'many2many'" class="relation-editor">
-    <div v-if="field.readonly" class="relation-readonly" data-readonly-relation>
-      <span
-        v-for="option in adapter.selectedRelationOptions(field.name)"
-        :key="`${field.name}-readonly-${option.id}`"
-        class="relation-readonly-item"
-      >{{ option.label }}</span>
-      <span
-        v-if="!adapter.selectedRelationOptions(field.name).length && adapter.relationIds(field.name).length"
-        class="relation-readonly-summary"
-      >已关联 {{ adapter.relationIds(field.name).length }} 条</span>
-      <ScInlineState
-        v-else-if="!adapter.selectedRelationOptions(field.name).length"
-        class="relation-readonly-empty"
-        state="empty"
-        label="暂无记录"
-      />
-    </div>
-    <div v-else-if="isMany2manyTags(field)" class="relation-tag-picker">
-      <div class="relation-tags-control">
-        <div v-if="adapter.selectedRelationOptions(field.name).length" class="relation-tag-list">
-          <ScButton
-            v-for="option in adapter.selectedRelationOptions(field.name)"
-            :key="`${field.name}-tag-${option.id}`"
-            type="button"
-            class="relation-tag"
-            appearance="relation-tag"
-            variant="ghost"
-            size="small"
-            :style="tagColorStyle(option.color)"
-            :disabled="adapter.busy"
-            :title="`移除${option.label}`"
-            @click="toggleRelationId(field.name, option.id, false)"
-          >
-            {{ option.label }}
-            <ScIcon name="close" :size="14" />
-          </ScButton>
-        </div>
-        <ScInput
-          class="relation-tags-input"
-          appearance="relation-tag-entry"
-          type="text"
-          :model-value="adapter.relationKeyword(field.name)"
-          :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
-          @update:model-value="adapter.setRelationKeyword(field.name, $event)"
-          @keydown.enter.prevent="commitTagKeyword(field.name)"
-        />
-        <div v-if="hasTagDropdown(field.name)" class="relation-tag-dropdown">
-          <ScButton
-            v-for="option in adapter.filteredRelationOptions(field.name).slice(0, 8)"
-            :key="`${field.name}-tag-option-${option.id}`"
-            type="button"
-            class="relation-tag-option"
-            appearance="menu-item"
-            variant="ghost"
-            size="small"
-            @mousedown.prevent
-            @click="toggleRelationId(field.name, option.id, true)"
-          >
-            <span class="relation-tag-swatch" :style="tagColorStyle(option.color)" aria-hidden="true"></span>
-            <span>{{ option.label }}</span>
-          </ScButton>
-          <div v-if="hasTagCreateActions(field.name)" class="relation-tag-actions">
-            <div
-              v-if="adapter.canInlineCreateRelation(field.name)"
-              class="relation-tag-hint"
-              role="note"
-            >
-              {{ adapter.relationInlineCreateLabel(field.name) }}
-            </div>
-            <ScButton
-              v-if="adapter.relationCreateMode(field.name) === 'page'"
-              type="button"
-              class="relation-tag-action"
-              variant="secondary"
-              size="small"
-              @mousedown.prevent
-              @click="adapter.openRelationCreate(field.name)"
-            >
-              {{ adapter.relationCreateLabel(field.name) }}
-            </ScButton>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-else-if="isAttachmentField(field)" class="relation-attachment-editor" data-semantic-component="RelationAttachmentEditor">
+    <div v-if="isAttachmentField(field)" class="relation-attachment-editor" data-semantic-component="RelationAttachmentEditor">
       <div v-if="adapter.selectedRelationOptions(field.name).length" class="attachment-list">
         <div
           v-for="att in adapter.selectedRelationOptions(field.name)"
@@ -107,6 +23,7 @@
         :key="uploadTick"
         class="attachment-upload"
         :disabled="adapter.busy"
+        :multiple="true"
         choose-label="上传附件"
         empty-label="未选择文件"
         @change="handleAttachmentUpload(field, $event)"
@@ -118,57 +35,11 @@
         :label="attachmentError"
       />
     </div>
-    <div v-else class="relation-select-editor">
-      <ScInput
-        class="relation-search"
-        type="text"
-        :model-value="adapter.relationKeyword(field.name)"
-        :placeholder="field.inputPlaceholder || adapter.inputPlaceholder(field.label)"
-        @update:model-value="adapter.setRelationKeyword(field.name, $event)"
-        @keydown.enter.prevent="commitTagKeyword(field.name)"
-      />
-      <div
-        v-if="adapter.filteredRelationOptions(field.name).length"
-        class="relation-multi-options"
-        role="listbox"
-        aria-multiselectable="true"
-        :aria-label="field.label || `${field.name} 选项列表`"
-      >
-        <ScCheckbox
-          v-for="option in adapter.filteredRelationOptions(field.name)"
-          :key="`${field.name}-${option.id}`"
-          :checked="relationIdSet(field.name).has(option.id)"
-          :disabled="adapter.busy"
-          :label="option.label"
-          @change="toggleRelationId(field.name, option.id, $event)"
-        />
-      </div>
-      <div v-if="hasTagCreateActions(field.name)" class="relation-select-actions">
-        <span
-          v-if="adapter.canInlineCreateRelation(field.name)"
-          class="relation-select-hint"
-          role="note"
-        >{{ adapter.relationInlineCreateLabel(field.name) }}</span>
-        <ScButton
-          v-if="adapter.canInlineCreateRelation(field.name)"
-          type="button"
-          class="relation-select-quick"
-          variant="secondary"
-          size="small"
-          :disabled="adapter.busy"
-          @click="adapter.quickCreateRelationMany(field.name)"
-        >快速新建</ScButton>
-        <ScButton
-          v-if="['page', 'dialog'].includes(adapter.relationCreateMode(field.name))"
-          type="button"
-          class="relation-select-manage"
-          variant="ghost"
-          size="small"
-          @mousedown.prevent
-          @click="adapter.openRelationCreate(field.name)"
-        >{{ adapter.relationCreateLabel(field.name) || '新建并维护' }}</ScButton>
-      </div>
-    </div>
+    <ProfessionalManyToManySelect
+      v-else
+      :field="field"
+      :adapter="adapter"
+    />
   </div>
   <div v-else-if="field.type === 'one2many'" class="relation-editor">
     <div v-if="field.readonly" class="o2m-readonly" data-readonly-relation>
@@ -358,6 +229,7 @@ import ScInput from '../design-system/ScInput.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScTable from '../design-system/ScTable.vue';
+import ProfessionalManyToManySelect from '../professional-fields/ProfessionalManyToManySelect.vue';
 import SettlementIntroduceDialog from './SettlementIntroduceDialog.vue';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
@@ -525,9 +397,9 @@ function isAttachmentField(field: FormSectionFieldSchema) {
   return String(relation || '').trim().toLowerCase() === 'ir.attachment';
 }
 
-async function handleAttachmentUpload(field: FormSectionFieldSchema, file: File | null) {
+async function handleAttachmentUpload(field: FormSectionFieldSchema, files: File[]) {
   attachmentError.value = '';
-  if (!file) return;
+  if (!files || files.length === 0) return;
   const model = props.adapter.currentModel;
   const resId = props.adapter.currentRecordId;
   if (!model || !resId) {
@@ -535,11 +407,17 @@ async function handleAttachmentUpload(field: FormSectionFieldSchema, file: File 
     return;
   }
   try {
-    const { data, mimetype } = await fileToBase64(file);
-    const created = await uploadFile({ model, res_id: resId, name: file.name, mimetype, data });
     const current = props.adapter.relationIds(field.name);
-    props.adapter.setRelationIds(field.name, Array.from(new Set([...current, created.id])));
-    attachmentNameMap.value = { ...attachmentNameMap.value, [created.id]: created.name || file.name };
+    const newIds: number[] = [];
+    const newNames: Record<number, string> = {};
+    for (const file of files) {
+      const { data, mimetype } = await fileToBase64(file);
+      const created = await uploadFile({ model, res_id: resId, name: file.name, mimetype, data });
+      newIds.push(created.id);
+      newNames[created.id] = created.name || file.name;
+    }
+    props.adapter.setRelationIds(field.name, Array.from(new Set([...current, ...newIds])));
+    attachmentNameMap.value = { ...attachmentNameMap.value, ...newNames };
     uploadTick.value += 1;
   } catch (err) {
     attachmentError.value = err instanceof Error ? err.message : '附件上传失败';

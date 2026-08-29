@@ -13,6 +13,7 @@
     "post_init_hook": "post_init_hook",
     "data": [
         "data/base/00_dictionary.xml",
+        "data/base/05_partner_categories.xml",
         "data/base/dictionary_demo.xml",
         "data/base/cost_demo.xml",
         "data/base/10_partners.xml",

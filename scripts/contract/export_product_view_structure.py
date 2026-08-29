@@ -168,6 +168,29 @@ def _source_graph(resolved_view, model_name: str, view_type: str, native_arch) -
     return {**body, "graph_sha256": sha256_json(body)}
 
 
+def _enrich_field_meta(node: dict, fields_meta: dict) -> None:
+    """Recursively enrich field nodes with model field metadata (type, relation)."""
+    if not isinstance(node, dict):
+        return
+    tag = str(node.get("tag") or "")
+    attrs = node.get("attrs")
+    if isinstance(attrs, dict) and tag == "field":
+        fname = str(attrs.get("name") or "")
+        meta = fields_meta.get(fname) if fname else None
+        if isinstance(meta, dict):
+            ftype = str(meta.get("type") or "")
+            if ftype and "type" not in attrs:
+                attrs["type"] = ftype
+            relation = str(meta.get("relation") or "")
+            if relation and "relation" not in attrs:
+                attrs["relation"] = relation
+    for key in ("children", "pages", "tabs", "nodes", "items", "groups"):
+        children = node.get(key)
+        if isinstance(children, list):
+            for child in children:
+                _enrich_field_meta(child, fields_meta)
+
+
 def _surface(menu_row: dict, action, view_type: str, view_ids: dict[str, int]) -> dict:
     model_name = str(action.res_model or "")
     Model = env[model_name].with_context(**_action_context(action))  # noqa: F821
@@ -179,6 +202,14 @@ def _surface(menu_row: dict, action, view_type: str, view_ids: dict[str, int]) -
     arch = str(view_def.get("arch") or "")
     resolved = normalize_arch(arch, semantic=False)
     semantic = normalize_arch(arch, semantic=True)
+    # Enrich field nodes with model field metadata (type, relation) for contract consumers
+    try:
+        fields_meta = Model.fields_get()
+    except Exception:
+        fields_meta = {}
+    if fields_meta:
+        _enrich_field_meta(resolved, fields_meta)
+        _enrich_field_meta(semantic, fields_meta)
     if normalize_view_type(resolved.get("tag")) != view_type:
         raise ValueError(f"resolved root {resolved.get('tag')!r} does not match {view_type!r}")
     occurrences = collect_occurrences(semantic, view_ref)

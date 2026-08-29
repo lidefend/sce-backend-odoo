@@ -5,6 +5,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
+# [DEPRECATED] 供应商类型选项已弃用，统一收敛到 res.partner.category（业务分类）
 SUPPLIER_TYPE_SELECTION = [
     ("material", "材料供应商"),
     ("labor", "劳务供应商"),
@@ -16,8 +17,16 @@ SUPPLIER_TYPE_SELECTION = [
 
 
 class ScSupplierType(models.Model):
+    """[DEPRECATED] 供应商类型模型已弃用。
+
+    自 v0.3.0 起，业务伙伴分类统一收敛到 Odoo 原生 `res.partner.category`
+    模型（字段 `category_id`，界面显示为"业务分类"）。
+
+    本模型保留仅为历史数据兼容，不再在任何产品视图中使用。
+    后续版本将移除本模型及相关字段。
+    """
     _name = "sc.supplier.type"
-    _description = "供应商类型"
+    _description = "供应商类型（已弃用）"
     _inherit = ["sc.delete.guard.mixin"]
     _order = "sequence, id"
 
@@ -105,23 +114,29 @@ class ResPartner(models.Model):
     child_ids = fields.One2many("res.partner", "parent_id", string="联系人")
     bank_ids = fields.One2many("res.partner.bank", "partner_id", string="账户")
 
+    # [DEPRECATED] 主供应商类型字段已弃用，统一收敛到 category_id（业务分类）
     sc_supplier_type = fields.Selection(
         SUPPLIER_TYPE_SELECTION,
-        string="主供应商类型",
+        string="主供应商类型（已弃用）",
         index=True,
+        help="已弃用：请使用业务分类（category_id）字段。",
     )
+    # [DEPRECATED] 供应商类型多对多字段已弃用，统一收敛到 category_id（业务分类）
     sc_supplier_type_ids = fields.Many2many(
         "sc.supplier.type",
         "sc_res_partner_supplier_type_rel",
         "partner_id",
         "supplier_type_id",
-        string="供应商类型",
+        string="供应商类型（已弃用）",
+        help="已弃用：请使用业务分类（category_id）字段。",
     )
+    # [DEPRECATED] 供应商类型汇总字段已弃用
     sc_supplier_type_label = fields.Char(
-        string="供应商类型汇总",
+        string="供应商类型汇总（已弃用）",
         compute="_compute_sc_supplier_type_label",
         store=True,
         readonly=True,
+        help="已弃用：请使用业务分类（category_id）字段。",
     )
     sc_account_name = fields.Char(string="账户名称")
     sc_bank_name = fields.Char(string="开户银行")
@@ -135,7 +150,11 @@ class ResPartner(models.Model):
     sc_business_scope = fields.Text(string="经营范围")
     sc_default_tax_rate = fields.Float(string="默认税率%", digits=(16, 4))
     sc_default_tax_rate_text = fields.Char(string="税率文本")
-    sc_supplier_note = fields.Text(string="供应商备注")
+    # [DEPRECATED] 供应商备注字段已弃用，统一使用 Odoo 原生 comment（备注）字段
+    sc_supplier_note = fields.Text(
+        string="供应商备注（已弃用）",
+        help="已弃用：请使用备注（comment）字段。",
+    )
     sc_blacklisted = fields.Boolean(string="黑名单", default=False, index=True, tracking=True)
     sc_blacklist_level = fields.Selection(
         [("attention", "关注"), ("restricted", "限制合作"), ("blocked", "停止合作")],
@@ -180,8 +199,10 @@ class ResPartner(models.Model):
 
     # Historical identity carrier fields for idempotent migration replay.
 
+    # [DEPRECATED] 供应商类型汇总计算方法已弃用
     @api.depends("sc_supplier_type_ids.name", "sc_supplier_type_ids.sequence", "sc_supplier_type")
     def _compute_sc_supplier_type_label(self):
+        """[DEPRECATED] 计算供应商类型汇总标签，已弃用。"""
         selection_labels = dict(SUPPLIER_TYPE_SELECTION)
         for partner in self:
             types = partner.sc_supplier_type_ids.sorted(lambda item: (item.sequence, item.id))
@@ -278,19 +299,26 @@ class ResPartner(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        if not self.env.context.get("sc_skip_supplier_type_sync"):
-            for record, vals in zip(records, vals_list):
-                record._sc_sync_supplier_type_fields(vals)
+        # [DEPRECATED] 供应商类型同步已禁用，字段统一收敛到 category_id（业务分类）
+        # if not self.env.context.get("sc_skip_supplier_type_sync"):
+        #     for record, vals in zip(records, vals_list):
+        #         record._sc_sync_supplier_type_fields(vals)
         return records
 
     def write(self, vals):
         result = super().write(vals)
-        if vals and not self.env.context.get("sc_skip_supplier_type_sync"):
-            self._sc_sync_supplier_type_fields(vals)
+        # [DEPRECATED] 供应商类型同步已禁用，字段统一收敛到 category_id（业务分类）
+        # if vals and not self.env.context.get("sc_skip_supplier_type_sync"):
+        #     self._sc_sync_supplier_type_fields(vals)
         return result
 
     @api.model
     def _sc_backfill_supplier_type_ids(self):
+        """[DEPRECATED] 回填供应商类型多对多字段，已弃用。
+
+        自 v0.3.0 起，业务伙伴分类统一收敛到 category_id（业务分类）。
+        本方法保留仅为历史数据兼容，不再主动调用。
+        """
         partners = self.sudo().with_context(active_test=False).search([("supplier_rank", ">", 0)])
         if not partners:
             return True
@@ -310,6 +338,11 @@ class ResPartner(models.Model):
         return True
 
     def _sc_sync_supplier_type_fields(self, vals):
+        """[DEPRECATED] 同步供应商类型单选与多选字段，已弃用。
+
+        自 v0.3.0 起，业务伙伴分类统一收敛到 category_id（业务分类）。
+        本方法保留仅为历史数据兼容，不再主动调用。
+        """
         if not vals or self.env.context.get("sc_skip_supplier_type_sync"):
             return
         Type = self.env["sc.supplier.type"].sudo()

@@ -6,8 +6,8 @@
     :accept="accept || undefined"
     :disabled="disabled"
     :auto-upload="false"
-    :multiple="false"
-    :max="1"
+    :multiple="multiple"
+    :max="multiple ? 0 : 1"
     :files="files"
     :aria-required="required || undefined"
     :aria-invalid="invalid || undefined"
@@ -20,7 +20,7 @@
       <ScButton variant="secondary" size="small" type="button" :disabled="disabled">{{ chooseLabel }}</ScButton>
     </template>
     <template #file-list-display>
-      <span class="sc-file-field__name" :title="selectedName || emptyLabel">{{ selectedName || emptyLabel }}</span>
+      <span class="sc-file-field__name" :title="displayName || emptyLabel">{{ displayName || emptyLabel }}</span>
     </template>
   </TDesignUpload>
 </template>
@@ -31,28 +31,33 @@ import ScButton from './ScButton.vue';
 import { semanticPrimitiveIdentity } from './primitiveAdapter';
 import { TDesignUpload } from './tdesignPrimitiveBridge';
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   id?: string; accept?: string; disabled?: boolean; required?: boolean; invalid?: boolean;
-  describedBy?: string; chooseLabel?: string; emptyLabel?: string;
+  describedBy?: string; chooseLabel?: string; emptyLabel?: string; multiple?: boolean;
 }>(), {
   id: undefined, accept: '', disabled: false, required: false, invalid: false,
-  describedBy: undefined, chooseLabel: '选择文件', emptyLabel: '未选择文件',
+  describedBy: undefined, chooseLabel: '选择文件', emptyLabel: '未选择文件', multiple: false,
 });
 
 type UploadFileLike = { name?: string; raw?: File };
-const emit = defineEmits<{ change: [file: File | null] }>();
-const selected = ref<File | null>(null);
-const selectedName = computed(() => selected.value?.name || '');
-const files = computed<UploadFileLike[]>(() => selected.value ? [{ name: selected.value.name, raw: selected.value }] : []);
+const selected = ref<File[]>([]);
+const displayName = computed(() => {
+  if (selected.value.length === 0) return '';
+  if (selected.value.length === 1) return selected.value[0].name;
+  return `已选择 ${selected.value.length} 个文件`;
+});
+const files = computed<UploadFileLike[]>(() => selected.value.map(f => ({ name: f.name, raw: f })));
+
+const emit = defineEmits<{ change: [files: File[]] }>();
 
 function handleSelectChange(nextFiles: File[]) {
-  selected.value = nextFiles[0] || null;
+  selected.value = nextFiles || [];
   emit('change', selected.value);
 }
 
 function clearSelection() {
-  selected.value = null;
-  emit('change', null);
+  selected.value = [];
+  emit('change', []);
 }
 </script>
 

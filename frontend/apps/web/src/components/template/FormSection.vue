@@ -167,7 +167,7 @@
                   :required="field.required"
                   :invalid="field.invalid"
                   :described-by="fieldDescribedBy(field)"
-                  @change="emitBinaryFieldChange(field, $event)"
+                  @change="emitBinaryFieldChange(field, $event[0] || null)"
                 />
                 <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field)" :field="field">
                 <div :class="['many2one-widget-shell', { 'many2one-widget-shell--avatar': isAvatarMany2oneWidget(field) }]">

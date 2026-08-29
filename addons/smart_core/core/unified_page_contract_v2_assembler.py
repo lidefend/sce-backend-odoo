@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 from copy import deepcopy
 from typing import Any
+
+_logger = logging.getLogger(__name__)
 
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
@@ -1418,7 +1421,7 @@ def _form_layout_field_labels(ui: dict[str, Any]) -> dict[str, str]:
         if isinstance(obj, dict):
             node_type = _text(obj.get("type") or obj.get("kind")).lower()
             name = _text(obj.get("name") or obj.get("field"))
-            if node_type == "field" and name and name not in labels:
+            if node_type == "field" and name:
                 field_info = _dict(obj.get("fieldInfo") or obj.get("field_info"))
                 label = _text(obj.get("string") or obj.get("label") or field_info.get("string") or field_info.get("label"))
                 if label:
@@ -1540,7 +1543,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "widgetId": widget_id,
         "widgetType": widget_type,
         "fieldCode": field_name,
-        "label": _text(field.get("string") or field.get("label"), field_name),
+        "label": _text(field.get("string") or field.get("label"), field_name) if field_name != "company_type" else "主体类型",
         "span": 12 if layout_type == "table" else 6,
         "componentKey": component_key,
         "capabilities": capabilities,

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- 业务伙伴分类（res.partner.category）基础数据 -->
+        <!-- 用于客户/供应商档案的业务分类标签 -->
+
+        <record id="sc_demo_partner_category_other" model="res.partner.category">
+            <field name="name">其他</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_equipment_supplier" model="res.partner.category">
+            <field name="name">设备供应商</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_service_supplier" model="res.partner.category">
+            <field name="name">服务供应商</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_subcontractor" model="res.partner.category">
+            <field name="name">分包单位</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_labor_supplier" model="res.partner.category">
+            <field name="name">劳务供应商</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_material_supplier" model="res.partner.category">
+            <field name="name">材料供应商</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_construction_owner" model="res.partner.category">
+            <field name="name">建设单位</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_design_unit" model="res.partner.category">
+            <field name="name">设计单位</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_supervision_unit" model="res.partner.category">
+            <field name="name">监理单位</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="sc_demo_partner_category_consulting_unit" model="res.partner.category">
+            <field name="name">咨询单位</field>
+            <field name="active">1</field>
+        </record>
+
+    </data>
+</odoo>

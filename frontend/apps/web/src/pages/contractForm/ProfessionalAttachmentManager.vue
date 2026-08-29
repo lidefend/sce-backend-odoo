@@ -12,7 +12,7 @@
         :disabled="uploading"
         :choose-label="uploading ? uploadingLabel : uploadLabel"
         empty-label=""
-        @change="emit('selected', $event)"
+        @change="emit('selected', $event[0] || null)"
       />
       <ScInlineState v-if="error" class="validation-error native-chatter-message" state="error" :label="error" />
     </section>
