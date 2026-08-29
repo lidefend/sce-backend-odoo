@@ -25,6 +25,7 @@ export {
   TDesignMenuItem,
   TDesignPagination,
   TDesignPopconfirm,
+  TDesignPopup,
   TDesignProgress,
   TDesignCard,
   TDesignCollapse,
