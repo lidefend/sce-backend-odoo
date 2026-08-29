@@ -72,6 +72,7 @@ def adapt_ui_base_contract(payload: Dict[str, Any] | None, *, scene_key: str = "
     workflow = _as_dict(base.get("workflow"))
     validation = _as_dict(base.get("validator") or base.get("validation"))
     actions = _extract_actions(base)
+    collaboration = _as_dict(base.get("collaboration"))
 
     view_fact = {
         "model": _text(base.get("model")),
@@ -120,6 +121,7 @@ def adapt_ui_base_contract(payload: Dict[str, Any] | None, *, scene_key: str = "
         "validation": validation_fact,
         "validator": validation_fact,
         "actions": {"items": actions},
+        "collaboration": collaboration,
     }
 
     return {
