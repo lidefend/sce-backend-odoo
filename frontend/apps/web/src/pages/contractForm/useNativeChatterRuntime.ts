@@ -222,9 +222,11 @@ export function useNativeChatterRuntime(params: {
         subject: activeLabel.value,
         mode: activeMode.value === 'note' ? 'note' : 'message',
         mention_user_ids: selectedMentionUserIds.value,
+        parent_id: replyTarget.value?.id,
       });
       draft.value = '';
       selectedMentionUserIds.value = [];
+      replyTarget.value = null;
       error.value = '';
       await loadTimeline();
     } catch (err) {
@@ -284,6 +286,9 @@ export function useNativeChatterRuntime(params: {
     activityUpdatingIds,
     clearForRecordLoad,
     closeComposer,
+    replyTarget,
+    setReplyTarget,
+    clearReplyTarget,
     loadTimeline,
     loadMoreTimeline,
     loadUsers,

@@ -65,6 +65,7 @@ class ChatterPostHandler(BaseIntentHandler):
         res_id = params.get("res_id") if "res_id" in params else params.get("record_id")
         body = params.get("body")
         subject = params.get("subject")
+        parent_id = params.get("parent_id")
         mode = str(params.get("mode") or "message").strip().lower()
         explicit_user_ids = _list_ints(params.get("mention_user_ids") or params.get("mentioned_user_ids"))
         explicit_partner_ids = _list_ints(params.get("partner_ids") or params.get("mention_partner_ids"))
@@ -119,6 +120,7 @@ class ChatterPostHandler(BaseIntentHandler):
                 subject=subject,
                 subtype_xmlid=subtype_xmlid,
                 partner_ids=mention_partner_ids,
+                parent_id=parent_id,
             )
             return {
                 "ok": True,
@@ -174,7 +176,7 @@ class ChatterPostHandler(BaseIntentHandler):
         partner_ids = users.mapped("partner_id").ids
         return [int(pid) for pid in partner_ids if pid]
 
-    def _create_log_message(self, *, model: str, record_id: int, body: str, subject, subtype_xmlid: str, partner_ids: List[int]):
+    def _create_log_message(self, *, model: str, record_id: int, body: str, subject, subtype_xmlid: str, partner_ids: List[int], parent_id=None):
         subtype = self.env.ref(subtype_xmlid, raise_if_not_found=False)
         vals = {
             "model": model,
@@ -185,6 +187,13 @@ class ChatterPostHandler(BaseIntentHandler):
             "author_id": self.env.user.partner_id.id,
             "email_from": _resolve_email_from(self.env.user),
         }
+        if parent_id:
+            try:
+                parent_id_int = int(parent_id)
+                if parent_id_int > 0:
+                    vals["parent_id"] = parent_id_int
+            except (TypeError, ValueError):
+                pass
         if subtype:
             vals["subtype_id"] = subtype.id
         message = self.env["mail.message"].with_context(

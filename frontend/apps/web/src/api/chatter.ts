@@ -75,6 +75,7 @@ export async function postChatterMessage(params: {
   subject?: string;
   mode?: 'message' | 'note';
   mention_user_ids?: number[];
+  parent_id?: number;
 }) {
   return intentRequest<{ result: { message_id: number } }>({
     intent: 'chatter.post',
@@ -85,6 +86,7 @@ export async function postChatterMessage(params: {
       subject: params.subject,
       mode: params.mode,
       mention_user_ids: params.mention_user_ids,
+      parent_id: params.parent_id,
     },
   });
 }
