@@ -1,16 +1,23 @@
 <template>
   <TDesignButton ref="buttonRef" variant="text" theme="default" shape="square" size="medium"
-    class="sc-icon-button" type="button" :aria-label="label" :title="label" :disabled="disabled"
+    :class="['sc-icon-button', attrs.class]" :style="attrs.style" type="button" :aria-label="label" :title="label" :disabled="disabled"
     :data-appearance="appearance"
+    v-bind="restAttrs"
     data-semantic-component="ScIconButton" data-semantic-driver="tdesign-button" data-semantic-layer="primitive">
     <span aria-hidden="true"><slot /></span>
   </TDesignButton>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, useAttrs } from 'vue';
 import { TDesignButton } from './tdesignPrimitiveBridge';
-withDefaults(defineProps<{ label: string; disabled?: boolean; appearance?: 'default' | 'toolbar-menu-toggle' | 'favorite-toggle' | 'outline-action' | 'column-handle' | 'activity-rail' }>(), {
+const props = withDefaults(defineProps<{ label: string; disabled?: boolean; appearance?: 'default' | 'toolbar-menu-toggle' | 'favorite-toggle' | 'outline-action' | 'column-handle' | 'activity-rail' }>(), {
   appearance: 'default',
+});
+
+const attrs = useAttrs();
+const restAttrs = computed(() => {
+  const { class: _class, style: _style, ...rest } = attrs;
+  return rest;
 });
 
 const buttonRef = ref<{ $el?: HTMLElement } | null>(null);
@@ -22,4 +29,7 @@ defineExpose({
     target?.focus();
   },
 });
+</script>
+<script lang="ts">
+export default { inheritAttrs: false };
 </script>
