@@ -140,3 +140,80 @@ export function parseAttachmentEntry(entry: ChatterTimelineEntry): ParsedAttachm
     icon: getFileIcon(mimetype),
   };
 }
+
+// 消息条目解析
+export interface ParsedMessageInfo {
+  author: string;
+  body: string;
+  at?: string;
+  atLabel?: string;
+  icon: string;
+}
+
+export function parseMessageEntry(entry: ChatterTimelineEntry): ParsedMessageInfo {
+  const body = entry.body || entry.title || '';
+  // 尝试从 body 中解析发送者（格式："作者 · 内容" 或 "作者: 内容"）
+  let author = entry.typeLabel || '消息';
+  let content = body;
+
+  const authorMatch = body.match(/^([^·:：]{1,20})[·:：]\s*(.+)$/);
+  if (authorMatch) {
+    author = authorMatch[1].trim();
+    content = authorMatch[2].trim();
+  }
+
+  return {
+    author,
+    body: content,
+    at: entry.at,
+    atLabel: entry.at ? formatCollaborationTimelineMeta(entry.at) : undefined,
+    icon: '💬',
+  };
+}
+
+// 活动条目解析
+export interface ParsedActivityInfo {
+  title: string;
+  assignee?: string;
+  deadline?: string;
+  deadlineLabel?: string;
+  activityType?: string;
+  canComplete: boolean;
+  canCancel: boolean;
+  at?: string;
+  atLabel?: string;
+  icon: string;
+  status: 'pending' | 'done' | 'canceled' | 'overdue';
+  statusLabel: string;
+}
+
+export function parseActivityEntry(entry: ChatterTimelineEntry): ParsedActivityInfo {
+  const activity = entry.activity || {};
+  const title = entry.title || entry.body || '待办活动';
+  const now = new Date();
+  const deadline = activity.deadline ? new Date(activity.deadline) : undefined;
+
+  let status: ParsedActivityInfo['status'] = 'pending';
+  let statusLabel = '待处理';
+
+  // 简单状态判断（实际状态应从后端获取）
+  if (deadline && deadline < now) {
+    status = 'overdue';
+    statusLabel = '已逾期';
+  }
+
+  return {
+    title,
+    assignee: activity.assignee_name,
+    deadline: activity.deadline,
+    deadlineLabel: deadline ? formatCollaborationTimelineMeta(activity.deadline!) : undefined,
+    activityType: activity.activity_type,
+    canComplete: Boolean(activity.can_complete),
+    canCancel: Boolean(activity.can_cancel),
+    at: entry.at,
+    atLabel: entry.at ? formatCollaborationTimelineMeta(entry.at) : undefined,
+    icon: '📋',
+    status,
+    statusLabel,
+  };
+}
