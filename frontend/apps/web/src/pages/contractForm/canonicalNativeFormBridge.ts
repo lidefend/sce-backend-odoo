@@ -132,6 +132,8 @@ function fieldNode(
       canonicalNodeKind: 'field',
       sectionNavigationRole: sourceNode?.zoneRole,
       contractStyleToken: sourceNode?.styleToken,
+      surfaceRole: text((field.componentConfig as Record<string, unknown>)?.surfaceRole),
+      technical: (field.componentConfig as Record<string, unknown>)?.technical === true,
     },
     children: [],
   };
@@ -235,7 +237,12 @@ export function buildCanonicalNativeFormBridge(
       };
     },
     nodeVisible(node) {
-      return node.visible !== false;
+      if (node.visible === false) return false;
+      const attrs = (node.attributes || {}) as Record<string, unknown>;
+      const surfaceRole = text(attrs.surfaceRole);
+      if (surfaceRole === 'hidden') return false;
+      if (attrs.technical === true) return false;
+      return true;
     },
   };
 }

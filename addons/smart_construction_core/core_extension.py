@@ -544,6 +544,11 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
     )
     _sc_normalize_construction_diary_form(out, source, model=model, view_type=view_type)
+    # res.partner 表单：隐藏国家/地区字段（由省/州级联 domain 自动确定）
+    # 隐藏销售员字段（产品面不展示，由后台逻辑维护）
+    if model == "res.partner" and view_type == "form":
+        _sc_hide_v2_widget_field(out, "country_id")
+        _sc_hide_v2_widget_field(out, "user_id")
     if model != "project.project" or view_type != "form":
         return out if out != contract else None
     # An action-bound form view is the structural authority.  Project-wide
@@ -596,6 +601,47 @@ def _sc_field_name(node: Any) -> str:
 
 def _sc_collect_field_nodes(nodes: Any, existing: dict[str, dict[str, Any]]) -> None:
     _contract_helpers.sc_collect_field_nodes(nodes, existing)
+
+
+def _sc_hide_v2_widget_field(contract: dict[str, Any], field_name: str) -> None:
+    """在 ui.contract.v2 契约的 layoutContract.containerTree 中隐藏指定字段的 widget。
+    遍历所有 container 的 widgetList，找到 fieldCode 匹配的 widget，
+    设置 componentConfig.surfaceRole = "hidden"。
+    """
+    if not isinstance(contract, dict):
+        return
+    layout = contract.get("layoutContract")
+    if not isinstance(layout, dict):
+        return
+    container_tree = layout.get("containerTree")
+    if not isinstance(container_tree, list):
+        return
+
+    def _hide_in_widgets(widgets: list[Any]) -> None:
+        for widget in widgets:
+            if not isinstance(widget, dict):
+                continue
+            widget_field = str(widget.get("fieldCode") or widget.get("field_code") or "").strip()
+            if widget_field == field_name:
+                component_config = widget.get("componentConfig")
+                if not isinstance(component_config, dict):
+                    component_config = {}
+                component_config["surfaceRole"] = "hidden"
+                component_config["technical"] = True
+                widget["componentConfig"] = component_config
+
+    def _walk_containers(containers: list[Any]) -> None:
+        for container in containers:
+            if not isinstance(container, dict):
+                continue
+            widget_list = container.get("widgetList")
+            if isinstance(widget_list, list):
+                _hide_in_widgets(widget_list)
+            children = container.get("children")
+            if isinstance(children, list):
+                _walk_containers(children)
+
+    _walk_containers(container_tree)
 
 
 def _sc_set_v2_container_tree(contract: dict[str, Any], container_tree: list[Any]) -> None:
@@ -1247,6 +1293,19 @@ def smart_core_finalize_projected_contract_data(env, data, context):
             return projected
         except Exception:
             _logger.exception("Failed to finalize project form contract surface")
+            return None
+    # res.partner 表单表面治理：隐藏国家/地区字段（由省/州级联 domain 自动确定）
+    if model == "res.partner" and (view_type == "form" or isinstance((data.get("views") or {}).get("form") if isinstance(data.get("views"), dict) else None, dict)):
+        projected = dict(data)
+        try:
+            from odoo.addons.smart_construction_core.services.contract_governance_overrides import (
+                _apply_partner_form_surface_governance,
+            )
+
+            _apply_partner_form_surface_governance(projected, "user")
+            return projected
+        except Exception:
+            _logger.exception("Failed to finalize partner form contract surface")
             return None
     try:
         action_id = int(data.get("action_id") or head.get("action_id") or 0)

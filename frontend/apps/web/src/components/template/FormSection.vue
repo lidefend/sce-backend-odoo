@@ -174,7 +174,7 @@
                   <span v-if="isAvatarMany2oneWidget(field)" class="many2one-avatar" aria-hidden="true">
                     {{ avatarText(many2oneTextValue(field)) }}
                   </span>
-                  <div :class="['many2one-combobox', { 'is-open': many2oneFocusedField === field.name }]">
+                  <div class="many2one-combobox">
                     <ScRelationField
                       :id="fieldControlId(field)"
                       class="input"
@@ -186,7 +186,7 @@
                       :placeholder="selectPlaceholderText(field)"
                       role="combobox"
                       aria-autocomplete="list"
-                      :aria-expanded="many2oneFocusedField === field.name && hasMany2oneDropdown(field)"
+                      :aria-expanded="isMany2oneOpen(field)"
                       :aria-controls="many2oneListboxId(field)"
                       :aria-activedescendant="many2oneActiveDescendant(field)"
                       @update:model-value="emitMany2oneQuery(field, $event)"
@@ -195,7 +195,7 @@
                       @keydown="handleMany2oneKeydown(field, $event)"
                       @blur="blurMany2one(field, $event)"
                     />
-                    <div v-if="hasMany2oneDropdown(field)" :id="many2oneListboxId(field)" class="many2one-option-panel" role="listbox">
+                    <div v-if="isMany2oneOpen(field)" :id="many2oneListboxId(field)" class="many2one-option-panel" role="listbox">
                       <div v-if="field.relationOptions?.length" class="many2one-option-list" role="presentation">
                         <ScButton
                           v-for="(option, optionIndex) in field.relationOptions.filter(Boolean).slice(0, 8)"
@@ -683,6 +683,10 @@ function hasMany2oneDropdown(field: FormSectionFieldSchema) {
   );
 }
 
+function isMany2oneOpen(field: FormSectionFieldSchema) {
+  return many2oneFocusedField.value === field.name && hasMany2oneDropdown(field);
+}
+
 function avatarText(label: string) {
   const text = String(label || '').trim();
   return text ? text.slice(0, 1).toUpperCase() : '';
@@ -843,7 +847,10 @@ function many2oneActiveDescendant(field: FormSectionFieldSchema) {
 function focusMany2one(field: FormSectionFieldSchema) {
   many2oneFocusedField.value = field.name;
   many2oneActiveIndex.value[field.name] = -1;
-  emitMany2oneQuery(field, many2oneTextValue(field));
+  // 已有缓存选项时直接显示，避免聚焦即重复查询；用户输入会触发新查询
+  if (!field.relationOptions?.length) {
+    emitMany2oneQuery(field, many2oneTextValue(field));
+  }
 }
 
 function blurMany2one(field: FormSectionFieldSchema, event: FocusEvent) {
@@ -1384,17 +1391,13 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   top: calc(100% + 2px);
   left: 0;
   right: 0;
-  display: none;
+  display: grid;
   max-height: 260px;
   overflow: auto;
   border: 1px solid var(--sc-app-border-strong);
   border-radius: var(--sc-component-panel-radius);
   background: var(--sc-app-panel);
   box-shadow: var(--sc-semantic-shadow-modal);
-}
-
-.many2one-combobox.is-open .many2one-option-panel {
-  display: grid;
 }
 
 .many2one-option-list {

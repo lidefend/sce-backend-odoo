@@ -332,7 +332,8 @@ export function resolveContractV2FieldDescriptorMap(
 ): ContractV2FieldDescriptorMap {
   const out: ContractV2FieldDescriptorMap = {};
   if (!store) return out;
-  const widgetsByFieldCode = store.widgetsByFieldCode instanceof Map
+  const isMap = store.widgetsByFieldCode instanceof Map;
+  const widgetsByFieldCode = isMap
     ? store.widgetsByFieldCode
     : new Map(Array.from(store.widgetsByFieldCodeAll?.entries?.() || []).flatMap(([fieldCode, widgets]) => (
       widgets.length === 1 ? [[fieldCode, widgets[0]] as const] : []
