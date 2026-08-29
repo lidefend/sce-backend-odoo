@@ -4,7 +4,7 @@
     data-component="FormSection"
     data-semantic-component="FormSection"
     :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
-    :title="showHead ? title : undefined"
+    :title="undefined"
     :appearance="preferReadonlyFacts ? 'fact' : 'form-section'"
   >
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
@@ -561,35 +561,42 @@ function fieldIdentity(field: FormSectionFieldSchema) {
   return String(field.name || field.key || '').trim();
 }
 
+// TDesign 24 栅格系统字段宽度映射
+const FIELD_SPAN_UNITS: Record<string, number> = {
+  'field--compact': 8,
+  'field--normal': 12,
+  'field--half': 12,
+  'field--wide': 16,
+  'field--full': 24,
+};
+
+function fieldSpanUnits(spanClass: string): number {
+  return FIELD_SPAN_UNITS[spanClass] ?? 12;
+}
+
 function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
   const explicitSpan = field.spanClass || '';
   const base = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
     ? 'field--full'
     : 'field--normal');
   if (base === 'field--full') return base;
-  const colCount = props.columns;
-  if (colCount >= 2) {
-    // Orphan-column fill: a normal (half/third-width) field that starts a new
-    // row alone leaves blank cells when its row has no pairing fields — either
-    // because it is the last field of the section, or because the next field
-    // spans the full row. Widen such a field to span the full row. This
-    // matches professional form conventions and applies to any column count
-    // (2/3-column grids) and even when the field carries an explicit spanClass
-    // (e.g. canonical/component driven forms) so trailing normal fields never
-    // leave a blank half/third.
-    let units = 0;
-    for (let i = 0; i < index; i++) {
-      const prev = props.fields[i];
-      const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
-      units += prevSpan === 'field--normal' ? 1 : colCount;
-    }
-    const isLast = index === props.fields.length - 1;
-    const next = props.fields[index + 1];
-    const nextSpan = next ? (next.spanClass || defaultSpanClass(next.type)) : '';
-    const nextIsFullRow = nextSpan === 'field--full' || nextSpan === 'field--wide';
-    if (units % colCount === 0 && (isLast || nextIsFullRow)) {
-      return 'field--wide';
-    }
+
+  // Orphan-column fill (TDesign 24 栅格系统): a normal/half-width field that
+  // starts a new row alone leaves blank cells when its row has no pairing fields —
+  // either because it is the last field of the section, or because the next field
+  // spans the full row. Widen such a field to span the full row (24 units).
+  let units = 0;
+  for (let i = 0; i < index; i++) {
+    const prev = props.fields[i];
+    const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
+    units += fieldSpanUnits(prevSpan);
+  }
+  const isLast = index === props.fields.length - 1;
+  const next = props.fields[index + 1];
+  const nextSpan = next ? (next.spanClass || defaultSpanClass(next.type)) : '';
+  const nextIsFullRow = nextSpan === 'field--full';
+  if (units % 24 === 0 && (isLast || nextIsFullRow)) {
+    return 'field--full';
   }
   return base;
 }
@@ -1031,10 +1038,26 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 
 .template-form-section-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(24, minmax(0, 1fr));
   row-gap: calc(var(--sc-pattern-task-form-field-gap, 12) * 1px);
-  column-gap: var(--sc-pattern-task-form-column-gap, 20px);
+  column-gap: calc(var(--sc-pattern-task-form-column-gap, 24) * 1px);
   min-width: 0;
+}
+
+/* 小屏幕：1 列布局，减小间隙 */
+@container (max-width: 479px) {
+  .template-form-section-grid {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+  }
+}
+
+/* 中等屏幕：2 列布局 */
+@container (min-width: 480px) and (max-width: 959px) {
+  .template-form-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: calc(var(--sc-pattern-task-form-column-gap, 24) * 1px);
+  }
 }
 
 .template-form-section--readonly .template-form-section-grid {
@@ -1100,41 +1123,45 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   background: color-mix(in srgb, var(--sc-app-muted-bg) 72%, transparent);
 }
 
-.field--compact,
+/* TDesign 24 栅格系统字段宽度映射（大屏幕默认） */
+.field--compact {
+  grid-column: span 8;
+}
+
 .field--normal,
 .field--half {
-  grid-column: span 1;
+  grid-column: span 12;
 }
 
-.field--wide,
+.field--wide {
+  grid-column: span 16;
+}
+
 .field--full {
-  grid-column: 1 / -1;
+  grid-column: span 24;
 }
 
-.template-form-section-grid--columns-1 > .field--wide,
-.template-form-section-grid--columns-1 > .field--full {
-  grid-column: 1 / -1;
-}
-
-.field--large .input {
-  min-height: 92px;
-}
-
-@container (min-width: 560px) {
-  .template-form-section-grid--columns-2,
-  .template-form-section-grid--columns-3 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .template-form-section-grid--columns-2 > .field--wide,
-  .template-form-section-grid--columns-3 > .field--wide {
-    grid-column: span 2;
+/* 小屏幕：1 列布局，所有字段全宽 */
+@container (max-width: 479px) {
+  .field--compact,
+  .field--normal,
+  .field--half,
+  .field--wide,
+  .field--full {
+    grid-column: 1 / -1;
   }
 }
 
-@container (min-width: 1240px) {
-  .template-form-section-grid--columns-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+/* 中等屏幕：2 列布局 */
+@container (min-width: 480px) and (max-width: 959px) {
+  .field--compact,
+  .field--normal,
+  .field--half {
+    grid-column: span 1;
+  }
+  .field--wide,
+  .field--full {
+    grid-column: 1 / -1;
   }
 }
 

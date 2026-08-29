@@ -153,6 +153,8 @@ export interface ContractV2Widget {
   sourcePosition?: number;
   fieldDescriptor?: ContractV2Dictionary;
   formStructureRole?: ContractV2FormStructureRole;
+  fieldType?: string;
+  relation?: string;
 }
 
 export interface ContractV2FieldDescriptor {

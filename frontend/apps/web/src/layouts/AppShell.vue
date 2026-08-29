@@ -308,38 +308,18 @@
             <ScIcon name="sun" :size="16" />
             <span class="topbar-tool-label">主题</span>
           </ScButton>
-          <div ref="stylePickerRef" class="scene-style-picker" data-scene-style-picker @click.stop>
-            <div
-              class="scene-style-picker__trigger"
-              role="button"
-              tabindex="0"
-              :title="`切换界面风格，当前${profileLabel}`"
-              :aria-label="`切换界面风格，当前${profileLabel}`"
-              :aria-expanded="stylePickerOpen"
-              aria-haspopup="listbox"
-              @click="stylePickerOpen = !stylePickerOpen"
-              @keydown.enter.prevent="stylePickerOpen = !stylePickerOpen"
-              @keydown.space.prevent="stylePickerOpen = !stylePickerOpen"
-            >
-              <span class="scene-style-picker__label">界面风格</span>
-              <span class="scene-style-picker__value">{{ profileLabel }}</span>
-              <ScIcon name="chevron-down" :size="14" class="scene-style-picker__caret" />
-            </div>
-            <div v-if="stylePickerOpen" class="scene-style-picker__menu" role="listbox">
-              <div
-                v-for="profile in SCENE_THEME_PROFILES"
-                :key="profile.id"
-                role="option"
-                class="scene-style-picker__option"
-                :class="{ 'is-active': profile.id === profileMode }"
-                @click="setThemeProfile(profile.id)"
-                @keydown.enter.prevent="setThemeProfile(profile.id)"
-              >
-                <span>{{ profile.label }}</span>
-                <ScIcon v-if="profile.id === profileMode" name="check" :size="14" class="scene-style-picker__check" />
-              </div>
-            </div>
-          </div>
+          <ScDropdown
+            :items="themeProfileOptions"
+            placement="bottom-right"
+            @select="(item) => setThemeProfile(item.value as ScThemeProfile)"
+          >
+            <template #trigger>
+              <ScButton variant="ghost" size="small" :title="`切换界面风格，当前${profileLabel}`">
+                {{ profileLabel }}
+                <ScIcon name="chevron-down" :size="14" class="scene-style-picker__caret" />
+              </ScButton>
+            </template>
+          </ScDropdown>
         </div>
       </ScHeader>
 
@@ -410,6 +390,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import GlobalMessagePanel from '../components/GlobalMessagePanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScDropdown from '../components/design-system/ScDropdown.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScIconButton from '../components/design-system/ScIconButton.vue';
 import ScInput from '../components/design-system/ScInput.vue';
@@ -988,8 +969,7 @@ const themeMode = ref<ScTheme>('system');
 const themeLabel = computed(() => (themeMode.value === 'system' ? '跟随系统' : themeMode.value === 'dark' ? '暗色' : '亮色'));
 const profileMode = ref<ScThemeProfile>('enterprise-neutral');
 const profileLabel = computed(() => SCENE_THEME_PROFILES.find((p) => p.id === profileMode.value)?.label ?? '企业中性');
-const stylePickerRef = ref<HTMLElement | null>(null);
-const stylePickerOpen = ref(false);
+const themeProfileOptions = computed(() => SCENE_THEME_PROFILES.map((p) => ({ value: p.id, label: p.label })));
 
 function loadThemeProfile(): ScThemeProfile {
   try {
@@ -1004,11 +984,6 @@ function setThemeProfile(profile: ScThemeProfile): void {
     profileMode.value = profile;
     persistThemeProfile(profile);
   }
-  stylePickerOpen.value = false;
-}
-
-function closeStylePicker(event: MouseEvent): void {
-  if (stylePickerRef.value && !stylePickerRef.value.contains(event.target as Node)) stylePickerOpen.value = false;
 }
 
 function loadThemeMode(): ScTheme {
@@ -1353,7 +1328,6 @@ onMounted(() => {
   window.addEventListener('keydown', handleShellEscape);
   window.addEventListener(getTraceUpdateEventName(), handleTraceUpdate as (event: Event) => void);
   window.addEventListener('click', closeRecordContextMenu);
-  window.addEventListener('click', closeStylePicker);
   handleTraceUpdate();
 });
 
@@ -1371,7 +1345,6 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleShellEscape);
   window.removeEventListener(getTraceUpdateEventName(), handleTraceUpdate as (event: Event) => void);
   window.removeEventListener('click', closeRecordContextMenu);
-  window.removeEventListener('click', closeStylePicker);
   if (recordContextSearchTimer) {
     clearTimeout(recordContextSearchTimer);
     recordContextSearchTimer = null;

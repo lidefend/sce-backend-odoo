@@ -231,92 +231,77 @@
         v-if="adapter.one2manyColumns(field.name).length && adapter.visibleOne2manyRows(field.name).length"
         class="o2m-table-scroll"
       >
-        <div role="table" class="o2m-table">
-          <thead>
-            <tr>
-              <th class="o2m-th-state">状态</th>
-              <th
-                v-for="column in adapter.one2manyColumns(field.name)"
-                :key="`${field.name}-th-${column.name}`"
-                :class="o2mThClass(column)"
-              >{{ column.label }}</th>
-              <th class="o2m-th-action">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="row in paginatedOne2manyRows" :key="row.key">
-              <tr class="o2m-tr">
-                <td class="o2m-td-state">
-                  <span class="o2m-state-badge">{{ adapter.one2manyRowStateLabel(row) }}</span>
-                </td>
-                <td
-                  v-for="column in adapter.one2manyColumns(field.name)"
-                  :key="`${row.key}-td-${column.name}`"
-                  :class="o2mTdClass(column)"
-                >
-                  <ScCheckbox
-                    v-if="column.ttype === 'boolean'"
-                    class="input-checkbox"
-                    :disabled="column.readonly || adapter.busy"
-                    :checked="Boolean(row.values[column.name])"
-                    :label="column.label"
-                    @change="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
-                  />
-                  <ScSelect
-                    v-else-if="column.ttype === 'selection'"
-                    :disabled="column.readonly || adapter.busy"
-                    :model-value="String(row.values[column.name] ?? '')"
-                    :placeholder="adapter.selectPlaceholder(column.label)"
-                    :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
-                    @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
-                  />
-                  <ScInput
-                    v-else
-                    :class="o2mInputClass(column)"
-                    :type="adapter.one2manyColumnInputType(column)"
-                    :disabled="column.readonly || adapter.busy"
-                    :model-value="adapter.one2manyColumnDisplayValue(column, row.values[column.name])"
-                    :placeholder="column.label"
-                    @update:model-value="adapter.setOne2manyRowField(field.name, row.key, column, $event)"
-                  />
-                </td>
-                <td class="o2m-td-action">
-                  <ScButton
-                    class="o2m-row-remove"
-                    type="button"
-                    variant="danger"
-                    size="small"
-                    :aria-label="`移除${adapter.one2manyRowLabel(field.name, row)}`"
-                    :disabled="adapter.busy"
-                    @click="adapter.removeOne2manyRow(field.name, row.key)"
-                  >移除</ScButton>
-                </td>
-              </tr>
-              <tr v-if="o2mRowHasMessages(row)" class="o2m-tr-msgs">
-                <td :colspan="o2mColSpan">
-                  <ScInlineState
-                    v-for="message in o2mRowMessages(row)"
-                    :key="`${row.key}-${message.state}-${message.label}`"
-                    class="o2m-row-message"
-                    :state="message.state"
-                    :label="message.label"
-                  />
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </div>
+        <ScTable
+          :data="o2mTableData"
+          :columns="o2mTableColumns"
+          row-key="id"
+          size="small"
+          :hover="true"
+          :stripe="false"
+          :foot-data="o2mTableFootData"
+          label="明细列表"
+        >
+          <template #_state="{ row }">
+            <div class="o2m-state-cell">
+              <span class="o2m-state-badge">{{ row._stateLabel }}</span>
+              <ScInlineState
+                v-for="message in row._messages"
+                :key="`${row._key}-${message.state}-${message.label}`"
+                class="o2m-row-message"
+                :state="message.state"
+                :label="message.label"
+              />
+            </div>
+          </template>
+          <template
+            v-for="column in adapter.one2manyColumns(field.name)"
+            :key="`cell-${column.name}`"
+            #[column.name]="{ row }"
+          >
+            <ScCheckbox
+              v-if="column.ttype === 'boolean'"
+              class="input-checkbox"
+              :disabled="column.readonly || adapter.busy"
+              :checked="Boolean(row._row.values[column.name])"
+              :label="column.label"
+              @change="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
+            />
+            <ScSelect
+              v-else-if="column.ttype === 'selection'"
+              :disabled="column.readonly || adapter.busy"
+              :model-value="String(row._row.values[column.name] ?? '')"
+              :placeholder="adapter.selectPlaceholder(column.label)"
+              :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
+              @update:model-value="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
+            />
+            <ScInput
+              v-else
+              :class="o2mInputClass(column)"
+              :type="adapter.one2manyColumnInputType(column)"
+              :disabled="column.readonly || adapter.busy"
+              :model-value="adapter.one2manyColumnDisplayValue(column, row._row.values[column.name])"
+              :placeholder="column.label"
+              @update:model-value="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
+            />
+          </template>
+          <template #_action="{ row }">
+            <ScButton
+              class="o2m-row-remove"
+              type="button"
+              variant="danger"
+              size="small"
+              :aria-label="`移除${adapter.one2manyRowLabel(field.name, row._row)}`"
+              :disabled="adapter.busy"
+              @click="adapter.removeOne2manyRow(field.name, row._key)"
+            >移除</ScButton>
+          </template>
+        </ScTable>
       </div>
 
       <div v-else-if="adapter.one2manyColumns(field.name).length" class="o2m-empty" data-o2m-empty>
         <ScIcon name="file-text" :size="24" />
         <p class="o2m-empty-title">暂无明细</p>
         <p class="o2m-empty-hint">点击「{{ adapter.one2manyCreateLabel(field.name, field.label) }}」新增明细</p>
-      </div>
-
-      <div v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-total">
-        <span class="o2m-total-label">明细金额合计</span>
-        <span class="o2m-total-value">{{ o2mAmountTotalText }}</span>
       </div>
 
       <div v-if="adapter.removedOne2manyRows(field.name).length" class="o2m-removed">
@@ -372,6 +357,7 @@ import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import ScSelect from '../design-system/ScSelect.vue';
+import ScTable from '../design-system/ScTable.vue';
 import SettlementIntroduceDialog from './SettlementIntroduceDialog.vue';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
@@ -413,6 +399,50 @@ function o2mInputClass(column: RelationFieldColumn) {
 }
 
 const o2mColSpan = computed(() => props.adapter.one2manyColumns(props.field.name).length + 2);
+
+// ===== TDesign Table 列定义与行数据 =====
+const o2mTableColumns = computed(() => {
+  const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column) => ({
+    colKey: column.name,
+    title: column.label,
+    width: isO2mAmountColumn(column) ? 140 : undefined,
+    align: isO2mAmountColumn(column) ? 'right' : 'left',
+    ellipsis: true,
+  }));
+  return [
+    { colKey: '_state', title: '状态', width: 90, fixed: 'left' },
+    ...fieldColumns,
+    { colKey: '_action', title: '操作', width: 80, fixed: 'right' },
+  ];
+});
+
+const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
+  const rowData: Record<string, unknown> = {
+    id: String(row.key),
+    _row: row,
+    _key: row.key,
+    _stateLabel: props.adapter.one2manyRowStateLabel(row),
+    _hasMessages: o2mRowHasMessages(row),
+    _messages: o2mRowMessages(row),
+  };
+  // 展开字段值到行对象，供 TDesign Table 普通列渲染
+  const columns = props.adapter.one2manyColumns(props.field.name);
+  columns.forEach((column) => {
+    rowData[column.name] = props.adapter.one2manyColumnDisplayValue(column, row.values[column.name]);
+  });
+  return rowData;
+}));
+
+const o2mTableFootData = computed(() => {
+  if (!o2mAmountTotal.value) return [];
+  const footRow: Record<string, unknown> = { id: '__total__' };
+  const columns = props.adapter.one2manyColumns(props.field.name);
+  const amountCol = columns.find((c) => c.name === 'amount');
+  if (amountCol) {
+    footRow[amountCol.name] = o2mAmountTotalText.value;
+  }
+  return [footRow];
+});
 
 const o2mAmountTotal = computed(() => {
   const columns = props.adapter.one2manyColumns(props.field.name);
@@ -1034,6 +1064,41 @@ function tagColorStyle(color: unknown) {
   color: var(--sc-app-info-text);
   font-size: 12px;
   white-space: nowrap;
+}
+
+.o2m-state-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.o2m-table-scroll :deep(.t-table) {
+  font-size: 13px;
+}
+
+.o2m-table-scroll :deep(.t-table__th) {
+  padding: 8px 10px;
+  background: var(--sc-app-muted-bg);
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.o2m-table-scroll :deep(.t-table__td) {
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+
+.o2m-table-scroll :deep(.t-table__tr--hover .t-table__td) {
+  background: var(--sc-app-hover-bg);
+}
+
+.o2m-table-scroll :deep(.t-table__foot .t-table__td) {
+  padding: 8px 10px;
+  background: var(--sc-app-muted-bg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .o2m-tr-msgs td {
