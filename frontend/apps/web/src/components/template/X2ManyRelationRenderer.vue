@@ -248,9 +248,6 @@ watch(one2manyPageCount, (count) => {
   if (one2manyPage.value > count) one2manyPage.value = count;
 });
 
-function isMany2manyTags(field: FormSectionFieldSchema) {
-  return String(field.widget || '').trim().toLowerCase() === 'many2many_tags';
-}
 
 const O2M_AMOUNT_FIELDS = new Set(['amount', 'paid_before_amount', 'remaining_amount', 'current_pay_amount']);
 
@@ -258,25 +255,14 @@ function isO2mAmountColumn(column: RelationFieldColumn) {
   return O2M_AMOUNT_FIELDS.has(column.name) || String(column.ttype).toLowerCase().includes('monet');
 }
 
-function o2mThClass(column: RelationFieldColumn) {
-  return { 'o2m-th-amount': isO2mAmountColumn(column) };
-}
-
-function o2mTdClass(column: RelationFieldColumn) {
-  return { 'o2m-td-amount': isO2mAmountColumn(column) };
-}
 
 function o2mInputClass(column: RelationFieldColumn) {
   return { 'o2m-input-amount': isO2mAmountColumn(column) };
 }
-
-const o2mColSpan = computed(() => props.adapter.one2manyColumns(props.field.name).length + 2);
-
 // ===== TDesign Table 列定义与行数据 =====
 const o2mTableColumns = computed(() => {
   const fieldColumns = props.adapter.one2manyColumns(props.field.name).map((column) => ({
     colKey: column.name,
-    title: column.label,
     width: isO2mAmountColumn(column) ? 140 : undefined,
     align: isO2mAmountColumn(column) ? 'right' : 'left',
     ellipsis: true,

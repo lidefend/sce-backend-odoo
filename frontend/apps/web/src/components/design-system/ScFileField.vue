@@ -31,7 +31,7 @@ import ScButton from './ScButton.vue';
 import { semanticPrimitiveIdentity } from './primitiveAdapter';
 import { TDesignUpload } from './tdesignPrimitiveBridge';
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   id?: string; accept?: string; disabled?: boolean; required?: boolean; invalid?: boolean;
   describedBy?: string; chooseLabel?: string; emptyLabel?: string; multiple?: boolean;
 }>(), {
