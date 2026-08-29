@@ -586,3 +586,100 @@
 .native-pending-attachment-item .native-chatter-attachment-icon {
   opacity: 0.7;
 }
+
+
+/* ===== 时间线过渡动画和交互细节 ===== */
+
+/* 时间线条目入场动画 */
+@keyframes native-chatter-entry-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.native-chatter-entry {
+  animation: native-chatter-entry-enter 0.3s ease-out;
+}
+
+/* 时间线条目依次延迟入场 */
+.native-chatter-entry:nth-child(1) { animation-delay: 0.0s; }
+.native-chatter-entry:nth-child(2) { animation-delay: 0.05s; }
+.native-chatter-entry:nth-child(3) { animation-delay: 0.1s; }
+.native-chatter-entry:nth-child(4) { animation-delay: 0.15s; }
+.native-chatter-entry:nth-child(5) { animation-delay: 0.2s; }
+.native-chatter-entry:nth-child(6) { animation-delay: 0.25s; }
+.native-chatter-entry:nth-child(7) { animation-delay: 0.3s; }
+.native-chatter-entry:nth-child(8) { animation-delay: 0.35s; }
+
+/* 附件图标悬停效果 */
+.native-chatter-attachment-icon {
+  transition: transform 0.2s ease;
+}
+
+.native-chatter-attachment-item:hover .native-chatter-attachment-icon {
+  transform: scale(1.1);
+}
+
+/* 附件名称悬停效果 */
+.native-chatter-attachment-name {
+  transition: color 0.2s ease;
+}
+
+.native-chatter-attachment-item:hover .native-chatter-attachment-name {
+  color: var(--sc-app-primary, #1677ff);
+}
+
+/* 消息内容过渡 */
+.native-chatter-message-body {
+  transition: background-color 0.2s ease;
+}
+
+/* 活动状态标签过渡 */
+.native-chatter-activity-status {
+  transition: all 0.2s ease;
+}
+
+.native-chatter-activity-item:hover .native-chatter-activity-status {
+  transform: scale(1.05);
+}
+
+/* 操作按钮过渡 */
+.native-chatter-entry-actions {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+}
+
+.native-chatter-entry:hover .native-chatter-entry-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* 加载更多按钮点击反馈 */
+.native-chatter-load-more:active {
+  transform: scale(0.98);
+}
+
+/* 面板标题过渡 */
+.native-chatter-block > h3 {
+  transition: color 0.2s ease;
+}
+
+.native-chatter-block > h3:hover {
+  color: var(--sc-app-primary, #1677ff);
+}
+
+/* 面板标题竖线过渡 */
+.native-chatter-block > h3::before {
+  transition: all 0.2s ease;
+}
+
+.native-chatter-block > h3:hover::before {
+  height: 16px;
+  background: var(--sc-app-primary-hover, #4096ff);
+}
