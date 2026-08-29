@@ -46,7 +46,7 @@
       :invalid="field.invalid"
       :described-by="describedBy"
       :placeholder="placeholder"
-      :options="(field.selectionOptions || []).map((option) => ({ value: option.value, label: option.label }))"
+      :options="(field.selectionOptions || []).filter(Boolean).map((option) => ({ value: option.value, label: option.label }))"
       @update:model-value="emitValue"
     />
     <ScDateField

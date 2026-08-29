@@ -69,7 +69,7 @@ const canEdit = computed(() => {
 });
 const fieldType = computed(() => props.descriptor?.ttype || props.descriptor?.type || '');
 const isSelection = computed(() => fieldType.value === 'selection');
-const selectionOptions = computed(() => (Array.isArray(props.descriptor?.selection) ? props.descriptor?.selection : []));
+const selectionOptions = computed(() => (Array.isArray(props.descriptor?.selection) ? props.descriptor?.selection.filter((o) => Array.isArray(o) && o.length >= 2) : []));
 const isRelational = computed(() => ['one2many', 'many2many'].includes(String(fieldType.value)));
 const relationIds = computed(() => {
   if (!Array.isArray(props.value)) return [];

@@ -26,7 +26,7 @@
       :disabled="field.readonly"
       :status="field.invalid ? 'error' : 'default'"
       :placeholder="placeholder || '请选择'"
-      :options="choiceOptions.map((option) => ({ value: option.value, label: option.label }))"
+      :options="choiceOptions.filter(Boolean).map((option) => ({ value: option.value, label: option.label }))"
       @update:model-value="$emit('update:value', $event)"
     />
     <ScInput

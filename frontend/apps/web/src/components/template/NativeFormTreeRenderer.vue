@@ -501,6 +501,7 @@ const SMART_BUTTON_DIRECT_LIMIT = 4;
 const visibleNodes = computed(() => (props.nodes || []).filter((node) => isNodeRenderable(node)));
 
 function isNodeRenderable(node: NativeFormLayoutNode): boolean {
+  if (!node) return false;
   if (!props.isNodeVisible(node)) return false;
   const type = nodeType(node);
   // Empty-container guard: a group/page/container with no title, no static
@@ -517,9 +518,10 @@ function isNodeRenderable(node: NativeFormLayoutNode): boolean {
 }
 
 function hasRenderableDescendant(node: NativeFormLayoutNode, seen: Set<object>): boolean {
-  if (seen.has(node)) return false;
+  if (!node || seen.has(node)) return false;
   seen.add(node);
   for (const child of rawChildren(node)) {
+    if (!child) continue;
     if (!props.isNodeVisible(child)) continue;
     const childType = nodeType(child);
     if (['field', 'button', 'widget'].includes(childType)) return true;
