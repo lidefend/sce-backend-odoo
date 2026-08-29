@@ -2,7 +2,7 @@
    Do not infer the device class from the content container: a desktop sidebar,
    browser zoom or shell layout can narrow that container and must not silently
    replace the user's table with cards. */
-@media (max-width: 768px) {
+@media (max-width: 576px) {
   .list-toolbar {
     position: static;
     padding: var(--sc-space-2xs) 0 var(--sc-space-xs);
