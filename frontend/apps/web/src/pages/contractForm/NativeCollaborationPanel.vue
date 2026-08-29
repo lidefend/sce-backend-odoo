@@ -144,6 +144,7 @@ export type NativeCollaborationPanelProps = {
   timelineHasMore: boolean;
   timelineLoading: boolean;
   activityUpdatingIds: number[];
+  replyTarget: { id: number; author: string; body: string } | null;
 };
 
 export type NativeCollaborationPanelListeners = {
@@ -198,6 +199,12 @@ const emit = defineEmits<{
 
 function forwardActivityUpdate(entry: ChatterTimelineEntry, action: 'done' | 'cancel') {
   emit('update-activity', entry, action);
+}
+
+function handleReply(entry: ChatterTimelineEntry) {
+  const messageInfo = entry.message;
+  if (!messageInfo) return;
+  emit('reply', entry);
 }
 
 </script>

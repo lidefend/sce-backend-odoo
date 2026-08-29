@@ -118,6 +118,7 @@ export function useRecordCollaborationPresentation(context: {
     activeIsActivity: activeChatterIsActivity.value, activeMode: context.activeChatterMode.value,
     activePlaceholder: activeChatterPlaceholder.value, activePostingLabel: activeChatterPostingLabel.value,
     activeSubmitLabel: activeChatterSubmitLabel.value, activityUpdatingIds: context.activityUpdatingIds.value,
+    replyTarget: context.replyTarget.value,
     attachmentError: context.attachmentError.value, attachmentUploadLabel: nativeAttachmentUploadLabel.value,
     attachmentUploading: context.attachmentUploading.value, attachmentUploadingLabel: nativeAttachmentUploadingLabel.value,
     attachmentViewLabel: nativeAttachmentViewLabel.value, busy: context.busy.value, chatterDraft: context.chatterDraft.value,

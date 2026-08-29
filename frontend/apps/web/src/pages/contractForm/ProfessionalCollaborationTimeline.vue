@@ -37,6 +37,7 @@
               <div class="native-chatter-message-header">
                 <span class="native-chatter-message-author">{{ messageInfo(entry).author }}</span>
                 <span v-if="messageInfo(entry).atLabel" class="native-chatter-message-time">{{ messageInfo(entry).atLabel }}</span>
+                <ScButton variant="ghost" size="small" class="native-chatter-message-reply" @click="emit('reply', entry)">回复</ScButton>
               </div>
               <span class="native-chatter-message-body">{{ messageInfo(entry).body }}</span>
             </div>
@@ -96,6 +97,7 @@ const emit = defineEmits<{
   'update-activity': [entry: ChatterTimelineEntry, action: 'done' | 'cancel'];
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
   'load-more': [];
+  'reply': [entry: ChatterTimelineEntry];
 }>();
 
 function entryId(entry: ChatterTimelineEntry) { return Number(entry.activity?.id || entry.id || 0); }

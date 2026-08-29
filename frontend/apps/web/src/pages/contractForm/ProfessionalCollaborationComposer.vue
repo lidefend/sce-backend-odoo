@@ -6,6 +6,14 @@
     :data-state="posting ? 'loading' : submitDisabled ? 'disabled' : 'ready'"
     :data-composer-mode="activity ? 'activity' : 'comment'"
   >
+    <div v-if="replyTarget" class="native-chatter-reply-target">
+      <span class="native-chatter-reply-icon">↩</span>
+      <div class="native-chatter-reply-content">
+        <span class="native-chatter-reply-author">{{ replyTarget.author }}</span>
+        <span class="native-chatter-reply-body">{{ replyTarget.body }}</span>
+      </div>
+      <ScButton variant="ghost" size="small" class="native-chatter-reply-clear" @click="emit('clear-reply-target')">×</ScButton>
+    </div>
     <template v-if="activity">
       <label class="native-chatter-field">
         <span>{{ activityAssigneeLabel }}</span>
@@ -64,6 +72,7 @@ import ScTextarea from '../../components/design-system/ScTextarea.vue';
 defineProps<{
   activity: boolean;
   posting: boolean;
+  replyTarget: { id: number; author: string; body: string } | null;
   usersLoading: boolean;
   draft: string;
   placeholder: string;
@@ -98,6 +107,7 @@ const emit = defineEmits<{
   'update:activityNote': [value: string];
   submit: [];
   cancel: [];
+  'clear-reply-target': [];
 }>();
 
 function emitCollaborationUserQuery(value: string) {
