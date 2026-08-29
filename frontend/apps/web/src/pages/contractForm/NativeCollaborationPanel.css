@@ -731,3 +731,41 @@
 .native-attachment-drag-over .native-attachment-upload {
   display: none;
 }
+
+
+/* ===== 多文件上传提示样式 ===== */
+
+.native-attachment-upload-hint {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--sc-app-text-secondary);
+  vertical-align: middle;
+}
+
+/* 待上传附件列表多文件时的样式 */
+.native-pending-attachments {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.native-pending-attachments::-webkit-scrollbar {
+  width: 4px;
+}
+
+.native-pending-attachments::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.native-pending-attachments::-webkit-scrollbar-thumb {
+  background: var(--sc-app-border-strong);
+  border-radius: 2px;
+}
+
+/* 待上传附件数量提示 */
+.native-pending-attachments-count {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: var(--sc-app-text-secondary);
+}

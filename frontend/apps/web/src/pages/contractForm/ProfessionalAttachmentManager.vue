@@ -25,7 +25,7 @@
         :disabled="uploading"
         :choose-label="uploading ? uploadingLabel : uploadLabel"
         empty-label=""
-        @change="emit('selected', $event[0] || null)"
+        @change="onFilesSelected($event)"
       />
       <ScInlineState v-if="error" class="validation-error native-chatter-message" state="error" :label="error" />
     </section>
@@ -75,8 +75,18 @@ function onDrop(event: DragEvent) {
   isDragOver.value = false;
   const files = event.dataTransfer?.files;
   if (files && files.length > 0) {
-    // 只处理第一个文件（与当前单文件上传逻辑一致）
-    emit('selected', files[0]);
+    // 处理所有拖拽的文件
+    for (let i = 0; i < files.length; i++) {
+      emit('selected', files[i]);
+    }
+  }
+}
+
+function onFilesSelected(files: File[] | FileList | null) {
+  if (!files) return;
+  const fileArray = Array.from(files);
+  for (const file of fileArray) {
+    emit('selected', file);
   }
 }
 
