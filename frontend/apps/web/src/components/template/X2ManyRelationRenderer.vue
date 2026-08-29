@@ -460,37 +460,6 @@ function hasTagCreateActions(name: string) {
   );
 }
 
-function hasTagDropdown(name: string) {
-  return props.adapter.filteredRelationOptions(name).length > 0 || hasTagCreateActions(name);
-}
-
-function commitTagKeyword(name: string) {
-  const options = props.adapter.filteredRelationOptions(name);
-  if (options.length === 1) {
-    toggleRelationId(name, options[0].id, true);
-  }
-}
-
-function tagColorStyle(color: unknown) {
-  const idx = Number(color);
-  if (!Number.isFinite(idx)) return {};
-  const palette = [
-    'var(--sc-app-muted-bg)',
-    'var(--sc-app-danger-bg)',
-    'var(--sc-app-warning-bg)',
-    'var(--sc-app-info-bg)',
-    'var(--sc-app-success-bg)',
-    'var(--sc-app-subtle-bg)',
-    'var(--sc-app-hover-bg)',
-    'var(--sc-app-info-bg)',
-    'var(--sc-app-muted-bg)',
-    'var(--sc-app-warning-bg)',
-    'var(--sc-app-danger-bg)',
-    'var(--sc-app-border)',
-  ];
-  const bg = palette[Math.abs(Math.trunc(idx)) % palette.length];
-  return { '--tag-bg': bg };
-}
 </script>
 
 <style scoped>

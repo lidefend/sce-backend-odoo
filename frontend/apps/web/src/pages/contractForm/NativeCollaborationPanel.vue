@@ -201,11 +201,6 @@ function forwardActivityUpdate(entry: ChatterTimelineEntry, action: 'done' | 'ca
   emit('update-activity', entry, action);
 }
 
-function handleReply(entry: ChatterTimelineEntry) {
-  const messageInfo = entry.message;
-  if (!messageInfo) return;
-  emit('reply', entry);
-}
 
 </script>
 
