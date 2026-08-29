@@ -453,13 +453,6 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   props.adapter.setRelationKeyword(name, '');
 }
 
-function hasTagCreateActions(name: string) {
-  const keyword = props.adapter.relationKeyword(name).trim();
-  return Boolean(keyword) && (
-    props.adapter.canInlineCreateRelation(name) || props.adapter.relationCreateMode(name) === 'page'
-  );
-}
-
 </script>
 
 <style scoped>
