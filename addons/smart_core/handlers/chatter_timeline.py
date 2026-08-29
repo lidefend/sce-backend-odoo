@@ -164,11 +164,13 @@ class ChatterTimelineHandler(BaseIntentHandler):
             order="date desc, id desc",
             limit=limit,
         )
+        is_admin = self.env.user._is_admin()
         items: List[Dict[str, Any]] = []
         for row in rows:
             date_value = _to_iso(row.date)
             subtype_xmlid = _message_subtype_xmlid(row)
             type_label = "备注" if subtype_xmlid == "mail.mt_note" else "评论"
+            is_owner = bool(row.author_id and row.author_id.id == self.env.user.partner_id.id)
             items.append(
                 {
                     "key": f"m-{row.id}",
@@ -180,6 +182,11 @@ class ChatterTimelineHandler(BaseIntentHandler):
                     "at": date_value,
                     "id": row.id,
                     "subtype": subtype_xmlid,
+                    "message": {
+                        "id": row.id,
+                        "can_edit": is_admin or is_owner,
+                        "can_delete": is_admin or is_owner,
+                    },
                 }
             )
         return items
@@ -204,11 +211,14 @@ class ChatterTimelineHandler(BaseIntentHandler):
                 related_ids = record[attachment_field].ids
         if related_ids:
             domain = ["|", ("id", "in", related_ids), "&", ("res_model", "=", model), ("res_id", "=", res_id)]
-        AttachmentModel = Attachment.sudo() if hasattr(Attachment, "sudo") else Attachment
+        # 使用正常权限检查，不绕过附件访问控制
+        AttachmentModel = Attachment
         rows = AttachmentModel.search(domain, order="id desc", limit=limit)
+        is_admin = self.env.user._is_admin()
         items: List[Dict[str, Any]] = []
         for row in rows:
             date_value = _to_iso(row.create_date) or _to_iso(row.write_date)
+            is_owner = bool(row.create_uid and row.create_uid.id == self.env.user.id)
             items.append(
                 {
                     "key": f"a-{row.id}",
@@ -223,6 +233,8 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "id": row.id,
                         "name": row.name or "",
                         "mimetype": row.mimetype or "",
+                        "can_download": True,
+                        "can_delete": is_admin or is_owner,
                     },
                 }
             )
@@ -241,11 +253,13 @@ class ChatterTimelineHandler(BaseIntentHandler):
             order="date_deadline desc, id desc",
             limit=limit,
         )
+        is_admin = self.env.user._is_admin()
         items: List[Dict[str, Any]] = []
         for row in rows:
             deadline = _to_iso(row.date_deadline)
             assignee = row.user_id.display_name or "Unknown"
             is_assignee = bool(row.user_id and row.user_id.id == self.env.user.id)
+            is_owner = bool(row.create_uid and row.create_uid.id == self.env.user.id)
             items.append(
                 {
                     "key": f"act-{row.id}",
@@ -262,8 +276,10 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "assignee_name": assignee,
                         "deadline": deadline,
                         "activity_type": row.activity_type_id.display_name or "",
-                        "can_complete": is_assignee,
-                        "can_cancel": True,
+                        "can_complete": is_assignee or is_admin,
+                        "can_cancel": is_assignee or is_admin or is_owner,
+                        "can_edit": is_assignee or is_admin or is_owner,
+                        "can_delete": is_admin or is_owner,
                     },
                 }
             )
@@ -273,6 +289,9 @@ class ChatterTimelineHandler(BaseIntentHandler):
         Audit = self.env.get("sc.audit.log")
         if Audit is None:
             return []
+        # TODO(权限): sc.audit.log 当前仅系统管理员/超级管理员有 read 权限
+        # 暂用 sudo() 保证普通用户可见操作历史，后续应增加记录规则(Record Rules)
+        # 限制用户只能读取自己有权限的记录的审计日志
         rows = Audit.sudo().search(
             [("model", "=", model), ("res_id", "=", res_id)],
             order="ts desc, id desc",

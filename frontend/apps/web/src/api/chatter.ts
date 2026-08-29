@@ -25,11 +25,20 @@ export interface ChatterTimelineEntry {
     activity_type?: string;
     can_complete?: boolean;
     can_cancel?: boolean;
+    can_edit?: boolean;
+    can_delete?: boolean;
   };
   attachment?: {
     id?: number;
     name?: string;
     mimetype?: string;
+    can_download?: boolean;
+    can_delete?: boolean;
+  };
+  message?: {
+    id?: number;
+    can_edit?: boolean;
+    can_delete?: boolean;
   };
 }
 
