@@ -15,7 +15,7 @@ const expected = [
   'ScActionBar', 'ScIconButton', 'ScLayout', 'ScAside', 'ScHeader', 'ScContent', 'ScButton', 'ScCheckbox', 'ScRadioGroup', 'ScRadio', 'ScInput', 'ScInputGroup', 'ScInlineState', 'ScTextarea', 'ScSelect', 'ScDialog', 'ScDrawer', 'ScTabs', 'ScTable',
   'ScBadge', 'ScTooltip', 'ScDropdown', 'ScFormField', 'ScLoading', 'ScEmptyState', 'ScErrorState',
   'ScAutoComplete', 'ScNumberInput', 'ScSwitch', 'ScDatePicker', 'ScTimePicker', 'ScUpload', 'ScForm', 'ScFormItem', 'ScCard', 'ScCollapse',
-  'ScDisclosure', 'ScProgress', 'ScSkeleton', 'ScDescriptions', 'ScList', 'ScTimeline', 'ScSteps', 'ScPagination', 'ScPopconfirm',
+  'ScDisclosure', 'ScProgress', 'ScSkeleton', 'ScDescriptions', 'ScList', 'ScTimeline', 'ScSteps', 'ScPagination', 'ScPopconfirm', 'ScPopover',
 ];
 
 assert.deepEqual([...SC_PRIMITIVE_KEYS], expected, 'Phase 2 primitive API must remain explicit and ordered');
