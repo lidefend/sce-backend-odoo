@@ -158,6 +158,8 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       CI_PROJECT_NAME: sc-prof-${{ github.run_id }}
       PROFESSIONAL_MODE: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || needs.professional_authorization.outputs.professional_mode }}
+      FRONTEND_CHANGED: ${{ needs.professional_authorization.outputs.frontend_changed }}
+      BACKEND_CHANGED: ${{ needs.professional_authorization.outputs.backend_changed }}
 
     defaults:
       run:
@@ -171,9 +173,9 @@ jobs:
           find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
           git init "${GITHUB_WORKSPACE}"
           git remote add origin "${CI_REMOTE_URL}"
-          for attempt in 1 2 3 4 5; do
-            if timeout 90 git fetch --no-tags origin "${BASE_SHA}" &&
-              timeout 90 git fetch --no-tags origin "${HEAD_SHA}" &&
+          for attempt in 1 2 3; do
+            if timeout 60 git fetch --no-tags origin "${BASE_SHA}" &&
+              timeout 60 git fetch --no-tags origin "${HEAD_SHA}" &&
               test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"; then
               git checkout --detach FETCH_HEAD
               test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
@@ -198,9 +200,44 @@ jobs:
           restore-keys: |
             pip-${{ runner.os }}-python-
 
-      - name: Run full professional quality gate
+      - name: Run full professional quality gate (parallel shards)
         if: env.PROFESSIONAL_MODE == 'full'
-        run: make ci.professional.backend
+        run: |
+          set -euo pipefail
+          # Determine which shards to run based on change type
+          # If only docs/config changed (no frontend/backend code), skip test shard
+          RUN_TESTS=1
+          if [ "${FRONTEND_CHANGED}" = "false" ] && [ "${BACKEND_CHANGED}" = "false" ]; then
+            echo "Change detected: docs/config only - skipping test shard"
+            RUN_TESTS=0
+          fi
+          # Run shards in parallel
+          make ci.professional.backend.shard-verify &
+          pid_verify=$!
+          make ci.professional.backend.shard-reports &
+          pid_reports=$!
+          if [ "${RUN_TESTS}" = "1" ]; then
+            make ci.professional.backend.shard-tests &
+            pid_tests=$!
+          fi
+          # Wait for all shards and capture exit codes
+          status_verify=0
+          status_reports=0
+          status_tests=0
+          wait "${pid_verify}" || status_verify=$?
+          wait "${pid_reports}" || status_reports=$?
+          if [ "${RUN_TESTS}" = "1" ]; then
+            wait "${pid_tests}" || status_tests=$?
+          fi
+          # Fail if any shard failed
+          test "${status_verify}" -eq 0
+          test "${status_reports}" -eq 0
+          test "${status_tests}" -eq 0
+          if [ "${RUN_TESTS}" = "1" ]; then
+            echo "[OK] All professional backend shards passed (verify + reports + tests)"
+          else
+            echo "[OK] Professional backend shards passed (verify + reports only, tests skipped for docs/config change)"
+          fi
 
       - name: Run mainline integrity gate
         if: env.PROFESSIONAL_MODE == 'mainline'

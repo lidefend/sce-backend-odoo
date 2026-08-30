@@ -43,4 +43,5 @@
   --sc-app-info-bg: var(--sc-semantic-state-info-bg);
   --sc-app-info-border: var(--sc-semantic-state-info-border);
   --sc-app-info-text: var(--sc-semantic-state-info-text);
+  --sc-app-text-inverse: var(--sc-semantic-text-on-interactive);
 }
