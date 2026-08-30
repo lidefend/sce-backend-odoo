@@ -398,7 +398,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 62,
+      "productionConsumerCount": 63,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -956,7 +956,7 @@
         "TDesignSpace"
       ],
       "officialComponent": "space",
-      "productionConsumerCount": 2,
+      "productionConsumerCount": 3,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1291,7 +1291,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "5b7e12535acf81fd902bf086fe7981d4110a8fe4cc7913ea8054988337f0f07e",
+  "inputDigest": "81b61ebb24db48dbc0934d13671eba8a4c36084fdd264641fa8ff016989154fa",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
