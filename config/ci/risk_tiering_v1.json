@@ -26,7 +26,8 @@
     "scripts/verify/test_frontend_professional_*"
   ],
   "high_risk_override_paths": [
-    "make/frontend_professional_extensions.mk"
+    "make/frontend_professional_extensions.mk",
+    "config/security/repository_oversized_blob_exceptions.v1.json"
   ],
   "frontend_full_paths": [
     ".github/workflows/frontend_release_gate.yml",
