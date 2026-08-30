@@ -7,6 +7,13 @@
       "blob_id": "5dc740d74360da32e810add8cd144b5f81f4b6ee",
       "classification": "OVERSIZED_BLOB",
       "reason": "governed generated product-view structure evidence from the registered exporter"
+    },
+    {
+      "rule_id": "RH007",
+      "path": "contracts/generated/product_view_structure_contract.json",
+      "blob_id": "c1d0260d953d933d0fbc42667eef817724e23d9e",
+      "classification": "OVERSIZED_BLOB",
+      "reason": "governed generated product-view structure evidence from the registered exporter (p0-user-friction-reduction-v1 refresh)"
     }
   ]
 }
