@@ -25,7 +25,7 @@ class FormHeaderActionPrimitivesGuardTests(unittest.TestCase):
 
     def test_action_event_authority_fails(self):
         def read_text(path: str) -> str:
-            return (ROOT / path).read_text(encoding="utf-8").replace("'canonical-save'", "'legacy-save'")
+            return (ROOT / path).read_text(encoding="utf-8").replace("'save-draft'", "'legacy-save'")
 
         self.assertTrue(any("event authority" in error for error in validate(read_text)))
 

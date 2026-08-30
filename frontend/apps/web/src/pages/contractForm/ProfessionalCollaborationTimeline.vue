@@ -81,7 +81,9 @@
       :state="timelineLoading ? 'loading' : 'empty'"
       :label="timelineLoading ? '活动记录加载中...' : '暂无活动记录'"
     />
-    <ScButton v-if="timelineHasMore" variant="ghost" :loading="timelineLoading" loading-label="加载中" class="native-chatter-load-more" @click="emit('load-more')">{{ timelineLoading ? '加载中...' : '加载更多' }}</ScButton>
+    <div v-if="timelineHasMore" style="margin-top: 10px; display: flex; justify-content: center;">
+      <ScButton variant="ghost" :loading="timelineLoading" loading-label="加载中" @click="emit('load-more')">{{ timelineLoading ? '加载中...' : '加载更多' }}</ScButton>
+    </div>
   </section>
 </template>
 

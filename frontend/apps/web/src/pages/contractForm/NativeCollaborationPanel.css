@@ -507,28 +507,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* 加载更多按钮优化 */
-.native-chatter-load-more {
-  display: block;
-  width: 100%;
-  margin-top: 10px;
-  padding: 8px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--sc-app-text-secondary);
-  background: var(--sc-app-muted-bg, #fafafa);
-  border: 1px dashed var(--sc-app-border);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.native-chatter-load-more:hover {
-  color: var(--sc-app-primary, #1677ff);
-  border-color: var(--sc-app-primary, #1677ff);
-  background: var(--sc-app-primary-bg, #e6f4ff);
-}
-
 /* 附件管理器区域优化 */
 .native-chatter-block .native-attachment-tools {
   margin-bottom: 8px;

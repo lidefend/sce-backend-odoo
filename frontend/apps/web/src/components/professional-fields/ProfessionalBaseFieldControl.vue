@@ -179,15 +179,6 @@ function emitValue(value: string | number | boolean | null) {
   padding-inline: calc(var(--sc-component-input-padding-x) * 1px);
 }
 
-/* TDesign driver: .sc-input is the t-input__wrap, and t-input already carries
- * its own internal padding. An extra wrap-level padding-inline would shift the
- * input control 8px right vs select/checkbox controls (which have no wrap
- * padding), breaking horizontal alignment across field widgets. Reset it so the
- * visible control edges line up on the same vertical grid line. */
-.professional-base-field-control :deep(.sc-input[data-primitive-driver='tdesign']):not(.sc-textarea) {
-  padding-inline: 0;
-}
-
 .professional-base-field-control__textarea {
   box-sizing: border-box;
   width: 100%;
