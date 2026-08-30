@@ -699,9 +699,21 @@ ci: guard.prod.forbid verify.contract.page_v1_zero_residue.guard security.legacy
 
 # Backend/static half of the professional gate. The required frontend workflow is
 # the single authority for frontend install, lint, typecheck, build and browsers.
-ci.professional.backend: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install ci.generated_reports.guard architecture.complexity_baseline_lock verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend test.unit test.contract test.e2e.preflight
+ci.professional.backend: ci.professional.backend.shard-verify ci.professional.backend.shard-reports ci.professional.backend.shard-tests
 	@git diff --check
 	@echo "[OK] professional backend/static quality gate passed"
+
+# Shard 1: verification and security checks
+ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend
+	@echo "[OK] professional backend shard-verify passed"
+
+# Shard 2: generated reports and architecture checks
+ci.professional.backend.shard-reports: guard.prod.forbid ci.generated_reports.guard architecture.complexity_baseline_lock
+	@echo "[OK] professional backend shard-reports passed"
+
+# Shard 3: unit, contract and e2e preflight tests
+ci.professional.backend.shard-tests: guard.prod.forbid test.unit test.contract test.e2e.preflight
+	@echo "[OK] professional backend shard-tests passed"
 
 ci.generated_reports.guard: guard.prod.forbid
 	@python3 scripts/ci/generate_test_inventory.py
