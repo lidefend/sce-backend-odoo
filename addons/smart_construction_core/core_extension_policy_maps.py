@@ -513,9 +513,9 @@ FILE_ATTACHMENT_EXCLUDED_MODEL_PREFIXES = (
     "ui.form.",
 )
 
-FILE_UPLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.request"]
+FILE_UPLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.request", "res.partner"]
 
-FILE_DOWNLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.request"]
+FILE_DOWNLOAD_ALLOWED_MODELS = ["project.project", "project.task", "payment.request", "res.partner"]
 
 LEGACY_VISIBLE_BUSINESS_COLUMN_LABELS_BY_MODEL = {
     "project.project": {

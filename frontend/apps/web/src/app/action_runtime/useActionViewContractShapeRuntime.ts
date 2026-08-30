@@ -113,7 +113,7 @@ export function extractListFieldSemanticsFromContract(store: ContractV2Normalize
     schemas.push({
       ...config,
       name: fieldCode,
-      type: config.data_type || config.fieldType || widget.fieldType,
+      type: config.data_type || config.fieldType || widget.fieldDescriptor?.fieldType,
     });
   });
 

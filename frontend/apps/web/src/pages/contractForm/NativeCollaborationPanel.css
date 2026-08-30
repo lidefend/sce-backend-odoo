@@ -234,3 +234,576 @@
     grid-template-columns: 1fr;
   }
 }
+/* ===== 协作日志时间线专业化样式 ===== */
+
+/* 附件条目专门显示样式 */
+.native-chatter-attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-panel);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.native-chatter-attachment-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.native-chatter-attachment-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.native-chatter-attachment-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sc-app-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.native-chatter-attachment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--sc-app-text-secondary);
+}
+
+.native-chatter-attachment-type {
+  background: var(--sc-app-tag-bg, #f0f0f0);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.native-chatter-attachment-size {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 消息条目专门显示样式 */
+.native-chatter-message-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-panel);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.native-chatter-message-icon {
+  font-size: 18px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.native-chatter-message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.native-chatter-message-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.native-chatter-message-author {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sc-app-text-primary);
+}
+
+.native-chatter-message-time {
+  font-size: 11px;
+  color: var(--sc-app-text-secondary);
+}
+
+.native-chatter-message-body {
+  font-size: 13px;
+  color: var(--sc-app-text-primary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 活动条目专门显示样式 */
+.native-chatter-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-panel);
+  width: 100%;
+  box-sizing: border-box;
+  border-left: 3px solid var(--sc-app-warning, #faad14);
+}
+
+.native-chatter-activity-item[data-activity-status="overdue"] {
+  border-left-color: var(--sc-app-error, #f5222d);
+  background: var(--sc-app-error-bg, #fff2f0);
+}
+
+.native-chatter-activity-item[data-activity-status="done"] {
+  border-left-color: var(--sc-app-success, #52c41a);
+  opacity: 0.7;
+}
+
+.native-chatter-activity-icon {
+  font-size: 18px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.native-chatter-activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.native-chatter-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.native-chatter-activity-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sc-app-text-primary);
+}
+
+.native-chatter-activity-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.native-chatter-activity-status.status-pending {
+  background: var(--sc-app-warning-bg, #fffbe6);
+  color: var(--sc-app-warning, #faad14);
+}
+
+.native-chatter-activity-status.status-overdue {
+  background: var(--sc-app-error-bg, #fff2f0);
+  color: var(--sc-app-error, #f5222d);
+}
+
+.native-chatter-activity-status.status-done {
+  background: var(--sc-app-success-bg, #f6ffed);
+  color: var(--sc-app-success, #52c41a);
+}
+
+.native-chatter-activity-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--sc-app-text-secondary);
+}
+
+.native-chatter-activity-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.native-chatter-activity-action {
+  min-height: 26px;
+  padding: 3px 12px;
+  font-size: 12px;
+}
+
+/* 响应式适配 */
+@media (max-width: 760px) {
+  .native-chatter-attachment-item,
+  .native-chatter-message-item,
+  .native-chatter-activity-item {
+    flex-wrap: wrap;
+  }
+  .native-chatter-attachment-content,
+  .native-chatter-message-content,
+  .native-chatter-activity-content {
+    flex: 1 1 100%;
+  }
+  .native-chatter-activity-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+
+/* ===== 协作日志面板专业化优化 ===== */
+
+/* 面板标题优化 */
+.native-chatter-block > h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sc-app-text-primary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--sc-app-border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.native-chatter-block > h3::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--sc-app-primary, #1677ff);
+  border-radius: 2px;
+}
+
+/* 操作按钮区域优化 */
+.native-chatter-block .chips {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--sc-app-muted-bg, #fafafa);
+  border-radius: 6px;
+  border: 1px solid var(--sc-app-border);
+}
+
+/* 时间线区域优化 */
+.native-chatter-timeline {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* 时间线条目 hover 效果 */
+.native-chatter-entry {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.native-chatter-entry:hover {
+  border-color: var(--sc-app-primary, #1677ff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 附件管理器区域优化 */
+.native-chatter-block .native-attachment-tools {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: var(--sc-app-muted-bg, #fafafa);
+  border-radius: 6px;
+  border: 1px solid var(--sc-app-border);
+}
+
+/* 错误消息优化 */
+.native-chatter-message.validation-error {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: var(--sc-app-error-bg, #fff2f0);
+  border: 1px solid var(--sc-app-error, #f5222d);
+  border-radius: 6px;
+  color: var(--sc-app-error, #f5222d);
+  font-size: 12px;
+}
+
+/* 空状态优化 */
+.native-chatter-empty {
+  margin: 12px 0 0;
+  padding: 20px 10px;
+  text-align: center;
+  background: var(--sc-app-muted-bg, #fafafa);
+  border: 1px dashed var(--sc-app-border);
+  border-radius: 8px;
+  color: var(--sc-app-text-secondary);
+  font-size: 12px;
+}
+
+
+/* ===== 待上传附件专业化样式 ===== */
+
+.native-pending-attachments {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.native-pending-attachment-item {
+  background: var(--sc-app-primary-bg, #e6f4ff);
+  border-color: var(--sc-app-primary, #1677ff);
+  border-style: dashed;
+}
+
+.native-pending-attachment-item .native-chatter-attachment-type {
+  background: var(--sc-app-primary, #1677ff);
+  color: #fff;
+}
+
+.native-pending-attachment-item .native-chatter-attachment-icon {
+  opacity: 0.7;
+}
+
+
+/* ===== 时间线过渡动画和交互细节 ===== */
+
+/* 时间线条目入场动画 */
+@keyframes native-chatter-entry-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.native-chatter-entry {
+  animation: native-chatter-entry-enter 0.3s ease-out;
+}
+
+/* 时间线条目依次延迟入场 */
+.native-chatter-entry:nth-child(1) { animation-delay: 0.0s; }
+.native-chatter-entry:nth-child(2) { animation-delay: 0.05s; }
+.native-chatter-entry:nth-child(3) { animation-delay: 0.1s; }
+.native-chatter-entry:nth-child(4) { animation-delay: 0.15s; }
+.native-chatter-entry:nth-child(5) { animation-delay: 0.2s; }
+.native-chatter-entry:nth-child(6) { animation-delay: 0.25s; }
+.native-chatter-entry:nth-child(7) { animation-delay: 0.3s; }
+.native-chatter-entry:nth-child(8) { animation-delay: 0.35s; }
+
+/* 附件图标悬停效果 */
+.native-chatter-attachment-icon {
+  transition: transform 0.2s ease;
+}
+
+.native-chatter-attachment-item:hover .native-chatter-attachment-icon {
+  transform: scale(1.1);
+}
+
+/* 附件名称悬停效果 */
+.native-chatter-attachment-name {
+  transition: color 0.2s ease;
+}
+
+.native-chatter-attachment-item:hover .native-chatter-attachment-name {
+  color: var(--sc-app-primary, #1677ff);
+}
+
+/* 消息内容过渡 */
+.native-chatter-message-body {
+  transition: background-color 0.2s ease;
+}
+
+/* 活动状态标签过渡 */
+.native-chatter-activity-status {
+  transition: all 0.2s ease;
+}
+
+.native-chatter-activity-item:hover .native-chatter-activity-status {
+  transform: scale(1.05);
+}
+
+/* 操作按钮过渡 */
+.native-chatter-entry-actions {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+}
+
+.native-chatter-entry:hover .native-chatter-entry-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* 加载更多按钮点击反馈 */
+.native-chatter-load-more:active {
+  transform: scale(0.98);
+}
+
+/* 面板标题过渡 */
+.native-chatter-block > h3 {
+  transition: color 0.2s ease;
+}
+
+.native-chatter-block > h3:hover {
+  color: var(--sc-app-primary, #1677ff);
+}
+
+/* 面板标题竖线过渡 */
+.native-chatter-block > h3::before {
+  transition: all 0.2s ease;
+}
+
+.native-chatter-block > h3:hover::before {
+  height: 16px;
+  background: var(--sc-app-primary-hover, #4096ff);
+}
+
+
+/* ===== 附件拖拽上传样式 ===== */
+
+.native-attachment-tools {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.native-attachment-tools.native-attachment-drag-over {
+  border-color: var(--sc-app-primary, #1677ff);
+  background: var(--sc-app-primary-bg, #e6f4ff);
+  border-style: dashed;
+  border-width: 2px;
+}
+
+.native-attachment-drag-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+  color: var(--sc-app-primary, #1677ff);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.native-attachment-drag-icon {
+  font-size: 32px;
+  line-height: 1;
+  animation: native-attachment-bounce 1s ease-in-out infinite;
+}
+
+@keyframes native-attachment-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* 拖拽时隐藏原有的上传按钮 */
+.native-attachment-drag-over .native-attachment-upload {
+  display: none;
+}
+
+
+/* ===== 多文件上传提示样式 ===== */
+
+.native-attachment-upload-hint {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--sc-app-text-secondary);
+  vertical-align: middle;
+}
+
+/* 待上传附件列表多文件时的样式 */
+.native-pending-attachments {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.native-pending-attachments::-webkit-scrollbar {
+  width: 4px;
+}
+
+.native-pending-attachments::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.native-pending-attachments::-webkit-scrollbar-thumb {
+  background: var(--sc-app-border-strong);
+  border-radius: 2px;
+}
+
+/* 待上传附件数量提示 */
+.native-pending-attachments-count {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: var(--sc-app-text-secondary);
+}
+
+
+/* ===== 消息回复目标样式 ===== */
+
+.native-chatter-reply-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: var(--sc-app-primary-bg, #e6f4ff);
+  border: 1px solid var(--sc-app-primary, #1677ff);
+  border-radius: 6px;
+}
+
+.native-chatter-reply-icon {
+  font-size: 14px;
+  color: var(--sc-app-primary, #1677ff);
+  flex-shrink: 0;
+}
+
+.native-chatter-reply-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.native-chatter-reply-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sc-app-primary, #1677ff);
+}
+
+.native-chatter-reply-body {
+  font-size: 12px;
+  color: var(--sc-app-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.native-chatter-reply-clear {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* 消息回复按钮样式 */
+.native-chatter-message-reply {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.native-chatter-message-item:hover .native-chatter-message-reply {
+  opacity: 1;
+}

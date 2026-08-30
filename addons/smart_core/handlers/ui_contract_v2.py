@@ -1978,6 +1978,36 @@ class UiContractV2Handler(BaseIntentHandler):
                 if str(key or "").strip() and str(value or "").strip()
             }
         )
+        # Inject view-level field string overrides.  fields_get() returns
+        # model-level labels only; explicit <field string="..."/> in the
+        # form view must win so per-action labels (e.g. 主体类型 vs 客户类型)
+        # are respected downstream by authoritativeFieldLabels.
+        if view_type == "form":
+            _views = source_contract.get("views") if isinstance(source_contract.get("views"), dict) else {}
+            _form_view = _views.get("form") if isinstance(_views.get("form"), dict) else {}
+            _view_layout = _form_view.get("layout")
+            if _view_layout:
+                def _collect_view_field_labels(rows: Any) -> dict[str, str]:
+                    labels: dict[str, str] = {}
+                    def visit(node: Any) -> None:
+                        if isinstance(node, list):
+                            for child in node:
+                                visit(child)
+                            return
+                        if not isinstance(node, dict):
+                            return
+                        node_type = str(node.get("type") or node.get("kind") or "").strip().lower()
+                        node_name = str(node.get("name") or node.get("field") or "").strip()
+                        node_string = str(node.get("string") or node.get("label") or "").strip()
+                        if node_type == "field" and node_name and node_string:
+                            labels[node_name] = node_string
+                        for key in ("children", "tabs", "pages", "groups", "fields", "widgetList"):
+                            visit(node.get(key))
+                    visit(rows)
+                    return labels
+                _view_field_labels = _collect_view_field_labels(_view_layout)
+                if _view_field_labels:
+                    form_structure_field_labels.update(_view_field_labels)
         form_structure_governed_field_names.update(
             str(item or "").strip()
             for item in (form_structure_governance.get("field_names") or [])
@@ -2113,6 +2143,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 profile=profile,
                 field_type=field_type,
                 unique=unique,
+                field_label=field_label,
                 governance=form_structure_governance,
             )
             if attachment_field:
@@ -2506,6 +2537,7 @@ class UiContractV2Handler(BaseIntentHandler):
         profile: dict[str, Any],
         field_type,
         unique,
+        field_label,
         governance: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         common_source = (
@@ -2767,7 +2799,11 @@ class UiContractV2Handler(BaseIntentHandler):
 
         def labels_for(items: list[str]) -> dict[str, str]:
             return {
-                name: str(field_labels.get(name) or name).strip()
+                # 字段显示名优先取 profile 配置 label，其次回退到字段定义的权威 string
+                # （field_display_label），而不是直接兜底成字段名 —— 否则 many2many 等
+                # 不在 common/detail 字段列表里的字段（如 res.partner.category_id）
+                # 会以原始字段名展示，覆盖正确的中文显示名。
+                name: str(field_labels.get(name) or field_display_label(name) or name).strip()
                 for name in fields_for(items)
             }
 

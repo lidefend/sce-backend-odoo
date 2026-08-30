@@ -200,6 +200,7 @@ function forwardActivityUpdate(entry: ChatterTimelineEntry, action: 'done' | 'ca
   emit('update-activity', entry, action);
 }
 
+
 </script>
 
 <style scoped src="./NativeCollaborationPanel.css"></style>

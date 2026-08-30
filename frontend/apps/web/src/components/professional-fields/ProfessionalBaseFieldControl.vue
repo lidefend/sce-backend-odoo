@@ -46,7 +46,7 @@
       :invalid="field.invalid"
       :described-by="describedBy"
       :placeholder="placeholder"
-      :options="(field.selectionOptions || []).map((option) => ({ value: option.value, label: option.label }))"
+      :options="(field.selectionOptions || []).filter(Boolean).map((option) => ({ value: option.value, label: option.label }))"
       @update:model-value="emitValue"
     />
     <ScDateField
@@ -233,6 +233,11 @@ function emitValue(value: string | number | boolean | null) {
 .professional-base-field-control[data-professional-field-type='float'] .professional-base-field-control__readonly {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.professional-base-field-control[data-professional-field-type='date'] :deep(.t-date-picker),
+.professional-base-field-control[data-professional-field-type='datetime'] :deep(.t-date-picker) {
+  width: 100%;
 }
 
 .professional-base-field-control[data-professional-field-type='date'] :deep(.sc-input),

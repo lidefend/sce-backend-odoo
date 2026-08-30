@@ -179,6 +179,64 @@ def _apply_project_ledger_form_surface_governance(data: dict, contract_mode: str
     _append_project_responsibility_section(data)
 
 
+def _hide_field_in_layout(nodes, name: str) -> bool:
+    """遍历 layout 节点树，找到指定字段，设置 componentConfig.surfaceRole = hidden。
+    返回是否找到并修改了字段。"""
+    if isinstance(nodes, list):
+        return any(_hide_field_in_layout(item, name) for item in nodes)
+    if not isinstance(nodes, dict):
+        return False
+    node_type = _text(nodes.get("type") or nodes.get("containerType")).lower()
+    node_name = _text(nodes.get("name") or nodes.get("field") or nodes.get("fieldCode"))
+    if node_type == "field" and node_name == name:
+        component_config = nodes.get("componentConfig")
+        if not isinstance(component_config, dict):
+            component_config = {}
+        component_config["surfaceRole"] = "hidden"
+        component_config["technical"] = True
+        nodes["componentConfig"] = component_config
+        # 同时设置 fieldInfo 中的 surface_role 作为后备
+        field_info = nodes.get("fieldInfo")
+        if isinstance(field_info, dict):
+            field_info["surface_role"] = "hidden"
+            field_info["technical"] = True
+            nodes["fieldInfo"] = field_info
+        return True
+    return any(
+        _hide_field_in_layout(nodes.get(key), name)
+        for key in ("children", "tabs", "pages", "nodes", "items", "widgetList")
+    )
+
+
+def _is_partner_form_contract(data: dict) -> bool:
+    if not isinstance(data, dict):
+        return False
+    head = _as_dict(data.get("head"))
+    views = _as_dict(data.get("views"))
+    model = _text(head.get("model") or data.get("model"))
+    view_type = _text(head.get("view_type") or data.get("view_type")).lower()
+    return model == "res.partner" and (view_type == "form" or isinstance(views.get("form"), dict))
+
+
+def _apply_partner_form_surface_governance(data: dict, contract_mode: str) -> None:
+    if contract_mode != "user" or not _is_partner_form_contract(data):
+        return
+    fields_map = _as_dict(data.get("fields"))
+    # 国家/地区由省/州级联 domain 自动确定，对用户隐藏
+    _hide_field(data, fields_map, "country_id")
+    data["fields"] = fields_map
+    # 同时在 views.form.layout 中设置 componentConfig.surfaceRole = hidden
+    # 前端 v2 契约从 widget.componentConfig.surfaceRole 读取字段可见性
+    views = _as_dict(data.get("views"))
+    form = _as_dict(views.get("form"))
+    layout = form.get("layout")
+    if isinstance(layout, list):
+        _hide_field_in_layout(layout, "country_id")
+        form["layout"] = layout
+        views["form"] = form
+        data["views"] = views
+
+
 register_contract_domain_override(
     "smart_construction_core.project_form",
     apply_project_form_domain_override,
@@ -194,5 +252,11 @@ register_contract_domain_override(
 register_contract_domain_override(
     "smart_construction_core.project_ledger_form_surface",
     _apply_project_ledger_form_surface_governance,
+    priority=30,
+)
+
+register_contract_domain_override(
+    "smart_construction_core.partner_form_surface",
+    _apply_partner_form_surface_governance,
     priority=30,
 )

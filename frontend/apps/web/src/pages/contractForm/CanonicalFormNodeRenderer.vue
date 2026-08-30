@@ -33,7 +33,7 @@
     <FormSection
       v-if="fields.length"
       :title="sectionTitle"
-      :columns="columns"
+      :columns="layoutColumns"
       :fields="fields"
       :relation-adapter="relationAdapter"
       :prefer-readonly-facts="readonlyFactLayout"
@@ -111,7 +111,7 @@ const sectionTitle = computed(() => '');
 const groupHeadingVisible = computed(() => false);
 
 const columns = computed<1 | 2 | 3>(() => Math.max(1, Math.min(3, Number(props.node.columns || 1))) as 1 | 2 | 3);
-const layoutColumns = computed(() => {
+const layoutColumns = computed<1 | 2 | 3>(() => {
   // Container/group nodes arrange their direct field children on a grid whose
   // column count follows the canonical contract (node.columns). A container
   // holding field children gets at least two columns so a single wide row (e.g.
@@ -121,7 +121,7 @@ const layoutColumns = computed(() => {
   // so those children stack full-width.
   const children = visibleCanonicalChildren(props.node);
   if (!children.length) return 1;
-  if (children.some((child) => child.kind === 'field')) return Math.max(2, columns.value);
+  if (children.some((child) => child.kind === 'field')) return Math.max(2, columns.value) as 1 | 2 | 3;
   return 1;
 });
 const nodeGridSpan = computed(() => Math.max(1, Math.min(4, Math.ceil(Number(props.node.span || 24) / 6))));

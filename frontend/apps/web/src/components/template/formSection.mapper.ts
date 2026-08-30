@@ -164,6 +164,10 @@ export function buildFormSectionFieldSchemas(
     const helpText = options.resolveHelpText?.(field) || '';
     const errorText = options.resolveErrorText?.(field) || '';
     const relationTextValue = type === 'many2one' ? options.resolveRelationTextValue(field.name) : '';
+    const relationModel = String(descriptor.relation || '').trim();
+    const isAttachmentRelation = relationModel.toLowerCase() === 'ir.attachment';
+    const isMany2manyTagField = type === 'many2many' && !isAttachmentRelation;
+    const effectiveWidget = isMany2manyTagField && !widget ? 'many2many_tags' : widget;
     const many2oneCapabilities = type === 'many2one'
       ? projectMany2oneCapabilities({
         fieldName: field.name,
@@ -181,12 +185,20 @@ export function buildFormSectionFieldSchemas(
         many2oneOpenToken: options.many2oneOpenToken,
       })
       : { relationCreateMode: 'none' as const };
+    const many2manyCapabilities = isMany2manyTagField
+      ? {
+          componentRenderer: 'ProfessionalRelationFieldControl',
+          componentKey: 'sc.select.tags',
+          relationCreateMode: options.resolveRelationCreateMode(field.name, field.descriptor),
+          relationInlineCreate: options.resolveRelationInlineCreate(field.name, field.descriptor),
+        }
+      : {};
     return {
       key: field.key,
       name: field.name,
       label: field.label,
       type,
-      widget,
+      widget: effectiveWidget,
       widgetSemantics: semantics,
       digits,
       currencyField: currencyField || undefined,
@@ -205,6 +217,7 @@ export function buildFormSectionFieldSchemas(
       selectionOptions: options.resolveSelectionOptions(field.descriptor),
       relationOptions: options.resolveRelationOptions(field.name),
       ...many2oneCapabilities,
+      ...many2manyCapabilities,
       many2oneTextValue: relationTextValue || undefined,
       descriptor: field.descriptor,
     };

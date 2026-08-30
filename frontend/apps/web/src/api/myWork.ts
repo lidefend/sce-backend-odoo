@@ -118,6 +118,7 @@ export type ProductMyWorkFact = {
   key: string;
   label: string;
   value?: string;
+  field_group?: 'business' | 'audit' | string;
   display_role?: 'text' | 'money' | 'datetime' | string;
   money?: ProductMyWorkMoney;
 };
@@ -128,8 +129,10 @@ export type ProductMyWorkItem = {
   business_type: string;
   record: { label: string };
   state: { key: string; label: string };
-  initiated_at?: string;
-  updated_at?: string;
+  create_uid?: { id: number; label: string };
+  create_date?: string;
+  write_uid?: { id: number; label: string };
+  write_date?: string;
   facts: ProductMyWorkFact[];
   search_text: string;
   sort_values: Record<string, string | number | null>;

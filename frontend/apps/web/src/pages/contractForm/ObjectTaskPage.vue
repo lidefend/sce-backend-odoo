@@ -310,7 +310,7 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   display: grid;
   grid-auto-rows: max-content;
   align-content: start;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
 }
 .object-task-page__body {
@@ -318,7 +318,7 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   grid-auto-rows: max-content;
   align-content: start;
   grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
 }
 .object-task-page--with-context .object-task-page__body {
@@ -376,9 +376,22 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   display: grid;
   grid-auto-rows: max-content;
   align-content: start;
-  gap: 8px;
+  gap: 6px;
 }
-.object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 12px; }
+.object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 8px; }
+/* Current-task card density: keep the handling guide compact so the
+ * user's input fields surface sooner. Tighter section titles, field
+ * spacing and fact padding cut the read-only guidance block's footprint
+ * without removing any content. */
+.object-task-page__current-task :deep(.canonical-form-node-title) {
+  margin: 0 0 2px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.object-task-page__current-task-facts :deep(.canonical-form-node--field.readonly-fact),
+.object-task-page__current-task-facts :deep(.canonical-form-node--readonly-fact) {
+  padding: 4px 0;
+}
 .object-task-page__current-task-facts {
   color: var(--sc-app-text-secondary);
 }

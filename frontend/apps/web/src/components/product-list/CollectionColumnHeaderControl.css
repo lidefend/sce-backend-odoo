@@ -6,7 +6,7 @@
 .cell-sortable.is-sort-disabled:hover, .cell-sortable.is-sort-disabled:focus-visible { background: var(--sc-app-panel); box-shadow: none; }
 .column-drag-handle { position: absolute; inset: 0 auto 0 0; z-index: var(--sc-z-content-raised); width: 22px; padding: 0; cursor: grab; }
 .column-drag-handle:active { cursor: grabbing; }
-.column-sort-btn { display: inline-flex; align-items: center; justify-content: flex-start; gap: 4px; width: 100%; min-height: var(--sc-table-header-height, 40px); max-width: 100%; padding: 0 12px 0 18px; font: inherit; font-weight: 700; line-height: 16px; text-align: left; cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
+.cell-sortable :deep(.column-sort-btn) { display: inline-flex; align-items: center; justify-content: flex-start; gap: 4px; width: 100%; min-height: var(--sc-table-header-height, 40px); max-width: 100%; padding-left: 30px; padding-right: 12px; font: inherit; font-weight: 700; line-height: 16px; text-align: left; cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
 .column-sort-btn > span:first-child { min-width: 0; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
 .column-long-text .column-sort-btn, .column-long-text .column-drag-handle { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
 .is-sort-disabled .column-sort-btn { cursor: default; }

@@ -14,7 +14,9 @@
     @keydown.enter.prevent="$emit('sort')"
     @keydown.space.prevent="$emit('sort')"
   >
-    <ScIconButton class="column-drag-handle" appearance="column-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')" />
+    <ScIconButton class="column-drag-handle" appearance="column-handle" :label="dragLabel" draggable="true" @click.stop @keydown.stop @dragstart.stop="$emit('drag-start', $event)" @dragend.stop="$emit('drag-end')">
+      <ScIcon name="menu" :size="14" />
+    </ScIconButton>
     <ScButton type="button" class="column-sort-btn" appearance="context-action" variant="ghost" size="small" :title="sortTitle" :aria-disabled="!sortable" draggable="false" @click.stop="$emit('sort')">
       <span>{{ label }}</span>
       <ScIcon v-if="sorted" class="sort-indicator" :name="sortIcon" :size="14" />

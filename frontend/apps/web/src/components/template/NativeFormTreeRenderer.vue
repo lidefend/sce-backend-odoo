@@ -500,8 +500,36 @@ const activePageIndex = ref(0);
 const SMART_BUTTON_DIRECT_LIMIT = 4;
 const visibleNodes = computed(() => (props.nodes || []).filter((node) => isNodeRenderable(node)));
 
-function isNodeRenderable(node: NativeFormLayoutNode) {
-  return props.isNodeVisible(node);
+function isNodeRenderable(node: NativeFormLayoutNode): boolean {
+  if (!node) return false;
+  if (!props.isNodeVisible(node)) return false;
+  const type = nodeType(node);
+  // Empty-container guard: a group/page/container with no title, no static
+  // text, and no renderable descendant (field/button/widget) renders as a
+  // bare separator line — a visual artifact from backend contracts that define
+  // structural groups without fields. Skip such nodes in normal view. In
+  // field-config edit mode, keep empty groups as drop targets.
+  if (type === 'group' || type === 'page' || type === 'container') {
+    if (props.fieldConfigEditable) return true;
+    if (containerTitle(node) || nodeText(node)) return true;
+    return hasRenderableDescendant(node, new Set<object>());
+  }
+  return true;
+}
+
+function hasRenderableDescendant(node: NativeFormLayoutNode, seen: Set<object>): boolean {
+  if (!node || seen.has(node)) return false;
+  seen.add(node);
+  for (const child of rawChildren(node)) {
+    if (!child) continue;
+    if (!props.isNodeVisible(child)) continue;
+    const childType = nodeType(child);
+    if (['field', 'button', 'widget'].includes(childType)) return true;
+    if (['group', 'page', 'container', 'notebook', 'sheet', 'header', 'footer'].includes(childType)) {
+      if (hasRenderableDescendant(child, seen)) return true;
+    }
+  }
+  return false;
 }
 
 function nodeType(node: NativeFormLayoutNode) {

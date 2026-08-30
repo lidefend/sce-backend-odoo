@@ -1760,8 +1760,8 @@ assert.equal(
   'action.submit',
   'an enabled backend primary must always outrank the platform create-save fallback',
 );
-assert.deepEqual(createBackendPrimaryFloorplan.directActions.map((action) => action.key), ['action.submit']);
-assert.deepEqual(createBackendPrimaryFloorplan.overflowActions.map((action) => action.key), ['form.save', 'action.navigation']);
+assert.deepEqual(createBackendPrimaryFloorplan.directActions.map((action) => action.key), ['action.submit', 'form.save']);
+assert.deepEqual(createBackendPrimaryFloorplan.overflowActions.map((action) => action.key), ['action.navigation']);
 
 const createBlockedPrimarySnapshot = structuredClone(createBackendPrimarySnapshot);
 createBlockedPrimarySnapshot.statusContract.buttonStatus = [
@@ -1778,11 +1778,11 @@ assert.equal(
   '',
   'a disabled backend primary must block create-save promotion instead of failing open',
 );
-assert.deepEqual(createBlockedPrimaryFloorplan.directActions, []);
+assert.deepEqual(createBlockedPrimaryFloorplan.directActions.map((action) => action.key), ['form.save']);
 assert.deepEqual(createBlockedPrimaryFloorplan.blockedActions.map((action) => action.key), ['action.submit']);
 assert.deepEqual(
   createBlockedPrimaryFloorplan.overflowActions.map((action) => action.key),
-  ['form.save', 'action.navigation'],
+  ['action.navigation'],
   'blocked primary handling must not remove any other cb6e276 action',
 );
 

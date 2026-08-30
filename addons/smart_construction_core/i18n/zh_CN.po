@@ -118,3 +118,33 @@ msgstr "无法连接邮件服务器，请检查发件服务器配置"
 #. module: smart_construction_core
 msgid "Sign in"
 msgstr "登录"
+
+#. module: smart_construction_core
+#: model:ir.model.fields,field_description:res.partner.category_id
+msgid "业务分类"
+msgstr "业务分类"
+
+#. module: smart_construction_core
+#: model:ir.model.fields,field_description:res.partner.company_type
+msgid "客户类型"
+msgstr "客户类型"
+
+#. module: smart_construction_core
+#: model:ir.model.fields,field_description:res.partner.industry_id
+msgid "行业"
+msgstr "行业"
+
+#. module: smart_construction_core
+#: model:ir.model.fields,field_description:res.partner.vat
+msgid "统一社会信用代码"
+msgstr "统一社会信用代码"
+
+#. module: smart_construction_core
+#: model:ir.model.fields,field_description:res.partner.company_registry
+msgid "工商注册号"
+msgstr "工商注册号"
+
+#. module: smart_construction_core
+#: model:ir.model.fields,field_description:res.partner.is_company
+msgid "企业/组织"
+msgstr "企业/组织"

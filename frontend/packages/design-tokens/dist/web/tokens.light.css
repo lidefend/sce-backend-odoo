@@ -245,13 +245,13 @@
   --sc-pattern-overlay-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
   --sc-pattern-page-header-section-gap: 24;
   --sc-pattern-page-header-title-size: 24;
-  --sc-pattern-task-form-column-gap: 20px;
+  --sc-pattern-task-form-column-gap: 24;
   --sc-pattern-task-form-content-max-width: 1200px;
-  --sc-pattern-task-form-control-row-gap: 6px;
+  --sc-pattern-task-form-control-row-gap: 4;
   --sc-pattern-task-form-field-gap: 12;
-  --sc-pattern-task-form-label-row-gap: 8px;
+  --sc-pattern-task-form-label-row-gap: 4;
   --sc-pattern-task-form-label-row-margin-bottom: 3px;
-  --sc-pattern-task-form-readonly-column-gap: 26px;
+  --sc-pattern-task-form-readonly-column-gap: 32;
   --sc-pattern-workspace-form-content-max-width: 1440px;
   --sc-pattern-workspace-form-frame-max-width: 1920px;
   --sc-platform-density-touch-target-min: 32;

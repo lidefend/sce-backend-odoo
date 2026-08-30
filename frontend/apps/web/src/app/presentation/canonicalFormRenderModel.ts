@@ -19,8 +19,6 @@ export type CanonicalFormAction = {
   visible: boolean;
   enabled: boolean;
   reasonCode: string;
-  placeholder: string;
-  auth: string;
   visibleProfiles: CanonicalFormRenderMode[];
   safety: Readonly<Record<string, unknown>>;
   actionRef: ContractV2ActionRule;
@@ -56,6 +54,8 @@ export type CanonicalFormField = {
   required: boolean;
   disabled: boolean;
   reasonCode: string;
+  placeholder: string;
+  auth: string;
   semanticRole: CanonicalFormSemanticRole | '';
   semanticSlot: string;
   semanticGroup: string;

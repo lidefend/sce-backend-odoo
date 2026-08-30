@@ -6,7 +6,7 @@ import type {
   CanonicalFormRenderModel,
 } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
-import { canonicalFieldToFormSection } from './canonicalFormRenderer';
+import { canonicalFieldToFormSection, type CanonicalRelationProjection } from './canonicalFormRenderer';
 
 export type CanonicalNativeLayoutNode = {
   type: string;
@@ -16,6 +16,7 @@ export type CanonicalNativeLayoutNode = {
   text?: string;
   cols?: number;
   columns?: number;
+  span?: number;
   widget?: string;
   visible?: boolean;
   attributes?: Record<string, unknown>;
@@ -106,6 +107,7 @@ function fieldNode(
   field: CanonicalFormField,
   fieldSchemas: WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>,
   sourceNode?: CanonicalFormNode,
+  relationProjection?: CanonicalRelationProjection,
 ): CanonicalNativeLayoutNode {
   const node: CanonicalNativeLayoutNode = {
     ...(sourceNode?.nativePresentation || {}),
@@ -130,15 +132,18 @@ function fieldNode(
       canonicalNodeKind: 'field',
       sectionNavigationRole: sourceNode?.zoneRole,
       contractStyleToken: sourceNode?.styleToken,
+      surfaceRole: text((field.componentConfig as Record<string, unknown>)?.surfaceRole),
+      technical: (field.componentConfig as Record<string, unknown>)?.technical === true,
     },
     children: [],
   };
-  fieldSchemas.set(node, canonicalFieldToFormSection(field));
+  fieldSchemas.set(node, canonicalFieldToFormSection(field, relationProjection));
   return node;
 }
 
 export function buildCanonicalNativeFormBridge(
   renderModel: CanonicalFormRenderModel,
+  relationProjection?: CanonicalRelationProjection,
 ): CanonicalNativeFormBridge {
   const fieldSchemas = new WeakMap<CanonicalNativeLayoutNode, FormSectionFieldSchema>();
   const actionsByIdentity = new Map<string, CanonicalFormAction>();
@@ -149,7 +154,7 @@ export function buildCanonicalNativeFormBridge(
 
   function mapNode(node: CanonicalFormNode): CanonicalNativeLayoutNode {
     if (text(node.kind).toLowerCase() === 'field' && node.fields.length === 1) {
-      return fieldNode(node.fields[0], fieldSchemas, node);
+      return fieldNode(node.fields[0], fieldSchemas, node, relationProjection);
     }
     const rawKind = text(node.kind).toLowerCase() || 'container';
     const action = node.action;
@@ -232,7 +237,12 @@ export function buildCanonicalNativeFormBridge(
       };
     },
     nodeVisible(node) {
-      return node.visible !== false;
+      if (node.visible === false) return false;
+      const attrs = (node.attributes || {}) as Record<string, unknown>;
+      const surfaceRole = text(attrs.surfaceRole);
+      if (surfaceRole === 'hidden') return false;
+      if (attrs.technical === true) return false;
+      return true;
     },
   };
 }

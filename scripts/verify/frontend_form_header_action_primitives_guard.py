@@ -28,7 +28,7 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
         "@click=\"$emit('run-primary')\"",
         "@click=\"$emit('run-action', action)\"",
         "@click=\"$emit('canonical-action', action)\"",
-        "@click=\"$emit('canonical-save')\"",
+        "@click=\"$emit('save-draft')\"",
         "@click=\"$emit('discard')\"",
     ):
         if event not in source:

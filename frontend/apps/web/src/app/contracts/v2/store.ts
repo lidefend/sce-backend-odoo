@@ -332,7 +332,8 @@ export function resolveContractV2FieldDescriptorMap(
 ): ContractV2FieldDescriptorMap {
   const out: ContractV2FieldDescriptorMap = {};
   if (!store) return out;
-  const widgetsByFieldCode = store.widgetsByFieldCode instanceof Map
+  const isMap = store.widgetsByFieldCode instanceof Map;
+  const widgetsByFieldCode = isMap
     ? store.widgetsByFieldCode
     : new Map(Array.from(store.widgetsByFieldCodeAll?.entries?.() || []).flatMap(([fieldCode, widgets]) => (
       widgets.length === 1 ? [[fieldCode, widgets[0]] as const] : []
@@ -342,8 +343,8 @@ export function resolveContractV2FieldDescriptorMap(
     if (!code) return;
     const config = asDict(widget.componentConfig);
     const descriptor = asDict(widget.fieldDescriptor);
-    const fieldType = asText(widget.fieldType || config.fieldType || descriptor.ttype || descriptor.type);
-    const relation = asText(widget.relation || config.relation || descriptor.relation);
+    const fieldType = asText(config.fieldType || descriptor.ttype || descriptor.type);
+    const relation = asText(config.relation || descriptor.relation);
     const relationField = asText(config.relationField || descriptor.relation_field);
     const relationEntry = asDict(config.relationEntry || descriptor.relation_entry);
     const widgetOptions = asDict(config.widgetOptions || descriptor.widget_options);

@@ -34,6 +34,8 @@
     @change="onTDesignChange"
     @focus="onTDesignFocus"
     @blur="onTDesignBlur"
+    @keydown="onTDesignKeydown"
+    @keyup="onTDesignKeyup"
   >
     <template v-if="$slots.prefix" #prefixIcon><slot name="prefix" /></template>
     <template v-if="$slots.suffix" #suffixIcon><slot name="suffix" /></template>
@@ -125,6 +127,8 @@ const emit = defineEmits<{
   change: [value: string, event: Event];
   focus: [value: string | number, event: FocusEvent];
   blur: [value: string | number, event: FocusEvent];
+  keydown: [event: KeyboardEvent];
+  keyup: [event: KeyboardEvent];
 }>();
 
 const usesTDesignDriver = computed(() => ['text', 'search', 'number', 'url', 'tel', 'password'].includes(props.type));
@@ -189,6 +193,12 @@ function onTDesignFocus(value: string | number, context: { e?: FocusEvent }) {
 }
 function onTDesignBlur(value: string | number, context: { e?: FocusEvent }) {
   emit('blur', value, context?.e ?? new FocusEvent('blur'));
+}
+function onTDesignKeydown(_value: string | number, context: { e?: KeyboardEvent }) {
+  emit('keydown', context?.e ?? new KeyboardEvent('keydown'));
+}
+function onTDesignKeyup(_value: string | number, context: { e?: KeyboardEvent }) {
+  emit('keyup', context?.e ?? new KeyboardEvent('keyup'));
 }
 
 defineExpose({

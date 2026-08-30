@@ -65,7 +65,9 @@ def digest(paths: list[Path], extra: str = "") -> str:
     for path in sorted(set(paths)):
         output.update(relative(path).encode())
         output.update(b"\0")
-        output.update(path.read_bytes())
+        # Normalize line endings for cross-platform digest consistency
+        content = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        output.update(content)
         output.update(b"\0")
     return output.hexdigest()
 

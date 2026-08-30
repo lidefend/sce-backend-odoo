@@ -80,7 +80,7 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
   };
 }
 
-type CanonicalRelationProjection = Pick<
+export type CanonicalRelationProjection = Pick<
   RelationFieldAdapter,
   | 'relationKeyword'
   | 'filteredRelationOptions'
@@ -103,10 +103,12 @@ export function canonicalFieldToFormSection(
   const descriptor = fieldDescriptor(field);
   const relation = type === 'many2one' ? relationValue(field.value) : null;
   const runtimeRelationOptions = type === 'many2one' && relationProjection
-    ? relationProjection.filteredRelationOptions(field.fieldCode).map((option) => ({
-      value: option.id,
-      label: option.label,
-    }))
+    ? relationProjection.filteredRelationOptions(field.fieldCode)
+      .filter((option): option is NonNullable<typeof option> => Boolean(option))
+      .map((option) => ({
+        value: option.id,
+        label: option.label,
+      }))
     : [];
   const selectedRelation = type === 'many2one' && relationProjection
     ? relationProjection.selectedRelationOptions(field.fieldCode).find((option) => (
@@ -167,7 +169,7 @@ export function canonicalFieldToFormSection(
     auth: field.auth || undefined,
     helpText: field.reasonCode,
     inputPlaceholder: field.placeholder || undefined,
-    spanClass: field.span >= 24 ? 'field--full' : field.span >= 16 ? 'field--wide' : 'field--normal',
+    spanClass: field.fieldType === 'text' || field.span >= 24 ? 'field--full' : field.span >= 16 ? 'field--wide' : 'field--normal',
     value: relation ? relation.displayName : field.value,
     inputValue: relation ? relation.id : inputValue(field.value),
     many2oneTextValue: relationKeyword || relation?.displayName || selectedRelation?.label || undefined,

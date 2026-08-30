@@ -39,5 +39,6 @@ export { Timeline as TDesignTimeline, TimelineItem as TDesignTimelineItem } from
 export { Steps as TDesignSteps, StepItem as TDesignStepItem } from 'tdesign-vue-next/es/steps';
 export { Pagination as TDesignPagination } from 'tdesign-vue-next/es/pagination';
 export { Popconfirm as TDesignPopconfirm } from 'tdesign-vue-next/es/popconfirm';
+export { Popup as TDesignPopup } from 'tdesign-vue-next/es/popup';
 export { Space as TDesignSpace } from 'tdesign-vue-next/es/space';
 export { Layout as TDesignLayout, Aside as TDesignAside, Header as TDesignHeader, Content as TDesignContent } from 'tdesign-vue-next/es/layout';

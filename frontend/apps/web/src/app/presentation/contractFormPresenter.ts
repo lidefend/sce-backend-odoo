@@ -120,6 +120,11 @@ function formStructureFieldLabels(
 }
 
 function zoneRole(container: ContractV2Container): CanonicalFormZoneRole {
+  // 协作/沟通类节点统一归为 subordinate 区，确保协作日志正确渲染
+  const containerKind = String(container.containerType || container.type || '').toLowerCase();
+  if (['chatter', 'activity', 'attachment', 'collaboration'].includes(containerKind)) {
+    return 'subordinate';
+  }
   const authority = asDict(container.sourceAuthority
     || container.attributes?.sourceAuthority || container.attributes?.source_authority);
   const projectionOnly = authority.projection_only === true || authority.projectionOnly === true;

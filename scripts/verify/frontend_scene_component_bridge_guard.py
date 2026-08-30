@@ -95,7 +95,7 @@ require("renderModel.zones" in form_floorplan, "floorplan does not consume canon
 require(
     "renderModel.zones.primary.map(mapNode)" in canonical_native_bridge
     and "renderModel.zones.subordinate" in canonical_native_bridge
-    and "canonicalFieldToFormSection(field)" in canonical_native_bridge
+    and "canonicalFieldToFormSection(field" in canonical_native_bridge
     and ("name: field.widgetId" in canonical_native_bridge or "canonicalWidgetId: field.widgetId" in canonical_native_bridge)
     and "name: field.fieldCode" in canonical_native_bridge,
     "canonical native bridge does not preserve normalized hierarchy and field occurrence identity",
@@ -229,7 +229,7 @@ require(
     "normalized form semantic roles do not survive the canonical mechanical mapping",
 )
 require(
-    "props.showCollaborationPanel === true || hasCollaborationNode.value" in form_host
+    "Boolean(props.showCollaborationPanel) || hasCollaborationNode.value" in form_host
     and ':show-collaboration-panel="showNativeCollaborationPanel"' in contract_form_page,
     "collaboration region must follow the normalized runtime capability or subordinate node authority",
 )

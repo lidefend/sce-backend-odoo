@@ -50,9 +50,6 @@ def validate() -> list[str]:
             failures.append(f"contract header mobile action settlement misses {marker}")
     if 'role="menu"' in contract or 'role="menuitem"' in contract:
         failures.append("contract header disclosure must preserve native button semantics")
-    for marker in ('data-action-ref="form.save"', 'data-action-tier="primary"', ':data-action-enabled="String(!busy)"'):
-        if marker not in contract:
-            failures.append(f"canonical local save misses primary-action evidence {marker}")
     action_view = source("frontend/apps/web/src/views/ActionView.vue")
     if "<ProductPageHeader" not in action_view or '<h1 class="sc-visually-hidden">{{ vm.page.title }}</h1>' in action_view:
         failures.append("ActionView does not delegate collection/scene identity to ProductPageHeader")
@@ -63,11 +60,11 @@ def validate() -> list[str]:
         if marker not in contract_page:
             failures.append(f"ContractForm does not project direct edit actions into header: {marker}")
     canonical_actions = source("frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts")
-    for marker in ("input.renderProfile === 'create'", "input.renderProfile === 'edit'", "authorizedLocalSave?.enabled"):
+    for marker in ("input.floorplan?.decisionMode", "input.floorplan.directActions", "input.floorplan.overflowActions", "['primary', 'secondary'].includes(action.tier)", "['overflow', 'configuration'].includes(action.tier)"):
         if marker not in canonical_actions:
-            failures.append(f"canonical edit/create save authority misses {marker}")
-    if "input.renderProfile === 'edit' && input.dirty" in canonical_actions:
-        failures.append("canonical edit save authority must not wait for dirty state")
+            failures.append(f"canonical header action floorplan rendering misses {marker}")
+    if "localSavePrimary" in canonical_actions or "authorizedLocalSave" in canonical_actions:
+        failures.append("canonical header actions must not invent local save orchestration")
     driver = source("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     for marker in ('showProductActions && !actionsInHeader', 'visibleActions.length && !actionsInHeader'):
         if marker not in driver:

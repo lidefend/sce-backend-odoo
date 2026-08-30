@@ -73,12 +73,11 @@
         ><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</ScButton>
         <ScButton v-if="showReturn" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</ScButton>
       </span>
-      <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length || canonicalDirectActions.length || canonicalLocalSavePrimary" class="form-header-primary-actions">
+      <span v-if="showContinueProcessing || showDraftSave || showPrimaryFormAction || directActions.length || canonicalDirectActions.length" class="form-header-primary-actions">
         <ScButton v-if="showContinueProcessing" data-product-primary-action data-form-mode-action="edit" variant="primary" size="small" :disabled="busy" type="button" @click="$emit('continue-processing')">{{ continueProcessingLabel }}</ScButton>
         <ScButton v-if="showDraftSave" variant="ghost" size="small" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</ScButton>
         <ScButton v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" variant="primary" size="small" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</ScButton>
         <ScButton v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
-        <ScButton v-if="canonicalLocalSavePrimary" data-product-primary-action data-action-ref="form.save" data-action-tier="primary" :data-action-enabled="String(!busy)" variant="primary" size="small" :disabled="busy" type="button" @click="$emit('canonical-save')">{{ mode === 'create' ? '保存草稿' : '保存修改' }}</ScButton>
         <ScButton v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
       </span>
       <ScDropdown v-if="headerOverflowItems.length" class="form-header-more-actions" :items="headerOverflowItems" @select="selectHeaderOverflow">
@@ -90,7 +89,7 @@
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('reload')">{{ reloadLabel }}</ScButton>
-      <ScDropdown v-if="mobileActionAuthority.count" class="form-header-mobile-actions" aria-label="更多页面操作" :data-mobile-action-count="mobileActionAuthority.count" :data-mobile-action-keys="mobileActionAuthority.keys.join(',')" :items="mobileActionItems" @select="selectMobileAction">
+      <ScDropdown v-if="mobileActionAuthority.count && isNarrowViewport" class="form-header-mobile-actions" aria-label="更多页面操作" :data-mobile-action-count="mobileActionAuthority.count" :data-mobile-action-keys="mobileActionAuthority.keys.join(',')" :items="mobileActionItems" @select="selectMobileAction">
         <template #trigger><ScButton variant="secondary" size="small" aria-label="打开更多页面操作">更多</ScButton></template>
       </ScDropdown>
     </template>
@@ -98,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScIcon from '../../components/design-system/ScIcon.vue';
@@ -126,11 +125,20 @@ const props = defineProps<{
   showDraftSave: boolean; draftSaveDisabled: boolean; draftSaveLabel: string; showPrimaryFormAction: boolean;
   primaryFormActionDisabled: boolean; primaryFormActionHint: string; submitLabel: string; primaryAction: ContractAction | null;
   directActions: ContractAction[]; overflowActions: ContractAction[];
-  canonicalDirectActions: CanonicalFormAction[]; canonicalOverflowActions: CanonicalFormAction[]; canonicalLocalSavePrimary: boolean;
+  canonicalDirectActions: CanonicalFormAction[]; canonicalOverflowActions: CanonicalFormAction[];
   configActions: ContractAction[]; showDiscard: boolean; showDebug: boolean; contractPresent: boolean;
   discardLabel: string; reloadLabel: string;
 }>();
 const workflowStatusAuthority = computed(() => resolveWorkflowStatusAuthority(props.statusbar));
+
+/** 窄屏（<=520px）才展示移动端全收敛「更多」下拉，desktop 由「更多操作」收纳 overflow。 */
+const narrowViewportQuery = typeof window !== 'undefined' ? window.matchMedia('(max-width: 520px)') : null;
+const isNarrowViewport = ref(Boolean(narrowViewportQuery?.matches));
+if (narrowViewportQuery) {
+  const applyNarrow = () => { isNarrowViewport.value = Boolean(narrowViewportQuery.matches); };
+  narrowViewportQuery.addEventListener('change', applyNarrow);
+  onBeforeUnmount(() => narrowViewportQuery.removeEventListener('change', applyNarrow));
+}
 
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
@@ -151,17 +159,13 @@ const headerPrimaryActions = computed<ProductPageHeaderAction[]>(() => {
   if (props.showPrimaryFormAction) return [{ key: props.primaryAction?.key || 'save', label: props.submitLabel, semantic: props.primaryAction ? 'submit' : 'save', enabled: !props.primaryFormActionDisabled }];
   const action = presentedDirectActions.value.find((item) => item.presentationTier === 'primary' || item.semantic === 'primary_action');
   if (action) return [{ key: action.key, label: action.label, semantic: 'submit', enabled: action.enabled }];
-  if (props.canonicalLocalSavePrimary) return [{ key: 'form.save', label: props.mode === 'create' ? '保存草稿' : '保存修改', semantic: 'save', enabled: !props.busy }];
   const canonical = props.canonicalDirectActions.find((item) => item.tier === 'primary');
   return canonical ? [{ key: canonical.key, label: canonical.label, semantic: 'submit', enabled: canonical.enabled }] : [];
 });
-const canonicalPresentedDirectActions = computed(() => props.canonicalLocalSavePrimary ? props.canonicalDirectActions.filter((action) => action.tier !== 'primary') : props.canonicalDirectActions);
+const canonicalPresentedDirectActions = computed(() => props.canonicalDirectActions);
 const mobilePresentedDirectActions = computed(() => presentedDirectActions.value.filter((action) => action.presentationTier !== 'primary' && action.semantic !== 'primary_action'));
 const mobileCanonicalDirectActions = computed(() => canonicalPresentedDirectActions.value.filter((action) => action.tier !== 'primary'));
-const canonicalPresentedOverflowActions = computed(() => [
-  ...(props.canonicalLocalSavePrimary ? props.canonicalDirectActions.filter((action) => action.tier === 'primary') : []),
-  ...props.canonicalOverflowActions,
-]);
+const canonicalPresentedOverflowActions = computed(() => props.canonicalOverflowActions);
 const mobileActionAuthority = computed(() => resolveMobileFormActionAuthority({
   showBack: props.showBack !== false,
   showReturn: props.showReturn,

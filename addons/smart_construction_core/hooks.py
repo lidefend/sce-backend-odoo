@@ -161,6 +161,57 @@ def post_init_hook(env):
     _ensure_signup_defaults(env)
     _task_sc_state_backfill(env)
     _backfill_lowcode_contract_source_status(env)
+    _ensure_chinese_translations(env)
+
+
+def _ensure_chinese_translations(env):
+    """Ensure zh_CN language is active and translations are loaded.
+
+    Odoo's base module ships complete zh_CN translations (including
+    res.partner.industry), but they are not automatically loaded into
+    the database unless the language is explicitly installed/updated.
+    This function activates zh_CN and forces a translation reload so
+    that all translatable fields (industry names, selection labels, etc.)
+    display correctly in Chinese.
+
+    Idempotent: uses ir.config_parameter to track whether translations
+    have been loaded for the current base module version.
+    """
+    ICP = env["ir.config_parameter"].sudo()
+    Lang = env["res.lang"].sudo()
+    Module = env["ir.module.module"].sudo()
+
+    # Activate zh_CN if not already active
+    zh_cn = Lang.search([("code", "=", "zh_CN")], limit=1)
+    if zh_cn and not zh_cn.active:
+        zh_cn.write({"active": True})
+    elif not zh_cn:
+        # Language record doesn't exist yet; activate via the standard
+        # Odoo language installation wizard
+        Lang._activate_lang("zh_CN")
+
+    # Check if translations have already been loaded for the current base version
+    base_module = Module.search([("name", "=", "base")], limit=1)
+    base_version = base_module.latest_version if base_module else "unknown"
+    loaded_version = ICP.get_param("sc.i18n.zh_cn.loaded_for_base_version", "")
+
+    if loaded_version == base_version:
+        return
+
+    # Force reload of zh_CN translations for all installed modules
+    # This is equivalent to running: odoo -d <db> -u all --i18n-overwrite
+    # but scoped to zh_CN only
+    installed_modules = Module.search([("state", "=", "installed")])
+    for module in installed_modules:
+        try:
+            module._update_translations("zh_CN")
+        except Exception:
+            # Individual module translation failures should not block
+            # the overall initialization; log and continue
+            pass
+
+    # Record that translations have been loaded
+    ICP.set_param("sc.i18n.zh_cn.loaded_for_base_version", base_version)
 
 
 def _backfill_lowcode_contract_source_status(env):

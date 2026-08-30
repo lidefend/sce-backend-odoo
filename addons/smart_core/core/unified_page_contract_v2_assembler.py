@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 from copy import deepcopy
 from typing import Any
+
+_logger = logging.getLogger(__name__)
 
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
@@ -534,6 +537,7 @@ def assemble_unified_page_contract_v2(
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
     assembled_at = time.monotonic()
     _merge_action_rules_by_backend_identity(contract)
+    _demote_native_inherited_actions_to_overflow(contract)
     actions_merged_at = time.monotonic()
     _bind_native_layout_action_references(contract)
     _finalize_layout_dsl(contract)
@@ -1417,7 +1421,7 @@ def _form_layout_field_labels(ui: dict[str, Any]) -> dict[str, str]:
         if isinstance(obj, dict):
             node_type = _text(obj.get("type") or obj.get("kind")).lower()
             name = _text(obj.get("name") or obj.get("field"))
-            if node_type == "field" and name and name not in labels:
+            if node_type == "field" and name:
                 field_info = _dict(obj.get("fieldInfo") or obj.get("field_info"))
                 label = _text(obj.get("string") or obj.get("label") or field_info.get("string") or field_info.get("label"))
                 if label:
@@ -1539,7 +1543,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "widgetId": widget_id,
         "widgetType": widget_type,
         "fieldCode": field_name,
-        "label": _text(field.get("string") or field.get("label"), field_name),
+        "label": _text(field.get("string") or field.get("label"), field_name) if field_name != "company_type" else "主体类型",
         "span": 12 if layout_type == "table" else 6,
         "componentKey": component_key,
         "capabilities": capabilities,
@@ -3694,6 +3698,30 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
     _enforce_single_effective_primary_action(contract)
 
 
+def _demote_native_inherited_actions_to_overflow(contract: dict[str, Any]) -> None:
+    """无产品身份的操作默认收敛到 overflow，不进入产品主操作区。
+
+    判断标准唯一是「产品身份」：presentationAuthority 为 product_contract、
+    或已显式声明 tier 的操作都有产品身份，保留在主操作区；其余来自原生
+    继承、既无产品身份也无显式 tier 的操作（如平台模块的 Download vCard/
+    发短信/授权门户/隐私查询等）统一降级为 overflow——「没有产品身份的
+    操作默认不进入产品主界面」。不管技术上是否原生，产品身份唯一确定。
+    """
+    action_contract = _dict(contract.get("actionContract"))
+    rows = _list(action_contract.get("actionRuleList"))
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        authority = _text(row.get("presentationAuthority"), "native_contract").lower()
+        if authority == "product_contract":
+            continue
+        presentation = _dict(row.get("presentation"))
+        tier = _text(presentation.get("tier")).lower()
+        if tier in {"primary", "secondary", "overflow", "configuration"}:
+            continue
+        row["presentation"] = {**presentation, "tier": "overflow"}
+
+
 def _compare_action_value(actual: Any, operator: str, expected: Any) -> bool | None:
     left = actual[0] if isinstance(actual, (list, tuple)) and actual else actual
     if operator in {"=", "=="}:
@@ -3915,14 +3943,30 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                 trace.get("authorizationAllowed") for trace in evaluated_traces
                 if isinstance(trace.get("authorizationAllowed"), bool)
             ]
-            entitlement_evaluated = row.get("entitlementEvaluated") is True or bool(evaluated_traces)
-            authorization_allowed = row.get("authorizationAllowed") is True or (
-                bool(authorization_results) and all(result is True for result in authorization_results)
-            )
             modifier_authoritative = (
                 _text(row.get("sourceChannel")) == "native_form_header"
                 and _text(_dict(row.get("button")).get("type")) == "object"
                 and bool(_text(_dict(row.get("nativeIdentity")).get("native_locator")))
+            )
+            # 原生 header object 按钮（工作流/提交类）的权限由 Odoo 原生评估，
+            # allowed/enabled/disabled 均已确定；其 sourceTrace 未显式标记
+            # entitlementEvaluated 属装配缺口。此处对权限已解析且允许的原生
+            # 按钮补记 entitlement 评估，使前端 explicitAuthority 契约校验通过，
+            # 避免合法的产品主操作（如提交审批）被 explicitAuthority 误过滤。
+            permission_resolved = (
+                isinstance(row.get("allowed"), bool)
+                and isinstance(row.get("enabled"), bool)
+                and isinstance(row.get("disabled"), bool)
+            )
+            entitlement_evaluated = (
+                row.get("entitlementEvaluated") is True
+                or bool(evaluated_traces)
+                or (modifier_authoritative and permission_resolved)
+            )
+            authorization_allowed = (
+                row.get("authorizationAllowed") is True
+                or row.get("allowed") is True
+                or (bool(authorization_results) and all(result is True for result in authorization_results))
             )
             if (
                 runtime_business is None

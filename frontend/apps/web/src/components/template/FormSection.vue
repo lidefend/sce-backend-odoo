@@ -4,7 +4,7 @@
     data-component="FormSection"
     data-semantic-component="FormSection"
     :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
-    :title="showHead ? title : undefined"
+    :title="undefined"
     :appearance="preferReadonlyFacts ? 'fact' : 'form-section'"
   >
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
@@ -167,14 +167,14 @@
                   :required="field.required"
                   :invalid="field.invalid"
                   :described-by="fieldDescribedBy(field)"
-                  @change="emitBinaryFieldChange(field, $event)"
+                  @change="emitBinaryFieldChange(field, $event[0] || null)"
                 />
                 <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field)" :field="field">
                 <div :class="['many2one-widget-shell', { 'many2one-widget-shell--avatar': isAvatarMany2oneWidget(field) }]">
                   <span v-if="isAvatarMany2oneWidget(field)" class="many2one-avatar" aria-hidden="true">
                     {{ avatarText(many2oneTextValue(field)) }}
                   </span>
-                  <div :class="['many2one-combobox', { 'is-open': many2oneFocusedField === field.name }]">
+                  <div class="many2one-combobox">
                     <ScRelationField
                       :id="fieldControlId(field)"
                       class="input"
@@ -186,7 +186,7 @@
                       :placeholder="selectPlaceholderText(field)"
                       role="combobox"
                       aria-autocomplete="list"
-                      :aria-expanded="many2oneFocusedField === field.name && hasMany2oneDropdown(field)"
+                      :aria-expanded="isMany2oneOpen(field)"
                       :aria-controls="many2oneListboxId(field)"
                       :aria-activedescendant="many2oneActiveDescendant(field)"
                       @update:model-value="emitMany2oneQuery(field, $event)"
@@ -195,10 +195,10 @@
                       @keydown="handleMany2oneKeydown(field, $event)"
                       @blur="blurMany2one(field, $event)"
                     />
-                    <div v-if="hasMany2oneDropdown(field)" :id="many2oneListboxId(field)" class="many2one-option-panel" role="listbox">
+                    <div v-if="isMany2oneOpen(field)" :id="many2oneListboxId(field)" class="many2one-option-panel" role="listbox">
                       <div v-if="field.relationOptions?.length" class="many2one-option-list" role="presentation">
                         <ScButton
-                          v-for="(option, optionIndex) in field.relationOptions.slice(0, 8)"
+                          v-for="(option, optionIndex) in field.relationOptions.filter(Boolean).slice(0, 8)"
                           :id="many2oneOptionId(field, optionIndex)"
                           :key="`${field.name}-option-${option.value}`"
                           type="button"
@@ -561,23 +561,42 @@ function fieldIdentity(field: FormSectionFieldSchema) {
   return String(field.name || field.key || '').trim();
 }
 
+// TDesign 24 栅格系统字段宽度映射
+const FIELD_SPAN_UNITS: Record<string, number> = {
+  'field--compact': 8,
+  'field--normal': 12,
+  'field--half': 12,
+  'field--wide': 16,
+  'field--full': 24,
+};
+
+function fieldSpanUnits(spanClass: string): number {
+  return FIELD_SPAN_UNITS[spanClass] ?? 12;
+}
+
 function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
-  if (field.spanClass) return field.spanClass;
-  const base = defaultSpanClass(field.type);
+  const explicitSpan = field.spanClass || '';
+  const base = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
+    ? 'field--full'
+    : 'field--normal');
   if (base === 'field--full') return base;
-  if (props.columns === 2 && index === props.fields.length - 1) {
-    // Orphan-column fill: when a 2-column grid ends with an isolated normal
-    // field (an even unit count before it means the last field starts a new
-    // row alone), widen the last field so it spans the full row instead of
-    // leaving a large blank half-card. This matches professional form
-    // conventions - a lone field never sits half-width.
-    let units = 0;
-    for (let i = 0; i < index; i++) {
-      const prev = props.fields[i];
-      const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
-      units += prevSpan === 'field--normal' ? 1 : 2;
-    }
-    if (units % 2 === 0) return 'field--wide';
+
+  // Orphan-column fill (TDesign 24 栅格系统): a normal/half-width field that
+  // starts a new row alone leaves blank cells when its row has no pairing fields —
+  // either because it is the last field of the section, or because the next field
+  // spans the full row. Widen such a field to span the full row (24 units).
+  let units = 0;
+  for (let i = 0; i < index; i++) {
+    const prev = props.fields[i];
+    const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
+    units += fieldSpanUnits(prevSpan);
+  }
+  const isLast = index === props.fields.length - 1;
+  const next = props.fields[index + 1];
+  const nextSpan = next ? (next.spanClass || defaultSpanClass(next.type)) : '';
+  const nextIsFullRow = nextSpan === 'field--full';
+  if (units % 24 === 0 && (isLast || nextIsFullRow)) {
+    return 'field--full';
   }
   return base;
 }
@@ -643,7 +662,7 @@ function isDateRangeWidget(field: FormSectionFieldSchema) {
 function selectedRelationLabel(field: FormSectionFieldSchema) {
   const value = String(field.inputValue ?? '').trim();
   if (!value) return '';
-  const option = (field.relationOptions || []).find((item) => String(item.value) === value);
+  const option = (field.relationOptions || []).filter(Boolean).find((item) => String(item.value) === value);
   return option?.label || '';
 }
 
@@ -654,7 +673,7 @@ function many2oneTextValue(field: FormSectionFieldSchema) {
 function showMany2oneInlineCreate(field: FormSectionFieldSchema) {
   const text = many2oneTextValue(field);
   if (!text || !field.relationInlineCreate?.enabled || !field.relationInlineCreate.createOnNoMatch) return false;
-  const options = field.relationOptions || [];
+  const options = (field.relationOptions || []).filter(Boolean);
   const normalized = text.trim().toLowerCase();
   const exact = options.some((item) => String(item.label || '').trim().toLowerCase() === normalized);
   if (exact) return false;
@@ -669,6 +688,10 @@ function hasMany2oneDropdown(field: FormSectionFieldSchema) {
     || (['page', 'dialog'].includes(field.relationCreateMode || '') && field.many2oneCreateToken)
     || showMany2oneInlineCreate(field),
   );
+}
+
+function isMany2oneOpen(field: FormSectionFieldSchema) {
+  return many2oneFocusedField.value === field.name && hasMany2oneDropdown(field);
 }
 
 function avatarText(label: string) {
@@ -831,19 +854,23 @@ function many2oneActiveDescendant(field: FormSectionFieldSchema) {
 function focusMany2one(field: FormSectionFieldSchema) {
   many2oneFocusedField.value = field.name;
   many2oneActiveIndex.value[field.name] = -1;
-  emitMany2oneQuery(field, many2oneTextValue(field));
+  // 已有缓存选项时直接显示，避免聚焦即重复查询；用户输入会触发新查询
+  if (!field.relationOptions?.length) {
+    emitMany2oneQuery(field, many2oneTextValue(field));
+  }
 }
 
 function blurMany2one(field: FormSectionFieldSchema, event: FocusEvent) {
   if (many2oneFocusedField.value !== field.name) return;
-  emitMany2oneCommit(field, (event.target as HTMLInputElement).value);
+  const targetValue = event.target instanceof HTMLInputElement ? event.target.value : '';
+  emitMany2oneCommit(field, targetValue);
   window.setTimeout(() => {
     if (many2oneFocusedField.value === field.name) many2oneFocusedField.value = '';
   }, 0);
 }
 
 function handleMany2oneKeydown(field: FormSectionFieldSchema, event: KeyboardEvent) {
-  const options = (field.relationOptions || []).slice(0, 8);
+  const options = (field.relationOptions || []).filter(Boolean).slice(0, 8);
   const current = many2oneActiveIndex.value[field.name] ?? -1;
   if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && options.length) {
     event.preventDefault();
@@ -854,11 +881,12 @@ function handleMany2oneKeydown(field: FormSectionFieldSchema, event: KeyboardEve
   if (event.key === 'Enter') {
     event.preventDefault();
     const option = current >= 0 ? options[current] : undefined;
+    const inputEl = event.target instanceof HTMLInputElement ? event.target : null;
     if (option) emitFieldChange(field, option.value);
-    else emitMany2oneCommit(field, (event.target as HTMLInputElement).value);
+    else emitMany2oneCommit(field, inputEl ? inputEl.value : '');
     many2oneFocusedField.value = '';
     many2oneActiveIndex.value[field.name] = -1;
-    (event.target as HTMLInputElement).blur();
+    inputEl?.blur();
     return;
   }
   if (event.key === 'Escape') {
@@ -1010,10 +1038,26 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 
 .template-form-section-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(24, minmax(0, 1fr));
   row-gap: calc(var(--sc-pattern-task-form-field-gap, 12) * 1px);
-  column-gap: var(--sc-pattern-task-form-column-gap, 20px);
+  column-gap: calc(var(--sc-pattern-task-form-column-gap, 24) * 1px);
   min-width: 0;
+}
+
+/* 小屏幕：1 列布局，减小间隙 */
+@container (max-width: 479px) {
+  .template-form-section-grid {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+  }
+}
+
+/* 中等屏幕：2 列布局 */
+@container (min-width: 480px) and (max-width: 959px) {
+  .template-form-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: calc(var(--sc-pattern-task-form-column-gap, 24) * 1px);
+  }
 }
 
 .template-form-section--readonly .template-form-section-grid {
@@ -1079,41 +1123,45 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   background: color-mix(in srgb, var(--sc-app-muted-bg) 72%, transparent);
 }
 
-.field--compact,
+/* TDesign 24 栅格系统字段宽度映射（大屏幕默认） */
+.field--compact {
+  grid-column: span 8;
+}
+
 .field--normal,
 .field--half {
-  grid-column: span 1;
+  grid-column: span 12;
 }
 
-.field--wide,
+.field--wide {
+  grid-column: span 16;
+}
+
 .field--full {
-  grid-column: 1 / -1;
+  grid-column: span 24;
 }
 
-.template-form-section-grid--columns-1 > .field--wide,
-.template-form-section-grid--columns-1 > .field--full {
-  grid-column: 1 / -1;
-}
-
-.field--large .input {
-  min-height: 92px;
-}
-
-@container (min-width: 680px) {
-  .template-form-section-grid--columns-2,
-  .template-form-section-grid--columns-3 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .template-form-section-grid--columns-2 > .field--wide,
-  .template-form-section-grid--columns-3 > .field--wide {
-    grid-column: span 2;
+/* 小屏幕：1 列布局，所有字段全宽 */
+@container (max-width: 479px) {
+  .field--compact,
+  .field--normal,
+  .field--half,
+  .field--wide,
+  .field--full {
+    grid-column: 1 / -1;
   }
 }
 
-@container (min-width: 1240px) {
-  .template-form-section-grid--columns-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+/* 中等屏幕：2 列布局 */
+@container (min-width: 480px) and (max-width: 959px) {
+  .field--compact,
+  .field--normal,
+  .field--half {
+    grid-column: span 1;
+  }
+  .field--wide,
+  .field--full {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1370,17 +1418,13 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   top: calc(100% + 2px);
   left: 0;
   right: 0;
-  display: none;
+  display: grid;
   max-height: 260px;
   overflow: auto;
   border: 1px solid var(--sc-app-border-strong);
   border-radius: var(--sc-component-panel-radius);
   background: var(--sc-app-panel);
   box-shadow: var(--sc-semantic-shadow-modal);
-}
-
-.many2one-combobox.is-open .many2one-option-panel {
-  display: grid;
 }
 
 .many2one-option-list {

@@ -490,7 +490,7 @@ export function composeCanonicalFormFloorplan(
     && action !== effectivePrimary
     && !['overflow', 'configuration'].includes(action.tier)
   ));
-  const directSecondary = writeMode ? [] : secondaryCandidates.slice(0, 1);
+  const directSecondary = secondaryCandidates.slice(0, 1);
   const directActions = [...(effectivePrimary ? [effectivePrimary] : []), ...directSecondary];
   const blockedActions = visibleActions.filter((action) => !action.enabled && action.tier === 'primary');
 

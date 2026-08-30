@@ -42,7 +42,13 @@ compose_dev run --rm -T \
   --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" \
   --addons-path="$ODOO_ADDONS_PATH" \
   -u "$MODULE" \
+  --i18n-overwrite \
   ${WITHOUT_DEMO:-} \
   --logfile=- \
   --no-http --workers=0 --max-cron-threads=0 \
   --stop-after-init ${ODOO_ARGS:-} </dev/null
+
+# Note: --i18n-overwrite in the upgrade command above ensures all
+# installed translations (including zh_CN) are reloaded from .po files.
+# Additional explicit language loading is not required.
+

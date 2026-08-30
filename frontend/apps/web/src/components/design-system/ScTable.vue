@@ -13,6 +13,7 @@
     :keyboard-row-hover="keyboardRowHover"
     :disable-data-page="disableDataPage"
     :table-content-width="tableContentWidth"
+    :scroll="tableScroll"
     :foot-data="footData"
     :selected-row-keys="selectedRowKeys"
     :row-selection-type="rowSelectionType"
@@ -77,6 +78,13 @@ function projectRowAttributes(attributes: Record<string, unknown> | undefined): 
 const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
   ? (context: unknown) => projectRowAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
   : projectRowAttributes(props.rowAttributes)) as unknown as ComputedRef<TDesignTableRowAttributes<TDesignTableRowData>>;
+// 启用水平滚动：当 tableContentWidth 存在时，将其作为 scroll.x
+// tdesign TScroll类型要求type字段，但水平滚动不需要，使用类型断言绕过
+const tableScroll = computed(() => {
+  if (!props.tableContentWidth) return undefined;
+  return { x: props.tableContentWidth };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}) as any;
 const emit = defineEmits<{
   rowClick: [context: unknown];
   rowDblclick: [context: unknown];

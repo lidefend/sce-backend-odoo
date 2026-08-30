@@ -483,6 +483,31 @@ function trimActivityPages(pages: ActivityPage[], activeKey: string): ActivityPa
   return keep;
 }
 
+function restoreActivityPages(raw: unknown, recordContext: RecordContextContract | null): ActivityPage[] {
+  if (!Array.isArray(raw)) return [];
+  // Fail-closed: without an authoritative company on the current context we
+  // cannot attribute any cached page to it, so nothing is restored. A page
+  // without company metadata is likewise untrusted and is dropped.
+  const companyId = Number(recordContext?.company_id || recordContext?.selected?.company_id || 0);
+  if (!companyId) return [];
+  return (raw as ActivityPage[])
+    .filter((page) => page && typeof page === 'object')
+    .filter((page) => asText(page.key) && asText(page.route))
+    .filter((page) => {
+      const pageCompanyId = Number(
+        page.record_context?.company_id || page.record_context?.selected?.company_id || 0,
+      );
+      return pageCompanyId === companyId;
+    })
+    .map((page) => ({
+      ...page,
+      created_at: Number(page.created_at || 0),
+      last_active_at: Number(page.last_active_at || 0),
+    }))
+    .sort((left, right) => left.created_at - right.created_at)
+    .slice(0, MAX_ACTIVITY_PAGES);
+}
+
 function isRetainedActivityPage(page: ActivityPage | null): page is ActivityPage {
   if (!page) return false;
   const key = asText(page.key).toLowerCase();
@@ -806,9 +831,33 @@ export const useSessionStore = defineStore('session', {
           this.roleSurface = null;
           this.roleSurfaceMap = {};
           this.recordContext = recordContextStorageSnapshot(normalizeRecordContext(parsed.recordContext));
-          this.activityPages = [];
-          this.activeActivityPageKey = '';
-          this.activityPageCacheEpochs = {};
+          // Recent activity pages are user-owned history and survive reloads
+          // (unlike navigation contracts, which stay live). Restore them,
+          // keeping only pages whose company metadata matches the restored
+          // context (fail-closed: pages without authoritative company
+          // metadata, or a context without one, restore nothing).
+          const restoredActivityPages = restoreActivityPages(parsed.activityPages, this.recordContext);
+          this.activityPages = restoredActivityPages;
+          const restoredActiveKey = asText(parsed.activeActivityPageKey);
+          this.activeActivityPageKey = restoredActiveKey && this.activityPages.some((page) => page.key === restoredActiveKey)
+            ? restoredActiveKey
+            : '';
+          // Only keep cache epochs that belong to a restored page (including
+          // its normalized route key); epochs for unknown pages are dropped
+          // rather than carried across companies/contexts.
+          const restoredPageKeys = new Set(restoredActivityPages.map((page) => page.key));
+          const restoredEpochs: Record<string, number> = {};
+          if (parsed.activityPageCacheEpochs && typeof parsed.activityPageCacheEpochs === 'object') {
+            for (const [epochKey, epoch] of Object.entries(parsed.activityPageCacheEpochs as Record<string, number>)) {
+              const numericEpoch = Number(epoch) || 0;
+              if (restoredPageKeys.has(epochKey)) {
+                restoredEpochs[epochKey] = numericEpoch;
+              } else if ([...restoredPageKeys].some((pageKey) => activityPageCacheRouteKey(pageKey) === epochKey)) {
+                restoredEpochs[epochKey] = numericEpoch;
+              }
+            }
+          }
+          this.activityPageCacheEpochs = restoredEpochs;
           this.capabilityCatalog = parsed.capabilityCatalog ?? {};
           this.sceneActionHints = {};
           this.capabilityGroups = parsed.capabilityGroups ?? [];
@@ -1190,6 +1239,12 @@ export const useSessionStore = defineStore('session', {
       this.sceneReadyContract = null;
       this.sceneGovernance = null;
       this.defaultRoute = null;
+      // Preserve user-owned recent activity pages across this authoritative
+      // bootstrap so the workspace home "最近访问" survives reloads. They are
+      // restored below once the authoritative record context is known; records
+      // for a different company/scope are filtered out then.
+      const pendingActivityRestore = this.activityPages;
+      const pendingActivityRestoreActiveKey = this.activeActivityPageKey;
       this.activityPages = [];
       this.activeActivityPageKey = '';
       this.activityPageCacheEpochs = {};
@@ -1573,6 +1628,21 @@ export const useSessionStore = defineStore('session', {
       this.menuTree = menuTreeWithKeys;
       this.navigationModel = createCanonicalNavigationModel(menuTreeWithKeys, this.routeAuthority);
       this.menuExpandedKeys = filterExpandedKeys(this.menuTree, this.menuExpandedKeys);
+      // Bootstrap succeeded with the authoritative record context. Restore
+      // user-owned recent activity pages that still match this context so the
+      // workspace home "最近访问" survives reloads. Records for a different
+      // company/scope are filtered out by restoreActivityPages.
+      if (!this.activityPages.length && pendingActivityRestore.length) {
+        this.activityPages = trimActivityPages(
+          restoreActivityPages(pendingActivityRestore, this.recordContext),
+          pendingActivityRestoreActiveKey,
+        );
+        const restoredActiveKey = pendingActivityRestoreActiveKey
+          && this.activityPages.some((page) => page.key === pendingActivityRestoreActiveKey)
+          ? pendingActivityRestoreActiveKey
+          : '';
+        this.activeActivityPageKey = restoredActiveKey;
+      }
       this.isReady = true;
       this.initStatus = 'ready';
       this.persist();

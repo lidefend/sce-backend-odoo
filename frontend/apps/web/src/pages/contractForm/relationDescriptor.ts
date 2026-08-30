@@ -138,7 +138,7 @@ export function relationOptionsFromRecords(records: unknown, descriptor?: FieldD
 }
 
 export function relationOptionsWithSelectedFallback(options: RelationOption[] | undefined, value: unknown): RelationOption[] {
-  const rows = Array.isArray(options) ? options : [];
+  const rows = Array.isArray(options) ? options.filter((item): item is RelationOption => Boolean(item)) : [];
   if (rows.length) return rows;
   const ids = normalizeRelationIds(value);
   return ids.map((id) => ({ id, label: `#${id}` }));
@@ -241,19 +241,30 @@ export function relationCreateMode(descriptor?: FieldDescriptor): 'page' | 'dial
 
 export function relationInlineCreate(descriptor?: FieldDescriptor) {
   const entry = relationEntry(descriptor);
-  if (!entry?.inlineCreate?.enabled) {
+  if (entry?.inlineCreate?.enabled) {
     return {
-      enabled: false,
-      createOnNoMatch: false,
-      nameField: '',
-      match: entry?.inlineCreate?.match || 'exact_label',
+      enabled: true,
+      createOnNoMatch: entry.inlineCreate.createOnNoMatch,
+      nameField: entry.inlineCreate.nameField,
+      match: entry.inlineCreate.match,
+    };
+  }
+  // 契约未提供 relation_entry 时，为 many2many 字段默认启用内联创建
+  // （后端 _build_relation_inline_create_contract 已生成配置，但契约 attrs 未包含 relation_entry）
+  const ttype = fieldType(descriptor);
+  if (ttype === 'many2many') {
+    return {
+      enabled: true,
+      createOnNoMatch: true,
+      nameField: 'name',
+      match: 'single_contains_or_exact',
     };
   }
   return {
-    enabled: true,
-    createOnNoMatch: entry.inlineCreate.createOnNoMatch,
-    nameField: entry.inlineCreate.nameField,
-    match: entry.inlineCreate.match,
+    enabled: false,
+    createOnNoMatch: false,
+    nameField: '',
+    match: entry?.inlineCreate?.match || 'exact_label',
   };
 }
 
@@ -261,7 +272,7 @@ export function dynamicDomainDependencyFields(descriptor?: FieldDescriptor) {
   const raw = (descriptor as Record<string, unknown> | undefined)?.domain;
   if (typeof raw !== 'string' || !raw.trim()) return [];
   const deps = new Set<string>();
-  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
+  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
   let match: RegExpExecArray | null;
   while ((match = tuplePattern.exec(raw.trim()))) {
     const valueField = match[3];
@@ -280,7 +291,7 @@ export function dynamicRelationDomainFromDescriptor(params: {
   if (typeof raw !== 'string' || !raw.trim()) return [];
   const out: unknown[] = [];
   const text = raw.trim();
-  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
+  const tuplePattern = /\(['"]([\w.]+)['"]\s*,\s*['"]([=!<>]{1,2}\??|in|not in|ilike|like)['"]\s*,\s*([A-Za-z_]\w*)\)/g;
   let match: RegExpExecArray | null;
   let hasDynamicDependency = false;
   let hasUnresolvedDependency = false;
@@ -298,7 +309,8 @@ export function dynamicRelationDomainFromDescriptor(params: {
       hasUnresolvedDependency = true;
       continue;
     }
-    out.push([fieldName, operator, normalizedValue]);
+    const effectiveOperator = operator === '=?' ? '=' : operator;
+    out.push([fieldName, effectiveOperator, normalizedValue]);
   }
   if (hasDynamicDependency && hasUnresolvedDependency) {
     const descriptorRecord = params.descriptor as Record<string, unknown> | undefined;

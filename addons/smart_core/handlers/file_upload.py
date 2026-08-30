@@ -25,7 +25,6 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
     def record_in_business_scope(env_model, record_id, params=None, context=None):
         return record_in_project_scope(env_model, record_id, selected_record_context_id_from_context(params, context))
 from ..core.request_params import parse_positive_int
-from ..utils.extension_hooks import call_extension_hook_first
 
 _logger = logging.getLogger(__name__)
 
@@ -33,8 +32,7 @@ _logger = logging.getLogger(__name__)
 class FileUploadHandler(BaseIntentHandler):
     """
     Intent: file.upload
-    - 按 allowlist 限定可上传附件 model
-    - 传入 base64 数据
+    - 传入 base64 数据，由 Odoo 原生 ACL 与记录规则控制权限
     """
 
     INTENT_TYPE = "file.upload"
@@ -44,7 +42,6 @@ class FileUploadHandler(BaseIntentHandler):
     REQUIRED_GROUPS = ["smart_core.group_smart_core_data_operator"]
     ACL_MODE = "explicit_check"
 
-    ALLOWED_MODELS = {"res.partner"}
     MAX_BYTES = 5 * 1024 * 1024
     SOURCE_AUTHORITY = "ir.attachment"
     SOURCE_KIND = "odoo_attachment_upload_proxy"
@@ -62,14 +59,6 @@ class FileUploadHandler(BaseIntentHandler):
             "no_business_fact_authority": cls.NO_BUSINESS_FACT_AUTHORITY,
             "runtime_carrier": cls.INTENT_TYPE,
         }
-
-    def _allowed_models(self):
-        payload = call_extension_hook_first(self.env, "smart_core_file_upload_allowed_models", self.env)
-        if isinstance(payload, (list, tuple, set)):
-            values = {str(item).strip() for item in payload if str(item).strip()}
-            if values:
-                return values
-        return set(self.ALLOWED_MODELS)
 
     def _err(self, code: int, message: str):
         return {"ok": False, "error": {"code": code, "message": message}, "code": code}
@@ -95,8 +84,6 @@ class FileUploadHandler(BaseIntentHandler):
 
         if not model:
             return self._err(400, "缺少参数 model")
-        if model not in self._allowed_models():
-            return self._err(403, f"模型不允许上传: {model}")
         if model not in self.env:
             return self._err(404, f"未知模型: {model}")
         if _is_empty_param(res_id):

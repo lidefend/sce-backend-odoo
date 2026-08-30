@@ -244,11 +244,13 @@ class _BaseViewParserMixin:
     def _widget_for_field(self, meta):
         ftype = (meta or {}).get('type', 'char')
         mapping = {
-            'many2one': 'many2one', 'many2many': 'many2many_tags', 'one2many': 'one2many_list',
+            'many2one': 'many2one', 'one2many': 'one2many_list',
             'binary': 'image', 'html': 'html', 'text': 'textarea', 'date': 'date',
             'datetime': 'datetime', 'boolean': 'boolean', 'integer': 'integer',
             'float': 'float', 'monetary': 'monetary'
         }
+        # many2many 不再默认补 many2many_tags（标签选择器），
+        # 走标准多选（relation-select-editor），与表单其他关系字段渲染一致。
         return mapping.get(ftype, ftype)
 
     def _field_info_for_layout(self, field_name, fields_info):

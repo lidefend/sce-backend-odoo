@@ -596,10 +596,10 @@ export function nativeFieldLabel(
   const fieldInfo = nativeNodeFieldInfo(node);
   const name = String(nodeRaw.name || '');
   return String(
-    resolveFieldLabel?.(name)
-    || descriptor?.string
-    || node.string
+    node.string
     || node.label
+    || resolveFieldLabel?.(name)
+    || descriptor?.string
     || fieldInfo.string
     || fieldInfo.label
     || nodeRaw.name
@@ -641,12 +641,16 @@ export function buildLegacyLayoutNodes(input: LegacyLayoutNodeInput): LayoutNode
   const used = new Set<string>();
   const nodes: LayoutNode[] = [];
 
-  function pushField(nameRaw: unknown) {
+  function pushField(nameRaw: unknown, nodeRaw?: Record<string, unknown>) {
     const name = String(nameRaw || '').trim();
     if (!name || used.has(name)) return;
     const descriptor = input.fields[name];
     if (!descriptor) return;
-    const label = String(input.resolveFieldLabel(name) || descriptor?.string || name);
+    const nodeString = nodeRaw ? String(nodeRaw.string || nodeRaw.label || '').trim() : '';
+    let label = String(nodeString || descriptor?.string || input.resolveFieldLabel(name) || name);
+    if (name === 'company_type') {
+      label = '主体类型';
+    }
     if (isCreateWorkflowStateField(name, label, input.isCreate)) return;
     const containerStatus = input.containerStatus[name];
     if (containerStatus?.visible === false) return;
@@ -684,7 +688,7 @@ export function buildLegacyLayoutNodes(input: LegacyLayoutNodeInput): LayoutNode
       });
     }
     if (kind === 'field') {
-      pushField(node.name);
+      pushField(node.name, node);
       return;
     }
     CHILD_KEYS.forEach((key) => {
@@ -1029,7 +1033,7 @@ export function nativeNodeFieldDescriptor(
   const fieldInfo = nativeNodeFieldInfo(node);
   if (!Object.keys(fieldInfo).length && !fallback) return undefined;
   const name = String(nodeRaw?.name || fieldInfo.name || fallback?.name || '').trim();
-  const label = String(resolveFieldLabel(name) || fallback?.string || node.string || node.label || fieldInfo.string || fieldInfo.label || name || '').trim();
+  const label = String(node.string || node.label || resolveFieldLabel(name) || fallback?.string || fieldInfo.string || fieldInfo.label || name || '').trim();
   const type = String(fieldInfo.type || fieldInfo.ttype || fallback?.type || fallback?.ttype || '').trim();
   const relation = String(fieldInfo.relation || fallback?.relation || '').trim();
   const relationField = String(fieldInfo.relation_field || fallback?.relation_field || '').trim();

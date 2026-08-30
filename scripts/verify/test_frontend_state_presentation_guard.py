@@ -41,20 +41,20 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
     def test_status_deterministic_state_is_required(self):
         self.assertTrue(any("semantic-state-surface" in error for error in validate(self.altered("status", 'data-semantic-state-surface="page"'))))
 
-    def test_activity_tabs_require_roving_tabindex(self):
-        self.assertTrue(any("tabindex" in error for error in validate(self.altered("tabs", ":tabindex="))))
+    def test_activity_tabs_require_tdesign_component(self):
+        self.assertTrue(any("TDesignTabs" in error for error in validate(self.altered("tabs", "<TDesignTabs"))))
 
-    def test_activity_tabs_require_keyboard_navigation(self):
-        self.assertTrue(any("activateFromKeyboard" in error for error in validate(self.altered("tabs", '@keydown="activateFromKeyboard'))))
+    def test_activity_tabs_require_tab_panel(self):
+        self.assertTrue(any("TDesignTabPanel" in error for error in validate(self.altered("tabs", "<TDesignTabPanel"))))
 
-    def test_activity_tabs_require_delete_shortcut(self):
-        self.assertTrue(any("Delete" in error for error in validate(self.altered("tabs", 'aria-keyshortcuts="Delete"'))))
+    def test_activity_tabs_require_primitive_bridge(self):
+        self.assertTrue(any("tdesignPrimitiveBridge" in error for error in validate(self.altered("tabs", "tdesignPrimitiveBridge"))))
 
-    def test_activity_tabs_require_empty_set_focus_exit(self):
-        self.assertTrue(any("focus-exit" in error for error in validate(self.altered("tabs", "else emit('focus-exit')"))))
+    def test_activity_tabs_require_change_handler(self):
+        self.assertTrue(any("handleChange" in error for error in validate(self.altered("tabs", '@change="handleChange"'))))
 
     def test_activity_tablist_rejects_nested_close_button(self):
-        sources = self.altered("tabs", '<span\n          class="activity-tab-close"', '<button class="activity-tab-close"')
+        sources = self.altered("tabs", '</TDesignTabs>', '<button class="activity-tab-close">x</button></TDesignTabs>')
         self.assertTrue(any("non-tab close button" in error for error in validate(sources)))
 
 

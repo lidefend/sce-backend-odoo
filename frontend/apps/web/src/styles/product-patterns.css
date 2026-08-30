@@ -610,3 +610,13 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* TDesign Dialog 遮罩修复：确保父容器隐藏时遮罩也被隐藏
+ * 问题：t-dialog__ctx 设置 display:none 后，position:fixed 的遮罩仍然可见
+ */
+.t-dialog__ctx[style*="display: none"] .t-dialog__mask,
+.t-dialog__ctx[style*="display: none"] .t-dialog__wrap {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

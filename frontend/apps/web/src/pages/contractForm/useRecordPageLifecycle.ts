@@ -516,13 +516,12 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
       // Relation candidates are interaction-time data. Eagerly enumerating all
       // writable relations here leaves requests in flight across route/actor
-      // changes and probes models the user never opened. Create defaults only
-      // need their already-selected identities hydrated.
-      if (!recordId.value) {
-        if (renderProfile.value !== 'readonly') {
-          await hydrateSelectedRelationOptions();
-          if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
-        }
+      // changes and probes models the user never opened. Both create defaults
+      // and existing records need their already-selected identities hydrated
+      // so labels render correctly (e.g. many2many tag fields).
+      if (renderProfile.value !== 'readonly') {
+        await hydrateSelectedRelationOptions();
+        if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
       }
       await hydrateVisibleOne2manyRows();
     } catch {

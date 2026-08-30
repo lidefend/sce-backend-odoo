@@ -60,6 +60,7 @@ export { default as ScTimeline } from './ScTimeline.vue';
 export { default as ScSteps } from './ScSteps.vue';
 export { default as ScPagination } from './ScPagination.vue';
 export { default as ScPopconfirm } from './ScPopconfirm.vue';
+export { default as ScPopover } from './ScPopover.vue';
 export {
   SC_PRIMITIVE_KEYS,
   normalizePrimitiveSize,

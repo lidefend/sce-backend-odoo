@@ -33,7 +33,7 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
         self.assertIn("relational cancel changed the existing transaction settlement boundary", validate(self.x2many, altered))
 
     def test_stateful_tag_choice_remains_governed(self):
-        altered = self.x2many.replace('v-for="option in adapter.filteredRelationOptions(field.name).slice(0, 8)"', 'v-for="item in genericCommands"')
+        altered = self.x2many.replace('ProfessionalManyToManySelect', 'GenericManyToManySelect')
         self.assertTrue(any("stateful governed" in error for error in validate(altered, self.view_relation)))
 
     def test_raw_relation_control_is_rejected(self):

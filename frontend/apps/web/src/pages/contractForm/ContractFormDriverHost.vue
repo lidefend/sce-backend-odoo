@@ -105,7 +105,7 @@
             @field-change="emit('field-change', $event)"
           />
         </section>
-        <section v-if="showCollaborationPanel && hasCollaborationNode" class="sc-native-contract-collaboration">
+        <section v-if="showCollaborationPanel" class="sc-native-contract-collaboration">
           <NativeCollaborationPanel
             v-bind="collaborationPanelProps"
             :show-audit-timeline="true"
@@ -146,7 +146,7 @@ import { resolveProfessionalAuditEvents } from './professionalAuditModel';
 import ObjectTaskPage from './ObjectTaskPage.vue';
 import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
-import { canonicalNodeHasContent } from './canonicalFormRenderer';
+import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
 
 const props = defineProps<{
   renderModel: CanonicalFormRenderModel | null;
@@ -223,7 +223,7 @@ const allowUserOverride = computed(() => (
 const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
 const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
-const hasCollaboration = computed(() => props.showCollaborationPanel === true || hasCollaborationNode.value);
+const hasCollaboration = computed(() => Boolean(props.showCollaborationPanel) || hasCollaborationNode.value);
 const auditEvents = computed<CanonicalAuditEvent[]>(() => resolveProfessionalAuditEvents(props.collaborationPanelProps?.timeline || []));
 const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
   const model = props.renderModel;
@@ -236,7 +236,7 @@ const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
     },
   };
 });
-const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNativeFormBridge(nativeBridgeModel.value) : null);
+const nativeBridge = computed(() => nativeBridgeModel.value ? buildCanonicalNativeFormBridge(nativeBridgeModel.value, props.relationAdapter as CanonicalRelationProjection) : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
   .filter((node) => !collaborationKind(node.kind))
   .filter(canonicalNodeHasContent));
