@@ -343,8 +343,8 @@ export function resolveContractV2FieldDescriptorMap(
     if (!code) return;
     const config = asDict(widget.componentConfig);
     const descriptor = asDict(widget.fieldDescriptor);
-    const fieldType = asText(widget.fieldType || config.fieldType || descriptor.ttype || descriptor.type);
-    const relation = asText(widget.relation || config.relation || descriptor.relation);
+    const fieldType = asText(config.fieldType || descriptor.ttype || descriptor.type);
+    const relation = asText(config.relation || descriptor.relation);
     const relationField = asText(config.relationField || descriptor.relation_field);
     const relationEntry = asDict(config.relationEntry || descriptor.relation_entry);
     const widgetOptions = asDict(config.widgetOptions || descriptor.widget_options);
