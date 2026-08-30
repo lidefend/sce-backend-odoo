@@ -11,7 +11,7 @@ assert.equal(shouldShowNativeCollaborationPanel({
   hasChatterActions: true,
   hasAttachments: false,
   isIntakeCreateMode: true,
-}), false, 'intake create does not expose record-bound chatter');
+}), true, 'intake create keeps collaboration panel when model declares chatter support');
 
 assert.equal(shouldShowNativeCollaborationPanel({
   hasChatterActions: false,
@@ -29,6 +29,6 @@ assert.equal(shouldShowNativeCollaborationPanel({
   hasChatterActions: false,
   hasAttachments: false,
   isIntakeCreateMode: false,
-}), false, 'empty collaboration contracts do not create a panel');
+}), true, 'saved records always keep collaboration panel for audit history');
 
 console.log('native collaboration presentation tests passed');

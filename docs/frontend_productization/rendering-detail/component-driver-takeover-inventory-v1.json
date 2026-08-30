@@ -39,7 +39,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 35,
+      "productionConsumerCount": 34,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 375,
+      "productionConsumerCount": 373,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -227,7 +227,7 @@
         "TDesignCheckbox"
       ],
       "officialComponent": "checkbox",
-      "productionConsumerCount": 15,
+      "productionConsumerCount": 14,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -363,7 +363,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 76,
+      "productionConsumerCount": 74,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -398,7 +398,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 65,
+      "productionConsumerCount": 63,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -419,7 +419,7 @@
         "TDesignDropdown"
       ],
       "officialComponent": "dropdown",
-      "productionConsumerCount": 4,
+      "productionConsumerCount": 5,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -549,7 +549,7 @@
         "TDesignInputNumber"
       ],
       "officialComponent": "input",
-      "productionConsumerCount": 59,
+      "productionConsumerCount": 57,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -678,7 +678,7 @@
         "TDesignLoading"
       ],
       "officialComponent": "loading",
-      "productionConsumerCount": 31,
+      "productionConsumerCount": 30,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -713,7 +713,7 @@
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 51,
+      "productionConsumerCount": 49,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -781,11 +781,22 @@
       "status": "not_required"
     },
     {
-      "adapterKeys": [],
-      "adapterSources": [],
-      "bridgeExports": [],
+      "adapterKeys": [
+        "ScPopover"
+      ],
+      "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScPopover"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScPopover.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignPopup"
+      ],
       "officialComponent": "popup",
-      "productionConsumerCount": 0,
+      "productionConsumerCount": 1,
       "requiredForCurrentProduct": false,
       "requirementDecision": "not required by current formal product semantics",
       "status": "not_required"
@@ -873,6 +884,10 @@
             "ScSelect"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScSelect.vue"
+        },
+        {
+          "semanticAdapters": [],
+          "source": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue"
         }
       ],
       "bridgeExports": [
@@ -1042,7 +1057,7 @@
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 18,
+      "productionConsumerCount": 19,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1057,6 +1072,10 @@
             "ScTabs"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScTabs.vue"
+        },
+        {
+          "semanticAdapters": [],
+          "source": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
         }
       ],
       "bridgeExports": [
@@ -1255,7 +1274,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 363,
+      "productionConsumerCount": 361,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1272,7 +1291,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "657964059a067dd1cc6779ace411cb33ff4ad4229a0bec571645664f7c2d02a3",
+  "inputDigest": "3ff146bd7bc988674499eb97803eb3b9fd98a63744ef5413c7866f6c6a2441c4",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
