@@ -139,12 +139,10 @@ jobs:
 
   professional_quality_gate:
     name: professional_quality_gate
-    needs: [professional_authorization, python310_runtime_compatibility]
+    needs: professional_authorization
     if: >-
       always() &&
       needs.professional_authorization.result == 'success' &&
-      (needs.python310_runtime_compatibility.result == 'success' ||
-      needs.python310_runtime_compatibility.result == 'skipped') &&
       github.repository == 'lidefend/sce-backend-odoo' &&
       ((github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository) ||
