@@ -227,14 +227,14 @@ watch(
   border-radius: 999px;
   font-size: 13px;
   line-height: 1.6;
-  background: var(--sc-app-muted-bg, #f0f0f0);
-  color: var(--sc-app-text-primary, #333);
+  background: var(--sc-app-muted-bg);
+  color: var(--sc-app-text-primary);
 }
 
 .m2m-readonly-summary,
 .m2m-readonly-empty {
   font-size: 13px;
-  color: var(--sc-app-text-secondary, #999);
+  color: var(--sc-app-text-secondary);
 }
 
 /* 选项样式 */
@@ -260,14 +260,14 @@ watch(
 }
 
 .m2m-option-create {
-  border-top: 1px solid var(--sc-app-border, #e0e0e0);
+  border-top: 1px solid var(--sc-app-border);
   padding-top: 8px;
   margin-top: 4px;
 }
 
 .m2m-option-hint {
   font-size: 12px;
-  color: var(--sc-app-text-secondary, #999);
+  color: var(--sc-app-text-secondary);
   flex-shrink: 0;
 }
 

@@ -281,7 +281,7 @@
 }
 
 .native-chatter-attachment-type {
-  background: var(--sc-app-tag-bg, #f0f0f0);
+  background: var(--sc-app-tag-bg);
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 10px;
@@ -354,16 +354,16 @@
   background: var(--sc-app-panel);
   width: 100%;
   box-sizing: border-box;
-  border-left: 3px solid var(--sc-app-warning, #faad14);
+  border-left: 3px solid var(--sc-app-warning);
 }
 
 .native-chatter-activity-item[data-activity-status="overdue"] {
-  border-left-color: var(--sc-app-error, #f5222d);
-  background: var(--sc-app-error-bg, #fff2f0);
+  border-left-color: var(--sc-app-error);
+  background: var(--sc-app-error-bg);
 }
 
 .native-chatter-activity-item[data-activity-status="done"] {
-  border-left-color: var(--sc-app-success, #52c41a);
+  border-left-color: var(--sc-app-success);
   opacity: 0.7;
 }
 
@@ -403,18 +403,18 @@
 }
 
 .native-chatter-activity-status.status-pending {
-  background: var(--sc-app-warning-bg, #fffbe6);
-  color: var(--sc-app-warning, #faad14);
+  background: var(--sc-app-warning-bg);
+  color: var(--sc-app-warning);
 }
 
 .native-chatter-activity-status.status-overdue {
-  background: var(--sc-app-error-bg, #fff2f0);
-  color: var(--sc-app-error, #f5222d);
+  background: var(--sc-app-error-bg);
+  color: var(--sc-app-error);
 }
 
 .native-chatter-activity-status.status-done {
-  background: var(--sc-app-success-bg, #f6ffed);
-  color: var(--sc-app-success, #52c41a);
+  background: var(--sc-app-success-bg);
+  color: var(--sc-app-success);
 }
 
 .native-chatter-activity-meta {
@@ -478,7 +478,7 @@
   display: inline-block;
   width: 3px;
   height: 14px;
-  background: var(--sc-app-primary, #1677ff);
+  background: var(--sc-app-primary);
   border-radius: 2px;
 }
 
@@ -486,7 +486,7 @@
 .native-chatter-block .chips {
   margin-bottom: 10px;
   padding: 8px 10px;
-  background: var(--sc-app-muted-bg, #fafafa);
+  background: var(--sc-app-muted-bg);
   border-radius: 6px;
   border: 1px solid var(--sc-app-border);
 }
@@ -503,15 +503,15 @@
 }
 
 .native-chatter-entry:hover {
-  border-color: var(--sc-app-primary, #1677ff);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: var(--sc-app-primary);
+  box-shadow: var(--sc-app-shadow-popover);
 }
 
 /* 附件管理器区域优化 */
 .native-chatter-block .native-attachment-tools {
   margin-bottom: 8px;
   padding: 8px 10px;
-  background: var(--sc-app-muted-bg, #fafafa);
+  background: var(--sc-app-muted-bg);
   border-radius: 6px;
   border: 1px solid var(--sc-app-border);
 }
@@ -520,10 +520,10 @@
 .native-chatter-message.validation-error {
   margin: 8px 0;
   padding: 8px 12px;
-  background: var(--sc-app-error-bg, #fff2f0);
-  border: 1px solid var(--sc-app-error, #f5222d);
+  background: var(--sc-app-error-bg);
+  border: 1px solid var(--sc-app-error);
   border-radius: 6px;
-  color: var(--sc-app-error, #f5222d);
+  color: var(--sc-app-error);
   font-size: 12px;
 }
 
@@ -532,7 +532,7 @@
   margin: 12px 0 0;
   padding: 20px 10px;
   text-align: center;
-  background: var(--sc-app-muted-bg, #fafafa);
+  background: var(--sc-app-muted-bg);
   border: 1px dashed var(--sc-app-border);
   border-radius: 8px;
   color: var(--sc-app-text-secondary);
@@ -551,14 +551,14 @@
 }
 
 .native-pending-attachment-item {
-  background: var(--sc-app-primary-bg, #e6f4ff);
-  border-color: var(--sc-app-primary, #1677ff);
+  background: var(--sc-app-primary-bg);
+  border-color: var(--sc-app-primary);
   border-style: dashed;
 }
 
 .native-pending-attachment-item .native-chatter-attachment-type {
-  background: var(--sc-app-primary, #1677ff);
-  color: #fff;
+  background: var(--sc-app-primary);
+  color: var(--sc-app-text-inverse);
 }
 
 .native-pending-attachment-item .native-chatter-attachment-icon {
@@ -609,7 +609,7 @@
 }
 
 .native-chatter-attachment-item:hover .native-chatter-attachment-name {
-  color: var(--sc-app-primary, #1677ff);
+  color: var(--sc-app-primary);
 }
 
 /* 消息内容过渡 */
@@ -649,7 +649,7 @@
 }
 
 .native-chatter-block > h3:hover {
-  color: var(--sc-app-primary, #1677ff);
+  color: var(--sc-app-primary);
 }
 
 /* 面板标题竖线过渡 */
@@ -659,7 +659,7 @@
 
 .native-chatter-block > h3:hover::before {
   height: 16px;
-  background: var(--sc-app-primary-hover, #4096ff);
+  background: var(--sc-app-primary-hover);
 }
 
 
@@ -671,8 +671,8 @@
 }
 
 .native-attachment-tools.native-attachment-drag-over {
-  border-color: var(--sc-app-primary, #1677ff);
-  background: var(--sc-app-primary-bg, #e6f4ff);
+  border-color: var(--sc-app-primary);
+  background: var(--sc-app-primary-bg);
   border-style: dashed;
   border-width: 2px;
 }
@@ -685,7 +685,7 @@
   gap: 8px;
   padding: 20px;
   text-align: center;
-  color: var(--sc-app-primary, #1677ff);
+  color: var(--sc-app-primary);
   font-size: 13px;
   font-weight: 500;
 }
@@ -757,14 +757,14 @@
   gap: 8px;
   padding: 8px 10px;
   margin-bottom: 8px;
-  background: var(--sc-app-primary-bg, #e6f4ff);
-  border: 1px solid var(--sc-app-primary, #1677ff);
+  background: var(--sc-app-primary-bg);
+  border: 1px solid var(--sc-app-primary);
   border-radius: 6px;
 }
 
 .native-chatter-reply-icon {
   font-size: 14px;
-  color: var(--sc-app-primary, #1677ff);
+  color: var(--sc-app-primary);
   flex-shrink: 0;
 }
 
@@ -779,7 +779,7 @@
 .native-chatter-reply-author {
   font-size: 12px;
   font-weight: 600;
-  color: var(--sc-app-primary, #1677ff);
+  color: var(--sc-app-primary);
 }
 
 .native-chatter-reply-body {
