@@ -80,9 +80,9 @@ const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'func
   : projectRowAttributes(props.rowAttributes)) as unknown as ComputedRef<TDesignTableRowAttributes<TDesignTableRowData>>;
 // 启用水平滚动：当 tableContentWidth 存在时，将其作为 scroll.x
 const tableScroll = computed(() => {
-  if (!props.tableContentWidth) return {};
+  if (!props.tableContentWidth) return undefined;
   return { x: props.tableContentWidth };
-});
+}) as any;
 const emit = defineEmits<{
   rowClick: [context: unknown];
   rowDblclick: [context: unknown];

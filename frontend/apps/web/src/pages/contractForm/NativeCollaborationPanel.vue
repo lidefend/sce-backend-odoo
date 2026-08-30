@@ -144,7 +144,6 @@ export type NativeCollaborationPanelProps = {
   timelineHasMore: boolean;
   timelineLoading: boolean;
   activityUpdatingIds: number[];
-  replyTarget: { id: number; author: string; body: string } | null;
 };
 
 export type NativeCollaborationPanelListeners = {
