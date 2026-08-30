@@ -1,0 +1,29 @@
+:root { font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1f2937; background: #f5f7fa; font-synthesis: none; }
+* { box-sizing: border-box; }
+html, body, #app { margin: 0; min-height: 100%; width: 100%; max-width: 100%; overflow-x: hidden; }
+body { min-width: 320px; background: #f5f7fa; }
+.app-shell { min-height: 100vh; }
+.app-aside { background: #fff; border-right: 1px solid var(--el-border-color-light); display: flex; flex-direction: column; transition: width .2s; overflow: hidden; }
+.brand { height: 64px; display: flex; align-items: center; gap: 11px; padding: 0 17px; border-bottom: 1px solid var(--el-border-color-lighter); cursor: pointer; white-space: nowrap; }
+.brand-mark { width: 32px; height: 32px; display: grid; place-items: center; color: #fff; background: var(--el-color-primary); border-radius: 6px; font-size: 13px; font-weight: 700; }
+.brand-copy { display: grid; gap: 3px; }
+.brand-copy strong { font-size: 15px; color: #303133; }
+.brand-copy span { color: #909399; font-size: 9px; letter-spacing: .08em; }
+.nav-scroll { flex: 1; }
+.el-menu { border-right: 0; }
+.el-menu-item, .el-sub-menu__title { height: 46px; line-height: 46px; }
+.app-aside .el-menu--collapse .menu-title,
+.app-aside .el-menu--collapse .el-sub-menu__title span { display: none !important; }
+.aside-footer { padding: 16px 20px; border-top: 1px solid var(--el-border-color-lighter); color: #909399; font-size: 12px; display: flex; justify-content: space-between; }
+.app-header { height: 64px; display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid var(--el-border-color-lighter); padding: 0 28px 0 18px; }
+.header-left, .header-actions { display: flex; align-items: center; gap: 14px; }
+.collapse-button { font-size: 19px; }
+.header-actions { gap: 9px; }
+.company-select { width: 150px; }
+.user-trigger { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #606266; font-size: 13px; }
+.avatar { color: #fff; background: var(--el-color-primary); font-size: 13px; }
+.app-main { padding: 24px 28px 40px; overflow: auto; }
+@media (max-width: 720px) { .app-aside { width: 64px !important; } .brand { padding: 0 16px; } .brand-copy, .aside-footer, .user-name, .company-select { display: none; } .app-header { padding-right: 14px; } .app-main { padding: 16px; } .el-breadcrumb { display: none; } }
+.list-table-no-vertical .el-table__cell { border-right: 0 !important; }
+.list-table-no-vertical .el-table__fixed-right::before,
+.list-table-no-vertical .el-table__fixed::before { display: none !important; }
