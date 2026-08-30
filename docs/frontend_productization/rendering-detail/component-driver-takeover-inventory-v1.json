@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 373,
+      "productionConsumerCount": 372,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1274,7 +1274,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 361,
+      "productionConsumerCount": 360,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1291,7 +1291,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "e3a2389a58d4dfe171088d038bf3f3b295666817059ad7280fc983d92e0e0bf6",
+  "inputDigest": "bca403c8b37ed34e575448d02273d37484f9550e785b0004e9806062dcf35cf7",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
