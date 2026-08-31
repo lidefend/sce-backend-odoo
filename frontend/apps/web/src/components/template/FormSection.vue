@@ -488,8 +488,6 @@ function usesProfessionalBaseField(field: FormSectionFieldSchema) {
 }
 
 function usesProfessionalBusinessValue(field: FormSectionFieldSchema) {
-  // many2one字段应该使用专业关系组件，而不是业务值组件
-  if (String(field.type || '').trim().toLowerCase() === 'many2one') return false;
   return field.componentRenderer === 'ProfessionalBusinessValueControl'
     && isProfessionalBusinessValueField(field);
 }

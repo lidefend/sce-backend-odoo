@@ -1,15 +1,33 @@
 <template>
-  <TDesignDatePicker v-native-control-projection="nativeProjection" data-semantic-component="ScDateField" data-semantic-driver="tdesign-date-picker" data-semantic-layer="primitive" :data-appearance="appearance"
-    :value="modelValue" :disabled="disabled" :readonly="readonly" :enable-time-picker="withTime"
-    :aria-invalid="invalid || undefined" :aria-describedby="describedBy"
-    @change="emit('update:modelValue', String($event ?? ''))" />
+  <TDesignDatePicker
+    v-native-control-projection="nativeProjection"
+    data-semantic-component="ScDateField"
+    data-semantic-driver="tdesign-date-picker"
+    data-semantic-layer="primitive"
+    :data-appearance="appearance"
+    :value="modelValue"
+    :disabled="disabled"
+    :readonly="readonly"
+    :enable-time-picker="withTime"
+    :aria-invalid="invalid || undefined"
+    :aria-describedby="describedBy"
+    @change="emit('update:modelValue', String($event ?? ''))"
+  />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
 import { TDesignDatePicker } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
 
-const props = withDefaults(defineProps<{ modelValue:string; withTime?:boolean; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; appearance?:'default'|'form-field' }>(), { appearance:'default' });
+const props = withDefaults(defineProps<{ modelValue:string; withTime?:boolean; readonly?:boolean; disabled?:boolean; required?:boolean; invalid?:boolean; describedBy?:string; appearance?:'default'|'form-field' }>(), {
+  withTime: false,
+  readonly: false,
+  disabled: false,
+  required: false,
+  invalid: false,
+  describedBy: undefined,
+  appearance:'default',
+});
 const vNativeControlProjection = nativeControlProjection;
 const nativeProjection = computed(() => ({
   selector: 'input' as const,

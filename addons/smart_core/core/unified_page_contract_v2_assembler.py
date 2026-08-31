@@ -223,8 +223,12 @@ def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str
         return "sc.value.duration"
     if normalized == "statusbar":
         return "sc.display.status"
-    # many2one字段统一使用专业关系组件，与前端usesProfessionalBusinessValue的设计意图一致
-    # 前端明确排除many2one类型使用业务值组件，避免控件不渲染
+    if field_type == "many2one" and relation == "res.currency":
+        return "sc.value.currency"
+    if field_type == "many2one" and relation == "res.users":
+        return "sc.value.user"
+    if field_type == "many2one" and relation == "res.company":
+        return "sc.value.company"
     if field_type == "many2one" or normalized.endswith("many2one"):
         return "sc.relation.many2one"
     if field_type == "many2many" and normalized != "many2many_tags":

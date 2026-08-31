@@ -22,11 +22,20 @@ export function resolveDesktopListCandidates(options: {
   availableWidth: number;
   capacity?: number;
 }) {
+  const capacity = Math.max(1, Number(options.capacity || 12));
   const fields = options.fields.filter((item) => Boolean(item.field));
-  // Desktop product list authoritative behavior: keep ALL user-enabled columns
-  // and let the table scroll horizontally. Never silently drop business fields
-  // based on the current viewport width.
-  return fields.map((item) => item.field);
+  // Native desktop lists may overflow horizontally, but they still respect
+  // the explicit product column budget to avoid uncontrolled field sprawl.
+  if (fields.length <= capacity) return fields.map((item) => item.field);
+  const selected: string[] = [];
+  let usedWidth = 0;
+  for (const item of fields) {
+    if (selected.length >= capacity) break;
+    if (selected.length >= 3 && usedWidth + item.width > options.availableWidth) continue;
+    selected.push(item.field);
+    usedWidth += item.width;
+  }
+  return selected.length ? selected : fields.slice(0, 1).map((item) => item.field);
 }
 
 export function resolveResponsiveListColumns(options: {
