@@ -34,6 +34,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
       CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}-${{ github.run_attempt }}
+      CANDIDATE_REQUESTED: ${{ github.event_name != 'pull_request' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
 
     steps:
       - name: Checkout the authoritative code object
@@ -64,8 +65,18 @@ jobs:
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
 
+      - name: Resolve effective frontend lane
+        id: effective_lane
+        run: |
+          set -euo pipefail
+          mode='${{ steps.risk.outputs.frontend_mode }}'
+          if [ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]; then
+            mode='standard'
+          fi
+          printf 'frontend_mode=%s\n' "${mode}" >> "${GITHUB_OUTPUT}"
+
       - name: Generate isolated acceptance environment
-        if: steps.risk.outputs.frontend_mode == 'full'
+        if: steps.effective_lane.outputs.frontend_mode == 'full'
         run: |
           set -euo pipefail
           db_password="$(openssl rand -hex 32)"
@@ -127,19 +138,19 @@ jobs:
           } >> "${GITHUB_ENV}"
 
       - name: Freeze isolated frontend release identity
-        if: steps.risk.outputs.frontend_mode == 'full'
+        if: steps.effective_lane.outputs.frontend_mode == 'full'
         run: |
           set -euo pipefail
           bash scripts/common/frontend_release_ci_identity.sh freeze "${GITHUB_WORKSPACE}"
 
       - name: Pin frontend Node toolchain
-        if: steps.risk.outputs.frontend_mode != 'skip'
+        if: steps.effective_lane.outputs.frontend_mode != 'skip'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22.17.0
 
       - name: Restore content-addressed pnpm store
-        if: steps.risk.outputs.frontend_mode != 'skip'
+        if: steps.effective_lane.outputs.frontend_mode != 'skip'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ~/.local/share/pnpm/store
@@ -149,14 +160,14 @@ jobs:
 
       - name: Restore content-addressed Playwright browser
         id: playwright-cache
-        if: steps.risk.outputs.frontend_mode == 'full'
+        if: steps.effective_lane.outputs.frontend_mode == 'full'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
 
       - name: Install locked frontend toolchain
-        if: steps.risk.outputs.frontend_mode != 'skip'
+        if: steps.effective_lane.outputs.frontend_mode != 'skip'
         run: |
           set -euo pipefail
           python3 scripts/ci/frontend_professional_extension_guard.py
@@ -164,7 +175,7 @@ jobs:
           corepack prepare pnpm@9.12.3 --activate
           pnpm config set store-dir "${HOME}/.local/share/pnpm/store"
           pnpm -C frontend install --frozen-lockfile
-          if [ '${{ steps.risk.outputs.frontend_mode }}' = 'full' ]; then
+          if [ '${{ steps.effective_lane.outputs.frontend_mode }}' = 'full' ]; then
             if [ '${{ steps.playwright-cache.outputs.cache-hit }}' = 'true' ]; then
               pnpm -C frontend/apps/web exec playwright install-deps chromium
             else
@@ -174,7 +185,7 @@ jobs:
 
       - name: Run the single authoritative frontend release command
         id: release
-        if: steps.risk.outputs.frontend_mode == 'full'
+        if: steps.effective_lane.outputs.frontend_mode == 'full'
         env:
           FRONTEND_RELEASE_PR_HEAD_SHA: ${{ env.PR_HEAD_SHA }}
         run: |
@@ -184,7 +195,7 @@ jobs:
 
       - name: Run standard frontend checks in parallel
         id: standard
-        if: steps.risk.outputs.frontend_mode == 'standard'
+        if: steps.effective_lane.outputs.frontend_mode == 'standard'
         run: |
           set -euo pipefail
           (
@@ -211,7 +222,7 @@ jobs:
           pnpm -C frontend/apps/web build
 
       - name: Fail closed on command or evidence identity
-        if: always() && steps.risk.outputs.frontend_mode == 'full'
+        if: always() && steps.effective_lane.outputs.frontend_mode == 'full'
         env:
           RELEASE_COMMAND_OUTCOME: ${{ steps.release.outcome }}
         run: |
@@ -226,9 +237,9 @@ jobs:
             --run-attempt "${GITHUB_RUN_ATTEMPT}"
 
       - name: Record explicit non-release lane result
-        if: always() && steps.risk.outputs.frontend_mode != 'full'
+        if: always() && steps.effective_lane.outputs.frontend_mode != 'full'
         env:
-          FRONTEND_MODE: ${{ steps.risk.outputs.frontend_mode }}
+          FRONTEND_MODE: ${{ steps.effective_lane.outputs.frontend_mode }}
           STANDARD_OUTCOME: ${{ steps.standard.outcome }}
           RISK_LANE: ${{ steps.risk.outputs.lane }}
         run: |
@@ -255,7 +266,7 @@ jobs:
           PY
 
       - name: Upload current-run non-sensitive release evidence
-        if: always() && steps.risk.outputs.frontend_mode == 'full'
+        if: always() && steps.effective_lane.outputs.frontend_mode == 'full'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: frontend-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
@@ -273,7 +284,7 @@ jobs:
             artifacts/frontend-delivery-hardening/error-recovery.json
 
       - name: Upload current-run risk-lane evidence
-        if: always() && steps.risk.outputs.frontend_mode != 'full'
+        if: always() && steps.effective_lane.outputs.frontend_mode != 'full'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: frontend-risk-lane-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
@@ -284,5 +295,5 @@ jobs:
       - name: Clean isolated runner state
         if: always()
         env:
-          FRONTEND_MODE: ${{ steps.risk.outputs.frontend_mode }}
+          FRONTEND_MODE: ${{ steps.effective_lane.outputs.frontend_mode }}
         run: bash scripts/ci/self_hosted_runner_cleanup.sh

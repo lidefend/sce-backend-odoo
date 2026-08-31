@@ -4,7 +4,8 @@
 
 - GitHub `lidefend/sce-backend-odoo` 是唯一开发、PR、Checks 和 `main` 合并入口。
 - Gitee `leegege/sce-product-odoo` 只接收 GitHub `main` 的普通快进镜像。
-- GitHub `main` 必须由 active ruleset 保护：必须 PR、required checks、线程解决、禁止删除和非快进，并且没有 bypass actor。
+- GitHub `main` 必须由 active ruleset 保护：必须 PR、`merge_policy_gate`
+  分支保护检查、线程解决、禁止删除和非快进，并且没有 bypass actor。
 - Gitee→GitHub 的 write Deploy Key、反向镜像和独立 Gitee `main` 合并均被禁止。
 - 日常镜像禁止 force push、force-with-lease、删除 `main` 或从 Gitee 反向覆盖
   GitHub。唯一例外是仓库所有者逐次明确授权的历史治理切换，且只能通过
@@ -13,11 +14,13 @@
 - 发布裁决前可通过 `make candidate.mirror.gitee` 将 GitHub 已存在的合规候选
   普通快进到 Gitee 同名候选分支，用于双远端 SHA 取证；它不能写入 `main`，
   也不能形成第二开发入口。
+- 迁移注记（2026-08-31）：当前制度下，`merge_policy_gate` 负责 GitHub `main`
+  的合并资格；`release_candidate_gate` 负责 exact-head 候选发布资格。
 
 ## 凭据隔离
 
 ```text
-GitHub PR + required checks + review/thread gates
+GitHub PR + `merge_policy_gate` + review/thread gates
         ↓ 正常合并
 GitHub main（唯一权威历史）
         ↓ 精确 SHA + fast-forward only

@@ -14,7 +14,8 @@ ENV=dev make release.candidate VERSION=1.0.0-rc.5
 
 1. 通过受控 `main.sync` 同步 GitHub `main`；
 2. 冻结完整 commit SHA、tree、`VERSION`；
-3. 验证 GitHub/Gitee `main` 一致及 required checks 全部成功；
+3. 验证 GitHub/Gitee `main` 一致，且该 exact head 已通过
+   `release_candidate_gate` 汇总的候选发布检查；
 4. 创建无 alternates、仅含 `main` 的独立 source repository，绑定完整
    commit/tree 后先执行 RH010；
 5. 从该 clean source repository 构建不可变候选镜像；

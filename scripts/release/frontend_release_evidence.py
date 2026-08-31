@@ -474,6 +474,7 @@ def generate_bundle(
         "professional_authorization": "professional-authorization.json",
         "professional_quality_gate": "professional-quality-gate.json",
         "frontend_release_gate": "frontend-release-gate.json",
+        "release_candidate_gate": "release-candidate-gate.json",
     }
     for row in check_rows:
         write_json(output / "governance" / governance_names[row["check_name"]], row)
@@ -647,6 +648,7 @@ def verify_bundle_directory(
             "professional_authorization": "professional-authorization.json",
             "professional_quality_gate": "professional-quality-gate.json",
             "frontend_release_gate": "frontend-release-gate.json",
+            "release_candidate_gate": "release-candidate-gate.json",
         }
         if read_json(
             bundle / "governance" / governance_names[name],

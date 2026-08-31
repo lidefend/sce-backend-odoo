@@ -13,7 +13,8 @@ Repository permission redesign beyond `main`.
 ### Acceptance Criteria
 
 - Direct push to `main` is blocked.
-- Required checks and review rules are active.
+- `merge_policy_gate` branch protection and review rules are active; release
+  qualification remains a separate candidate path.
 - Evidence screenshot or settings export is attached.
 
 ---

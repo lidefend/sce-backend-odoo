@@ -131,6 +131,7 @@ class ReleaseCandidateReportTests(unittest.TestCase):
                 "public_guard": "success",
                 "professional_authorization": "success",
                 "professional_quality_gate": "success",
+                "release_candidate_gate": "success",
             },
             "required_checks_head_sha": "e" * 40,
             "image_architecture": "amd64",

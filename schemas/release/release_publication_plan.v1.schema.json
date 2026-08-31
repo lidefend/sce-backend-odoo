@@ -67,12 +67,14 @@
           "required": [
             "public_guard",
             "professional_authorization",
-            "professional_quality_gate"
+            "professional_quality_gate",
+            "release_candidate_gate"
           ],
           "properties": {
             "public_guard": {"const": "success"},
             "professional_authorization": {"const": "success"},
-            "professional_quality_gate": {"const": "success"}
+            "professional_quality_gate": {"const": "success"},
+            "release_candidate_gate": {"const": "success"}
           }
         },
         "candidate_evidence_sha256": {
@@ -151,12 +153,14 @@
           "required": [
             "public_guard",
             "professional_authorization",
-            "professional_quality_gate"
+            "professional_quality_gate",
+            "release_candidate_gate"
           ],
           "properties": {
             "public_guard": {"const": "success"},
             "professional_authorization": {"const": "success"},
-            "professional_quality_gate": {"const": "success"}
+            "professional_quality_gate": {"const": "success"},
+            "release_candidate_gate": {"const": "success"}
           }
         },
         "publication_tool_source_sha": {"pattern": "^[0-9a-f]{40}$"},

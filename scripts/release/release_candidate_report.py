@@ -22,6 +22,7 @@ EXPECTED_REQUIRED_CHECKS = {
     "public_guard",
     "professional_authorization",
     "professional_quality_gate",
+    "release_candidate_gate",
 }
 
 

@@ -14,7 +14,8 @@ Team staffing changes.
 
 - `main` direct push is blocked.
 - PR review is required.
-- Required checks include the v1.1 quality gate.
+- Required merge checks use `merge_policy_gate`; release qualification uses
+  `release_candidate_gate` on explicit candidate heads.
 - CODEOWNERS review is enforced.
 
 ---

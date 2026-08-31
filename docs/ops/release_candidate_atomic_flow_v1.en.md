@@ -14,7 +14,8 @@ In a clean, dedicated release workspace the entry point automatically:
 
 1. synchronizes GitHub `main` through controlled `main.sync`;
 2. freezes the full commit SHA, tree, and `VERSION`;
-3. verifies aligned GitHub/Gitee `main` and successful required checks;
+3. verifies aligned GitHub/Gitee `main` and that the exact head has passed the
+   candidate-publication checks summarized by `release_candidate_gate`;
 4. creates an independent, main-only source repository without alternates,
    binds the full commit/tree, and runs RH010;
 5. builds the immutable candidate image from that clean source repository;

@@ -16,6 +16,7 @@ class MergePolicyGateContractTests(unittest.TestCase):
     def test_fast_and_full_are_disjoint_and_fail_closed(self) -> None:
         self.assertIn("needs.classify.outputs.lane == 'FAST'", self.workflow)
         self.assertIn("needs.classify.outputs.lane != 'FAST'", self.workflow)
+        self.assertIn("Enforce exactly one merge lane", self.workflow)
         self.assertIn("test \"${{ needs.fast.result }}\" != \"${{ needs.full.result }}\"", self.workflow)
         self.assertIn("--base", self.workflow)
         self.assertIn("--head", self.workflow)
@@ -33,6 +34,17 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("--event", self.workflow)
         self.assertNotIn('test "$count" = 1', self.workflow)
         self.assertIn("full workflow failed", self.workflow)
+
+    def test_summary_publishes_effective_daily_vs_candidate_lane(self) -> None:
+        self.assertIn("Publish lane summary", self.workflow)
+        self.assertIn("GITHUB_STEP_SUMMARY", self.workflow)
+        self.assertIn("needs.classify.outputs.frontend_mode", self.workflow)
+        self.assertIn("needs.classify.outputs.professional_mode", self.workflow)
+        self.assertIn("needs.classify.outputs.candidate_requested", self.workflow)
+        self.assertIn('if [ "${CANDIDATE_REQUESTED}" != "true" ]; then', self.workflow)
+        self.assertIn('effective_professional="governance"', self.workflow)
+        self.assertIn("Ordinary PR governance changes were downgraded", self.workflow)
+        self.assertIn("Explicit candidate validation was requested for this exact head.", self.workflow)
 
     def test_ruleset_requires_only_the_aggregate_without_bypass(self) -> None:
         self.assertIn('readonly required_checks="merge_policy_gate"', self.ruleset)

@@ -53,4 +53,5 @@ same browser route without a product-code workaround.
   upgrades, registry reload, and final preflight.
 - Governed `FE-A-PE-001` readonly browser probe — PASS with the real record,
   zero HTTP 500 responses, and no load-failure surface.
-- Full frontend release evidence is recorded after the frozen-candidate gate.
+- Full frontend release evidence is recorded after the then-current
+  frozen-candidate publication gate.

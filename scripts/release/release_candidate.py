@@ -35,6 +35,7 @@ REQUIRED_CHECKS = (
     "public_guard",
     "professional_authorization",
     "professional_quality_gate",
+    "release_candidate_gate",
 )
 GITEE_MAIN = "git@gitee.com:leegege/sce-product-odoo.git"
 APPROVED_ORIGIN = "https://github.com/lidefend/sce-backend-odoo.git"

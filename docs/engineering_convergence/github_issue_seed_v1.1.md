@@ -156,7 +156,8 @@ Team staffing changes.
 
 - `main` direct push is blocked.
 - PR review is required.
-- Required checks include the v1.1 quality gate.
+- Required merge checks use `merge_policy_gate`; release qualification uses
+  `release_candidate_gate` on explicit candidate heads.
 - CODEOWNERS review is enforced.
 
 ## P1-01 Establish Unified CI Workflow
@@ -200,7 +201,8 @@ Repository permission redesign beyond `main`.
 ### Acceptance Criteria
 
 - Direct push to `main` is blocked.
-- Required checks and review rules are active.
+- `merge_policy_gate` branch protection and review rules are active; release
+  qualification remains a separate candidate path.
 - Evidence screenshot or settings export is attached.
 
 ## P1-03 Normalize PR and Issue Templates

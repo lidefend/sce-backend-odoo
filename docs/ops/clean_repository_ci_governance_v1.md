@@ -13,7 +13,7 @@ sandbox boundary and must never authorize that code to execute the
 professional quality gate. Unknown external fork workflows must not be
 manually approved for professional execution.
 
-CI is split into two layers:
+CI is split into trust and delivery lanes:
 
 1. `public_guard` uses a fresh GitHub-hosted runner, read-only `GITHUB_TOKEN`,
    no repository secrets, no private checkout, and no persisted credentials.
@@ -29,6 +29,15 @@ CI is split into two layers:
    professional job. A single actor login is not a PR trust boundary. The job
    uses an isolated GitHub-hosted runner because no self-hosted runner is
    registered to the new authoritative repository.
+
+3. `merge_policy_gate` is the only required branch-protection status for
+   ordinary merges into `main`. It aggregates the exact-head outcome of the
+   daily PR lanes and reports merge eligibility without implying release
+   readiness.
+4. `release_candidate_gate` is a separate exact-head publication lane. It runs
+   only for explicit candidate requests such as the governed `ci:candidate`
+   label event, `push` on `main`, or an authorized `workflow_dispatch`. Its
+   success means the head is qualified for release review, not merely mergeable.
 
 Each professional run uses a fresh GitHub-hosted runner with read-only token
 permissions. If a dedicated runner is introduced later, it requires a separate
@@ -111,17 +120,19 @@ that no longer resolve from the publication history fail closed as
 
 ## Main protection
 
-The `main` branch must require pull requests, a current branch, and these
-checks:
+The `main` branch must require pull requests, a current branch, and this
+aggregate merge check:
 
-- `public_guard`
-- `professional_authorization`
-- `professional_quality_gate`
+- `merge_policy_gate`
 
 Force pushes and deletion are disabled, and administrators are subject to the
 same protection. Because this owner-only public repository cannot require the
 author to approve their own pull request, the pull-request approval count is
 zero; required CI checks and strict up-to-date enforcement remain mandatory.
+
+Release qualification is governed separately and must never be inferred from
+branch protection alone. A head is release-qualified only when
+`release_candidate_gate` succeeds for that exact head.
 
 If GitHub rejects any rule because of the account plan, record the API response
 in the external CLEAN-REPO evidence directory and retain `make pr.push` plus
@@ -142,9 +153,11 @@ does not access production projects, databases, images, or attachment stores.
 2. Register a clean, single-purpose ephemeral runner with only the required
    labels.
 3. Push the governance branch only to the authoritative GitHub repository.
-4. Open the pull request and require all three checks.
+4. Open the pull request and require `merge_policy_gate`.
 5. Merge through the protected branch; do not push directly to `main`.
 6. Fast-forward Gitee `main` to the merged GitHub `main` SHA; never sync in the
    opposite direction.
 7. Clone both remotes into new directories and run the 12/12 product release
    scan again.
+8. Run explicit candidate qualification and require `release_candidate_gate`
+   before treating the merged head as publishable.
