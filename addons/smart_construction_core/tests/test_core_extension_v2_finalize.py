@@ -68,7 +68,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         self.assertIsNone(projected)
         self.assertIn("field.user_id", {row["widgetId"] for row in contract["statusContract"]["widgetStatus"]})
 
-    def test_project_form_finalize_prunes_user_field_and_adds_responsibility_group_once(self):
+    def test_project_form_finalize_keeps_native_membership_and_adds_responsibility_group_once(self):
         contract = self._base_project_contract()
         source = {"model": "project.project", "view_type": "form", "render_profile": "edit"}
 
@@ -90,14 +90,22 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         widget_names = [row.get("fieldCode") for row in widget_nodes if row.get("fieldCode")]
         widget_status_ids = {row["widgetId"] for row in projected["statusContract"]["widgetStatus"]}
 
-        self.assertNotIn("user_id", field_names)
-        self.assertNotIn("field.user_id", widget_status_ids)
+        self.assertIn("user_id", field_names)
+        self.assertIn("field.user_id", widget_status_ids)
         self.assertEqual(field_names.count("responsibility_ids"), 1)
         self.assertEqual(field_names.count("collaborator_ids"), 1)
         self.assertIn("responsibility_ids", widget_names)
         self.assertIn("collaborator_ids", widget_names)
         self.assertTrue(all("field_info" not in row for row in field_nodes))
-        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.table.data"]["version"], "1.0")
+        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.relation.table"]["version"], "1.0")
+        self.assertEqual(projected["layoutContract"]["componentRegistry"]["sc.relation.many2many"]["version"], "1.0")
+        widget_component_keys = {
+            row.get("fieldCode"): row.get("componentKey")
+            for row in widget_nodes
+            if row.get("fieldCode") in {"responsibility_ids", "collaborator_ids"}
+        }
+        self.assertEqual(widget_component_keys["responsibility_ids"], "sc.relation.table")
+        self.assertEqual(widget_component_keys["collaborator_ids"], "sc.relation.many2many")
         self.assertIn(
             "sc_project_responsibility_collaboration",
             {row["containerId"] for row in projected["statusContract"]["containerStatus"]},
@@ -109,8 +117,8 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             for row in second_field_nodes
         ]
         second_status_ids = {row["widgetId"] for row in projected_again["statusContract"]["widgetStatus"]}
-        self.assertNotIn("user_id", second_field_names)
-        self.assertNotIn("field.user_id", second_status_ids)
+        self.assertIn("user_id", second_field_names)
+        self.assertIn("field.user_id", second_status_ids)
         self.assertEqual(second_field_names.count("responsibility_ids"), 1)
         self.assertEqual(second_field_names.count("collaborator_ids"), 1)
 
@@ -146,14 +154,18 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             },
         )
 
-        self.assertIsNone(projected)
+        self.assertIsInstance(projected, dict)
         field_names = {
             row.get("name") or str(row.get("widgetId") or "").replace("field.", "")
-            for row in self._field_nodes(contract["layoutContract"]["containerTree"], include_widget_list=False)
+            for row in self._field_nodes(projected["layoutContract"]["containerTree"], include_widget_list=False)
         }
         self.assertIn("user_id", field_names)
         self.assertNotIn("responsibility_ids", field_names)
         self.assertNotIn("collaborator_ids", field_names)
+        self.assertIn(
+            "root",
+            {row["containerId"] for row in projected["statusContract"]["containerStatus"]},
+        )
 
     def test_non_project_contract_is_unchanged_without_workflow_record(self):
         contract = self._base_project_contract()

@@ -36,7 +36,7 @@
                 "fieldCode": "contract_line_ids",
                 "label": "Lines",
                 "span": 12,
-                "componentKey": "sc.table.relation",
+                "componentKey": "sc.relation.table",
                 "capabilities": [
                   "editable",
                   "inline-create",
@@ -79,14 +79,14 @@
           "harmony_h5": "H5NumberInput"
         }
       },
-      "sc.table.relation": {
+      "sc.relation.table": {
         "version": "1.0",
         "adapter": {
           "web_pc": "ElEditableTable",
           "wx_mini": "WxRelationList",
           "harmony_h5": "H5EditableTable"
         },
-        "fallback": "sc.list.relation"
+        "fallback": "sc.table.data"
       }
     }
   },

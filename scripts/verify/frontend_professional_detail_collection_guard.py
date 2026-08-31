@@ -12,10 +12,20 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     renderer = read_text("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
+    project_layout = read_text("addons/smart_construction_core/core_extension_project_layout.py")
+    example = read_text("docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json")
     if "sc.relation.table" not in model or "ProfessionalDetailCollectionControl" not in registry:
         failures.append("detail collection registry authority is incomplete")
     if 'field_type == "one2many"' not in assembler or 'return "sc.relation.table"' not in assembler:
         failures.append("one2many is not projected to the detail collection authority")
+    if '"componentKey": "sc.table.data"' in project_layout:
+        failures.append("project layout extension still emits legacy sc.table.data component keys")
+    if '"sc.relation.table"' not in project_layout or '"sc.relation.many2many"' not in project_layout:
+        failures.append("project layout extension does not register formal relation component keys")
+    if '"componentKey": "sc.table.relation"' in example or '"sc.table.relation": {' in example:
+        failures.append("nested form relation example still uses legacy sc.table.relation authority")
+    if '"componentKey": "sc.relation.table"' not in example or '"sc.relation.table": {' not in example:
+        failures.append("nested form relation example does not document formal sc.relation.table authority")
     for marker in (
         'data-professional-field-family="detail-collection"', ':data-row-count', ':data-column-count',
         ':data-can-create', ':data-removed-row-count', ':data-validation-visible', ':data-summary-present',

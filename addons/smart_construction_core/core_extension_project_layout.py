@@ -69,13 +69,18 @@ def sc_project_field_widget(
     config = {"fieldType": field_type}
     if relation:
         config["relation"] = relation
+    component_key = "sc.select.remote"
+    if field_type == "one2many":
+        component_key = "sc.relation.table"
+    elif field_type == "many2many":
+        component_key = "sc.relation.many2many"
     return {
         "widgetId": "field.%s" % field_name,
         "widgetType": "table" if field_type in {"one2many", "many2many"} else "select",
         "fieldCode": field_name,
         "label": label,
         "span": 12,
-        "componentKey": "sc.table.data" if field_type in {"one2many", "many2many"} else "sc.select.remote",
+        "componentKey": component_key,
         "capabilities": [],
         "componentConfig": config,
         "ownerContainerId": owner_container_id or "field.%s" % field_name,
@@ -154,7 +159,15 @@ def sc_append_project_responsibility_group(contract: dict, *, include_collaborat
         tree.append(group)
     layout["containerTree"] = tree
     registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
-    registry["sc.table.data"] = {
+    registry["sc.relation.table"] = {
+        "version": "1.0",
+        "adapter": {
+            "web_pc": "ElTable",
+            "wx_mini": "WxTable",
+            "harmony_h5": "H5Table",
+        },
+    }
+    registry["sc.relation.many2many"] = {
         "version": "1.0",
         "adapter": {
             "web_pc": "ElTable",

@@ -3,6 +3,26 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-31 — PROFESSIONAL-COMPONENT-RESIDUAL-CLOSURE-01
+
+- Branch / anchor: `audit/professional-component-residual-closure-v1` at
+  `e35bd13`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel /
+  generic relation component-key projection and frontend renderer contract
+  alignment / `addons/smart_construction_core`, `frontend/apps/web`, and
+  `scripts/verify`.
+- Standard vs User-Specific: platform-standard component authority only; no
+  project workflow rule, customer preference, runtime configuration, or page
+  special case is introduced.
+- Why Here / Why Not Elsewhere: Contract-first rendering requires late project
+  layout extensions to emit the same formal `one2many` / `many2many` component
+  keys as the platform assembler. Fixing this in page templates or frontend
+  fallbacks would preserve split authority and hide contract drift.
+- Blast Radius: project responsibility/collaboration relation fields, their
+  component registry entries, and the residual regression guard. Validation is
+  limited to targeted backend tests, the dedicated verification script, and
+  strict frontend typecheck.
+
 ## 2026-08-23 — Contract V2 layout DSL convergence
 
 - Branch / anchor: `feature/layout-contract-dsl-convergence-v1` at
