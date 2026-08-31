@@ -169,106 +169,16 @@
                   :described-by="fieldDescribedBy(field)"
                   @change="emitBinaryFieldChange(field, $event[0] || null)"
                 />
-                <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2one(field)" :field="field">
-                <div :class="['many2one-widget-shell', { 'many2one-widget-shell--avatar': isAvatarMany2oneWidget(field) }]">
-                  <span v-if="isAvatarMany2oneWidget(field)" class="many2one-avatar" aria-hidden="true">
-                    {{ avatarText(many2oneTextValue(field)) }}
-                  </span>
-                  <div class="many2one-combobox">
-                    <ScRelationField
-                      :id="fieldControlId(field)"
-                      class="input"
-                      appearance="form-field"
-                      :required="field.required"
-                      :invalid="field.invalid"
-                      :described-by="fieldDescribedBy(field)"
-                      :model-value="many2oneTextValue(field)"
-                      :placeholder="selectPlaceholderText(field)"
-                      role="combobox"
-                      aria-autocomplete="list"
-                      :aria-expanded="isMany2oneOpen(field)"
-                      :aria-controls="many2oneListboxId(field)"
-                      :aria-activedescendant="many2oneActiveDescendant(field)"
-                      @update:model-value="emitMany2oneQuery(field, $event)"
-                      @focus="focusMany2one(field)"
-                      @change="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
-                      @keydown="handleMany2oneKeydown(field, $event)"
-                      @blur="blurMany2one(field, $event)"
-                    />
-                    <div v-if="isMany2oneOpen(field)" :id="many2oneListboxId(field)" class="many2one-option-panel" role="listbox">
-                      <div v-if="field.relationOptions?.length" class="many2one-option-list" role="presentation">
-                        <ScButton
-                          v-for="(option, optionIndex) in field.relationOptions.filter(Boolean).slice(0, 8)"
-                          :id="many2oneOptionId(field, optionIndex)"
-                          :key="`${field.name}-option-${option.value}`"
-                          type="button"
-                          class="many2one-option"
-                          appearance="menu-item"
-                          size="small"
-                          variant="ghost"
-                          :class="{ 'is-active': many2oneActiveIndex[field.name] === optionIndex }"
-                          role="option"
-                          :aria-selected="many2oneActiveIndex[field.name] === optionIndex"
-                          @mousedown.prevent
-                          @click="emitMany2oneAction(field, option.value, $event)"
-                        >
-                          {{ option.label }}
-                        </ScButton>
-                      </div>
-                      <div class="many2one-actions">
-                        <ScButton
-                          v-if="field.many2oneOpenToken"
-                          type="button"
-                          class="many2one-action many2one-action--record"
-                          appearance="menu-item"
-                          size="small"
-                          variant="ghost"
-                          @mousedown.prevent
-                          @click="emitMany2oneAction(field, field.many2oneOpenToken || '', $event)"
-                        >
-                          {{ field.many2oneOpenLabel || '维护当前项' }}
-                        </ScButton>
-                        <ScButton
-                          v-if="field.many2oneSearchToken"
-                          type="button"
-                          class="many2one-action"
-                          appearance="menu-item"
-                          size="small"
-                          variant="ghost"
-                          @mousedown.prevent
-                          @click="emitMany2oneAction(field, field.many2oneSearchToken || '', $event)"
-                        >
-                          {{ field.many2oneSearchLabel }}
-                        </ScButton>
-                        <ScButton
-                          v-if="['page', 'dialog'].includes(field.relationCreateMode || '') && field.many2oneCreateToken"
-                          type="button"
-                          class="many2one-action"
-                          appearance="menu-item"
-                          size="small"
-                          variant="ghost"
-                          @mousedown.prevent
-                          @click="emitMany2oneAction(field, field.many2oneCreateToken || '', $event)"
-                        >
-                          {{ field.many2oneCreateLabel }}
-                        </ScButton>
-                        <ScButton
-                          v-if="showMany2oneInlineCreate(field)"
-                          type="button"
-                          class="many2one-action"
-                          appearance="menu-item"
-                          size="small"
-                          variant="ghost"
-                          @mousedown.prevent
-                          @click="emitMany2oneInlineCreate(field, $event)"
-                        >
-                          {{ field.many2oneInlineCreateLabel }}
-                        </ScButton>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                </ProfessionalRelationFieldControl>
+                <ProfessionalMany2oneFieldControl
+                  v-else-if="usesProfessionalMany2one(field)"
+                  :field="field"
+                  :control-id="fieldControlId(field)"
+                  :described-by="fieldDescribedBy(field)"
+                  :placeholder="selectPlaceholderText(field)"
+                  @select="emitFieldChange(field, $event)"
+                  @query="emitMany2oneQuery(field, $event)"
+                  @commit="emitMany2oneCommit(field, $event)"
+                />
                 <div v-else-if="isDateRangeWidget(field)" class="native-date-range">
                   <ScDateField
                     :id="fieldControlId(field)"
@@ -336,20 +246,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref, useId, useSlots } from 'vue';
+import { computed, inject, useId, useSlots } from 'vue';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
 import ScDateField from '../design-system/ScDateField.vue';
-import ScButton from '../design-system/ScButton.vue';
 import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScRadioGroup, { type ScRadioOption } from '../design-system/ScRadioGroup.vue';
-import ScRelationField from '../design-system/ScRelationField.vue';
 import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
 import ProfessionalBusinessValueControl from '../professional-fields/ProfessionalBusinessValueControl.vue';
 import ProfessionalDetailCollectionControl from '../professional-fields/ProfessionalDetailCollectionControl.vue';
+import ProfessionalMany2oneFieldControl from '../professional-fields/ProfessionalMany2oneFieldControl.vue';
 import ProfessionalRelationFieldControl from '../professional-fields/ProfessionalRelationFieldControl.vue';
 import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
@@ -422,9 +331,7 @@ const props = withDefaults(defineProps<{
   preferReadonlyFacts: false,
 });
 
-const many2oneFocusedField = ref('');
 const sceneUiKit = useOptionalSceneUiKit();
-const many2oneActiveIndex = ref<Record<string, number>>({});
 const formSectionDomId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
 
 const emit = defineEmits<{
@@ -651,52 +558,8 @@ function isRadioWidget(field: FormSectionFieldSchema) {
   return fieldWidget(field) === 'radio';
 }
 
-function isAvatarMany2oneWidget(field: FormSectionFieldSchema) {
-  return ['many2one_avatar_user', 'many2one_avatar_employee'].includes(fieldWidget(field));
-}
-
 function isDateRangeWidget(field: FormSectionFieldSchema) {
   return fieldWidget(field) === 'daterange';
-}
-
-function selectedRelationLabel(field: FormSectionFieldSchema) {
-  const value = String(field.inputValue ?? '').trim();
-  if (!value) return '';
-  const option = (field.relationOptions || []).filter(Boolean).find((item) => String(item.id ?? item.value) === value);
-  return String(option?.label || '').trim();
-}
-
-function many2oneTextValue(field: FormSectionFieldSchema) {
-  return String(selectedRelationLabel(field) || '').trim();
-}
-
-function showMany2oneInlineCreate(field: FormSectionFieldSchema) {
-  const text = many2oneTextValue(field);
-  if (!text || !field.relationInlineCreate?.enabled || !field.relationInlineCreate.createOnNoMatch) return false;
-  const options = (field.relationOptions || []).filter(Boolean);
-  const normalized = text.trim().toLowerCase();
-  const exact = options.some((item) => String(item.label || '').trim().toLowerCase() === normalized);
-  if (exact) return false;
-  return true;
-}
-
-function hasMany2oneDropdown(field: FormSectionFieldSchema) {
-  return Boolean(
-    field.relationOptions?.length
-    || field.many2oneOpenToken
-    || field.many2oneSearchToken
-    || (['page', 'dialog'].includes(field.relationCreateMode || '') && field.many2oneCreateToken)
-    || showMany2oneInlineCreate(field),
-  );
-}
-
-function isMany2oneOpen(field: FormSectionFieldSchema) {
-  return many2oneFocusedField.value === field.name && hasMany2oneDropdown(field);
-}
-
-function avatarText(label: string) {
-  const text = String(label || '').trim();
-  return text ? text.slice(0, 1).toUpperCase() : '';
 }
 
 function selectPlaceholderText(field: FormSectionFieldSchema) {
@@ -804,25 +667,7 @@ function emitBinaryFieldChange(field: FormSectionFieldSchema, file: File | null)
   reader.readAsDataURL(file);
 }
 
-function collapseMany2oneDropdown(event: Event) {
-  const target = event.currentTarget;
-  const targetElement = target as unknown as { closest?: (selector: string) => { querySelector?: (selector: string) => HTMLInputElement | null } | null };
-  const closest = target && typeof targetElement.closest === 'function'
-    ? targetElement.closest.bind(target)
-    : null;
-  const input = closest?.('.many2one-combobox')?.querySelector?.('input') || null;
-  window.setTimeout(() => input?.blur(), 0);
-}
-
-function emitMany2oneAction(field: FormSectionFieldSchema, value: string | number | boolean | null, event: Event) {
-  many2oneFocusedField.value = '';
-  many2oneActiveIndex.value[field.name] = -1;
-  emitFieldChange(field, value);
-  collapseMany2oneDropdown(event);
-}
-
 function emitMany2oneQuery(field: FormSectionFieldSchema, value: string) {
-  many2oneActiveIndex.value[field.name] = -1;
   emit('field-change', {
     occurrenceKey: field.key,
     name: field.name,
@@ -832,68 +677,6 @@ function emitMany2oneQuery(field: FormSectionFieldSchema, value: string) {
     action: 'query',
     descriptor: field.descriptor,
   });
-}
-
-function many2oneDomKey(field: FormSectionFieldSchema) {
-  return field.name.replace(/[^A-Za-z0-9_-]/g, '-');
-}
-
-function many2oneListboxId(field: FormSectionFieldSchema) {
-  return `${formSectionDomId}-many2one-options-${many2oneDomKey(field)}`;
-}
-
-function many2oneOptionId(field: FormSectionFieldSchema, index: number) {
-  return `${many2oneListboxId(field)}-${index}`;
-}
-
-function many2oneActiveDescendant(field: FormSectionFieldSchema) {
-  const index = many2oneActiveIndex.value[field.name] ?? -1;
-  return index >= 0 ? many2oneOptionId(field, index) : undefined;
-}
-
-function focusMany2one(field: FormSectionFieldSchema) {
-  many2oneFocusedField.value = field.name;
-  many2oneActiveIndex.value[field.name] = -1;
-  // 已有缓存选项时直接显示，避免聚焦即重复查询；用户输入会触发新查询
-  if (!field.relationOptions?.length) {
-    emitMany2oneQuery(field, many2oneTextValue(field));
-  }
-}
-
-function blurMany2one(field: FormSectionFieldSchema, event: FocusEvent) {
-  if (many2oneFocusedField.value !== field.name) return;
-  const targetValue = event.target instanceof HTMLInputElement ? event.target.value : '';
-  emitMany2oneCommit(field, targetValue);
-  window.setTimeout(() => {
-    if (many2oneFocusedField.value === field.name) many2oneFocusedField.value = '';
-  }, 0);
-}
-
-function handleMany2oneKeydown(field: FormSectionFieldSchema, event: KeyboardEvent) {
-  const options = (field.relationOptions || []).filter(Boolean).slice(0, 8);
-  const current = many2oneActiveIndex.value[field.name] ?? -1;
-  if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && options.length) {
-    event.preventDefault();
-    const delta = event.key === 'ArrowDown' ? 1 : -1;
-    many2oneActiveIndex.value[field.name] = (current + delta + options.length) % options.length;
-    return;
-  }
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    const option = current >= 0 ? options[current] : undefined;
-    const inputEl = event.target instanceof HTMLInputElement ? event.target : null;
-    if (option) emitFieldChange(field, option.value);
-    else emitMany2oneCommit(field, inputEl ? inputEl.value : '');
-    many2oneFocusedField.value = '';
-    many2oneActiveIndex.value[field.name] = -1;
-    inputEl?.blur();
-    return;
-  }
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    many2oneFocusedField.value = '';
-    many2oneActiveIndex.value[field.name] = -1;
-  }
 }
 
 function emitMany2oneCommit(field: FormSectionFieldSchema, value: string) {
@@ -906,11 +689,6 @@ function emitMany2oneCommit(field: FormSectionFieldSchema, value: string) {
     action: 'commit',
     descriptor: field.descriptor,
   });
-}
-
-function emitMany2oneInlineCreate(field: FormSectionFieldSchema, event: Event) {
-  emitMany2oneCommit(field, many2oneTextValue(field));
-  collapseMany2oneDropdown(event);
 }
 
 function emitDateRangeEndChange(field: FormSectionFieldSchema, value: string | number | boolean | null) {
@@ -1391,77 +1169,6 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   display: grid;
   gap: 8px;
   align-items: start;
-}
-
-.many2one-widget-shell {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.many2one-widget-shell--avatar .many2one-combobox > .input {
-  padding-left: 42px;
-}
-
-.many2one-combobox {
-  position: relative;
-  display: grid;
-  gap: 6px;
-  width: 100%;
-  min-width: 0;
-}
-
-.many2one-option-panel {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 2px);
-  left: 0;
-  right: 0;
-  display: grid;
-  max-height: 260px;
-  overflow: auto;
-  border: 1px solid var(--sc-app-border-strong);
-  border-radius: var(--sc-component-panel-radius);
-  background: var(--sc-app-panel);
-  box-shadow: var(--sc-semantic-shadow-modal);
-}
-
-.many2one-option-list {
-  display: grid;
-}
-
-.many2one-actions {
-  display: grid;
-  min-width: 0;
-  border-top: 1px solid var(--sc-app-border);
-}
-
-.many2one-action {
-  width: 100%;
-  justify-content: flex-start;
-  max-width: 100%;
-}
-
-.many2one-action--record {
-  font-weight: 600;
-}
-
-.many2one-avatar {
-  position: absolute;
-  left: 10px;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--sc-app-muted-bg);
-  color: var(--sc-app-text-secondary);
-  font-size: 11px;
-  font-weight: 700;
-  pointer-events: none;
 }
 
 .native-date-range {

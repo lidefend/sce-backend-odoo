@@ -6677,3 +6677,20 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   but not yet backed by a production consumer are explicitly recorded as an
   implementation gap rather than completed behavior. This remains
   documentation-only.
+
+## 2026-08-31 — Professional many2one component residual closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `2448d5a83d52493cd984af039717928c0c91fa6b`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  frontend renderer relation-field decomposition / `frontend/apps/web`.
+- Reason: finish the residual extraction of editable `many2one` rendering from
+  the generic form section into a dedicated professional relation component
+  while preserving the governed `query` / `commit` / `select` event semantics.
+- Why here / why not elsewhere: this is shared renderer structure and adapter
+  governance, not industry behavior, customer preference, low-code runtime data
+  or ops repair.
+- Blast radius and evidence: editable `many2one` relation fields plus the
+  frontend relation-field, primitive-adapter and release-unit guards; verified
+  with `pnpm typecheck`, `pnpm build`, relation-field guard unittest, and
+  `make --no-print-directory verify.frontend.release.unit`.
