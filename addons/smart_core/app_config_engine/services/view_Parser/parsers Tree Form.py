@@ -195,21 +195,29 @@ class _TreeFormParserMixin:
         return None
 
     def _field_widget_semantics(self, fname, widget, options):
-        if widget != 'daterange':
-            return {}
         options = options if isinstance(options, dict) else {}
-        end_field = (
-            options.get('end_date_field')
-            or options.get('related_end_date')
-            or options.get('date_end')
-            or options.get('end_field')
+        semantics = {}
+        if widget == 'daterange':
+            end_field = (
+                options.get('end_date_field')
+                or options.get('related_end_date')
+                or options.get('date_end')
+                or options.get('end_field')
+                or ''
+            )
+            semantics.update({
+                'kind': 'date_range',
+                'start_field': fname,
+                'end_field': str(end_field or '').strip(),
+            })
+        semantic_feature = str(
+            options.get('sc_semantic_feature')
+            or options.get('semantic_feature')
             or ''
-        )
-        return {
-            'kind': 'date_range',
-            'start_field': fname,
-            'end_field': str(end_field or '').strip(),
-        }
+        ).strip()
+        if semantic_feature:
+            semantics['feature'] = semantic_feature
+        return semantics
 
     def _resolve_action_label(self, btn_node, name_raw):
         label = (btn_node.get('string') or btn_node.get('title') or '').strip()

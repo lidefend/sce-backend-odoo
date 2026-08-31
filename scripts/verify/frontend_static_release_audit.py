@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "artifacts/frontend-release-audit/static.json"
+PNPM = ["scripts/dev/pnpm_exec.sh", "-C"]
 COMMANDS = {
     "style_system": ["make", "--no-print-directory", "verify.frontend.style_system.guard"],
     "shared_semantic_boundary": ["make", "--no-print-directory", "verify.frontend.shared_surface_semantic_boundary.guard"],
@@ -18,16 +19,14 @@ COMMANDS = {
         "--no-print-directory",
         "verify.frontend.release_navigation_policy.guard",
     ],
-    "lint": ["pnpm", "--dir", "frontend/apps/web", "run", "lint"],
-    "strict_typecheck": ["pnpm", "--dir", "frontend/apps/web", "run", "typecheck:strict"],
+    "lint": [*PNPM, "frontend/apps/web", "lint"],
+    "strict_typecheck": [*PNPM, "frontend/apps/web", "typecheck:strict"],
     "design_tokens_build": [
-        "pnpm",
-        "--dir",
+        *PNPM,
         "frontend/packages/design-tokens",
-        "run",
         "build",
     ],
-    "production_build": ["pnpm", "--dir", "frontend/apps/web", "run", "build"],
+    "production_build": [*PNPM, "frontend/apps/web", "build"],
     "production_build_fingerprint": [
         "bash",
         "scripts/verify/frontend_build_fingerprint.sh",

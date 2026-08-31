@@ -179,6 +179,19 @@
                   @query="emitMany2oneQuery(field, $event)"
                   @commit="emitMany2oneCommit(field, $event)"
                 />
+                <ScRelationField
+                  v-else-if="field.type === 'many2one'"
+                  :id="fieldControlId(field)"
+                  class="input"
+                  appearance="form-field"
+                  :required="field.required"
+                  :invalid="field.invalid"
+                  :described-by="fieldDescribedBy(field)"
+                  :model-value="String(field.inputValue ?? '')"
+                  :placeholder="selectPlaceholderText(field)"
+                  @update:model-value="emitMany2oneQuery(field, $event)"
+                  @change="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
+                />
                 <div v-else-if="isDateRangeWidget(field)" class="native-date-range">
                   <ScDateField
                     :id="fieldControlId(field)"
@@ -254,6 +267,7 @@ import ScFileField from '../design-system/ScFileField.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScRelationField from '../design-system/ScRelationField.vue';
 import ScRadioGroup, { type ScRadioOption } from '../design-system/ScRadioGroup.vue';
 import ProfessionalBaseFieldControl from '../professional-fields/ProfessionalBaseFieldControl.vue';
 import ProfessionalBusinessValueControl from '../professional-fields/ProfessionalBusinessValueControl.vue';

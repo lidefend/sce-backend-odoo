@@ -67,7 +67,12 @@
       <form id="create-api-key-form" class="sc-form credential-form" autocomplete="off" @submit.prevent="createCredential">
         <label class="sc-form-label">
           用途名称
-          <ScInput v-model="createForm.name" :max-length="120" required placeholder="例如：报表集成（只读）" />
+          <ScInput
+            v-model="createForm.name"
+            :max-length="120"
+            required
+            placeholder="例如：报表集成（只读）"
+          />
         </label>
         <fieldset>
           <legend>权限范围</legend>
@@ -358,6 +363,7 @@ onBeforeUnmount(() => {
 .credential-alert { margin: 0; padding: var(--sc-product-space-2); border-radius: var(--sc-component-panel-radius); }
 .credential-alert--error { color: var(--sc-app-danger-text); background: var(--sc-app-danger-bg); }
 .credential-alert--warning { color: var(--sc-app-warning-text); background: var(--sc-app-warning-bg); }
+.credential-loading { color: var(--sc-app-text-secondary); }
 .credential-list { display: grid; gap: var(--sc-product-space-3); }
 .credential-card > header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sc-product-space-2); }
 .credential-card h3 { margin: 0 0 var(--sc-product-space-1); }

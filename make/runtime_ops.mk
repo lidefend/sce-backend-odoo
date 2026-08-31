@@ -1843,7 +1843,7 @@ verify.frontend.page_identity.browser: guard.prod.forbid check-compose-project c
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
-	runtime_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < scripts/verify/frontend_page_identity_runtime_metadata.py 2>&1 )"; \
+	runtime_output="$$( SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh page-identity-runtime-ids 2>&1 )"; \
 	action_xmlids_line="$$(echo "$$runtime_output" | grep '^FRONTEND_PAGE_IDENTITY_ACTION_XMLIDS_JSON=' | tail -1)"; \
 	test -n "$$action_xmlids_line"; export "$$action_xmlids_line"; \
 	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
@@ -2009,7 +2009,7 @@ verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-comp
 
 verify.frontend.release.unit: verify.frontend.canonical_form_presenter.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.contract_render_profile.unit
 verify.frontend.release.unit: verify.frontend.cross_model_action_navigation.unit
-verify.frontend.release.unit: verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.navigation_initialization_race.unit verify.frontend.action_view_route_lease_race.unit verify.frontend.runtime_environment.unit verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.native_section_navigation.unit verify.frontend.auth_credential.guard
+verify.frontend.release.unit: verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.navigation_initialization_race.unit verify.frontend.action_view_route_lease_race.unit verify.frontend.runtime_environment.unit verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.native_section_navigation.unit verify.frontend.auth_credential.guard verify.frontend.auth_surface.guard
 	@node scripts/verify/frontend_navigation_audit.test.mjs
 	@node scripts/verify/frontend_performance_budget.test.mjs
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py

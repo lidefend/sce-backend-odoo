@@ -143,7 +143,7 @@
             <p
               v-if="pageSectionEnabled('error', true) && pageSectionTagIs('error', 'section') && error"
               id="login-error"
-              class="error sc-alert sc-alert-danger"
+              class="error"
               role="alert"
               :style="pageSectionStyle('error')"
             >

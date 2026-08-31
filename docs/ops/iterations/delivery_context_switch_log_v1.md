@@ -3,6 +3,26 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-31 — AUTH-SURFACE-GUARD-CONSUMPTION-CLOSURE-01
+
+- Branch / anchor: `audit/professional-component-residual-closure-v1` at
+  `55f8ecf7`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel /
+  authentication surface page-contract governance and validation aggregation /
+  `addons/smart_core`, `frontend/apps/web`, `make`, and `scripts/verify`.
+- Standard vs User-Specific: platform-standard auth entry and guard wiring
+  only; no construction workflow rule, customer preference, runtime
+  configuration, or secret-handling policy is relaxed.
+- Why Here / Why Not Elsewhere: login, activation, and recovery belong to the
+  shared platform auth-entry surface, so contract routing and guard aggregation
+  must be owned by the generic page-contract/runtime boundary. Leaving the new
+  guard outside release or incremental validation would make the policy
+  decorative instead of enforced.
+- Blast Radius: auth view incremental validation selection, release-unit guard
+  aggregation, generated component-driver takeover inventory, and auth-surface
+  audit evidence only. Validation is limited to targeted Python guards/unit
+  tests plus the existing frontend release-unit aggregate.
+
 ## 2026-08-31 — PROFESSIONAL-COMPONENT-RESIDUAL-CLOSURE-01
 
 - Branch / anchor: `audit/professional-component-residual-closure-v1` at
@@ -6694,3 +6714,63 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   frontend relation-field, primitive-adapter and release-unit guards; verified
   with `pnpm typecheck`, `pnpm build`, relation-field guard unittest, and
   `make --no-print-directory verify.frontend.release.unit`.
+
+## 2026-08-31 — Authentication surface professionalization gap freeze
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `55f8ecf7c9e20bba7158639f3a99894b9d7dbde4`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  frontend authentication surface governance / `frontend/apps/web`.
+- Reason: freeze the current authentication journey's professionalization gaps
+  before adding further auth features. The audit confirms login is partially
+  page-contract-driven while activation, recovery, and API-key management still
+  sit outside one unified professional auth surface model.
+- Why here / why not elsewhere: this is shared platform auth-surface ownership,
+  not an industry rule, customer preference, low-code configuration, or ops
+  repair path.
+- Blast radius and evidence: documentation-only audit covering login,
+  platform-admin login, activation, recovery, API-key management, and their
+  guards; no runtime behavior, contract payload, router authority, or security
+  policy changed in this batch.
+
+## 2026-08-31 — Authentication surface contract closure and auth-family seeding
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `55f8ecf7c9e20bba7158639f3a99894b9d7dbde4`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  auth entry contract governance and professional component authority /
+  `addons/smart_core`, `frontend/apps/web`, and `scripts/verify`.
+- Reason: move account activation and password recovery into the same governed
+  page-contract family as login, then seed a minimal generic auth professional
+  component vocabulary without forcing API-key one-time secret handling into an
+  ordinary form renderer path.
+- Why here / why not elsewhere: auth page sections, contract actions, route
+  targets, and professional component keys are platform mechanisms. They must
+  not be hidden in page-local navigation, business modules, customer
+  configuration, or ops-only checks.
+- Blast radius and evidence: login-adjacent routes, auth page contracts,
+  generic action-target mapping, frontend auth-surface verification, and the
+  professional component registry only. Sensitive API-key handling stays under
+  dedicated fail-closed guards and explicit high-sensitivity exemption.
+
+## 2026-08-31 — Relation semantic feature closure for settlement introduce
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `55f8ecf7c9e20bba7158639f3a99894b9d7dbde4`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product
+  plus P1 construction standard product / widget semantics projection and
+  payment-request relation capability declaration / `addons/smart_core`,
+  `addons/smart_construction_core`, and `frontend/apps/web`.
+- Reason: remove the shared frontend's residual `payment.request.line` model
+  branch for settlement-line introduction and replace it with contract-owned
+  semantic feature projection consumed by the generic x2many renderer.
+- Why here / why not elsewhere: semantic projection belongs to the platform
+  parser boundary, while the existence of the settlement-introduce capability
+  belongs to the construction-standard payment-request form view. Keeping the
+  rule in the frontend would preserve split authority and product-specific
+  routing hints in a shared renderer.
+- Blast radius and evidence: payment-request outflow-line form rendering,
+  native view parser semantics, page-pattern parity, and frontend release-unit
+  aggregation only. Verified with native parser unit coverage, page-pattern
+  parity, auth-surface guards, and `make --no-print-directory
+  verify.frontend.release.unit`.

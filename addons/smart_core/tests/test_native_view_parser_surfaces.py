@@ -232,8 +232,8 @@ class _TreeFormParserProbe(_load_tree_form_mixin()):
         value = element.get(name)
         return default if value is None else self._normalize_modifier_value(value)
 
-    def _field_widget_semantics(self, *_args):
-        return {}
+    def _field_widget_semantics(self, *args):
+        return super()._field_widget_semantics(*args)
 
 
 class _BaseParserProbe(_load_base_mixin()):
@@ -488,6 +488,26 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
 
         self.assertEqual(node["attributes"]["modifiers"], "{'readonly': true}")
         self.assertEqual(node["relation_active_actions"], {"create": False})
+
+    def test_field_widget_semantics_preserves_date_range_and_semantic_feature(self):
+        semantics = self.tree_form_parser._field_widget_semantics(
+            "date_start",
+            "daterange",
+            {
+                "end_field": "date_end",
+                "sc_semantic_feature": "settlement_line_introduce",
+            },
+        )
+
+        self.assertEqual(
+            semantics,
+            {
+                "kind": "date_range",
+                "start_field": "date_start",
+                "end_field": "date_end",
+                "feature": "settlement_line_introduce",
+            },
+        )
 
     def test_monetary_occurrences_preserve_currency_field_and_digits(self):
         fields_info = {

@@ -21,6 +21,8 @@ HOME_RUNTIME = ROOT / "frontend/apps/web/src/composables/shared-surface/useWorks
 MY_WORK_VIEW = ROOT / "frontend/apps/web/src/views/MyWorkView.vue"
 SCENE_PACKAGES_VIEW = ROOT / "frontend/apps/web/src/views/ScenePackagesView.vue"
 PAGE_ACTION_RUNTIME = ROOT / "frontend/apps/web/src/app/pageContractActionRuntime.ts"
+ACCOUNT_ACTIVATION_VIEW = ROOT / "frontend/apps/web/src/views/AccountActivationView.vue"
+PASSWORD_RECOVERY_VIEW = ROOT / "frontend/apps/web/src/views/PasswordRecoveryView.vue"
 
 
 def _read(path: Path) -> str:
@@ -57,6 +59,8 @@ def main() -> int:
     my_work_text = _read(MY_WORK_VIEW)
     scene_packages_text = _read(SCENE_PACKAGES_VIEW)
     action_runtime_text = _read(PAGE_ACTION_RUNTIME)
+    account_activation_text = _read(ACCOUNT_ACTIVATION_VIEW)
+    password_recovery_text = _read(PASSWORD_RECOVERY_VIEW)
     errors: list[str] = []
 
     if not page_contract_text:
@@ -91,6 +95,10 @@ def main() -> int:
         errors.append(f"missing file: {SCENE_PACKAGES_VIEW.relative_to(ROOT).as_posix()}")
     if not action_runtime_text:
         errors.append(f"missing file: {PAGE_ACTION_RUNTIME.relative_to(ROOT).as_posix()}")
+    if not account_activation_text:
+        errors.append(f"missing file: {ACCOUNT_ACTIVATION_VIEW.relative_to(ROOT).as_posix()}")
+    if not password_recovery_text:
+        errors.append(f"missing file: {PASSWORD_RECOVERY_VIEW.relative_to(ROOT).as_posix()}")
     if errors:
         return _fail(errors)
 
@@ -247,6 +255,39 @@ def main() -> int:
             "@click=\"executeHeaderAction(action.key)\"",
             "async function executeHeaderAction(actionKey: string) {",
             "const handled = await executePageContractAction({",
+        ],
+        errors,
+    )
+    _expect(
+        account_activation_text,
+        "AccountActivationView.vue",
+        [
+            "import { usePageContract } from '../app/pageContract';",
+            "import { executePageContractAction } from '../app/pageContractActionRuntime';",
+            "const pageContract = usePageContract('account_activation');",
+            "const pageActionIntent = pageContract.actionIntent;",
+            "const pageActionTarget = pageContract.actionTarget;",
+            "pageSectionEnabled('code_form', true)",
+            "pageSectionEnabled('password_form', true)",
+            "pageSectionEnabled('success', true)",
+            "executeHeaderAction('open_login')",
+            "await executePageContractAction({",
+        ],
+        errors,
+    )
+    _expect(
+        password_recovery_text,
+        "PasswordRecoveryView.vue",
+        [
+            "import { usePageContract } from '../app/pageContract';",
+            "import { executePageContractAction } from '../app/pageContractActionRuntime';",
+            "const pageContract = usePageContract('password_recovery');",
+            "const pageActionIntent = pageContract.actionIntent;",
+            "const pageActionTarget = pageContract.actionTarget;",
+            "pageSectionEnabled('message', true)",
+            "pageSectionEnabled('support', true)",
+            "executeHeaderAction('open_login')",
+            "await executePageContractAction({",
         ],
         errors,
     )

@@ -276,7 +276,7 @@ function emitInlineCreate(event: Event) {
   border: 1px solid var(--sc-app-border);
   border-radius: 10px;
   background: var(--sc-app-surface-elevated);
-  box-shadow: var(--sc-component-relation-dropdown-shadow, 0 12px 32px rgba(15, 23, 42, 0.18));
+  box-shadow: var(--sc-component-relation-dropdown-shadow, var(--sc-app-shadow-popover));
 }
 
 .many2one-option-list,

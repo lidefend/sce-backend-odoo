@@ -340,8 +340,7 @@ const introduceBusy = ref(false);
 
 function isSettlementIntroduceField(field: FormSectionFieldSchema) {
   if (field.type !== 'one2many') return false;
-  const relation = (field as { descriptor?: { relation?: string } }).descriptor?.relation;
-  return String(relation || '').trim().toLowerCase() === 'payment.request.line';
+  return String(field.widgetSemantics?.feature || '').trim().toLowerCase() === 'settlement_line_introduce';
 }
 
 function openSettlementIntroduce() {

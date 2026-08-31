@@ -200,6 +200,55 @@ validate_frontend_launch_contract() {
   esac
 }
 
+frontend_listener_pid() {
+  local listener
+  listener="$(ss -H -ltnp "sport = :$FRONTEND_ACCEPTANCE_PORT" 2>/dev/null || true)"
+  sed -nE 's/.*pid=([0-9]+).*/\1/p' <<<"$listener" | head -n 1
+}
+
+remove_recoverable_frontend_listener() {
+  local owner="$1"
+  local pid process_root process_cmd process_group worktree_root
+  pid="$(frontend_listener_pid)"
+  [[ "$pid" =~ ^[0-9]+$ && -d "/proc/$pid" && "$(stat -c %u "/proc/$pid")" == "$(id -u)" ]] || {
+    echo "[$owner] DENY untracked listener owns port=$FRONTEND_ACCEPTANCE_PORT" >&2
+    return 1
+  }
+  process_root="$(readlink -f "/proc/$pid/cwd")"
+  worktree_root="$(readlink -f "$ROOT_DIR")"
+  process_cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline")"
+  case "$process_root" in
+    "$worktree_root"|"$worktree_root"/*) ;;
+    *)
+    echo "[$owner] DENY untracked listener belongs to another worktree port=$FRONTEND_ACCEPTANCE_PORT" >&2
+    return 1
+    ;;
+  esac
+  [[ "$process_cmd" == *"scripts/release/release_static_server.mjs"* || "$process_cmd" == *"node_modules/vite/bin/vite.js"* ]] || {
+    echo "[$owner] DENY untracked listener command is not a governed frontend carrier port=$FRONTEND_ACCEPTANCE_PORT" >&2
+    return 1
+  }
+  process_group="$(ps -o pgid= -p "$pid" | tr -d '[:space:]')"
+  kill -- "-$process_group" 2>/dev/null || kill "$pid" 2>/dev/null || true
+  for _ in $(seq 1 50); do
+    if [[ ! -d "/proc/$pid" ]] && [[ -z "$(frontend_listener_pid)" ]]; then
+      echo "[$owner] removed stale frontend listener pid=$pid port=$FRONTEND_ACCEPTANCE_PORT" >&2
+      return 0
+    fi
+    sleep 0.1
+  done
+  kill -KILL -- "-$process_group" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
+  for _ in $(seq 1 50); do
+    [[ -z "$(frontend_listener_pid)" ]] && {
+      echo "[$owner] removed stale frontend listener pid=$pid port=$FRONTEND_ACCEPTANCE_PORT" >&2
+      return 0
+    }
+    sleep 0.1
+  done
+  echo "[$owner] DENY untracked listener survived cleanup port=$FRONTEND_ACCEPTANCE_PORT" >&2
+  return 1
+}
+
 preflight() {
   local db_container="${COMPOSE_PROJECT_NAME}-db-1"
   local redis_container="${COMPOSE_PROJECT_NAME}-redis-1"
@@ -248,8 +297,8 @@ case "$command" in
     preflight
     if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
       validate_backend_identity || {
-        echo "[backend.acceptance.up] DENY existing backend identity mismatch" >&2
-        exit 2
+        echo "[backend.acceptance.up] replacing stale backend identity" >&2
+        bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
       }
     fi
     bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
@@ -259,8 +308,10 @@ case "$command" in
     preflight
     if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
       validate_backend_identity || {
-        echo "[backend.acceptance.down] DENY existing backend identity mismatch" >&2
-        exit 2
+        echo "[backend.acceptance.down] removing stale backend identity" >&2
+        bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
+        echo "[backend.acceptance.down] PASS stale container removed"
+        exit 0
       }
       bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
     else
@@ -271,10 +322,12 @@ case "$command" in
     preflight
     if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
       validate_backend_resource_identity || {
-        echo "[backend.acceptance.replace-stale] DENY existing backend resource identity mismatch" >&2
-        exit 2
+        echo "[backend.acceptance.replace-stale] replacing stale backend resource identity" >&2
+        bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
       }
-      bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
+      if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then
+        bash "$ROOT_DIR/scripts/dev/backend_acceptance_down.sh"
+      fi
     fi
     bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
     validate_backend_runtime
@@ -304,8 +357,12 @@ case "$command" in
     preflight
     if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
       validate_frontend_runtime || {
-        echo "[frontend.acceptance.up] DENY existing frontend identity mismatch" >&2
-        exit 2
+        echo "[frontend.acceptance.up] replacing stale frontend identity" >&2
+        rm -f "$FRONTEND_ACCEPTANCE_PIDFILE"
+        remove_recoverable_frontend_listener frontend.acceptance.up || exit 2
+        bash "$ROOT_DIR/scripts/dev/frontend_acceptance_up.sh"
+        validate_frontend_runtime
+        exit 0
       }
       [[ "$validated_frontend_mode" == "${FRONTEND_ACCEPTANCE_MODE:-development}" ]] || {
         echo "[frontend.acceptance.up] DENY existing frontend mode mismatch" >&2
@@ -319,6 +376,9 @@ case "$command" in
         validate_frontend_runtime
       fi
     else
+      if [[ -n "$(frontend_listener_pid)" ]]; then
+        remove_recoverable_frontend_listener frontend.acceptance.up || exit 2
+      fi
       bash "$ROOT_DIR/scripts/dev/frontend_acceptance_up.sh"
       validate_frontend_runtime
     fi
@@ -327,16 +387,19 @@ case "$command" in
     preflight
     if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then
       validate_frontend_runtime || {
-        echo "[frontend.acceptance.down] DENY existing frontend identity mismatch" >&2
-        exit 2
+        echo "[frontend.acceptance.down] removing stale frontend identity" >&2
+        rm -f "$FRONTEND_ACCEPTANCE_PIDFILE"
+        remove_recoverable_frontend_listener frontend.acceptance.down || exit 2
+        echo "[frontend.acceptance.down] PASS stale listener removed"
+        exit 0
       }
       bash "$ROOT_DIR/scripts/dev/frontend_acceptance_down.sh"
     else
-      listener="$(ss -H -ltnp "sport = :$FRONTEND_ACCEPTANCE_PORT" 2>/dev/null || true)"
-      [[ -z "$listener" ]] || {
-        echo "[frontend.acceptance.down] DENY untracked listener owns port=$FRONTEND_ACCEPTANCE_PORT" >&2
-        exit 2
-      }
+      if [[ -n "$(frontend_listener_pid)" ]]; then
+        remove_recoverable_frontend_listener frontend.acceptance.down || exit 2
+        echo "[frontend.acceptance.down] PASS stale listener removed"
+        exit 0
+      fi
       echo "[frontend.acceptance.down] PASS already absent"
     fi
     ;;
@@ -390,6 +453,11 @@ case "$command" in
   release-snapshot)
     preflight
     bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
+    ;;
+  page-identity-runtime-ids)
+    preflight
+    ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
+      < "$ROOT_DIR/scripts/verify/frontend_page_identity_runtime_metadata.py"
     ;;
   delivery-hardening-runtime-ids)
     preflight

@@ -142,6 +142,11 @@ case "$operation" in
     bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
       < "$ROOT_DIR/scripts/test/frontend_acceptance_release_snapshot.py"
     ;;
+  page-identity-runtime-ids)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
+      < "$ROOT_DIR/scripts/verify/frontend_page_identity_runtime_metadata.py"
+    ;;
   delivery-hardening-runtime-ids)
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \

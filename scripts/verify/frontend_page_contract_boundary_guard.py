@@ -126,11 +126,9 @@ def main() -> int:
 
     page_contract_exempt_views = {
         "AccessDeniedView.vue",
-        "AccountActivationView.vue",
         "ApiKeyManagementView.vue",
         "HomeView.vue",
         "NotFoundView.vue",
-        "PasswordRecoveryView.vue",
         "ActionViewShell.vue",
         "MyWorkView.vue",
     }
@@ -166,6 +164,27 @@ def main() -> int:
             "pageSectionTagIs(",
             "pageSectionEnabled('card', true)",
             "pageSectionEnabled('form', true)",
+        ],
+        "AccountActivationView.vue": [
+            "const pageContract = usePageContract('account_activation');",
+            "const pageActionIntent = pageContract.actionIntent;",
+            "const pageActionTarget = pageContract.actionTarget;",
+            "pageSectionEnabled('card', true)",
+            "pageSectionEnabled('code_form', true)",
+            "pageSectionEnabled('password_form', true)",
+            "pageSectionEnabled('success', true)",
+            "executePageContractAction({",
+            "executeHeaderAction('open_login')",
+        ],
+        "PasswordRecoveryView.vue": [
+            "const pageContract = usePageContract('password_recovery');",
+            "const pageActionIntent = pageContract.actionIntent;",
+            "const pageActionTarget = pageContract.actionTarget;",
+            "pageSectionEnabled('card', true)",
+            "pageSectionEnabled('message', true)",
+            "pageSectionEnabled('support', true)",
+            "executePageContractAction({",
+            "executeHeaderAction('open_login')",
         ],
         "HomeView.vue": [
             "import WorkspaceHome from '../components/role-home/WorkspaceHome.vue';",
