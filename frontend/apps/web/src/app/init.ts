@@ -46,7 +46,14 @@ function installExtensionNoiseGuard() {
 export async function bootstrapApp() {
   installExtensionNoiseGuard();
   const session = useSessionStore();
-  session.restore();
+  // main.ts already calls session.restore() before mount to avoid
+  // first-paint flicker. Only restore here if the token is still
+  // missing (e.g. bootstrapApp called independently). Calling restore()
+  // unconditionally would reset isReady=false and interrupt the
+  // router guard's ensureReady() wait.
+  if (!session.token) {
+    session.restore();
+  }
   if (!session.token) {
     return;
   }

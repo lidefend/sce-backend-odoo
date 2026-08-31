@@ -39,14 +39,14 @@
       @change="emitValue($event)"
     />
     <ScSelect
-      v-else-if="field.type === 'selection'"
+      v-else-if="field.type === 'selection' || field.type === 'many2one'"
       :id="controlId"
       :model-value="String(field.inputValue ?? '')"
       :required="field.required"
       :invalid="field.invalid"
       :described-by="describedBy"
       :placeholder="placeholder"
-      :options="(field.selectionOptions || []).filter(Boolean).map((option) => ({ value: option.value, label: option.label }))"
+      :options="(field.relationOptions?.length ? field.relationOptions : field.selectionOptions || []).filter(Boolean).map((option) => ({ value: option.id ?? option.value, label: option.label }))"
       @update:model-value="emitValue"
     />
     <ScDateField
@@ -78,7 +78,8 @@
       :placeholder="placeholder"
       @update:model-value="emitValue($event ?? null)"
     />
-    <ScInput v-else
+    <ScInput
+      v-else
       :id="controlId"
       :model-value="String(field.inputValue ?? '')"
       :type="field.type === 'integer' || field.type === 'float' ? 'number' : 'text'"

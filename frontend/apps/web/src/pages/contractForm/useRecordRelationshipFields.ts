@@ -20,7 +20,8 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
 
   function many2oneValue(name: string) {
     const ids = relationIds(name);
-    return ids.length ? String(ids[0]) : '';
+    if (!ids.length) return '';
+    return String(ids[0]);
   }
 
   function relationOptionsForField(name: string) {

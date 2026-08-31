@@ -50,7 +50,7 @@
                     <group string="项目标识（可选）" col="2" invisible="context.get('intake_mode') == 'quick'">
                         <group>
                             <field name="project_type_id" />
-                            <field name="project_category_id" />
+                            <field name="project_category_id" invisible="1" />
                         </group>
                         <group>
                             <field name="location" />
@@ -92,6 +92,9 @@
         <field name="model">project.project</field>
         <field name="inherit_id" ref="project.edit_project" />
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='user_id']" position="attributes">
+                <attribute name="string">项目负责人</attribute>
+            </xpath>
             <xpath expr="//form/header//field[@name='stage_id']" position="replace">
                 <field name="lifecycle_state" widget="statusbar" statusbar_visible="draft,in_progress,paused,done,closing,warranty,closed" />
             </xpath>
@@ -146,7 +149,7 @@
                         <field name="project_code" readonly="1" invisible="id == False" />
                         <field name="initiation_date" />
                         <field name="project_type_id" />
-                        <field name="project_category_id" />
+                        <field name="project_category_id" invisible="1" />
                         <field name="operation_strategy" />
                         <field name="lifecycle_state" />
                         <field name="phase_key" invisible="1" />
