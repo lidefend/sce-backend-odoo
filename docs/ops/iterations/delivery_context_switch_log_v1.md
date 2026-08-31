@@ -346,7 +346,7 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Standard vs User-Specific: generic release identity; no business or customer semantics
 - Why Here / Why Not Elsewhere: `VERSION` is the formal product release source; image tags, manifests, and snapshot acceptance consume it rather than duplicating a stale literal
 - Blast Radius: next candidate image tag and release manifest version only; no production connection, database, runtime, baseline, rc.1 artifact, or application behavior change
-- Validation: product release version tests, shell syntax, generated-report guard, and PR required checks
+- Validation: product release version tests, shell syntax, generated-report guard, and the then-current PR merge checks
 
 ## 2026-07-23 — RELEASE-CANDIDATE-02R
 
@@ -617,7 +617,7 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Formal Product Layer: P4 repository and continuous-integration governance only
 - Layer Target: make `lidefend/sce-backend-odoo` the explicit GitHub authority while keeping authorization fail-closed and actor-independent
 - Module: GitHub Actions workflows, repository security guard and tests, safe-push/mirror tooling, CODEOWNERS, and repository governance documentation
-- Reason: the authoritative repository moved from `Leedefend/sce-product-odoo`; the former fixed repository and actor identities prevented required checks from running under the new authority
+- Reason: the authoritative repository moved from `Leedefend/sce-product-odoo`; the former fixed repository and actor identities prevented the then-current checks from running under the new authority
 - Standard vs User-Specific: repository governance constants and auditable trust rules only; no user-module product behavior, tenant payload, production data, or customer-specific policy changes
 - Why Here / Why Not Elsewhere: P4 owns repository identity, CI admission, push direction, and mirror policy; product modules must not encode source-host ownership or CI actors
 - Blast Radius: workflow admission and checkout, public governance verification, GitHub branch-push safety, GitHub-to-Gitee fast-forward mirroring, and documentation; no runtime, database, deployment, image, or migration impact
@@ -725,7 +725,7 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Why Here: P1 owns the formal tax business model and stable entry identity; P4 consumes the same locked 97-entry product contract during formal initialization
 - Why Not Elsewhere: `sc.invoice.registration` has a different lifecycle, `sc.legacy.payment.residual.fact` is forbidden, and release-source identity plus existing `ci.full` reason-code debt remain independent workstreams
 - Blast Radius: one approved tax-center entry in each locked 97-row baseline, its independent records, views, roles, company/project visibility, and transactional initialization expectations; no release SHA tooling, production database, image, runtime, or historical data
-- Validation: static model/action/menu/ACL/rule/baseline/checksum contracts, locked-menu policy tests, legacy-carrier and baseline-integrity guards, targeted module initialization attempt, standard pre-PR CI, and PR-bound required checks
+- Validation: static model/action/menu/ACL/rule/baseline/checksum contracts, locked-menu policy tests, legacy-carrier and baseline-integrity guards, targeted module initialization attempt, standard pre-PR CI, and the then-current PR-bound checks
 
 ## 2026-07-23 — First Fresh Production Formal Module Closure Tool
 
@@ -738,7 +738,7 @@ customer delivery evidence belongs in private customer or payload repositories.
 - Standard vs User-Specific: one first-production delivery control; no customer preference, application behavior, runtime configuration, or long-term business fact
 - Why Here / Why Not Elsewhere: P4 owns production mutation authorization and recovery sequencing; rc.4, P0/P1 modules, Nginx, credentials, and database schema remain immutable
 - Blast Radius: one new production Make target that accepts no caller module selection and makes at most one Odoo install invocation after a validated backup; negative preflight performs zero production writes
-- Validation: exact environment/confirmation/allowlist, manifest topology and data boundary, safe retry, pending/history/business/seed/demo drift rejection, backup-failure zero-install, 10/10 postcondition, Nginx fingerprint preservation, release contracts, security/generated gates, and PR required checks
+- Validation: exact environment/confirmation/allowlist, manifest topology and data boundary, safe retry, pending/history/business/seed/demo drift rejection, backup-failure zero-install, 10/10 postcondition, Nginx fingerprint preservation, release contracts, security/generated gates, and the then-current PR merge checks
 
 ## 2026-07-23 — Production Backup Configuration Loading Guard
 
@@ -1976,10 +1976,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Branch / anchor: `fix/release-p0-01r-qualification-fail-closed` from
   `e948e760c09f1f3be25f3844149932925de2e6aa`.
 - Formal Product Layer: P4 release governance and P0 platform authorization
-  verification; Layer Target: GitHub required checks, immutable release
+  verification; Layer Target: GitHub merge/publication qualification checks, immutable release
   candidate qualification, and generic chatter timeline authorization tests;
   Modules: `.github/workflows`, `scripts/ops`, and `addons/smart_core/tests`.
-- Reason: the merged `main` SHA must receive its own required-check evidence,
+- Reason: the merged `main` SHA must receive its own merge/publication qualification evidence,
   superseded candidates must fail before any database rehearsal, and timeline
   content/existence boundaries require real ORM negative proof.
 - Why Here / Why Not Elsewhere: release eligibility belongs to delivery
@@ -2124,7 +2124,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific: generic product behavior; no customer identifier, payload, or customer-specific branch
 - Why Here / Why Not Elsewhere: the role projection belongs to the industry product policy; type and pure query helpers belong beside their generic frontend domains rather than customer modules or release exceptions
 - Blast Radius: finance navigation adds one existing read-only menu identity; contract form and session changes only move pure helpers/types; no ACL, workflow, payload, database, `main`, protection, or production mutation
-- Validation: finance projection unit guard, role/authorization regression, frontend lint/strict/build/unit gates, complexity locks, four required checks on the new SHA, and dual-remote candidate parity
+- Validation: finance projection unit guard, role/authorization regression, frontend lint/strict/build/unit gates, complexity locks, the then-current four checks on the new SHA, and dual-remote candidate parity
 
 ## 2026-07-31 — RELEASE-TOOLING-P0-RC11-RUNTIME-FIX-05
 
@@ -2137,19 +2137,19 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Standard vs User-Specific: generic signed-import and release safety mechanism; no customer semantics or payload contents are encoded
 - Why Here / Why Not Elsewhere: capability authorization belongs to the platform import boundary, while pre-publication execution evidence belongs to release tooling; neither belongs in customer modules, frontend code, or production data
 - Blast Radius: maintenance capability matching, focused release tests, candidate publication preflight, and version identity only; production data, ACL design, customer package, v4 payload, and runtime services remain unchanged
-- Validation: behavioral equality/mismatch tests, repository API audit, publication negative tests, HIGH_RISK required checks, and final rc.11 image execution of the production-equivalent v4 plan with zero database writes
+- Validation: behavioral equality/mismatch tests, repository API audit, publication negative tests, the then-current HIGH_RISK checks, and final rc.11 image execution of the production-equivalent v4 plan with zero database writes
 
 ## 2026-08-01 — CI-SURFACE-AWARE-ORCHESTRATION-01
 
 - Branch: `fix/ci-surface-aware-orchestration`
 - Starting product commit: `3fb17948feacb34c2574668eaba7ddb2ad4bef26`
 - Formal Product Layer: P4 delivery and CI orchestration
-- Layer Target: risk-tier routing and required-check execution ownership
+- Layer Target: risk-tier routing and merge/publication check execution ownership
 - Module: `config/ci`, `scripts/ci`, GitHub Actions workflows, and `make/ci.mk`
 - Reason: high-risk release or operations changes currently trigger the complete frontend release suite even when no frontend surface changed, while the professional gate independently reinstalls and rebuilds the frontend. Route validation by affected surface and retain one authoritative frontend executor.
 - Standard vs User-Specific: generic repository delivery policy; no customer, tenant, role, navigation, or business semantics are encoded.
 - Why Here / Why Not Elsewhere: CI classification owns lane selection, the frontend workflow owns frontend validation, and the professional workflow owns backend/static validation. Product modules and production runtime are outside this change.
-- Blast Radius: required-check orchestration and CI duration only. Check names, fail-closed risk classification, release-event full validation, frontend dependency/config full validation, application code, databases, and production services remain unchanged.
+- Blast Radius: merge/publication check orchestration and CI duration only. Check names, fail-closed risk classification, release-event full validation, frontend dependency/config full validation, application code, databases, and production services remain unchanged.
 
 ## 2026-08-01 — GOVERNED-PRODUCTION-IMAGE-SYNC-01
 
@@ -4008,7 +4008,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   not belong in the product publication transaction.
 - Blast Radius / validation: removes only the customer real-plan read from
   publication identity. Candidate readiness, artifact hashes, image identity,
-  security policy, dual-remote authority, required checks and zero-write
+  security policy, dual-remote authority, then-current qualification checks and zero-write
   preflight ordering remain fail-closed and are covered by the complete
   publication and production release-contract suites.
 
@@ -5020,7 +5020,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 ## PR #264 contract-spec-v0.1 full merge closure (2026-08-18)
 
 - feature/contract-spec-v0.1 was merged into main via PR #264 (merge commit
-  31d6e6e5) with all five required checks green, including the first full-mode
+  31d6e6e5) with all five then-current checks green, including the first full-mode
   frontend_release_gate run in repository history (14m30s, journeys J01-J11).
 - Pre-merge history governance: the RH001 root-commit guard had failed with 18
   roots because 17 orphan roots were reachable from pushed stash-backup
@@ -5695,6 +5695,11 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   Its Fast and Full paths are mutually exclusive. Full binds all four existing
   authoritative checks to the exact head and rejects missing, failed or timed-
   out evidence. Ruleset changes occur only after this P4 code is merged.
+- Migration note added on 2026-08-31: this entry reflects the then-current
+  transition state. The repository now distinguishes `merge_policy_gate`
+  ("can merge") from `release_candidate_gate` ("can publish"), and later
+  mentions of candidate-triggered checks should be interpreted under that
+  split.
 
 ## Local.dev candidate visual smoke binding (2026-08-24)
 
@@ -5857,7 +5862,7 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   repeated checkout and risk classification, and consumed candidate-level CI
   during ordinary development feedback. Required checks should validate a
   frozen exact head, not act as the inner edit loop.
-- Change: PR creation, reopen and ready-for-review still run the candidate gate
+- Change: PR creation, reopen and ready-for-review still run the then-current candidate gate
   once. Later branch pushes do not automatically rerun it. The governed
   `candidate.required_checks.dispatch` entry verifies clean local state, local,
   remote and unique open-PR head equality, captures the exact PR base, then
@@ -5865,6 +5870,10 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   starts all four gates on the current PR head and retains PR risk
   classification. Direct workflow dispatch remains reserved for release-mode
   validation and is not used to satisfy protected-main checks.
+- Migration note added on 2026-08-31: the current policy further narrows this
+  flow. `ci:candidate` is now interpreted as the explicit trigger for
+  `release_candidate_gate`, while `merge_policy_gate` remains the sole
+  protected-branch merge requirement.
 - Preserved boundary: a new head has no successful required check and therefore
   cannot merge until explicitly dispatched. Main pushes, release validation,
   fail-closed risk classification and protected-main rules are unchanged.

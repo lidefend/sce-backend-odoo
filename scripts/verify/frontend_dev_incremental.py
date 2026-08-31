@@ -3,7 +3,8 @@
 
 This is a development feedback tool.  It deliberately never builds a candidate,
 captures browser evidence, refreshes generated reports, or computes a candidate
-fingerprint.  Those operations remain part of the one-shot candidate gate.
+fingerprint.  Those operations remain part of the one-shot exact-head
+publication qualification flow.
 """
 
 from __future__ import annotations

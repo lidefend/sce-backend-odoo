@@ -1,5 +1,12 @@
 <template>
-  <section ref="plannerElement" class="hierarchy-planner" :aria-label="labels.surface_aria" data-semantic-component="HierarchyPlanner" :data-state="loading ? 'loading' : errorMessage ? 'error' : records.size ? 'ready' : 'empty'" :aria-busy="loading || undefined">
+  <section
+    ref="plannerElement"
+    class="hierarchy-planner"
+    :aria-label="labels.surface_aria"
+    data-semantic-component="HierarchyPlanner"
+    :data-state="loading ? 'loading' : errorMessage ? 'error' : records.size ? 'ready' : 'empty'"
+    :aria-busy="loading || undefined"
+  >
     <ProductListHeader
       class="planner-head"
       :loading="loading"
@@ -60,10 +67,21 @@
 
       <div v-if="loading" class="planner-state">{{ labels.loading }}</div>
       <ScEmptyState v-else-if="!visibleEntries.length" class="planner-state" :title="String(config.empty_title || '')" :description="String(config.empty_hint || '')" />
-      <ScTable v-else class="planner-grid" appearance="flush" :label="title" :data="plannerTableRows" :columns="plannerTableColumns"
-        row-key="__rowKey" size="small" :table-content-width="plannerTableWidth"
-        :row-class-name="plannerRowClassName" :row-attributes="plannerRowAttributes"
-        @row-click="selectPlannerRow" @row-dblclick="openPlannerRow" />
+      <ScTable
+        v-else
+        class="planner-grid"
+        appearance="flush"
+        :label="title"
+        :data="plannerTableRows"
+        :columns="plannerTableColumns"
+        row-key="__rowKey"
+        size="small"
+        :table-content-width="plannerTableWidth"
+        :row-class-name="plannerRowClassName"
+        :row-attributes="plannerRowAttributes"
+        @row-click="selectPlannerRow"
+        @row-dblclick="openPlannerRow"
+      />
       <aside v-if="showDetail && selectedRecord" class="planner-drawer" :aria-label="labels.details">
         <header><strong>{{ selectedEntry?.node.code }} {{ selectedEntry?.node.label }}</strong><ScIconButton :label="labels.close_details" @click="showDetail = false"><ScIcon name="close" :size="16" /></ScIconButton></header>
         <div class="planner-drawer-body">

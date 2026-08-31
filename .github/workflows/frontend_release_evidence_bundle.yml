@@ -79,6 +79,7 @@ jobs:
               "professional_authorization",
               "professional_quality_gate",
               "frontend_release_gate",
+              "release_candidate_gate",
           }
           selected = [row for row in checks.get("check_runs", []) if row.get("name") in required]
           if {row.get("name") for row in selected} != required:
@@ -165,6 +166,7 @@ jobs:
           CANDIDATE_TREE: ${{ steps.identity.outputs.tree }}
         run: |
           set -euo pipefail
+          echo "binding evidence bundle to release_candidate_gate-qualified main head ${CANDIDATE_SHA}"
           archive="${RUNNER_TEMP}/frontend-release-evidence-${CANDIDATE_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.zip"
           python3 scripts/release/generate_frontend_release_evidence_bundle.py \
             --output "${BUNDLE_ROOT}" \

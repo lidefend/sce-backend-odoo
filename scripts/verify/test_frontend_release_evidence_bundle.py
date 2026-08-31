@@ -54,6 +54,7 @@ class FrontendReleaseEvidenceBundleTests(unittest.TestCase):
                 "professional_authorization",
                 "professional_quality_gate",
                 "frontend_release_gate",
+                "release_candidate_gate",
             ),
             start=10,
         ):
@@ -385,6 +386,7 @@ class FrontendReleaseEvidenceBundleTests(unittest.TestCase):
             "professional_authorization",
             "professional_quality_gate",
             "frontend_release_gate",
+            "release_candidate_gate",
         ):
             mutation = self.mutate_json(
                 "checks.json",
@@ -396,8 +398,8 @@ class FrontendReleaseEvidenceBundleTests(unittest.TestCase):
         self.assert_blocked(
             "MANUAL_COMMIT_STATUS",
             self.mutate_json(
-                "governance/manual-statuses.json",
-                lambda p: p.__setitem__("statuses", [{"context": "frontend_release_gate"}]),
+            "governance/manual-statuses.json",
+                lambda p: p.__setitem__("statuses", [{"context": "release_candidate_gate"}]),
             ),
         )
         self.assert_blocked(

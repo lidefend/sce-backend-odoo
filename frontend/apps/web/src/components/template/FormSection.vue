@@ -662,12 +662,12 @@ function isDateRangeWidget(field: FormSectionFieldSchema) {
 function selectedRelationLabel(field: FormSectionFieldSchema) {
   const value = String(field.inputValue ?? '').trim();
   if (!value) return '';
-  const option = (field.relationOptions || []).filter(Boolean).find((item) => String(item.value) === value);
-  return option?.label || '';
+  const option = (field.relationOptions || []).filter(Boolean).find((item) => String(item.id ?? item.value) === value);
+  return String(option?.label || '').trim();
 }
 
 function many2oneTextValue(field: FormSectionFieldSchema) {
-  return String(field.many2oneTextValue || selectedRelationLabel(field) || '').trim();
+  return String(selectedRelationLabel(field) || '').trim();
 }
 
 function showMany2oneInlineCreate(field: FormSectionFieldSchema) {

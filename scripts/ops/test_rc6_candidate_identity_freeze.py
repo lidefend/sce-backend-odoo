@@ -91,6 +91,12 @@ class DeclarationTests(unittest.TestCase):
         with self.assertRaises(freeze.FreezeError):
             freeze.validate_declaration(payload)
 
+    def test_release_candidate_gate_is_required(self) -> None:
+        payload = declaration()
+        payload["ci_checks"].pop("release_candidate_gate")
+        with self.assertRaises(freeze.FreezeError):
+            freeze.validate_declaration(payload)
+
     def test_required_merge_commits_are_exact(self) -> None:
         payload = declaration()
         payload["required_merge_commits"] = {"PR_43": freeze.CANDIDATE_SHA}

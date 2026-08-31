@@ -26,6 +26,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                 "  frontend_release_gate:",
                 "    name: frontend_release_gate",
             ),
+            "release_candidate_gate.yml": (
+                "  release_candidate_gate:",
+                "    name: release_candidate_gate",
+            ),
         }
         for workflow, required in contracts.items():
             text = self.text(workflow)
@@ -50,6 +54,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             "public_guard.yml",
             "professional_quality_gate.yml",
             "frontend_release_gate.yml",
+            "release_candidate_gate.yml",
         )
         for workflow in workflows:
             text = self.text(workflow)
@@ -75,6 +80,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
 
     def test_frontend_lane_commands_are_explicit(self) -> None:
         text = self.text("frontend_release_gate.yml")
+        self.assertIn("CANDIDATE_REQUESTED:", text)
+        self.assertIn("Resolve effective frontend lane", text)
+        self.assertIn("steps.effective_lane.outputs.frontend_mode", text)
+        self.assertIn('[ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]', text)
         self.assertIn("frontend_mode == 'full'", text)
         self.assertIn("frontend_mode == 'standard'", text)
         self.assertIn("frontend_mode != 'full'", text)
@@ -97,6 +106,20 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
 
     def test_professional_lane_commands_are_explicit(self) -> None:
         text = self.text("professional_quality_gate.yml")
+        self.assertIn("frontend_changed: ${{ steps.risk.outputs.frontend_changed }}", text)
+        self.assertIn("backend_changed: ${{ steps.risk.outputs.backend_changed }}", text)
+        self.assertIn("candidate_requested:", text)
+        self.assertIn("CANDIDATE_REQUESTED:", text)
+        self.assertIn("PROFESSIONAL_MODE == 'governance'", text)
+        self.assertIn("github.event.action == 'labeled' && github.event.label.name == 'ci:candidate'", text)
+        self.assertIn(
+            'FRONTEND_CHANGED: ${{ needs.professional_authorization.outputs.frontend_changed }}',
+            text,
+        )
+        self.assertIn(
+            'BACKEND_CHANGED: ${{ needs.professional_authorization.outputs.backend_changed }}',
+            text,
+        )
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'standard_backend'", text)
         self.assertIn("PROFESSIONAL_MODE == 'fast'", text)
@@ -109,6 +132,13 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("pnpm -C frontend install", text)
         self.assertIn("make test.unit test.contract test.e2e.preflight", text)
         self.assertIn("make verify.product.release.version", text)
+        governance_section = text.split("- name: Run governance-only quality gate", 1)[1].split(
+            "- name: Run Fast lightweight quality gate", 1
+        )[0]
+        self.assertIn("if: env.PROFESSIONAL_MODE == 'governance'", governance_section)
+        self.assertIn("test_ci_risk_workflow_contract.py", governance_section)
+        self.assertIn("ci.generated_reports.guard", governance_section)
+        self.assertNotIn("make ci.professional.backend", governance_section)
         fast_section = text.split("- name: Run Fast lightweight quality gate", 1)[1].split(
             "- name: Run standard frontend quality gate", 1
         )[0]

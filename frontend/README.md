@@ -13,13 +13,18 @@ This workspace is the independent frontend for the Smart Construction Platform.
 ## Quick Start
 
 ```bash
-pnpm -C frontend install
-pnpm -C frontend dev
+make fe.install.cached
+make local.dev.frontend.watch
 ```
 
 ## Environment
 
-Copy the example env file and adjust as needed:
+The governed local development authority is the repository `.env.dev`.
+Use `make local.dev.up` for backend services and `make local.dev.frontend.watch`
+for the Vite HMR server. `make local.dev.frontend` remains the static build entry.
+
+Copy the example env file only for isolated experiments outside the governed
+`local.dev` lifecycle:
 
 ```bash
 cp frontend/.env.example frontend/apps/web/.env
@@ -37,7 +42,9 @@ Key vars (Vite uses `VITE_*`):
 From repo root:
 
 ```bash
-pnpm -C frontend dev
+make local.dev.frontend.watch
+make frontend.logs
+make frontend.stop
 pnpm -C frontend build
 pnpm -C frontend lint
 pnpm -C frontend typecheck

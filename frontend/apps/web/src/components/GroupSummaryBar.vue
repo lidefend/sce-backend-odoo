@@ -8,10 +8,10 @@
           v-if="onPrevWindow"
           class="page-btn"
           appearance="summary-chip"
-          :disabled="!canPrevWindow"
-          @click="onPrevWindow?.()"
           variant="secondary"
           size="small"
+          :disabled="!canPrevWindow"
+          @click="onPrevWindow?.()"
         >
           上一组
         </ScButton>
@@ -19,10 +19,10 @@
           v-if="onNextWindow"
           class="page-btn"
           appearance="summary-chip"
-          :disabled="!canNextWindow"
-          @click="onNextWindow?.()"
           variant="secondary"
           size="small"
+          :disabled="!canNextWindow"
+          @click="onNextWindow?.()"
         >
           下一组
         </ScButton>

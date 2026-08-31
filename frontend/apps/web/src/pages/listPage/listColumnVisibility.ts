@@ -24,9 +24,8 @@ export function resolveDesktopListCandidates(options: {
 }) {
   const capacity = Math.max(1, Number(options.capacity || 12));
   const fields = options.fields.filter((item) => Boolean(item.field));
-  // A native tree view within the desktop product budget is authoritative.
-  // Keep all declared columns and let the table scroll horizontally instead
-  // of silently dropping business fields based on the current viewport width.
+  // Native desktop lists may overflow horizontally, but they still respect
+  // the explicit product column budget to avoid uncontrolled field sprawl.
   if (fields.length <= capacity) return fields.map((item) => item.field);
   const selected: string[] = [];
   let usedWidth = 0;
@@ -54,9 +53,6 @@ export function resolveResponsiveListColumns(options: {
   const critical = new Set((options.criticalColumns || []).filter((field) => enabled.has(field)));
   const explicitVisible = new Set(ordered.filter((field) => visibility[field] === true));
   const candidates = new Set((options.responsiveCandidates || ordered).filter((field) => enabled.has(field)));
-  // Contract-critical columns are priority hints, not an instruction to break
-  // the available-width budget. Only a user's explicit visibility choice may
-  // require controlled horizontal overflow.
   const required = explicitVisible;
   const capacity = Math.max(1, Number(options.capacity || ordered.length || 1));
   const selected = new Set<string>();

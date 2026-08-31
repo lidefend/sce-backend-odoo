@@ -1,5 +1,11 @@
 <template>
-  <section class="hierarchy-browser" :aria-label="labels.surface_aria" data-semantic-component="HierarchyBrowser" :data-state="loading ? 'loading' : errorMessage ? 'error' : rows.length ? 'ready' : 'empty'" :aria-busy="loading || undefined">
+  <section
+    class="hierarchy-browser"
+    :aria-label="labels.surface_aria"
+    data-semantic-component="HierarchyBrowser"
+    :data-state="loading ? 'loading' : errorMessage ? 'error' : rows.length ? 'ready' : 'empty'"
+    :aria-busy="loading || undefined"
+  >
     <ProductListHeader
       class="hierarchy-head"
       :loading="loading"
@@ -53,10 +59,20 @@
         </div>
         <div v-if="loading && !rows.length" class="list-state">{{ labels.loading }}</div>
         <ScEmptyState v-else-if="!rows.length" class="list-state" :title="String(config.empty_title || '')" :description="String(config.empty_hint || '')" />
-        <ScTable v-else class="table-scroll" appearance="flush" :label="String(config.title || labels.surface_aria)"
-          :data="rows" :columns="hierarchyTableColumns" row-key="id" size="small"
-          :row-class-name="hierarchyRowClassName" :row-attributes="hierarchyRowAttributes"
-          @row-click="selectTableRow" @row-dblclick="openTableRow" />
+        <ScTable
+          v-else
+          class="table-scroll"
+          appearance="flush"
+          :label="String(config.title || labels.surface_aria)"
+          :data="rows"
+          :columns="hierarchyTableColumns"
+          row-key="id"
+          size="small"
+          :row-class-name="hierarchyRowClassName"
+          :row-attributes="hierarchyRowAttributes"
+          @row-click="selectTableRow"
+          @row-dblclick="openTableRow"
+        />
         <footer v-if="total > pageSize" class="pager">
           <ScButton :disabled="offset <= 0 || loading" @click="loadRows(Math.max(0, offset - pageSize))">{{ labels.previous }}</ScButton>
           <span>{{ labels.page_prefix }} {{ Math.floor(offset / pageSize) + 1 }} / {{ Math.ceil(total / pageSize) }} {{ labels.page_suffix }}</span>

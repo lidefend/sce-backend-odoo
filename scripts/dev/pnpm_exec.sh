@@ -2,6 +2,38 @@
 set -euo pipefail
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
+REAL_HOME="${SNAP_REAL_HOME:-$HOME}"
+NVM_ROOT="${NVM_DIR:-${REAL_HOME}/.nvm}"
+
+ensure_node_runtime() {
+  if command -v node >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ -s "${NVM_ROOT}/nvm.sh" ]]; then
+    # shellcheck disable=SC1090
+    . "${NVM_ROOT}/nvm.sh"
+  fi
+
+  if command -v node >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ -d "${NVM_ROOT}/versions/node" ]]; then
+    local latest_node_bin
+    latest_node_bin="$(find "${NVM_ROOT}/versions/node" -maxdepth 2 -type d -name bin | sort | tail -n 1)"
+    if [[ -n "${latest_node_bin:-}" ]]; then
+      export PATH="${latest_node_bin}:$PATH"
+    fi
+  fi
+
+  command -v node >/dev/null 2>&1
+}
+
+ensure_node_runtime || {
+  echo "node runtime is required but was not found (searched NVM_ROOT=${NVM_ROOT})" >&2
+  exit 2
+}
 
 if [[ -n "${PNPM_BIN:-}" ]]; then
   exec "${PNPM_BIN}" "$@"
@@ -25,8 +57,8 @@ if [[ -n "${COREPACK_HOME:-}" ]]; then
 fi
 candidate_paths+=(
   "${ROOT_DIR}/../.corepack/v1/pnpm/${PNPM_VERSION}/bin/pnpm.cjs"
-  "${HOME}/.cache/node/corepack/v1/pnpm/${PNPM_VERSION}/bin/pnpm.cjs"
-  "${HOME}/.local/share/node/corepack/v1/pnpm/${PNPM_VERSION}/bin/pnpm.cjs"
+  "${REAL_HOME}/.cache/node/corepack/v1/pnpm/${PNPM_VERSION}/bin/pnpm.cjs"
+  "${REAL_HOME}/.local/share/node/corepack/v1/pnpm/${PNPM_VERSION}/bin/pnpm.cjs"
 )
 
 for candidate in "${candidate_paths[@]}"; do

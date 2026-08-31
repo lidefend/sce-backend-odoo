@@ -25,6 +25,8 @@ const props = withDefaults(defineProps<{
   bordered?: boolean;
   appearance?: 'default' | 'summary' | 'task' | 'section' | 'task-section' | 'context' | 'relation' | 'form-section' | 'fact' | 'auth' | 'account' | 'main-surface' | 'flow' | 'kanban-record' | 'metric' | 'table' | 'record' | 'config';
 }>(), {
+  title: undefined,
+  subtitle: undefined,
   bordered: true,
   appearance: 'default',
 });

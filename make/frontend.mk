@@ -25,13 +25,16 @@ verify.frontend.release.local: guard.prod.forbid confirm.frontend.release.audit
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-audit
 
 fe.dev:
-	@scripts/dev/pnpm_exec.sh -C frontend dev
+	@FRONTEND_PROFILE=$${FRONTEND_PROFILE:-local-dev} \
+	  FRONTEND_DEV_PIDFILE="$${FRONTEND_DEV_PIDFILE:-/tmp/sc-frontend-dev.pid}" \
+	  FRONTEND_DEV_LOGFILE="$${FRONTEND_DEV_LOGFILE:-/tmp/sc-frontend-dev.log}" \
+	  bash scripts/dev/frontend_dev_reset.sh
 
 fe.dev.reset: guard.prod.forbid
 	@bash scripts/dev/frontend_dev_reset.sh
 
 fe.dev.daily: guard.prod.forbid
-	@FRONTEND_PROFILE=daily bash scripts/dev/frontend_dev_reset.sh
+	@FRONTEND_PROFILE=local-dev bash scripts/dev/frontend_dev_reset.sh
 
 fe.dev.test: guard.prod.forbid
 	@FRONTEND_PROFILE=test bash scripts/dev/frontend_dev_reset.sh

@@ -406,12 +406,13 @@ pr.merge: guard.prod.forbid
 
 # Gate preparation before pr.merge.
 #
-# The four productization gates are dispatched via workflow_dispatch (the
+# The merge-eligibility gates are dispatched via workflow_dispatch (the
 # PR workflows deliberately omit `synchronize`, so pushes do not auto-run
 # them). A workflow_dispatch run is NOT attached to the PR check suite, so
 # the base-branch ruleset (required_status_checks: merge_policy_gate) cannot
 # see it. This target verifies every gate is green on the exact PR head and
 # then reports the merge_policy_gate commit status, unblocking pr.merge.
+# Publication eligibility is separate and governed by release_candidate_gate.
 pr.merge.prep:
 	@bash -c '\
 	set -euo pipefail; \
@@ -584,7 +585,7 @@ candidate.required_checks.dispatch: guard.prod.forbid
 	[ -n "$$pr_number" ] || { echo "[candidate.required_checks.dispatch] BLOCKED exactly_one_open_pr_required"; exit 2; }; \
 	[ "$$live_head" = "$$expected" ] || { echo "[candidate.required_checks.dispatch] BLOCKED pr_head_mismatch"; exit 2; }; \
 	[[ "$$base_sha" =~ ^[0-9a-f]{40}$$ ]] || { echo "[candidate.required_checks.dispatch] BLOCKED invalid_pr_base"; exit 2; }; \
-	gh label create ci:candidate --color 1d76db --description "Run exact-head candidate required checks" --force >/dev/null; \
+	gh label create ci:candidate --color 1d76db --description "Run exact-head candidate publication qualification" --force >/dev/null; \
 	if gh pr view "$$pr_number" --json labels --jq ".labels[].name" | grep -Fxq ci:candidate; then \
 	  gh pr edit "$$pr_number" --remove-label ci:candidate >/dev/null; \
 	fi; \

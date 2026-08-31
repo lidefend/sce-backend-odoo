@@ -41,6 +41,7 @@ REQUIRED_CHECKS = {
     "python310_runtime_compatibility",
     "professional_quality_gate",
     "public_guard",
+    "release_candidate_gate",
 }
 SUPERSESSION_POLICY = (
     "A different SHA or manifest digest requires a new reviewed declaration; "

@@ -62,7 +62,7 @@
     ]
   },
   "github_gitee_role": {
-    "github": "authoritative required-check execution",
+    "github": "authoritative merge/publication qualification execution at capture time",
     "gitee": "source mirror; no duplicate automatic heavyweight workflow found"
   }
 }

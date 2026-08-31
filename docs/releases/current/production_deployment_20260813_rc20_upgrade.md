@@ -132,8 +132,10 @@ production.customer.runtime.config.promote: PASS
 ## 7. 代码与远端收口
 
 - P2 `main`: `4683ac95d9601362ae4d5ec1de08ad270e34db34`。
-- 产品工具 PR #198 五项 required checks 全部 PASS，merge commit：
+- 产品工具 PR #198 当时的五项 required checks 全部 PASS，merge commit：
   `1129485ecec95cc1e04e8b313cdfa3c4dab0f4b3`。
+- 迁移注记（2026-08-31）：该表述记录的是当时的检查模型；当前制度下
+  `merge_policy_gate` 表示可合并，`release_candidate_gate` 表示可发布。
 - GitHub/Gitee 产品 `main` 均同步到该 SHA。
 - 产品运行身份仍为冻结 RC20 源 SHA/digest/image ID；工具合并没有重发产品镜像。
 

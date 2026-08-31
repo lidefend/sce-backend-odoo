@@ -802,7 +802,7 @@ def _govern_project_task_form_for_user(data: dict) -> None:
     _project_form.govern_project_task_form(
         data,
         profile=profile,
-        make_labeled_field_node=_make_labeled_field_node,
+        make_labeled_field_node=lambda name, fields_map, preferred_labels: _make_labeled_field_node(name, fields_map, preferred_labels, primary_model),
     )
 
 
@@ -949,8 +949,20 @@ def _make_labeled_field_node(
     name: str,
     fields_map: dict[str, Any],
     preferred_labels: dict[str, str] | None = None,
+    model_name: str = "",
 ) -> dict[str, Any]:
-    return _form_layout.make_labeled_field_node(name, fields_map, preferred_labels)
+    node = _form_layout.make_labeled_field_node(name, fields_map, preferred_labels)
+    if model_name:
+        try:
+            from ..handlers.form_field_configuration import _form_field_label_override
+            override_label = _form_field_label_override(model_name, name)
+            if override_label:
+                node["string"] = override_label
+                if "fieldInfo" in node:
+                    node["fieldInfo"]["label"] = override_label
+        except Exception:
+            pass
+    return node
 
 
 def _infer_action_semantic(action: dict) -> str:

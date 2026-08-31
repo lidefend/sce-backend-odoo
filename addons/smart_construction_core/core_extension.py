@@ -88,6 +88,7 @@ for _business_scope_exempt_model in (
 ):
     register_business_scope_exempt_model(_business_scope_exempt_model)
 register_form_field_label_override("project.project", "manager_id", "项目经理")
+register_form_field_label_override("project.project", "user_id", "项目负责人")
 for _reason_code, _reason_meta in (
     (
         REASON_PAYMENT_ATTACHMENTS_REQUIRED,

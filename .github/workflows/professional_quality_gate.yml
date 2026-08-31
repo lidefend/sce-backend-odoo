@@ -27,6 +27,9 @@ jobs:
     outputs:
       lane: ${{ steps.risk.outputs.lane }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
+      frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
+      backend_changed: ${{ steps.risk.outputs.backend_changed }}
+      candidate_requested: ${{ github.event_name != 'pull_request' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
       - name: Deny forks and non-owner actors
         env:
@@ -157,7 +160,8 @@ jobs:
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       CI_PROJECT_NAME: sc-prof-${{ github.run_id }}
-      PROFESSIONAL_MODE: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || needs.professional_authorization.outputs.professional_mode }}
+      CANDIDATE_REQUESTED: ${{ needs.professional_authorization.outputs.candidate_requested }}
+      PROFESSIONAL_MODE: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || (needs.professional_authorization.outputs.candidate_requested == 'true' && needs.professional_authorization.outputs.professional_mode) || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
       FRONTEND_CHANGED: ${{ needs.professional_authorization.outputs.frontend_changed }}
       BACKEND_CHANGED: ${{ needs.professional_authorization.outputs.backend_changed }}
 
@@ -261,6 +265,18 @@ jobs:
             verify.tenant.payload_boundary \
             verify.tenant.product_legacy_boundary \
             verify.tenant.legacy_xmlid_boundary
+          make ci.generated_reports.guard architecture.complexity_baseline_lock
+          git diff --check
+
+      - name: Run governance-only quality gate
+        if: env.PROFESSIONAL_MODE == 'governance'
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/test_ci_risk_classifier.py
+          python3 scripts/ci/test_ci_risk_workflow_contract.py
+          python3 scripts/verify/test_github_actions_security_guard.py
+          python3 scripts/verify/github_actions_security_guard.py
+          make verify.product.release.version
           make ci.generated_reports.guard architecture.complexity_baseline_lock
           git diff --check
 

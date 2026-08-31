@@ -26,7 +26,7 @@
       :disabled="field.readonly"
       :status="field.invalid ? 'error' : 'default'"
       :placeholder="placeholder || '请选择'"
-      :options="choiceOptions.filter(Boolean).map((option) => ({ value: option.value, label: option.label }))"
+      :options="choiceOptions.filter(Boolean).map((option) => ({ value: option.id ?? option.value, label: option.label }))"
       @update:model-value="$emit('update:value', $event)"
     />
     <ScInput
@@ -73,6 +73,7 @@ const numeric = computed(() => ['sc.value.money', 'sc.value.percentage', 'sc.val
 const inputModelValue = computed(() => typeof props.field.inputValue === 'boolean' ? String(props.field.inputValue) : props.field.inputValue ?? '');
 const choiceOptions = computed(() => props.field.relationOptions?.length ? props.field.relationOptions : props.field.selectionOptions || []);
 const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInputStep(props.field.digits) : 'any');
+
 const suffix = computed(() => {
   if (kind.value === 'sc.value.money') return props.field.currencyLabel || '';
   if (kind.value === 'sc.value.percentage') return '%';

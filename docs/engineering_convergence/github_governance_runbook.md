@@ -14,17 +14,18 @@ Protect `main` with these rules:
 - Require at least one approving review.
 - Require CODEOWNERS review when owned files change.
 - Require status checks to pass before merging.
-- Require the `professional_quality_gate` workflow check on an isolated
-  GitHub-hosted runner.
+- Require only the aggregate `merge_policy_gate` status check before merging.
+- Treat `release_candidate_gate` as a separate publication qualification check,
+  not as a merge prerequisite.
 - Require branches to be up to date before merging.
 - Block force pushes.
 - Block branch deletion.
 - Restrict direct pushes to release administrators only, preferably nobody.
 
 The new authoritative repository has no registered self-hosted runner. The
-professional gate therefore uses a fresh GitHub-hosted runner. Introducing a
-dedicated runner requires a separate governance change and must not restore an
-old-repository trust or credential path.
+professional and candidate gates therefore use fresh GitHub-hosted runners.
+Introducing a dedicated runner requires a separate governance change and must
+not restore an old-repository trust or credential path.
 
 ### Milestone
 
@@ -112,3 +113,6 @@ For protected `main` changes:
 - Seed issues created or explicitly deferred.
 - Branch protection enabled on `main`.
 - `make ci` passes locally and in GitHub Actions.
+- `merge_policy_gate` proves merge eligibility for ordinary PRs.
+- `release_candidate_gate` proves release qualification only for explicit
+  candidate heads.

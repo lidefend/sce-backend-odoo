@@ -195,9 +195,10 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   * 用于开放 PR 在后续修复提交完成后，显式冻结并验证唯一 exact-head 候选；
   * 普通 `make pr.push` 只更新远端分支，不再因每个提交自动启动完整候选 CI；
   * 入口必须校验本地、远端和开放 PR head 完全一致，并从 PR 读取完整 base SHA；
-  * 入口只允许通过重新应用受管 `ci:candidate` 标签触发 PR exact-head required checks；
-  * 标签事件必须沿用 PR diff 风险分类，并生成属于当前 PR head 的 check suite；
-  * 新 head 在该入口成功完成前没有 required check，因此不能合并。
+  * 入口只允许通过重新应用受管 `ci:candidate` 标签触发 PR exact-head 候选发布校验；
+  * 标签事件必须沿用 PR diff 风险分类，并生成属于当前 PR head 的 `release_candidate_gate`；
+  * 该入口服务“可发布”判定，不替代 `merge_policy_gate` 的“可合并”判定；
+  * 新 head 在该入口成功完成前没有候选发布资格，因此不能被当作可发布头。
 
 > 说明：
 > **PR 内容更新属于远端状态变更**，必须统一走 Makefile 封装流程，
@@ -298,7 +299,7 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   （唯一例外：获得仓库所有者逐次明确授权后，通过
   `make main.cutover.controlled` 执行双远端 `main` 历史切换。该入口必须使用完整
   SHA 精确 lease、外部不可变恢复 bundle、配对完成或回退、保护规则恢复及
-  required checks 复验；禁止直接调用底层 push。）
+  候选发布资格复验；禁止直接调用底层 push。）
 * ❌ `git reset --hard`
 * ❌ `git rebase`
 * ❌ `git cherry-pick`
@@ -492,7 +493,7 @@ Codex 的责任是 **定位 → 修复 → 重试**。
   * 不属于生产部署授权，不得连接数据库、filestore 或生产运行环境。
 * `make candidate.required_checks.dispatch CANDIDATE_EXPECTED_SHA=<full-sha>`
 
-  * 仅为当前合规候选分支的精确远端 SHA 派发既有 required-check 工作流；
+  * 仅为当前合规候选分支的精确远端 SHA 派发既有候选发布工作流；
   * 工作区、当前 HEAD 或远端分支任一漂移时零派发退出；
   * 不修改 `main`、保护规则、产品数据或生产环境。
 * `make candidate.mirror.gitee CANDIDATE_EXPECTED_SHA=<full-sha>`

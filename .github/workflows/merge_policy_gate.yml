@@ -24,6 +24,9 @@ jobs:
     outputs:
       lane: ${{ steps.risk.outputs.lane }}
       head: ${{ steps.identity.outputs.head }}
+      frontend_mode: ${{ steps.risk.outputs.frontend_mode }}
+      professional_mode: ${{ steps.risk.outputs.professional_mode }}
+      candidate_requested: ${{ github.event_name != 'pull_request' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -104,7 +107,55 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - run: |
+      - name: Enforce exactly one merge lane
+        run: |
           test "${{ needs.fast.result }}" = success -o "${{ needs.fast.result }}" = skipped
           test "${{ needs.full.result }}" = success -o "${{ needs.full.result }}" = skipped
           test "${{ needs.fast.result }}" != "${{ needs.full.result }}"
+
+      - name: Publish lane summary
+        env:
+          RISK_LANE: ${{ needs.classify.outputs.lane }}
+          FRONTEND_MODE: ${{ needs.classify.outputs.frontend_mode }}
+          PROFESSIONAL_MODE: ${{ needs.classify.outputs.professional_mode }}
+          CANDIDATE_REQUESTED: ${{ needs.classify.outputs.candidate_requested }}
+          FAST_RESULT: ${{ needs.fast.result }}
+          FULL_RESULT: ${{ needs.full.result }}
+        run: |
+          set -euo pipefail
+          effective_frontend="${FRONTEND_MODE}"
+          effective_professional="${PROFESSIONAL_MODE}"
+          if [ "${CANDIDATE_REQUESTED}" != "true" ]; then
+            if [ "${effective_frontend}" = "full" ]; then
+              effective_frontend="standard"
+            fi
+            if [ "${effective_professional}" = "full" ]; then
+              effective_professional="governance"
+            fi
+          fi
+          if [ "${FAST_RESULT}" = "success" ]; then
+            selected_lane="fast"
+          else
+            selected_lane="full"
+          fi
+          {
+            echo "## Merge Policy Lane"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Risk lane | ${RISK_LANE} |"
+            echo "| Candidate requested | ${CANDIDATE_REQUESTED} |"
+            echo "| Effective aggregate lane | ${selected_lane} |"
+            echo "| Effective frontend lane | ${effective_frontend} |"
+            echo "| Effective professional lane | ${effective_professional} |"
+            echo "| Fast job result | ${FAST_RESULT} |"
+            echo "| Full job result | ${FULL_RESULT} |"
+            echo ""
+            if [ "${CANDIDATE_REQUESTED}" != "true" ] && { [ "${FRONTEND_MODE}" = "full" ] || [ "${PROFESSIONAL_MODE}" = "full" ]; }; then
+              echo "Ordinary PR governance changes were downgraded from candidate-grade validation to daily iteration lanes."
+            elif [ "${CANDIDATE_REQUESTED}" = "true" ]; then
+              echo "Explicit candidate validation was requested for this exact head."
+            else
+              echo "This head stayed on the default daily iteration lanes."
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"

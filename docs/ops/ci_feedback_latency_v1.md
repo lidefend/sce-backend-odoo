@@ -15,6 +15,7 @@ was:
 | `professional_quality_gate` | 9–14 minutes |
 | `frontend_release_gate` | 10–16 minutes |
 | `merge_policy_gate` critical path | 14–16 minutes |
+| `release_candidate_gate` | candidate-only aggregate on explicit publish path |
 
 The main classification errors were:
 
@@ -54,11 +55,20 @@ commands.
 Ordinary backend product changes. It retains backend contract, unit, tenant
 boundary, and generated-report verification.
 
-### High risk / release
+### Governance-only
+
+Ordinary PRs that touch CI policy, release orchestration, or other previously
+high-risk governance surfaces stay out of the fast lanes, but they no longer
+automatically imply candidate-grade publication validation. They run governance
+verification suitable for merge qualification.
+
+### Candidate / release
 
 Security, permissions, migrations, dependencies, CI policy, release machinery,
-core Makefiles, unknown paths, and mixed unsafe scopes remain fail-closed. The
-full professional and frontend release gates remain authoritative here.
+core Makefiles, unknown paths, and mixed unsafe scopes remain fail-closed for
+publication. The full professional and frontend release gates remain
+authoritative only on explicit candidate paths, and `release_candidate_gate`
+summarizes that publication qualification.
 
 ## Safety invariants
 
@@ -69,7 +79,8 @@ full professional and frontend release gates remain authoritative here.
 - A frontend filename cannot downgrade a security, tenant, importer, identity,
   or migration path.
 - Unknown paths remain high risk.
-- The aggregate required check and exact-head binding remain unchanged.
+- `merge_policy_gate` remains the only merge-required branch-protection status.
+- `release_candidate_gate` remains publication-only and exact-head bound.
 
 ## Expected effect
 
@@ -86,4 +97,4 @@ frontend_full_required=false
 This removes the 10–16 minute release acceptance and unrelated ORM work from the
 ordinary component-development critical path. Full release acceptance is still
 required when a release-critical surface changes and when formal release
-evidence is produced.
+evidence is produced through the explicit candidate path.

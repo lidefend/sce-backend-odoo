@@ -2,6 +2,20 @@
 
 Status: PASS.
 
+## Migration note
+
+This record captures the pre-split required-check model that existed when this
+audit was run. As of August 31, 2026, merge eligibility and publication
+eligibility are governed separately:
+
+- `merge_policy_gate` is the only required branch-protection status for
+  ordinary merges into `main`.
+- `release_candidate_gate` is the explicit exact-head publication
+  qualification gate.
+
+Historical mentions of "required checks" in this document should therefore be
+read as period-specific evidence, not as the current repository policy.
+
 ## Scope
 
 This change is limited to CI classification, required-check orchestration,

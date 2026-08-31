@@ -72,6 +72,7 @@ class ProjectProject(models.Model):
             "last_update_status": "项目更新状态",
             "open_task_count": "任务",
             "tag_ids": "标签",
+            "user_id": "项目负责人",
         }
         for field_name, label in labels.items():
             if field_name in self._fields:
@@ -391,6 +392,7 @@ class ProjectProject(models.Model):
     )
     owner_id = fields.Many2one('res.partner', string='业主单位')
     owner_contact = fields.Char('业主联系人')
+    user_id = fields.Many2one('res.users', string='项目负责人')
     manager_id = fields.Many2one('res.users', string='项目经理')
     cost_manager_id = fields.Many2one('res.users', string='成本负责人')
     doc_manager_id = fields.Many2one('res.users', string='资料负责人')

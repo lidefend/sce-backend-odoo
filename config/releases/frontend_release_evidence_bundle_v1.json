@@ -12,7 +12,8 @@
     "public_guard",
     "professional_authorization",
     "professional_quality_gate",
-    "frontend_release_gate"
+    "frontend_release_gate",
+    "release_candidate_gate"
   ],
   "required_frontend_files": [
     "frontend/frontend-release-report.json",
@@ -29,6 +30,7 @@
     "governance/professional-authorization.json",
     "governance/professional-quality-gate.json",
     "governance/frontend-release-gate.json",
+    "governance/release-candidate-gate.json",
     "governance/branch-protection.json",
     "governance/manual-statuses.json"
   ],
