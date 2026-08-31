@@ -1,10 +1,17 @@
 #!/bin/bash
-# 稳定启动前端开发服务器
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-export PATH="/home/lidefend/.nvm/versions/node/v24.16.0/bin:$PATH"
+set -euo pipefail
 
-cd /home/lidefend/workspace/sce-backend-odoo/frontend/apps/web
+ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+ENV_FILE="${ENV_FILE:-${ROOT_DIR}/.env.dev}"
+REAL_HOME="${SNAP_REAL_HOME:-$HOME}"
 
-# 直接用 node 执行 vite.js，避免 pnpm_exec.sh 的间接调用问题
-exec node node_modules/vite/bin/vite.js --host 0.0.0.0 --port 5175 --strictPort
+export ENV="${ENV:-dev}"
+export FRONTEND_PROFILE="${FRONTEND_PROFILE:-local-dev}"
+export VITE_DEV_HOST="${VITE_DEV_HOST:-127.0.0.1}"
+export VITE_DEV_PORT="${VITE_DEV_PORT:-5174}"
+export FRONTEND_DEV_PIDFILE="${FRONTEND_DEV_PIDFILE:-/tmp/sc-frontend-dev.pid}"
+export FRONTEND_DEV_LOGFILE="${FRONTEND_DEV_LOGFILE:-/tmp/sc-frontend-dev.log}"
+export NVM_DIR="${NVM_DIR:-${REAL_HOME}/.nvm}"
+export ENV_FILE
+
+exec "${ROOT_DIR}/scripts/dev/frontend_dev_reset.sh"

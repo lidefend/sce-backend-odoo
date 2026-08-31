@@ -38,6 +38,7 @@ make local.dev.ps
 make local.dev.logs
 make local.dev.upgrade MODULE=smart_construction_core
 make local.dev.frontend
+make local.dev.frontend.watch
 make verify.local.dev.frontend.quick.gate
 make verify.local.dev.payment_request.native_parity.readonly
 make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestP1PaymentRequestCapability'
@@ -112,6 +113,11 @@ Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`h
 `local.dev.contract_snapshot` 使用同一固定 `sc-local-dev / sc_dev_demo / ^sc_dev_demo$`
 身份调用既有 `contract.export_all`，用于功能迭代后的契约快照刷新。禁止通过通用
 `codex.snapshot` 手工覆盖 Compose project、数据库或凭据来替代该入口。
+
+`local.dev.frontend.watch` 是受管的 Vite HMR 入口。它固定复用 `.env.dev` 的
+`sc_dev_demo` 与 `ODOO_PORT` 身份，在 `127.0.0.1:5174` 上启动开发服务器，并统一
+注入 HMR host/client port、严格端口和缓存目录；`local.dev.frontend` 仍然只负责
+静态构建，不替代热更新迭代。
 
 ## 研发节奏
 
