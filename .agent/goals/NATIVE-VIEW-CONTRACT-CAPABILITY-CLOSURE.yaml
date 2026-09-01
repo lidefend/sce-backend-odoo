@@ -89,23 +89,27 @@ goal:
       title: form_tree_search_kanban_semantic_closure
       status: planned
       current_increment:
-        id: Q3-2
-        title: final_contract_field_descriptor_occurrence_closure
+        id: Q3-3
+        title: final_contract_field_identity_label_widget_closure
         status: verified
         result:
-          - final_ui_contract_v2_layout_container_tree_is_captured_as_governed_runtime_evidence
-          - form_field_relation_and_type_require_exact_native_locator_and_occurrence_equivalence
-          - canonical_component_config_and_field_descriptor_must_agree_before_ready_promotion
-          - unresolved_or_unproven_field_descriptors_remain_fallback_or_unsupported
+          - form_field_identity_label_and_widget_require_exact_native_locator_and_occurrence_equivalence
+          - normalized_field_info_and_final_contract_v2_projection_must_preserve_the_same_canonical_value
+          - field_identity_requires_top_level_name_and_descriptor_name_agreement
+          - field_widget_requires_component_native_widget_and_descriptor_widget_agreement
+          - missing_final_field_projection_is_classified_as_semantic_carrier_missing_not_dynamic_fallback
           - local_clean_capability_ledger_gate_passes_with_zero_silent_loss
         terminal_counts:
-          ready: 4192
-          fallback: 827
-          unsupported: 27632
+          ready: 6448
+          fallback: 797
+          unsupported: 25406
           silent_loss: 0
         promoted_form_field_descriptors:
+          field_identity_ready: 2136
+          field_label_ready: 108
           field_relation_ready: 489
           field_type_ready: 2136
+          field_widget_ready: 12
     - id: Q4
       title: pivot_graph_activity_renderer_closure
       status: planned

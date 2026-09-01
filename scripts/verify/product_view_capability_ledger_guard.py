@@ -28,6 +28,7 @@ NORMALIZED_REASON = "CAPABILITY_NORMALIZED_MAPPING_UNPROVEN"
 NATIVE_ORIGIN_REASON = "CAPABILITY_NATIVE_OCCURRENCE_ORIGIN_UNPROVEN"
 NORMALIZED_MISSING_REASON = "CAPABILITY_NORMALIZED_CARRIER_MISSING"
 DYNAMIC_REASON = "CAPABILITY_DYNAMIC_VERDICT_NOT_EVALUATED"
+SEMANTIC_MISSING_REASON = "CAPABILITY_SEMANTIC_CARRIER_MISSING"
 INTERACTION_EVIDENCE_PATH = Path("frontend/apps/web/scripts/canonical_form_presenter_test.ts")
 INTERACTION_EVIDENCE_SYMBOL = "validateCanonicalFormActionExecutors"
 
@@ -322,6 +323,8 @@ def validate_ledger(
                 and frontend_ready
             ):
                 status, reason_code = "ready", ""
+            elif expected["capability_key"] in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES:
+                status, reason_code = "unsupported", SEMANTIC_MISSING_REASON
             elif expected["capability_key"] == "form.delete":
                 status, reason_code = "fallback", "CAPABILITY_INTERACTION_EVIDENCE_MISSING"
             elif expected["capability_key"].startswith("action."):

@@ -151,6 +151,8 @@ def build_ledger(
                     and frontend_ready
                 ):
                     terminal_status, reason_code = "ready", ""
+                elif atom["capability_key"] in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES:
+                    terminal_status, reason_code = "unsupported", "CAPABILITY_SEMANTIC_CARRIER_MISSING"
                 elif atom["capability_key"] == "form.delete":
                     terminal_status, reason_code = "fallback", "CAPABILITY_INTERACTION_EVIDENCE_MISSING"
                 elif atom["capability_key"].startswith("action."):

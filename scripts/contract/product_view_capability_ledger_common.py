@@ -63,7 +63,23 @@ ACTION_IDENTITY_FIELDS = {
     "action.help": "help",
 }
 READY_FINAL_ACTION_CAPABILITIES = {"action.confirm", "action.icon", "action.identity", "action.label", "action.type"}
-READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES = {"field.relation", "field.type"}
+READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES = {
+    "field.identity", "field.label", "field.relation", "field.type", "field.widget",
+}
+FIELD_DESCRIPTOR_KEYS = {
+    "field.identity": "name",
+    "field.label": "label",
+    "field.relation": "relation",
+    "field.type": "type",
+    "field.widget": "widget",
+}
+FINAL_FIELD_PROJECTION_KEYS = {
+    "field.identity": ("name", "name"),
+    "field.label": ("label", "label"),
+    "field.relation": ("fieldInfo", "relation"),
+    "field.type": ("fieldInfo", "type"),
+    "field.widget": ("componentConfig", "nativeWidget"),
+}
 NATIVE_FONT_AWESOME_ICON = re.compile(r"^fa-[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -167,7 +183,7 @@ def match_normalized_atom(
         key = str(atom.get("capability_key") or "")
         if atom.get("view_type") != "form" or key not in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES:
             return []
-        attribute = key.removeprefix("field.")
+        attribute = FIELD_DESCRIPTOR_KEYS[key]
         matches: list[dict[str, Any]] = []
         for carrier in carrier_entry.get("normalized_carriers", []):
             if carrier.get("source_selector") not in mapping.get("source_selectors", []):
@@ -344,8 +360,9 @@ def match_final_field_descriptor(atom: dict[str, Any], carrier_entry: dict[str, 
         if row.get("source_selector") == "/data/layoutContract/containerTree"
     ), None)
     rows = carrier.get("value") if isinstance(carrier, dict) and isinstance(carrier.get("value"), list) else []
-    attribute = key.removeprefix("field.")
-    component_key = "fieldType" if attribute == "type" else attribute
+    attribute = FIELD_DESCRIPTOR_KEYS[key]
+    projection_region, projection_key = FINAL_FIELD_PROJECTION_KEYS[key]
+    component_key = "fieldType" if key == "field.type" else "relation" if key == "field.relation" else ""
     matches: list[dict[str, Any]] = []
     for relative_pointer, row in _walk_json(rows, ""):
         if not isinstance(row, dict) or row.get("type") != "field":
@@ -358,12 +375,20 @@ def match_final_field_descriptor(atom: dict[str, Any], carrier_entry: dict[str, 
         component = row.get("componentConfig") if isinstance(row.get("componentConfig"), dict) else {}
         if descriptor.get(attribute) != atom.get("canonical_value"):
             continue
-        if component.get(component_key) != atom.get("canonical_value"):
+        projection = row if projection_region in {"name", "label"} else descriptor if projection_region == "fieldInfo" else component
+        if projection.get(projection_key) != atom.get("canonical_value"):
+            continue
+        if component_key and component.get(component_key) != atom.get("canonical_value"):
             continue
         base = str(carrier.get("artifact_selector") or "") + relative_pointer
+        semantic_path = (
+            projection_key
+            if projection_region in {"name", "label"}
+            else f"{projection_region}/{_pointer_escape(projection_key)}"
+        )
         matches.append({
-            "semantic_selector": f"{base}/componentConfig/{_pointer_escape(component_key)}",
-            "semantic_value": component[component_key],
+            "semantic_selector": f"{base}/{semantic_path}",
+            "semantic_value": projection[projection_key],
             "interaction_selector": f"{base}/fieldInfo/{_pointer_escape(attribute)}",
             "interaction_value": descriptor[attribute],
         })
