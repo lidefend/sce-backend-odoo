@@ -35,6 +35,10 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("GITHUB_STEP_SUMMARY", self.workflow)
         self.assertIn("release_candidate_gate", self.workflow)
 
+    def test_non_candidate_pull_request_skip_is_treated_as_success(self) -> None:
+        self.assertIn('result="${{ needs.wait_for_candidate_checks.result }}"', self.workflow)
+        self.assertIn('test "$result" = success || test "$result" = skipped', self.workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

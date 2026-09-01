@@ -6774,3 +6774,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   aggregation only. Verified with native parser unit coverage, page-pattern
   parity, auth-surface guards, and `make --no-print-directory
   verify.frontend.release.unit`.
+
+## 2026-09-01 — Release candidate gate pull-request skip closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `f1d9cb4940c3164f985b24ab4f00252c90cb31d3`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool /
+  GitHub Actions candidate-publication workflow governance /
+  `.github/workflows` and `scripts/ci`.
+- Reason: PR `#386` immediately failed `release_candidate_gate` on September 1,
+  2026 because the aggregate job treated the expected non-candidate
+  `wait_for_candidate_checks=skipped` result as a failure. Candidate-only
+  publication gating must stay green on ordinary pull-request opens and fail
+  only when an explicit candidate path actually fails.
+- Why here / why not elsewhere: this is a CI aggregation contract bug in the
+  release-candidate workflow and its guard tests, not a product-code,
+  frontend, backend, customer, or runtime-profile defect.
+- Blast radius and evidence: release-candidate GitHub Actions workflow plus CI
+  contract/unit guards only. Verified with `python3
+  scripts/ci/test_release_candidate_gate.py`, `python3
+  scripts/ci/test_ci_risk_workflow_contract.py`, and `python3
+  scripts/verify/test_github_actions_security_guard.py`.

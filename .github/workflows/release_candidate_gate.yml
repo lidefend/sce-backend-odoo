@@ -93,4 +93,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          test "${{ needs.wait_for_candidate_checks.result }}" = success
+          result="${{ needs.wait_for_candidate_checks.result }}"
+          test "$result" = success || test "$result" = skipped
