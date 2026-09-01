@@ -73,18 +73,7 @@
         <span v-if="adapter.visibleOne2manyRows(field.name).length" class="o2m-count">共 {{ adapter.visibleOne2manyRows(field.name).length }} 条</span>
         <span v-if="adapter.one2manySummary(field.name)" class="o2m-summary">{{ adapter.one2manySummary(field.name) }}</span>
         <span class="o2m-spacer" />
-        <ScButton
-          v-if="isSettlementIntroduceField(field)"
-          class="o2m-introduce"
-          type="button"
-          variant="secondary"
-          size="small"
-          :disabled="adapter.busy || introduceBusy"
-          @click="openSettlementIntroduce"
-        >
-          <ScIcon name="clipboard" :size="14" />
-          从结算单引入
-        </ScButton>
+        <slot name="collection-actions" />
         <ScButton
           v-if="adapter.one2manyCanCreate(field.name)"
           class="o2m-create"
@@ -200,15 +189,6 @@
       <ScButton type="button" class="o2m-page-action" variant="ghost" size="small" :disabled="one2manyPage >= one2manyPageCount" @click="one2manyPage += 1">下一页</ScButton>
     </nav>
   </div>
-  <SettlementIntroduceDialog
-    v-if="isSettlementIntroduceField(field)"
-    :field="field"
-    :adapter="adapter"
-    :open="settleDialogOpen"
-    @close="settleDialogOpen = false"
-    @introduced="emit('reload-requested')"
-    @busy-change="introduceBusy = $event"
-  />
   <ScInput
   v-else-if="field.type !== 'many2many' && field.type !== 'one2many'"
     :model-value="adapter.inputFieldValue(field.name)"
@@ -230,12 +210,10 @@ import ScInlineState from '../design-system/ScInlineState.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScTable from '../design-system/ScTable.vue';
 import ProfessionalManyToManySelect from '../professional-fields/ProfessionalManyToManySelect.vue';
-import SettlementIntroduceDialog from './SettlementIntroduceDialog.vue';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
 
 const props = defineProps<X2ManyRelationRendererProps>();
-const emit = defineEmits<{ (e: 'reload-requested'): void }>();
 const one2manyPage = ref(1);
 const one2manyPageSize = 20;
 const one2manyRows = computed(() => props.field.type === 'one2many' ? props.adapter.visibleOne2manyRows(props.field.name) : []);
@@ -249,10 +227,8 @@ watch(one2manyPageCount, (count) => {
 });
 
 
-const O2M_AMOUNT_FIELDS = new Set(['amount', 'paid_before_amount', 'remaining_amount', 'current_pay_amount']);
-
 function isO2mAmountColumn(column: RelationFieldColumn) {
-  return O2M_AMOUNT_FIELDS.has(column.name) || String(column.ttype).toLowerCase().includes('monet');
+  return String(column.ttype).toLowerCase() === 'monetary';
 }
 
 
@@ -294,8 +270,7 @@ const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
 const o2mTableFootData = computed(() => {
   if (!o2mAmountTotal.value) return [];
   const footRow: Record<string, unknown> = { id: '__total__' };
-  const columns = props.adapter.one2manyColumns(props.field.name);
-  const amountCol = columns.find((c) => c.name === 'amount');
+  const amountCol = aggregateAmountColumn.value;
   if (amountCol) {
     footRow[amountCol.name] = o2mAmountTotalText.value;
   }
@@ -303,19 +278,22 @@ const o2mTableFootData = computed(() => {
 });
 
 const o2mAmountTotal = computed(() => {
-  const columns = props.adapter.one2manyColumns(props.field.name);
-  if (!columns.some((column) => column.name === 'amount')) return 0;
+  const amountCol = aggregateAmountColumn.value;
+  if (!amountCol) return 0;
   return paginatedOne2manyRows.value.reduce((sum, row) => {
-    const value = Number(row.values.amount);
+    const value = Number(row.values[amountCol.name]);
     return sum + (Number.isFinite(value) ? value : 0);
   }, 0);
 });
 
 const o2mAmountTotalText = computed(() => {
-  const total = o2mAmountTotal.value;
-  const text = total.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `¥ ${text}`;
+  const amountCol = aggregateAmountColumn.value;
+  return amountCol ? props.adapter.one2manyColumnDisplayValue(amountCol, o2mAmountTotal.value) : '';
 });
+
+const aggregateAmountColumn = computed(() => (
+  props.adapter.one2manyColumns(props.field.name).find(isO2mAmountColumn)
+));
 
 function o2mRowHasMessages(row: RelationFieldRow) {
   const name = props.field.name;
@@ -332,19 +310,6 @@ function o2mRowMessages(row: RelationFieldRow) {
     ...errors.map((label) => ({ state: 'error' as const, label })),
     ...hints.map((label) => ({ state: 'info' as const, label })),
   ];
-}
-
-// ===== 从结算单引入明细（面板逻辑在 SettlementIntroduceDialog） =====
-const settleDialogOpen = ref(false);
-const introduceBusy = ref(false);
-
-function isSettlementIntroduceField(field: FormSectionFieldSchema) {
-  if (field.type !== 'one2many') return false;
-  return String(field.widgetSemantics?.feature || '').trim().toLowerCase() === 'settlement_line_introduce';
-}
-
-function openSettlementIntroduce() {
-  settleDialogOpen.value = true;
 }
 
 const attachmentError = ref('');
@@ -1030,11 +995,6 @@ function toggleRelationId(name: string, id: number, checked: boolean) {
   .o2m-field .meta {
     display: block;
   }
-}
-
-/* ===== 从结算单引入按钮 ===== */
-.o2m-introduce {
-  margin-right: 8px;
 }
 
 </style>

@@ -12,7 +12,7 @@ import { beginPageIdentity } from '../app/pageIdentityRuntime';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
 import { findRouteAuthority } from '../app/routeAuthority';
-import { resolveBusinessActivityTitle } from '../app/activityPageTitle';
+import { resolveBusinessActivityTitle, shouldDeferActivityPageTitle } from '../app/activityPageTitle';
 import { intentRequest } from '../api/intents';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
@@ -451,6 +451,10 @@ router.afterEach((to) => {
   const routeIdentity = resolveRoutePageIdentity(to, session.menuTree);
   const isCreateForm = (to.name === 'record' || to.name === 'model-form') && routeQueryText(to.params.id) === 'new';
   const authority = isCreateForm ? resolveRouteAuthorityEntry(to, session) : null;
+  const deferUntilPageIdentity = shouldDeferActivityPageTitle({
+    routeName: to.name,
+    recordId: to.params.id,
+  });
   if (to.name === 'action' && routeHasFormalEntryTarget(to, session)) {
     // Governed entries can use an action route only as an asynchronous carrier
     // before resolving into a formal form. Register it immediately so page
@@ -458,7 +462,7 @@ router.afterEach((to) => {
     // after the action surface itself has completed loading without redirecting.
     registerRouteActivity(to, { settling: true });
   } else {
-    registerRouteActivity(to);
+    registerRouteActivity(to, { settling: deferUntilPageIdentity });
   }
   // Register the route-owned activity instance before publishing identity.
   // Identity consumers update the active activity title immediately; reversing

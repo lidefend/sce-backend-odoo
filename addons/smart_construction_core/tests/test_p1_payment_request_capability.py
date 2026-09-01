@@ -46,12 +46,12 @@ class TestP1PaymentRequestCapability(TransactionCase):
     def test_payment_request_list_prioritizes_complete_handling_facts(self):
         policy = BUSINESS_LIST_DEFAULT_VISIBILITY_BY_MODEL["payment.request"]
         expected = [
-            "document_status_display",
+            "state",
             "name",
             "date_request",
             "project_name_display",
             "payee_unit_display",
-            "related_document_text",
+            "payment_basis_type",
             "payee_account_completeness",
             "legal_next_action_display",
             "request_amount_display",
@@ -76,6 +76,20 @@ class TestP1PaymentRequestCapability(TransactionCase):
         )
         self.assertEqual(policy["roles"]["payee_account_completeness"], "status")
         self.assertEqual(policy["roles"]["legal_next_action_display"], "status")
+        self.assertEqual(policy["roles"]["state"], "status")
+        self.assertEqual(policy["roles"]["payment_basis_type"], "status")
+
+    def test_payment_request_formal_list_uses_authoritative_status_and_basis(self):
+        view = self.env.ref(
+            "smart_construction_core.view_payment_request_formal_payment_apply_tree"
+        )
+        arch = etree.fromstring(view.arch_db.encode("utf-8"))
+        field_names = [node.get("name") for node in arch.xpath(".//field")]
+
+        self.assertIn("state", field_names)
+        self.assertIn("payment_basis_type", field_names)
+        self.assertNotIn("document_status_display", field_names)
+        self.assertNotIn("related_document_text", field_names)
 
     def test_payment_request_formal_list_declares_amount_sum(self):
         view = self.env.ref(

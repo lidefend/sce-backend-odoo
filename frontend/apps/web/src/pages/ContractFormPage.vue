@@ -317,8 +317,6 @@ import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
 import { executeButton } from '../api/executeButton';
-import { ScTaskActionResolverKey } from '../components/template/taskActionResolver';
-import { createNextTaskActionResolver } from '../components/template/nextTaskAction';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
 import type { FieldDescriptor } from '@sc/schema';
@@ -581,7 +579,6 @@ import { usePageContract } from '../app/pageContract';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import { usePublishedPageIdentity } from '../app/usePublishedPageIdentity';
 import { findRouteAuthority } from '../app/routeAuthority';
-import { resolveBusinessActivityTitle } from '../app/activityPageTitle';
 import {
   activeChatterPlaceholder as activeChatterPlaceholderFromMode,
   activeChatterPostingLabel as activeChatterPostingLabelFromMode,
@@ -962,14 +959,6 @@ const recordId = computed(() => {
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
 
-provide(ScTaskActionResolverKey, createNextTaskActionResolver({
-  getRecordId: () => recordId.value ?? undefined,
-  runAction: async (_label: string, methodName: string) => {
-    try {
-      await executeButton({ model: model.value, res_id: recordId.value as number, button: { name: methodName, type: 'object' }, meta: { menu_id: Number(route.query.menu_id || 0) || undefined, action_id: actionId.value || undefined } });
-    } finally { await reload(); }
-  },
-}));
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
@@ -1171,9 +1160,10 @@ const pageIdentityInput = computed(() => buildContractFormPageIdentity({ action:
   recordMissing: recordMissing.value, renderError: Boolean(renderErrorMessage.value), status: status.value }));
 const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () => route.fullPath,
   active: () => isComponentActive.value && isFormPageRouteOwner(route.name),
-  onTitle: (title) => session.updateActiveActivityTitle(recordId.value ? title : resolveBusinessActivityTitle({
-    authorityName: currentRouteAuthority.value?.action_name || currentRouteAuthority.value?.name, businessLabel: currentBusinessCategoryLabel.value, actionTitle: currentActionMeta.value?.ui_title || currentActionMeta.value?.scene_title || currentActionMeta.value?.name, modelLabel: currentActionMeta.value?.model_label,
-    menuTitle: currentActionMeta.value?.menu_title || currentMenuTitle.value, fallback: '业务表单' })),
+  onTitle: (title) => {
+    session.updateActiveActivityTitle(title);
+    session.settleActivityPage(session.activeActivityPageKey);
+  },
 });
 const canonicalShellTitle = computed(() => canonicalFormRenderState.value.model?.shell.title || '');
 const pageDisplayTitle = computed(() => canonicalShellTitle.value || pageIdentity.value.title);

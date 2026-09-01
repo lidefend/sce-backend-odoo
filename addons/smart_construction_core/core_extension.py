@@ -545,6 +545,11 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
     )
     _sc_normalize_construction_diary_form(out, source, model=model, view_type=view_type)
+    _contract_normalizers.normalize_payment_settlement_detail_component(
+        out,
+        model=model,
+        view_type=view_type,
+    )
     # res.partner 表单：隐藏国家/地区字段（由省/州级联 domain 自动确定）
     # 隐藏销售员字段（产品面不展示，由后台逻辑维护）
     if model == "res.partner" and view_type == "form":
@@ -760,8 +765,8 @@ register_legacy_standard_list_profile({
     "profile_key": "payment.request.list",
     "model_name": "payment.request",
     "columns_order": [
-        "document_status_display", "name", "date_request",
-        "project_name_display", "payee_unit_display", "related_document_text",
+        "state", "name", "date_request",
+        "project_name_display", "payee_unit_display", "payment_basis_type",
         "payee_account_completeness", "legal_next_action_display",
         "request_amount_display", "actual_payee_unit_display",
         "payer_unit_display", "actual_paid_amount_display", "cost_type_display",
@@ -770,9 +775,9 @@ register_legacy_standard_list_profile({
         "payee_account_no_display", "attachment_ids",
     ],
     "column_labels": {
-        "document_status_display": "单据状态", "name": "单据编号",
+        "state": "单据状态", "name": "单据编号",
         "date_request": "申请日期", "project_name_display": "项目名称",
-        "payee_unit_display": "收款单位", "related_document_text": "付款依据",
+        "payee_unit_display": "收款单位", "payment_basis_type": "付款依据",
         "payee_account_completeness": "账户完整度",
         "legal_next_action_display": "下一步",
         "request_amount_display": "申请付款金额",
@@ -787,7 +792,7 @@ register_legacy_standard_list_profile({
     },
     "row_primary": "name",
     "row_secondary": "project_name_display",
-    "status_field": "document_status_display",
+    "status_field": "state",
 })
 
 register_legacy_standard_list_profile({

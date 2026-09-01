@@ -40,6 +40,16 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
         altered = self.x2many.replace('<ScCheckbox', '<input', 1)
         self.assertTrue(any("raw interactive control" in error for error in validate(altered, self.view_relation)))
 
+    def test_business_specific_collection_action_is_rejected(self):
+        altered = self.x2many.replace(
+            '<slot name="collection-actions" />',
+            '<SettlementIntroduceDialog v-if="isSettlementIntroduceField(field)" />',
+        )
+        self.assertIn(
+            "shared X2Many surface retains a business-specific collection action",
+            validate(altered, self.view_relation),
+        )
+
     def test_parallel_command_is_rejected(self):
         altered = self.view_relation.replace('</template>', '<ScButton>parallel</ScButton>\n</template>', 1)
         self.assertTrue(any("expected 6" in error for error in validate(self.x2many, altered)))

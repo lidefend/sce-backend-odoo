@@ -253,12 +253,12 @@
         <field name="model">payment.request</field>
         <field name="arch" type="xml">
             <tree string="付款申请" create="false" edit="false" delete="false" default_order="created_time desc, name desc">
-                <field name="document_status_display" string="单据状态" />
+                <field name="state" string="单据状态" />
                 <field name="name" string="单据编号" />
                 <field name="date_request" string="申请日期" />
                 <field name="project_name_display" string="项目名称" />
                 <field name="payee_unit_display" string="收款单位" />
-                <field name="related_document_text" string="付款依据" />
+                <field name="payment_basis_type" string="付款依据" />
                 <field name="payee_account_completeness" string="账户完整度" />
                 <field name="legal_next_action_display" string="下一步" />
                 <field name="request_amount_display" string="申请付款金额" sum="申请付款金额合计" />

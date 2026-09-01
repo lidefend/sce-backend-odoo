@@ -271,6 +271,30 @@ authorized, and reach the one legal payment action.
 - Audit/source facts never fill ordinary page space merely because they exist
   in the normalized payload.
 
+## Two-model minimum Contract V2 profile
+
+Payment request and project initiation are the first two real form models used
+to freeze the reusable minimum. This profile is a subset of Normalized Contract
+V2, not a new contract or scene layer:
+
+- every rendered field occurrence keeps a stable `widgetId`, business
+  `fieldCode`, and backend-selected `componentKey`;
+- `layoutContract.componentRegistry` resolves that key to the client adapter;
+- `statusContract.globalStatus.pageAuth` and the matching `widgetStatus` row
+  own visible, readonly, required, disabled, and auth state;
+- executable controls retain explicit `actionId`, `sourceWidgetId`, and
+  `backendIdentity`; semantic components receive business action references in
+  declared component configuration;
+- relation values render business display names while canonical IDs remain
+  non-visible execution identity.
+
+The project initiation page proves the ordinary relation/value path with
+`manager_id -> sc.value.user`; the payment request page proves the semantic
+collection path with
+`outflow_line_ids -> sc.payment.settlement_detail_collection`. A third path may
+reuse these authorities, but it may not introduce model-, label-, role-, or
+state-based frontend inference.
+
 ## Implementation checkpoints
 
 ### Checkpoint 1 — semantic floorplan shell

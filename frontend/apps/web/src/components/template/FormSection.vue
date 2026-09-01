@@ -129,6 +129,12 @@
               <ProfessionalRelationFieldControl v-else-if="usesProfessionalMany2many(field) && relationAdapter" :field="field">
                 <X2ManyRelationRenderer :field="field" :adapter="relationAdapter" @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })" />
               </ProfessionalRelationFieldControl>
+              <PaymentSettlementDetailCollectionControl
+                v-else-if="usesPaymentSettlementDetailCollection(field) && relationAdapter"
+                :field="field"
+                :adapter="relationAdapter"
+                @reload-requested="emitFieldAction(field, { key: 'reload-requested', label: '刷新', value: 'reload-requested' })"
+              />
               <ProfessionalDetailCollectionControl
                 v-else-if="usesProfessionalOne2many(field) && relationAdapter"
                 :field="field"
@@ -274,10 +280,12 @@ import ProfessionalBusinessValueControl from '../professional-fields/Professiona
 import ProfessionalDetailCollectionControl from '../professional-fields/ProfessionalDetailCollectionControl.vue';
 import ProfessionalMany2oneFieldControl from '../professional-fields/ProfessionalMany2oneFieldControl.vue';
 import ProfessionalRelationFieldControl from '../professional-fields/ProfessionalRelationFieldControl.vue';
+import PaymentSettlementDetailCollectionControl from '../professional-fields/PaymentSettlementDetailCollectionControl.vue';
 import { isProfessionalBaseFieldCandidate } from '../professional-fields/professionalBaseFieldModel';
 import { isProfessionalBusinessValueField } from '../professional-fields/professionalBusinessValueModel';
 import { isProfessionalDetailCollectionField } from '../professional-fields/professionalDetailCollectionModel';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
+import { isPaymentSettlementDetailCollectionField } from '../professional-fields/paymentSettlementDetailCollectionModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
@@ -431,8 +439,12 @@ function usesProfessionalOne2many(field: FormSectionFieldSchema) {
     && isProfessionalDetailCollectionField(field);
 }
 
+function usesPaymentSettlementDetailCollection(field: FormSectionFieldSchema) {
+  return isPaymentSettlementDetailCollectionField(field);
+}
+
 function usesSceneFieldControl(field: FormSectionFieldSchema) {
-  if (isProfessionalRelationField(field) || isProfessionalDetailCollectionField(field)) return false;
+  if (isProfessionalRelationField(field) || isProfessionalDetailCollectionField(field) || isPaymentSettlementDetailCollectionField(field)) return false;
   return usesContractFormDriverField(field, sceneUiKit?.kit.value || 'sc-native');
 }
 

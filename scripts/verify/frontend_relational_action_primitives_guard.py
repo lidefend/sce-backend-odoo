@@ -11,7 +11,7 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     view = view_relation if view_relation is not None else VIEW_RELATION.read_text(encoding="utf-8")
     failures: list[str] = []
     x2many_actions = (
-        '<ScButton\n          v-if="isSettlementIntroduceField(field)"',
+        '<slot name="collection-actions" />',
         '<ScButton\n          v-if="adapter.one2manyCanCreate(field.name)"',
         '<ScButton\n              class="o2m-row-remove"',
         'v-for="row in adapter.removedOne2manyRows(field.name)"',
@@ -44,6 +44,8 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
     )
     if any(marker in x2m or marker in view for marker in forbidden):
         failures.append("relational surface retains a generic legacy command")
+    if "isSettlementIntroduceField" in x2m or "SettlementIntroduceDialog" in x2m:
+        failures.append("shared X2Many surface retains a business-specific collection action")
     forbidden_variant_overrides = (
         ".chip-btn {",
         ".ghost {",
@@ -64,8 +66,8 @@ def validate(x2many: str | None = None, view_relation: str | None = None) -> lis
             failures.append(f"X2Many lost stateful governed relation control {marker}")
     if '<button' in x2m or '<input' in x2m or '<select' in x2m:
         failures.append("X2Many retains a raw interactive control outside the primitive adapter")
-    if x2m.count("<ScButton") != 8:
-        failures.append(f"X2Many expected 8 governed commands, found {x2m.count('<ScButton')}")
+    if x2m.count("<ScButton") != 7:
+        failures.append(f"X2Many expected 7 governed commands, found {x2m.count('<ScButton')}")
     if view.count("<ScButton") != 6:
         failures.append(f"View relational expected 6 governed commands, found {view.count('<ScButton')}")
     return failures
@@ -78,4 +80,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_relational_action_primitives_guard] PASS x2many=8 view_relation=6 raw_controls=0")
+    print("[frontend_relational_action_primitives_guard] PASS x2many=7 delegated_slots=1 view_relation=6 raw_controls=0")

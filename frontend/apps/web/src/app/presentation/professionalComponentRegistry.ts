@@ -63,6 +63,7 @@ const REGISTRATIONS = [
   registration('sc.relation.many2one', 'relation', ['many2one'], 'ready', 'ProfessionalRelationFieldControl'),
   registration('sc.relation.many2many', 'relation_collection', ['many2many'], 'ready', 'ProfessionalRelationFieldControl'),
   registration('sc.relation.table', 'detail_collection', ['one2many'], 'ready', 'ProfessionalDetailCollectionControl'),
+  registration('sc.payment.settlement_detail_collection', 'payment_settlement_detail_collection', ['one2many'], 'ready', 'PaymentSettlementDetailCollectionControl'),
   registration('sc.select.tags', 'tag_collection', ['many2many'], 'ready', 'ProfessionalRelationFieldControl'),
   registration('sc.button.action', 'action', ['action']),
   registration('sc.auth.credential_entry', 'credential_entry', ['char']),

@@ -36,6 +36,9 @@ assert.equal(resolveProfessionalComponent({
 assert.equal(resolveProfessionalComponent({
   componentKey: 'sc.relation.table', fieldType: 'one2many', presentationMode: 'workspace', renderProfile: 'edit',
 }).renderer, 'ProfessionalDetailCollectionControl');
+assert.equal(resolveProfessionalComponent({
+  componentKey: 'sc.payment.settlement_detail_collection', fieldType: 'one2many', presentationMode: 'task', renderProfile: 'edit',
+}).renderer, 'PaymentSettlementDetailCollectionControl');
 for (const [componentKey, fieldType] of [
   ['sc.value.money', 'monetary'], ['sc.value.currency', 'many2one'], ['sc.value.percentage', 'float'],
   ['sc.display.status', 'selection'], ['sc.value.duration', 'float'], ['sc.value.user', 'many2one'],
@@ -104,5 +107,5 @@ for (const componentKey of [
   );
 }
 
-assert.equal(professionalComponentRegistrations.length, 28);
-console.log('[professional_component_registry_test] PASS cases=30');
+assert.equal(professionalComponentRegistrations.length, 29);
+console.log('[professional_component_registry_test] PASS cases=31');

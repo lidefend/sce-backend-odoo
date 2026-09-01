@@ -6868,3 +6868,122 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   scripts/ci/test_release_candidate_gate.py`, `python3
   scripts/verify/test_github_actions_security_guard.py`, and `python3
   scripts/verify/github_actions_security_guard.py`.
+
+## 2026-09-01 — Payment request single-primary-action truth closure
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `1d1ddec191e42fa6b7b99e4b24f3f64fc6b389e6`.
+- Formal Product Layer / Layer Target / Module: P0 platform mechanism plus P1
+  construction standard / Contract V2 form action projection and shared form
+  rendering / `smart_core`, `smart_construction_core`, and
+  `frontend/apps/web`.
+- Reason: the payment request current-task fact was converted into a second
+  executable action by a shared-frontend Chinese-label-to-method map, while
+  the canonical workflow already supplied the page header action. The inferred
+  path was removed so task text remains a backend-owned fact and executable
+  actions come only from the normalized contract.
+- Why here / why not elsewhere: permission, state, blockers, next-step text,
+  and executable action identity remain backend authorities. The shared
+  frontend only renders the explicit contract and may not infer a business
+  method from a displayed label.
+- Blast radius and evidence: payment request and every contract form now share
+  the same no-label-inference rule; no business model, contract variant,
+  runtime profile, or database was added. Verified with
+  `python3 scripts/verify/frontend_shared_surface_semantic_boundary_guard.py`,
+  `make verify.frontend.component_driver_takeover.unit`, and
+  `make verify.frontend.release.unit`.
+
+## 2026-09-01 — Payment request authoritative list-fact closure
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `bb8fb98c924f71ae0ad22ed037f8d4378ff31b36`.
+- Formal Product Layer / Layer Target / Module: P1 construction standard /
+  payment request list fact projection / `smart_construction_core`.
+- Reason: the formal list exposed stored presentation helpers for document
+  status and payment-basis presence. Real records therefore showed `草稿` in
+  the list while their authoritative workflow state and detail page were
+  `已完成`, and reduced a typed settlement basis to `是`. The list profile,
+  visibility policy, and formal tree now consume the authoritative `state`
+  and `payment_basis_type` fields directly.
+- Why here / why not elsewhere: workflow state and payment-basis type are
+  backend domain facts. The frontend remains model-neutral and renders the
+  selection labels supplied by the normalized contract without inferring or
+  repairing business meaning.
+- Blast radius and evidence: only the payment request list contract and its
+  regression assertions changed; no new contract family, frontend exception,
+  or database mutation path was introduced. The governed module upgrade and
+  three targeted Odoo tests passed. Logged-in browser acceptance confirmed the
+  nine critical facts render, `PRQ2600035`, `PRQ2600013`, and `PRQ2600011`
+  show `已完成 / 标准结算单 / 账户信息待补充 / 已办结`, and the page emitted no
+  console warning or error.
+
+## 2026-09-01 — Payment settlement semantic component ownership closure
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `f2d11c34c8daffc2ab6024e3b40b0995c20bf488`.
+- Formal Product Layer / Layer Target / Module: P0 component mechanism plus P1
+  construction semantic component / Contract V2 component projection and
+  payment settlement detail collection / `smart_core`,
+  `smart_construction_core`, and `frontend/apps/web`.
+- Reason: the shared X2Many renderer owned a payment-only feature switch,
+  payment amount field names, Chinese currency formatting, and a settlement
+  dialog with hard-coded intent identifiers. The backend now assigns the
+  explicit `sc.payment.settlement_detail_collection` component key, action
+  refs, and component registry binding. The payment semantic component owns
+  the workflow while the shared X2Many renderer exposes only a generic action
+  slot and type-driven monetary aggregation.
+- Why here / why not elsewhere: the backend remains authoritative for selecting
+  the business component and its executable refs. The frontend Registry binds
+  that declared component to its TDesign implementation; no model, label,
+  role, state, or field-name inference remains in the shared renderer.
+- Blast radius and evidence: one existing component family was added to the
+  canonical Registry; no Scene/Lite/Terminal contract or alternate primitive
+  system was introduced. Strict typecheck, the full frontend release unit
+  suite, the shared-surface semantic guard, and the focused Odoo finalizer test
+  passed. Logged-in browser acceptance on `payment.request/157` confirmed the
+  declared component key and adapter, one visible `从结算单引入` action, a
+  searchable settlement result, line preview with remaining amounts, and no
+  console warning or error; the confirmation mutation was intentionally not
+  executed during this read-only UI acceptance.
+
+## 2026-09-01 — Two-model Contract V2 minimum freeze
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `e8af62ec2d4dc36ea4f53a0d21d857c6c33aaa76`.
+- Formal Product Layer / Layer Target / Module: P0 contract mechanism plus P1
+  two-model evidence / existing Normalized Contract V2 authority chain /
+  `smart_construction_core` and product documentation.
+- Reason: payment request and project initiation now prove the smallest shared
+  form authority chain: stable field occurrence, backend-selected component,
+  Registry adapter, explicit widget status, explicit action identity, and
+  non-visible canonical relation identity. The freeze adds no top-level
+  contract, Scene/Lite/Terminal variant, or frontend model/label inference.
+- Page and test evidence: logged-in project create acceptance showed nine
+  contract-driven fields and `manager_id` rendered as `Demo-全能力`, not raw ID
+  `50`; payment request acceptance showed 39 fields and the declared settlement
+  collection component. The focused cross-model finalizer test passed and
+  asserts both models remain on the existing V2 authority chain.
+
+## 2026-09-01 — Activity-page create identity publication closure
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `f49545191109731d7e20b3e645f699e6ad1b2692`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / generic
+  activity-page identity publication / `frontend/apps/web`.
+- Reason: a new contract form was published to the activity tabs before its
+  authoritative page identity was available, and the later title callback
+  intentionally collapsed the create title back to the entry action name.
+  List and create pages could therefore remain independently open but appear
+  under the same title. New record/model-form routes now stay settling until
+  the page identity publisher provides the final title, then become visible in
+  one step.
+- Why here / why not elsewhere: this is generic page lifecycle behavior shared
+  by every contract form. No project/payment model, Chinese-label map, Scene
+  contract, or backend business rule was added.
+- Blast radius and evidence: only new contract-form activity-page publication
+  timing changes; saved records, action carriers, cross-model retention,
+  capacity, dirty-page protection, and TDesign tab rendering remain unchanged.
+  Strict typecheck and the state/dashboard activity tests passed. After the
+  governed local frontend rebuild, the logged-in route from action 722 retained
+  payment pages and published the new project page directly as
+  `新建项目立项`, with no visible intermediate `项目立项` tab for that instance.
