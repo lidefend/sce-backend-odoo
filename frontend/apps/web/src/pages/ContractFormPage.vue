@@ -263,7 +263,7 @@
   </LayoutShell>
 </template>
 <script setup lang="ts">
-import { computed, nextTick, onErrorCaptured, provide, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onErrorCaptured, onMounted, provide, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
@@ -575,6 +575,7 @@ import {
 } from './contractForm/uiLabels';
 import { presentContractHeaderActions } from './contractForm/headerActionPresentation';
 import { buildContractFormPageIdentity } from '../app/pageIdentityAdapters';
+import { resolveBusinessActivityTitle } from '../app/activityPageTitle';
 import { usePageContract } from '../app/pageContract';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import { usePublishedPageIdentity } from '../app/usePublishedPageIdentity';
@@ -1158,13 +1159,22 @@ const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContex
 const pageIdentityInput = computed(() => buildContractFormPageIdentity({ action: currentActionMeta.value, authoritativeActionName: currentRouteAuthority.value?.action_name, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs, businessCategoryLabel: currentBusinessCategoryLabel.value,
   contract: contract.value, formData, entryTitle: route.query.entry_title, isCreate: !recordId.value, isEdit: route.name === 'model-form', menuName: currentMenuTitle.value, modelName: model.value,
   recordMissing: recordMissing.value, renderError: Boolean(renderErrorMessage.value), status: status.value }));
+function publishActivityPageTitle(title: string) {
+  const activityTitle = recordId.value ? title : resolveBusinessActivityTitle({
+    authorityName: currentRouteAuthority.value?.action_name,
+    actionTitle: currentActionMeta.value?.name,
+    menuTitle: currentMenuTitle.value,
+    fallback: title,
+  });
+  session.updateActiveActivityTitle(activityTitle, route.fullPath);
+  session.settleActivityPage(session.activeActivityPageKey);
+}
 const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () => route.fullPath,
   active: () => isComponentActive.value && isFormPageRouteOwner(route.name),
-  onTitle: (title) => {
-    session.updateActiveActivityTitle(title);
-    session.settleActivityPage(session.activeActivityPageKey);
-  },
+  onTitle: publishActivityPageTitle,
+  immediate: true,
 });
+onMounted(() => publishActivityPageTitle(pageIdentity.value.title));
 const canonicalShellTitle = computed(() => canonicalFormRenderState.value.model?.shell.title || '');
 const pageDisplayTitle = computed(() => canonicalShellTitle.value || pageIdentity.value.title);
 const pageDisplaySubtitle = computed(() => {

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import {
+  activityPageTitleTargetKeys,
   isSupersededEntryActionActivityPage,
+  normalizeRetainedActivityPageIdentity,
+  reconcileRestoredActivityPages,
   retainIndependentActivityPages,
+  shareActivityPageTitleScope,
   trimRetainedActivityPages,
   type RetainedActivityPageLike,
 } from '../src/app/activityPageRetention';
@@ -49,13 +53,80 @@ const entryAction = createPage({
 assert.equal(isSupersededEntryActionActivityPage(entryAction, incoming), true);
 assert.equal(isSupersededEntryActionActivityPage({ ...entryAction, menu_id: 379 }, incoming), false);
 assert.equal(isSupersededEntryActionActivityPage({ ...entryAction, dirty: true }, incoming), false);
+assert.equal(isSupersededEntryActionActivityPage({
+  ...entryAction,
+  record_context: { company_id: 1, selected: { id: 88 } },
+}, incoming), true, 'a clean carrier is superseded even when it was cached under an older record context');
 assert.deepEqual(
   retainIndependentActivityPages([entryAction, previous], incoming, true).map((page) => page.key),
   [previous.key],
   'only the entry action intermediate is removed when the form replaces it',
 );
 
-console.log('[activity_page_retention_test] PASS cases=6');
+console.log('[activity_page_retention_test] PASS cases=7');
+
+const legacyEntryAction = normalizeRetainedActivityPageIdentity(createPage({
+  key: 'legacy:action',
+  route: '/a/722?menu_id=378',
+  kind: 'custom',
+  model: undefined,
+  action_id: undefined,
+  menu_id: undefined,
+  record_id: undefined,
+}));
+const legacyCreateForm = normalizeRetainedActivityPageIdentity(createPage({
+  key: 'legacy:form',
+  route: '/f/project.project/new?menu_id=378&action_id=722',
+  kind: 'custom',
+  model: undefined,
+  action_id: undefined,
+  menu_id: undefined,
+  record_id: undefined,
+}));
+assert.deepEqual(
+  {
+    kind: legacyEntryAction.kind,
+    action_id: legacyEntryAction.action_id,
+    menu_id: legacyEntryAction.menu_id,
+  },
+  { kind: 'menu_action', action_id: 722, menu_id: 378 },
+  'legacy action history derives its governed carrier identity from the saved route',
+);
+assert.deepEqual(
+  {
+    kind: legacyCreateForm.kind,
+    model: legacyCreateForm.model,
+    record_id: legacyCreateForm.record_id,
+    action_id: legacyCreateForm.action_id,
+    menu_id: legacyCreateForm.menu_id,
+  },
+  { kind: 'record_form', model: 'project.project', record_id: 'new', action_id: 722, menu_id: 378 },
+  'legacy form history derives its formal page identity from the saved route',
+);
+
+assert.deepEqual(
+  reconcileRestoredActivityPages([entryAction, previous, otherModelLoading]).map((page) => page.key),
+  [previous.key, otherModelLoading.key],
+  'restored history removes an entry action already replaced by its formal create form',
+);
+assert.deepEqual(
+  reconcileRestoredActivityPages([legacyEntryAction, legacyCreateForm]).map((page) => page.key),
+  [legacyCreateForm.key],
+  'route-normalized history removes the legacy intermediate carrier',
+);
+assert.equal(shareActivityPageTitleScope(previous, incoming), true);
+assert.equal(shareActivityPageTitleScope(previous, otherModelLoading), false);
+assert.equal(
+  shareActivityPageTitleScope(previous, createPage({ key: 'new:project.project:third', menu_id: 379 })),
+  false,
+);
+assert.deepEqual(
+  [...activityPageTitleTargetKeys([previous, incoming, otherModelLoading], incoming.key)],
+  [previous.key, incoming.key],
+  'published create-form titles update every instance in the same business scope only',
+);
+
+console.log('[activity_page_restore_reconciliation_test] PASS cases=8');
 
 const capacityPages = Array.from({ length: 7 }, (_, index) => createPage({
   key: `page:${index + 1}`,
