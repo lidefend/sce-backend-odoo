@@ -45,6 +45,33 @@ PROFILE_CASES = (
 
 @tagged("payment_settlement_component_profile", "post_install", "-at_install")
 class TestPaymentSettlementComponentProfile(TransactionCase):
+    def test_finance_reader_can_read_settlement_lines_with_project_boundary(self):
+        finance_read = self.env.ref(
+            "smart_construction_core.group_sc_cap_finance_read"
+        )
+        line_model = self.env["ir.model"]._get("sc.settlement.order.line")
+        access = self.env["ir.model.access"].search(
+            [
+                ("model_id", "=", line_model.id),
+                ("group_id", "=", finance_read.id),
+            ]
+        )
+        self.assertTrue(access)
+        self.assertTrue(any(row.perm_read for row in access))
+        self.assertFalse(
+            any(
+                row.perm_write or row.perm_create or row.perm_unlink
+                for row in access
+            )
+        )
+
+        rule = self.env.ref(
+            "smart_construction_core.rule_sc_settlement_read_line"
+        )
+        self.assertIn(finance_read, rule.groups)
+        self.assertTrue(rule.perm_read)
+        self.assertIn("settlement_id.project_id", rule.domain_force)
+
     def test_profiles_bind_only_to_released_product_entries(self):
         self.env["sc.product.policy"].sync_construction_menu_product_policies()
         policy = self.env["sc.product.policy"].search(
