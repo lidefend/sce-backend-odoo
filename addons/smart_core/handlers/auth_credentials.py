@@ -53,6 +53,7 @@ def _policy_payload(policy):
 
 class _CredentialManagementBase(BaseIntentHandler):
     REQUIRED_GROUPS = ["base.group_user"]
+    ACL_MODE = "explicit_check"
 
     def _current_human(self):
         principal = get_principal_from_token()

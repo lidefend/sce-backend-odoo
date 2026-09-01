@@ -6,7 +6,7 @@
       "intents": [
         "risk.action.execute"
       ],
-      "max_sudo_calls": 6,
+      "max_sudo_calls": 2,
       "reason": "risk action execution bridges project risk actions with optional evidence exception records after explicit intent permission and project-scope checks"
     },
     {

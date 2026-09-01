@@ -7042,3 +7042,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   key, state, zero line count, and zero settlement relationship were restored.
   The six-method focused Odoo component-profile suite (eight assertions/tests)
   and the 12-case local-development lifecycle suite passed.
+
+## 2026-09-02 — Platform security intent baseline closure
+
+- Branch / baseline: `feature/platform-security-baseline-closure-v1` /
+  `ced36f8e458060c1f38df765f947217938c0af2b`.
+- Formal Product Layer / Layer Target / Module: P0 platform security baseline /
+  intent ACL declaration and least-privilege sudo accounting / `smart_core` and
+  `smart_construction_core`.
+- Security repair: credential-management intents now declare the existing
+  `explicit_check` ACL mode that matches their human-principal and user-owned
+  policy checks. Risk-action execution retains its two deliberate sudo model
+  entry points after explicit intent and project-scope checks, while five
+  redundant record-level sudo calls were removed. The exact allowlist ceiling
+  is tightened from six calls to two; no role, record rule, business permission,
+  frontend behavior, or contract surface was expanded.
+- Acceptance evidence: intent ACL, permission-matrix, sudo, and system-group
+  guards passed. The focused risk-action backend suite passed with zero
+  failures/errors, and the credential framework passed 27 runtime tests with
+  zero failures/errors. `verify.platform.security.ready` reached the runtime
+  write smoke but did not complete because the local environment exposed only
+  one valid probe login while the gate requires two; this prerequisite failure
+  is recorded as unresolved and is not represented as a security-gate pass.

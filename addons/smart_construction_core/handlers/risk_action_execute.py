@@ -188,24 +188,24 @@ class RiskActionExecuteHandler(BaseIntentHandler):
                 }
             )
             if exception:
-                exception.sudo().write({"risk_action_id": int(record.id)})
+                exception.write({"risk_action_id": int(record.id)})
 
         if action == "claim":
             record.action_claim(owner_id=owner_id or self.env.user.id)
             if exception:
-                exception.sudo().action_assign(user_id=owner_id or self.env.user.id)
+                exception.action_assign(user_id=owner_id or self.env.user.id)
         elif action == "escalate":
             record.action_escalate(note=note)
             if exception:
-                exception.sudo().action_processing(user_id=owner_id or self.env.user.id, note=note)
+                exception.action_processing(user_id=owner_id or self.env.user.id, note=note)
         elif action == "close":
             # R10-v2: the model layer refuses to close without an owner;
             # the handler assigns the caller (or explicit owner_id) first.
             if not record.owner_id:
-                record.sudo().write({"owner_id": owner_id or self.env.user.id})
+                record.write({"owner_id": owner_id or self.env.user.id})
             record.action_close(note=note)
             if exception:
-                exception.sudo().action_resolve(note=note)
+                exception.action_resolve(note=note)
 
         return {
             "ok": True,
