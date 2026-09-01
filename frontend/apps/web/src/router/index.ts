@@ -12,6 +12,7 @@ import { beginPageIdentity } from '../app/pageIdentityRuntime';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
 import { findRouteAuthority } from '../app/routeAuthority';
+import { resolveBusinessActivityTitle } from '../app/activityPageTitle';
 import { intentRequest } from '../api/intents';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
@@ -134,6 +135,55 @@ function currentActionMatches(session: ReturnType<typeof useSessionStore>, actio
   return positiveInteger(current.action_id || current.actionId || current.id) === actionId;
 }
 
+function resolveRouteActivityActionMeta(
+  to: RouteLocationNormalized,
+  session: ReturnType<typeof useSessionStore>,
+): NavMeta | null {
+  const actionId = positiveInteger(to.params.actionId || to.query.action_id);
+  const menuId = positiveInteger(to.query.menu_id);
+  return (menuId > 0 ? findActionMetaByMenu(session.menuTree, menuId, actionId || undefined) : null)
+    || (actionId > 0 ? findActionMeta(session.menuTree, actionId) : null)
+    || (currentActionMatches(session, actionId) ? session.currentAction : null)
+    || null;
+}
+
+function hasFormalEntryTarget(meta: NavMeta | null): boolean {
+  return Boolean(meta?.entry_target && typeof meta.entry_target === 'object' && !Array.isArray(meta.entry_target));
+}
+
+function routeHasFormalEntryTarget(
+  to: RouteLocationNormalized,
+  session: ReturnType<typeof useSessionStore>,
+): boolean {
+  if (hasFormalEntryTarget(resolveRouteActivityActionMeta(to, session))) return true;
+  const actionId = positiveInteger(to.params.actionId || to.query.action_id);
+  const menuId = positiveInteger(to.params.menuId || to.query.menu_id);
+  const authority = actionId > 0 || menuId > 0 ? findRouteAuthority(session.routeAuthority, {
+    actionId,
+    menuId,
+    query: to.query as Record<string, unknown>,
+    companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+    selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
+  }) : null;
+  return Boolean(authority?.entry_target && typeof authority.entry_target === 'object');
+}
+
+function resolveRouteAuthorityEntry(
+  to: RouteLocationNormalized,
+  session: ReturnType<typeof useSessionStore>,
+) {
+  const actionId = positiveInteger(to.params.actionId || to.query.action_id);
+  const menuId = positiveInteger(to.params.menuId || to.query.menu_id);
+  if (actionId <= 0 && menuId <= 0) return null;
+  return findRouteAuthority(session.routeAuthority, {
+    actionId,
+    menuId,
+    query: to.query as Record<string, unknown>,
+    companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+    selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
+  });
+}
+
 function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<typeof useSessionStore>): string {
   const businessLabel = routeQueryText(to.query.current_business_category_label || to.query.default_business_category_label);
   if (businessLabel) return businessLabel;
@@ -147,25 +197,31 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
   if (to.name === 'action') {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);
     const menuId = positiveInteger(to.query.menu_id);
-    const meta = (menuId > 0 ? findActionMetaByMenu(session.menuTree, menuId, actionId) : null)
-      || (actionId > 0 ? findActionMeta(session.menuTree, actionId) : null)
-      || (currentActionMatches(session, actionId) ? session.currentAction : null)
-      || null;
+    const meta = resolveRouteActivityActionMeta(to, session);
     const menuNode = menuId > 0 ? findMenuNode(session.menuTree, menuId) : null;
-    return String(meta?.ui_title || meta?.scene_title || meta?.menu_title || menuNode?.label || meta?.name || `动作 ${actionId}`).trim();
+    const authority = resolveRouteAuthorityEntry(to, session);
+    return resolveBusinessActivityTitle({
+      authorityName: authority?.action_name || authority?.name,
+      actionTitle: meta?.ui_title || meta?.scene_title || meta?.name,
+      menuTitle: meta?.menu_title || menuNode?.label,
+      fallback: `动作 ${actionId}`,
+    });
   }
   if (to.name === 'record' || to.name === 'model-form') {
     const id = routeQueryText(to.params.id);
     if (id === 'new') {
-      const actionId = positiveInteger(to.query.action_id);
       const menuId = positiveInteger(to.query.menu_id);
-      const meta = (menuId > 0 ? findActionMetaByMenu(session.menuTree, menuId, actionId) : null)
-        || (actionId > 0 ? findActionMeta(session.menuTree, actionId) : null)
-        || (currentActionMatches(session, actionId) ? session.currentAction : null)
-        || null;
+      const meta = resolveRouteActivityActionMeta(to, session);
       const menuNode = menuId > 0 ? findMenuNode(session.menuTree, menuId) : null;
-      const baseTitle = String(meta?.ui_title || meta?.scene_title || meta?.menu_title || menuNode?.label || meta?.name || '').trim();
-      return baseTitle ? `新建${baseTitle}` : '新建业务表单';
+      const authority = resolveRouteAuthorityEntry(to, session);
+      return resolveBusinessActivityTitle({
+        authorityName: authority?.action_name || authority?.name,
+        businessLabel,
+        actionTitle: meta?.ui_title || meta?.scene_title || meta?.name,
+        modelLabel: meta?.model_label,
+        menuTitle: meta?.menu_title || menuNode?.label,
+        fallback: '业务表单',
+      });
     }
     return routeTitle(to.name);
   }
@@ -180,6 +236,7 @@ function registerRouteActivity(to: RouteLocationNormalized) {
   if (to.name === 'home' || to.name === 'scene-home') return;
   if (String(to.path || '').startsWith('/admin/')) return;
   if (to.meta?.adminOnly) return;
+  if (to.name === 'action' && routeHasFormalEntryTarget(to, session)) return;
   const fullPath = String(to.fullPath || '').trim();
   if (!fullPath) return;
   const now = Date.now();
@@ -226,6 +283,7 @@ function registerRouteActivity(to: RouteLocationNormalized) {
     record_id: recordId || undefined,
     scene_key: sceneKey || undefined,
     record_context: session.currentActivityRecordContextSnapshot(),
+    supersedes_entry_action: recordId === 'new' && routeHasFormalEntryTarget(to, session),
   });
 }
 
@@ -389,7 +447,12 @@ router.beforeEach(async (to) => {
 
 router.afterEach((to) => {
   const session = useSessionStore();
-  beginPageIdentity(to.fullPath, resolveRoutePageIdentity(to, session.menuTree));
+  const routeIdentity = resolveRoutePageIdentity(to, session.menuTree);
+  const isCreateForm = (to.name === 'record' || to.name === 'model-form') && routeQueryText(to.params.id) === 'new';
+  const authority = isCreateForm ? resolveRouteAuthorityEntry(to, session) : null;
+  beginPageIdentity(to.fullPath, authority?.action_name
+    ? { ...routeIdentity, actionName: authority.action_name }
+    : routeIdentity);
   registerRouteActivity(to);
 });
 

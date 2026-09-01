@@ -1,6 +1,6 @@
 <template>
   <TDesignTabs
-    v-if="pages.length > 1"
+    v-if="shouldShowActivityPageTabs(pages.length)"
     ref="tabsRef"
     class="activity-page-tabs"
     :value="activeKey"
@@ -26,6 +26,7 @@
 import { ref } from 'vue';
 import { TDesignTabs, TDesignTabPanel } from '../design-system/tdesignPrimitiveBridge';
 import type { ActivityPage } from '../../stores/session';
+import { shouldShowActivityPageTabs } from './activityPageTabKeyboard';
 
 const props = withDefaults(defineProps<{
   pages: ActivityPage[];

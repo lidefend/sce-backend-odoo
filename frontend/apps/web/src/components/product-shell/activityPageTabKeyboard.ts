@@ -10,3 +10,7 @@ export function resolveActivityTabKeyboardIndex(input: {
   if (input.key === 'ArrowRight') return (input.currentIndex + 1) % input.count;
   return null;
 }
+
+export function shouldShowActivityPageTabs(pageCount: number): boolean {
+  return Number.isFinite(pageCount) && pageCount > 0;
+}

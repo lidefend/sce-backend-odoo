@@ -39,6 +39,7 @@ function primaryRecordName(contract: BusinessMetadata, formData: Record<string, 
 
 export function buildContractFormPageIdentity(input: {
   action: BusinessMetadata;
+  authoritativeActionName?: unknown;
   breadcrumbs?: PageBreadcrumb[];
   businessCategoryLabel?: unknown;
   entryTitle?: unknown;
@@ -55,14 +56,18 @@ export function buildContractFormPageIdentity(input: {
   const head = input.contract?.head && typeof input.contract.head === 'object'
     ? input.contract.head as Record<string, unknown>
     : {};
+  const modelLabel = head.model_label || input.action?.model_label;
   const businessName = input.entryTitle || input.businessCategoryLabel || head.title || actionName(input.action);
+  const identityName = input.isCreate
+    ? input.entryTitle || input.authoritativeActionName || input.businessCategoryLabel || modelLabel || businessName
+    : businessName;
   const recordName = primaryRecordName(input.contract, input.formData);
   return {
     kind: input.isCreate ? 'create' : input.isEdit ? 'edit' : 'detail',
-    actionName: businessName,
+    actionName: identityName,
     menuName: input.menuName,
     modelName: input.modelName,
-    modelLabel: head.model_label || input.action?.model_label,
+    modelLabel,
     record: input.formData,
     recordDisplayName: recordName,
     primaryFieldNames: formPrimaryFields(input.contract),

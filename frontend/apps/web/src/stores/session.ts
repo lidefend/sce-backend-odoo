@@ -11,6 +11,11 @@ import { isConfiguredDbPinned, resolveActiveDb, resolveConfiguredDb, resolveLogi
 import { beginContextTransition, currentContextEpoch, invalidateContextRequests, isCurrentContextEpoch } from '../app/contextEpoch';
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
 import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
+import {
+  dedupeCleanCreateActivityPages,
+  isSupersededCleanCreateActivityPage,
+  isSupersededEntryActionActivityPage,
+} from '../app/activityPageRetention';
 import type {
   WorkspaceAdviceRow,
   WorkspaceCapabilityGroupRow,
@@ -490,7 +495,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
   // without company metadata is likewise untrusted and is dropped.
   const companyId = Number(recordContext?.company_id || recordContext?.selected?.company_id || 0);
   if (!companyId) return [];
-  return (raw as ActivityPage[])
+  return dedupeCleanCreateActivityPages((raw as ActivityPage[])
     .filter((page) => page && typeof page === 'object')
     .filter((page) => asText(page.key) && asText(page.route))
     .filter((page) => {
@@ -504,7 +509,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
       created_at: Number(page.created_at || 0),
       last_active_at: Number(page.last_active_at || 0),
     }))
-    .sort((left, right) => left.created_at - right.created_at)
+    .sort((left, right) => left.created_at - right.created_at))
     .slice(0, MAX_ACTIVITY_PAGES);
 }
 
@@ -1033,7 +1038,7 @@ export const useSessionStore = defineStore('session', {
         operation_strategy_label: asText(current.operation_strategy_label || current.selected?.operation_strategy_label),
       };
     },
-    registerActivityPage(rawPage: Omit<ActivityPage, 'created_at' | 'last_active_at'> & Partial<Pick<ActivityPage, 'created_at' | 'last_active_at'>>) {
+    registerActivityPage(rawPage: Omit<ActivityPage, 'created_at' | 'last_active_at'> & Partial<Pick<ActivityPage, 'created_at' | 'last_active_at'>> & { supersedes_entry_action?: boolean }) {
       const now = Date.now();
       const key = asText(rawPage.key);
       const route = asText(rawPage.route);
@@ -1061,7 +1066,10 @@ export const useSessionStore = defineStore('session', {
       };
       if (!isRetainedActivityPage(nextPage)) return;
       const others = this.activityPages.filter(
-        (page) => page.key !== key && !isTransientLoadingActivityTitle(page.title),
+        (page) => page.key !== key
+          && !isTransientLoadingActivityTitle(page.title)
+          && !isSupersededCleanCreateActivityPage(page, nextPage)
+          && !(rawPage.supersedes_entry_action && isSupersededEntryActionActivityPage(page, nextPage)),
       );
       this.activeActivityPageKey = key;
       this.activityPages = trimActivityPages([...others, nextPage], key)
