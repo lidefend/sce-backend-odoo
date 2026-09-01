@@ -228,17 +228,16 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
   return routeTitle(to.name);
 }
 
-function registerRouteActivity(to: RouteLocationNormalized) {
+function registerRouteActivity(to: RouteLocationNormalized, options: { settling?: boolean } = {}): string {
   const session = useSessionStore();
-  if (!session.token || !session.isReady) return;
-  if (to.name === 'login' || to.name === 'platform-admin-login') return;
-  if (to.name === 'menu') return;
-  if (to.name === 'home' || to.name === 'scene-home') return;
-  if (String(to.path || '').startsWith('/admin/')) return;
-  if (to.meta?.adminOnly) return;
-  if (to.name === 'action' && routeHasFormalEntryTarget(to, session)) return;
+  if (!session.token || !session.isReady) return '';
+  if (to.name === 'login' || to.name === 'platform-admin-login') return '';
+  if (to.name === 'menu') return '';
+  if (to.name === 'home' || to.name === 'scene-home') return '';
+  if (String(to.path || '').startsWith('/admin/')) return '';
+  if (to.meta?.adminOnly) return '';
   const fullPath = String(to.fullPath || '').trim();
-  if (!fullPath) return;
+  if (!fullPath) return '';
   const now = Date.now();
   let key = '';
   let kind: 'menu_action' | 'record_form' | 'scene' | 'workspace' | 'custom' = 'custom';
@@ -284,7 +283,9 @@ function registerRouteActivity(to: RouteLocationNormalized) {
     scene_key: sceneKey || undefined,
     record_context: session.currentActivityRecordContextSnapshot(),
     supersedes_entry_action: recordId === 'new' && routeHasFormalEntryTarget(to, session),
+    settling: Boolean(options.settling),
   });
+  return key;
 }
 
 const router = createRouter({
@@ -450,10 +451,21 @@ router.afterEach((to) => {
   const routeIdentity = resolveRoutePageIdentity(to, session.menuTree);
   const isCreateForm = (to.name === 'record' || to.name === 'model-form') && routeQueryText(to.params.id) === 'new';
   const authority = isCreateForm ? resolveRouteAuthorityEntry(to, session) : null;
+  if (to.name === 'action' && routeHasFormalEntryTarget(to, session)) {
+    // Governed entries can use an action route only as an asynchronous carrier
+    // before resolving into a formal form. Register it immediately so page
+    // identity updates are isolated, but let ActionView publish the tab only
+    // after the action surface itself has completed loading without redirecting.
+    registerRouteActivity(to, { settling: true });
+  } else {
+    registerRouteActivity(to);
+  }
+  // Register the route-owned activity instance before publishing identity.
+  // Identity consumers update the active activity title immediately; reversing
+  // this order can rename the page the user was previously working in.
   beginPageIdentity(to.fullPath, authority?.action_name
     ? { ...routeIdentity, actionName: authority.action_name }
     : routeIdentity);
-  registerRouteActivity(to);
 });
 
 export default router;

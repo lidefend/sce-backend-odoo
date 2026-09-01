@@ -1448,7 +1448,9 @@ function filterNavigationNodes(nodes: CanonicalNavigationNode[], q: string): Can
 
 const filteredNavigation = computed(() => filterNavigationNodes(visibleNavigationNodes.value, query.value));
 const isConfigurationRoute = computed(() => route.path.startsWith('/admin/'));
-const activityPages = computed(() => (isConfigurationRoute.value ? [] : session.activityPages));
+const activityPages = computed(() => (
+  isConfigurationRoute.value ? [] : session.activityPages.filter((page) => !page.settling)
+));
 const activeActivityPageKey = computed(() => (isConfigurationRoute.value ? '' : session.activeActivityPageKey));
 const mainContentRef = ref<HTMLElement | null>(null);
 

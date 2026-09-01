@@ -1005,6 +1005,16 @@ let latestLoadGeneration = 0;
 let loadPageInvoker: (loadGeneration: number) => Promise<void> = async () => {};
 function requestLoadPage(): Promise<void> { latestLoadGeneration += 1; return loadPageInvoker(latestLoadGeneration); }
 function currentActionActivityRouteKey(): string { return buildActionActivityRouteKey({ actionId: route.params.actionId, queryActionId: route.query.action_id, menuId: route.query.menu_id }); }
+function settleCurrentActionActivityPage(requestedRouteFullPath: string): void {
+  if (
+    !isComponentActive.value
+    || route.name !== 'action'
+    || route.fullPath !== requestedRouteFullPath
+    || status.value === 'idle'
+    || status.value === 'loading'
+  ) return;
+  session.settleActionActivityPage(resolveCurrentRouteActionId(), Number(route.query.menu_id || 0));
+}
 function resolveCurrentRouteActionId(): number {
   const fromParam = Number(route.params.actionId || 0);
   if (Number.isFinite(fromParam) && fromParam > 0) return fromParam;
@@ -3300,6 +3310,7 @@ onMounted(async () => {
     return;
   }
   await requestLoadPage();
+  settleCurrentActionActivityPage(requestedRouteFullPath);
   retainedRouteFullPath.value = requestedRouteFullPath;
   restoreCollectionScroll();
   if (typeof window !== 'undefined') {
@@ -3322,6 +3333,7 @@ onActivated(() => {
     applyRoutePreset();
     updateActivityRuntimeQueryFromRoute();
     void Promise.resolve(requestLoadPage()).then(() => {
+      settleCurrentActionActivityPage(requestedRouteFullPath);
       retainedRouteFullPath.value = requestedRouteFullPath;
     });
   } else if (retainedRouteFullPath.value && status.value !== 'loading') void requestLoadPage();
@@ -3347,6 +3359,14 @@ onErrorCaptured((err) => {
   console.error('[ActionView] render failed', err);
   return false;
 });
+
+watch(
+  () => [route.fullPath, status.value] as const,
+  ([requestedRouteFullPath]) => {
+    settleCurrentActionActivityPage(requestedRouteFullPath);
+  },
+  { immediate: true },
+);
 
 watch(
   () => route.fullPath,
@@ -3377,6 +3397,7 @@ watch(
       return;
     }
     void Promise.resolve(requestLoadPage()).then(() => {
+      settleCurrentActionActivityPage(requestedRouteFullPath);
       retainedRouteFullPath.value = requestedRouteFullPath;
     });
   },

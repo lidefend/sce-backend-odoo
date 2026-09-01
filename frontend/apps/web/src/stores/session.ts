@@ -179,6 +179,7 @@ export interface ActivityPage {
   record_context?: ActivityRecordContextSnapshot | null;
   runtime_query?: ActivityRuntimeQuery;
   dirty?: boolean;
+  settling?: boolean;
   created_at: number;
   last_active_at: number;
 }
@@ -504,6 +505,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
     })
     .map((page) => ({
       ...page,
+      settling: false,
       created_at: Number(page.created_at || 0),
       last_active_at: Number(page.last_active_at || 0),
     }))
@@ -1059,6 +1061,7 @@ export const useSessionStore = defineStore('session', {
         record_context: rawPage.record_context ?? this.currentActivityRecordContextSnapshot(),
         runtime_query: existing?.runtime_query,
         dirty: Boolean(rawPage.dirty || existing?.dirty),
+        settling: Boolean(rawPage.settling),
         created_at: existing?.created_at || Number(rawPage.created_at || 0) || now,
         last_active_at: now,
       };
@@ -1072,6 +1075,29 @@ export const useSessionStore = defineStore('session', {
       this.activityPages = trimActivityPages([...others, nextPage], key)
         .sort((a, b) => a.created_at - b.created_at);
       this.persist();
+    },
+    settleActivityPage(key: string) {
+      const normalizedKey = asText(key);
+      if (!normalizedKey) return;
+      let changed = false;
+      this.activityPages = this.activityPages.map((page) => {
+        if (page.key !== normalizedKey || !page.settling) return page;
+        changed = true;
+        return { ...page, settling: false };
+      });
+      if (changed) this.persist();
+    },
+    settleActionActivityPage(actionId: number, menuId: number) {
+      const normalizedActionId = Number(actionId || 0);
+      const normalizedMenuId = Number(menuId || 0);
+      const matchingPage = [...this.activityPages]
+        .sort((a, b) => b.last_active_at - a.last_active_at)
+        .find((page) => (
+          page.kind === 'menu_action'
+          && Number(page.action_id || 0) === normalizedActionId
+          && Number(page.menu_id || 0) === normalizedMenuId
+        ));
+      if (matchingPage) this.settleActivityPage(matchingPage.key);
     },
     closeActivityPage(key: string): ActivityPage | null {
       const normalizedKey = asText(key);
