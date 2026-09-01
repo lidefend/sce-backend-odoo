@@ -89,14 +89,23 @@ goal:
       title: form_tree_search_kanban_semantic_closure
       status: planned
       current_increment:
-        id: Q3-1
-        title: relation_and_field_type_capability_inventory_alignment
+        id: Q3-2
+        title: final_contract_field_descriptor_occurrence_closure
         status: verified
         result:
-          - field_relation_is_classified_as_authoritative_native_metadata_across_all_view_types
-          - non_form_field_type_and_relation_are_explicitly_mapped_without_ready_promotion
-          - all_32651_native_candidates_have_unique_normalized_and_frontend_mapping
+          - final_ui_contract_v2_layout_container_tree_is_captured_as_governed_runtime_evidence
+          - form_field_relation_and_type_require_exact_native_locator_and_occurrence_equivalence
+          - canonical_component_config_and_field_descriptor_must_agree_before_ready_promotion
+          - unresolved_or_unproven_field_descriptors_remain_fallback_or_unsupported
           - local_clean_capability_ledger_gate_passes_with_zero_silent_loss
+        terminal_counts:
+          ready: 4192
+          fallback: 827
+          unsupported: 27632
+          silent_loss: 0
+        promoted_form_field_descriptors:
+          field_relation_ready: 489
+          field_type_ready: 2136
     - id: Q4
       title: pivot_graph_activity_renderer_closure
       status: planned

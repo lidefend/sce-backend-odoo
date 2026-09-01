@@ -196,7 +196,9 @@ def _capture_final_contract(
         raise ValueError(f"{surface['contract_ref']} final response contract_version missing")
     action_contract = data.get("actionContract") if isinstance(data.get("actionContract"), dict) else {}
     status_contract = data.get("statusContract") if isinstance(data.get("statusContract"), dict) else {}
+    layout_contract = data.get("layoutContract") if isinstance(data.get("layoutContract"), dict) else {}
     values = [
+        ("/data/layoutContract/containerTree", layout_contract.get("containerTree")),
         ("/data/actionContract/actionRuleList", action_contract.get("actionRuleList")),
         ("/data/statusContract/buttonStatus", status_contract.get("buttonStatus")),
     ]

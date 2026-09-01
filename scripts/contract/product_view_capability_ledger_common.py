@@ -63,6 +63,7 @@ ACTION_IDENTITY_FIELDS = {
     "action.help": "help",
 }
 READY_FINAL_ACTION_CAPABILITIES = {"action.confirm", "action.icon", "action.identity", "action.label", "action.type"}
+READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES = {"field.relation", "field.type"}
 NATIVE_FONT_AWESOME_ICON = re.compile(r"^fa-[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -160,6 +161,44 @@ def match_normalized_atom(
                         "raw_value": native_identity[identity_key],
                         "semantic_selector": selector,
                         "semantic_value": native_identity[identity_key],
+                    })
+        return matches
+    if mapping.get("matcher") == "native_field_descriptor_identity":
+        key = str(atom.get("capability_key") or "")
+        if atom.get("view_type") != "form" or key not in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES:
+            return []
+        attribute = key.removeprefix("field.")
+        matches: list[dict[str, Any]] = []
+        for carrier in carrier_entry.get("normalized_carriers", []):
+            if carrier.get("source_selector") not in mapping.get("source_selectors", []):
+                continue
+            value = carrier.get("value")
+            for region in mapping.get("value_regions", []):
+                try:
+                    region_value = pointer_get(value, str(region))
+                except (KeyError, ValueError):
+                    continue
+                for relative_pointer, row in _walk_json(region_value, str(region)):
+                    if not isinstance(row, dict):
+                        continue
+                    if row.get("native_locator") != atom.get("native_locator"):
+                        continue
+                    if row.get("occurrence_index") != atom.get("occurrence_index"):
+                        continue
+                    descriptor = row.get("fieldInfo") if isinstance(row.get("fieldInfo"), dict) else {}
+                    if descriptor.get(attribute) != atom.get("canonical_value"):
+                        continue
+                    selector = (
+                        str(carrier.get("artifact_selector") or "")
+                        + relative_pointer
+                        + "/fieldInfo/"
+                        + _pointer_escape(attribute)
+                    )
+                    matches.append({
+                        "raw_selector": selector,
+                        "raw_value": descriptor[attribute],
+                        "semantic_selector": selector,
+                        "semantic_value": descriptor[attribute],
                     })
         return matches
     if mapping.get("matcher") != "recursive_native_occurrence":
@@ -288,6 +327,45 @@ def match_final_object_action(atom: dict[str, Any], carrier_entry: dict[str, Any
             "interaction_value": status,
             "rule_selector": rule_base,
             "rule": rule,
+        })
+    return matches
+
+
+def match_final_field_descriptor(atom: dict[str, Any], carrier_entry: dict[str, Any]) -> list[dict[str, Any]]:
+    """Match one native field descriptor to the exact final Contract V2 occurrence."""
+    key = str(atom.get("capability_key") or "")
+    if atom.get("view_type") != "form" or key not in READY_FINAL_FIELD_DESCRIPTOR_CAPABILITIES:
+        return []
+    capture = carrier_entry.get("final_contract_capture")
+    if not isinstance(capture, dict) or capture.get("status") != "complete":
+        return []
+    carrier = next((
+        row for row in capture.get("carriers", [])
+        if row.get("source_selector") == "/data/layoutContract/containerTree"
+    ), None)
+    rows = carrier.get("value") if isinstance(carrier, dict) and isinstance(carrier.get("value"), list) else []
+    attribute = key.removeprefix("field.")
+    component_key = "fieldType" if attribute == "type" else attribute
+    matches: list[dict[str, Any]] = []
+    for relative_pointer, row in _walk_json(rows, ""):
+        if not isinstance(row, dict) or row.get("type") != "field":
+            continue
+        if row.get("nativeLocator") != atom.get("native_locator"):
+            continue
+        if row.get("occurrenceIndex") != atom.get("occurrence_index"):
+            continue
+        descriptor = row.get("fieldInfo") if isinstance(row.get("fieldInfo"), dict) else {}
+        component = row.get("componentConfig") if isinstance(row.get("componentConfig"), dict) else {}
+        if descriptor.get(attribute) != atom.get("canonical_value"):
+            continue
+        if component.get(component_key) != atom.get("canonical_value"):
+            continue
+        base = str(carrier.get("artifact_selector") or "") + relative_pointer
+        matches.append({
+            "semantic_selector": f"{base}/componentConfig/{_pointer_escape(component_key)}",
+            "semantic_value": component[component_key],
+            "interaction_selector": f"{base}/fieldInfo/{_pointer_escape(attribute)}",
+            "interaction_value": descriptor[attribute],
         })
     return matches
 

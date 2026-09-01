@@ -57,7 +57,7 @@ properties:
           minItems: 1
           uniqueItems: true
           items: {type: string, pattern: '^(|/.*)$'}
-        matcher: {enum: [surface_identity, recursive_native_occurrence, native_action_identity, named_occurrence, ordered_occurrence, native_lineage_required, unproven]}
+        matcher: {enum: [surface_identity, recursive_native_occurrence, native_action_identity, native_field_descriptor_identity, named_occurrence, ordered_occurrence, native_lineage_required, unproven]}
         cardinality_policy: {enum: [exactly_one, occurrence_preserving, unproven]}
         mapping_status: {enum: [proven, mapping_unproven]}
         source_authority: {const: final_response_normalized_carrier}

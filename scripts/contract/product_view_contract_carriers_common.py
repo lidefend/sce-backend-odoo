@@ -24,6 +24,7 @@ TYPE_REQUIRED_KEYS = {
 }
 
 FINAL_FORM_CARRIER_SELECTORS = (
+    "/data/layoutContract/containerTree",
     "/data/actionContract/actionRuleList",
     "/data/statusContract/buttonStatus",
 )

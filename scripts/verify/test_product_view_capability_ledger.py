@@ -7,7 +7,10 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from scripts.contract.product_view_capability_ledger_common import classify_structure, match_final_object_action, match_normalized_atom, static_boolean_value
+from scripts.contract.product_view_capability_ledger_common import (
+    classify_structure, match_final_field_descriptor, match_final_object_action,
+    match_normalized_atom, static_boolean_value,
+)
 from scripts.contract.product_view_contract_carriers_common import with_manifest
 from scripts.contract.product_view_structure_common import file_sha256, sha256_json
 from scripts.verify.product_view_capability_ledger_guard import (
@@ -194,6 +197,55 @@ class ProductViewCapabilityLedgerTests(unittest.TestCase):
         carrier["normalized_carriers"][0]["value"]["header_buttons"][0]["native_identity"]["authoritative"] = True
         carrier["normalized_carriers"][0]["value"]["header_buttons"][0]["native_identity"]["occurrence_index"] = 1
         self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
+
+    def test_form_field_descriptor_match_requires_exact_occurrence_and_value(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "field.relation", "attribute": "relation",
+            "native_locator": "/form[1]/sheet[1]/field[2]", "occurrence_index": 1,
+            "canonical_value": "project.project",
+        }
+        mapping = {
+            "mapping_status": "proven", "matcher": "native_field_descriptor_identity",
+            "source_selectors": ["/data/views/form"], "value_regions": ["/layout"],
+        }
+        carrier = {"normalized_carriers": [{
+            "source_selector": "/data/views/form",
+            "artifact_selector": "/entries/0/normalized_carriers/0/value",
+            "value": {"layout": [{
+                "native_locator": atom["native_locator"], "occurrence_index": 1,
+                "fieldInfo": {"name": "project_id", "type": "many2one", "relation": "project.project"},
+            }]},
+        }]}
+
+        matches = match_normalized_atom(atom, mapping, carrier)
+
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["semantic_value"], "project.project")
+        carrier["normalized_carriers"][0]["value"]["layout"][0]["occurrence_index"] = 2
+        self.assertEqual(match_normalized_atom(atom, mapping, carrier), [])
+
+    def test_final_field_descriptor_match_requires_contract_v2_projection_equivalence(self) -> None:
+        atom = {
+            "view_type": "form", "capability_key": "field.type", "attribute": "type",
+            "native_locator": "/form[1]/sheet[1]/field[2]", "occurrence_index": 1,
+            "canonical_value": "many2one",
+        }
+        carrier = {"final_contract_capture": {"status": "complete", "carriers": [{
+            "source_selector": "/data/layoutContract/containerTree",
+            "artifact_selector": "/entries/0/final_contract_capture/carriers/0/value",
+            "value": [{
+                "type": "field", "name": "project_id", "nativeLocator": atom["native_locator"],
+                "occurrenceIndex": 1, "fieldInfo": {"type": "many2one", "relation": "project.project"},
+                "componentConfig": {"fieldType": "many2one", "relation": "project.project"},
+            }],
+        }]}}
+
+        matches = match_final_field_descriptor(atom, carrier)
+
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["semantic_value"], "many2one")
+        carrier["final_contract_capture"]["carriers"][0]["value"][0]["componentConfig"]["fieldType"] = "char"
+        self.assertEqual(match_final_field_descriptor(atom, carrier), [])
 
     def test_final_object_action_match_requires_exact_rule_and_status(self) -> None:
         atom = {
