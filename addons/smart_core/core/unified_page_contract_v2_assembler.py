@@ -1214,6 +1214,7 @@ def _assemble_native_form_projection(
         "record_version": deepcopy(_dict(runtime.get("recordVersion"))),
         "data_sources": deepcopy(_dict(runtime.get("dataSources"))),
         "business_operation_profile": deepcopy(_dict(runtime.get("businessOperationProfile"))),
+        "form_governance": deepcopy(_dict(source.get("form_governance"))),
         "visible_fields": deepcopy(_list(runtime.get("visibleFields"))),
         "field_groups": deepcopy(_list(runtime.get("fieldGroups"))),
         "formStructureContract": deepcopy(_dict(runtime.get("formStructureContract"))),
@@ -2980,6 +2981,8 @@ def _append_standard_form_save_action(
     required_right = "create" if render_profile == "create" else "write"
     if rights.get(required_right) is not True:
         return
+    form_governance = _dict(source.get("form_governance"))
+    governed_primary_label = _text(form_governance.get("primary_action_label"))
     action_id = "form.save"
     backend_identity = "contract_action:form.save"
     contract["actionContract"]["actionRuleList"].append({
@@ -2987,7 +2990,7 @@ def _append_standard_form_save_action(
         "actionKey": action_id,
         "sourceActionKey": action_id,
         "backendIdentity": backend_identity,
-        "label": "保存草稿" if render_profile == "create" else "保存修改",
+        "label": governed_primary_label or ("保存草稿" if render_profile == "create" else "保存修改"),
         "intent": "api.data",
         "target": {},
         "button": {},
@@ -3000,7 +3003,7 @@ def _append_standard_form_save_action(
         "sourceChannel": "platform_form_action",
         "presentationAuthority": "platform_contract",
         "presentationPriority": 100,
-        "presentation": {"tier": "secondary"},
+        "presentation": {"tier": "primary" if governed_primary_label else "secondary"},
         "visibleProfiles": [render_profile],
         "allowed": True,
         "enabled": True,

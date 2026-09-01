@@ -40,6 +40,24 @@ class RenderOdooConfTests(unittest.TestCase):
         self.assertIn("addons_path = /native,/mnt/source-addons\n", normalized)
         self.assertEqual(removed, ("/mnt/product-addons", "/mnt/test-addons"))
 
+    def test_dev_prefers_source_over_persisted_runtime_addons(self):
+        rendered = (
+            "[options]\n"
+            "addons_path = /native,/opt/sce-runtime/addons/17.0,/mnt/source-addons\n"
+        )
+
+        normalized, removed = TARGET.normalize_non_production_addons_path(
+            rendered,
+            environment="dev",
+            is_directory=lambda _value: True,
+        )
+
+        self.assertIn(
+            "addons_path = /native,/mnt/source-addons,/opt/sce-runtime/addons/17.0\n",
+            normalized,
+        )
+        self.assertEqual(removed, ())
+
     def test_production_keeps_declared_roots_unchanged(self):
         rendered = "addons_path = /native,/mnt/product-addons,/mnt/customer-addons\n"
 

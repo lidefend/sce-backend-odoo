@@ -6987,3 +6987,32 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   governed local frontend rebuild, the logged-in route from action 722 retained
   payment pages and published the new project page directly as
   `新建项目立项`, with no visible intermediate `项目立项` tab for that instance.
+
+## 2026-09-01 — Project initiation Product Floorplan closure
+
+- Branch / baseline: `feature/project-intake-product-floorplan-v1` /
+  `1f1a271050284412d4de6762d9494dd4e3f95211`.
+- Formal Product Layer / Layer Target / Module: P1 second real-model sample /
+  backend form governance through existing Normalized Contract V2 and
+  Canonical Render Model / `smart_construction_core`, `smart_core`, and
+  `frontend/apps/web`.
+- Product change: the project initiation create form now presents one governed
+  primary action named `创建项目`, a visible current-task and blocking-repair
+  region, and the existing project responsibility fields through the canonical
+  form driver. The backend owns the task/risk facts and action label; the
+  frontend renders the declared action and semantic roles without model or
+  Chinese-label inference.
+- Why here / why not elsewhere: the native-form projection now preserves the
+  generic `form_governance` carrier when it enters the canonical assembler.
+  No Scene/Lite/Terminal contract, alternate component system, or project-only
+  frontend branch was introduced.
+- Acceptance evidence: the read-only local.dev probe verified one unique
+  `form.save`, `创建项目` with primary presentation, task/risk semantic roles,
+  zero record-bound actions on create, and unchanged occurrence integrity for
+  four existing project actions. Logged-in browser acceptance loaded the
+  project-create Floorplan, the 11-tab project workspace, and the payment
+  Floorplan through one canonical driver each; at 390px all three had no
+  horizontal overflow, and the run observed no create/write/unlink mutation.
+  The 85-case Contract V2 suite, 140-case canonical presenter suite,
+  component-driver inventory, config-render tests, and full frontend release
+  unit gate passed.

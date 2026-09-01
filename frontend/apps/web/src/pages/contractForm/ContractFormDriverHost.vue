@@ -59,14 +59,14 @@
         <template v-if="showProductActions && !actionsInHeader" #actions>
           <nav class="canonical-product-edit-actions" aria-label="表单业务动作" data-canonical-action-bar>
             <SceneButton
-              v-if="localSavePrimary"
+              v-if="localSaveAction"
               tier="primary"
               :disabled="busy"
               data-action-ref="form.save"
               data-action-tier="primary"
               data-action-enabled="true"
               @activate="emit('save')"
-            >{{ renderModel.identity.mode === 'create' ? '保存草稿' : '保存修改' }}</SceneButton>
+            >{{ localSaveAction.label }}</SceneButton>
             <CanonicalActionBar
               v-else
               :direct-actions="floorplan.directActions"
@@ -202,12 +202,13 @@ const productWriteMode = computed(() => Boolean(
   floorplan.value.decisionMode && props.renderModel && props.renderModel.identity.mode !== 'readonly',
 ));
 const visibleActions = computed(() => props.renderModel?.actionBar.filter((action) => action.visible) || []);
-const localSavePrimary = computed(() => Boolean(
+const localSaveAction = computed(() => (
   productWriteMode.value
-  && visibleActions.value.some((action) => action.actionRef.actionId === 'form.save' && action.enabled),
+    ? visibleActions.value.find((action) => action.actionRef.actionId === 'form.save' && action.enabled) || null
+    : null
 ));
 const showProductActions = computed(() => Boolean(
-  localSavePrimary.value || productWriteMode.value
+  localSaveAction.value || productWriteMode.value
   || floorplan.value.directActions.length || floorplan.value.overflowActions.length,
 ));
 const renderKit = computed<SceneUiKitId>(() => floorplan.value.decisionMode ? 'tdesign-modern' : activeKit.value);

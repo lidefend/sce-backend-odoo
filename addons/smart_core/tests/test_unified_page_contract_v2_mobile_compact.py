@@ -567,6 +567,25 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertNotIn("form.save", {row["actionId"] for row in denied["actionContract"]["actionRuleList"]})
         self.assertNotIn("form.save", {row["actionId"] for row in missing["actionContract"]["actionRuleList"]})
 
+    def test_ui_contract_v2_create_form_uses_explicit_governed_primary_label(self):
+        full = assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "x.document",
+                "view_type": "form",
+                "head": {"render_profile": "create"},
+                "permissions": {"read": True, "write": False, "create": True},
+                "form_governance": {"primary_action_label": "创建业务对象"},
+                "fields": {"name": {"name": "name", "type": "char"}},
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.create.governed-primary",
+        )
+
+        save = next(row for row in full["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
+        self.assertEqual(save["label"], "创建业务对象")
+        self.assertEqual(save["presentation"]["tier"], "primary")
+
     def test_ui_contract_v2_readonly_form_never_publishes_save(self):
         full = assembler.assemble_unified_page_contract_v2(
             {

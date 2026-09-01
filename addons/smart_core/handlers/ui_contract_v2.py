@@ -33,7 +33,11 @@ from ..core.ui_base_contract_asset_repository import (
     upsert_runtime_source_asset,
 )
 from ..core.request_params import parse_positive_int
-from ..utils.contract_governance import apply_contract_governance, resolve_contract_mode, resolve_contract_surface
+from ..utils.contract_governance import (
+    apply_contract_governance,
+    resolve_contract_mode,
+    resolve_contract_surface,
+)
 from ..utils.extension_hooks import call_extension_hook_first
 from ..utils.load_contract_response_cache import (
     CONTRACT_PROJECTION_HOT_CACHE,
@@ -71,6 +75,7 @@ REASON_STANDARD_SUBMIT_ACTION = "STANDARD_SUBMIT_ACTION"
 REASON_SCENE_CONTRACT_READY = "SCENE_CONTRACT_READY"
 REASON_ACTION_GROUP_ACCESS_DENIED = _authority.REASON_ACTION_GROUP_ACCESS_DENIED
 REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INVALID
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-governance-2026-09-01"
 
 
 def form_structure_presentation_mode(authority: Any) -> str:
@@ -625,6 +630,21 @@ class UiContractV2Handler(BaseIntentHandler):
             or f"ui.contract.v2.{model or 'unknown'}.{view_type or 'form'}"
         )
 
+        requested_render_profile = str(
+            params.get("render_profile")
+            or params.get("renderProfile")
+            or ui_params.get("render_profile")
+            or ui_params.get("renderProfile")
+            or ""
+        ).strip().lower()
+        requested_record_id = str(
+            params.get("record_id")
+            or params.get("recordId")
+            or ui_params.get("record_id")
+            or ui_params.get("recordId")
+            or ""
+        ).strip().lower()
+        is_create_request = requested_render_profile == "create" or requested_record_id == "new"
         assembled_cached = (
             cached_source.get("_assembled_v2")
             if not runtime_record_id and isinstance(cached_source, dict)
@@ -632,6 +652,8 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if (
             isinstance(assembled_cached, dict)
+            and not is_create_request
+            and assembled_cached.get("cache_version") == ASSEMBLED_CONTRACT_CACHE_VERSION
             and assembled_cached.get("client_type") == client_type
             and assembled_cached.get("delivery_profile") == delivery_profile
             and assembled_cached.get("limit_params") == limit_params
@@ -908,7 +930,7 @@ class UiContractV2Handler(BaseIntentHandler):
             **limit_params,
         )
         contract_trimmed_at = time.monotonic()
-        if not runtime_record_id and cache_key and source_token:
+        if not runtime_record_id and not is_create_request and cache_key and source_token:
             CONTRACT_PROJECTION_HOT_CACHE.put(
                 cache_key,
                 source_token,
@@ -921,6 +943,7 @@ class UiContractV2Handler(BaseIntentHandler):
                         if key not in {"trace_id", "request_id"}
                     },
                     "_assembled_v2": {
+                        "cache_version": ASSEMBLED_CONTRACT_CACHE_VERSION,
                         "client_type": client_type,
                         "delivery_profile": delivery_profile,
                         "limit_params": deepcopy(limit_params),
@@ -1349,6 +1372,18 @@ class UiContractV2Handler(BaseIntentHandler):
                         action_context = {}
                     if isinstance(action_context, dict):
                         request_context.update(action_context)
+            menu_id, _menu_id_error = parse_positive_int(
+                params.get("menu_id") or ui_params.get("menu_id"),
+                allow_empty=True,
+            )
+            if menu_id:
+                menu = self.env["ir.ui.menu"].sudo().browse(menu_id)
+                if menu.exists():
+                    menu_xmlid = menu.get_external_id().get(menu.id, "")
+                    if menu_xmlid:
+                        source_contract["menu_xmlid"] = menu_xmlid
+                        head = source_contract.get("head") if isinstance(source_contract.get("head"), dict) else {}
+                        source_contract["head"] = {**head, "menu_xmlid": menu_xmlid}
             for raw_context in (params.get("context"), ui_params.get("context")):
                 if isinstance(raw_context, dict):
                     request_context.update(raw_context)
@@ -1408,6 +1443,15 @@ class UiContractV2Handler(BaseIntentHandler):
                 or "edit"
             )
             normalized_render_profile = str(render_profile or "").strip().lower()
+            requested_record_id = str(
+                params.get("record_id")
+                or params.get("recordId")
+                or ui_params.get("record_id")
+                or ui_params.get("recordId")
+                or ""
+            ).strip().lower()
+            if requested_record_id == "new":
+                normalized_render_profile = "create"
             if normalized_render_profile in {"read", "view"}:
                 normalized_render_profile = "readonly"
             if normalized_render_profile not in {"create", "edit", "readonly"}:
@@ -1428,7 +1472,13 @@ class UiContractV2Handler(BaseIntentHandler):
                 relation_cache_key=relation_cache_key,
             )
             relation_contract_at = time.monotonic()
-            if not source_contract.get("business_form_policy"):
+            has_business_form_policy = bool(source_contract.get("business_form_policy"))
+            source_record_id = str(source_contract.get("record_id") or "").strip().lower()
+            if (
+                not has_business_form_policy
+                and normalized_render_profile != "create"
+                and source_record_id != "new"
+            ):
                 if stage_timings is not None:
                     stage_timings.update({
                         "category_context_merge": int((context_ready_at - started_at) * 1000),
@@ -1436,17 +1486,6 @@ class UiContractV2Handler(BaseIntentHandler):
                         "category_relation_contract": int((relation_contract_at - policy_injected_at) * 1000),
                     })
                 return
-            business_policy_groups = deepcopy(
-                source_contract.get("field_groups")
-                if isinstance(source_contract.get("field_groups"), list)
-                else []
-            )
-            business_policy_root = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
-            business_policy_fields = deepcopy(
-                business_policy_root.get("fields")
-                if isinstance(business_policy_root.get("fields"), list)
-                else []
-            )
             contract_mode = resolve_contract_mode(params)
             contract_surface = resolve_contract_surface(params, contract_mode)
             governed = apply_contract_governance(
@@ -1467,6 +1506,25 @@ class UiContractV2Handler(BaseIntentHandler):
                     head["context"] = dict(merged_context)
                     source_contract["head"] = head
             governed_at = time.monotonic()
+            if not has_business_form_policy:
+                if stage_timings is not None:
+                    stage_timings.update({
+                        "category_context_merge": int((context_ready_at - started_at) * 1000),
+                        "category_policy_inject": int((policy_injected_at - context_ready_at) * 1000),
+                        "category_relation_contract": int((relation_contract_at - policy_injected_at) * 1000),
+                    })
+                return
+            business_policy_groups = deepcopy(
+                source_contract.get("field_groups")
+                if isinstance(source_contract.get("field_groups"), list)
+                else []
+            )
+            business_policy_root = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
+            business_policy_fields = deepcopy(
+                business_policy_root.get("fields")
+                if isinstance(business_policy_root.get("fields"), list)
+                else []
+            )
             if business_policy_fields:
                 business_policy = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
                 field_aliases = self._form_field_aliases(model, source_contract)

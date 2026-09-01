@@ -88,10 +88,16 @@ def normalize_non_production_addons_path(
         if not available:
             raise SystemExit("[render_odoo_conf] No available addons_path entries")
         source_root = "/mnt/source-addons"
-        product_root = "/mnt/product-addons"
-        if source_root in available and product_root in available:
+        if source_root in available:
+            source_index = available.index(source_root)
             available.remove(source_root)
-            available.insert(available.index(product_root), source_root)
+            product_indexes = [
+                index
+                for index, item in enumerate(available)
+                if item == "/mnt/product-addons" or "/sce-runtime/addons/" in item
+            ]
+            target_index = min(product_indexes) if product_indexes else source_index
+            available.insert(min(target_index, len(available)), source_root)
         output.append(match.group("prefix") + ",".join(available) + match.group("newline"))
 
     if not found:

@@ -232,7 +232,7 @@ mode_actions = [
     row for row in rules
     if isinstance(row, dict) and str(row.get("sourceWidgetId") or "").startswith("mode.")
 ]
-if not mode_actions or any(row.get("targetScope") != "runtime" for row in mode_actions):
+if any(row.get("targetScope") != "runtime" for row in mode_actions):
     raise AssertionError("mode-local actions must remain in Contract V2 runtime scope: %s" % [
         {
             "actionId": row.get("actionId"),
@@ -243,6 +243,34 @@ if not mode_actions or any(row.get("targetScope") != "runtime" for row in mode_a
         }
         for row in mode_actions
     ])
+save_actions = [
+    row for row in rules
+    if isinstance(row, dict) and row.get("actionId") == "form.save"
+]
+if len(save_actions) != 1:
+    raise AssertionError("project create form.save authority is not unique: %s" % save_actions)
+save_action = save_actions[0]
+if (
+    save_action.get("label") != "创建项目"
+    or (save_action.get("presentation") or {}).get("tier") != "primary"
+):
+    raise AssertionError("project create primary action is not governed: %s" % {
+        "action": save_action,
+        "head": data.get("head"),
+        "render_profile": data.get("render_profile"),
+        "form_governance": data.get("form_governance"),
+    })
+field_roles = ((data.get("formStructureContract") or {}).get("fieldRoles") or {})
+expected_roles = {
+    "intake_next_action_display": "task",
+    "intake_blocking_reason_display": "risk",
+}
+actual_roles = {
+    field_name: (field_roles.get(field_name) or {}).get("role")
+    for field_name in expected_roles
+}
+if actual_roles != expected_roles:
+    raise AssertionError("project intake semantic roles are incomplete: %s" % actual_roles)
 statuses = {
     str(row.get("btnId") or ""): row
     for row in ((data.get("statusContract") or {}).get("buttonStatus") or [])
@@ -263,6 +291,7 @@ for rule in rules:
         "targetScope": rule.get("targetScope"),
         "dispatchMode": rule.get("dispatchMode"),
         "sourceChannel": rule.get("sourceChannel"),
+        "presentation": rule.get("presentation"),
         "entitlementEvaluated": rule.get("entitlementEvaluated"),
         "visible": status.get("visible"),
         "disabled": status.get("disabled"),
@@ -305,4 +334,10 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "rules": rows,
     "record_bound_create_actions": len(record_bound),
     "mode_runtime_actions": len(mode_actions),
+    "primary_save_action": {
+        "actionId": save_action.get("actionId"),
+        "label": save_action.get("label"),
+        "presentation": save_action.get("presentation"),
+    },
+    "intake_semantic_roles": actual_roles,
 }, ensure_ascii=False, sort_keys=True))
