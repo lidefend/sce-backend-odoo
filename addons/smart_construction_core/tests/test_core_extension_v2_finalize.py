@@ -228,6 +228,128 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             "PaymentSettlementDetailCollectionControl",
         )
 
+    def test_payment_and_project_forms_share_existing_v2_minimum_authority_chain(self):
+        contracts = {
+            "project.project": {
+                "layoutContract": {
+                    "containerTree": [{
+                        "type": "group",
+                        "containerId": "project.task",
+                        "children": [{
+                            "type": "field",
+                            "name": "manager_id",
+                            "fieldCode": "manager_id",
+                            "widgetId": "field.manager_id",
+                            "componentKey": "sc.value.user",
+                            "componentConfig": {
+                                "fieldType": "many2one",
+                                "relationModel": "res.users",
+                            },
+                        }],
+                    }],
+                    "componentRegistry": {
+                        "sc.value.user": {
+                            "version": "1.0",
+                            "adapter": {"web_pc": "UserValueControl"},
+                        },
+                    },
+                },
+                "statusContract": {
+                    "globalStatus": {"pageAuth": "edit"},
+                    "widgetStatus": [{
+                        "widgetId": "field.manager_id",
+                        "visible": True,
+                        "readonly": False,
+                        "required": True,
+                        "disabled": False,
+                        "auth": "edit",
+                    }],
+                },
+                "actionContract": {
+                    "actionRuleList": [{
+                        "actionId": "form.save",
+                        "sourceWidgetId": "form.project.project",
+                        "backendIdentity": "project.project.create",
+                    }],
+                },
+                "runtimeContract": {},
+            },
+            "payment.request": {
+                "layoutContract": {
+                    "containerTree": [{
+                        "type": "group",
+                        "containerId": "payment.relations",
+                        "children": [{
+                            "type": "field",
+                            "name": "outflow_line_ids",
+                            "fieldCode": "outflow_line_ids",
+                            "widgetId": "field.outflow_line_ids",
+                            "componentKey": "sc.relation.table",
+                            "componentConfig": {"fieldType": "one2many"},
+                        }],
+                    }],
+                    "componentRegistry": {},
+                },
+                "statusContract": {
+                    "globalStatus": {"pageAuth": "edit"},
+                    "widgetStatus": [{
+                        "widgetId": "field.outflow_line_ids",
+                        "visible": True,
+                        "readonly": False,
+                        "required": False,
+                        "disabled": False,
+                        "auth": "edit",
+                    }],
+                },
+                "actionContract": {
+                    "actionRuleList": [{
+                        "actionId": "form.save",
+                        "sourceWidgetId": "form.payment.request",
+                        "backendIdentity": "payment.request.write",
+                    }],
+                },
+                "runtimeContract": {},
+            },
+        }
+
+        projected_by_model = {}
+        for model_name, contract in contracts.items():
+            projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+                self.env,
+                contract,
+                {"source_contract": {"model": model_name, "view_type": "form"}},
+            ) or contract
+            projected_by_model[model_name] = projected
+            widgets = self._field_nodes(projected["layoutContract"]["containerTree"])
+            self.assertTrue(widgets, model_name)
+            status_by_id = {
+                row["widgetId"]: row
+                for row in projected["statusContract"]["widgetStatus"]
+            }
+            registry = projected["layoutContract"]["componentRegistry"]
+
+            for widget in widgets:
+                widget_id = widget.get("widgetId")
+                component_key = widget.get("componentKey")
+                self.assertTrue(widget.get("fieldCode") or widget.get("name"), model_name)
+                self.assertTrue(widget_id, model_name)
+                self.assertTrue(component_key, model_name)
+                self.assertIn(widget_id, status_by_id, model_name)
+                self.assertIn(component_key, registry, model_name)
+
+            action = projected["actionContract"]["actionRuleList"][0]
+            self.assertEqual(action["actionId"], "form.save")
+            self.assertTrue(action["sourceWidgetId"], model_name)
+            self.assertTrue(action["backendIdentity"], model_name)
+
+        payment_widget = self._field_nodes(
+            projected_by_model["payment.request"]["layoutContract"]["containerTree"]
+        )[0]
+        self.assertEqual(
+            payment_widget["componentConfig"]["actionRefs"]["introduce"],
+            "payment.request.add.settlement.lines",
+        )
+
     def test_general_contract_normalizer_preserves_native_v2_form_identity(self):
         widget_id = "field.contract_name.occ.native"
         contract = {

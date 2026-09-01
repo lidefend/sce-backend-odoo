@@ -6945,3 +6945,21 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   searchable settlement result, line preview with remaining amounts, and no
   console warning or error; the confirmation mutation was intentionally not
   executed during this read-only UI acceptance.
+
+## 2026-09-01 — Two-model Contract V2 minimum freeze
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `e8af62ec2d4dc36ea4f53a0d21d857c6c33aaa76`.
+- Formal Product Layer / Layer Target / Module: P0 contract mechanism plus P1
+  two-model evidence / existing Normalized Contract V2 authority chain /
+  `smart_construction_core` and product documentation.
+- Reason: payment request and project initiation now prove the smallest shared
+  form authority chain: stable field occurrence, backend-selected component,
+  Registry adapter, explicit widget status, explicit action identity, and
+  non-visible canonical relation identity. The freeze adds no top-level
+  contract, Scene/Lite/Terminal variant, or frontend model/label inference.
+- Page and test evidence: logged-in project create acceptance showed nine
+  contract-driven fields and `manager_id` rendered as `Demo-全能力`, not raw ID
+  `50`; payment request acceptance showed 39 fields and the declared settlement
+  collection component. The focused cross-model finalizer test passed and
+  asserts both models remain on the existing V2 authority chain.
