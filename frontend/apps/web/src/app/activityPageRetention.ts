@@ -10,6 +10,7 @@ export interface RetainedActivityPageLike {
     company_id?: number | null;
   } | null;
   dirty?: boolean;
+  last_active_at?: number;
 }
 
 function positiveInteger(value: unknown): number {
@@ -50,4 +51,23 @@ export function retainIndependentActivityPages<T extends RetainedActivityPageLik
     page.key !== incoming.key
     && !(supersedesEntryAction && isSupersededEntryActionActivityPage(page, incoming))
   ));
+}
+
+export function trimRetainedActivityPages<T extends RetainedActivityPageLike>(
+  pages: readonly T[],
+  activeKey: string,
+  limit: number,
+): T[] {
+  const normalizedLimit = Math.max(1, Math.trunc(Number(limit || 0)));
+  const keep = [...pages];
+  while (keep.length > normalizedLimit) {
+    const removable = keep
+      .filter((page) => page.key !== activeKey && !page.dirty)
+      .sort((a, b) => Number(a.last_active_at || 0) - Number(b.last_active_at || 0))[0];
+    if (!removable) break;
+    const index = keep.findIndex((page) => page.key === removable.key);
+    if (index < 0) break;
+    keep.splice(index, 1);
+  }
+  return keep;
 }

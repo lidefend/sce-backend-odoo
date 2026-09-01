@@ -1783,11 +1783,19 @@ const {
 const unsavedFormGuard = useUnsavedFormGuard({
   dirty: () => hasChanges.value,
   busy,
+  consumeAuthorizedNavigation: () => session.consumeActivityPageNavigationAuthorization(),
   confirmLeave: async () => intentConfirmationRef.value?.confirm({
     actionLabel: '离开页面',
     message: '当前修改尚未保存。离开后这些修改将丢失，是否继续？',
   }) ?? false,
 });
+watch(
+  () => [hasChanges.value, isComponentActive.value] as const,
+  ([dirty, active]) => {
+    if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty);
+  },
+  { immediate: true },
+);
 async function returnToPreviousPage() {
   await unsavedFormGuard.navigateAfterConfirm(async () => {
     await executeRecordFormReturn({

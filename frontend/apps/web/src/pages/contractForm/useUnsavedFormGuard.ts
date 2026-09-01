@@ -5,6 +5,7 @@ export function useUnsavedFormGuard(params: {
   dirty: () => boolean;
   busy: Ref<boolean>;
   confirmLeave: () => Promise<boolean>;
+  consumeAuthorizedNavigation?: () => boolean;
 }) {
   const router = useRouter();
   let removeRouteGuard: (() => void) | null = null;
@@ -16,6 +17,7 @@ export function useUnsavedFormGuard(params: {
   };
 
   const routeGuard: NavigationGuard = async () => {
+    if (params.consumeAuthorizedNavigation?.()) return true;
     if (allowNextNavigation) {
       allowNextNavigation = false;
       return true;
@@ -35,22 +37,20 @@ export function useUnsavedFormGuard(params: {
   const installRouteGuard = () => {
     if (removeRouteGuard) return;
     removeRouteGuard = router.beforeEach(routeGuard);
+    window.addEventListener('beforeunload', beforeUnload);
   };
 
   const removeInstalledRouteGuard = () => {
     removeRouteGuard?.();
     removeRouteGuard = null;
+    window.removeEventListener('beforeunload', beforeUnload);
   };
 
-  onMounted(() => {
-    installRouteGuard();
-    window.addEventListener('beforeunload', beforeUnload);
-  });
+  onMounted(installRouteGuard);
   onActivated(installRouteGuard);
   onDeactivated(removeInstalledRouteGuard);
   onBeforeUnmount(() => {
     removeInstalledRouteGuard();
-    window.removeEventListener('beforeunload', beforeUnload);
   });
   return { navigateAfterConfirm };
 }

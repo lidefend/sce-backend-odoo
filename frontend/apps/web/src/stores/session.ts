@@ -13,6 +13,7 @@ import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type Route
 import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
 import {
   retainIndependentActivityPages,
+  trimRetainedActivityPages,
 } from '../app/activityPageRetention';
 import type {
   WorkspaceAdviceRow,
@@ -281,6 +282,7 @@ export interface SessionState {
 
 const TOKEN_STORAGE_KEY_LEGACY = 'sc_auth_token';
 const MAX_ACTIVITY_PAGES = 6;
+let activityPageNavigationAuthorized = false;
 const ACTIVITY_RUNTIME_QUERY_KEYS = new Set([
   'search',
   'q',
@@ -473,18 +475,7 @@ function normalizeActivityRuntimeQuery(raw: unknown): ActivityRuntimeQuery | und
 }
 
 function trimActivityPages(pages: ActivityPage[], activeKey: string): ActivityPage[] {
-  if (pages.length <= MAX_ACTIVITY_PAGES) return pages;
-  const keep = [...pages];
-  while (keep.length > MAX_ACTIVITY_PAGES) {
-    const removable = keep
-      .filter((page) => page.key !== activeKey && !page.dirty)
-      .sort((a, b) => a.last_active_at - b.last_active_at)[0];
-    if (!removable) break;
-    const index = keep.findIndex((page) => page.key === removable.key);
-    if (index >= 0) keep.splice(index, 1);
-    else break;
-  }
-  return keep;
+  return trimRetainedActivityPages(pages, activeKey, MAX_ACTIVITY_PAGES);
 }
 
 function restoreActivityPages(raw: unknown, recordContext: RecordContextContract | null): ActivityPage[] {
@@ -505,6 +496,9 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
     })
     .map((page) => ({
       ...page,
+      // Unsaved field buffers are intentionally not persisted, so a restored
+      // activity cannot remain dirty after a full reload.
+      dirty: false,
       settling: false,
       created_at: Number(page.created_at || 0),
       last_active_at: Number(page.last_active_at || 0),
@@ -1072,7 +1066,8 @@ export const useSessionStore = defineStore('session', {
         Boolean(rawPage.supersedes_entry_action),
       );
       this.activeActivityPageKey = key;
-      this.activityPages = trimActivityPages([...others, nextPage], key)
+      const registeredPages = [...others, nextPage];
+      this.activityPages = (nextPage.settling ? registeredPages : trimActivityPages(registeredPages, key))
         .sort((a, b) => a.created_at - b.created_at);
       this.persist();
     },
@@ -1085,7 +1080,11 @@ export const useSessionStore = defineStore('session', {
         changed = true;
         return { ...page, settling: false };
       });
-      if (changed) this.persist();
+      if (changed) {
+        this.activityPages = trimActivityPages(this.activityPages, normalizedKey)
+          .sort((a, b) => a.created_at - b.created_at);
+        this.persist();
+      }
     },
     settleActionActivityPage(actionId: number, menuId: number) {
       const normalizedActionId = Number(actionId || 0);
@@ -1098,6 +1097,28 @@ export const useSessionStore = defineStore('session', {
           && Number(page.menu_id || 0) === normalizedMenuId
         ));
       if (matchingPage) this.settleActivityPage(matchingPage.key);
+    },
+    updateActiveActivityDirty(dirty: boolean) {
+      const activeKey = asText(this.activeActivityPageKey);
+      if (!activeKey) return;
+      let changed = false;
+      this.activityPages = this.activityPages.map((page) => {
+        if (page.key !== activeKey || Boolean(page.dirty) === Boolean(dirty)) return page;
+        changed = true;
+        return { ...page, dirty: Boolean(dirty) };
+      });
+      if (changed) this.persist();
+    },
+    authorizeActivityPageNavigation() {
+      activityPageNavigationAuthorized = true;
+    },
+    consumeActivityPageNavigationAuthorization() {
+      if (!activityPageNavigationAuthorized) return false;
+      activityPageNavigationAuthorized = false;
+      return true;
+    },
+    clearActivityPageNavigationAuthorization() {
+      activityPageNavigationAuthorized = false;
     },
     closeActivityPage(key: string): ActivityPage | null {
       const normalizedKey = asText(key);

@@ -332,6 +332,7 @@
         @close="closeActivityPage"
         @focus-exit="focusMainContent"
       />
+      <IntentConfirmationDialog ref="activityCloseConfirmationRef" />
 
       <StatusPanel
         v-if="initStatus === 'loading'"
@@ -386,6 +387,7 @@ import NavigationBreadcrumb from '../components/product-shell/NavigationBreadcru
 import WorkspaceContextIndicator from '../components/product-shell/WorkspaceContextIndicator.vue';
 import ProductIdentity from '../components/product-shell/ProductIdentity.vue';
 import ActivityPageTabs from '../components/product-shell/ActivityPageTabs.vue';
+import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
 import GlobalMessagePanel from '../components/GlobalMessagePanel.vue';
@@ -1452,6 +1454,7 @@ const activityPages = computed(() => (
   isConfigurationRoute.value ? [] : session.activityPages.filter((page) => !page.settling)
 ));
 const activeActivityPageKey = computed(() => (isConfigurationRoute.value ? '' : session.activeActivityPageKey));
+const activityCloseConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 const mainContentRef = ref<HTMLElement | null>(null);
 
 function focusMainContent() {
@@ -1539,24 +1542,36 @@ function resolveActivityPageRoute(page: ActivityPage): string {
 
 async function activateActivityPage(page: ActivityPage) {
   if (!page?.key || !page.route) return;
+  const switchingFromDirtyPage = page.key !== activeActivityPageKey.value
+    && Boolean(session.activityPages.find((item) => item.key === activeActivityPageKey.value)?.dirty);
+  if (switchingFromDirtyPage) session.authorizeActivityPageNavigation();
   await session.applyActivityRecordContext(page.record_context);
   const targetRoute = resolveActivityPageRoute(page);
   if (route.fullPath !== targetRoute) {
     await router.push(targetRoute).catch(() => {});
   }
   session.markActivityPageActive(page.key);
+  session.clearActivityPageNavigationAuthorization();
 }
 
 async function closeActivityPage(page: ActivityPage) {
   if (!page?.key) return;
   const wasActive = page.key === activeActivityPageKey.value;
+  if (page.dirty) {
+    const confirmed = await activityCloseConfirmationRef.value?.confirm({
+      actionLabel: '关闭页面',
+      message: `“${page.title || '当前页面'}”存在未保存修改。关闭后这些修改将丢失，是否继续？`,
+    }) ?? false;
+    if (!confirmed) return;
+    if (wasActive) session.authorizeActivityPageNavigation();
+  }
   const nextPage = session.closeActivityPage(page.key);
   if (!wasActive) return;
   if (nextPage) {
-    await activateActivityPage(nextPage);
+    await activateActivityPage(nextPage).finally(() => session.clearActivityPageNavigationAuthorization());
     return;
   }
-  await router.push(roleLandingPath.value || '/').catch(() => {});
+  await router.push(roleLandingPath.value || '/').catch(() => {}).finally(() => session.clearActivityPageNavigationAuthorization());
 }
 
 async function refreshInit() {

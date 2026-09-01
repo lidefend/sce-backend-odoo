@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   isSupersededEntryActionActivityPage,
   retainIndependentActivityPages,
+  trimRetainedActivityPages,
   type RetainedActivityPageLike,
 } from '../src/app/activityPageRetention';
 import { resolveBusinessActivityTitle } from '../src/app/activityPageTitle';
@@ -52,6 +53,24 @@ assert.deepEqual(
 );
 
 console.log('[activity_page_retention_test] PASS cases=6');
+
+const capacityPages = Array.from({ length: 7 }, (_, index) => createPage({
+  key: `page:${index + 1}`,
+  dirty: index === 0,
+  last_active_at: index + 1,
+}));
+assert.deepEqual(
+  trimRetainedActivityPages(capacityPages, 'page:7', 6).map((page) => page.key),
+  ['page:1', 'page:3', 'page:4', 'page:5', 'page:6', 'page:7'],
+  'capacity eviction preserves the active page and dirty pages while removing the least-recent clean page',
+);
+assert.equal(
+  trimRetainedActivityPages(capacityPages.map((page) => ({ ...page, dirty: true })), 'page:7', 6).length,
+  7,
+  'capacity remains soft when every inactive page contains unsaved work',
+);
+
+console.log('[activity_page_capacity_test] PASS cases=2');
 
 assert.equal(resolveBusinessActivityTitle({
   authorityName: '项目立项',
