@@ -23,27 +23,6 @@ function contextIdentity(page: RetainedActivityPageLike): string {
   return `company:${companyId}:record:${selectedId}`;
 }
 
-function sameCreateCarrier(left: RetainedActivityPageLike, right: RetainedActivityPageLike): boolean {
-  if (String(left.model || '').trim() !== String(right.model || '').trim()) return false;
-  const leftMenuId = positiveInteger(left.menu_id);
-  const rightMenuId = positiveInteger(right.menu_id);
-  if (leftMenuId > 0 || rightMenuId > 0) return leftMenuId > 0 && leftMenuId === rightMenuId;
-  const leftActionId = positiveInteger(left.action_id);
-  const rightActionId = positiveInteger(right.action_id);
-  return leftActionId > 0 && leftActionId === rightActionId;
-}
-
-export function isSupersededCleanCreateActivityPage(
-  existing: RetainedActivityPageLike,
-  incoming: RetainedActivityPageLike,
-): boolean {
-  if (existing.key === incoming.key || existing.dirty) return false;
-  if (existing.kind !== 'record_form' || incoming.kind !== 'record_form') return false;
-  if (existing.record_id !== 'new' || incoming.record_id !== 'new') return false;
-  if (contextIdentity(existing) !== contextIdentity(incoming)) return false;
-  return sameCreateCarrier(existing, incoming);
-}
-
 export function isSupersededEntryActionActivityPage(
   existing: RetainedActivityPageLike,
   incoming: RetainedActivityPageLike,
@@ -62,9 +41,13 @@ export function isSupersededEntryActionActivityPage(
   return existingActionId > 0 && existingActionId === incomingActionId;
 }
 
-export function dedupeCleanCreateActivityPages<T extends RetainedActivityPageLike>(pages: readonly T[]): T[] {
-  return pages.reduce<T[]>((retained, page) => [
-    ...retained.filter((existing) => !isSupersededCleanCreateActivityPage(existing, page)),
-    page,
-  ], []);
+export function retainIndependentActivityPages<T extends RetainedActivityPageLike>(
+  pages: readonly T[],
+  incoming: T,
+  supersedesEntryAction: boolean,
+): T[] {
+  return pages.filter((page) => (
+    page.key !== incoming.key
+    && !(supersedesEntryAction && isSupersededEntryActionActivityPage(page, incoming))
+  ));
 }

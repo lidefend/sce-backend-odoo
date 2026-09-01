@@ -12,9 +12,7 @@ import { beginContextTransition, currentContextEpoch, invalidateContextRequests,
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
 import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
 import {
-  dedupeCleanCreateActivityPages,
-  isSupersededCleanCreateActivityPage,
-  isSupersededEntryActionActivityPage,
+  retainIndependentActivityPages,
 } from '../app/activityPageRetention';
 import type {
   WorkspaceAdviceRow,
@@ -495,7 +493,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
   // without company metadata is likewise untrusted and is dropped.
   const companyId = Number(recordContext?.company_id || recordContext?.selected?.company_id || 0);
   if (!companyId) return [];
-  return dedupeCleanCreateActivityPages((raw as ActivityPage[])
+  return (raw as ActivityPage[])
     .filter((page) => page && typeof page === 'object')
     .filter((page) => asText(page.key) && asText(page.route))
     .filter((page) => {
@@ -509,7 +507,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
       created_at: Number(page.created_at || 0),
       last_active_at: Number(page.last_active_at || 0),
     }))
-    .sort((left, right) => left.created_at - right.created_at))
+    .sort((left, right) => left.created_at - right.created_at)
     .slice(0, MAX_ACTIVITY_PAGES);
 }
 
@@ -1065,11 +1063,10 @@ export const useSessionStore = defineStore('session', {
         last_active_at: now,
       };
       if (!isRetainedActivityPage(nextPage)) return;
-      const others = this.activityPages.filter(
-        (page) => page.key !== key
-          && !isTransientLoadingActivityTitle(page.title)
-          && !isSupersededCleanCreateActivityPage(page, nextPage)
-          && !(rawPage.supersedes_entry_action && isSupersededEntryActionActivityPage(page, nextPage)),
+      const others = retainIndependentActivityPages(
+        this.activityPages,
+        nextPage,
+        Boolean(rawPage.supersedes_entry_action),
       );
       this.activeActivityPageKey = key;
       this.activityPages = trimActivityPages([...others, nextPage], key)

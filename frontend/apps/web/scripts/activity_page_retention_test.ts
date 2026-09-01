@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import {
-  dedupeCleanCreateActivityPages,
-  isSupersededCleanCreateActivityPage,
   isSupersededEntryActionActivityPage,
+  retainIndependentActivityPages,
   type RetainedActivityPageLike,
 } from '../src/app/activityPageRetention';
 import { resolveBusinessActivityTitle } from '../src/app/activityPageTitle';
@@ -22,23 +21,20 @@ function createPage(overrides: Partial<RetainedActivityPageLike> = {}): Retained
 
 const previous = createPage();
 const incoming = createPage({ key: 'new:project.project:second', action_id: 722 });
+const otherModelLoading = createPage({
+  key: 'record:payment.request:157',
+  kind: 'record_form',
+  model: 'payment.request',
+  menu_id: 558,
+  action_id: 807,
+  record_id: '157',
+});
 
-assert.equal(isSupersededCleanCreateActivityPage(previous, incoming), true);
-assert.deepEqual(dedupeCleanCreateActivityPages([previous, incoming]).map((page) => page.key), [incoming.key]);
-assert.equal(isSupersededCleanCreateActivityPage(createPage({ dirty: true }), incoming), false);
-assert.equal(isSupersededCleanCreateActivityPage(createPage({ menu_id: 379 }), incoming), false);
-assert.equal(isSupersededCleanCreateActivityPage(createPage({ model: 'sale.order' }), incoming), false);
-assert.equal(isSupersededCleanCreateActivityPage(createPage({ record_context: { company_id: 2 } }), incoming), false);
-assert.equal(isSupersededCleanCreateActivityPage(createPage({ record_id: '42' }), incoming), false);
-assert.equal(isSupersededCleanCreateActivityPage(
-  createPage({ menu_id: undefined, action_id: 722 }),
-  createPage({ key: 'new:project.project:third', menu_id: undefined, action_id: 722 }),
-), true);
-
-const dirty = createPage({ key: 'new:project.project:dirty', dirty: true });
+assert.notEqual(previous.key, incoming.key, 'different activity instances remain independently addressable');
 assert.deepEqual(
-  dedupeCleanCreateActivityPages([previous, dirty, incoming]).map((page) => page.key),
-  [dirty.key, incoming.key],
+  retainIndependentActivityPages([previous, otherModelLoading], incoming, false).map((page) => page.key),
+  [previous.key, otherModelLoading.key],
+  'same-carrier instances and pages from other models remain available',
 );
 
 const entryAction = createPage({
@@ -49,8 +45,13 @@ const entryAction = createPage({
 assert.equal(isSupersededEntryActionActivityPage(entryAction, incoming), true);
 assert.equal(isSupersededEntryActionActivityPage({ ...entryAction, menu_id: 379 }, incoming), false);
 assert.equal(isSupersededEntryActionActivityPage({ ...entryAction, dirty: true }, incoming), false);
+assert.deepEqual(
+  retainIndependentActivityPages([entryAction, previous], incoming, true).map((page) => page.key),
+  [previous.key],
+  'only the entry action intermediate is removed when the form replaces it',
+);
 
-console.log('[activity_page_retention_test] PASS cases=12');
+console.log('[activity_page_retention_test] PASS cases=6');
 
 assert.equal(resolveBusinessActivityTitle({
   authorityName: '项目立项',
