@@ -21,13 +21,11 @@
       <template #label>
         <span class="activity-page-tab-label" :title="page.title" :data-activity-page-key="page.key">
           <span class="activity-page-tab-title">{{ page.title }}</span>
-          <button
+          <ScIconButton
             class="activity-page-tab-close"
-            type="button"
-            :aria-label="`${closeLabel}“${page.title}”`"
-            :title="`${closeLabel}“${page.title}”`"
+            :label="`${closeLabel}“${page.title}”`"
             @click.stop="handleExplicitClose(page)"
-          >×</button>
+          >×</ScIconButton>
         </span>
       </template>
       <!-- 内容由路由渲染，此处不渲染 -->
@@ -38,6 +36,7 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue';
 import { TDesignTabs, TDesignTabPanel } from '../design-system/tdesignPrimitiveBridge';
+import ScIconButton from '../design-system/ScIconButton.vue';
 import type { ActivityPage } from '../../stores/session';
 import { resolveActivityTabKeyboardIndex, shouldShowActivityPageTabs } from './activityPageTabKeyboard';
 
