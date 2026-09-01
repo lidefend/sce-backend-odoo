@@ -105,7 +105,7 @@ Generated from repository source files. This report is informational during the 
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1020 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
-| 1001 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1000 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 990 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 952 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
