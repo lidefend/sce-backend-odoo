@@ -2470,6 +2470,35 @@ assert.deepEqual(
   { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_AMBIGUOUS' },
   'a duplicated normalized backend identity must fail closed',
 );
+const secondOccurrenceIdentity = {
+  ...occurrenceIdentity,
+  native_locator: '/form/header/button[2]',
+  occurrence_index: 2,
+};
+assert.deepEqual(
+  resolveCanonicalFormActionExecution(
+    { ...normalizedAction, nativeIdentity: occurrenceIdentity },
+    [
+      occurrenceAction,
+      { ...occurrenceAction, nativeIdentity: secondOccurrenceIdentity },
+    ],
+  ),
+  { kind: 'contract-action', action: occurrenceAction },
+  'an authoritative native occurrence must disambiguate buttons sharing one backend identity',
+);
+assert.equal(
+  resolveContractActionForNativeOccurrence(
+    [occurrenceAction, { ...occurrenceAction, nativeIdentity: secondOccurrenceIdentity }],
+    {
+      action: {
+        backendIdentity: 'button:object:action_submit',
+        nativeIdentity: occurrenceIdentity,
+      },
+    },
+  ),
+  occurrenceAction,
+  'native presentation and canonical execution must share the same occurrence-aware identity match',
+);
 assert.equal(
   validateCanonicalFormActionExecutors([
     { visible: true, enabled: true, actionRef: { ...normalizedAction, actionId: 'form.save', backendIdentity: 'contract_action:form.save' } },
@@ -2503,4 +2532,4 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-console.log('[canonical_form_presenter_test] PASS cases=140');
+console.log('[canonical_form_presenter_test] PASS cases=142');

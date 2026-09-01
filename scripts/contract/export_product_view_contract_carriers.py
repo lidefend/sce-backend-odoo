@@ -77,7 +77,21 @@ def _runtime_authority(runtime_env: Any, structure: dict[str, Any], fingerprint:
         key=lambda item: item["name"],
     )
     if sha256_json(module_set) != source["module_set_sha256"]:
-        raise ValueError("runtime module set differs from structure input")
+        expected_modules = {
+            (str(item.get("name") or ""), str(item.get("installed_version") or ""))
+            for item in source.get("module_set", [])
+            if isinstance(item, dict)
+        }
+        runtime_modules = {
+            (str(item.get("name") or ""), str(item.get("installed_version") or ""))
+            for item in module_set
+        }
+        missing = sorted(expected_modules - runtime_modules)
+        unexpected = sorted(runtime_modules - expected_modules)
+        raise ValueError(
+            "runtime module set differs from structure input: "
+            f"missing={missing[:10]} unexpected={unexpected[:10]}"
+        )
     assert_system_identity(runtime_env.uid, SUPERUSER_ID, source["user"])
     if source["language"] != "en_US" or runtime_env.context.get("lang") != source["language"]:
         raise ValueError("runtime user or language differs from structure input")

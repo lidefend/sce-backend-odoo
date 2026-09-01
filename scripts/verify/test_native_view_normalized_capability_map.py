@@ -95,7 +95,7 @@ class NativeViewNormalizedCapabilityMapTests(unittest.TestCase):
     def test_tracked_structure_has_complete_unique_mapping(self) -> None:
         errors, summary = self.errors()
         self.assertEqual(errors, [])
-        self.assertEqual(summary["classified_atom_count"], 26531)
+        self.assertEqual(summary["classified_atom_count"], 32651)
         self.assertEqual(summary["unmapped_atom_count"], 0)
         self.assertEqual(summary["ambiguous_atom_count"], 0)
         self.assertEqual(summary["proven_mapping_count"], 3)

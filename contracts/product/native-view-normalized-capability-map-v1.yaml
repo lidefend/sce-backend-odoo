@@ -2,7 +2,7 @@ schema: native_view_normalized_capability_map/v1
 authority: p0_normalized_evidence_mapping
 unknown_capability_policy: fail_closed
 canonical_view_types: [form, tree, search, kanban, pivot, graph, activity]
-classified_capability_pairs_sha256: 56f96bbb02e4ef26d0a50db4f49aac78e48e6d2e926fdf0fcfb2861730ed7ff8
+classified_capability_pairs_sha256: d9edb8a7cec9c483dc6c851b77f33e9f6571f140231a6008386625c18e308acc
 forbidden_source_aliases: [/data/native_view, /data/fields, /data/permissions]
 mappings:
   - {id: view_root, view_types: [form, tree, search, kanban, pivot, graph, activity], capability_keys: [structure.view_root], source_selectors: ['/data/views/{view_type}'], value_regions: [''], matcher: unproven, cardinality_policy: unproven, mapping_status: mapping_unproven, source_authority: final_response_normalized_carrier, missing_reason_code: CAPABILITY_NORMALIZED_CARRIER_MISSING, reduced_reason_code: CAPABILITY_STAGE_VALUE_REDUCED, unproven_reason_code: CAPABILITY_NORMALIZED_MAPPING_UNPROVEN}
