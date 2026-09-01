@@ -16,7 +16,7 @@ Generated from repository source files. This report is informational during the 
 | 4565 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4236 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4188 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 3688 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3683 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3674 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3667 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -41,7 +41,7 @@ Generated from repository source files. This report is informational during the 
 | 1921 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1886 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1828 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1800 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1791 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1764 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1749 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
@@ -150,7 +150,7 @@ Generated from repository source files. This report is informational during the 
 | 4565 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4236 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4188 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 3688 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3683 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3674 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3667 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
@@ -175,7 +175,7 @@ Generated from repository source files. This report is informational during the 
 | 1921 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1886 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1828 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 1800 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 1791 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1764 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1749 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
