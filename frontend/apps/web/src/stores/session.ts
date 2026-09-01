@@ -12,6 +12,9 @@ import { beginContextTransition, currentContextEpoch, invalidateContextRequests,
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
 import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
 import {
+  activityPageTitleTargetKeys,
+  normalizeRetainedActivityPageIdentity,
+  reconcileRestoredActivityPages,
   retainIndependentActivityPages,
   trimRetainedActivityPages,
 } from '../app/activityPageRetention';
@@ -485,7 +488,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
   // without company metadata is likewise untrusted and is dropped.
   const companyId = Number(recordContext?.company_id || recordContext?.selected?.company_id || 0);
   if (!companyId) return [];
-  return (raw as ActivityPage[])
+  const restored = (raw as ActivityPage[])
     .filter((page) => page && typeof page === 'object')
     .filter((page) => asText(page.key) && asText(page.route))
     .filter((page) => {
@@ -494,7 +497,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
       );
       return pageCompanyId === companyId;
     })
-    .map((page) => ({
+    .map((page) => normalizeRetainedActivityPageIdentity({
       ...page,
       // Unsaved field buffers are intentionally not persisted, so a restored
       // activity cannot remain dirty after a full reload.
@@ -503,8 +506,8 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
       created_at: Number(page.created_at || 0),
       last_active_at: Number(page.last_active_at || 0),
     }))
-    .sort((left, right) => left.created_at - right.created_at)
-    .slice(0, MAX_ACTIVITY_PAGES);
+    .sort((left, right) => left.created_at - right.created_at);
+  return reconcileRestoredActivityPages(restored).slice(0, MAX_ACTIVITY_PAGES);
 }
 
 function isRetainedActivityPage(page: ActivityPage | null): page is ActivityPage {
@@ -1169,8 +1172,14 @@ export const useSessionStore = defineStore('session', {
       });
       if (changed) this.persist();
     },
-    updateActiveActivityTitle(rawTitle: unknown) {
-      const activeKey = asText(this.activeActivityPageKey);
+    updateActiveActivityTitle(rawTitle: unknown, rawRoute?: unknown) {
+      const route = asText(rawRoute);
+      const routePage = route
+        ? [...this.activityPages]
+          .sort((left, right) => right.last_active_at - left.last_active_at)
+          .find((page) => page.route === route)
+        : null;
+      const activeKey = asText(routePage?.key || this.activeActivityPageKey);
       const title = asText(rawTitle);
       if (!activeKey || !title) return;
       const activePage = this.activityPages.find((page) => page.key === activeKey);
@@ -1181,7 +1190,10 @@ export const useSessionStore = defineStore('session', {
       ) {
         return;
       }
-      const titleBelongsToAnotherPage = this.activityPages.some((page) => page.key !== activeKey && page.title === title);
+      const titleTargetKeys = activityPageTitleTargetKeys(this.activityPages, activeKey);
+      const titleBelongsToAnotherPage = this.activityPages.some((page) => (
+        !titleTargetKeys.has(page.key) && page.title === title
+      ));
       if (
         activePage?.title
         && activePage.title !== title
@@ -1193,7 +1205,7 @@ export const useSessionStore = defineStore('session', {
       }
       let changed = false;
       this.activityPages = this.activityPages.map((page) => {
-        if (page.key !== activeKey || page.title === title) return page;
+        if (!titleTargetKeys.has(page.key) || page.title === title) return page;
         changed = true;
         return { ...page, title };
       });

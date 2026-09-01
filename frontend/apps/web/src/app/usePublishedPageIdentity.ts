@@ -14,8 +14,8 @@ export function usePublishedPageIdentity(
   options: PublishedPageIdentityOptions,
 ) {
   const identity = computed(() => resolveProductPageIdentity(input.value));
-  watch(input, (value) => {
-    if (options.active && !options.active()) return;
+  watch([input, () => options.active?.() ?? true], ([value, active]) => {
+    if (!active) return;
     publishPageIdentity(options.routeKey(), value);
     options.onTitle?.(resolveProductPageIdentity(value).title);
   }, { deep: true, immediate: options.immediate });

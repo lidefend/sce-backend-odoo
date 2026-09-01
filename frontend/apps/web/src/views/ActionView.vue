@@ -1754,7 +1754,7 @@ const actionIdentityInput = computed(() => buildActionPageIdentity({
     modelName: resolvedModelRef.value || model.value, status: status.value, subtitle: subtitle.value,
 }));
 const pageIdentity = usePublishedPageIdentity(actionIdentityInput, { routeKey: () => route.fullPath,
-  active: () => isComponentActive.value, onTitle: (title) => session.updateActiveActivityTitle(title), immediate: true });
+  active: () => isComponentActive.value, onTitle: (title) => session.updateActiveActivityTitle(title, route.fullPath), immediate: true });
 const pageTitle = computed(() => pageIdentity.value.title);
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
 function resolveContractActionCountForHud() {
