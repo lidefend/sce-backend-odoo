@@ -12,6 +12,12 @@ export const PROFESSIONAL_BUSINESS_VALUE_KEYS = Object.freeze([
 
 export type ProfessionalBusinessValueKey = typeof PROFESSIONAL_BUSINESS_VALUE_KEYS[number];
 
+export type ProfessionalBusinessValueChoiceOption = {
+  id?: string | number;
+  value?: string | number;
+  label: string;
+};
+
 const KEY_FIELD_TYPES: Readonly<Record<ProfessionalBusinessValueKey, readonly string[]>> = Object.freeze({
   'sc.value.money': Object.freeze(['monetary']),
   'sc.value.currency': Object.freeze(['many2one']),
@@ -35,6 +41,15 @@ export function businessValueKind(field: FormSectionFieldSchema): ProfessionalBu
     throw new Error(`PROFESSIONAL_BUSINESS_VALUE_UNSUPPORTED:${field.componentKey || '(missing)'}:${field.type || '(missing)'}`);
   }
   return field.componentKey as ProfessionalBusinessValueKey;
+}
+
+export function normalizeBusinessValueChoiceOptions(
+  options: readonly ProfessionalBusinessValueChoiceOption[],
+): Array<{ value: string; label: string }> {
+  return options.filter(Boolean).map((option) => ({
+    value: String(option.id ?? option.value ?? ''),
+    label: option.label,
+  }));
 }
 
 export function statusSemantic(value: unknown): 'default' | 'info' | 'success' | 'warning' | 'danger' {

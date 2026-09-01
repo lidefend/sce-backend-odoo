@@ -26,7 +26,7 @@
       :disabled="field.readonly"
       :status="field.invalid ? 'error' : 'default'"
       :placeholder="placeholder || '请选择'"
-      :options="choiceOptions.filter(Boolean).map((option) => ({ value: option.id ?? option.value, label: option.label }))"
+      :options="normalizedChoiceOptions"
       @update:model-value="$emit('update:value', $event)"
     />
     <ScInput
@@ -56,6 +56,7 @@ import {
   businessValueKind,
   formatDuration,
   formatPercentage,
+  normalizeBusinessValueChoiceOptions,
   statusSemantic,
 } from './professionalBusinessValueModel';
 
@@ -72,6 +73,7 @@ const isChoice = computed(() => ['sc.value.currency', 'sc.display.status', 'sc.v
 const numeric = computed(() => ['sc.value.money', 'sc.value.percentage', 'sc.value.duration'].includes(kind.value));
 const inputModelValue = computed(() => typeof props.field.inputValue === 'boolean' ? String(props.field.inputValue) : props.field.inputValue ?? '');
 const choiceOptions = computed(() => props.field.relationOptions?.length ? props.field.relationOptions : props.field.selectionOptions || []);
+const normalizedChoiceOptions = computed(() => normalizeBusinessValueChoiceOptions(choiceOptions.value));
 const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInputStep(props.field.digits) : 'any');
 
 const suffix = computed(() => {
