@@ -118,6 +118,12 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("steps.risk.outputs.lane", text)
         self.assertIn("if: needs.classify.outputs.lane != 'FAST'", text)
         self.assertIn("Scan governed product history", text)
+        self.assertIn('case "${GITHUB_EVENT_NAME}" in', text)
+        self.assertIn("schedule|workflow_dispatch)", text)
+        self.assertIn("pull_request|push)", text)
+        self.assertIn('git cat-file -e "${BASE_SHA}^{commit}"', text)
+        self.assertIn('git merge-base --is-ancestor "${BASE_SHA}" HEAD', text)
+        self.assertIn("trusted_base_unavailable", text)
         self.assertIn('repository_clean_history_guard.py --trusted-base "${BASE_SHA}"', text)
         self.assertIn("make verify.repository.clean_history", text)
 

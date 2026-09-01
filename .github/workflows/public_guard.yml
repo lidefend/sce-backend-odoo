@@ -98,11 +98,28 @@ jobs:
       - name: Scan governed product history
         run: |
           set -euo pipefail
-          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            python3 scripts/verify/repository_clean_history_guard.py --trusted-base "${BASE_SHA}"
-          else
-            make verify.repository.clean_history
-          fi
+          case "${GITHUB_EVENT_NAME}" in
+            schedule|workflow_dispatch)
+              echo "[public_guard] history_scan=full reason=${GITHUB_EVENT_NAME}"
+              make verify.repository.clean_history
+              ;;
+            pull_request|push)
+              if [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ ]] \
+                && [ "${BASE_SHA}" != "0000000000000000000000000000000000000000" ] \
+                && git cat-file -e "${BASE_SHA}^{commit}" \
+                && git merge-base --is-ancestor "${BASE_SHA}" HEAD; then
+                echo "[public_guard] history_scan=trusted_base_incremental base=${BASE_SHA}"
+                python3 scripts/verify/repository_clean_history_guard.py --trusted-base "${BASE_SHA}"
+              else
+                echo "[public_guard] history_scan=full reason=trusted_base_unavailable base=${BASE_SHA}"
+                make verify.repository.clean_history
+              fi
+              ;;
+            *)
+              echo "[public_guard] history_scan=full reason=unsupported_event event=${GITHUB_EVENT_NAME}"
+              make verify.repository.clean_history
+              ;;
+          esac
 
       - name: Run clean product boundary scan
         run: >-
