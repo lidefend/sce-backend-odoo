@@ -1156,13 +1156,8 @@ const changedFieldCount = computed(() =>
 );
 const one2manyValidation = computed(() => collectOne2manyDraftValidation());
 const currentActionMeta = computed(() => findActionMetaByMenu(session.menuTree, menuId.value, actionId.value || undefined));
-const currentRouteAuthority = computed(() => findRouteAuthority(session.routeAuthority, {
-  actionId: actionId.value,
-  menuId: menuId.value,
-  query: route.query as Record<string, unknown>,
-  companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
-  selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
-}));
+const currentRouteAuthority = computed(() => findRouteAuthority(session.routeAuthority, { actionId: actionId.value, menuId: menuId.value, query: route.query as Record<string, unknown>,
+  companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null, selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null }));
 const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryContext({
   contractRecord: contract.value,
   routeQuery: route.query as Record<string, unknown>,
@@ -1171,26 +1166,14 @@ const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryCon
 }));
 const currentBusinessCategoryLabel = computed(() => currentBusinessCategoryContext.value.label);
 const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContext.value.code);
-const pageIdentityInput = computed(() => buildContractFormPageIdentity({
-  action: currentActionMeta.value,
-  authoritativeActionName: currentRouteAuthority.value?.action_name,
-  breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
-  businessCategoryLabel: currentBusinessCategoryLabel.value, contract: contract.value, formData,
-  entryTitle: route.query.entry_title,
-  isCreate: !recordId.value, isEdit: route.name === 'model-form',
-  menuName: currentMenuTitle.value, modelName: model.value, recordMissing: recordMissing.value,
-  renderError: Boolean(renderErrorMessage.value), status: status.value,
-}));
+const pageIdentityInput = computed(() => buildContractFormPageIdentity({ action: currentActionMeta.value, authoritativeActionName: currentRouteAuthority.value?.action_name, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs, businessCategoryLabel: currentBusinessCategoryLabel.value,
+  contract: contract.value, formData, entryTitle: route.query.entry_title, isCreate: !recordId.value, isEdit: route.name === 'model-form', menuName: currentMenuTitle.value, modelName: model.value,
+  recordMissing: recordMissing.value, renderError: Boolean(renderErrorMessage.value), status: status.value }));
 const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () => route.fullPath,
   active: () => isComponentActive.value && isFormPageRouteOwner(route.name),
   onTitle: (title) => session.updateActiveActivityTitle(recordId.value ? title : resolveBusinessActivityTitle({
-    authorityName: currentRouteAuthority.value?.action_name || currentRouteAuthority.value?.name,
-    businessLabel: currentBusinessCategoryLabel.value,
-    actionTitle: currentActionMeta.value?.ui_title || currentActionMeta.value?.scene_title || currentActionMeta.value?.name,
-    modelLabel: currentActionMeta.value?.model_label,
-    menuTitle: currentActionMeta.value?.menu_title || currentMenuTitle.value,
-    fallback: '业务表单',
-  })),
+    authorityName: currentRouteAuthority.value?.action_name || currentRouteAuthority.value?.name, businessLabel: currentBusinessCategoryLabel.value, actionTitle: currentActionMeta.value?.ui_title || currentActionMeta.value?.scene_title || currentActionMeta.value?.name, modelLabel: currentActionMeta.value?.model_label,
+    menuTitle: currentActionMeta.value?.menu_title || currentMenuTitle.value, fallback: '业务表单' })),
 });
 const canonicalShellTitle = computed(() => canonicalFormRenderState.value.model?.shell.title || '');
 const pageDisplayTitle = computed(() => canonicalShellTitle.value || pageIdentity.value.title);
@@ -1780,22 +1763,11 @@ const {
   validateBeforeSaveRecord, validationErrors,
   writeContractFormRecord,
 });
-const unsavedFormGuard = useUnsavedFormGuard({
-  dirty: () => hasChanges.value,
-  busy,
+const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, busy,
   consumeAuthorizedNavigation: () => session.consumeActivityPageNavigationAuthorization(),
   confirmLeave: async () => intentConfirmationRef.value?.confirm({
-    actionLabel: '离开页面',
-    message: '当前修改尚未保存。离开后这些修改将丢失，是否继续？',
-  }) ?? false,
-});
-watch(
-  () => [hasChanges.value, isComponentActive.value] as const,
-  ([dirty, active]) => {
-    if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty);
-  },
-  { immediate: true },
-);
+    actionLabel: '离开页面', message: '当前修改尚未保存。离开后这些修改将丢失，是否继续？' }) ?? false });
+watch(() => [hasChanges.value, isComponentActive.value] as const, ([dirty, active]) => { if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty); }, { immediate: true });
 async function returnToPreviousPage() {
   await unsavedFormGuard.navigateAfterConfirm(async () => {
     await executeRecordFormReturn({

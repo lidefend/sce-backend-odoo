@@ -1006,13 +1006,8 @@ let loadPageInvoker: (loadGeneration: number) => Promise<void> = async () => {};
 function requestLoadPage(): Promise<void> { latestLoadGeneration += 1; return loadPageInvoker(latestLoadGeneration); }
 function currentActionActivityRouteKey(): string { return buildActionActivityRouteKey({ actionId: route.params.actionId, queryActionId: route.query.action_id, menuId: route.query.menu_id }); }
 function settleCurrentActionActivityPage(requestedRouteFullPath: string): void {
-  if (
-    !isComponentActive.value
-    || route.name !== 'action'
-    || route.fullPath !== requestedRouteFullPath
-    || status.value === 'idle'
-    || status.value === 'loading'
-  ) return;
+  if (!isComponentActive.value || route.name !== 'action' || route.fullPath !== requestedRouteFullPath
+    || status.value === 'idle' || status.value === 'loading') return;
   session.settleActionActivityPage(resolveCurrentRouteActionId(), Number(route.query.menu_id || 0));
 }
 function resolveCurrentRouteActionId(): number {
