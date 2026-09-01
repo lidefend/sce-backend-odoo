@@ -121,6 +121,7 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
             "local.dev.rebuild_demo",
             "local.dev.verify_demo",
             "verify.local.dev.payment_request.native_parity.readonly",
+            "verify.local.dev.payment_request.settlement_component.journey",
             "local.sample.prepare",
             "local.sample.up",
             "local.sample.down",
@@ -164,6 +165,15 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', submit)
         self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', submit)
         self.assertIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', submit)
+
+    def test_payment_settlement_component_reset_keeps_canonical_env_authority(self):
+        journey = (
+            ROOT / "scripts/verify/local_dev_payment_settlement_component_journey.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn('LOCAL_DEV_CANONICAL_ENV_FILE="$(readlink -f "$ENV_FILE")"', journey)
+        self.assertIn('ENV_FILE="$LOCAL_DEV_CANONICAL_ENV_FILE"', journey)
+        self.assertIn('make -C "$ROOT_DIR" --no-print-directory local.dev.sync_demo', journey)
+        self.assertIn("authoritative line relationship created", journey)
 
     def test_sample_prepare_creates_distinct_technical_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
