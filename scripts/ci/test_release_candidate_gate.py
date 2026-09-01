@@ -17,7 +17,10 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("name: release_candidate_gate", self.workflow)
         self.assertIn("github.event_name != 'pull_request'", self.workflow)
         self.assertIn("github.event.action == 'labeled' && github.event.label.name == 'ci:candidate'", self.workflow)
-        self.assertNotIn("synchronize", self.workflow)
+        self.assertIn(
+            "types: [opened, reopened, synchronize, ready_for_review, labeled]",
+            self.workflow,
+        )
 
     def test_release_gate_waits_for_exact_head_candidate_checks(self) -> None:
         self.assertIn("Wait for exact-head candidate checks", self.workflow)

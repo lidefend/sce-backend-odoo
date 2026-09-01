@@ -6845,3 +6845,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   scripts/verify/github_actions_security_guard.py`, and `python3
   scripts/verify/repository_clean_history_guard.py --trusted-base
   b9e3e56a80c02c1eb277d2ac573e10286c4cd8e8`.
+
+## 2026-09-01 — Pull-request synchronize trigger closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `fe0a754d47779ca88584dc38ad917138e02bec4b`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool /
+  GitHub pull-request workflow trigger governance / `.github/workflows` and
+  `scripts/ci`.
+- Reason: PR `#386` accepted new commits on September 1, 2026 but did not
+  start any fresh checks because the governed pull-request workflows listened
+  to `opened`, `reopened`, `ready_for_review`, and `labeled` only. Appending
+  commits to an existing PR must trigger the exact-head CI lanes through the
+  standard `pull_request.synchronize` event.
+- Why here / why not elsewhere: this is workflow trigger policy and CI
+  contract coverage, not product code, runtime profile, frontend rendering, or
+  business semantics.
+- Blast radius and evidence: pull-request trigger metadata for merge, public,
+  professional, frontend-release, and release-candidate workflows plus their
+  contract tests only. Verified with `python3
+  scripts/ci/test_ci_risk_workflow_contract.py`, `python3
+  scripts/ci/test_release_candidate_gate.py`, `python3
+  scripts/verify/test_github_actions_security_guard.py`, and `python3
+  scripts/verify/github_actions_security_guard.py`.

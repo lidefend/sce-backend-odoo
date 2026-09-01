@@ -58,8 +58,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         for workflow in workflows:
             text = self.text(workflow)
-            self.assertIn("types: [opened, reopened, ready_for_review, labeled]", text)
-            self.assertNotIn("synchronize", text)
+            self.assertIn(
+                "types: [opened, reopened, synchronize, ready_for_review, labeled]",
+                text,
+            )
             self.assertIn("workflow_dispatch:", text)
             self.assertIn("github.event.label.name == 'ci:candidate'", text)
             self.assertNotIn("inputs.expected_head", text)
