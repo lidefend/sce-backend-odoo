@@ -1,8 +1,8 @@
 {
   "version": 1,
   "counts": {
-    "active": 999,
-    "orphan": 85,
+    "active": 1165,
+    "orphan": 105,
     "retired": 1
   },
   "scripts": [
@@ -133,7 +133,7 @@
         "make/ci.mk",
         "make/frontend.mk"
       ],
-      "lines": 67
+      "lines": 74
     },
     {
       "script": "action_view_responsibility_map_guard.py",
@@ -185,7 +185,7 @@
         "scripts/verify/backend_architecture_full_report.py",
         "scripts/verify/smart_core_boundary_guard.py"
       ],
-      "lines": 154
+      "lines": 324
     },
     {
       "script": "application_form_required_marker_audit.py",
@@ -222,7 +222,8 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/frontend_auth_surface_guard.py"
       ],
       "lines": 51
     },
@@ -333,7 +334,6 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/dev_test.mk",
         "make/runtime_ops.mk",
         "scripts/verify/business_config_guard_inventory.py",
         "scripts/verify/lowcode_config_boundary_guard.py"
@@ -500,7 +500,6 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/release.mk",
         "make/runtime_ops.mk"
       ],
       "lines": 89
@@ -1319,7 +1318,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 99
+      "lines": 101
     },
     {
       "script": "collection_view_semantics_runtime_ids.py",
@@ -1464,7 +1463,7 @@
         "make/ci.mk",
         "scripts/verify/construction_core_extension_responsibility_map_guard.py"
       ],
-      "lines": 186
+      "lines": 200
     },
     {
       "script": "construction_core_extension_hook_facts_split_guard.py",
@@ -1859,6 +1858,17 @@
         "scripts/verify/contract_form_side_effect_regression_guard.py"
       ],
       "lines": 106
+    },
+    {
+      "script": "contract_form_semantic_identity_guard.py",
+      "path": "scripts/verify/contract_form_semantic_identity_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_scene_component_bridge_guard.py"
+      ],
+      "lines": 159
     },
     {
       "script": "contract_form_side_effect_regression_guard.py",
@@ -2303,6 +2313,19 @@
       "lines": 82
     },
     {
+      "script": "contract_projection_cache_runtime_probe.py",
+      "path": "scripts/verify/contract_projection_cache_runtime_probe.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "local.clean.contract_projection_cache.probe"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 289
+    },
+    {
       "script": "contract_settlement_payment_closure_audit.py",
       "path": "scripts/verify/contract_settlement_payment_closure_audit.py",
       "status": "active",
@@ -2312,6 +2335,19 @@
         "scripts/ops/validate_contract_settlement_payment_closure.sh"
       ],
       "lines": 320
+    },
+    {
+      "script": "contract_v2_render_authority_matrix.py",
+      "path": "scripts/verify/contract_v2_render_authority_matrix.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.contract_v2_render_authority.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 295
     },
     {
       "script": "contract_version_evolution_drill.py",
@@ -2740,6 +2776,18 @@
         "make/dev_test.mk"
       ],
       "lines": 61
+    },
+    {
+      "script": "design_token_system.py",
+      "path": "scripts/verify/design_token_system.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_style_system_guard.py",
+        "scripts/verify/test_design_token_system.py"
+      ],
+      "lines": 215
     },
     {
       "script": "dev_acceptance_release_probe_schema_guard.py",
@@ -3379,6 +3427,19 @@
       "lines": 279
     },
     {
+      "script": "form_structure_contract_projection_matrix.py",
+      "path": "scripts/verify/form_structure_contract_projection_matrix.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.form_structure_contract_projection.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 169
+    },
+    {
       "script": "form_structure_contract_runtime_audit.py",
       "path": "scripts/verify/form_structure_contract_runtime_audit.py",
       "status": "active",
@@ -3708,7 +3769,9 @@
       "path": "scripts/verify/frontend_acceptance_login_probe.py",
       "status": "active",
       "referenced_by_make_targets": [
+        "verify.frontend.activity_surface.browser.internal",
         "verify.frontend.delivery_hardening.release.browser",
+        "verify.frontend.delivery_hardening.release.performance_probe",
         "verify.frontend.page_identity.browser",
         "verify.frontend.release.unit"
       ],
@@ -3719,6 +3782,59 @@
         "scripts/verify/test_frontend_release_local_entry.py"
       ],
       "lines": 97
+    },
+    {
+      "script": "frontend_accounting_center_browser.sh",
+      "path": "scripts/verify/frontend_accounting_center_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.accounting_center.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 39
+    },
+    {
+      "script": "frontend_accounting_center_rollout.py",
+      "path": "scripts/verify/frontend_accounting_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.accounting_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_accounting_center_rollout.py"
+      ],
+      "lines": 55
+    },
+    {
+      "script": "frontend_accounting_center_rollout_report.py",
+      "path": "scripts/verify/frontend_accounting_center_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.accounting_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 40
+    },
+    {
+      "script": "frontend_action_view_page_actions_guard.py",
+      "path": "scripts/verify/frontend_action_view_page_actions_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.action_view_page_actions.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 61
     },
     {
       "script": "frontend_actionview_scene_specialcase_guard.py",
@@ -3734,6 +3850,59 @@
       "lines": 122
     },
     {
+      "script": "frontend_activity_surface_runtime_ids.py",
+      "path": "scripts/verify/frontend_activity_surface_runtime_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.activity_surface.browser.internal"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/runtime_ops.mk"
+      ],
+      "lines": 28
+    },
+    {
+      "script": "frontend_administration_domain_browser.sh",
+      "path": "scripts/verify/frontend_administration_domain_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.administration_domain.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 39
+    },
+    {
+      "script": "frontend_administration_domain_rollout.py",
+      "path": "scripts/verify/frontend_administration_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.administration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_administration_domain_rollout.py"
+      ],
+      "lines": 73
+    },
+    {
+      "script": "frontend_administration_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_administration_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.administration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 48
+    },
+    {
       "script": "frontend_api_smoke.py",
       "path": "scripts/verify/frontend_api_smoke.py",
       "status": "active",
@@ -3747,6 +3916,59 @@
       "lines": 99
     },
     {
+      "script": "frontend_auth_surface_guard.py",
+      "path": "scripts/verify/frontend_auth_surface_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.auth_surface.guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 159
+    },
+    {
+      "script": "frontend_base_configuration_domain_browser.sh",
+      "path": "scripts/verify/frontend_base_configuration_domain_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.base_configuration_domain.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 39
+    },
+    {
+      "script": "frontend_base_configuration_domain_rollout.py",
+      "path": "scripts/verify/frontend_base_configuration_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.base_configuration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_base_configuration_domain_rollout.py"
+      ],
+      "lines": 73
+    },
+    {
+      "script": "frontend_base_configuration_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_base_configuration_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.base_configuration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 49
+    },
+    {
       "script": "frontend_build_fingerprint.sh",
       "path": "scripts/verify/frontend_build_fingerprint.sh",
       "status": "active",
@@ -3757,6 +3979,164 @@
         "scripts/verify/frontend_static_release_audit.py"
       ],
       "lines": 27
+    },
+    {
+      "script": "frontend_collaboration_domain_browser.sh",
+      "path": "scripts/verify/frontend_collaboration_domain_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.collaboration_domain.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 41
+    },
+    {
+      "script": "frontend_collaboration_domain_rollout.py",
+      "path": "scripts/verify/frontend_collaboration_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.collaboration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_collaboration_domain_rollout.py"
+      ],
+      "lines": 179
+    },
+    {
+      "script": "frontend_collaboration_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_collaboration_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.collaboration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_collaboration_domain_rollout.py"
+      ],
+      "lines": 83
+    },
+    {
+      "script": "frontend_collection_action_toolbar_guard.py",
+      "path": "scripts/verify/frontend_collection_action_toolbar_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_action_toolbar.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 132
+    },
+    {
+      "script": "frontend_collection_aggregate_footer_guard.py",
+      "path": "scripts/verify/frontend_collection_aggregate_footer_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_aggregate_footer.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 91
+    },
+    {
+      "script": "frontend_collection_group_header_guard.py",
+      "path": "scripts/verify/frontend_collection_group_header_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_group_header.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 82
+    },
+    {
+      "script": "frontend_collection_kanban_record_card_guard.py",
+      "path": "scripts/verify/frontend_collection_kanban_record_card_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_kanban_record_card.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 54
+    },
+    {
+      "script": "frontend_collection_mobile_record_row_guard.py",
+      "path": "scripts/verify/frontend_collection_mobile_record_row_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_mobile_record_row.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 92
+    },
+    {
+      "script": "frontend_collection_navigation_controls_guard.py",
+      "path": "scripts/verify/frontend_collection_navigation_controls_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_navigation_controls.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 124
+    },
+    {
+      "script": "frontend_collection_row_cell_guard.py",
+      "path": "scripts/verify/frontend_collection_row_cell_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_row_cell.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 64
+    },
+    {
+      "script": "frontend_collection_selection_control_guard.py",
+      "path": "scripts/verify/frontend_collection_selection_control_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_selection_control.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 87
+    },
+    {
+      "script": "frontend_collection_summary_strip_guard.py",
+      "path": "scripts/verify/frontend_collection_summary_strip_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_summary_strip.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 94
     },
     {
       "script": "frontend_color_role_contract_test.py",
@@ -3799,6 +4179,34 @@
       "lines": 342
     },
     {
+      "script": "frontend_contract_domain_rollout.py",
+      "path": "scripts/verify/frontend_contract_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.contract_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_contract_domain_rollout.py"
+      ],
+      "lines": 77
+    },
+    {
+      "script": "frontend_contract_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_contract_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.contract_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_contract_domain_rollout.py"
+      ],
+      "lines": 54
+    },
+    {
       "script": "frontend_contract_normalized_fields_guard.py",
       "path": "scripts/verify/frontend_contract_normalized_fields_guard.py",
       "status": "active",
@@ -3810,6 +4218,19 @@
         "make/dev_test.mk"
       ],
       "lines": 46
+    },
+    {
+      "script": "frontend_contract_prompt_action_presentation_guard.py",
+      "path": "scripts/verify/frontend_contract_prompt_action_presentation_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.contract_prompt_action_presentation.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 77
     },
     {
       "script": "frontend_contract_query_context_guard.py",
@@ -3877,6 +4298,60 @@
       "lines": 109
     },
     {
+      "script": "frontend_cost_domain_browser.sh",
+      "path": "scripts/verify/frontend_cost_domain_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.cost_domain.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 41
+    },
+    {
+      "script": "frontend_cost_domain_rollout.py",
+      "path": "scripts/verify/frontend_cost_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.cost_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_cost_domain_rollout.py"
+      ],
+      "lines": 80
+    },
+    {
+      "script": "frontend_cost_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_cost_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.cost_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_cost_domain_rollout.py"
+      ],
+      "lines": 49
+    },
+    {
+      "script": "frontend_dashboard_state_guard.py",
+      "path": "scripts/verify/frontend_dashboard_state_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.state_dashboard.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 52
+    },
+    {
       "script": "frontend_delivery_hardening_guard.py",
       "path": "scripts/verify/frontend_delivery_hardening_guard.py",
       "status": "active",
@@ -3886,10 +4361,9 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk",
-        "make/runtime_ops.mk"
+        "make/frontend.mk"
       ],
-      "lines": 280
+      "lines": 329
     },
     {
       "script": "frontend_delivery_hardening_runtime_ids.py",
@@ -3907,8 +4381,11 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/release/tenant_rc_runtime_acceptance.sh",
-        "scripts/verify/test_frontend_delivery_hardening_guard.py"
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py"
       ],
       "lines": 47
     },
@@ -3936,7 +4413,21 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 56
+      "lines": 65
+    },
+    {
+      "script": "frontend_dev_incremental.py",
+      "path": "scripts/verify/frontend_dev_incremental.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.dev.incremental",
+        "verify.frontend.dev.watch"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 182
     },
     {
       "script": "frontend_dev_process_isolation_guard.py",
@@ -3963,6 +4454,46 @@
         "make/dev_test.mk"
       ],
       "lines": 63
+    },
+    {
+      "script": "frontend_finance_center_browser.sh",
+      "path": "scripts/verify/frontend_finance_center_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.finance_center.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 39
+    },
+    {
+      "script": "frontend_finance_center_rollout.py",
+      "path": "scripts/verify/frontend_finance_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.finance_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_finance_center_rollout.py"
+      ],
+      "lines": 71
+    },
+    {
+      "script": "frontend_finance_center_rollout_report.py",
+      "path": "scripts/verify/frontend_finance_center_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.finance_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 42
     },
     {
       "script": "frontend_financial_workspace_action_smoke.py",
@@ -4017,7 +4548,7 @@
         "make/runtime_ops.mk",
         "scripts/release/tenant_rc_runtime_acceptance.sh"
       ],
-      "lines": 33
+      "lines": 34
     },
     {
       "script": "frontend_financial_workspace_v2_contract.py",
@@ -4044,6 +4575,19 @@
         "make/frontend.mk"
       ],
       "lines": 59
+    },
+    {
+      "script": "frontend_form_header_action_primitives_guard.py",
+      "path": "scripts/verify/frontend_form_header_action_primitives_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.form_header_action_primitives.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 66
     },
     {
       "script": "frontend_form_loading_continuity_guard.py",
@@ -4108,6 +4652,19 @@
       "lines": 169
     },
     {
+      "script": "frontend_inline_state_guard.py",
+      "path": "scripts/verify/frontend_inline_state_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.rendering_detail_state.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 55
+    },
+    {
       "script": "frontend_intent_channel_guard.py",
       "path": "scripts/verify/frontend_intent_channel_guard.py",
       "status": "active",
@@ -4129,6 +4686,60 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [],
       "lines": 123
+    },
+    {
+      "script": "frontend_low_code_field_create_dialog_guard.py",
+      "path": "scripts/verify/frontend_low_code_field_create_dialog_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.low_code_field_create_dialog.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 70
+    },
+    {
+      "script": "frontend_material_domain_browser.sh",
+      "path": "scripts/verify/frontend_material_domain_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.material_domain.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 41
+    },
+    {
+      "script": "frontend_material_domain_rollout.py",
+      "path": "scripts/verify/frontend_material_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.material_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_material_domain_rollout.py"
+      ],
+      "lines": 78
+    },
+    {
+      "script": "frontend_material_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_material_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.material_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_material_domain_rollout.py"
+      ],
+      "lines": 49
     },
     {
       "script": "frontend_my_work_approval_guard.py",
@@ -4184,6 +4795,19 @@
       "lines": 63
     },
     {
+      "script": "frontend_native_form_action_presentation_guard.py",
+      "path": "scripts/verify/frontend_native_form_action_presentation_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.native_form_action_presentation.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 134
+    },
+    {
       "script": "frontend_navigation_access_runtime_ids.py",
       "path": "scripts/verify/frontend_navigation_access_runtime_ids.py",
       "status": "active",
@@ -4197,6 +4821,19 @@
       "lines": 16
     },
     {
+      "script": "frontend_navigation_shell_guard.py",
+      "path": "scripts/verify/frontend_navigation_shell_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.navigation_shell.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 170
+    },
+    {
       "script": "frontend_no_base_contract_direct_consume_guard.py",
       "path": "scripts/verify/frontend_no_base_contract_direct_consume_guard.py",
       "status": "active",
@@ -4208,6 +4845,19 @@
         "make/dev_test.mk"
       ],
       "lines": 63
+    },
+    {
+      "script": "frontend_overlay_lifecycle_guard.py",
+      "path": "scripts/verify/frontend_overlay_lifecycle_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.overlay_lifecycle.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 60
     },
     {
       "script": "frontend_page_block_registry_guard.py",
@@ -4265,9 +4915,10 @@
         "make/dev_test.mk",
         "scripts/ci/verify_contract_form_split_evidence.py",
         "scripts/verify/contract_form_behavior_regression_runbook_guard.py",
-        "scripts/verify/contract_form_side_effect_regression_guard.py"
+        "scripts/verify/contract_form_side_effect_regression_guard.py",
+        "scripts/verify/frontend_auth_surface_guard.py"
       ],
-      "lines": 418
+      "lines": 437
     },
     {
       "script": "frontend_page_contract_key_consistency_guard.py",
@@ -4296,9 +4947,10 @@
         "make/dev_test.mk",
         "scripts/ci/verify_contract_form_split_evidence.py",
         "scripts/verify/contract_form_behavior_regression_runbook_guard.py",
-        "scripts/verify/contract_form_side_effect_regression_guard.py"
+        "scripts/verify/contract_form_side_effect_regression_guard.py",
+        "scripts/verify/frontend_auth_surface_guard.py"
       ],
-      "lines": 391
+      "lines": 432
     },
     {
       "script": "frontend_page_contract_runtime_universal_guard.py",
@@ -4382,13 +5034,13 @@
       "script": "frontend_page_identity_runtime_metadata.py",
       "path": "scripts/verify/frontend_page_identity_runtime_metadata.py",
       "status": "active",
-      "referenced_by_make_targets": [
-        "verify.frontend.page_identity.browser"
-      ],
+      "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/runtime_ops.mk",
-        "scripts/release/tenant_rc_runtime_acceptance.sh"
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/release/tenant_rc_runtime_acceptance.sh",
+        "scripts/verify/test_frontend_release_local_entry.py"
       ],
       "lines": 16
     },
@@ -4406,6 +5058,20 @@
       "lines": 36
     },
     {
+      "script": "frontend_page_pattern_reference_parity_guard.py",
+      "path": "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.page_pattern_reference_parity.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py"
+      ],
+      "lines": 116
+    },
+    {
       "script": "frontend_page_renderer_default_guard.py",
       "path": "scripts/verify/frontend_page_renderer_default_guard.py",
       "status": "active",
@@ -4417,6 +5083,47 @@
         "make/dev_test.mk"
       ],
       "lines": 61
+    },
+    {
+      "script": "frontend_payment_domain_browser.sh",
+      "path": "scripts/verify/frontend_payment_domain_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.payment_domain.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 42
+    },
+    {
+      "script": "frontend_payment_domain_rollout.py",
+      "path": "scripts/verify/frontend_payment_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.payment_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_payment_domain_rollout.py"
+      ],
+      "lines": 74
+    },
+    {
+      "script": "frontend_payment_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_payment_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.payment_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_payment_domain_rollout.py"
+      ],
+      "lines": 49
     },
     {
       "script": "frontend_pilot_readiness_guard.py",
@@ -4458,6 +5165,19 @@
       "lines": 30
     },
     {
+      "script": "frontend_primitive_adapter_guard.py",
+      "path": "scripts/verify/frontend_primitive_adapter_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.primitive_adapter.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 349
+    },
+    {
       "script": "frontend_product_contract_consumption_guard.py",
       "path": "scripts/verify/frontend_product_contract_consumption_guard.py",
       "status": "active",
@@ -4493,6 +5213,32 @@
       "lines": 22
     },
     {
+      "script": "frontend_product_page_header_guard.py",
+      "path": "scripts/verify/frontend_product_page_header_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.product_page_header.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 118
+    },
+    {
+      "script": "frontend_product_page_pattern_guard.py",
+      "path": "scripts/verify/frontend_product_page_pattern_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.product_page_pattern.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 58
+    },
+    {
       "script": "frontend_productization_fixture.py",
       "path": "scripts/verify/frontend_productization_fixture.py",
       "status": "active",
@@ -4505,7 +5251,7 @@
         "scripts/release/tenant_rc_runtime_acceptance.sh",
         "scripts/verify/frontend_productization_fixture.sh"
       ],
-      "lines": 395
+      "lines": 433
     },
     {
       "script": "frontend_productization_fixture.sh",
@@ -4582,6 +5328,210 @@
       "lines": 25
     },
     {
+      "script": "frontend_professional_audit_guard.py",
+      "path": "scripts/verify/frontend_professional_audit_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_audit.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 38
+    },
+    {
+      "script": "frontend_professional_base_field_guard.py",
+      "path": "scripts/verify/frontend_professional_base_field_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_base_field.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 48
+    },
+    {
+      "script": "frontend_professional_business_value_guard.py",
+      "path": "scripts/verify/frontend_professional_business_value_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_business_value.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 49
+    },
+    {
+      "script": "frontend_professional_collaboration_guard.py",
+      "path": "scripts/verify/frontend_professional_collaboration_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_collaboration.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 51
+    },
+    {
+      "script": "frontend_professional_component_registry_guard.py",
+      "path": "scripts/verify/frontend_professional_component_registry_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_component_registry.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 60
+    },
+    {
+      "script": "frontend_professional_detail_collection_guard.py",
+      "path": "scripts/verify/frontend_professional_detail_collection_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_detail_collection.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 63
+    },
+    {
+      "script": "frontend_professional_relation_field_guard.py",
+      "path": "scripts/verify/frontend_professional_relation_field_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_relation_field.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 62
+    },
+    {
+      "script": "frontend_professional_relation_lifecycle_guard.py",
+      "path": "scripts/verify/frontend_professional_relation_lifecycle_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_relation_lifecycle.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 58
+    },
+    {
+      "script": "frontend_professional_workflow_guard.py",
+      "path": "scripts/verify/frontend_professional_workflow_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_workflow.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 34
+    },
+    {
+      "script": "frontend_project_domain_rollout.py",
+      "path": "scripts/verify/frontend_project_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.accounting_center.runtime",
+        "verify.frontend.professionalization.administration_domain.runtime",
+        "verify.frontend.professionalization.base_configuration_domain.runtime",
+        "verify.frontend.professionalization.collaboration_domain.runtime",
+        "verify.frontend.professionalization.contract_domain.runtime",
+        "verify.frontend.professionalization.cost_domain.runtime",
+        "verify.frontend.professionalization.finance_center.runtime",
+        "verify.frontend.professionalization.material_domain.runtime",
+        "verify.frontend.professionalization.payment_domain.runtime",
+        "verify.frontend.professionalization.project_domain.runtime",
+        "verify.frontend.professionalization.quality_safety_domain.runtime",
+        "verify.frontend.professionalization.reporting_center.runtime",
+        "verify.frontend.professionalization.settlement_domain.runtime",
+        "verify.frontend.professionalization.tax_center.runtime",
+        "verify.frontend.professionalization.workbench_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/frontend_accounting_center_rollout.py",
+        "scripts/verify/frontend_administration_domain_rollout.py",
+        "scripts/verify/frontend_base_configuration_domain_rollout.py",
+        "scripts/verify/frontend_collaboration_domain_rollout.py",
+        "scripts/verify/frontend_contract_domain_rollout.py",
+        "scripts/verify/frontend_cost_domain_rollout.py",
+        "scripts/verify/frontend_finance_center_rollout.py",
+        "scripts/verify/frontend_material_domain_rollout.py",
+        "scripts/verify/frontend_payment_domain_rollout.py",
+        "scripts/verify/frontend_quality_safety_domain_rollout.py",
+        "scripts/verify/frontend_reporting_center_rollout.py",
+        "scripts/verify/frontend_settlement_domain_rollout.py",
+        "scripts/verify/frontend_systemwide_coverage_audit.py",
+        "scripts/verify/frontend_tax_center_rollout.py",
+        "scripts/verify/frontend_workbench_center_rollout.py",
+        "scripts/verify/test_frontend_contract_domain_rollout.py",
+        "scripts/verify/test_frontend_project_domain_rollout.py"
+      ],
+      "lines": 418
+    },
+    {
+      "script": "frontend_project_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_project_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.accounting_center.runtime",
+        "verify.frontend.professionalization.administration_domain.runtime",
+        "verify.frontend.professionalization.base_configuration_domain.runtime",
+        "verify.frontend.professionalization.collaboration_domain.runtime",
+        "verify.frontend.professionalization.contract_domain.runtime",
+        "verify.frontend.professionalization.cost_domain.runtime",
+        "verify.frontend.professionalization.finance_center.runtime",
+        "verify.frontend.professionalization.material_domain.runtime",
+        "verify.frontend.professionalization.payment_domain.runtime",
+        "verify.frontend.professionalization.project_domain.runtime",
+        "verify.frontend.professionalization.quality_safety_domain.runtime",
+        "verify.frontend.professionalization.reporting_center.runtime",
+        "verify.frontend.professionalization.settlement_domain.runtime",
+        "verify.frontend.professionalization.tax_center.runtime",
+        "verify.frontend.professionalization.workbench_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/frontend_accounting_center_rollout_report.py",
+        "scripts/verify/frontend_administration_domain_rollout_report.py",
+        "scripts/verify/frontend_base_configuration_domain_rollout_report.py",
+        "scripts/verify/frontend_collaboration_domain_rollout_report.py",
+        "scripts/verify/frontend_contract_domain_rollout_report.py",
+        "scripts/verify/frontend_cost_domain_rollout_report.py",
+        "scripts/verify/frontend_finance_center_rollout_report.py",
+        "scripts/verify/frontend_material_domain_rollout_report.py",
+        "scripts/verify/frontend_payment_domain_rollout_report.py",
+        "scripts/verify/frontend_quality_safety_domain_rollout_report.py",
+        "scripts/verify/frontend_reporting_center_rollout_report.py",
+        "scripts/verify/frontend_settlement_domain_rollout_report.py",
+        "scripts/verify/frontend_tax_center_rollout_report.py",
+        "scripts/verify/frontend_workbench_center_rollout_report.py",
+        "scripts/verify/test_frontend_contract_domain_rollout.py",
+        "scripts/verify/test_frontend_project_domain_rollout.py"
+      ],
+      "lines": 154
+    },
+    {
       "script": "frontend_project_management_scene_bridge_guard.py",
       "path": "scripts/verify/frontend_project_management_scene_bridge_guard.py",
       "status": "active",
@@ -4593,6 +5543,60 @@
         "make/dev_test.mk"
       ],
       "lines": 60
+    },
+    {
+      "script": "frontend_quality_safety_domain_browser.sh",
+      "path": "scripts/verify/frontend_quality_safety_domain_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.quality_safety_domain.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 41
+    },
+    {
+      "script": "frontend_quality_safety_domain_rollout.py",
+      "path": "scripts/verify/frontend_quality_safety_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.quality_safety_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_quality_safety_domain_rollout.py"
+      ],
+      "lines": 76
+    },
+    {
+      "script": "frontend_quality_safety_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_quality_safety_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.quality_safety_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_quality_safety_domain_rollout.py"
+      ],
+      "lines": 50
+    },
+    {
+      "script": "frontend_relational_action_primitives_guard.py",
+      "path": "scripts/verify/frontend_relational_action_primitives_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.relational_action_primitives.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 81
     },
     {
       "script": "frontend_release_audit.py",
@@ -4637,7 +5641,6 @@
       "referenced_by_files": [
         ".github/workflows/frontend_release_evidence_bundle.yml",
         ".github/workflows/public_guard.yml",
-        "make/ci.mk",
         "scripts/release/frontend_release_evidence.py",
         "scripts/verify/github_actions_security_guard.py"
       ],
@@ -4655,7 +5658,6 @@
       ],
       "referenced_by_files": [
         ".github/workflows/frontend_release_gate.yml",
-        "make/runtime_ops.mk",
         "scripts/verify/frontend_release_ci_guard.py",
         "scripts/verify/github_actions_security_guard.py",
         "scripts/verify/test_frontend_release_gate.py"
@@ -4674,6 +5676,59 @@
         "make/frontend.mk"
       ],
       "lines": 104
+    },
+    {
+      "script": "frontend_rendering_detail_state_guard.py",
+      "path": "scripts/verify/frontend_rendering_detail_state_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.rendering_detail_state.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 123
+    },
+    {
+      "script": "frontend_reporting_center_browser.sh",
+      "path": "scripts/verify/frontend_reporting_center_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.reporting_center.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 39
+    },
+    {
+      "script": "frontend_reporting_center_rollout.py",
+      "path": "scripts/verify/frontend_reporting_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.reporting_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_reporting_center_rollout.py"
+      ],
+      "lines": 58
+    },
+    {
+      "script": "frontend_reporting_center_rollout_report.py",
+      "path": "scripts/verify/frontend_reporting_center_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.reporting_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 40
     },
     {
       "script": "frontend_runtime_navigation_hud_guard.py",
@@ -4699,7 +5754,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 297
+      "lines": 400
     },
     {
       "script": "frontend_scene_contract_auto_render_guard.py",
@@ -4756,6 +5811,47 @@
       "lines": 78
     },
     {
+      "script": "frontend_settlement_domain_browser.sh",
+      "path": "scripts/verify/frontend_settlement_domain_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.settlement_domain.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 42
+    },
+    {
+      "script": "frontend_settlement_domain_rollout.py",
+      "path": "scripts/verify/frontend_settlement_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.settlement_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_settlement_domain_rollout.py"
+      ],
+      "lines": 76
+    },
+    {
+      "script": "frontend_settlement_domain_rollout_report.py",
+      "path": "scripts/verify/frontend_settlement_domain_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.settlement_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_settlement_domain_rollout.py"
+      ],
+      "lines": 49
+    },
+    {
       "script": "frontend_shared_surface_semantic_boundary_guard.py",
       "path": "scripts/verify/frontend_shared_surface_semantic_boundary_guard.py",
       "status": "active",
@@ -4784,6 +5880,19 @@
       "lines": 243
     },
     {
+      "script": "frontend_state_presentation_guard.py",
+      "path": "scripts/verify/frontend_state_presentation_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.state_dashboard.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 55
+    },
+    {
       "script": "frontend_static_release_audit.py",
       "path": "scripts/verify/frontend_static_release_audit.py",
       "status": "active",
@@ -4796,7 +5905,7 @@
         "scripts/verify/frontend_release_ci_guard.py",
         "scripts/verify/test_frontend_release_ci_guard.py"
       ],
-      "lines": 70
+      "lines": 69
     },
     {
       "script": "frontend_style_system_guard.py",
@@ -4809,7 +5918,64 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 268
+      "lines": 290
+    },
+    {
+      "script": "frontend_systemwide_coverage_audit.py",
+      "path": "scripts/verify/frontend_systemwide_coverage_audit.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.systemwide_coverage.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_systemwide_coverage_audit.py"
+      ],
+      "lines": 232
+    },
+    {
+      "script": "frontend_systemwide_coverage_audit_report.py",
+      "path": "scripts/verify/frontend_systemwide_coverage_audit_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.systemwide_coverage.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 80
+    },
+    {
+      "script": "frontend_systemwide_public_metric_browser.sh",
+      "path": "scripts/verify/frontend_systemwide_public_metric_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.systemwide_public_metric.browser",
+        "verify.frontend.professionalization.systemwide_public_metric.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk",
+        "make/dev_test.mk"
+      ],
+      "lines": 40
+    },
+    {
+      "script": "frontend_systemwide_public_metric_report.py",
+      "path": "scripts/verify/frontend_systemwide_public_metric_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.systemwide_public_metric.acceptance",
+        "verify.frontend.professionalization.systemwide_public_metric.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk",
+        "make/dev_test.mk"
+      ],
+      "lines": 122
     },
     {
       "script": "frontend_table_primitive_guard.py",
@@ -4822,33 +5988,60 @@
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 25
+      "lines": 34
     },
     {
-      "script": "frontend_ui5_scene_spike_browser.sh",
-      "path": "scripts/verify/frontend_ui5_scene_spike_browser.sh",
+      "script": "frontend_tax_center_browser.sh",
+      "path": "scripts/verify/frontend_tax_center_browser.sh",
       "status": "active",
       "referenced_by_make_targets": [
-        "verify.frontend.scene_component_drivers"
+        "verify.frontend.professionalization.tax_center.browser"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/dev.mk"
       ],
       "lines": 39
     },
     {
-      "script": "frontend_ui5_scene_spike_guard.py",
-      "path": "scripts/verify/frontend_ui5_scene_spike_guard.py",
+      "script": "frontend_tax_center_rollout.py",
+      "path": "scripts/verify/frontend_tax_center_rollout.py",
       "status": "active",
       "referenced_by_make_targets": [
-        "verify.frontend.scene_component_drivers"
+        "verify.frontend.professionalization.tax_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_tax_center_rollout.py"
+      ],
+      "lines": 61
+    },
+    {
+      "script": "frontend_tax_center_rollout_report.py",
+      "path": "scripts/verify/frontend_tax_center_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.tax_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 40
+    },
+    {
+      "script": "frontend_theme_profile_guard.py",
+      "path": "scripts/verify/frontend_theme_profile_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.theme_profile.unit"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 257
+      "lines": 173
     },
     {
       "script": "frontend_v2_policy_projection_guard.py",
@@ -4862,7 +6055,7 @@
         "make/ci.mk",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 741
+      "lines": 759
     },
     {
       "script": "frontend_workbench_block_migration_guard.py",
@@ -4878,6 +6071,46 @@
       "lines": 54
     },
     {
+      "script": "frontend_workbench_center_browser.sh",
+      "path": "scripts/verify/frontend_workbench_center_browser.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.workbench_center.browser"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 39
+    },
+    {
+      "script": "frontend_workbench_center_rollout.py",
+      "path": "scripts/verify/frontend_workbench_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.workbench_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/test_frontend_workbench_center_rollout.py"
+      ],
+      "lines": 64
+    },
+    {
+      "script": "frontend_workbench_center_rollout_report.py",
+      "path": "scripts/verify/frontend_workbench_center_rollout_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.workbench_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 42
+    },
+    {
       "script": "frontend_workspace_content_alignment_guard.py",
       "path": "scripts/verify/frontend_workspace_content_alignment_guard.py",
       "status": "active",
@@ -4888,7 +6121,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 167
+      "lines": 181
     },
     {
       "script": "full_product_capability_scope_audit.py",
@@ -4948,17 +6181,20 @@
         "verify.github_actions.security"
       ],
       "referenced_by_workflows": [
+        ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/public_guard.yml"
       ],
       "referenced_by_files": [
+        ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/public_guard.yml",
         "make/ci.mk",
         "scripts/ci/gitee_ci_run.sh",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
         "scripts/verify/test_github_actions_security_guard.py"
       ],
-      "lines": 169
+      "lines": 180
     },
     {
       "script": "github_non_mirror_push_denied.sh",
@@ -5193,7 +6429,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 179
+      "lines": 237
     },
     {
       "script": "guard_registry_audit.py",
@@ -5209,7 +6445,7 @@
       "referenced_by_files": [
         "make/guards.mk"
       ],
-      "lines": 463
+      "lines": 500
     },
     {
       "script": "hierarchy_browser_architecture_guard.py",
@@ -5399,7 +6635,7 @@
         "make/contract.mk",
         "scripts/verify/test_contract_snapshot_export_fail_closed.py"
       ],
-      "lines": 179
+      "lines": 218
     },
     {
       "script": "intent_catalog_case_coverage_guard.py",
@@ -5816,6 +7052,22 @@
       "lines": 272
     },
     {
+      "script": "js_contract_consumer_markers.py",
+      "path": "scripts/verify/js_contract_consumer_markers.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.unified_page_contract.v2.web_consumer"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/test_js_contract_consumer_markers.py",
+        "scripts/verify/unified_page_contract_v2_web_consumer_guard.py",
+        "scripts/verify/web_unified_page_contract_v2_guard.py"
+      ],
+      "lines": 196
+    },
+    {
       "script": "kernel_freeze_guard.py",
       "path": "scripts/verify/kernel_freeze_guard.py",
       "status": "active",
@@ -6087,6 +7339,253 @@
         "make/dev_test.mk"
       ],
       "lines": 188
+    },
+    {
+      "script": "local_dev_accounting_center_ids.py",
+      "path": "scripts/verify/local_dev_accounting_center_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_accounting_center_browser.sh",
+        "scripts/verify/test_frontend_accounting_center_rollout.py"
+      ],
+      "lines": 35
+    },
+    {
+      "script": "local_dev_administration_domain_ids.py",
+      "path": "scripts/verify/local_dev_administration_domain_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_administration_domain_browser.sh",
+        "scripts/verify/test_frontend_administration_domain_rollout.py"
+      ],
+      "lines": 45
+    },
+    {
+      "script": "local_dev_base_configuration_domain_ids.py",
+      "path": "scripts/verify/local_dev_base_configuration_domain_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_base_configuration_domain_browser.sh",
+        "scripts/verify/test_frontend_base_configuration_domain_rollout.py"
+      ],
+      "lines": 47
+    },
+    {
+      "script": "local_dev_candidate_visual_smoke.sh",
+      "path": "scripts/verify/local_dev_candidate_visual_smoke.sh",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/audit/generate_frontend_visual_projection_inventory.py",
+        "scripts/dev/local_dev_candidate_frontend.py",
+        "scripts/verify/test_local_dev_candidate_frontend.py"
+      ],
+      "lines": 23
+    },
+    {
+      "script": "local_dev_collaboration_domain_ids.py",
+      "path": "scripts/verify/local_dev_collaboration_domain_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_collaboration_domain_browser.sh",
+        "scripts/verify/test_frontend_collaboration_domain_rollout.py"
+      ],
+      "lines": 58
+    },
+    {
+      "script": "local_dev_cost_domain_ids.py",
+      "path": "scripts/verify/local_dev_cost_domain_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_cost_domain_browser.sh"
+      ],
+      "lines": 71
+    },
+    {
+      "script": "local_dev_finance_center_ids.py",
+      "path": "scripts/verify/local_dev_finance_center_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_finance_center_browser.sh",
+        "scripts/verify/test_frontend_finance_center_rollout.py"
+      ],
+      "lines": 37
+    },
+    {
+      "script": "local_dev_material_domain_ids.py",
+      "path": "scripts/verify/local_dev_material_domain_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_material_domain_browser.sh"
+      ],
+      "lines": 70
+    },
+    {
+      "script": "local_dev_payment_request_floorplan_readonly.sh",
+      "path": "scripts/verify/local_dev_payment_request_floorplan_readonly.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.local.dev.payment_request.floorplan.readonly"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 46
+    },
+    {
+      "script": "local_dev_payment_request_floorplan_submit.sh",
+      "path": "scripts/verify/local_dev_payment_request_floorplan_submit.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.local.dev.payment_request.floorplan.submit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk",
+        "scripts/verify/test_local_development_lifecycle.py"
+      ],
+      "lines": 64
+    },
+    {
+      "script": "local_dev_payment_request_native_parity_ids.py",
+      "path": "scripts/verify/local_dev_payment_request_native_parity_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_payment_domain_browser.sh",
+        "scripts/verify/local_dev_payment_request_floorplan_readonly.sh",
+        "scripts/verify/local_dev_payment_request_floorplan_submit.sh",
+        "scripts/verify/local_dev_payment_request_native_parity_readonly.sh"
+      ],
+      "lines": 186
+    },
+    {
+      "script": "local_dev_payment_request_native_parity_readonly.sh",
+      "path": "scripts/verify/local_dev_payment_request_native_parity_readonly.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.local.dev.payment_request.native_parity.readonly"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 59
+    },
+    {
+      "script": "local_dev_project_create_contract_action_scope.py",
+      "path": "scripts/verify/local_dev_project_create_contract_action_scope.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/local_dev_project_create_contract_action_scope.sh"
+      ],
+      "lines": 308
+    },
+    {
+      "script": "local_dev_project_create_contract_action_scope.sh",
+      "path": "scripts/verify/local_dev_project_create_contract_action_scope.sh",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "local.dev.project_create_contract_action_scope"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev.mk"
+      ],
+      "lines": 26
+    },
+    {
+      "script": "local_dev_quality_safety_domain_ids.py",
+      "path": "scripts/verify/local_dev_quality_safety_domain_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_quality_safety_domain_browser.sh",
+        "scripts/verify/test_frontend_quality_safety_domain_rollout.py"
+      ],
+      "lines": 72
+    },
+    {
+      "script": "local_dev_reporting_center_ids.py",
+      "path": "scripts/verify/local_dev_reporting_center_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_reporting_center_browser.sh",
+        "scripts/verify/test_frontend_reporting_center_rollout.py"
+      ],
+      "lines": 47
+    },
+    {
+      "script": "local_dev_settlement_domain_ids.py",
+      "path": "scripts/verify/local_dev_settlement_domain_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_settlement_domain_browser.sh"
+      ],
+      "lines": 68
+    },
+    {
+      "script": "local_dev_systemwide_public_metric_ids.py",
+      "path": "scripts/verify/local_dev_systemwide_public_metric_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.systemwide_public_metric.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk",
+        "scripts/verify/frontend_systemwide_public_metric_browser.sh",
+        "scripts/verify/test_frontend_systemwide_public_metric_report.py"
+      ],
+      "lines": 80
+    },
+    {
+      "script": "local_dev_tax_center_ids.py",
+      "path": "scripts/verify/local_dev_tax_center_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_tax_center_browser.sh",
+        "scripts/verify/test_frontend_tax_center_rollout.py"
+      ],
+      "lines": 35
+    },
+    {
+      "script": "local_dev_workbench_center_ids.py",
+      "path": "scripts/verify/local_dev_workbench_center_ids.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_workbench_center_browser.sh",
+        "scripts/verify/test_frontend_workbench_center_rollout.py"
+      ],
+      "lines": 33
     },
     {
       "script": "locked_fact_formal_model_continuity_guard.py",
@@ -6761,6 +8260,15 @@
       "lines": 212
     },
     {
+      "script": "native_view_capability_taxonomy_guard.py",
+      "path": "scripts/verify/native_view_capability_taxonomy_guard.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 69
+    },
+    {
       "script": "native_view_coverage_report.py",
       "path": "scripts/verify/native_view_coverage_report.py",
       "status": "active",
@@ -6785,6 +8293,32 @@
         "make/ci.mk"
       ],
       "lines": 65
+    },
+    {
+      "script": "native_view_frontend_capability_map_guard.py",
+      "path": "scripts/verify/native_view_frontend_capability_map_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.contract.native_view_frontend_map_candidate"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/contract.mk"
+      ],
+      "lines": 123
+    },
+    {
+      "script": "native_view_normalized_capability_map_guard.py",
+      "path": "scripts/verify/native_view_normalized_capability_map_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.contract.native_view_normalized_map"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/contract.mk"
+      ],
+      "lines": 283
     },
     {
       "script": "native_view_sample_compare_report.py",
@@ -7576,9 +9110,10 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/runtime_ops.mk"
+        "make/runtime_ops.mk",
+        "scripts/verify/test_platform_company_access_manifest_guard.py"
       ],
-      "lines": 518
+      "lines": 567
     },
     {
       "script": "platform_config_fixture.py",
@@ -8331,9 +9866,10 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/tenant_boundary.mk"
+        "make/tenant_boundary.mk",
+        "scripts/release/test_product_release.py"
       ],
-      "lines": 107
+      "lines": 165
     },
     {
       "script": "product_reporting_center_wave1_guard.py",
@@ -8404,19 +9940,46 @@
       "lines": 48
     },
     {
+      "script": "product_view_capability_ledger_guard.py",
+      "path": "scripts/verify/product_view_capability_ledger_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.contract.view_capability_ledger"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/contract.mk"
+      ],
+      "lines": 413
+    },
+    {
+      "script": "product_view_contract_carriers_guard.py",
+      "path": "scripts/verify/product_view_contract_carriers_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.contract.view_carrier"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/contract.mk"
+      ],
+      "lines": 283
+    },
+    {
       "script": "product_view_structure_contract_guard.py",
       "path": "scripts/verify/product_view_structure_contract_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
         "contract.view_structure.baseline",
         "gate.contract.view_structure",
-        "verify.contract.view_structure"
+        "verify.contract.view_structure",
+        "verify.contract.view_structure_candidate"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/contract.mk"
       ],
-      "lines": 134
+      "lines": 224
     },
     {
       "script": "product_workbench_wave1_guard.py",
@@ -9068,7 +10631,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 93
+      "lines": 99
     },
     {
       "script": "relation_read_closure_guard.py",
@@ -9291,13 +10854,14 @@
         ".github/workflows/public_guard.yml",
         "make/ci.mk",
         "scripts/ci/gitee_ci_run.sh",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
         "scripts/ops/controlled_main_cutover.py",
         "scripts/ops/rc6_candidate_identity_freeze.py",
         "scripts/release/prepare_rc_workspace.sh",
         "scripts/release/release_candidate.py",
         "scripts/verify/test_repository_clean_history_guard.py"
       ],
-      "lines": 458
+      "lines": 605
     },
     {
       "script": "role_acl_minimum_set_guard.py",
@@ -9603,6 +11167,17 @@
         "make/dev_test.mk"
       ],
       "lines": 158
+    },
+    {
+      "script": "scene_audit_disclosure_guard.py",
+      "path": "scripts/verify/scene_audit_disclosure_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/frontend_scene_component_bridge_guard.py"
+      ],
+      "lines": 52
     },
     {
       "script": "scene_base_contract_asset_coverage_guard.py",
@@ -10872,8 +12447,7 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/runtime_ops.mk",
-        "scripts/verify/platform_company_access_manifest_guard.py"
+        "make/runtime_ops.mk"
       ],
       "lines": 198
     },
@@ -11537,6 +13111,19 @@
       "lines": 72
     },
     {
+      "script": "test_app_config_engine_authority_guard.py",
+      "path": "scripts/verify/test_app_config_engine_authority_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.app_config_engine.boundary_guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/runtime_ops.mk"
+      ],
+      "lines": 104
+    },
+    {
       "script": "test_app_nav_config_company_cache.py",
       "path": "scripts/verify/test_app_nav_config_company_cache.py",
       "status": "active",
@@ -11595,7 +13182,7 @@
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 302
+      "lines": 381
     },
     {
       "script": "test_business_entry_ownership_guard.py",
@@ -11685,6 +13272,19 @@
       "lines": 33
     },
     {
+      "script": "test_contract_catalog_paths.py",
+      "path": "scripts/verify/test_contract_catalog_paths.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.contract.catalog"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/contract.mk"
+      ],
+      "lines": 55
+    },
+    {
       "script": "test_contract_export_resume.py",
       "path": "scripts/verify/test_contract_export_resume.py",
       "status": "orphan",
@@ -11692,6 +13292,15 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [],
       "lines": 88
+    },
+    {
+      "script": "test_contract_form_semantic_identity_guard.py",
+      "path": "scripts/verify/test_contract_form_semantic_identity_guard.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 115
     },
     {
       "script": "test_contract_probe_routing.py",
@@ -11709,7 +13318,20 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 18
+      "lines": 149
+    },
+    {
+      "script": "test_contract_snapshot_execute_authority.py",
+      "path": "scripts/verify/test_contract_snapshot_execute_authority.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.contract.catalog"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/contract.mk"
+      ],
+      "lines": 292
     },
     {
       "script": "test_contract_snapshot_export_fail_closed.py",
@@ -11718,7 +13340,7 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 200
+      "lines": 270
     },
     {
       "script": "test_contract_snapshot_field_selection.py",
@@ -11740,7 +13362,7 @@
       "referenced_by_files": [
         "make/contract.mk"
       ],
-      "lines": 71
+      "lines": 85
     },
     {
       "script": "test_contract_snapshot_user_resolution.py",
@@ -11772,6 +13394,15 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [],
       "lines": 127
+    },
+    {
+      "script": "test_design_token_system.py",
+      "path": "scripts/verify/test_design_token_system.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 109
     },
     {
       "script": "test_dev_acceptance_release_identity.py",
@@ -11815,7 +13446,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 113
+      "lines": 118
     },
     {
       "script": "test_feishu_agent_bridge.py",
@@ -11898,7 +13529,241 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 182
+      "lines": 225
+    },
+    {
+      "script": "test_frontend_accounting_center_rollout.py",
+      "path": "scripts/verify/test_frontend_accounting_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.accounting_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 54
+    },
+    {
+      "script": "test_frontend_action_view_page_actions_guard.py",
+      "path": "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.action_view_page_actions.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 36
+    },
+    {
+      "script": "test_frontend_administration_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_administration_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.administration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 70
+    },
+    {
+      "script": "test_frontend_base_configuration_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_base_configuration_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.base_configuration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 77
+    },
+    {
+      "script": "test_frontend_collaboration_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_collaboration_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.collaboration_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 215
+    },
+    {
+      "script": "test_frontend_collection_action_toolbar_guard.py",
+      "path": "scripts/verify/test_frontend_collection_action_toolbar_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_action_toolbar.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 95
+    },
+    {
+      "script": "test_frontend_collection_aggregate_footer_guard.py",
+      "path": "scripts/verify/test_frontend_collection_aggregate_footer_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_aggregate_footer.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 64
+    },
+    {
+      "script": "test_frontend_collection_group_header_guard.py",
+      "path": "scripts/verify/test_frontend_collection_group_header_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_group_header.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 56
+    },
+    {
+      "script": "test_frontend_collection_kanban_record_card_guard.py",
+      "path": "scripts/verify/test_frontend_collection_kanban_record_card_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_kanban_record_card.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 26
+    },
+    {
+      "script": "test_frontend_collection_mobile_record_row_guard.py",
+      "path": "scripts/verify/test_frontend_collection_mobile_record_row_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_mobile_record_row.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 62
+    },
+    {
+      "script": "test_frontend_collection_navigation_controls_guard.py",
+      "path": "scripts/verify/test_frontend_collection_navigation_controls_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_navigation_controls.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 80
+    },
+    {
+      "script": "test_frontend_collection_row_cell_guard.py",
+      "path": "scripts/verify/test_frontend_collection_row_cell_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_row_cell.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 42
+    },
+    {
+      "script": "test_frontend_collection_selection_control_guard.py",
+      "path": "scripts/verify/test_frontend_collection_selection_control_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_selection_control.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 60
+    },
+    {
+      "script": "test_frontend_collection_summary_strip_guard.py",
+      "path": "scripts/verify/test_frontend_collection_summary_strip_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.collection_summary_strip.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 65
+    },
+    {
+      "script": "test_frontend_contract_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_contract_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.contract_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 99
+    },
+    {
+      "script": "test_frontend_contract_prompt_action_presentation_guard.py",
+      "path": "scripts/verify/test_frontend_contract_prompt_action_presentation_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.contract_prompt_action_presentation.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 69
+    },
+    {
+      "script": "test_frontend_cost_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_cost_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.cost_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 106
+    },
+    {
+      "script": "test_frontend_dashboard_state_guard.py",
+      "path": "scripts/verify/test_frontend_dashboard_state_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.state_dashboard.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 45
     },
     {
       "script": "test_frontend_delivery_hardening_guard.py",
@@ -11911,7 +13776,51 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 131
+      "lines": 155
+    },
+    {
+      "script": "test_frontend_dev_incremental.py",
+      "path": "scripts/verify/test_frontend_dev_incremental.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 68
+    },
+    {
+      "script": "test_frontend_finance_center_rollout.py",
+      "path": "scripts/verify/test_frontend_finance_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.finance_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 65
+    },
+    {
+      "script": "test_frontend_form_header_action_primitives_guard.py",
+      "path": "scripts/verify/test_frontend_form_header_action_primitives_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.form_header_action_primitives.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 46
+    },
+    {
+      "script": "test_frontend_inline_state_guard.py",
+      "path": "scripts/verify/test_frontend_inline_state_guard.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 38
     },
     {
       "script": "test_frontend_intent_channel_guard.py",
@@ -11925,6 +13834,307 @@
         "make/dev_test.mk"
       ],
       "lines": 77
+    },
+    {
+      "script": "test_frontend_low_code_field_create_dialog_guard.py",
+      "path": "scripts/verify/test_frontend_low_code_field_create_dialog_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.low_code_field_create_dialog.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 50
+    },
+    {
+      "script": "test_frontend_material_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_material_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.material_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 125
+    },
+    {
+      "script": "test_frontend_native_form_action_presentation_guard.py",
+      "path": "scripts/verify/test_frontend_native_form_action_presentation_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.native_form_action_presentation.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 75
+    },
+    {
+      "script": "test_frontend_navigation_shell_guard.py",
+      "path": "scripts/verify/test_frontend_navigation_shell_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.navigation_shell.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 153
+    },
+    {
+      "script": "test_frontend_overlay_lifecycle_guard.py",
+      "path": "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.overlay_lifecycle.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 49
+    },
+    {
+      "script": "test_frontend_page_pattern_reference_parity_guard.py",
+      "path": "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 75
+    },
+    {
+      "script": "test_frontend_payment_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_payment_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.payment_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 99
+    },
+    {
+      "script": "test_frontend_primitive_adapter_guard.py",
+      "path": "scripts/verify/test_frontend_primitive_adapter_guard.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 263
+    },
+    {
+      "script": "test_frontend_product_page_header_guard.py",
+      "path": "scripts/verify/test_frontend_product_page_header_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.product_page_header.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 79
+    },
+    {
+      "script": "test_frontend_product_page_pattern_guard.py",
+      "path": "scripts/verify/test_frontend_product_page_pattern_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.product_page_pattern.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 24
+    },
+    {
+      "script": "test_frontend_productization_fixture_upsert.py",
+      "path": "scripts/verify/test_frontend_productization_fixture_upsert.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 110
+    },
+    {
+      "script": "test_frontend_professional_audit_guard.py",
+      "path": "scripts/verify/test_frontend_professional_audit_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_audit.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 20
+    },
+    {
+      "script": "test_frontend_professional_base_field_guard.py",
+      "path": "scripts/verify/test_frontend_professional_base_field_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_base_field.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 26
+    },
+    {
+      "script": "test_frontend_professional_business_value_guard.py",
+      "path": "scripts/verify/test_frontend_professional_business_value_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_business_value.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 31
+    },
+    {
+      "script": "test_frontend_professional_collaboration_guard.py",
+      "path": "scripts/verify/test_frontend_professional_collaboration_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_collaboration.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 20
+    },
+    {
+      "script": "test_frontend_professional_component_registry_guard.py",
+      "path": "scripts/verify/test_frontend_professional_component_registry_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_component_registry.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 30
+    },
+    {
+      "script": "test_frontend_professional_detail_collection_guard.py",
+      "path": "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_detail_collection.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 27
+    },
+    {
+      "script": "test_frontend_professional_relation_field_guard.py",
+      "path": "scripts/verify/test_frontend_professional_relation_field_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_relation_field.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 55
+    },
+    {
+      "script": "test_frontend_professional_relation_lifecycle_guard.py",
+      "path": "scripts/verify/test_frontend_professional_relation_lifecycle_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_relation_lifecycle.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 36
+    },
+    {
+      "script": "test_frontend_professional_workflow_guard.py",
+      "path": "scripts/verify/test_frontend_professional_workflow_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professional_workflow.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 20
+    },
+    {
+      "script": "test_frontend_project_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_project_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.accounting_center.runtime",
+        "verify.frontend.professionalization.administration_domain.runtime",
+        "verify.frontend.professionalization.base_configuration_domain.runtime",
+        "verify.frontend.professionalization.collaboration_domain.runtime",
+        "verify.frontend.professionalization.contract_domain.runtime",
+        "verify.frontend.professionalization.cost_domain.runtime",
+        "verify.frontend.professionalization.finance_center.runtime",
+        "verify.frontend.professionalization.material_domain.runtime",
+        "verify.frontend.professionalization.payment_domain.runtime",
+        "verify.frontend.professionalization.project_domain.runtime",
+        "verify.frontend.professionalization.quality_safety_domain.runtime",
+        "verify.frontend.professionalization.reporting_center.runtime",
+        "verify.frontend.professionalization.settlement_domain.runtime",
+        "verify.frontend.professionalization.tax_center.runtime",
+        "verify.frontend.professionalization.workbench_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 192
+    },
+    {
+      "script": "test_frontend_quality_safety_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_quality_safety_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.quality_safety_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 193
+    },
+    {
+      "script": "test_frontend_relational_action_primitives_guard.py",
+      "path": "scripts/verify/test_frontend_relational_action_primitives_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.relational_action_primitives.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 49
     },
     {
       "script": "test_frontend_release_audit.py",
@@ -11959,7 +14169,7 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 405
+      "lines": 407
     },
     {
       "script": "test_frontend_release_evidence_bundle.py",
@@ -11975,7 +14185,7 @@
         ".github/workflows/public_guard.yml",
         "make/ci.mk"
       ],
-      "lines": 564
+      "lines": 566
     },
     {
       "script": "test_frontend_release_gate.py",
@@ -12001,7 +14211,7 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 256
+      "lines": 366
     },
     {
       "script": "test_frontend_release_navigation_policy_guard.py",
@@ -12015,6 +14225,106 @@
         "make/frontend.mk"
       ],
       "lines": 84
+    },
+    {
+      "script": "test_frontend_rendering_detail_state_guard.py",
+      "path": "scripts/verify/test_frontend_rendering_detail_state_guard.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 78
+    },
+    {
+      "script": "test_frontend_reporting_center_rollout.py",
+      "path": "scripts/verify/test_frontend_reporting_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.reporting_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 58
+    },
+    {
+      "script": "test_frontend_settlement_domain_rollout.py",
+      "path": "scripts/verify/test_frontend_settlement_domain_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.settlement_domain.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 106
+    },
+    {
+      "script": "test_frontend_state_presentation_guard.py",
+      "path": "scripts/verify/test_frontend_state_presentation_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.state_dashboard.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 62
+    },
+    {
+      "script": "test_frontend_systemwide_coverage_audit.py",
+      "path": "scripts/verify/test_frontend_systemwide_coverage_audit.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.systemwide_coverage.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 96
+    },
+    {
+      "script": "test_frontend_systemwide_public_metric_report.py",
+      "path": "scripts/verify/test_frontend_systemwide_public_metric_report.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.systemwide_public_metric.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 91
+    },
+    {
+      "script": "test_frontend_tax_center_rollout.py",
+      "path": "scripts/verify/test_frontend_tax_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.tax_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 54
+    },
+    {
+      "script": "test_frontend_workbench_center_rollout.py",
+      "path": "scripts/verify/test_frontend_workbench_center_rollout.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.professionalization.workbench_center.runtime"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 68
     },
     {
       "script": "test_gitee_to_github_mirror.py",
@@ -12050,16 +14360,27 @@
         "verify.github_actions.security"
       ],
       "referenced_by_workflows": [
+        ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/public_guard.yml"
       ],
       "referenced_by_files": [
+        ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/public_guard.yml",
         "make/ci.mk",
         "scripts/ci/gitee_ci_run.sh"
       ],
-      "lines": 183
+      "lines": 274
+    },
+    {
+      "script": "test_guard_registry_audit.py",
+      "path": "scripts/verify/test_guard_registry_audit.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 54
     },
     {
       "script": "test_hr_payroll_document_p2_extraction_migration.py",
@@ -12088,6 +14409,19 @@
       "lines": 372
     },
     {
+      "script": "test_js_contract_consumer_markers.py",
+      "path": "scripts/verify/test_js_contract_consumer_markers.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.unified_page_contract.v2.web_consumer"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk"
+      ],
+      "lines": 82
+    },
+    {
       "script": "test_labor_usage_p2_extraction_migration.py",
       "path": "scripts/verify/test_labor_usage_p2_extraction_migration.py",
       "status": "active",
@@ -12110,13 +14444,31 @@
       "lines": 114
     },
     {
+      "script": "test_local_dev_candidate_frontend.py",
+      "path": "scripts/verify/test_local_dev_candidate_frontend.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 172
+    },
+    {
+      "script": "test_local_dev_frontend_quick.py",
+      "path": "scripts/verify/test_local_dev_frontend_quick.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 261
+    },
+    {
       "script": "test_local_development_lifecycle.py",
       "path": "scripts/verify/test_local_development_lifecycle.py",
       "status": "orphan",
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 318
+      "lines": 408
     },
     {
       "script": "test_material_inbound_p2_extraction_migration.py",
@@ -12180,6 +14532,33 @@
       "lines": 163
     },
     {
+      "script": "test_native_view_capability_taxonomy.py",
+      "path": "scripts/verify/test_native_view_capability_taxonomy.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 50
+    },
+    {
+      "script": "test_native_view_frontend_capability_map.py",
+      "path": "scripts/verify/test_native_view_frontend_capability_map.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 67
+    },
+    {
+      "script": "test_native_view_normalized_capability_map.py",
+      "path": "scripts/verify/test_native_view_normalized_capability_map.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 202
+    },
+    {
       "script": "test_p1_payment_request_field_completeness_guard.py",
       "path": "scripts/verify/test_p1_payment_request_field_completeness_guard.py",
       "status": "orphan",
@@ -12200,6 +14579,19 @@
         "make/dev_test.mk"
       ],
       "lines": 42
+    },
+    {
+      "script": "test_platform_company_access_manifest_guard.py",
+      "path": "scripts/verify/test_platform_company_access_manifest_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.platform_company_access_manifest.guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/runtime_ops.mk"
+      ],
+      "lines": 99
     },
     {
       "script": "test_platform_performance_db_routing.py",
@@ -12408,13 +14800,40 @@
       "lines": 19
     },
     {
+      "script": "test_product_view_capability_ledger.py",
+      "path": "scripts/verify/test_product_view_capability_ledger.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 351
+    },
+    {
+      "script": "test_product_view_capability_ledger_schema.py",
+      "path": "scripts/verify/test_product_view_capability_ledger_schema.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 40
+    },
+    {
+      "script": "test_product_view_contract_carriers.py",
+      "path": "scripts/verify/test_product_view_contract_carriers.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 215
+    },
+    {
       "script": "test_product_view_structure_contract.py",
       "path": "scripts/verify/test_product_view_structure_contract.py",
       "status": "orphan",
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 54
+      "lines": 169
     },
     {
       "script": "test_product_workbench_wave1_guard.py",
@@ -12493,14 +14912,16 @@
         "verify.repository.release_hygiene"
       ],
       "referenced_by_workflows": [
+        ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/public_guard.yml"
       ],
       "referenced_by_files": [
+        ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/public_guard.yml",
         "make/ci.mk",
         "scripts/ci/gitee_ci_run.sh"
       ],
-      "lines": 355
+      "lines": 495
     },
     {
       "script": "test_retired_p1_alias_view_cleanup_migration.py",
@@ -12519,6 +14940,15 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [],
       "lines": 64
+    },
+    {
+      "script": "test_scene_audit_disclosure_guard.py",
+      "path": "scripts/verify/test_scene_audit_disclosure_guard.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 66
     },
     {
       "script": "test_scene_company_access_preflight_guard.py",
@@ -12687,6 +15117,15 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [],
       "lines": 34
+    },
+    {
+      "script": "test_view_type_render_coverage_guard.py",
+      "path": "scripts/verify/test_view_type_render_coverage_guard.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 91
     },
     {
       "script": "ui_contract_v2_contract_boundary_guard.py",
@@ -13615,7 +16054,7 @@
         "make/ci.mk",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 328
+      "lines": 349
     },
     {
       "script": "unified_page_contract_v2_client_guard.py",
@@ -13728,7 +16167,7 @@
         "make/ci.mk",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 383
+      "lines": 439
     },
     {
       "script": "unified_page_contract_v2_status_guard.py",
@@ -13756,7 +16195,7 @@
         "make/ci.mk",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 152
+      "lines": 155
     },
     {
       "script": "usage_product_clean_guard.py",
@@ -13780,7 +16219,8 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/dev_test.mk"
+        "make/dev_test.mk",
+        "scripts/verify/frontend_auth_surface_guard.py"
       ],
       "lines": 82
     },
@@ -14075,7 +16515,7 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 528
+      "lines": 527
     },
     {
       "script": "view_orchestration_product_boundary_guard.py",
@@ -14113,9 +16553,10 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/test_view_type_render_coverage_guard.py"
       ],
-      "lines": 119
+      "lines": 288
     },
     {
       "script": "visibility_filter_verification.py",
@@ -14174,7 +16615,7 @@
         "scripts/ci/verify_contract_form_split_evidence.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 535
+      "lines": 552
     },
     {
       "script": "web_unified_page_contract_v2_guard.py",
@@ -14190,7 +16631,7 @@
         "scripts/ci/generate_test_inventory.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 174
+      "lines": 177
     },
     {
       "script": "workbench_extraction_hit_rate_report.py",
@@ -14334,7 +16775,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 117
+      "lines": 118
     }
   ],
   "retired": [

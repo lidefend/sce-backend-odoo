@@ -6795,3 +6795,53 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   scripts/ci/test_release_candidate_gate.py`, `python3
   scripts/ci/test_ci_risk_workflow_contract.py`, and `python3
   scripts/verify/test_github_actions_security_guard.py`.
+
+## 2026-09-01 — Guard registry orphan acknowledgement closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `731ca2751c31d3fb8d2f68074a15016533da89e`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool /
+  verification registry governance / `scripts/verify` and
+  `docs/ops/iterations`.
+- Reason: `scripts/verify/test_frontend_productization_fixture_upsert.py`
+  exists on disk and verifies acceptance-fixture xmlid rebinding safety, but
+  it is not referenced by any governed Make or CI entry. The R7 guard registry
+  requires every such orphan script to be explicitly acknowledged in
+  `scripts/verify/registry.yaml`.
+- Why here / why not elsewhere: this is verification-corpus lifecycle metadata,
+  not product behavior, contract authority, frontend rendering, customer
+  configuration, or runtime-profile ownership.
+- Blast radius and evidence: registry metadata and resumable iteration context
+  only. Product code is unchanged; the target unit test remains green via
+  `python3 -m unittest scripts/verify/test_frontend_productization_fixture_upsert.py`.
+
+## 2026-09-01 — Guard registry audit runtime closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `731ca2751c31d3fb8d2f68074a15016533da89e`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool /
+  verification registry audit scalability / `scripts/verify`,
+  `docs/audit/guard_registry`, and `docs/ops/iterations`.
+- Reason: after acknowledging the orphan script, the governed full-registry
+  audit still needed a practical runtime path on the current 1270-script
+  corpus. The audit implementation was reworked to build one filename/import
+  index up front and confirm only candidate matches, then the deterministic
+  registry export was refreshed from the new classifier. The same batch also
+  refreshed `docs/engineering_convergence/test_inventory.csv` because the new
+  governance unit `scripts/verify/test_guard_registry_audit.py` made the test
+  inventory stale and caused the local PR-equivalent inventory gate to fail
+  closed until regenerated.
+- Why here / why not elsewhere: this is verification-tooling performance and
+  export-governance ownership. It does not belong in product modules,
+  frontend behavior, customer configuration, or runtime-profile policy.
+- Blast radius and evidence: guard-registry inventory/export metadata plus the
+  new audit unit coverage only. Verified with `python3 -m unittest
+  scripts/verify/test_guard_registry_audit.py
+  scripts/verify/test_frontend_productization_fixture_upsert.py`, `python3
+  scripts/verify/guard_registry_audit.py`, and `python3
+  scripts/verify/guard_registry_audit.py --export`. The PR-equivalent CI path
+  also passed with `python3 scripts/ci/generate_test_inventory.py`, `python3
+  scripts/verify/test_github_actions_security_guard.py`, `python3
+  scripts/verify/github_actions_security_guard.py`, and `python3
+  scripts/verify/repository_clean_history_guard.py --trusted-base
+  b9e3e56a80c02c1eb277d2ac573e10286c4cd8e8`.
