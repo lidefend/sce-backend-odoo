@@ -79,7 +79,9 @@ summarizes that publication qualification.
 - A frontend filename cannot downgrade a security, tenant, importer, identity,
   or migration path.
 - Unknown paths remain high risk.
-- `merge_policy_gate` remains the only merge-required branch-protection status.
+- The ruleset directly requires `frontend_release_gate`, `merge_policy_gate`,
+  `professional_quality_gate`, and `public_guard`; no workflow polls sibling
+  runs to reproduce their result.
 - `release_candidate_gate` remains publication-only and exact-head bound.
 
 ## Expected effect

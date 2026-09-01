@@ -30,10 +30,11 @@ CI is split into trust and delivery lanes:
    uses an isolated GitHub-hosted runner because no self-hosted runner is
    registered to the new authoritative repository.
 
-3. `merge_policy_gate` is the only required branch-protection status for
-   ordinary merges into `main`. It aggregates the exact-head outcome of the
-   daily PR lanes and reports merge eligibility without implying release
-   readiness.
+3. The active ruleset directly requires `frontend_release_gate`,
+   `merge_policy_gate`, `professional_quality_gate`, and `public_guard` for
+   ordinary merges into `main`. `merge_policy_gate` reports the selected risk
+   lane; GitHub binds the four independent outcomes to the exact head without
+   cross-workflow polling.
 4. `release_candidate_gate` is a separate exact-head publication lane. It runs
    only for explicit candidate requests such as the governed `ci:candidate`
    label event, `push` on `main`, or an authorized `workflow_dispatch`. Its

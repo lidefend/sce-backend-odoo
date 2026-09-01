@@ -10,8 +10,6 @@ on:
 
 permissions:
   contents: read
-  checks: read
-  actions: read
 
 concurrency:
   group: merge-policy-${{ github.event.pull_request.number || github.ref }}
@@ -69,19 +67,13 @@ jobs:
     needs: [classify, fast]
     if: always()
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-      HEAD_SHA: ${{ needs.classify.outputs.head }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ needs.classify.outputs.head }}
           persist-credentials: false
 
-      - name: Resolve merge eligibility once
+      - name: Resolve merge-policy lane once
         run: |
           set -euo pipefail
           if [ "${{ needs.classify.outputs.lane }}" = "FAST" ]; then
@@ -89,27 +81,6 @@ jobs:
             exit 0
           fi
           test "${{ needs.fast.result }}" = skipped
-          required=(public_guard.yml professional_quality_gate.yml frontend_release_gate.yml)
-          for attempt in $(seq 1 90); do
-            pending=0
-            for workflow in "${required[@]}"; do
-              runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=${GITHUB_EVENT_NAME}&per_page=100")"
-              latest="$(python3 scripts/ci/select_authoritative_workflow_run.py \
-                --repository "$GITHUB_REPOSITORY" \
-                --workflow-path ".github/workflows/${workflow}" \
-                --head "$HEAD_SHA" \
-                --event "$GITHUB_EVENT_NAME" <<<"$runs")"
-              test -n "$latest" || { pending=1; continue; }
-              status="$(jq -r '.status' <<<"$latest")"
-              conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"
-              test "$status" = completed || { pending=1; continue; }
-              test "$conclusion" = success || { echo "required workflow failed: $workflow" >&2; exit 1; }
-            done
-            test "$pending" = 0 && exit 0
-            sleep 10
-          done
-          echo "timed out waiting for exact-head required checks" >&2
-          exit 1
 
       - name: Publish lane summary
         env:

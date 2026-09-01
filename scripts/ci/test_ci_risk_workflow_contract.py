@@ -42,9 +42,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("name: merge_policy_gate", aggregate)
         self.assertIn("name: merge_policy_gate", aggregate)
         self.assertIn("needs: [classify, fast]", aggregate)
-        self.assertIn("Resolve merge eligibility once", aggregate)
-        self.assertIn("select_authoritative_workflow_run.py", aggregate)
-        self.assertIn("actions/workflows/${workflow}/runs", aggregate)
+        self.assertIn("Resolve merge-policy lane once", aggregate)
+        merge_job = aggregate.split("  merge_policy_gate:", 1)[1]
+        self.assertNotIn("select_authoritative_workflow_run.py", merge_job)
+        self.assertNotIn("actions/workflows/${workflow}/runs", merge_job)
         self.assertNotIn('test "$count" = 1', aggregate)
         self.assertNotIn("continue-on-error:", aggregate)
 
