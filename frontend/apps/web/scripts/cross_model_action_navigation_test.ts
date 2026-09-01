@@ -166,6 +166,20 @@ const targetPageIdentity = resolveProductPageIdentity(buildContractFormPageIdent
 }));
 assert.equal(targetPageIdentity.title, '新建Create target settlement', 'create identity consumes the backend action-result title before category or stored action labels');
 
+const directCreatePageIdentity = resolveProductPageIdentity(buildContractFormPageIdentity({
+  action: { name: '新项目立项', model_label: '项目立项' },
+  authoritativeActionName: '项目立项',
+  contract: {},
+  formData: {},
+  isCreate: true,
+  isEdit: false,
+  modelName: 'project.project',
+  recordMissing: false,
+  renderError: false,
+  status: 'ready',
+}));
+assert.equal(directCreatePageIdentity.title, '新建项目立项', 'direct create identity prefers the authoritative backend action name over a create-oriented menu label');
+
 const rawOnlyTargets: Array<Record<string, unknown>> = [];
 const rawOnlyNavigation = useActionResponseNavigation({
   router: {

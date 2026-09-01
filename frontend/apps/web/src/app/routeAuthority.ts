@@ -17,6 +17,7 @@ export interface RouteAuthorityEntry {
   menu_xmlid: string;
   action_id: number;
   name: string;
+  action_name?: string;
   model: string;
   view_modes: string[];
   view_id?: number;
@@ -69,6 +70,7 @@ function normalizeEntry(value: unknown, expectedKind: RouteAuthorityKind, allowC
     menu_xmlid: menuXmlid,
     action_id: actionId,
     name: String(row.name || '').trim(),
+    action_name: String(row.action_name || '').trim() || undefined,
     model: String(row.model || '').trim(),
     view_modes: Array.isArray(row.view_modes) ? row.view_modes.map((item) => String(item || '').trim()).filter(Boolean) : [],
     view_id: positiveInteger(row.view_id) || undefined,

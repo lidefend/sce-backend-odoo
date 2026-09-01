@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 375,
+      "productionConsumerCount": 376,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -363,7 +363,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 74,
+      "productionConsumerCount": 75,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -398,7 +398,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 63,
+      "productionConsumerCount": 64,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1064,6 +1064,7 @@
     },
     {
       "adapterKeys": [
+        "ScIconButton",
         "ScTabs"
       ],
       "adapterSources": [
@@ -1074,7 +1075,9 @@
           "source": "frontend/apps/web/src/components/design-system/ScTabs.vue"
         },
         {
-          "semanticAdapters": [],
+          "semanticAdapters": [
+            "ScIconButton"
+          ],
           "source": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
         }
       ],
@@ -1082,7 +1085,7 @@
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 2,
+      "productionConsumerCount": 17,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1291,7 +1294,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "34988a5a4a6d07922c7987c76ffb6bf91910fc4ca75bff9ea26eb5e0c8a133aa",
+  "inputDigest": "2b264afbc07e82c93685da1dfad74d1bd0ba88742af5012ebcc1318270ed7387",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

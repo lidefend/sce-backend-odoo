@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import { computed, ref, useAttrs } from 'vue';
 import { TDesignButton } from './tdesignPrimitiveBridge';
-withDefaults(defineProps<{ label: string; disabled?: boolean; appearance?: 'default' | 'toolbar-menu-toggle' | 'favorite-toggle' | 'outline-action' | 'column-handle' | 'activity-rail' }>(), {
+withDefaults(defineProps<{ label: string; disabled?: boolean; appearance?: 'default' | 'toolbar-menu-toggle' | 'favorite-toggle' | 'outline-action' | 'column-handle' | 'activity-rail' | 'activity-tab-close' }>(), {
   appearance: 'default',
 });
 

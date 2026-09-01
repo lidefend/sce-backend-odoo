@@ -5,6 +5,7 @@ import {
   formatDuration,
   formatPercentage,
   isProfessionalBusinessValueField,
+  normalizeBusinessValueChoiceOptions,
   statusSemantic,
 } from '../src/components/professional-fields/professionalBusinessValueModel';
 
@@ -38,5 +39,15 @@ assert.equal(formatPercentage(12.5), '12.5%');
 assert.equal(formatDuration(1.5), '1 小时 30 分钟');
 assert.equal(statusSemantic('approved'), 'success');
 assert.equal(statusSemantic('rejected'), 'danger');
+assert.deepEqual(
+  normalizeBusinessValueChoiceOptions([
+    { id: 50, value: 50, label: 'Demo Role Owner' },
+    { value: 'approved', label: '已审批' },
+  ]),
+  [
+    { value: '50', label: 'Demo Role Owner' },
+    { value: 'approved', label: '已审批' },
+  ],
+);
 
-console.log(`[professional_business_value_model_test] PASS matrix=${matrix} counterexamples=7`);
+console.log(`[professional_business_value_model_test] PASS matrix=${matrix} counterexamples=8`);
