@@ -6963,3 +6963,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `50`; payment request acceptance showed 39 fields and the declared settlement
   collection component. The focused cross-model finalizer test passed and
   asserts both models remain on the existing V2 authority chain.
+
+## 2026-09-01 — Activity-page create identity publication closure
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `f49545191109731d7e20b3e645f699e6ad1b2692`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / generic
+  activity-page identity publication / `frontend/apps/web`.
+- Reason: a new contract form was published to the activity tabs before its
+  authoritative page identity was available, and the later title callback
+  intentionally collapsed the create title back to the entry action name.
+  List and create pages could therefore remain independently open but appear
+  under the same title. New record/model-form routes now stay settling until
+  the page identity publisher provides the final title, then become visible in
+  one step.
+- Why here / why not elsewhere: this is generic page lifecycle behavior shared
+  by every contract form. No project/payment model, Chinese-label map, Scene
+  contract, or backend business rule was added.
+- Blast radius and evidence: only new contract-form activity-page publication
+  timing changes; saved records, action carriers, cross-model retention,
+  capacity, dirty-page protection, and TDesign tab rendering remain unchanged.
+  Strict typecheck and the state/dashboard activity tests passed. After the
+  governed local frontend rebuild, the logged-in route from action 722 retained
+  payment pages and published the new project page directly as
+  `新建项目立项`, with no visible intermediate `项目立项` tab for that instance.

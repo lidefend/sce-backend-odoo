@@ -7,6 +7,11 @@ export interface BusinessActivityTitleInput {
   fallback?: unknown;
 }
 
+export interface ActivityPageTitlePublicationInput {
+  routeName?: unknown;
+  recordId?: unknown;
+}
+
 function titleText(value: unknown): string {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
@@ -24,4 +29,12 @@ export function resolveBusinessActivityTitle(input: BusinessActivityTitleInput):
     || input.menuTitle
     || input.fallback,
   );
+}
+
+export function shouldDeferActivityPageTitle(
+  input: ActivityPageTitlePublicationInput,
+): boolean {
+  const routeName = titleText(input.routeName);
+  return (routeName === 'record' || routeName === 'model-form')
+    && titleText(input.recordId) === 'new';
 }

@@ -579,7 +579,6 @@ import { usePageContract } from '../app/pageContract';
 import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import { usePublishedPageIdentity } from '../app/usePublishedPageIdentity';
 import { findRouteAuthority } from '../app/routeAuthority';
-import { resolveBusinessActivityTitle } from '../app/activityPageTitle';
 import {
   activeChatterPlaceholder as activeChatterPlaceholderFromMode,
   activeChatterPostingLabel as activeChatterPostingLabelFromMode,
@@ -1161,9 +1160,10 @@ const pageIdentityInput = computed(() => buildContractFormPageIdentity({ action:
   recordMissing: recordMissing.value, renderError: Boolean(renderErrorMessage.value), status: status.value }));
 const pageIdentity = usePublishedPageIdentity(pageIdentityInput, { routeKey: () => route.fullPath,
   active: () => isComponentActive.value && isFormPageRouteOwner(route.name),
-  onTitle: (title) => session.updateActiveActivityTitle(recordId.value ? title : resolveBusinessActivityTitle({
-    authorityName: currentRouteAuthority.value?.action_name || currentRouteAuthority.value?.name, businessLabel: currentBusinessCategoryLabel.value, actionTitle: currentActionMeta.value?.ui_title || currentActionMeta.value?.scene_title || currentActionMeta.value?.name, modelLabel: currentActionMeta.value?.model_label,
-    menuTitle: currentActionMeta.value?.menu_title || currentMenuTitle.value, fallback: '业务表单' })),
+  onTitle: (title) => {
+    session.updateActiveActivityTitle(title);
+    session.settleActivityPage(session.activeActivityPageKey);
+  },
 });
 const canonicalShellTitle = computed(() => canonicalFormRenderState.value.model?.shell.title || '');
 const pageDisplayTitle = computed(() => canonicalShellTitle.value || pageIdentity.value.title);

@@ -5,7 +5,10 @@ import {
   trimRetainedActivityPages,
   type RetainedActivityPageLike,
 } from '../src/app/activityPageRetention';
-import { resolveBusinessActivityTitle } from '../src/app/activityPageTitle';
+import {
+  resolveBusinessActivityTitle,
+  shouldDeferActivityPageTitle,
+} from '../src/app/activityPageTitle';
 
 function createPage(overrides: Partial<RetainedActivityPageLike> = {}): RetainedActivityPageLike {
   return {
@@ -83,3 +86,21 @@ assert.equal(resolveBusinessActivityTitle({
 }), '新项目立项', 'fallback activity names are not decorated with a page mode');
 
 console.log('[activity_page_title_test] PASS cases=2');
+
+assert.equal(
+  shouldDeferActivityPageTitle({ routeName: 'model-form', recordId: 'new' }),
+  true,
+  'new contract forms wait for the published page identity before showing a tab',
+);
+assert.equal(
+  shouldDeferActivityPageTitle({ routeName: 'record', recordId: '157' }),
+  false,
+  'saved records retain their immediately available record identity',
+);
+assert.equal(
+  shouldDeferActivityPageTitle({ routeName: 'action', recordId: 'new' }),
+  false,
+  'action carriers keep their existing governed settling lifecycle',
+);
+
+console.log('[activity_page_title_publication_test] PASS cases=3');
