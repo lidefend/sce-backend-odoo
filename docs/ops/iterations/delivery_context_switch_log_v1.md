@@ -6868,3 +6868,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   scripts/ci/test_release_candidate_gate.py`, `python3
   scripts/verify/test_github_actions_security_guard.py`, and `python3
   scripts/verify/github_actions_security_guard.py`.
+
+## 2026-09-01 — Payment request single-primary-action truth closure
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `1d1ddec191e42fa6b7b99e4b24f3f64fc6b389e6`.
+- Formal Product Layer / Layer Target / Module: P0 platform mechanism plus P1
+  construction standard / Contract V2 form action projection and shared form
+  rendering / `smart_core`, `smart_construction_core`, and
+  `frontend/apps/web`.
+- Reason: the payment request current-task fact was converted into a second
+  executable action by a shared-frontend Chinese-label-to-method map, while
+  the canonical workflow already supplied the page header action. The inferred
+  path was removed so task text remains a backend-owned fact and executable
+  actions come only from the normalized contract.
+- Why here / why not elsewhere: permission, state, blockers, next-step text,
+  and executable action identity remain backend authorities. The shared
+  frontend only renders the explicit contract and may not infer a business
+  method from a displayed label.
+- Blast radius and evidence: payment request and every contract form now share
+  the same no-label-inference rule; no business model, contract variant,
+  runtime profile, or database was added. Verified with
+  `python3 scripts/verify/frontend_shared_surface_semantic_boundary_guard.py`,
+  `make verify.frontend.component_driver_takeover.unit`, and
+  `make verify.frontend.release.unit`.

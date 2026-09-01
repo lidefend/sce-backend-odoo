@@ -317,8 +317,6 @@ import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
 import { executeButton } from '../api/executeButton';
-import { ScTaskActionResolverKey } from '../components/template/taskActionResolver';
-import { createNextTaskActionResolver } from '../components/template/nextTaskAction';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
 import type { FieldDescriptor } from '@sc/schema';
@@ -962,14 +960,6 @@ const recordId = computed(() => {
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
 
-provide(ScTaskActionResolverKey, createNextTaskActionResolver({
-  getRecordId: () => recordId.value ?? undefined,
-  runAction: async (_label: string, methodName: string) => {
-    try {
-      await executeButton({ model: model.value, res_id: recordId.value as number, button: { name: methodName, type: 'object' }, meta: { menu_id: Number(route.query.menu_id || 0) || undefined, action_id: actionId.value || undefined } });
-    } finally { await reload(); }
-  },
-}));
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));

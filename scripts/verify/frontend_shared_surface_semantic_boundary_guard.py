@@ -14,6 +14,7 @@ PROTECTED_FILES = (
     ROOT / "frontend/apps/web/src/views/HomeView.vue",
     ROOT / "frontend/apps/web/src/views/MyWorkView.vue",
     ROOT / "frontend/apps/web/src/pages/ListPage.vue",
+    ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
     ROOT / "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
     ROOT / "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
     ROOT / "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
@@ -78,6 +79,11 @@ RULES: tuple[tuple[str, re.Pattern[str], str], ...] = (
         "business-field-literal",
         re.compile(r"['\"`](?:project_id|parent_id|work_id|boq_line_id|execution_scope_id)['\"`]"),
         "共享渲染器不得硬编码行业业务字段，字段绑定必须来自后端契约。",
+    ),
+    (
+        "label-to-method-inference",
+        re.compile(r"(?:METHOD|method)[A-Za-z_]*(?:BY_LABEL|LABEL)[A-Za-z_]*\s*(?::[^=]+)?=\s*[{[]"),
+        "共享前端不得把显示标签反向映射为业务方法；动作必须来自后端契约。",
     ),
 )
 
