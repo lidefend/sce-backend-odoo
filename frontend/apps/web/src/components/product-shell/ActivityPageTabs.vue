@@ -23,6 +23,7 @@
           <span class="activity-page-tab-title">{{ page.title }}</span>
           <ScIconButton
             class="activity-page-tab-close"
+            appearance="activity-tab-close"
             :label="`${closeLabel}“${page.title}”`"
             @click.stop="handleExplicitClose(page)"
           >×</ScIconButton>
@@ -151,32 +152,6 @@ async function handleKeydown(event: KeyboardEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.activity-page-tab-close {
-  display: inline-grid;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--sc-product-radius-control);
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  cursor: pointer;
-  font: inherit;
-  line-height: 1;
-  place-items: center;
-}
-
-.activity-page-tab-close:hover {
-  background: var(--sc-app-hover-bg);
-  color: var(--sc-app-text);
-}
-
-.activity-page-tab-close:focus-visible {
-  outline: 2px solid var(--sc-app-focus-ring);
-  outline-offset: 1px;
 }
 
 .activity-page-tabs :deep(.t-tabs__content) {
