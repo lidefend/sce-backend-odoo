@@ -15,7 +15,7 @@ readonly expected_sha="${GITHUB_AUTHORITY_RULESET_EXPECTED_SHA:-}"
 
 readonly repository="lidefend/sce-backend-odoo"
 readonly ruleset_name="main-github-authoritative-pr"
-readonly required_checks="merge_policy_gate"
+readonly required_checks="frontend_release_gate merge_policy_gate professional_quality_gate public_guard"
 
 remote_main="$(gh api "repos/${repository}/git/ref/heads/main" --jq .object.sha)"
 [ "${remote_main}" = "${expected_sha}" ] || {
@@ -62,7 +62,10 @@ jq -n --arg name "${ruleset_name}" '{
       do_not_enforce_on_create: false,
       strict_required_status_checks_policy: true,
       required_status_checks: [
-        {context: "merge_policy_gate"}
+        {context: "frontend_release_gate"},
+        {context: "merge_policy_gate"},
+        {context: "professional_quality_gate"},
+        {context: "public_guard"}
       ]
     }}
   ]
@@ -87,7 +90,7 @@ gh api "repos/${repository}/rulesets/${ruleset_id}" --jq '
   | select(
       ([.rules[] | select(.type == "required_status_checks")
         | .parameters.required_status_checks[].context] | sort)
-      == ["merge_policy_gate"])
+      == ["frontend_release_gate", "merge_policy_gate", "professional_quality_gate", "public_guard"])
   | .id' | grep -qx "${ruleset_id}"
 
-echo "[github_authority_ruleset] PASS ruleset_id=${ruleset_id} sha=${expected_sha} required_checks=1 bypass_actors=none write_deploy_keys=0"
+echo "[github_authority_ruleset] PASS ruleset_id=${ruleset_id} sha=${expected_sha} required_checks=4 bypass_actors=none write_deploy_keys=0"

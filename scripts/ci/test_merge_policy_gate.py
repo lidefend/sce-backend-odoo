@@ -15,26 +15,18 @@ class MergePolicyGateContractTests(unittest.TestCase):
 
     def test_fast_and_required_paths_are_disjoint_and_fail_closed(self) -> None:
         self.assertIn("needs.classify.outputs.lane == 'FAST'", self.workflow)
-        self.assertIn("Resolve merge eligibility once", self.workflow)
+        self.assertIn("Resolve merge-policy lane once", self.workflow)
         self.assertIn('if [ "${{ needs.classify.outputs.lane }}" = "FAST" ]', self.workflow)
         self.assertIn('test "${{ needs.fast.result }}" = skipped', self.workflow)
         self.assertNotIn("  full:", self.workflow)
         self.assertIn("--base", self.workflow)
         self.assertIn("--head", self.workflow)
 
-    def test_full_binds_existing_checks_to_the_exact_head(self) -> None:
-        for workflow in (
-            "public_guard.yml",
-            "professional_quality_gate.yml",
-            "frontend_release_gate.yml",
-        ):
-            self.assertIn(workflow, self.workflow)
-        self.assertIn("select_authoritative_workflow_run.py", self.workflow)
-        self.assertIn("--workflow-path", self.workflow)
-        self.assertIn("--repository", self.workflow)
-        self.assertIn("--event", self.workflow)
-        self.assertNotIn('test "$count" = 1', self.workflow)
-        self.assertIn("required workflow failed", self.workflow)
+    def test_merge_gate_does_not_poll_sibling_workflows(self) -> None:
+        merge_job = self.workflow.split("  merge_policy_gate:", 1)[1]
+        self.assertNotIn("select_authoritative_workflow_run.py", merge_job)
+        self.assertNotIn("actions/workflows/${workflow}/runs", merge_job)
+        self.assertNotIn("sleep 10", merge_job)
 
     def test_summary_publishes_effective_daily_vs_candidate_lane(self) -> None:
         self.assertIn("Publish lane summary", self.workflow)
@@ -47,11 +39,19 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("Ordinary PR governance changes were downgraded", self.workflow)
         self.assertIn("Explicit candidate validation was requested for this exact head.", self.workflow)
 
-    def test_ruleset_requires_only_the_aggregate_without_bypass(self) -> None:
-        self.assertIn('readonly required_checks="merge_policy_gate"', self.ruleset)
-        self.assertIn('{context: "merge_policy_gate"}', self.ruleset)
+    def test_ruleset_requires_each_authoritative_check_without_bypass(self) -> None:
+        self.assertIn(
+            'readonly required_checks="frontend_release_gate merge_policy_gate professional_quality_gate public_guard"',
+            self.ruleset,
+        )
+        for check in (
+            "frontend_release_gate",
+            "merge_policy_gate",
+            "professional_quality_gate",
+            "public_guard",
+        ):
+            self.assertIn(f'{{context: "{check}"}}', self.ruleset)
         self.assertIn("bypass_actors: []", self.ruleset)
-        self.assertNotIn('{context: "public_guard"}', self.ruleset)
 
 
 if __name__ == "__main__":
