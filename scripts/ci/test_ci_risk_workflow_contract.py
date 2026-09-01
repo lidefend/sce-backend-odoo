@@ -130,13 +130,14 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("PROFESSIONAL_MODE == 'governance'", text)
         self.assertIn("github.event.action == 'labeled' && github.event.label.name == 'ci:candidate'", text)
         self.assertIn(
-            'FRONTEND_CHANGED: ${{ needs.professional_authorization.outputs.frontend_changed }}',
+            "FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}",
             text,
         )
         self.assertIn(
-            'BACKEND_CHANGED: ${{ needs.professional_authorization.outputs.backend_changed }}',
+            "BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}",
             text,
         )
+        self.assertIn("github.event_name == 'schedule' && 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'standard_backend'", text)
         self.assertIn("PROFESSIONAL_MODE == 'fast'", text)
@@ -162,6 +163,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("test_ci_risk_workflow_contract.py", governance_section)
         self.assertIn("ci.generated_reports.guard", governance_section)
         self.assertNotIn("make ci.professional.backend", governance_section)
+
         fast_section = text.split("- name: Run Fast lightweight quality gate", 1)[1].split(
             "- name: Run standard frontend quality gate", 1
         )[0]
@@ -184,6 +186,30 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("github_actions_security_guard.py", mainline_section)
         self.assertIn("ci.generated_reports.guard", mainline_section)
         self.assertNotIn("ci.professional.backend", mainline_section)
+
+    def test_nightly_candidate_is_separate_from_main_push(self) -> None:
+        for workflow in (
+            "frontend_release_gate.yml",
+            "merge_policy_gate.yml",
+            "professional_quality_gate.yml",
+            "public_guard.yml",
+            "release_candidate_gate.yml",
+        ):
+            text = self.text(workflow)
+            self.assertIn("cron: '30 18 * * *'", text)
+        frontend = self.text("frontend_release_gate.yml")
+        self.assertIn("github.event_name == 'schedule'", frontend)
+        self.assertIn("mode='full'", frontend)
+        self.assertNotIn("github.event_name != 'pull_request' || github.event.action", frontend)
+        professional = self.text("professional_quality_gate.yml")
+        self.assertEqual(
+            professional.count(
+                "if: github.event_name == 'schedule' || steps.risk.outputs.professional_mode == 'full'"
+            ),
+            2,
+        )
+        release = self.text("release_candidate_gate.yml")
+        self.assertNotIn("  push:\n    branches: [main]", release)
 
         makefile = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
         professional_target = makefile.split("ci.professional.backend:", 1)[1].split("\n", 1)[0]

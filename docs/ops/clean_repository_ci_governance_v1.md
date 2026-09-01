@@ -37,8 +37,10 @@ CI is split into trust and delivery lanes:
    cross-workflow polling.
 4. `release_candidate_gate` is a separate exact-head publication lane. It runs
    only for explicit candidate requests such as the governed `ci:candidate`
-   label event, `push` on `main`, or an authorized `workflow_dispatch`. Its
-   success means the head is qualified for release review, not merely mergeable.
+   label event, the nightly `18:30 UTC` (`02:30 Asia/Shanghai`) schedule, or an
+   authorized `workflow_dispatch`. An ordinary `push` on `main` runs mainline
+   health and is not a candidate request. Candidate success means the exact head
+   is qualified for release review, not merely mergeable.
 
 Each professional run uses a fresh GitHub-hosted runner with read-only token
 permissions. If a dedicated runner is introduced later, it requires a separate
