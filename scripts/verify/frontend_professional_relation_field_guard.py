@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
     failures: list[str] = []
     component = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalRelationFieldControl.vue")
+    many2one = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue")
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalRelationFieldModel.ts")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
@@ -22,7 +23,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"professional relation field missing marker {marker}")
     if section.count("<ProfessionalRelationFieldControl") < 2:
         failures.append("FormSection does not route many2one and many2many through the relation family")
-    if "import ScButton from '../design-system/ScButton.vue'" not in section or section.count("<ScButton") != 5:
+    if "import ScButton from '../design-system/ScButton.vue'" not in many2one or many2one.count("<ScButton") != 5:
         failures.append("many2one options and lifecycle commands must consume five shared ScButton primitives")
     if "import ScInput from '../design-system/ScInput.vue'" not in section or '<ScInput\n              v-else-if="fieldConfigEditable"' not in section:
         failures.append("field configuration label editor must consume the shared ScInput primitive")
@@ -32,16 +33,16 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         'v-if="field.many2oneOpenToken"',
         'v-if="field.many2oneSearchToken"',
         'field.many2oneCreateToken',
-        'v-if="showMany2oneInlineCreate(field)"',
+        'v-if="showInlineCreate"',
     ):
-        if marker not in section:
+        if marker not in many2one:
             failures.append(f"many2one lifecycle command authority is incomplete: {marker}")
-    if ".many2one-action:hover" in section or ".many2one-action {\n  min-height:" in section:
+    if ".many2one-action:hover" in many2one or ".many2one-action {\n  min-height:" in many2one:
         failures.append("many2one lifecycle commands override shared ScButton presentation")
-    if '<ScButton\n                          v-for="(option, optionIndex)' not in section:
+    if '<ScButton\n                type="button"' not in many2one:
         failures.append("many2one stateful listbox options must consume the shared ScButton primitive")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
-        if forbidden in component or forbidden in model:
+        if forbidden in component or forbidden in many2one or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")
     return failures
 

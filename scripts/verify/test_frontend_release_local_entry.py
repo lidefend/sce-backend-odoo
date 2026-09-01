@@ -218,6 +218,17 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
             self.assertLess(cleanup, backend, target)
             self.assertLess(backend, login_probe, target)
             self.assertLess(login_probe, frontend, target)
+        page_identity_block = source.rsplit("verify.frontend.page_identity.browser:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+        self.assertIn(
+            "frontend_acceptance_operation_entry.sh page-identity-runtime-ids",
+            page_identity_block,
+        )
+        page_identity_runtime_line = next(
+            line for line in page_identity_block.splitlines() if "runtime_output=" in line
+        )
+        self.assertNotIn("$(RUN_ENV)", page_identity_runtime_line)
 
     def test_release_performance_probe_uses_governed_acceptance_identity_only(self) -> None:
         runtime_make = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
@@ -244,6 +255,17 @@ class FrontendReleaseLocalEntryTest(unittest.TestCase):
                 ";;", 1
             )[0]
             self.assertIn("frontend_delivery_hardening_runtime_ids.py", operation)
+            self.assertIn("ODOO_SHELL_RUN_ISOLATED=1", operation)
+
+        for relative_path in (
+            "scripts/dev/frontend_acceptance_runtime.sh",
+            "scripts/dev/frontend_acceptance_operation_entry.sh",
+        ):
+            source = (ROOT / relative_path).read_text(encoding="utf-8")
+            operation = source.split("page-identity-runtime-ids)", 1)[1].split(
+                ";;", 1
+            )[0]
+            self.assertIn("frontend_page_identity_runtime_metadata.py", operation)
             self.assertIn("ODOO_SHELL_RUN_ISOLATED=1", operation)
 
     def test_ci_starts_http_carrier_after_install_and_stops_after_first_browser_failure(self) -> None:

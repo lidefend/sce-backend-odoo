@@ -217,7 +217,7 @@ def _normalize_page_type(page_key: str) -> str:
     key = str(page_key or "").strip().lower()
     if key in {"home", "workbench"}:
         return "workspace"
-    if key in {"login", "menu", "placeholder"}:
+    if key in {"login", "account_activation", "password_recovery", "menu", "placeholder"}:
         return "entry_hub"
     if key in {"my_work"}:
         return "approval"
@@ -578,6 +578,10 @@ def _default_page_actions(page_key: str, profile_overrides: Dict[str, Any] | Non
         return [
             {"key": "open_account_activation", "label": "激活账号", "intent": "ui.contract"},
             {"key": "open_password_recovery", "label": "忘记密码", "intent": "ui.contract"},
+        ]
+    if key in {"account_activation", "password_recovery"}:
+        return [
+            {"key": "open_login", "label": "返回登录", "intent": "ui.contract"},
         ]
     if key == "home":
         return [
@@ -954,6 +958,47 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
                     "value_line_2": "让流程可控",
                     "value_line_3": "让协同高效",
                     "value_line_4": "让风险可预警",
+                },
+            },
+            "account_activation": {
+                "schema_version": "2.0.0",
+                "sections": [
+                    {"key": "card", "enabled": True, "order": 1, "tag": "section"},
+                    {"key": "code_form", "enabled": True, "order": 2, "tag": "section"},
+                    {"key": "password_form", "enabled": True, "order": 3, "tag": "section"},
+                    {"key": "success", "enabled": True, "order": 4, "tag": "section"},
+                    {"key": "message", "enabled": True, "order": 5, "tag": "section"},
+                    {"key": "support", "enabled": True, "order": 6, "tag": "section"},
+                ],
+                "texts": {
+                    "title": "激活账号",
+                    "hint_code": "请输入经批准渠道单独收到的激活码，并设置自己的正式密码。",
+                    "hint_password": "密码至少12位，并同时包含字母和数字。",
+                    "activation_code_label": "激活码",
+                    "activation_code_placeholder": "请输入激活码",
+                    "password_label": "正式密码",
+                    "password_confirm_label": "确认正式密码",
+                    "submit_code_idle": "继续",
+                    "submit_code_loading": "正在验证…",
+                    "submit_password_idle": "设置正式密码",
+                    "submit_password_loading": "正在设置…",
+                    "success_message": "账号激活成功。现在可以使用正式密码登录。",
+                    "back_to_login": "返回登录",
+                    "error_incomplete": "激活请求未完成",
+                },
+            },
+            "password_recovery": {
+                "schema_version": "2.0.0",
+                "sections": [
+                    {"key": "card", "enabled": True, "order": 1, "tag": "section"},
+                    {"key": "message", "enabled": True, "order": 2, "tag": "section"},
+                    {"key": "support", "enabled": True, "order": 3, "tag": "section"},
+                ],
+                "texts": {
+                    "title": "忘记密码",
+                    "message_default": "当前请通过已批准的组织身份核验流程申请密码恢复。",
+                    "hint": "为保护账号安全，本页面不会确认某个账号是否存在。",
+                    "back_to_login": "返回登录",
                 },
             },
             "menu": {

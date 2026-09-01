@@ -6,15 +6,30 @@ from scripts.verify.frontend_dev_incremental import FALLBACK_TARGET, select_targ
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
-    def test_login_change_selects_only_focused_checks(self) -> None:
+    def test_auth_entry_changes_select_only_auth_surface_checks(self) -> None:
         targets = select_targets(["frontend/apps/web/src/views/LoginView.vue"])
         self.assertEqual(
             targets,
             [
                 "verify.frontend.auth_credential.guard",
+                "verify.frontend.auth_surface.guard",
                 "verify.frontend.page_pattern_reference_parity.unit",
             ],
         )
+
+    def test_activation_and_recovery_changes_share_auth_surface_checks(self) -> None:
+        for path in (
+            "frontend/apps/web/src/views/AccountActivationView.vue",
+            "frontend/apps/web/src/views/PasswordRecoveryView.vue",
+        ):
+            self.assertEqual(
+                select_targets([path]),
+                [
+                    "verify.frontend.auth_credential.guard",
+                    "verify.frontend.auth_surface.guard",
+                    "verify.frontend.page_pattern_reference_parity.unit",
+                ],
+            )
 
     def test_related_changes_are_merged_and_deduplicated(self) -> None:
         targets = select_targets(

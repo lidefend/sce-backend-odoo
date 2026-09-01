@@ -38,6 +38,12 @@ def menu_first_reachable_target() -> Dict[str, Any]:
 def resolve_action_target(action_key: str, page_key: str) -> Dict[str, Any]:
     key = str(action_key or "").strip().lower()
     page = str(page_key or "").strip().lower()
+    if key == "open_login":
+        return route_path_target("/login")
+    if key == "open_account_activation":
+        return route_path_target("/activate-account")
+    if key == "open_password_recovery":
+        return route_path_target("/password-recovery")
     if key == "open_risk_dashboard":
         return scene_target("workspace.home")
     if key == "open_my_work":

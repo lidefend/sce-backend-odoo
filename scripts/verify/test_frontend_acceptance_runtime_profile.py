@@ -119,14 +119,17 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             backend_up.index("validate_backend_identity"),
             backend_up.index("backend_acceptance_up.sh"),
         )
+        self.assertIn("replacing stale backend identity", backend_up)
         self.assertLess(
             backend_down.index("validate_backend_identity"),
             backend_down.index("backend_acceptance_down.sh"),
         )
+        self.assertIn("removing stale backend identity", backend_down)
         self.assertLess(
             backend_replace.index("validate_backend_resource_identity"),
             backend_replace.index("backend_acceptance_down.sh"),
         )
+        self.assertIn("replacing stale backend resource identity", backend_replace)
         self.assertIn("validate_backend_runtime", backend_replace)
         self.assertNotIn("validate_backend_identity ||", backend_replace)
         self.assertLess(

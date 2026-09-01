@@ -3,6 +3,46 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-08-31 — AUTH-SURFACE-GUARD-CONSUMPTION-CLOSURE-01
+
+- Branch / anchor: `audit/professional-component-residual-closure-v1` at
+  `55f8ecf7`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel /
+  authentication surface page-contract governance and validation aggregation /
+  `addons/smart_core`, `frontend/apps/web`, `make`, and `scripts/verify`.
+- Standard vs User-Specific: platform-standard auth entry and guard wiring
+  only; no construction workflow rule, customer preference, runtime
+  configuration, or secret-handling policy is relaxed.
+- Why Here / Why Not Elsewhere: login, activation, and recovery belong to the
+  shared platform auth-entry surface, so contract routing and guard aggregation
+  must be owned by the generic page-contract/runtime boundary. Leaving the new
+  guard outside release or incremental validation would make the policy
+  decorative instead of enforced.
+- Blast Radius: auth view incremental validation selection, release-unit guard
+  aggregation, generated component-driver takeover inventory, and auth-surface
+  audit evidence only. Validation is limited to targeted Python guards/unit
+  tests plus the existing frontend release-unit aggregate.
+
+## 2026-08-31 — PROFESSIONAL-COMPONENT-RESIDUAL-CLOSURE-01
+
+- Branch / anchor: `audit/professional-component-residual-closure-v1` at
+  `e35bd13`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel /
+  generic relation component-key projection and frontend renderer contract
+  alignment / `addons/smart_construction_core`, `frontend/apps/web`, and
+  `scripts/verify`.
+- Standard vs User-Specific: platform-standard component authority only; no
+  project workflow rule, customer preference, runtime configuration, or page
+  special case is introduced.
+- Why Here / Why Not Elsewhere: Contract-first rendering requires late project
+  layout extensions to emit the same formal `one2many` / `many2many` component
+  keys as the platform assembler. Fixing this in page templates or frontend
+  fallbacks would preserve split authority and hide contract drift.
+- Blast Radius: project responsibility/collaboration relation fields, their
+  component registry entries, and the residual regression guard. Validation is
+  limited to targeted backend tests, the dedicated verification script, and
+  strict frontend typecheck.
+
 ## 2026-08-23 — Contract V2 layout DSL convergence
 
 - Branch / anchor: `feature/layout-contract-dsl-convergence-v1` at
@@ -6657,3 +6697,174 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   but not yet backed by a production consumer are explicitly recorded as an
   implementation gap rather than completed behavior. This remains
   documentation-only.
+
+## 2026-08-31 — Professional many2one component residual closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `2448d5a83d52493cd984af039717928c0c91fa6b`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  frontend renderer relation-field decomposition / `frontend/apps/web`.
+- Reason: finish the residual extraction of editable `many2one` rendering from
+  the generic form section into a dedicated professional relation component
+  while preserving the governed `query` / `commit` / `select` event semantics.
+- Why here / why not elsewhere: this is shared renderer structure and adapter
+  governance, not industry behavior, customer preference, low-code runtime data
+  or ops repair.
+- Blast radius and evidence: editable `many2one` relation fields plus the
+  frontend relation-field, primitive-adapter and release-unit guards; verified
+  with `pnpm typecheck`, `pnpm build`, relation-field guard unittest, and
+  `make --no-print-directory verify.frontend.release.unit`.
+
+## 2026-08-31 — Authentication surface professionalization gap freeze
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `55f8ecf7c9e20bba7158639f3a99894b9d7dbde4`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  frontend authentication surface governance / `frontend/apps/web`.
+- Reason: freeze the current authentication journey's professionalization gaps
+  before adding further auth features. The audit confirms login is partially
+  page-contract-driven while activation, recovery, and API-key management still
+  sit outside one unified professional auth surface model.
+- Why here / why not elsewhere: this is shared platform auth-surface ownership,
+  not an industry rule, customer preference, low-code configuration, or ops
+  repair path.
+- Blast radius and evidence: documentation-only audit covering login,
+  platform-admin login, activation, recovery, API-key management, and their
+  guards; no runtime behavior, contract payload, router authority, or security
+  policy changed in this batch.
+
+## 2026-08-31 — Authentication surface contract closure and auth-family seeding
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `55f8ecf7c9e20bba7158639f3a99894b9d7dbde4`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  auth entry contract governance and professional component authority /
+  `addons/smart_core`, `frontend/apps/web`, and `scripts/verify`.
+- Reason: move account activation and password recovery into the same governed
+  page-contract family as login, then seed a minimal generic auth professional
+  component vocabulary without forcing API-key one-time secret handling into an
+  ordinary form renderer path.
+- Why here / why not elsewhere: auth page sections, contract actions, route
+  targets, and professional component keys are platform mechanisms. They must
+  not be hidden in page-local navigation, business modules, customer
+  configuration, or ops-only checks.
+- Blast radius and evidence: login-adjacent routes, auth page contracts,
+  generic action-target mapping, frontend auth-surface verification, and the
+  professional component registry only. Sensitive API-key handling stays under
+  dedicated fail-closed guards and explicit high-sensitivity exemption.
+
+## 2026-08-31 — Relation semantic feature closure for settlement introduce
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `55f8ecf7c9e20bba7158639f3a99894b9d7dbde4`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product
+  plus P1 construction standard product / widget semantics projection and
+  payment-request relation capability declaration / `addons/smart_core`,
+  `addons/smart_construction_core`, and `frontend/apps/web`.
+- Reason: remove the shared frontend's residual `payment.request.line` model
+  branch for settlement-line introduction and replace it with contract-owned
+  semantic feature projection consumed by the generic x2many renderer.
+- Why here / why not elsewhere: semantic projection belongs to the platform
+  parser boundary, while the existence of the settlement-introduce capability
+  belongs to the construction-standard payment-request form view. Keeping the
+  rule in the frontend would preserve split authority and product-specific
+  routing hints in a shared renderer.
+- Blast radius and evidence: payment-request outflow-line form rendering,
+  native view parser semantics, page-pattern parity, and frontend release-unit
+  aggregation only. Verified with native parser unit coverage, page-pattern
+  parity, auth-surface guards, and `make --no-print-directory
+  verify.frontend.release.unit`.
+
+## 2026-09-01 — Release candidate gate pull-request skip closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `f1d9cb4940c3164f985b24ab4f00252c90cb31d3`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool /
+  GitHub Actions candidate-publication workflow governance /
+  `.github/workflows` and `scripts/ci`.
+- Reason: PR `#386` immediately failed `release_candidate_gate` on September 1,
+  2026 because the aggregate job treated the expected non-candidate
+  `wait_for_candidate_checks=skipped` result as a failure. Candidate-only
+  publication gating must stay green on ordinary pull-request opens and fail
+  only when an explicit candidate path actually fails.
+- Why here / why not elsewhere: this is a CI aggregation contract bug in the
+  release-candidate workflow and its guard tests, not a product-code,
+  frontend, backend, customer, or runtime-profile defect.
+- Blast radius and evidence: release-candidate GitHub Actions workflow plus CI
+  contract/unit guards only. Verified with `python3
+  scripts/ci/test_release_candidate_gate.py`, `python3
+  scripts/ci/test_ci_risk_workflow_contract.py`, and `python3
+  scripts/verify/test_github_actions_security_guard.py`.
+
+## 2026-09-01 — Guard registry orphan acknowledgement closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `731ca2751c31d3fb8d2f68074a15016533da89e`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool /
+  verification registry governance / `scripts/verify` and
+  `docs/ops/iterations`.
+- Reason: `scripts/verify/test_frontend_productization_fixture_upsert.py`
+  exists on disk and verifies acceptance-fixture xmlid rebinding safety, but
+  it is not referenced by any governed Make or CI entry. The R7 guard registry
+  requires every such orphan script to be explicitly acknowledged in
+  `scripts/verify/registry.yaml`.
+- Why here / why not elsewhere: this is verification-corpus lifecycle metadata,
+  not product behavior, contract authority, frontend rendering, customer
+  configuration, or runtime-profile ownership.
+- Blast radius and evidence: registry metadata and resumable iteration context
+  only. Product code is unchanged; the target unit test remains green via
+  `python3 -m unittest scripts/verify/test_frontend_productization_fixture_upsert.py`.
+
+## 2026-09-01 — Guard registry audit runtime closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `731ca2751c31d3fb8d2f68074a15016533da89e`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool /
+  verification registry audit scalability / `scripts/verify`,
+  `docs/audit/guard_registry`, and `docs/ops/iterations`.
+- Reason: after acknowledging the orphan script, the governed full-registry
+  audit still needed a practical runtime path on the current 1270-script
+  corpus. The audit implementation was reworked to build one filename/import
+  index up front and confirm only candidate matches, then the deterministic
+  registry export was refreshed from the new classifier. The same batch also
+  refreshed `docs/engineering_convergence/test_inventory.csv` because the new
+  governance unit `scripts/verify/test_guard_registry_audit.py` made the test
+  inventory stale and caused the local PR-equivalent inventory gate to fail
+  closed until regenerated.
+- Why here / why not elsewhere: this is verification-tooling performance and
+  export-governance ownership. It does not belong in product modules,
+  frontend behavior, customer configuration, or runtime-profile policy.
+- Blast radius and evidence: guard-registry inventory/export metadata plus the
+  new audit unit coverage only. Verified with `python3 -m unittest
+  scripts/verify/test_guard_registry_audit.py
+  scripts/verify/test_frontend_productization_fixture_upsert.py`, `python3
+  scripts/verify/guard_registry_audit.py`, and `python3
+  scripts/verify/guard_registry_audit.py --export`. The PR-equivalent CI path
+  also passed with `python3 scripts/ci/generate_test_inventory.py`, `python3
+  scripts/verify/test_github_actions_security_guard.py`, `python3
+  scripts/verify/github_actions_security_guard.py`, and `python3
+  scripts/verify/repository_clean_history_guard.py --trusted-base
+  b9e3e56a80c02c1eb277d2ac573e10286c4cd8e8`.
+
+## 2026-09-01 — Pull-request synchronize trigger closure
+
+- Branch / baseline: `audit/professional-component-residual-closure-v1` /
+  `fe0a754d47779ca88584dc38ad917138e02bec4b`.
+- Formal Product Layer / Layer Target / Module: P4 ops delivery tool /
+  GitHub pull-request workflow trigger governance / `.github/workflows` and
+  `scripts/ci`.
+- Reason: PR `#386` accepted new commits on September 1, 2026 but did not
+  start any fresh checks because the governed pull-request workflows listened
+  to `opened`, `reopened`, `ready_for_review`, and `labeled` only. Appending
+  commits to an existing PR must trigger the exact-head CI lanes through the
+  standard `pull_request.synchronize` event.
+- Why here / why not elsewhere: this is workflow trigger policy and CI
+  contract coverage, not product code, runtime profile, frontend rendering, or
+  business semantics.
+- Blast radius and evidence: pull-request trigger metadata for merge, public,
+  professional, frontend-release, and release-candidate workflows plus their
+  contract tests only. Verified with `python3
+  scripts/ci/test_ci_risk_workflow_contract.py`, `python3
+  scripts/ci/test_release_candidate_gate.py`, `python3
+  scripts/verify/test_github_actions_security_guard.py`, and `python3
+  scripts/verify/github_actions_security_guard.py`.

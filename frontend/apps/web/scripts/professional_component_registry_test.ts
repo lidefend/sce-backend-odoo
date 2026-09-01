@@ -91,5 +91,18 @@ assert.equal(resolveProfessionalComponentRegistration(testRegistry, {
   capabilities: ['relation.read'],
 }).componentKey, restricted.componentKey);
 
-assert.equal(professionalComponentRegistrations.length, 23);
-console.log('[professional_component_registry_test] PASS cases=25');
+for (const componentKey of [
+  'sc.auth.credential_entry',
+  'sc.auth.secret_confirmation',
+  'sc.auth.challenge_status',
+  'sc.auth.one_time_secret',
+  'sc.auth.support_action',
+] as const) {
+  assert.ok(
+    professionalComponentRegistrations.some((registration) => registration.componentKey === componentKey),
+    `missing auth registration ${componentKey}`,
+  );
+}
+
+assert.equal(professionalComponentRegistrations.length, 28);
+console.log('[professional_component_registry_test] PASS cases=30');

@@ -58,12 +58,16 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         for workflow in workflows:
             text = self.text(workflow)
-            self.assertIn("types: [opened, reopened, ready_for_review, labeled]", text)
-            self.assertNotIn("synchronize", text)
+            self.assertIn(
+                "types: [opened, reopened, synchronize, ready_for_review, labeled]",
+                text,
+            )
             self.assertIn("workflow_dispatch:", text)
             self.assertIn("github.event.label.name == 'ci:candidate'", text)
             self.assertNotIn("inputs.expected_head", text)
             self.assertNotIn("inputs.expected_base", text)
+        candidate_gate = self.text("release_candidate_gate.yml")
+        self.assertIn('test "$result" = success || test "$result" = skipped', candidate_gate)
 
         makefile = (ROOT / "make/codex.mk").read_text(encoding="utf-8")
         dispatch = makefile.split("candidate.required_checks.dispatch:", 1)[1].split(

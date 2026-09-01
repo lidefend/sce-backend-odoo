@@ -34,8 +34,13 @@ class Rule:
 
 
 RULES = (
-    Rule(("/views/LoginView.vue",), (
+    Rule((
+        "/views/LoginView.vue",
+        "/views/AccountActivationView.vue",
+        "/views/PasswordRecoveryView.vue",
+    ), (
         "verify.frontend.auth_credential.guard",
+        "verify.frontend.auth_surface.guard",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
     Rule(("/layouts/AppShell.vue", "/layouts/AppShell.css", "/navigation/"), (

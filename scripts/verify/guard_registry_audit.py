@@ -27,6 +27,7 @@ registry.yaml with ``status: active-dynamic`` and a reason.
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import re
 import shutil
@@ -47,6 +48,10 @@ WORKFLOW_FILES = sorted(
     (*ROOT.glob(".github/workflows/*.yml"), *ROOT.glob(".github/workflows/*.yaml"))
 )
 SCRIPT_CORPUS_GLOBS = ("scripts/**/*.py", "scripts/**/*.sh")
+SCRIPT_REFERENCE_RE = re.compile(r"\b([A-Za-z0-9_./-]+\.(?:py|sh))\b")
+IMPORT_REFERENCE_RE = re.compile(
+    r"\b(?:from|import)\s+([A-Za-z_][A-Za-z0-9_\.]*)\b"
+)
 
 STATUS_ACTIVE = "active"
 STATUS_ACTIVE_DYNAMIC = "active-dynamic"
@@ -108,8 +113,8 @@ def parse_make_targets() -> dict[str, str]:
     return targets
 
 
-def build_corpus(exclude: Path | None = None) -> tuple[str, dict[str, str]]:
-    """Reference corpus text + per-file map for attribution."""
+def build_corpus(exclude: Path | None = None) -> dict[str, str]:
+    """Reference corpus text keyed by repository-relative file path."""
     parts: dict[str, str] = {}
     for makefile in MAKE_FILES:
         parts[makefile.relative_to(ROOT).as_posix()] = makefile.read_text(
@@ -128,7 +133,19 @@ def build_corpus(exclude: Path | None = None) -> tuple[str, dict[str, str]]:
             key = path.relative_to(ROOT).as_posix()
             if key not in parts:
                 parts[key] = path.read_text(encoding="utf-8", errors="replace")
-    return "\n".join(parts.values()), parts
+    return parts
+
+
+def build_reference_index(parts: dict[str, str]) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    """Index file texts once so per-script classification stays linear-ish."""
+    filename_hits: dict[str, set[str]] = collections.defaultdict(set)
+    import_hits: dict[str, set[str]] = collections.defaultdict(set)
+    for key, text in parts.items():
+        for match in SCRIPT_REFERENCE_RE.findall(text):
+            filename_hits[Path(match).name].add(key)
+        for module in IMPORT_REFERENCE_RE.findall(text):
+            import_hits[module.rsplit(".", 1)[-1]].add(key)
+    return filename_hits, import_hits
 
 
 def _reference_patterns(name: str) -> list[re.Pattern[str]]:
@@ -145,23 +162,43 @@ def _reference_patterns(name: str) -> list[re.Pattern[str]]:
     ]
 
 
+def resolve_external_hits(
+    script_key: str,
+    script_name: str,
+    parts: dict[str, str],
+    filename_hits: dict[str, set[str]],
+    import_hits: dict[str, set[str]],
+) -> list[str]:
+    stem = script_name.rsplit(".", 1)[0]
+    candidates = set(filename_hits.get(script_name, set())) | set(
+        import_hits.get(stem, set())
+    )
+    candidates.discard(script_key)
+    if not candidates:
+        return []
+    patterns = _reference_patterns(script_name)
+    return sorted(
+        key
+        for key in candidates
+        if any(pattern.search(parts[key]) for pattern in patterns)
+    )
+
+
 def classify(scripts: list[Path]) -> list[dict]:
-    corpus, parts = build_corpus()
+    parts = build_corpus()
+    filename_hits, import_hits = build_reference_index(parts)
     targets = parse_make_targets()
     inventory = []
     for script in scripts:
+        script_key = script.relative_to(ROOT).as_posix()
         name = script.name
-        patterns = _reference_patterns(name)
-        external_hits = [
-            key
-            for key, text in parts.items()
-            if key != script.relative_to(ROOT).as_posix()
-            and any(p.search(text) for p in patterns)
-        ]
+        external_hits = resolve_external_hits(
+            script_key, name, parts, filename_hits, import_hits
+        )
         referenced_by_targets = [
             target
             for target, text in targets.items()
-            if any(p.search(text) for p in patterns)
+            if name in text
         ]
         referenced_by_workflows = [
             key for key in external_hits if key.startswith(".github/workflows/")

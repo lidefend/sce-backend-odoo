@@ -17,7 +17,10 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("name: release_candidate_gate", self.workflow)
         self.assertIn("github.event_name != 'pull_request'", self.workflow)
         self.assertIn("github.event.action == 'labeled' && github.event.label.name == 'ci:candidate'", self.workflow)
-        self.assertNotIn("synchronize", self.workflow)
+        self.assertIn(
+            "types: [opened, reopened, synchronize, ready_for_review, labeled]",
+            self.workflow,
+        )
 
     def test_release_gate_waits_for_exact_head_candidate_checks(self) -> None:
         self.assertIn("Wait for exact-head candidate checks", self.workflow)
@@ -34,6 +37,10 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("This exact head passed merge eligibility and explicit candidate validation.", self.workflow)
         self.assertIn("GITHUB_STEP_SUMMARY", self.workflow)
         self.assertIn("release_candidate_gate", self.workflow)
+
+    def test_non_candidate_pull_request_skip_is_treated_as_success(self) -> None:
+        self.assertIn('result="${{ needs.wait_for_candidate_checks.result }}"', self.workflow)
+        self.assertIn('test "$result" = success || test "$result" = skipped', self.workflow)
 
 
 if __name__ == "__main__":

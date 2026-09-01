@@ -59,6 +59,13 @@ def _upsert(env, model_name, xmlid_name, domain, values):
     record = env.ref("%s.%s" % (MODULE, xmlid_name), raise_if_not_found=False)
     if record and record._name != model_name:
         raise RuntimeError("xmlid %s points to %s" % (xmlid_name, record._name))
+    if record:
+        # Existing fixture-owned rows must be reconciled through the same
+        # administrative sudo model used for search/create.  Re-reading the raw
+        # XMLID record can fail on business ACLs before browser acceptance even
+        # starts, which would make the fixture non-idempotent for governed
+        # reruns.
+        record = model.browse(record.id).exists()
     if not record:
         matches = model.search(domain)
         if len(matches) > 1:
