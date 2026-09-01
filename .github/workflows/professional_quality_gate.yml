@@ -3,7 +3,7 @@ name: professional_quality_gate
 on:
   pull_request:
     branches: [main]
-    types: [opened, reopened, synchronize, ready_for_review, labeled]
+    types: [opened, reopened, synchronize, labeled]
   push:
     branches: [main]
   workflow_dispatch:
@@ -72,13 +72,6 @@ jobs:
             --event "${GITHUB_EVENT_NAME}" \
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
-
-      - name: Prove chatter timeline authorization with real ORM
-        if: >-
-          github.event_name != 'push' &&
-          steps.risk.outputs.professional_mode == 'full' &&
-          steps.risk.outputs.backend_changed == 'true'
-        run: make test.chatter-timeline.authorization.orm
 
   python310_runtime_compatibility:
     name: python310_runtime_compatibility
@@ -195,6 +188,13 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           git cat-file -e "${BASE_SHA}^{commit}"
+
+      - name: Prove candidate chatter authorization with real ORM
+        if: >-
+          env.CANDIDATE_REQUESTED == 'true' &&
+          env.PROFESSIONAL_MODE == 'full' &&
+          env.BACKEND_CHANGED == 'true'
+        run: make test.chatter-timeline.authorization.orm
 
       - name: Restore pip dependency cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830

@@ -3,7 +3,7 @@ name: merge_policy_gate
 on:
   pull_request:
     branches: [main]
-    types: [opened, reopened, synchronize, ready_for_review, labeled]
+    types: [opened, reopened, synchronize, labeled]
   push:
     branches: [main]
   workflow_dispatch:
@@ -64,10 +64,14 @@ jobs:
           make verify.product.release.version
           git diff --check
 
-  full:
-    needs: classify
-    if: needs.classify.outputs.lane != 'FAST'
+  merge_policy_gate:
+    name: merge_policy_gate
+    needs: [classify, fast]
+    if: always()
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     env:
       GH_TOKEN: ${{ github.token }}
       HEAD_SHA: ${{ needs.classify.outputs.head }}
@@ -76,9 +80,15 @@ jobs:
         with:
           ref: ${{ needs.classify.outputs.head }}
           persist-credentials: false
-      - name: Wait for exact-head full checks
+
+      - name: Resolve merge eligibility once
         run: |
           set -euo pipefail
+          if [ "${{ needs.classify.outputs.lane }}" = "FAST" ]; then
+            test "${{ needs.fast.result }}" = success
+            exit 0
+          fi
+          test "${{ needs.fast.result }}" = skipped
           required=(public_guard.yml professional_quality_gate.yml frontend_release_gate.yml)
           for attempt in $(seq 1 90); do
             pending=0
@@ -93,25 +103,13 @@ jobs:
               status="$(jq -r '.status' <<<"$latest")"
               conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"
               test "$status" = completed || { pending=1; continue; }
-              test "$conclusion" = success || { echo "full workflow failed: $workflow" >&2; exit 1; }
+              test "$conclusion" = success || { echo "required workflow failed: $workflow" >&2; exit 1; }
             done
             test "$pending" = 0 && exit 0
-            sleep 20
+            sleep 10
           done
-          echo "timed out waiting for exact-head full checks" >&2
+          echo "timed out waiting for exact-head required checks" >&2
           exit 1
-
-  merge_policy_gate:
-    name: merge_policy_gate
-    needs: [fast, full]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Enforce exactly one merge lane
-        run: |
-          test "${{ needs.fast.result }}" = success -o "${{ needs.fast.result }}" = skipped
-          test "${{ needs.full.result }}" = success -o "${{ needs.full.result }}" = skipped
-          test "${{ needs.fast.result }}" != "${{ needs.full.result }}"
 
       - name: Publish lane summary
         env:
@@ -120,7 +118,6 @@ jobs:
           PROFESSIONAL_MODE: ${{ needs.classify.outputs.professional_mode }}
           CANDIDATE_REQUESTED: ${{ needs.classify.outputs.candidate_requested }}
           FAST_RESULT: ${{ needs.fast.result }}
-          FULL_RESULT: ${{ needs.full.result }}
         run: |
           set -euo pipefail
           effective_frontend="${FRONTEND_MODE}"
@@ -133,10 +130,10 @@ jobs:
               effective_professional="governance"
             fi
           fi
-          if [ "${FAST_RESULT}" = "success" ]; then
+          if [ "${RISK_LANE}" = "FAST" ]; then
             selected_lane="fast"
           else
-            selected_lane="full"
+            selected_lane="required"
           fi
           {
             echo "## Merge Policy Lane"
@@ -149,7 +146,6 @@ jobs:
             echo "| Effective frontend lane | ${effective_frontend} |"
             echo "| Effective professional lane | ${effective_professional} |"
             echo "| Fast job result | ${FAST_RESULT} |"
-            echo "| Full job result | ${FULL_RESULT} |"
             echo ""
             if [ "${CANDIDATE_REQUESTED}" != "true" ] && { [ "${FRONTEND_MODE}" = "full" ] || [ "${PROFESSIONAL_MODE}" = "full" ]; }; then
               echo "Ordinary PR governance changes were downgraded from candidate-grade validation to daily iteration lanes."

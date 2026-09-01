@@ -41,8 +41,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         aggregate = self.text("merge_policy_gate.yml")
         self.assertIn("name: merge_policy_gate", aggregate)
         self.assertIn("name: merge_policy_gate", aggregate)
-        self.assertIn("needs: [fast, full]", aggregate)
-        self.assertIn("Wait for exact-head full checks", aggregate)
+        self.assertIn("needs: [classify, fast]", aggregate)
+        self.assertIn("Resolve merge eligibility once", aggregate)
         self.assertIn("select_authoritative_workflow_run.py", aggregate)
         self.assertIn("actions/workflows/${workflow}/runs", aggregate)
         self.assertNotIn('test "$count" = 1', aggregate)
@@ -59,7 +59,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         for workflow in workflows:
             text = self.text(workflow)
             self.assertIn(
-                "types: [opened, reopened, synchronize, ready_for_review, labeled]",
+                "types: [opened, reopened, synchronize, labeled]",
                 text,
             )
             self.assertIn("workflow_dispatch:", text)
@@ -95,9 +95,21 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("pnpm -C frontend/apps/web lint:src", text)
         self.assertIn("pnpm -C frontend/apps/web typecheck:strict", text)
         self.assertIn("pnpm -C frontend/apps/web build", text)
+        self.assertIn("pnpm -C frontend/apps/web test", text)
         self.assertIn("python3 scripts/ci/frontend_professional_extension_guard.py", text)
         self.assertNotIn("continue-on-error:", text)
         self.assertNotIn("|| true", text)
+
+        package = json.loads((ROOT / "frontend/apps/web/package.json").read_text(encoding="utf-8"))
+        self.assertIn("verify.frontend.pr.unit", package["scripts"]["test"])
+        self.assertIn("verify.frontend.release.audit", package["scripts"]["test:release"])
+        makefile = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        merge_units = makefile.split("verify.frontend.pr.unit:", 1)[1].split("\n", 1)[0]
+        self.assertIn("verify.frontend.component_driver_takeover.unit", merge_units)
+        self.assertIn("verify.frontend.primitive_adapter.unit", merge_units)
+        self.assertIn("verify.frontend.navigation_shell.unit", merge_units)
+        self.assertIn("verify.frontend.state_dashboard.unit", merge_units)
+        self.assertNotIn("verify.frontend.professional_audit.unit", merge_units)
 
     def test_public_guard_skips_history_scan_only_for_fast_lane(self) -> None:
         text = self.text("public_guard.yml")
@@ -132,7 +144,13 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("github.ref == 'refs/heads/main'", text)
         self.assertIn("make ci.professional.backend", text)
         self.assertNotIn("run: make ci\n", text)
-        self.assertIn("steps.risk.outputs.backend_changed == 'true'", text)
+        self.assertIn("env.BACKEND_CHANGED == 'true'", text)
+        authorization_section = text.split("  professional_authorization:", 1)[1].split(
+            "  python310_runtime_compatibility:", 1
+        )[0]
+        self.assertNotIn("test.chatter-timeline.authorization.orm", authorization_section)
+        self.assertIn("Prove candidate chatter authorization with real ORM", text)
+        self.assertIn("env.CANDIDATE_REQUESTED == 'true'", text)
         self.assertNotIn("pnpm -C frontend install", text)
         self.assertIn("make test.unit test.contract test.e2e.preflight", text)
         self.assertIn("make verify.product.release.version", text)

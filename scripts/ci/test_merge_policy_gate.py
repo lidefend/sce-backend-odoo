@@ -13,11 +13,12 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.workflow = (ROOT / ".github/workflows/merge_policy_gate.yml").read_text(encoding="utf-8")
         self.ruleset = (ROOT / "scripts/ops/configure_github_mirror_ruleset.sh").read_text(encoding="utf-8")
 
-    def test_fast_and_full_are_disjoint_and_fail_closed(self) -> None:
+    def test_fast_and_required_paths_are_disjoint_and_fail_closed(self) -> None:
         self.assertIn("needs.classify.outputs.lane == 'FAST'", self.workflow)
-        self.assertIn("needs.classify.outputs.lane != 'FAST'", self.workflow)
-        self.assertIn("Enforce exactly one merge lane", self.workflow)
-        self.assertIn("test \"${{ needs.fast.result }}\" != \"${{ needs.full.result }}\"", self.workflow)
+        self.assertIn("Resolve merge eligibility once", self.workflow)
+        self.assertIn('if [ "${{ needs.classify.outputs.lane }}" = "FAST" ]', self.workflow)
+        self.assertIn('test "${{ needs.fast.result }}" = skipped', self.workflow)
+        self.assertNotIn("  full:", self.workflow)
         self.assertIn("--base", self.workflow)
         self.assertIn("--head", self.workflow)
 
@@ -33,7 +34,7 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("--repository", self.workflow)
         self.assertIn("--event", self.workflow)
         self.assertNotIn('test "$count" = 1', self.workflow)
-        self.assertIn("full workflow failed", self.workflow)
+        self.assertIn("required workflow failed", self.workflow)
 
     def test_summary_publishes_effective_daily_vs_candidate_lane(self) -> None:
         self.assertIn("Publish lane summary", self.workflow)
