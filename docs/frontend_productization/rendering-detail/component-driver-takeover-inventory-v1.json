@@ -363,7 +363,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 75,
+      "productionConsumerCount": 76,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -398,7 +398,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 64,
+      "productionConsumerCount": 65,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -713,7 +713,7 @@
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 49,
+      "productionConsumerCount": 50,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1064,6 +1064,7 @@
     },
     {
       "adapterKeys": [
+        "ScIcon",
         "ScIconButton",
         "ScTabs"
       ],
@@ -1076,6 +1077,7 @@
         },
         {
           "semanticAdapters": [
+            "ScIcon",
             "ScIconButton"
           ],
           "source": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
@@ -1085,7 +1087,7 @@
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 17,
+      "productionConsumerCount": 66,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1294,7 +1296,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "2b264afbc07e82c93685da1dfad74d1bd0ba88742af5012ebcc1318270ed7387",
+  "inputDigest": "4a1ef6aba3ec9999170f214d44cde344c5b408dc66d2226954d26ee67f36c8f7",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

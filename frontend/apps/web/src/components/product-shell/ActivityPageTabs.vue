@@ -26,7 +26,7 @@
             appearance="activity-tab-close"
             :label="`${closeLabel}“${page.title}”`"
             @click.stop="handleExplicitClose(page)"
-          >×</ScIconButton>
+          ><ScIcon name="close" :size="14" /></ScIconButton>
         </span>
       </template>
       <!-- 内容由路由渲染，此处不渲染 -->
@@ -38,6 +38,7 @@
 import { nextTick, ref } from 'vue';
 import { TDesignTabs, TDesignTabPanel } from '../design-system/tdesignPrimitiveBridge';
 import ScIconButton from '../design-system/ScIconButton.vue';
+import ScIcon from '../design-system/ScIcon.vue';
 import type { ActivityPage } from '../../stores/session';
 import { resolveActivityTabKeyboardIndex, shouldShowActivityPageTabs } from './activityPageTabKeyboard';
 
