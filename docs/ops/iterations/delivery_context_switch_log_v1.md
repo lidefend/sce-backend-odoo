@@ -6892,3 +6892,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `python3 scripts/verify/frontend_shared_surface_semantic_boundary_guard.py`,
   `make verify.frontend.component_driver_takeover.unit`, and
   `make verify.frontend.release.unit`.
+
+## 2026-09-01 — Payment request authoritative list-fact closure
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `bb8fb98c924f71ae0ad22ed037f8d4378ff31b36`.
+- Formal Product Layer / Layer Target / Module: P1 construction standard /
+  payment request list fact projection / `smart_construction_core`.
+- Reason: the formal list exposed stored presentation helpers for document
+  status and payment-basis presence. Real records therefore showed `草稿` in
+  the list while their authoritative workflow state and detail page were
+  `已完成`, and reduced a typed settlement basis to `是`. The list profile,
+  visibility policy, and formal tree now consume the authoritative `state`
+  and `payment_basis_type` fields directly.
+- Why here / why not elsewhere: workflow state and payment-basis type are
+  backend domain facts. The frontend remains model-neutral and renders the
+  selection labels supplied by the normalized contract without inferring or
+  repairing business meaning.
+- Blast radius and evidence: only the payment request list contract and its
+  regression assertions changed; no new contract family, frontend exception,
+  or database mutation path was introduced. The governed module upgrade and
+  three targeted Odoo tests passed. Logged-in browser acceptance confirmed the
+  nine critical facts render, `PRQ2600035`, `PRQ2600013`, and `PRQ2600011`
+  show `已完成 / 标准结算单 / 账户信息待补充 / 已办结`, and the page emitted no
+  console warning or error.
