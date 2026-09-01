@@ -7016,3 +7016,29 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   The 85-case Contract V2 suite, 140-case canonical presenter suite,
   component-driver inventory, config-render tests, and full frontend release
   unit gate passed.
+
+## 2026-09-02 — Payment settlement component real-mutation closure
+
+- Branch / baseline: `feature/payment-settlement-component-journey-v1` /
+  `59cee905bc2c1bc4425e90c49c4818dac45b202b`.
+- Formal Product Layer / Layer Target / Module: P1 payment business journey
+  with one narrow backend authority repair / existing
+  `sc.payment.settlement_detail_collection` component and canonical intent
+  executor / `smart_construction_core` plus local.dev verification plumbing.
+- Product defect and repair: the payment component already declared backend
+  search, preview, and introduce action refs, but the finance capability chain
+  could read settlement orders while lacking read ACL and the existing
+  project-member record rule on settlement lines. The search intent therefore
+  failed with HTTP 403 while evaluating line counts. Finance read now receives
+  read-only settlement-line ACL under that same project boundary; no sudo,
+  write permission, new role, contract variant, or frontend model inference
+  was introduced.
+- Acceptance evidence: the governed logged-in browser journey used the finance
+  demo role on `DEMO-PR-FLOORPLAN-001`, selected settlement
+  `S69-PAY-SET-001`, applied one percent, and executed exactly one
+  `payment.request.add.settlement.lines` mutation. After authoritative reload,
+  both the request-line count and persisted settlement relationship increased.
+  The wrapper then ran `local.dev.sync_demo` and verified the draft business
+  key, state, zero line count, and zero settlement relationship were restored.
+  The six-method focused Odoo component-profile suite (eight assertions/tests)
+  and the 12-case local-development lifecycle suite passed.

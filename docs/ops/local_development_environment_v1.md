@@ -41,6 +41,7 @@ make local.dev.frontend
 make local.dev.frontend.watch
 make verify.local.dev.frontend.quick.gate
 make verify.local.dev.payment_request.native_parity.readonly
+make verify.local.dev.payment_request.settlement_component.journey
 make local.dev.test MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestP1PaymentRequestCapability'
 make local.dev.sync_demo
 make local.dev.verify_demo
