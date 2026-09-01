@@ -59,6 +59,56 @@ class ProjectProject(models.Model):
         "closed": "smart_construction_core.project_stage_archived",
     }
 
+    intake_next_action_display = fields.Char(
+        string="下一步办理",
+        compute="_compute_intake_floorplan_guidance",
+    )
+    intake_blocking_reason_display = fields.Char(
+        string="立项阻断与修复",
+        compute="_compute_intake_floorplan_guidance",
+    )
+
+    @api.depends("name", "initiation_date", "manager_id", "operation_strategy")
+    def _compute_intake_floorplan_guidance(self):
+        labels = {
+            "name": "项目名称",
+            "initiation_date": "单据日期",
+            "manager_id": "项目负责人",
+            "operation_strategy": "经营方式",
+        }
+        for record in self:
+            missing = [label for field_name, label in labels.items() if not record[field_name]]
+            if missing:
+                record.intake_next_action_display = "补齐立项必填信息"
+                record.intake_blocking_reason_display = "缺少%s。请补充后创建项目。" % "、".join(missing)
+            else:
+                record.intake_next_action_display = "创建项目"
+                record.intake_blocking_reason_display = "立项必填信息已完整，可创建项目。"
+
+    @api.model
+    def default_get(self, fields_list):
+        values = super().default_get(fields_list)
+        guidance_fields = {
+            "intake_next_action_display",
+            "intake_blocking_reason_display",
+        }
+        if not guidance_fields.intersection(fields_list):
+            return values
+        labels = {
+            "name": "项目名称",
+            "initiation_date": "单据日期",
+            "manager_id": "项目负责人",
+            "operation_strategy": "经营方式",
+        }
+        missing = [label for field_name, label in labels.items() if not values.get(field_name)]
+        if missing:
+            values["intake_next_action_display"] = "补齐立项必填信息"
+            values["intake_blocking_reason_display"] = "缺少%s。请补充后创建项目。" % "、".join(missing)
+        else:
+            values["intake_next_action_display"] = "创建项目"
+            values["intake_blocking_reason_display"] = "立项必填信息已完整，可创建项目。"
+        return values
+
     def _setup_complete(self):
         super()._setup_complete()
         labels = {

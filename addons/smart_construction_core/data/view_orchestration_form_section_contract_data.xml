@@ -17,7 +17,13 @@
                     'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
                     'views': {
                         'form': {'composition_mode': 'entry_semantic_surface',
+                            'semantic_anchors': [
+                                {'role': 'task', 'fields': ['intake_next_action_display']},
+                                {'role': 'risk', 'fields': ['intake_blocking_reason_display']}
+                            ],
                             'sections': [
+                                {'key': 'current_task', 'title': '当前任务', 'sequence': 5, 'columns': 1, 'semantic_role': 'task', 'fields': ['intake_next_action_display']},
+                                {'key': 'intake_risk', 'title': '立项条件', 'sequence': 6, 'columns': 1, 'semantic_role': 'risk', 'fields': ['intake_blocking_reason_display']},
                                 {'title': '项目基本信息'},
                                 {'title': '业务关系与类型'},
                                 {'title': '参建单位与联系人'},
@@ -29,6 +35,8 @@
                                 {'title': '驾驶舱'}
                             ],
                             'fields': [
+                                {'name': 'intake_next_action_display', 'sequence': 5, 'readonly': True},
+                                {'name': 'intake_blocking_reason_display', 'sequence': 6, 'readonly': True},
                                 {'name': 'name', 'sequence': 10},
                                 {'name': 'project_code', 'sequence': 20},
                                 {'name': 'short_name', 'sequence': 25},

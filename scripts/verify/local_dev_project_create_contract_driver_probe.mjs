@@ -25,10 +25,11 @@ async function captureHeaderPresentation(surface) {
     primaryActions: await header.locator('[data-product-primary-action]:visible:not(:disabled)').count(),
     rawButtons: await header.locator('button:not([data-semantic-component="ScButton"])').count(),
     rawButtonsOutsideWorkflow: await header.locator('button:not([data-semantic-component="ScButton"]):not(.native-statusbar-step)').count(),
-    mobileActionKeys: await header.locator('[data-mobile-action-key]').evaluateAll((nodes) => (
-      nodes.map((node) => node.getAttribute('data-mobile-action-key')).filter(Boolean)
+    mobileActionKeys: await header.locator('[data-mobile-action-keys]').evaluateAll((nodes) => (
+      nodes.flatMap((node) => String(node.getAttribute('data-mobile-action-keys') || '').split(','))
+        .map((key) => key.trim()).filter(Boolean)
     )),
-    mobileDisclosures: await header.locator('details.form-header-mobile-actions').count(),
+    mobileDisclosures: await header.locator('.form-header-mobile-actions[data-mobile-action-count]').count(),
     horizontalOverflow: await header.evaluate((node) => node.scrollWidth > node.clientWidth + 1),
   };
 }
@@ -116,11 +117,13 @@ try {
   await page.locator('#login-username').fill(login);
   await page.locator('#login-password').fill(password);
   const databaseInput = page.getByLabel('数据库');
-  if (await databaseInput.isEnabled()) await databaseInput.fill(database);
+  if (await databaseInput.count()) {
+    if (await databaseInput.isEnabled()) await databaseInput.fill(database);
+  }
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
-  const route = `${frontendUrl}/f/project.project/new?menu_id=${target.menu_id}&action_id=${target.action_id}`;
-  await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  const projectCreateRoute = `${frontendUrl}/f/project.project/new?menu_id=${target.menu_id}&action_id=${target.action_id}`;
+  await page.goto(projectCreateRoute, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const surface = page.locator(
     `[data-product-page-mode="form"][data-form-model="project.project"][data-form-record="new"]`
     + `[data-form-action-id="${target.action_id}"][data-form-menu-id="${target.menu_id}"]`,
@@ -150,6 +153,8 @@ try {
     errors,
     taskPage: await surface.locator('[data-object-task-page]').count(),
     nativeStructure: await surface.locator('[data-native-contract-structure]').count(),
+    currentTaskText: await surface.locator('[data-floorplan-region="current-task"]').allTextContents(),
+    riskRegions: await surface.locator('[data-floorplan-region="risk"]').count(),
     contractActions: [...contractActions],
     header: await captureHeaderPresentation(surface),
   };
@@ -161,6 +166,10 @@ try {
   }
   if (projectResult.taskPage !== 1 || projectResult.nativeStructure !== 0) {
     throw new Error(`project initiation did not render Floorplan: ${JSON.stringify(projectResult)}`);
+  }
+  if (projectResult.currentTaskText.length !== 1 || projectResult.riskRegions !== 1
+    || !projectResult.currentTaskText[0].includes('补齐立项必填信息')) {
+    throw new Error(`project initiation task and risk guidance is incomplete: ${JSON.stringify(projectResult)}`);
   }
   if (projectResult.header.commandBars !== 1 || projectResult.header.scButtons < 1
     || projectResult.header.primaryActions > 1 || projectResult.header.rawButtonsOutsideWorkflow !== 0) {
@@ -242,11 +251,12 @@ try {
   }
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileResults = {};
-  for (const [key, route, selector] of [
+  for (const [key, currentRoute, selector] of [
+    ['projectCreate', projectCreateRoute, `[data-product-page-mode="form"][data-form-model="project.project"][data-form-record="new"]`],
     ['workspace', workspaceRoute, `[data-product-page-mode="form"][data-form-model="project.project"][data-form-record="${target.project_record_id}"]`],
     ['payment', paymentRoute, `[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="${target.payment_record_id}"]`],
   ]) {
-    await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.goto(currentRoute, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const mobileSurface = page.locator(selector);
     await mobileSurface.waitFor({ state: 'visible', timeout: 45000 });
     await page.waitForFunction(() => (
@@ -256,7 +266,9 @@ try {
     mobileResults[key] = await captureHeaderPresentation(mobileSurface);
     if (mobileResults[key].commandBars !== 1 || mobileResults[key].scButtons < 1
       || mobileResults[key].primaryActions > 1 || mobileResults[key].rawButtonsOutsideWorkflow !== 0
-      || mobileResults[key].mobileDisclosures !== 1 || mobileResults[key].horizontalOverflow) {
+      || mobileResults[key].mobileDisclosures > 1
+      || (mobileResults[key].mobileDisclosures === 1 && mobileResults[key].mobileActionKeys.length === 0)
+      || mobileResults[key].horizontalOverflow) {
       throw new Error(`${key} mobile header boundary failed: ${JSON.stringify(mobileResults[key])}`);
     }
   }

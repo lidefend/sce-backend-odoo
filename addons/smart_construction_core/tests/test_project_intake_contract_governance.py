@@ -55,6 +55,7 @@ class ProjectIntakeContractGovernanceCase(unittest.TestCase):
                 "route": "/s/project.management",
             },
         )
+        self.assertNotEqual(governance.get("primary_action_label"), "保存草稿")
 
     def test_project_quick_create_contract_receives_quick_governance(self):
         governed = apply_contract_governance(
