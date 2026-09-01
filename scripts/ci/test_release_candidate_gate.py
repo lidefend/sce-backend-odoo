@@ -21,6 +21,8 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
             "types: [opened, reopened, synchronize, labeled]",
             self.workflow,
         )
+        self.assertIn("cron: '30 18 * * *'", self.workflow)
+        self.assertNotIn("  push:\n    branches: [main]", self.workflow)
 
     def test_release_gate_waits_for_exact_head_candidate_checks(self) -> None:
         self.assertIn("Wait for exact-head candidate checks", self.workflow)

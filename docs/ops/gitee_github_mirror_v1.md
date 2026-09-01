@@ -17,7 +17,9 @@
   也不能形成第二开发入口。
 - 迁移注记（2026-09-01）：四项合并检查由 ruleset 对同一 HEAD 直接约束，
   `merge_policy_gate` 只裁决风险分层，不再轮询兄弟工作流；
-  `release_candidate_gate` 继续负责 exact-head 候选发布资格。
+  `release_candidate_gate` 继续负责 exact-head 候选发布资格。全量候选链在
+  每日 `18:30 UTC`（北京时间次日 `02:30`）运行；`ci:candidate` 与授权手动
+  触发保留即时入口，普通 `main` push 只运行主线健康检查，不自动成为候选。
 
 ## 凭据隔离
 

@@ -70,6 +70,13 @@ publication. The full professional and frontend release gates remain
 authoritative only on explicit candidate paths, and `release_candidate_gate`
 summarizes that publication qualification.
 
+The full candidate suite runs nightly at `18:30 UTC` (`02:30 Asia/Shanghai`).
+The governed `ci:candidate` label and authorized manual dispatch remain the
+immediate paths when publication evidence is needed before that window. An
+ordinary push to `main` runs mainline health only; it does not silently become
+a release candidate. A failed nightly candidate blocks publication of that
+exact head, but does not retroactively invalidate an already merged PR.
+
 ## Safety invariants
 
 - `make/frontend.mk`, `make/ci.mk`, `Makefile`, and every unlisted Makefile remain
@@ -82,7 +89,8 @@ summarizes that publication qualification.
 - The ruleset directly requires `frontend_release_gate`, `merge_policy_gate`,
   `professional_quality_gate`, and `public_guard`; no workflow polls sibling
   runs to reproduce their result.
-- `release_candidate_gate` remains publication-only and exact-head bound.
+- `release_candidate_gate` remains publication-only, exact-head bound, and is
+  absent from the ordinary `main` push path.
 
 ## Expected effect
 
