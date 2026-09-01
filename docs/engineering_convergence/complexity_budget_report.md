@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4178`
+- Scanned files: `4181`
 - Files requiring split plan: `45`
 - Files above warning threshold: `80`
 
@@ -22,7 +22,7 @@ Generated from repository source files. This report is informational during the 
 | 3380 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
-| 3055 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3056 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3016 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2875 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2597 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
@@ -157,7 +157,7 @@ Generated from repository source files. This report is informational during the 
 | 3380 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3345 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3087 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
-| 3055 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3056 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3016 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2875 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2597 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
