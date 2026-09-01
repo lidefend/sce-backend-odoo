@@ -6916,3 +6916,32 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   nine critical facts render, `PRQ2600035`, `PRQ2600013`, and `PRQ2600011`
   show `已完成 / 标准结算单 / 账户信息待补充 / 已办结`, and the page emitted no
   console warning or error.
+
+## 2026-09-01 — Payment settlement semantic component ownership closure
+
+- Branch / baseline: `feature/payment-golden-floorplan-truth-closure-v2` /
+  `f2d11c34c8daffc2ab6024e3b40b0995c20bf488`.
+- Formal Product Layer / Layer Target / Module: P0 component mechanism plus P1
+  construction semantic component / Contract V2 component projection and
+  payment settlement detail collection / `smart_core`,
+  `smart_construction_core`, and `frontend/apps/web`.
+- Reason: the shared X2Many renderer owned a payment-only feature switch,
+  payment amount field names, Chinese currency formatting, and a settlement
+  dialog with hard-coded intent identifiers. The backend now assigns the
+  explicit `sc.payment.settlement_detail_collection` component key, action
+  refs, and component registry binding. The payment semantic component owns
+  the workflow while the shared X2Many renderer exposes only a generic action
+  slot and type-driven monetary aggregation.
+- Why here / why not elsewhere: the backend remains authoritative for selecting
+  the business component and its executable refs. The frontend Registry binds
+  that declared component to its TDesign implementation; no model, label,
+  role, state, or field-name inference remains in the shared renderer.
+- Blast radius and evidence: one existing component family was added to the
+  canonical Registry; no Scene/Lite/Terminal contract or alternate primitive
+  system was introduced. Strict typecheck, the full frontend release unit
+  suite, the shared-surface semantic guard, and the focused Odoo finalizer test
+  passed. Logged-in browser acceptance on `payment.request/157` confirmed the
+  declared component key and adapter, one visible `从结算单引入` action, a
+  searchable settlement result, line preview with remaining amounts, and no
+  console warning or error; the confirmation mutation was intentionally not
+  executed during this read-only UI acceptance.

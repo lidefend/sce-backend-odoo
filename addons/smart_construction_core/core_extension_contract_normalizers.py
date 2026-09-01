@@ -15,6 +15,64 @@ _sc_replace_contract_content = _contract_helpers.sc_replace_contract_content
 _sc_form_layout_governance = _contract_helpers.sc_form_layout_governance
 _sc_apply_form_layout_governance_to_group = _contract_helpers.sc_apply_form_layout_governance_to_group
 
+PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY = "sc.payment.settlement_detail_collection"
+
+
+def normalize_payment_settlement_detail_component(
+    contract: dict[str, Any],
+    *,
+    model: str,
+    view_type: str,
+) -> None:
+    if model != "payment.request" or view_type != "form":
+        return
+    layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
+    tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
+    changed = False
+
+    def visit(value: Any) -> None:
+        nonlocal changed
+        if isinstance(value, list):
+            for item in value:
+                visit(item)
+            return
+        if not isinstance(value, dict):
+            return
+        field_code = _sc_text(value.get("fieldCode") or value.get("name") or value.get("field"))
+        widget_id = _sc_text(value.get("widgetId"))
+        if field_code == "outflow_line_ids" or widget_id.startswith("field.outflow_line_ids"):
+            value["componentKey"] = PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY
+            config = value.get("componentConfig") if isinstance(value.get("componentConfig"), dict) else {}
+            config.update({
+                "fieldType": "one2many",
+                "introduceLabel": "从结算单引入",
+                "actionRefs": {
+                    "search": "payment.request.settlement.search",
+                    "preview": "payment.request.settlement.preview",
+                    "introduce": "payment.request.add.settlement.lines",
+                },
+            })
+            value["componentConfig"] = config
+            changed = True
+        for key in ("children", "tabs", "pages", "nodes", "items", "widgetList"):
+            visit(value.get(key))
+
+    visit(tree)
+    if not changed:
+        return
+    registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
+    registry[PAYMENT_SETTLEMENT_DETAIL_COMPONENT_KEY] = {
+        "version": "1.0",
+        "adapter": {
+            "web_pc": "PaymentSettlementDetailCollectionControl",
+            "wx_mini": "WxTable",
+            "harmony_h5": "H5Table",
+        },
+        "fallback": "PaymentSettlementDetailCollectionControl",
+    }
+    layout["componentRegistry"] = registry
+    contract["layoutContract"] = layout
+
 def normalize_construction_diary_form(contract: dict[str, Any], source_contract: dict[str, Any], *, model: str, view_type: str) -> None:
     if model != "sc.construction.diary" or view_type != "form":
         return

@@ -15,6 +15,7 @@ PROTECTED_FILES = (
     ROOT / "frontend/apps/web/src/views/MyWorkView.vue",
     ROOT / "frontend/apps/web/src/pages/ListPage.vue",
     ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
+    ROOT / "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
     ROOT / "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
     ROOT / "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
     ROOT / "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",

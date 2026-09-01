@@ -181,8 +181,8 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { FormSectionFieldSchema } from './formSection.types';
-import type { RelationFieldAdapter } from './relationField.types';
+import type { FormSectionFieldSchema } from '../template/formSection.types';
+import type { RelationFieldAdapter } from '../template/relationField.types';
 import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
@@ -191,6 +191,22 @@ import { intentRequest } from '../../api/intents';
 
 const props = defineProps<{ field: FormSectionFieldSchema; adapter: RelationFieldAdapter; open: boolean }>();
 const emit = defineEmits<{ close: []; introduced: []; 'busy-change': [busy: boolean] }>();
+
+const actionRefs = computed(() => {
+  const raw = props.field.componentConfig?.actionRefs;
+  const refs = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+  return {
+    search: String(refs.search || '').trim(),
+    preview: String(refs.preview || '').trim(),
+    introduce: String(refs.introduce || '').trim(),
+  };
+});
+
+function requiredActionRef(key: 'search' | 'preview' | 'introduce') {
+  const value = actionRefs.value[key];
+  if (!value) throw new Error(`PAYMENT_SETTLEMENT_ACTION_REF_MISSING:${key}`);
+  return value;
+}
 
 // ===== 从结算单引入明细 =====
 type SettleLineItem = {
@@ -271,7 +287,7 @@ async function searchSettlements() {
   settleSearching.value = true;
   try {
     const res = await intentRequest<{ settlements: Array<{ id: number; name: string; display_name: string; amount_total: number; contract_name: string; partner_name: string; line_count: number }> }>({
-      intent: 'payment.request.settlement.search',
+      intent: requiredActionRef('search'),
       params: {
         keyword: settleKeyword.value || '',
         payment_request_id: props.adapter.currentRecordId || 0,
@@ -293,7 +309,7 @@ async function loadSettlementPreview(id: number) {
   previewLoading.value = true;
   try {
     const res = await intentRequest<SettlePreviewData>({
-      intent: 'payment.request.settlement.preview',
+      intent: requiredActionRef('preview'),
       params: { settlement_id: id },
     });
     previewData.value = res;
@@ -374,7 +390,7 @@ async function confirmIntroduce() {
   introduceError.value = '';
   try {
     await intentRequest({
-      intent: 'payment.request.add.settlement.lines',
+      intent: requiredActionRef('introduce'),
       params: {
         payment_request_id: recordId,
         settlement_id: selectedSettlementId.value,

@@ -545,6 +545,11 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
     )
     _sc_normalize_construction_diary_form(out, source, model=model, view_type=view_type)
+    _contract_normalizers.normalize_payment_settlement_detail_component(
+        out,
+        model=model,
+        view_type=view_type,
+    )
     # res.partner 表单：隐藏国家/地区字段（由省/州级联 domain 自动确定）
     # 隐藏销售员字段（产品面不展示，由后台逻辑维护）
     if model == "res.partner" and view_type == "form":

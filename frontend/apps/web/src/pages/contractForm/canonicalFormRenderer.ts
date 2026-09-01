@@ -153,6 +153,7 @@ export function canonicalFieldToFormSection(
     occurrenceIndex: field.occurrenceIndex || undefined,
     sourcePosition: field.sourcePosition ?? undefined,
     widgetSemantics: asRecord(config.widgetSemantics || config.widget_semantics),
+    componentConfig: config,
     componentKey: field.componentResolution.componentKey,
     componentReadiness: field.componentResolution.readiness,
     componentRenderer: field.componentResolution.renderer,

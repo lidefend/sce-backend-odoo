@@ -178,6 +178,56 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         self.assertIsNone(projected)
 
+    def test_payment_settlement_lines_use_explicit_professional_component_contract(self):
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "type": "group",
+                    "children": [{
+                        "type": "field",
+                        "name": "outflow_line_ids",
+                        "widgetId": "field.outflow_line_ids",
+                        "componentKey": "sc.relation.table",
+                        "componentConfig": {"fieldType": "one2many"},
+                    }],
+                    "widgetList": [{
+                        "widgetId": "field.outflow_line_ids",
+                        "fieldCode": "outflow_line_ids",
+                        "componentKey": "sc.relation.table",
+                        "componentConfig": {"fieldType": "one2many"},
+                    }],
+                }],
+                "componentRegistry": {},
+            },
+            "statusContract": {"globalStatus": {}, "widgetStatus": []},
+            "runtimeContract": {},
+        }
+
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            self.env,
+            contract,
+            {"source_contract": {"model": "payment.request", "view_type": "form"}},
+        )
+
+        nodes = [
+            row for row in self._field_nodes(projected["layoutContract"]["containerTree"])
+            if row.get("name") == "outflow_line_ids" or row.get("fieldCode") == "outflow_line_ids"
+        ]
+        self.assertTrue(nodes)
+        self.assertTrue(all(row["componentKey"] == "sc.payment.settlement_detail_collection" for row in nodes))
+        self.assertEqual(
+            nodes[0]["componentConfig"]["actionRefs"],
+            {
+                "search": "payment.request.settlement.search",
+                "preview": "payment.request.settlement.preview",
+                "introduce": "payment.request.add.settlement.lines",
+            },
+        )
+        self.assertEqual(
+            projected["layoutContract"]["componentRegistry"]["sc.payment.settlement_detail_collection"]["adapter"]["web_pc"],
+            "PaymentSettlementDetailCollectionControl",
+        )
+
     def test_general_contract_normalizer_preserves_native_v2_form_identity(self):
         widget_id = "field.contract_name.occ.native"
         contract = {
