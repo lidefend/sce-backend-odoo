@@ -214,7 +214,6 @@ import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
 
 const props = defineProps<X2ManyRelationRendererProps>();
-const emit = defineEmits<{ (e: 'reload-requested'): void }>();
 const one2manyPage = ref(1);
 const one2manyPageSize = 20;
 const one2manyRows = computed(() => props.field.type === 'one2many' ? props.adapter.visibleOne2manyRows(props.field.name) : []);
