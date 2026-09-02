@@ -3,7 +3,7 @@
 ## 1. 本轮变更
 
 - 目标：修复定时 CI 的事件身份误判、共享工件写入竞争和动态凭据日志暴露。
-- 完成：允许受管 `schedule` 前端发布事件；串行化 professional shards 并验证宿主原子写；掩码 backend suite 动态凭据。
+- 完成：允许受管 `schedule` 前端发布事件；串行化 professional shards 并验证宿主原子写；掩码 backend suite 动态凭据；同步重新激活的 frontend release CI identity 测试生命周期登记。
 - 未完成：远端 exact-head scheduled run；公共 delivery context switch log 由并行前端工作树占用，待其释放后追加。
 
 ## 2. 影响范围
@@ -24,9 +24,11 @@
 - `make verify.ci.scheduled_gates`：PASS；61 个非零专项测试，Actions 安全扫描 PASS，宿主原子写探针 PASS。
 - `make verify.branch.governance.consistency verify.baseline.iteration.execution.policy`：PASS；14 个分支治理测试、3 个基线策略测试及两个守卫均 PASS。
 - `make security.secrets.scan`：PASS；10 个扫描器单元测试通过，全范围扫描退出码为 0。
+- `make guard.registry.seed`：PASS；移除 1 个 stale orphan 条目，随后 audit 扫描 1274 个脚本并 PASS。
 - `git diff --check`：PASS。
 - `make verify.restricted`：NOT_RUN；该产品主线门禁包含本批次排除的前端重型链路和已知 P0/P1 产品阻断，不以无关失败替代 P4 专项证据。
-- 远端 scheduled CI：`verification_pending`，只接受 exact-head 新运行作为完成证据。
+- PR：[\#398](https://github.com/lidefend/sce-backend-odoo/pull/398)。首次 exact-head professional run [33585140881](https://github.com/lidefend/sce-backend-odoo/actions/runs/33585140881) 在进入 shards 前由 `verify.guard.registry` fail-closed，归因为本批次新增 Make 引用尚未移除 stale orphan 登记；已在本批次修复，等待新 head 重跑。
+- 远端 scheduled/candidate CI：`verification_pending`，只接受修复后 exact-head 新运行作为完成证据。
 
 ## 5. 产物
 
