@@ -7089,3 +7089,32 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   productization guard remains blocked by its pre-existing expectation of the
   old statusbar readonly expression; that baseline drift is not represented as
   a pass or changed in this batch.
+
+## 2026-09-02 — Decision-first form and professional state closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `0d3ca081`.
+- Formal Product Layer / Layer Target / Module: P0 product Floorplan and
+  professional component ownership / canonical contract form and relation
+  surfaces / `frontend/apps/web`.
+- Product change: supplementary input and overflow business context now use
+  the existing TDesign-backed `ScDisclosure`, leaving current task, blockers,
+  and required input ahead of secondary facts. One-to-many empty and removed
+  states now use `ScInlineState`; payment settlement search, error, empty, and
+  completed states use the same professional state authority. The payment
+  settlement detail/introduce controls and the professional many2one/many2many
+  controls are registered in the existing P0 form/relation workflow ownership
+  map. No model-name, Chinese-label, role, or status inference was added.
+- Supporting guard alignment: stale checks now recognize the current
+  professional many2many control, `ScSteps` readonly authority, TDesign 24-grid
+  container breakpoints, shell topbar token, and `ScTable` row adapter keys.
+  Generated rendering inventories were refreshed from their repository-owned
+  generators; they report 156 formal surfaces and zero gaps.
+- Acceptance evidence: `git diff --check`, product page pattern, primitive
+  adapter, canonical presenter, detail productization, form-canvas, workspace
+  alignment, x2many inline-edit, rendering-detail state, component-driver, and
+  the full `make verify.frontend.quick.gate` passed. The strict Vue typecheck
+  and development static build are included in that gate. Logged-in browser
+  acceptance for payment and project remains pending because the governed demo
+  synchronization expired the existing session; no browser result is claimed
+  until a user login is available.

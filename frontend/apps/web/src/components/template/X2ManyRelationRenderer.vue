@@ -158,14 +158,20 @@
         </ScTable>
       </div>
 
-      <div v-else-if="adapter.one2manyColumns(field.name).length" class="o2m-empty" data-o2m-empty>
-        <ScIcon name="file-text" :size="24" />
-        <p class="o2m-empty-title">暂无明细</p>
-        <p class="o2m-empty-hint">点击「{{ adapter.one2manyCreateLabel(field.name, field.label) }}」新增明细</p>
-      </div>
+      <ScInlineState
+        v-else-if="adapter.one2manyColumns(field.name).length"
+        class="o2m-empty"
+        state="empty"
+        :label="`暂无明细，点击「${adapter.one2manyCreateLabel(field.name, field.label)}」新增`"
+        data-o2m-empty
+      />
 
       <div v-if="adapter.removedOne2manyRows(field.name).length" class="o2m-removed">
-        <p class="meta">已移除 {{ adapter.removedOne2manyRows(field.name).length }} 行</p>
+        <ScInlineState
+          class="meta"
+          state="info"
+          :label="`已移除 ${adapter.removedOne2manyRows(field.name).length} 行，提交前可撤销`"
+        />
         <div class="chips">
           <ScButton
             v-for="row in adapter.removedOne2manyRows(field.name)"

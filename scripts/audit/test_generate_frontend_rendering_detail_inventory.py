@@ -57,7 +57,7 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_form_relation_workflow_sources_have_machine_proven_completion(self) -> None:
         batch = "p0-form-relation-workflow-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
-        self.assertEqual(len(sources), 21)
+        self.assertEqual(len(sources), 25)
         for source in sources:
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)

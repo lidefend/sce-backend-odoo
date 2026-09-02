@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "e35bd1315ba60710936527e6a9c5c2c2636da91645ddae1c7e53609a299c263a",
-  "generatorDigest": "9a0537491ed7c94e1801009ba5e1ff407b9b41d3439e9011bbdba242e01cd27c",
-  "ownershipDigest": "6349644dec46ae7c415f217a04ba9cf89c2524787cf8bfc07aa62ce1401b9d1f",
-  "inputDigest": "dae427cb17494233af936e94c477c8f23cdce07dcf5a6058389a06601df575a4",
+  "sourceIdentity": "e683ae63d505963035df5f6a637cc9d6f7bbc1406cf638c4f13f5d753a32b12a",
+  "generatorDigest": "5882c8710b858e2e468011187a4c3fb32a01f3197d6340649a7294c81d805103",
+  "ownershipDigest": "e7281319693c0ffabac44c3447e21e391b4a001c95b287557388515e9511cabb",
+  "inputDigest": "833c2321bf8ca801d5c65f4a5a580983b330980c6dbfdf0e5c48950e84b0ceb1",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,13 +20,13 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 151,
+    "surfaceCount": 156,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 94,
-    "governed_primitive": 39,
+    "governed_composite": 98,
+    "governed_primitive": 40,
     "p3_out_of_scope": 18
   },
   "nextBatch": null,
@@ -553,6 +553,19 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScPopover.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1184,13 +1197,42 @@
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
       "source": "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
         "empty",
-        "error"
+        "error",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1204,6 +1246,32 @@
       "stateTypes": [
         "error",
         "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty",
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1295,6 +1363,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "empty",
         "error",
         "disabled",
@@ -1451,6 +1520,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "empty",
         "disabled"
       ],
       "rawControls": {},

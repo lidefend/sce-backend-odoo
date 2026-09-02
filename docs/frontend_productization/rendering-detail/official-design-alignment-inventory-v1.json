@@ -14,8 +14,171 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "ee2d3b438c2674fbe9fef23b8b0cf99cd776e8d9f790afe535c738d09a32d5d3",
-  "internalVendorSelectorGaps": [],
+  "inputDigest": "c2331275547162ffb7ec0f13a3a885c967c79e3f213a57ddf8740766ec7d1963",
+  "internalVendorSelectorGaps": [
+    {
+      "file": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.css",
+      "line": 3,
+      "selector": "/* 计数信息由 .pagination-total（自定义文案）独占；隐藏 TDesign 自带的“共 N 条数据”，避免同一计数重复呈现 */ .pagination-footer :deep(.t-pagination__total)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 452,
+      "selector": "/* TDesign table density alignment (list surface). * ScTable bridges to tdesign-vue-next TTable; the product density tokens are * declared on the list surface but were previously only consumed by the legacy * native-table rules (.table / .sc-product-table). The t-table header/rows were * falling back to TDesign defaults, so rendered heights drifted from the token * contract (header 42px, row 46px, toolbar 46px). Align them here, scoped to * the list surface so shared component tokens keep authority elsewhere. */ .page[data-product-page-mode='list'] .t-table thead th, .page[data-product-page-mode='list'] .t-table thead th.t-table__th",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 469,
+      "selector": ".page[data-product-page-mode='list'] .t-table tbody tr",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 473,
+      "selector": ".page[data-product-page-mode='list'] .t-table tbody td, .page[data-product-page-mode='list'] .t-table tbody td.t-table__td",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 482,
+      "selector": "/* TDesign form control density alignment (form surface) * Canonical form fields render through TDesign primitives (t-input / t-select / * t-date-picker / t-textarea). TDesign defaults these to ~32px, but the form token * --sc-component-input-form-height is 36px, so rendered controls drifted from the * token contract. Pin controls to the form token so token changes propagate to * rendering. Scoped to the form surface; shared component tokens keep authority * elsewhere. */ [data-product-page-mode='form'] :is(.t-input, .t-select, .t-date-picker, .t-textarea__inner)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 496,
+      "selector": "/* List query-bar search input height (list surface) * The toolbar search input renders through ScInput -> TDesign t-input at its * default medium (32px) next to a 36px search button, so the input looked * shorter than the button it sits beside. Pin the list search input to the * same 36px form-height token so query-bar controls read as one height. */ [data-product-page-mode='list'] .collection-search-control :is(.t-input, .t-input__inner)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 548,
+      "selector": "/* Long-text cell truncation (list surface, TDesign table) * ListPage.css declares .column-long-text ellipsis rules, but that file is a * scoped stylesheet and the t-table cells carrying these classes are rendered * by the TDesign table primitive (the td is not inside ListPage's scoped * data-v scope), so the scoped rules never match. Long identity/description * values overflow their column instead of truncating (verified: 164px content * in a 157px cell rendered with overflow visible). Re-declare the truncation * contract globally, scoped to the list surface so it reaches the TDesign td. * The 180px cap mirrors the legacy .column-long-text contract; cell width is * driven by the column budget, and truncation kicks in when content exceeds it. */ .page[data-product-page-mode='list'] .t-table td.column-long-text",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 567,
+      "selector": ".page[data-product-page-mode='list'] .t-table td.column-long-text > *, .page[data-product-page-mode='list'] .t-table td.column-long-text .collection-row-cell, .page[data-product-page-mode='list'] .t-table td.column-long-text .cell-primary",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 577,
+      "selector": "/* Numeric / monetary / date cell presentation (list surface, TDesign table) * ListPage.css also declares these presentation rules scoped, so they never * reach the TDesign-rendered td: money/numeric cells render left-aligned * instead of right, and date cells render at primary color instead of the * secondary text token (verified: textAlign=left / color=primary on the live * payment.request list). Re-declare the alignment/color/nowrap contract * globally. Column widths stay owned by the column-width budget; only * presentation is normalized here. */ .page[data-product-page-mode='list'] .t-table td.column-numeric, .page[data-product-page-mode='list'] .t-table td.column-layout-money",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 592,
+      "selector": ".page[data-product-page-mode='list'] .t-table td.column-layout-date",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/styles/product-patterns.css",
+      "line": 612,
+      "selector": "/* TDesign Dialog 遮罩修复：确保父容器隐藏时遮罩也被隐藏 * 问题：t-dialog__ctx 设置 display:none 后，position:fixed 的遮罩仍然可见 */ .t-dialog__ctx[style*=\"display: none\"] .t-dialog__mask, .t-dialog__ctx[style*=\"display: none\"] .t-dialog__wrap",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "line": 114,
+      "selector": ".activity-page-tabs :deep(.t-tabs__nav)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "line": 119,
+      "selector": ".activity-page-tabs :deep(.t-tabs__nav-wrap)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "line": 123,
+      "selector": ".activity-page-tabs :deep(.t-tabs__nav-item)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "line": 130,
+      "selector": ".activity-page-tabs :deep(.t-tabs__nav-item.t-is-active)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "line": 134,
+      "selector": ".activity-page-tabs :deep(.t-tabs__nav-item .t-tabs__nav-item-text)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "line": 156,
+      "selector": ".activity-page-tabs :deep(.t-tabs__content)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+      "line": 165,
+      "selector": ".activity-page-tabs :deep(.t-tabs__nav-item)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+      "line": 237,
+      "selector": ".professional-base-field-control[data-professional-field-type='date'] :deep(.t-date-picker), .professional-base-field-control[data-professional-field-type='datetime'] :deep(.t-date-picker)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
+      "line": 272,
+      "selector": "/* 穿透 TDesign Select 样式，与表单字段对齐 */ .m2m-select :deep(.t-select__wrap)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
+      "line": 277,
+      "selector": ".m2m-select :deep(.t-select__placeholder)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
+      "line": 281,
+      "selector": ".m2m-select :deep(.t-tag)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+      "line": 870,
+      "selector": ".o2m-table-scroll :deep(.t-table)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+      "line": 874,
+      "selector": ".o2m-table-scroll :deep(.t-table__th)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+      "line": 882,
+      "selector": ".o2m-table-scroll :deep(.t-table__td)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+      "line": 887,
+      "selector": ".o2m-table-scroll :deep(.t-table__tr--hover .t-table__td)",
+      "status": "legacy_override_gap"
+    },
+    {
+      "file": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+      "line": 891,
+      "selector": ".o2m-table-scroll :deep(.t-table__foot .t-table__td)",
+      "status": "legacy_override_gap"
+    }
+  ],
   "productAppearanceVariants": [
     {
       "appearance": "account-context",
@@ -55,11 +218,26 @@
       "status": "registered_product_variance"
     },
     {
+      "appearance": "activity-tab-close",
+      "consumers": [
+        "frontend/apps/web/src/components/design-system/ScIconButton.vue",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
+      ],
+      "selectors": [
+        ".sc-icon-button[data-appearance='activity-tab-close']",
+        ".sc-icon-button[data-appearance='activity-tab-close']:focus-visible",
+        ".sc-icon-button[data-appearance='activity-tab-close']:hover:not(:disabled)"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
       "appearance": "auth-link",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScButton.vue",
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
-        "frontend/apps/web/src/views/LoginView.vue"
+        "frontend/apps/web/src/views/AccountActivationView.vue",
+        "frontend/apps/web/src/views/LoginView.vue",
+        "frontend/apps/web/src/views/PasswordRecoveryView.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='auth-link']"
@@ -212,6 +390,7 @@
         "frontend/apps/web/src/components/design-system/ScSelect.vue",
         "frontend/apps/web/src/components/design-system/ScTextarea.vue",
         "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
         "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue"
@@ -251,8 +430,7 @@
         "frontend/apps/web/src/components/GlobalMessagePanel.vue",
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/template/FormSection.vue",
-        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/views/ActionView.vue"
       ],
@@ -333,8 +511,7 @@
     {
       "appearance": "relation-tag",
       "consumers": [
-        "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+        "frontend/apps/web/src/components/design-system/ScButton.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='relation-tag']",
@@ -345,8 +522,7 @@
     {
       "appearance": "relation-tag-entry",
       "consumers": [
-        "frontend/apps/web/src/components/design-system/ScInput.vue",
-        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
+        "frontend/apps/web/src/components/design-system/ScInput.vue"
       ],
       "selectors": [
         ".sc-input[data-appearance='relation-tag-entry']"
@@ -387,7 +563,6 @@
       "consumers": [
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue"
       ],
       "selectors": [
@@ -549,14 +724,14 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 196,
-    "internalVendorSelectorGapCount": 0,
+    "formalStyleSourceCount": 199,
+    "internalVendorSelectorGapCount": 27,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 35,
+    "productAppearanceVariantCount": 36,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
-    "visualLiteralGapCount": 0
+    "visualLiteralGapCount": 2
   },
   "themeTokens": {
     "inheritedOfficialTokenCount": 202,
@@ -844,5 +1019,23 @@
     ],
     "unknownProjectTokenOverrides": []
   },
-  "visualLiteralGaps": []
+  "visualLiteralGaps": [
+    {
+      "line": 341,
+      "literals": [
+        "22px"
+      ],
+      "selector": ".sc-icon-button[data-appearance='activity-tab-close']",
+      "status": "legacy_override_gap"
+    },
+    {
+      "line": 343,
+      "literals": [
+        "1px",
+        "2px"
+      ],
+      "selector": ".sc-icon-button[data-appearance='activity-tab-close']:focus-visible",
+      "status": "legacy_override_gap"
+    }
+  ]
 }

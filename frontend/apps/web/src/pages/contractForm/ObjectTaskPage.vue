@@ -127,10 +127,11 @@
           @field-action="emit('field-action', $event)"
       />
     </ScCard>
-    <section
+    <ScDisclosure
       v-if="supplementaryInputNodes.length"
       class="object-task-page__supplementary-input"
       data-floorplan-region="supplementary-input"
+      title="补充信息"
     >
       <CanonicalFormNodeRenderer
         v-for="node in supplementaryInputNodes"
@@ -141,7 +142,7 @@
         @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
       />
-    </section>
+    </ScDisclosure>
     <slot v-if="!decisionMode" name="blocking" />
     <section
       v-if="!decisionMode && riskNodes.length"
@@ -194,10 +195,11 @@
         />
       </ScCard>
     </div>
-    <section
+    <ScDisclosure
       v-if="overflowContextNodes.length"
       class="object-task-page__overflow-context"
       data-floorplan-region="overflow-context"
+      title="更多业务信息"
     >
       <CanonicalFormNodeRenderer
         v-for="node in overflowContextNodes"
@@ -208,7 +210,7 @@
         @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
       />
-    </section>
+    </ScDisclosure>
     <ScCard
       v-if="relationNodes.length"
       class="object-task-page__relation"
@@ -280,6 +282,7 @@ import type { RelationFieldAdapter } from '../../components/template/relationFie
 import CanonicalFormNodeRenderer from './CanonicalFormNodeRenderer.vue';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
+import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
 
 defineProps<{
   summaryNodes: CanonicalFormNode[];
@@ -419,7 +422,6 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
-.object-task-page__supplementary-input > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit {
   padding: 12px 16px;
   border: 1px solid var(--sc-app-border);
@@ -432,7 +434,6 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   border-radius: var(--sc-product-radius-panel);
   background: var(--sc-app-panel);
 }
-.object-task-page__overflow-context > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit > summary { cursor: pointer; font-weight: 600; }
 .object-task-page__audit:not([open]) [data-audit-content] { display: none; }
 .object-task-page__audit-events {

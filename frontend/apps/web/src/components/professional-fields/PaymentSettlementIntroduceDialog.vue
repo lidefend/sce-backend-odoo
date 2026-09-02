@@ -1,5 +1,6 @@
 <template>
   <ScDialog
+    data-semantic-component="PaymentSettlementIntroduceDialog"
     :open="open"
     title="从结算单引入明细"
     description="选择结算单，勾选结算行并设置申请金额，确认后引入为付款申请明细"
@@ -25,11 +26,11 @@
           @click="searchSettlements"
         >搜索</ScButton>
       </div>
-      <div v-if="introduceError" class="settle-error" role="alert">{{ introduceError }}</div>
+      <ScInlineState v-if="introduceError" class="settle-error" state="error" :label="introduceError" />
 
       <div v-if="!previewData" class="settle-results" data-settle-results>
-        <div v-if="settleSearching" class="settle-hint">搜索中…</div>
-        <div v-else-if="!settleResults.length" class="settle-hint">未找到结算单，请输入关键词搜索</div>
+        <ScInlineState v-if="settleSearching" class="settle-hint" state="loading" label="正在搜索结算单" />
+        <ScInlineState v-else-if="!settleResults.length" class="settle-hint" state="empty" label="未找到结算单，请输入关键词搜索" />
         <div
           v-for="s in settleResults"
           :key="s.id"
@@ -100,7 +101,12 @@
               <span v-else class="settle-state-open">可申请</span>
             </span>
           </div>
-          <div v-if="!previewLoading && !selectableLines.length" class="settle-hint">该结算单所有明细均已申请完毕</div>
+          <ScInlineState
+            v-if="!previewLoading && !selectableLines.length"
+            class="settle-hint"
+            state="info"
+            label="该结算单所有明细均已申请完毕"
+          />
         </div>
 
         <div v-if="relatedPaymentRequests.length" class="settle-history" data-settle-history>
@@ -187,6 +193,7 @@ import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScDialog from '../design-system/ScDialog.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 import { intentRequest } from '../../api/intents';
 
 const props = defineProps<{ field: FormSectionFieldSchema; adapter: RelationFieldAdapter; open: boolean }>();
