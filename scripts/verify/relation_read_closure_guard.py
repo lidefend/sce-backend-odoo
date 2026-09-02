@@ -61,6 +61,9 @@ def main() -> int:
         "canRead: row.can_read === true,",
         "canOpen: row.can_open === true,",
         "if (entry?.canRead !== true)",
+        "if (relationEntry(descriptor)?.canRead !== true) return [];",
+        "if (entry?.canRead !== true) return [];",
+        "if (relationEntry(resolvedDescriptor)?.canRead !== true) return;",
         "if (!params.canRead) {",
         "if (!relation || !params.canRead || deniedRelationModels.has(relation)) return [];",
         "const contractAccessPolicy = computed<ContractAccessPolicy>(() => {",
@@ -80,6 +83,7 @@ def main() -> int:
         "canRead: row.can_read !== false,",
         "canOpen: row.can_open !== false,",
         "canRead: entry?.canRead !== false,",
+        "if (entry && entry.canRead === false)",
     ]
     for marker in frontend_forbidden:
         if marker in frontend:

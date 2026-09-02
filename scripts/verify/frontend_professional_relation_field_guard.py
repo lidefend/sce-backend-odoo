@@ -18,6 +18,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     form_state = read_text("frontend/apps/web/src/pages/contractForm/useRecordFormState.ts")
     action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
     relationship_navigation = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts")
+    relationships = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts")
     for key in ("sc.relation.many2one", "sc.relation.many2many", "sc.select.tags"):
         if key not in model or key not in registry or key not in assembler:
             failures.append(f"relation authority is incomplete for {key}")
@@ -75,6 +76,15 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("professional many2many quick-create handler does not fail closed")
     if "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch" not in relationship_navigation:
         failures.append("many2one quick-create handler does not fail closed")
+    for marker in (
+        "if (relationEntry(descriptor)?.canRead !== true) return [];",
+        "if (entry?.canRead !== true) return [];",
+        "if (relationEntry(resolvedDescriptor)?.canRead !== true) return;",
+    ):
+        if marker not in relationships:
+            failures.append(f"relation search read authority is incomplete: {marker}")
+    if "if (entry && entry.canRead === false)" in relationships:
+        failures.append("relation search rows retain fail-open read authority")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in many2one or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")

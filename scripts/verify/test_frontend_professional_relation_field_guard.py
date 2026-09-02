@@ -120,6 +120,30 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
 
         self.assertTrue(any("many2one quick-create" in item for item in validate(read_text)))
 
+    def test_relation_search_dialog_without_read_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationships.ts"):
+                return value.replace(
+                    "if (relationEntry(resolvedDescriptor)?.canRead !== true) return;",
+                    "",
+                )
+            return value
+
+        self.assertTrue(any("search read authority" in item for item in validate(read_text)))
+
+    def test_relation_search_rows_fail_open_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationships.ts"):
+                return value.replace(
+                    "if (entry?.canRead !== true) return [];",
+                    "if (entry && entry.canRead === false) return [];",
+                )
+            return value
+
+        self.assertTrue(any("fail-open read authority" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

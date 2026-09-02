@@ -355,6 +355,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
 
   async function loadRelationSearchColumns(fieldName: string): Promise<RelationSearchColumn[]> {
     const descriptor = effectiveFieldDescriptor(fieldName);
+    if (relationEntry(descriptor)?.canRead !== true) return [];
     const contractColumns = relationSearchColumnsFromContract(
       relationSearchDialogContract(descriptor),
     );
@@ -387,7 +388,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     const relation = relationModel(name);
     if (!relation) return [];
     const entry = relationEntry(descriptor);
-    if (entry && entry.canRead === false) return [];
+    if (entry?.canRead !== true) return [];
     const domain = mergedRelationDomain(name, descriptor);
     const dialog = relationSearchDialogContract(descriptor);
     const columns = relationSearchDialog.columns.length
@@ -420,6 +421,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     if (!relation) return;
     const labels = relationUiLabels(descriptor);
     const resolvedDescriptor = effectiveFieldDescriptor(fieldName);
+    if (relationEntry(resolvedDescriptor)?.canRead !== true) return;
     await openRelationSearchFromRuntime({
       fieldName,
       descriptor,

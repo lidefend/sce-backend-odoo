@@ -7777,3 +7777,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   missing grants, unguarded handlers, and frontend model-inference rejection;
   strict Vue typecheck, development build, refreshed productization inventories
   with zero gaps, and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Relation search read-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `51b6ff6d`.
+- Product defect and repair: the relation search dialog could open, load the
+  related model contract, and query rows when the field relation-entry contract
+  was absent. The row query also retained the old `entry && denied` fail-open
+  condition. Dialog opening, column-contract hydration, and row loading now all
+  require explicit `relation_entry.can_read=true`; otherwise no dialog or
+  related-model I/O is started. The change consumes the existing backend
+  authority and adds no frontend model or role inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, two readable project tender
+  rows, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: relation-read closure guard, 16 professional relation
+  counterexample tests including missing dialog authority and fail-open row
+  loading, strict Vue typecheck, development build, refreshed productization
+  inventories with zero gaps, and the complete `make
+  verify.frontend.quick.gate` passed.
