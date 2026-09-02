@@ -35,6 +35,19 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         failures = validate(read_text)
         self.assertTrue(any("current page" in item for item in failures))
 
+    def test_zero_amount_total_hidden_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(
+                    "if (!amountCol || !one2manyRows.value.length) return [];",
+                    "if (!o2mAmountTotal.value) return [];",
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("when it is zero" in item for item in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7568,3 +7568,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   page-scoped-total counterexample, strict Vue typecheck, development build,
   refreshed repository-owned productization inventories with zero gaps, and
   the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Zero-value detail total visibility closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `a858cba9`.
+- Product defect and repair: the shared detail collection suppressed its
+  amount footer when the authoritative aggregate was exactly zero. The footer
+  now remains present whenever an amount column and visible detail rows exist,
+  preserving the business distinction between an explicit zero total and no
+  aggregate. The change remains generic and introduces no business special
+  case or new contract.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey again retained three independent activity pages, unsaved draft and
+  dirty-close behavior, two readable project tender rows, one editable payment
+  attachment upload entry, zero browser errors, zero mutations, zero execute
+  requests, and no 390px horizontal overflow.
+- Verification: 5 professional detail collection guard tests including a
+  hidden-zero counterexample, strict Vue typecheck, development build,
+  refreshed repository-owned productization inventories with zero gaps, and
+  the complete `make verify.frontend.quick.gate` passed.

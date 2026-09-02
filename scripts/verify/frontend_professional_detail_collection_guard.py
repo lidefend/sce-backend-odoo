@@ -42,6 +42,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection amount total is not authoritative across every visible row")
     if "return paginatedOne2manyRows.value.reduce" in renderer:
         failures.append("detail collection amount total is incorrectly narrowed to the current page")
+    if "if (!amountCol || !one2manyRows.value.length) return [];" not in renderer:
+        failures.append("detail collection does not preserve an explicit zero amount total")
+    if "if (!o2mAmountTotal.value) return [];" in renderer:
+        failures.append("detail collection hides the authoritative amount total when it is zero")
     if "<ScInput" not in renderer or "<ScSelect" not in renderer:
         failures.append("editable detail rows bypass the governed input/select primitives")
     if "--sc-component-relation-dropdown-z-index" not in renderer or "--sc-component-relation-dropdown-shadow" not in renderer:

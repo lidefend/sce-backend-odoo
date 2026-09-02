@@ -301,12 +301,10 @@ const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
 }));
 
 const o2mTableFootData = computed(() => {
-  if (!o2mAmountTotal.value) return [];
   const footRow: Record<string, unknown> = { id: '__total__' };
   const amountCol = aggregateAmountColumn.value;
-  if (amountCol) {
-    footRow[amountCol.name] = o2mAmountTotalText.value;
-  }
+  if (!amountCol || !one2manyRows.value.length) return [];
+  footRow[amountCol.name] = o2mAmountTotalText.value;
   return [footRow];
 });
 
