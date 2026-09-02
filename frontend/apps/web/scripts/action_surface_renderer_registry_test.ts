@@ -10,6 +10,7 @@ import {
   resolveActivitySurfaceModel,
   resolveActivitySurfaceModelFromProfile,
 } from '../src/app/contracts/actionViewActivityContract';
+import { resolveAnalysisSurfaceModelFromProfile } from '../src/app/contracts/actionViewAnalysisContract';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { shouldUseCanonicalCollectionDetail } from '../src/app/runtime/actionViewInteractionRuntime';
@@ -22,8 +23,10 @@ const readySemantics = [
   'hierarchy_planner',
   'hierarchical_worksheet',
   'activity',
+  'pivot',
+  'graph',
 ];
-const plannedSemantics = ['pivot', 'graph', 'calendar', 'gantt', 'dashboard'];
+const plannedSemantics = ['calendar', 'gantt', 'dashboard'];
 
 assert.deepEqual(registeredActionSurfaceSemantics().sort(), [...readySemantics, ...plannedSemantics].sort());
 readySemantics.forEach((semantic) => assert.equal(ACTION_SURFACE_RENDERER_REGISTRY[semantic]?.status, 'ready'));
@@ -35,6 +38,37 @@ plannedSemantics.forEach((semantic) => {
   assert.equal(presentation.semantic, semantic);
   assert.equal(resolveActionSurfaceRenderer(presentation, semantic).requestedRendererKey, `core.${semantic}`);
 });
+(['pivot', 'graph'] as const).forEach((semantic) => {
+  const registration = ACTION_SURFACE_RENDERER_REGISTRY[semantic];
+  assert.equal(registration?.status, 'ready');
+  assert.equal(registration?.activeRendererKey, `core.${semantic}`);
+  assert.equal(registration?.outlet, 'standard');
+  assert.equal(registration?.reasonCode, '');
+});
+const analysisAuthority = (viewType: 'pivot' | 'graph') => ({
+  kind: `native_${viewType}_view_projection`,
+  authorities: ['ir.ui.view', 'ir.model.fields', 'ir.actions.act_window'],
+  projection_only: true, no_business_fact_authority: true,
+  runtime_carrier: `ui.contract.v2.layoutContract.${viewType}Profile`,
+});
+const pivotModel = resolveAnalysisSurfaceModelFromProfile({
+  dimensions: [{ name: 'project_id', label: 'Project' }],
+  measures: [{ name: 'amount', label: 'Amount' }],
+  defaults: {}, sourceAuthority: analysisAuthority('pivot'),
+}, 'pivot', [
+  { project_id: [7, 'Project A'], amount: 12 },
+  { project_id: [7, 'Project A'], amount: 8 },
+]);
+assert.equal(pivotModel.ok, true);
+assert.equal(pivotModel.rows.length, 1);
+assert.equal(pivotModel.rows[0]?.amount, 20);
+assert.equal(pivotModel.rows[0]?.project_id, 'Project A');
+const invalidGraphModel = resolveAnalysisSurfaceModelFromProfile({
+  dimensions: [{ name: 'project_id' }], measures: [], typeDefault: 'bar',
+  sourceAuthority: { ...analysisAuthority('graph'), runtime_carrier: 'wrong' },
+}, 'graph', []);
+assert.equal(invalidGraphModel.ok, false);
+assert.equal(invalidGraphModel.reasonCode, 'ANALYSIS_SOURCE_AUTHORITY_MISSING');
 
 const activity = ACTION_SURFACE_RENDERER_REGISTRY.activity;
 assert.equal(activity?.status, 'ready');

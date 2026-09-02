@@ -23,13 +23,22 @@ def main() -> int:
     for semantic in ("table", "card", "workflow_board", "hierarchy_browser", "hierarchy_planner", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"):
         if f"semantic: '{semantic}'" not in registry:
             errors.append(f"missing renderer registration: {semantic}")
-    for semantic in ("pivot", "graph", "calendar", "gantt", "dashboard"):
+    for semantic in ("calendar", "gantt", "dashboard"):
         marker = f"semantic: '{semantic}'"
         row = next((line for line in registry.splitlines() if marker in line), "")
         if "status: 'fallback'" not in row or "core.readable_records" not in row:
             errors.append(f"complex renderer must use governed readable fallback: {semantic}")
         if f"'{semantic}'" not in v2_types or f"value === '{semantic}'" not in v2_schema or f'"{semantic}"' not in v2_assembler:
             errors.append(f"complex renderer semantic is not synchronized through contract v2: {semantic}")
+    for semantic in ("pivot", "graph"):
+        marker = f"semantic: '{semantic}'"
+        row = next((line for line in registry.splitlines() if marker in line), "")
+        if "status: 'ready'" not in row or f"activeRendererKey: 'core.{semantic}'" not in row or "outlet: 'standard'" not in row:
+            errors.append(f"analysis renderer must use the native ready standard outlet: {semantic}")
+        for chain_marker in (f"{semantic}Profile", "AnalysisPage", "resolveAnalysisSurfaceModel"):
+            target = v2_types if chain_marker == f"{semantic}Profile" else action_view
+            if chain_marker not in target:
+                errors.append(f"analysis renderer terminal chain missing: {semantic}:{chain_marker}")
     activity_row = next((line for line in registry.splitlines() if "semantic: 'activity'" in line), "")
     if "status: 'ready'" not in activity_row or "activeRendererKey: 'core.activity'" not in activity_row or "outlet: 'standard'" not in activity_row:
         errors.append("activity renderer must use the native ready standard outlet")
