@@ -17,9 +17,13 @@ customer delivery evidence belongs in private customer or payload repositories.
   clear its unsaved business draft.
 - Real-page evidence: a logged-in five-page session retained an unsaved project
   name through project-create -> payment request `167` -> project-create. The
-  independent governed probe repeated the journey across project and payment
-  models, retained all three pages and the exact unsaved value, and observed
-  zero mutations, execute requests, browser errors, or 390px header overflow.
+  dirty-page close warning appeared before discard, and cancelling it retained
+  all five pages plus the exact unsaved value. The independent governed probe
+  repeated the journey across project and payment models, retained all three
+  pages and the exact unsaved value, cancelled the dirty close without losing
+  state, then closed only an inactive clean project page without polluting the
+  active draft. It observed zero mutations, execute requests, browser errors,
+  or 390px header overflow.
 - Standard vs User-Specific: ownership is derived only from canonical route
   identity and the existing activity instance ID; no model label, role, status,
   customer, or business-state inference is introduced.

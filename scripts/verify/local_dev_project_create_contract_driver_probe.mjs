@@ -339,6 +339,45 @@ try {
     || retainedAfterDraftRoundtrip !== activityTabKeys.length) {
     throw new Error(`activity page lost its unsaved business draft: ${JSON.stringify(activityDraftJourney)}`);
   }
+  await page.locator(`[data-activity-page-key="${projectCreateActivityKey}"] .activity-page-tab-close`).click();
+  const dirtyCloseDialog = page.getByRole('dialog').filter({ hasText: '确认关闭页面' });
+  await dirtyCloseDialog.waitFor({ state: 'visible', timeout: 10000 });
+  const dirtyCloseDialogText = String(await dirtyCloseDialog.textContent() || '').trim();
+  if (!dirtyCloseDialogText.includes('存在未保存修改') || !dirtyCloseDialogText.includes('关闭后这些修改将丢失')) {
+    throw new Error(`dirty activity page close warning is incomplete: ${dirtyCloseDialogText}`);
+  }
+  await dirtyCloseDialog.getByRole('button', { name: '取消', exact: true }).click();
+  await dirtyCloseDialog.waitFor({ state: 'hidden', timeout: 10000 });
+  const retainedAfterDirtyCloseCancel = await activityTabLabels.count();
+  const retainedAfterDirtyCloseCancelName = await projectNameInput.inputValue();
+  const activityDirtyCloseJourney = {
+    warning: dirtyCloseDialogText,
+    retainedAfterDirtyCloseCancel,
+    retainedAfterDirtyCloseCancelName,
+    urlAfterCancel: page.url(),
+  };
+  if (retainedAfterDirtyCloseCancel !== activityTabKeys.length
+    || retainedAfterDirtyCloseCancelName !== unsavedProjectName
+    || new URL(page.url()).pathname !== new URL(projectCreateRoute).pathname) {
+    throw new Error(`cancelling dirty activity page close lost page state: ${JSON.stringify(activityDirtyCloseJourney)}`);
+  }
+  await page.locator(`[data-activity-page-key="${projectActivityKey}"] .activity-page-tab-close`).click();
+  await page.waitForFunction((expectedKey) => (
+    !document.querySelector(`[data-activity-page-key="${expectedKey}"]`)
+  ), projectActivityKey, { timeout: 10000 });
+  const retainedAfterInactiveCleanClose = await activityTabLabels.count();
+  const retainedAfterInactiveCleanCloseName = await projectNameInput.inputValue();
+  const activityIndependentCloseJourney = {
+    closedActivityKey: projectActivityKey,
+    retainedAfterInactiveCleanClose,
+    retainedAfterInactiveCleanCloseName,
+    activeUrl: page.url(),
+  };
+  if (retainedAfterInactiveCleanClose !== activityTabKeys.length - 1
+    || retainedAfterInactiveCleanCloseName !== unsavedProjectName
+    || new URL(page.url()).pathname !== new URL(projectCreateRoute).pathname) {
+    throw new Error(`closing inactive clean activity page polluted active draft: ${JSON.stringify(activityIndependentCloseJourney)}`);
+  }
   await page.locator(`[data-activity-page-key="${paymentActivityKey}"]`).click();
   await page.waitForURL((url) => url.pathname === new URL(paymentRoute).pathname, { timeout: 15000 });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -370,6 +409,8 @@ try {
     payment: paymentResult,
     activityTabJourney,
     activityDraftJourney,
+    activityDirtyCloseJourney,
+    activityIndependentCloseJourney,
     mobile: mobileResults,
     contractPresentations,
     mutations,
