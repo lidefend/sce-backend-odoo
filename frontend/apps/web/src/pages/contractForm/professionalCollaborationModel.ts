@@ -48,7 +48,10 @@ export function canUpdateCollaborationActivity(
 }
 
 export function canReplyCollaborationMessage(entry: ChatterTimelineEntry): boolean {
-  return entry.type === 'message' && entry.message?.can_reply === true && Number(entry.message.id || entry.id || 0) > 0;
+  return entry.type === 'message'
+    && entry.message?.can_reply === true
+    && entry.message.reply_intent === 'chatter.post'
+    && Number(entry.message.id || entry.id || 0) > 0;
 }
 
 export function canDeleteCollaborationMessage(entry: ChatterTimelineEntry): boolean {

@@ -224,7 +224,7 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "id": row.id,
                         "author_name": _message_author_display(row),
                         "can_reply": bool(can_reply),
-                        "can_edit": False,
+                        "reply_intent": "chatter.post" if can_reply else "",
                         "can_delete": can_delete,
                         "delete_intent": "chatter.message.delete" if can_delete else "",
                     },

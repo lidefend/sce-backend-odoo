@@ -73,7 +73,7 @@ defineProps<{
   posting: boolean;
   usersLoading: boolean;
   draft: string;
-  replyTarget: { id: number; author: string; body: string } | null;
+  replyTarget: { id: number; author: string; body: string; intent: 'chatter.post' } | null;
   placeholder: string;
   submitLabel: string;
   postingLabel: string;

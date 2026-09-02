@@ -108,6 +108,13 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace("parent_id: replyTarget.value?.id,", "")
             return value
         self.assertTrue(any("preserve the parent" in item for item in validate(read_text)))
+    def test_task_floorplan_cannot_force_collaboration_readonly(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ContractFormDriverHost.vue"):
+                return value.replace(':readonly="renderModel.identity.mode === \'readonly\'"', "readonly")
+            return value
+        self.assertTrue(any("canonical render mode" in item for item in validate(read_text)))
     def test_activity_update_missing_authority_cannot_fail_open(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
@@ -119,7 +126,7 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("useNativeChatterRuntime.ts"):
-                return value.replace("if (!canExecuteCollaborationCreateAction(action, activeMode.value)) return;", "")
+                return value.replace("if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;", "")
             return value
         self.assertTrue(any("create handlers" in item for item in validate(read_text)))
     def test_activity_action_cannot_fall_back_to_another_contract_row(self):

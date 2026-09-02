@@ -8149,3 +8149,27 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   mutations, execute requests, or desktop/390px overflow. The complete
   `verify.frontend.quick.gate` also passed after refreshing its generated
   productization inventories.
+
+## 2026-09-02 — Collaboration message-reply authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `9e5b3d91`.
+- Product defect and repair: timeline messages exposed only a reply boolean and
+  retained an unused edit flag, while the frontend relied on a locally known
+  reply intent and also coupled a row-level reply to the page-level new-comment
+  action. Message rows now project the exact `chatter.post` intent and no edit
+  flag. The professional model, reply opener, and sender require that exact
+  intent plus a positive parent identity; ordinary new comments continue to
+  require their page-level action contract.
+- Floorplan correction: Task Floorplans forced the collaboration panel to
+  readonly even in edit mode. This produced visible reply actions that could
+  never open a composer on the payment page. The professional driver now derives
+  collaboration readonly state from the canonical render mode, with no
+  model-specific exception.
+- Real-page evidence: governed `project.project` and `payment.request` journeys
+  each posted one child reply with an exact parent message id, then cancelled
+  deletion with the parent preserved and confirmed deletion successfully. The
+  same run retained three independent activity pages and the unsaved project
+  draft, restored follower state, completed attachment and activity journeys,
+  and reported zero intent failures, browser errors, unrelated mutations,
+  execute requests, or desktop/390px overflow.

@@ -132,6 +132,14 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
         self.assertNotIn('"can_edit"', activity_projection)
         self.assertNotIn('"can_delete"', activity_projection)
 
+    def test_message_projection_exposes_only_exact_reply_authority(self):
+        source = (Path(__file__).resolve().parents[1] / "handlers" / "chatter_timeline.py").read_text(encoding="utf-8")
+        message_projection = source.split('"type": "message"', 1)[1].split("return items", 1)[0]
+
+        self.assertIn('"reply_intent": "chatter.post" if can_reply else ""', message_projection)
+        self.assertIn('"can_reply": bool(can_reply)', message_projection)
+        self.assertNotIn('"can_edit"', message_projection)
+
     def test_attachment_download_projection_requires_exact_authorized_subject(self):
         project = self.module._attachment_download_projection(
             "project.project", 7, "project.project", 7, {"project.project"},

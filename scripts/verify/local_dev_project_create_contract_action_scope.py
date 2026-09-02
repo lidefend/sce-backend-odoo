@@ -435,6 +435,10 @@ for target_record in (project_record, payment_record):
         })
     if (row.get("message") or {}).get("delete_intent") != "chatter.message.delete":
         raise AssertionError("message delete intent was not exact: %s" % row)
+    if (row.get("message") or {}).get("can_reply") is not True:
+        raise AssertionError("message reply authority was not projected: %s" % row)
+    if (row.get("message") or {}).get("reply_intent") != "chatter.post":
+        raise AssertionError("message reply intent was not exact: %s" % row)
     message_delete_journeys.append({
         "model": target_record._name,
         "record_id": int(target_record.id),
@@ -442,6 +446,9 @@ for target_record in (project_record, payment_record):
         "body": fixture_body,
         "can_delete": True,
         "delete_intent": "chatter.message.delete",
+        "can_reply": True,
+        "reply_intent": "chatter.post",
+        "reply_body": "%s-reply" % fixture_body,
     })
 
 activity_cancel_journeys = []

@@ -33,7 +33,7 @@ export function useRecordCollaborationPresentation(context: {
   activeChatterMode: MutableRef<string>;
   activeChatterLabel: MutableRef<string>;
   chatterDraft: MutableRef<string>;
-  replyTarget: MutableRef<{ id: number; author: string; body: string } | null>;
+  replyTarget: MutableRef<{ id: number; author: string; body: string; intent: 'chatter.post' } | null>;
   activitySummary: MutableRef<string>;
   activityDeadline: MutableRef<string>;
   activityNote: MutableRef<string>;

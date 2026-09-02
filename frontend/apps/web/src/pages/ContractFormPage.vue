@@ -926,7 +926,6 @@ const {
   model: () => model.value,
   recordId: () => recordId.value,
   activeChatterAction: () => activeChatterAction.value,
-  messageAction: () => messageAction.value,
   followerContract: () => nativeFollowerContract.value,
 });
 const attachmentViewerRef = ref<NativeAttachmentViewerLike | null>(null);

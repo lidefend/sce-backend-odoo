@@ -33,7 +33,6 @@ export function useNativeChatterRuntime(params: {
   model: () => string;
   recordId: () => number;
   activeChatterAction: () => NativeChatterAction | null;
-  messageAction: () => NativeChatterAction | null;
   followerContract: () => NativeFollowerContract | null;
 }) {
   const activeMode = ref('');
@@ -55,7 +54,7 @@ export function useNativeChatterRuntime(params: {
   const timelineNextOffset = ref(0);
   const activityUpdatingIds = ref<number[]>([]);
   const messageDeletingIds = ref<number[]>([]);
-  const replyTarget = ref<{ id: number; author: string; body: string } | null>(null);
+  const replyTarget = ref<{ id: number; author: string; body: string; intent: 'chatter.post' } | null>(null);
   const followers = ref<CollaborationFollower[]>([]);
   const followerCount = ref(0);
   const isFollowing = ref(false);
@@ -245,16 +244,16 @@ export function useNativeChatterRuntime(params: {
   }
 
   async function openReply(entry: ChatterTimelineEntry) {
-    const action = params.messageAction();
     const messageId = Number(entry.message?.id || entry.id || 0);
-    if (entry.type !== 'message' || entry.message?.can_reply !== true || !messageId
-      || !canExecuteCollaborationCreateAction(action, 'message')) return;
+    if (entry.type !== 'message' || entry.message?.can_reply !== true
+      || entry.message.reply_intent !== 'chatter.post' || !messageId) return;
     activeMode.value = 'message';
-    activeLabel.value = action!.label;
+    activeLabel.value = '回复消息';
     replyTarget.value = {
       id: messageId,
       author: String(entry.message?.author_name || entry.typeLabel || '消息').trim(),
       body: String(entry.body || entry.title || '').trim(),
+      intent: 'chatter.post',
     };
     error.value = '';
     if (!userOptions.value.length && !usersLoading.value) await loadUsers('');
@@ -302,7 +301,8 @@ export function useNativeChatterRuntime(params: {
       return;
     }
     const action = params.activeChatterAction();
-    if (!canExecuteCollaborationCreateAction(action, activeMode.value)) return;
+    const exactReplyAuthorized = replyTarget.value?.intent === 'chatter.post' && replyTarget.value.id > 0;
+    if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;
     const body = draft.value.trim();
     const recordId = params.recordId();
     const model = params.model();

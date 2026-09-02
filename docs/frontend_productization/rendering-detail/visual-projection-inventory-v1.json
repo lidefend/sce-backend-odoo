@@ -1845,7 +1845,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "01cbccd180fbe2368caf11fe9a138e8c7ce31db616be1e5ffa4152a8bf58649c",
+      "digest": "98915f1fb5bbe85bca0668a0be727967ad73154c1b2d6f4729df89953863af10",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -1942,7 +1942,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "81af9f2569c2a8c2c22b99a62ef2d80f4cbf7a1fd8ab3ab16259a5f0a4f86b91",
+      "digest": "5dcfbdabcf6395a9e8199cd33ce970c7e057b66a5bdf5a9703d2c78321047ae4",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormDriverHost.vue",
       "referenceNativeStyleSelectors": [
@@ -2057,7 +2057,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "82b46617a5dabe50ee96d2dc35f2c24e5651d4ebdcd98a8c4c4b008747ec97ac",
+      "digest": "b5507775e627ba4ab678e5ba3abdeb31deaf601b31dac232edaba4f6ed480409",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/NativeCollaborationPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2121,7 +2121,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "a08cd47f3953c77a67648f4a7c8408ddb8028ccfe85239a7ecdb9d9ed60c368c",
+      "digest": "806abf2a7ee5509eab5794308cbc96da3211f3e381fce2995fc15735cf56193f",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalCollaborationComposer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2606,7 +2606,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "0b2fd73fc61526376391e30fc73c6e0f1c784467825e3a98c6ac6fb38cc3866c",
+  "currentInputDigest": "da9b87801c8687936bb4fff2b86938a703575d7d29a33723d8d4ee2245f33420",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

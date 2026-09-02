@@ -98,7 +98,10 @@ async function verifyMessageDeleteJourney(surface, model) {
   const expected = (target.message_delete_journeys || []).find((row) => row.model === model);
   if (!expected?.body || !expected?.message_id) throw new Error(`missing message delete fixture authority for ${model}`);
   const body = String(expected.body);
-  const timelineEntry = surface.locator('.native-chatter-entry:visible').filter({ hasText: body });
+  const timelineEntry = surface.locator('.native-chatter-entry:visible').filter({
+    hasText: body,
+    hasNotText: String(expected.reply_body || `${body}-reply`),
+  });
   const timeline = surface.locator('[data-professional-collaboration-component="timeline"]');
   for (let pageIndex = 0; pageIndex < 3 && await timelineEntry.count() === 0; pageIndex += 1) {
     const loadMore = timeline.getByRole('button', { name: '加载更多', exact: true });
@@ -123,6 +126,34 @@ async function verifyMessageDeleteJourney(surface, model) {
   await confirmation.getByRole('button', { name: '确认删除消息', exact: true }).click();
   await timelineEntry.waitFor({ state: 'detached', timeout: 30000 });
   return { messageId: expected.message_id, body, cancelPreserved: true, confirmed: true, deleted: true };
+}
+async function verifyMessageReplyJourney(surface, model) {
+  const expected = (target.message_delete_journeys || []).find((row) => row.model === model);
+  if (!expected?.body || !expected?.message_id || !expected?.reply_body) {
+    throw new Error(`missing message reply fixture authority for ${model}`);
+  }
+  const timeline = surface.locator('[data-professional-collaboration-component="timeline"]');
+  const timelineEntry = surface.locator('.native-chatter-entry:visible').filter({ hasText: String(expected.body) });
+  for (let pageIndex = 0; pageIndex < 3 && await timelineEntry.count() === 0; pageIndex += 1) {
+    const loadMore = timeline.getByRole('button', { name: '加载更多', exact: true });
+    if (await loadMore.count() === 0) break;
+    await loadMore.click();
+    await page.waitForTimeout(750);
+  }
+  await timelineEntry.waitFor({ state: 'visible', timeout: 30000 });
+  await timelineEntry.getByRole('button', { name: '回复', exact: true }).click();
+  const composer = surface.locator('[data-professional-collaboration-component="composer"]');
+  await composer.waitFor({ state: 'visible', timeout: 15000 });
+  const replyTarget = composer.locator('.native-chatter-reply-target');
+  await replyTarget.waitFor({ state: 'visible', timeout: 15000 });
+  if (!String(await replyTarget.textContent() || '').includes(String(expected.body))) {
+    throw new Error(`message reply composer omitted parent identity for ${model}`);
+  }
+  await composer.locator('textarea').fill(String(expected.reply_body));
+  await composer.locator('.native-chatter-compose-actions button').first().click();
+  const replyEntry = surface.locator('.native-chatter-entry:visible').filter({ hasText: String(expected.reply_body) });
+  await replyEntry.waitFor({ state: 'visible', timeout: 30000 });
+  return { messageId: expected.message_id, body: expected.body, replyBody: expected.reply_body, parentId: expected.message_id };
 }
 async function verifyActivityCancelJourney(surface, model) {
   const expected = (target.activity_cancel_journeys || []).find((row) => row.model === model);
@@ -181,11 +212,13 @@ page.on('request', (request) => {
     attachmentId: payload?.params?.attachment_id,
     name: payload?.params?.name,
   });
-  if (intent === 'chatter.message.delete') messageMutations.push({
+  if (intent === 'chatter.message.delete' || intent === 'chatter.post') messageMutations.push({
     intent,
     model: payload?.params?.model,
     recordId: payload?.params?.res_id,
     messageId: payload?.params?.message_id,
+    parentId: payload?.params?.parent_id,
+    body: payload?.params?.body,
   });
   if (intent === 'chatter.activity.update') activityMutations.push({
     intent,
@@ -350,6 +383,7 @@ try {
     .waitFor({ state: 'visible', timeout: 45000 });
   const workspaceFollowerJourney = await verifyFollowerMutation(workspaceSurface, 'project.project');
   const workspaceAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(workspaceSurface, 'project.project');
+  const workspaceMessageReplyJourney = await verifyMessageReplyJourney(workspaceSurface, 'project.project');
   const workspaceMessageDeleteJourney = await verifyMessageDeleteJourney(workspaceSurface, 'project.project');
   const workspaceActivityCancelJourney = await verifyActivityCancelJourney(workspaceSurface, 'project.project');
   const workspaceResult = {
@@ -372,6 +406,8 @@ try {
     followerReadiness: await workspaceSurface.locator('[data-professional-collaboration-component="panel"]').getAttribute('data-follower-readiness'),
     followerJourney: workspaceFollowerJourney,
     attachmentDeleteJourney: workspaceAttachmentDeleteJourney,
+    messageReplyJourney: workspaceMessageReplyJourney,
+    messageDeleteJourney: workspaceMessageDeleteJourney,
   };
   const workspacePresentation = contractPresentations
     .filter((row) => row.actionId === String(target.workspace_action_id))
@@ -432,6 +468,7 @@ try {
     .waitFor({ state: 'visible', timeout: 45000 });
   const paymentFollowerJourney = await verifyFollowerMutation(paymentSurface, 'payment.request');
   const paymentAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(paymentSurface, 'payment.request');
+  const paymentMessageReplyJourney = await verifyMessageReplyJourney(paymentSurface, 'payment.request');
   const paymentMessageDeleteJourney = await verifyMessageDeleteJourney(paymentSurface, 'payment.request');
   const paymentActivityCancelJourney = await verifyActivityCancelJourney(paymentSurface, 'payment.request');
   const paymentDrivers = await paymentSurface.locator('[data-contract-form-driver]').count();
@@ -461,6 +498,8 @@ try {
     followerReadiness: await paymentSurface.locator('[data-professional-collaboration-component="panel"]').getAttribute('data-follower-readiness'),
     followerJourney: paymentFollowerJourney,
     attachmentDeleteJourney: paymentAttachmentDeleteJourney,
+    messageReplyJourney: paymentMessageReplyJourney,
+    messageDeleteJourney: paymentMessageDeleteJourney,
   };
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
     throw new Error(`payment record canonical driver did not load: ${JSON.stringify(paymentResult)}`);
@@ -635,6 +674,10 @@ try {
   }
   if (messageMutations.filter((row) => row.intent === 'chatter.message.delete').length !== 2) {
     throw new Error(`message delete journey did not preserve dual-model mutation symmetry: ${JSON.stringify(messageMutations)}`);
+  }
+  const replyMutations = messageMutations.filter((row) => row.intent === 'chatter.post');
+  if (replyMutations.length !== 2 || replyMutations.some((row) => !Number(row.parentId))) {
+    throw new Error(`message reply journey did not preserve dual-model parent authority: ${JSON.stringify(messageMutations)}`);
   }
   if (activityMutations.filter((row) => row.intent === 'chatter.activity.update' && row.action === 'cancel').length !== 2) {
     throw new Error(`activity cancel journey did not preserve dual-model mutation symmetry: ${JSON.stringify(activityMutations)}`);

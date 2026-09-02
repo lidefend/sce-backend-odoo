@@ -14,6 +14,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     attachment_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts")
     chatter_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts")
     contract_page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
+    driver_host = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
         if marker not in timeline: failures.append(f"collaboration timeline missing {marker}")
     if "<ProfessionalCollaborationTimeline" not in panel or "visibleCollaborationTimeline" not in panel:
@@ -73,8 +74,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("activity update handler must independently enforce explicit backend authority")
     if "canReplyCollaborationMessage(entry)" not in timeline:
         failures.append("message reply presentation must consume explicit backend authority")
-    if "entry.message?.can_reply !== true" not in chatter_runtime or "parent_id: replyTarget.value?.id" not in chatter_runtime:
-        failures.append("message reply handler must enforce authority and preserve the parent relation")
+    if ':readonly="renderModel.identity.mode === \'readonly\'"' not in driver_host:
+        failures.append("task Floorplan collaboration must follow the canonical render mode instead of forcing readonly")
+    if "entry.message?.can_reply !== true" not in chatter_runtime or "entry.message.reply_intent !== 'chatter.post'" not in chatter_runtime or "parent_id: replyTarget.value?.id" not in chatter_runtime or "exactReplyAuthorized" not in chatter_runtime:
+        failures.append("message reply handler must enforce exact backend authority and preserve the parent relation")
+    if "entry.message?.can_reply === true" not in model or "entry.message.reply_intent === 'chatter.post'" not in model:
+        failures.append("message reply authority must require the exact backend intent")
     if "@reply=\"$emit('reply', $event)\"" not in panel:
         failures.append("professional collaboration panel must settle the reply action")
     if "canDeleteCollaborationMessage(entry)" not in timeline or "delete-message" not in timeline:
@@ -85,7 +90,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("message delete handler must independently reject missing or denied authority")
     if "confirmAndDeleteNativeMessage" not in contract_page or "deleteNativeMessage(entry)" not in contract_page:
         failures.append("message deletion must settle through the professional confirmation component")
-    if "canExecuteCollaborationCreateAction(action, 'activity')" not in chatter_runtime or "canExecuteCollaborationCreateAction(action, activeMode.value)" not in chatter_runtime:
+    if "canExecuteCollaborationCreateAction(action, 'activity')" not in chatter_runtime or "if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;" not in chatter_runtime:
         failures.append("collaboration create handlers must independently enforce the active contract action")
     if "nativeChatterActions.value.find((item) => item.mode === 'activity')" in read_text("frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts"):
         failures.append("activity composer authority must not fall back to an unrelated contract action")

@@ -137,7 +137,7 @@ export type NativeCollaborationPanelProps = {
   activeSubmitLabel: string;
   activePostingLabel: string;
   chatterDraft: string;
-  replyTarget: { id: number; author: string; body: string } | null;
+  replyTarget: { id: number; author: string; body: string; intent: 'chatter.post' } | null;
   collaborationUserQuery: string;
   selectedMentionUsers: CollaborationUserOption[];
   collaborationUserChoices: CollaborationUserOption[];
