@@ -108,8 +108,8 @@ export function useNativeAttachmentRuntime(params: {
     }
   }
 
-  async function openAttachment(att: { id?: number; name?: string; mimetype?: string; can_download?: boolean }) {
-    if (!att?.id || att.can_download !== true) return;
+  async function openAttachment(att: { id?: number; name?: string; mimetype?: string; can_download?: boolean; download_intent?: string }) {
+    if (!att?.id || att.can_download !== true || att.download_intent !== 'file.download') return;
     error.value = '';
     try {
       await params.viewerRef.value?.open({ id: Number(att.id) }, att.name);

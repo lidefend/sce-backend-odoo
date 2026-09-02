@@ -8080,3 +8080,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   intent. Temporary fixtures were removed with zero survivors; follower state,
   activity-page retention, unsaved draft, dirty-close warning, browser-error
   count, unrelated-mutation count, and 390px overflow checks remained clean.
+
+## 2026-09-02 — Collaboration attachment-download intent closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `fb9421db`.
+- Product defect and repair: the professional timeline treated a boolean
+  download capability as sufficient authority and then called a locally known
+  intent name. The backend timeline now projects the exact `file.download`
+  intent with every authorized attachment, while the collaboration model and
+  attachment runtime both independently require that exact carrier. Missing or
+  mismatched download intents fail closed without model, role, label, or status
+  inference.
+- Real-page evidence: the governed project-workspace and payment-request
+  journeys each opened the temporary attachment through the professional viewer
+  using one exact `file.download` request, then cancelled deletion with the
+  attachment preserved and confirmed deletion with the entry removed. The
+  combined journey observed exactly two downloads and two governed deletes,
+  restored follower state, retained the three independent activity pages and
+  unsaved project draft, and reported zero intent failures, browser errors,
+  unrelated mutations, execute requests, or desktop/390px overflow.
+- Runtime note: the first acceptance attempt exposed an already-stale payment
+  form view containing removed `funding_baseline_id` metadata. A normal
+  `smart_construction_core` module upgrade followed by the standard local-dev
+  restart refreshed the database view and resident registry; no database reset
+  or rebuild was performed. The identical journey then passed.

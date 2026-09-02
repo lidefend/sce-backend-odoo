@@ -23,7 +23,9 @@ export function visibleCollaborationTimeline(entries: readonly ChatterTimelineEn
 }
 
 export function canDownloadCollaborationAttachment(entry: ChatterTimelineEntry): boolean {
-  return entry.type === 'attachment' && entry.attachment?.can_download === true;
+  return entry.type === 'attachment'
+    && entry.attachment?.can_download === true
+    && entry.attachment.download_intent === 'file.download';
 }
 
 export function canDeleteCollaborationAttachment(entry: ChatterTimelineEntry): boolean {

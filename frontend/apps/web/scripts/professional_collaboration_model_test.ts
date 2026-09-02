@@ -14,7 +14,9 @@ assert.equal(formatCollaborationTimelineMeta('plain'), 'plain');
 assert.match(formatCollaborationTimelineMeta('at 2026-08-25T08:30:00Z'), /2026/);
 assert.equal(canDownloadCollaborationAttachment({ key: 'missing', type: 'attachment', attachment: { id: 1, name: 'a' } } as never), false);
 assert.equal(canDownloadCollaborationAttachment({ key: 'denied', type: 'attachment', attachment: { id: 1, name: 'a', can_download: false } } as never), false);
-assert.equal(canDownloadCollaborationAttachment({ key: 'allowed', type: 'attachment', attachment: { id: 1, name: 'a', can_download: true } } as never), true);
+assert.equal(canDownloadCollaborationAttachment({ key: 'missing-intent', type: 'attachment', attachment: { id: 1, name: 'a', can_download: true } } as never), false);
+assert.equal(canDownloadCollaborationAttachment({ key: 'wrong-intent', type: 'attachment', attachment: { id: 1, name: 'a', can_download: true, download_intent: 'file.preview' } } as never), false);
+assert.equal(canDownloadCollaborationAttachment({ key: 'allowed', type: 'attachment', attachment: { id: 1, name: 'a', can_download: true, download_intent: 'file.download' } } as never), true);
 assert.equal(canDeleteCollaborationAttachment({ key: 'missing-delete', type: 'attachment', attachment: { id: 1, can_delete: true } } as never), false);
 assert.equal(canDeleteCollaborationAttachment({ key: 'wrong-intent', type: 'attachment', attachment: { id: 1, can_delete: true, delete_intent: 'file.delete' } } as never), false);
 assert.equal(canDeleteCollaborationAttachment({ key: 'delete', type: 'attachment', attachment: { id: 1, can_delete: true, delete_intent: 'chatter.attachment.delete' } } as never), true);
@@ -35,4 +37,4 @@ assert.equal(canReplyCollaborationMessage({ key: 'missing-id', type: 'message', 
 assert.equal(canReplyCollaborationMessage({ key: 'reply', type: 'message', message: { id: 1, can_reply: true } } as never), true);
 assert.deepEqual(parseActivityEntry({ key: 'missing-status', type: 'activity', title: '计划', activity: { id: 1, deadline: '2020-01-01' } } as never).status, 'unknown');
 assert.deepEqual(parseActivityEntry({ key: 'overdue', type: 'activity', title: '计划', activity: { id: 1, status: 'overdue', status_label: '已逾期' } } as never).statusLabel, '已逾期');
-console.log('[professional_collaboration_model_test] PASS cases=28');
+console.log('[professional_collaboration_model_test] PASS cases=30');

@@ -45,6 +45,13 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace(" || att.can_download !== true", "")
             return value
         self.assertTrue(any("independently reject" in item for item in validate(read_text)))
+    def test_attachment_download_cannot_accept_an_unrelated_intent(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalCollaborationModel.ts"):
+                return value.replace("entry.attachment.download_intent === 'file.download'", "Boolean(entry.attachment.download_intent)")
+            return value
+        self.assertTrue(any("exact backend intent" in item for item in validate(read_text)))
     def test_attachment_delete_cannot_use_a_non_authoritative_intent(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

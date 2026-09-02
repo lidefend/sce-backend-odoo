@@ -393,6 +393,8 @@ for target_record in (project_record, payment_record):
         })
     if (row.get("attachment") or {}).get("delete_intent") != "chatter.attachment.delete":
         raise AssertionError("attachment delete intent was not exact: %s" % row)
+    if (row.get("attachment") or {}).get("download_intent") != "file.download":
+        raise AssertionError("attachment download intent was not exact: %s" % row)
     attachment_delete_journeys.append({
         "model": target_record._name,
         "record_id": int(target_record.id),
@@ -400,6 +402,7 @@ for target_record in (project_record, payment_record):
         "name": fixture_name,
         "can_delete": True,
         "delete_intent": "chatter.attachment.delete",
+        "download_intent": "file.download",
     })
 
 # The browser runs in a separate Odoo transaction. Persist only these uniquely

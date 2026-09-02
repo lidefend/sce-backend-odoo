@@ -18,6 +18,7 @@ const contractPresentations = [];
 const browserErrors = [];
 const followerUpdates = [];
 const attachmentMutations = [];
+const intentFailures = [];
 async function captureHeaderPresentation(surface) {
   const header = surface.locator('.contract-form-command-bar');
   await header.waitFor({ state: 'visible', timeout: 45000 });
@@ -69,6 +70,13 @@ async function verifyAttachmentDeleteJourney(surface, model) {
     await page.waitForTimeout(750);
   }
   await timelineEntry.waitFor({ state: 'visible', timeout: 30000 });
+  const downloadButton = timelineEntry.locator('.native-attachment-download');
+  await downloadButton.waitFor({ state: 'visible', timeout: 15000 });
+  await downloadButton.click();
+  const viewer = page.locator('[data-semantic-component="ScDialog"][data-state="open"]').filter({ hasText: fileName });
+  await viewer.waitFor({ state: 'visible', timeout: 30000 });
+  await viewer.getByRole('button', { name: '关闭附件', exact: true }).click();
+  await viewer.waitFor({ state: 'detached', timeout: 15000 });
   const deleteButton = timelineEntry.getByRole('button', { name: '删除', exact: true });
   await deleteButton.waitFor({ state: 'visible', timeout: 15000 });
   await deleteButton.click();
@@ -82,7 +90,7 @@ async function verifyAttachmentDeleteJourney(surface, model) {
   await confirmation.waitFor({ state: 'visible', timeout: 15000 });
   await confirmation.getByRole('button', { name: '确认删除附件', exact: true }).click();
   await timelineEntry.waitFor({ state: 'detached', timeout: 30000 });
-  return { attachmentId: expected.attachment_id, fileName, cancelPreserved: true, confirmed: true, deleted: true, remainingEntries: await timelineEntry.count() };
+  return { attachmentId: expected.attachment_id, fileName, downloaded: true, cancelPreserved: true, confirmed: true, deleted: true, remainingEntries: await timelineEntry.count() };
 }
 page.on('console', (message) => {
   if (message.type() === 'error') browserErrors.push(`console:${message.text()}`);
@@ -104,7 +112,7 @@ page.on('request', (request) => {
     recordId: payload?.params?.res_id,
     action: payload?.params?.action,
   });
-  if (intent === 'file.upload' || intent === 'chatter.attachment.delete') attachmentMutations.push({
+  if (intent === 'file.upload' || intent === 'file.download' || intent === 'chatter.attachment.delete') attachmentMutations.push({
     intent,
     model: payload?.params?.model,
     recordId: payload?.params?.res_id,
@@ -117,6 +125,11 @@ page.on('response', async (response) => {
   if (!response.url().includes('/api/v1/intent')) return;
   let request = {};
   try { request = JSON.parse(response.request().postData() || '{}'); } catch {}
+  if (response.status() >= 400) {
+    let responseText = '';
+    try { responseText = (await response.text()).slice(0, 1200); } catch {}
+    intentFailures.push({ status: response.status(), intent: String(request.intent || ''), responseText });
+  }
   if (String(request.intent || '') !== 'ui.contract.v2') return;
   let body = {};
   try { body = await response.json(); } catch {}
@@ -528,11 +541,13 @@ try {
     executeRequests,
     followerUpdates,
     attachmentMutations,
+    intentFailures,
     browserErrors,
   }));
   if (mutations.length) throw new Error('read-only project create driver probe observed mutation');
   if (executeRequests.length) throw new Error(`read-only browser driver probe observed execute request: ${executeRequests.length}`);
   if (attachmentMutations.filter((row) => row.intent === 'file.upload').length !== 0
+    || attachmentMutations.filter((row) => row.intent === 'file.download').length !== 2
     || attachmentMutations.filter((row) => row.intent === 'chatter.attachment.delete').length !== 2) {
     throw new Error(`attachment delete journey did not preserve dual-model mutation symmetry: ${JSON.stringify(attachmentMutations)}`);
   }
@@ -548,6 +563,7 @@ try {
       }))
     )).catch(() => []),
     browserErrors,
+    intentFailures,
     executeRequests,
     mutations,
   };

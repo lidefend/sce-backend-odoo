@@ -53,9 +53,9 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("collaboration attachment download bypasses the shared authority resolver")
     if "entry.attachment?.can_download !== false" in timeline:
         failures.append("collaboration attachment download retains fail-open authority")
-    if "entry.attachment?.can_download === true" not in model:
-        failures.append("collaboration attachment download authority does not fail closed")
-    if "att.can_download !== true" not in attachment_runtime:
+    if "entry.attachment?.can_download === true" not in model or "entry.attachment.download_intent === 'file.download'" not in model:
+        failures.append("collaboration attachment download authority does not require the exact backend intent")
+    if "att.can_download !== true" not in attachment_runtime or "att.download_intent !== 'file.download'" not in attachment_runtime:
         failures.append("attachment open handler must independently reject missing or denied authority")
     if "canDeleteCollaborationAttachment(entry)" not in timeline or "delete-attachment" not in timeline:
         failures.append("attachment deletion presentation must consume explicit backend authority")
@@ -97,7 +97,7 @@ def main() -> int:
         print("[frontend_professional_collaboration_guard] FAIL")
         for failure in failures: print(f" - {failure}")
         return 1
-    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative attachment_delete=confirmed")
+    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative attachment_download=exact_intent attachment_delete=confirmed")
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())

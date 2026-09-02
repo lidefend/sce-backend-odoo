@@ -259,6 +259,7 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "name": row.name or "",
                         "mimetype": row.mimetype or "",
                         "can_download": True,
+                        "download_intent": "file.download",
                         "can_delete": can_delete,
                         "delete_intent": "chatter.attachment.delete" if can_delete else "",
                     },

@@ -35,6 +35,7 @@ export interface ChatterTimelineEntry {
     name?: string;
     mimetype?: string;
     can_download?: boolean;
+    download_intent?: string;
     can_delete?: boolean;
     delete_intent?: string;
   };
