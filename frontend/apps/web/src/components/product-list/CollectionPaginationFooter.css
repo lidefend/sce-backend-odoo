@@ -1,8 +1,6 @@
 .pagination-footer { display: flex; box-sizing: border-box; align-items: center; justify-content: flex-end; width: 100%; min-height: var(--sc-table-row-height, 44px); border-top: 1px solid var(--sc-app-border); background: var(--sc-app-panel); padding: var(--sc-space-2xs) var(--sc-space-sm); }
 .pagination-actions { display: inline-flex; align-items: center; flex-wrap: nowrap; justify-content: flex-end; gap: 5px; color: var(--sc-app-text-secondary); font-size: 12px; white-space: nowrap; }
 .pagination-total { color: var(--sc-app-text-secondary); font-size: 13px; font-weight: 600; white-space: nowrap; }
-/* 计数信息由 .pagination-total（自定义文案）独占；隐藏 TDesign 自带的“共 N 条数据”，避免同一计数重复呈现 */
-.pagination-footer :deep(.t-pagination__total) { display: none; }
 .pagination-size-control, .pagination-size-combo { display: inline-flex; align-items: center; }
 .pagination-size-control { gap: 5px; }
 .pagination-size-combo { position: relative; }

@@ -3,6 +3,23 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — PAGINATION-TOTAL-PUBLIC-AUTHORITY-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `0a86c32b`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 collection component
+  authority / paged list footer / `ScPagination` and
+  `CollectionPaginationFooter`.
+- Product result: the custom business record-count text remains the single
+  visible count, while TDesign's built-in total is disabled through its public
+  `totalContent` property. The previous private `.t-pagination__total` styling
+  dependency is removed; pagination behavior and page-size authority are
+  unchanged.
+- Acceptance evidence: the collection-navigation guard now requires the public
+  total-suppression contract and rejects its removal. Eleven guard tests pass;
+  the official design inventory moved from 16 to 15 internal-selector gaps and
+  retains zero visual-literal gaps.
+
 ## 2026-09-02 — PROFESSIONAL-FIELD-OFFICIAL-CONTROL-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

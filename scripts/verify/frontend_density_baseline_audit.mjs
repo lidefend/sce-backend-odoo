@@ -88,8 +88,8 @@ async function auditList(page) {
     const textTd = document.querySelector('.t-table td.column-layout-text');
     const styleOf = (el, prop) => el ? getComputedStyle(el)[prop] : null;
     // Pagination must render the record count exactly once: the custom
-    // .pagination-total owns "共 N 条" and the TDesign t-pagination's built-in
-    // total ("共 N 条数据") is hidden (see CollectionPaginationFooter.css).
+    // .pagination-total owns "共 N 条" and ScPagination disables the TDesign
+    // built-in total through its public totalContent prop.
     const pagFooter = document.querySelector('.pagination-footer');
     const pagVisible = pagFooter ? pagFooter.innerText.replace(/\s+/g, ' ') : '';
     const paginationCountMatches = (pagVisible.match(/共\s*\d+\s*条/g) || []).length;

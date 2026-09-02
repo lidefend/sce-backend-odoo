@@ -14,14 +14,8 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "4f7bd1fe244979d89a5fbec5d55478dde92e155aea0ef8f06debf117c21e4de5",
+  "inputDigest": "a2b0951005f1dce1f0d1353e283a6b6512a8f401e59d31da0d3dbfecf95f17bb",
   "internalVendorSelectorGaps": [
-    {
-      "file": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.css",
-      "line": 3,
-      "selector": "/* 计数信息由 .pagination-total（自定义文案）独占；隐藏 TDesign 自带的“共 N 条数据”，避免同一计数重复呈现 */ .pagination-footer :deep(.t-pagination__total)",
-      "status": "legacy_override_gap"
-    },
     {
       "file": "frontend/apps/web/src/styles/product-patterns.css",
       "line": 452,
@@ -659,7 +653,7 @@
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
     "formalStyleSourceCount": 200,
-    "internalVendorSelectorGapCount": 16,
+    "internalVendorSelectorGapCount": 15,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
     "productAppearanceVariantCount": 36,
