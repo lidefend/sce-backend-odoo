@@ -466,6 +466,13 @@ try {
             visibleText: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
           };
         });
+        const relationTagCells = [...document.querySelectorAll('[data-semantic-cell-kind="relation-tags"]')]
+          .filter((node) => node instanceof HTMLElement && node.offsetParent !== null);
+        const relationTagLabels = relationTagCells.flatMap((node) =>
+          [...node.querySelectorAll('.relation-tag, .collection-mobile-record-row__relation-tag')]
+            .map((label) => String(label.textContent || '').trim())
+            .filter(Boolean),
+        );
         return {
           h1: document.querySelectorAll('h1').length,
           pageHeaders: document.querySelectorAll('.template-page-header, [data-product-page-header]').length,
@@ -520,6 +527,14 @@ try {
               && activityCardEvidence.every((entry) => entry.ordinal && !entry.horizontalClipped && !entry.verticalClipped)
               && activityCardEvidence.every((entry) => !/记录\s*#\d+/.test(entry.visibleText)),
           } : null,
+          relationTagEvidence: {
+            cellCount: relationTagCells.length,
+            labels: relationTagLabels,
+            numericOnlyLabelCount: relationTagLabels.filter((label) => /^\d+$/.test(label)).length,
+            pass: relationTagCells.length > 0
+              && relationTagLabels.length > 0
+              && relationTagLabels.every((label) => !/^\d+$/.test(label)),
+          },
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
             .filter((element) => element instanceof HTMLElement && element.offsetParent !== null)
             .map((element) => ({
@@ -1268,6 +1283,9 @@ for (const item of report.routes) {
   }
   if (item.path && routes.find((target) => target.name === item.name)?.expectedActivityReady === true && !item.activityEvidence?.pass) {
     failures.push({ name: item.name, expectedActivityReady: true, activityEvidence: item.activityEvidence || null });
+  }
+  if (item.path && routes.find((target) => target.name === item.name)?.expectedRelationTagsReady === true && !item.relationTagEvidence?.pass) {
+    failures.push({ name: item.name, expectedRelationTagsReady: true, relationTagEvidence: item.relationTagEvidence || null });
   }
   if (item.sidebarScrollEvidence && !item.sidebarScrollEvidence.pass) failures.push({ name: item.name, sidebarScrollEvidence: item.sidebarScrollEvidence });
   if (item.taskDensityEvidence && (!item.taskDensityEvidence.present || !item.taskDensityEvidence.summary?.pass)) failures.push({ name: item.name, taskDensityEvidence: item.taskDensityEvidence });

@@ -114,6 +114,7 @@ export function extractListFieldSemanticsFromContract(store: ContractV2Normalize
       ...config,
       name: fieldCode,
       type: config.data_type || config.fieldType || widget.fieldDescriptor?.fieldType,
+      widget: config.widget || widget.widgetType,
     });
   });
 

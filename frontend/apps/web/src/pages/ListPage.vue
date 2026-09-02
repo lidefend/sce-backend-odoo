@@ -702,11 +702,15 @@ function statusSemantic(tone: string): 'default' | 'info' | 'success' | 'warning
     : 'default';
 }
 function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecordFact[] {
-  return mobileFactColumns.value.map((column) => ({
-    key: column,
-    label: columnLabel(column),
-    value: semanticCell(column, columnValue(row, column), relationDisplayItems(row, column)).text,
-  }));
+  return mobileFactColumns.value.map((column) => {
+    const relationItems = relationDisplayItems(row, column);
+    return {
+      key: column,
+      label: columnLabel(column),
+      value: semanticCell(column, columnValue(row, column), relationItems).text,
+      relationItems,
+    };
+  });
 }
 function attachmentLinks(value: unknown) {
   return parseAttachmentReferenceLinks(value);
