@@ -446,7 +446,10 @@ try {
           return {
             ordinal: node.getAttribute('data-record-ordinal') || '',
             rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
-            clipped: node.scrollHeight > node.clientHeight + 1 || node.scrollWidth > node.clientWidth + 1,
+            clientSize: [node.clientWidth, node.clientHeight],
+            scrollSize: [node.scrollWidth, node.scrollHeight],
+            horizontalClipped: node.scrollWidth > node.clientWidth + 1,
+            verticalClipped: node.scrollHeight > node.clientHeight + 1,
             visibleText: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
           };
         });
@@ -501,7 +504,7 @@ try {
             visibleRawIdentityCount: activityCardEvidence.filter((entry) => /记录\s*#\d+/.test(entry.visibleText)).length,
             pass: activityRoot.getAttribute('data-state') === 'ready'
               && activityCards.length > 0
-              && activityCardEvidence.every((entry) => entry.ordinal && !entry.clipped)
+              && activityCardEvidence.every((entry) => entry.ordinal && !entry.horizontalClipped && !entry.verticalClipped)
               && activityCardEvidence.every((entry) => !/记录\s*#\d+/.test(entry.visibleText)),
           } : null,
           visibleActions: [...document.querySelectorAll('main button, [data-workspace-primary-content] button')]
