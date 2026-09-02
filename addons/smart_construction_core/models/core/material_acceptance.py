@@ -14,6 +14,8 @@ LEGACY_SYSTEM_DEFAULT_SUPPLIER_NAME = "系统默认供应商（待完善）"
 LEGACY_TECHNICAL_DEFAULT_SUPPLIER_NAME = "系统默认供应商（技术兜底）"
 SYSTEM_DEFAULT_MATERIAL_NAME = "系统默认材料"
 SYSTEM_DEFAULT_WAREHOUSE_NAME = "系统默认仓库"
+_COST_SOURCE_STATE_CONTEXT_KEY = "sc_cost_source_state_transition"
+_COST_SOURCE_STATE_TOKEN = object()
 
 
 class ScMaterialSystemDefaultMixin(models.AbstractModel):
@@ -112,18 +114,12 @@ class ScMaterialSystemDefaultMixin(models.AbstractModel):
         return warehouse.lot_stock_id.id if warehouse and warehouse.lot_stock_id else False
 
     def _sc_get_or_create_material_cost_code(self):
-        CostCode = self.env["project.cost.code"].sudo()
-        cost_code = CostCode.search([("code", "=", "MAT"), ("type", "=", "material")], limit=1)
-        if not cost_code:
-            cost_code = CostCode.create(
-                {
-                    "code": "MAT",
-                    "name": "材料成本",
-                    "type": "material",
-                    "note": "材料办理确认时自动归集的默认成本科目。",
-                }
-            )
-        return cost_code
+        return self.env["project.cost.code"]._get_or_create_standard_code(
+            "MAT",
+            "材料成本",
+            "material",
+            "材料办理确认时自动归集的默认成本科目。",
+        )
 
     def _sc_business_category_ledger_policy(self, code):
         category = self.env["sc.business.category"].sudo().search([("code", "=", code)], limit=1)
@@ -1643,6 +1639,10 @@ class ScMaterialOutbound(models.Model):
     _description = "材料出库单"
     _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation", "sc.material.system.default.mixin"]
     _order = "outbound_date desc, id desc"
+    _FACT_IMMUTABLE_FIELDS = {
+        "outbound_type", "project_id", "outbound_date", "currency_id",
+        "receiver_id", "line_ids",
+    }
 
     name = fields.Char(string="出库单号", required=True, default="新建", tracking=True)
     business_category_id = fields.Many2one(
@@ -1755,6 +1755,11 @@ class ScMaterialOutbound(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if (
+            self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+            and any(vals.get("state", "draft") != "draft" for vals in vals_list)
+        ):
+            raise UserError(_("材料出库状态只能通过受控业务动作推进。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             vals.setdefault("business_category_id", self._sc_resolve_material_business_category_id(vals))
@@ -1771,6 +1776,28 @@ class ScMaterialOutbound(models.Model):
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.material.outbound") or _("材料出库单")
         return super().create(vals_list)
+
+    def write(self, vals):
+        if (
+            "state" in vals
+            and self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+        ):
+            raise UserError(_("材料出库状态只能通过受控业务动作推进。"))
+        if self._FACT_IMMUTABLE_FIELDS & set(vals):
+            locked = self.filtered(lambda record: record.state in ("submitted", "issued"))
+            if locked:
+                raise UserError(_("已提交或已出库的材料出库事实不可修改；请先通过受控流程退回草稿。"))
+        return super().write(vals)
+
+    def _write_cost_source_state(self, vals):
+        return self.with_context(
+            **{_COST_SOURCE_STATE_CONTEXT_KEY: _COST_SOURCE_STATE_TOKEN}
+        ).write(vals)
+
+    def unlink(self):
+        if self.filtered(lambda record: record.state in ("submitted", "issued")):
+            raise UserError(_("已提交或已出库的材料出库事实不可删除。"))
+        return super().unlink()
 
     def init(self):
         self.env.cr.execute(
@@ -1800,9 +1827,10 @@ class ScMaterialOutbound(models.Model):
             if record.outbound_type == "loss" and not record.purpose:
                 raise ValidationError(_("材料损耗必须填写损耗原因。"))
             record.line_ids._check_qty()
+            record._validate_return_authority(lock=False)
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("提交材料出库"))
-        self.write({"state": "submitted"})
+        self._write_cost_source_state({"state": "submitted"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_outbound_submitted",
@@ -1829,9 +1857,13 @@ class ScMaterialOutbound(models.Model):
 
     def _complete_issue(self):
         self.ensure_one() if len(self) == 1 else None
+        for record in self:
+            record._validate_return_authority(lock=True)
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("确认材料出库"))
-        self.with_context(skip_validation_check=True).write({"state": "issued", "reject_reason": False})
+        self.with_context(skip_validation_check=True)._write_cost_source_state(
+            {"state": "issued", "reject_reason": False}
+        )
         for record in self:
             record._sc_audit_material_transition(
                 "material_outbound_issued",
@@ -1842,7 +1874,7 @@ class ScMaterialOutbound(models.Model):
             if record._sc_business_category_cost_trigger(
                 record._material_outbound_category_code(),
                 "issue_project_cost_ledger",
-                default=record.outbound_type in ("issue", "loss"),
+                default=record.outbound_type in ("issue", "return", "loss"),
             ):
                 record._sync_cost_ledger_after_issue()
             record._sync_transfer_inbound_after_issue()
@@ -1977,45 +2009,93 @@ class ScMaterialOutbound(models.Model):
 
     def _prepare_cost_ledger_vals(self, line, cost_code):
         material_name = line.material_catalog_id.display_name or line.product_id.display_name or self.name
+        sign = -1 if self.outbound_type == "return" else 1
+        authority_line = line.origin_issue_line_id if sign < 0 else line
+        unit_price = authority_line.unit_price
+        source_currency = authority_line.outbound_id.currency_id if sign < 0 else self.currency_id
         return {
             "project_id": self.project_id.id,
             "cost_code_id": cost_code.id,
             "date": self.outbound_date or fields.Date.context_today(self),
-            "qty": line.qty,
+            "qty": sign * line.qty,
             "uom_id": line.product_uom_id.id or line.product_id.uom_id.id,
-            "amount": line.amount,
-            "currency_id": self.currency_id.id,
+            "source_amount": sign * line.qty * unit_price,
+            "source_currency_id": source_currency.id,
             "partner_id": self.receiver_id.id,
             "source_model": self._name,
             "source_id": self.id,
             "source_line_id": line.id,
-            "note": "%s - %s" % (self.name, material_name),
+            "note": "%s - %s%s" % (
+                self.name,
+                material_name,
+                "（项目退库冲减）" if sign < 0 else "",
+            ),
         }
+
+    def _validate_return_authority(self, lock=False):
+        """Require every project return to reverse a locked issued line."""
+        returns = self.filtered(lambda outbound: outbound.outbound_type == "return")
+        if not returns:
+            return True
+        return_lines = returns.mapped("line_ids")
+        missing = return_lines.filtered(lambda line: not line.origin_issue_line_id)
+        if missing:
+            raise ValidationError(_("项目退库明细必须选择原领用出库明细。"))
+        origin_ids = sorted(set(return_lines.mapped("origin_issue_line_id").ids))
+        if lock and origin_ids:
+            self.env.cr.execute(
+                "SELECT id FROM sc_material_outbound_line WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                [origin_ids],
+            )
+            return_lines.invalidate_recordset()
+            return_lines.mapped("origin_issue_line_id").invalidate_recordset(["returned_qty"])
+        current_qty = {}
+        for line in return_lines:
+            origin_id = line.origin_issue_line_id.id
+            current_qty[origin_id] = current_qty.get(origin_id, 0.0) + line.qty
+        for line in return_lines:
+            origin = line.origin_issue_line_id
+            if origin.outbound_id.outbound_type != "issue" or origin.outbound_id.state != "issued":
+                raise ValidationError(_("项目退库只能冲销已确认的领用出库明细。"))
+            if origin.outbound_id.project_id != line.outbound_id.project_id:
+                raise ValidationError(_("项目退库与原领用明细必须属于同一项目。"))
+            if origin.product_id != line.product_id or origin.product_uom_id != line.product_uom_id:
+                raise ValidationError(_("项目退库的材料和单位必须与原领用明细一致。"))
+            if origin.outbound_id.currency_id != line.outbound_id.currency_id:
+                raise ValidationError(_("项目退库币种必须与原领用明细一致。"))
+            if float_compare(
+                origin.returned_qty + current_qty[origin.id],
+                origin.qty,
+                precision_rounding=origin.product_uom_id.rounding,
+            ) > 0:
+                raise ValidationError(_("项目退库累计数量不能超过原领用数量。"))
+            if line.unit_price != origin.unit_price:
+                line.unit_price = origin.unit_price
+        if lock and current_qty:
+            for origin_id in sorted(current_qty):
+                origin = self.env["sc.material.outbound.line"].browse(origin_id)
+                self.env.cr.execute(
+                    "UPDATE sc_material_outbound_line SET returned_qty = %s WHERE id = %s",
+                    [origin.returned_qty + current_qty[origin_id], origin_id],
+                )
+            self.env["sc.material.outbound.line"].browse(origin_ids).invalidate_recordset(
+                ["returned_qty"], flush=False
+            )
+        return True
 
     def _sync_cost_ledger_after_issue(self):
         self.ensure_one()
         cost_code = self._sc_get_or_create_material_cost_code()
         Ledger = self.env["project.cost.ledger"].sudo()
-        for line in self.line_ids:
-            vals = self._prepare_cost_ledger_vals(line, cost_code)
-            ledger = Ledger.search(
-                [
-                    ("source_model", "=", self._name),
-                    ("source_id", "=", self.id),
-                    ("source_line_id", "=", line.id),
-                ],
-                limit=1,
-            )
-            if ledger:
-                ledger.write(vals)
-            else:
-                Ledger.create(vals)
+        return Ledger._upsert_generated_cost_rows(
+            [self._prepare_cost_ledger_vals(line, cost_code) for line in self.line_ids]
+        )
 
     def action_cancel(self):
         self._sc_require_material_manager(_("取消材料出库"))
         self._sc_require_state({"draft", "submitted"}, _("取消材料出库"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "cancel"})
+        self._write_cost_source_state({"state": "cancel"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_outbound_cancelled",
@@ -2029,7 +2109,7 @@ class ScMaterialOutbound(models.Model):
         self._sc_require_material_manager(_("重置材料出库为草稿"))
         self._sc_require_state({"cancel"}, _("重置材料出库为草稿"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "draft"})
+        self._write_cost_source_state({"state": "draft"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_outbound_reset",
@@ -2045,6 +2125,10 @@ class ScMaterialOutboundLine(models.Model):
     _description = "材料出库明细"
     _inherit = "sc.material.system.default.mixin"
     _order = "outbound_id, sequence, id"
+    _FACT_IMMUTABLE_FIELDS = {
+        "outbound_id", "product_id", "material_catalog_id", "material_spec",
+        "product_uom_id", "qty", "unit_price", "origin_issue_line_id",
+    }
 
     outbound_id = fields.Many2one("sc.material.outbound", string="出库单", required=True, ondelete="cascade", index=True)
     sequence = fields.Integer(default=10)
@@ -2056,14 +2140,53 @@ class ScMaterialOutboundLine(models.Model):
     qty = fields.Float(string="出库数量", required=True)
     currency_id = fields.Many2one("res.currency", string="币种", related="outbound_id.currency_id", store=True, readonly=True)
     unit_price = fields.Monetary(string="出库单价", currency_field="currency_id")
+    origin_issue_line_id = fields.Many2one(
+        "sc.material.outbound.line",
+        string="原领用明细",
+        ondelete="restrict",
+        index=True,
+        copy=False,
+        domain="[('outbound_id.outbound_type', '=', 'issue'), ('outbound_id.state', '=', 'issued'), ('project_id', '=', project_id)]",
+        help="退库必须引用已确认的原领用行；数量和计价均以该行作为冲销权威。",
+    )
+    returned_qty = fields.Float(
+        string="累计已退数量",
+        readonly=True,
+        copy=False,
+        help="已确认退库对本领用行的累计冲销数量，由确认服务在原行锁内维护。",
+    )
     amount = fields.Monetary(string="出库金额", currency_field="currency_id", compute="_compute_amount", store=True)
     note = fields.Char(string="备注")
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(vals.get("returned_qty") for vals in vals_list):
+            raise UserError(_("累计已退数量只能由退库确认服务维护。"))
+        outbound_ids = {
+            int(vals["outbound_id"])
+            for vals in vals_list
+            if vals.get("outbound_id")
+        }
+        if self.env["sc.material.outbound"].browse(outbound_ids).filtered(
+            lambda outbound: outbound.state in ("submitted", "issued")
+        ):
+            raise UserError(_("已提交或已出库的材料出库单不能新增明细。"))
         for vals in vals_list:
             self._sc_apply_line_defaults(vals)
         return super().create(vals_list)
+
+    def write(self, vals):
+        if "returned_qty" in vals:
+            raise UserError(_("累计已退数量只能由退库确认服务维护。"))
+        if self._FACT_IMMUTABLE_FIELDS & set(vals):
+            if self.filtered(lambda line: line.outbound_id.state in ("submitted", "issued")):
+                raise UserError(_("已提交或已出库的材料出库明细不可修改。"))
+        return super().write(vals)
+
+    def unlink(self):
+        if self.filtered(lambda line: line.outbound_id.state in ("submitted", "issued")):
+            raise UserError(_("已提交或已出库的材料出库明细不可删除。"))
+        return super().unlink()
 
     @api.depends("qty", "unit_price")
     def _compute_amount(self):
@@ -2077,6 +2200,16 @@ class ScMaterialOutboundLine(models.Model):
                 record.product_uom_id = record.product_id.uom_id
                 if not record.material_spec:
                     record.material_spec = record.product_id.default_code or ""
+
+    @api.onchange("origin_issue_line_id")
+    def _onchange_origin_issue_line_id(self):
+        for record in self.filtered("origin_issue_line_id"):
+            origin = record.origin_issue_line_id
+            record.product_id = origin.product_id
+            record.material_catalog_id = origin.material_catalog_id
+            record.material_spec = origin.material_spec
+            record.product_uom_id = origin.product_uom_id
+            record.unit_price = origin.unit_price
 
     @api.onchange("material_catalog_id")
     def _onchange_material_catalog_id(self):
@@ -2416,6 +2549,10 @@ class ScMaterialSettlement(models.Model):
     _description = "材料结算"
     _inherit = ["mail.thread", "mail.activity.mixin", "sc.material.system.default.mixin"]
     _order = "settlement_date desc, id desc"
+    _FACT_IMMUTABLE_FIELDS = {
+        "project_id", "supplier_id", "purchase_order_id", "purchase_scope_ids",
+        "settlement_date", "currency_id", "line_ids",
+    }
 
     name = fields.Char(string="结算单号", required=True, default="新建", tracking=True)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
@@ -2522,6 +2659,11 @@ class ScMaterialSettlement(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if (
+            self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+            and any(vals.get("state", "draft") != "draft" for vals in vals_list)
+        ):
+            raise UserError(_("材料结算状态只能通过受控业务动作推进。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             vals.setdefault("business_category_id", self._sc_resolve_material_business_category_id(vals))
@@ -2546,6 +2688,14 @@ class ScMaterialSettlement(models.Model):
         return records
 
     def write(self, vals):
+        if (
+            "state" in vals
+            and self.env.context.get(_COST_SOURCE_STATE_CONTEXT_KEY) is not _COST_SOURCE_STATE_TOKEN
+        ):
+            raise UserError(_("材料结算状态只能通过受控业务动作推进。"))
+        if self._FACT_IMMUTABLE_FIELDS & set(vals):
+            if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
+                raise UserError(_("已提交或已确认的材料结算事实不可修改；请通过受控状态流程处理。"))
         if self.env.context.get("sc_skip_material_purchase_authority"):
             return super().write(vals)
         explicit_fields = {
@@ -2558,7 +2708,14 @@ class ScMaterialSettlement(models.Model):
         self._sc_validate_purchase_authority(explicit_fields=explicit_fields)
         return result
 
+    def _write_cost_source_state(self, vals):
+        return self.with_context(
+            **{_COST_SOURCE_STATE_CONTEXT_KEY: _COST_SOURCE_STATE_TOKEN}
+        ).write(vals)
+
     def unlink(self):
+        if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
+            raise UserError(_("已提交或已确认的材料结算事实不可删除。"))
         if self.purchase_scope_ids:
             raise UserError(_("已有正式采购范围的材料结算不能删除，请先保留或解除审计关系。"))
         return super().unlink()
@@ -2645,7 +2802,7 @@ class ScMaterialSettlement(models.Model):
             record.line_ids._check_values()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("提交材料结算"))
-        self.write({"state": "submitted"})
+        self._write_cost_source_state({"state": "submitted"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_settlement_submitted",
@@ -2662,7 +2819,7 @@ class ScMaterialSettlement(models.Model):
             record.line_ids._check_values()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("确认材料结算"))
-        self.write({"state": "confirmed"})
+        self._write_cost_source_state({"state": "confirmed"})
         for record in self:
             record._sync_downstream_after_confirm()
             record._sc_audit_material_transition(
@@ -2684,8 +2841,8 @@ class ScMaterialSettlement(models.Model):
             "date": self.settlement_date or fields.Date.context_today(self),
             "qty": line.qty,
             "uom_id": line.product_uom_id.id or line.product_id.uom_id.id,
-            "amount": line.amount_untaxed,
-            "currency_id": self.currency_id.id,
+            "source_amount": line.amount_untaxed,
+            "source_currency_id": self.currency_id.id,
             "partner_id": self.supplier_id.id,
             "source_model": self._name,
             "source_id": self.id,
@@ -2697,20 +2854,9 @@ class ScMaterialSettlement(models.Model):
         self.ensure_one()
         cost_code = self._get_or_create_material_cost_code()
         Ledger = self.env["project.cost.ledger"].sudo()
-        for line in self.line_ids:
-            vals = self._prepare_cost_ledger_vals(line, cost_code)
-            ledger = Ledger.search(
-                [
-                    ("source_model", "=", self._name),
-                    ("source_id", "=", self.id),
-                    ("source_line_id", "=", line.id),
-                ],
-                limit=1,
-            )
-            if ledger:
-                ledger.write(vals)
-            else:
-                Ledger.create(vals)
+        return Ledger._upsert_generated_cost_rows(
+            [self._prepare_cost_ledger_vals(line, cost_code) for line in self.line_ids]
+        )
 
     def _sync_payment_request_after_confirm(self):
         self.ensure_one()
@@ -2835,7 +2981,7 @@ class ScMaterialSettlement(models.Model):
         self._sc_require_material_manager(_("取消材料结算"))
         self._sc_require_state({"draft", "submitted"}, _("取消材料结算"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "cancel"})
+        self._write_cost_source_state({"state": "cancel"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_settlement_cancelled",
@@ -2849,7 +2995,7 @@ class ScMaterialSettlement(models.Model):
         self._sc_require_material_manager(_("重置材料结算为草稿"))
         self._sc_require_state({"cancel"}, _("重置材料结算为草稿"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "draft"})
+        self._write_cost_source_state({"state": "draft"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_settlement_reset",
@@ -2865,6 +3011,10 @@ class ScMaterialSettlementLine(models.Model):
     _description = "材料结算明细"
     _inherit = "sc.material.system.default.mixin"
     _order = "settlement_id, sequence, id"
+    _FACT_IMMUTABLE_FIELDS = {
+        "settlement_id", "product_id", "material_catalog_id", "material_spec",
+        "product_uom_id", "qty", "unit_price", "tax_rate",
+    }
 
     settlement_id = fields.Many2one("sc.material.settlement", string="结算单", required=True, ondelete="cascade", index=True)
     sequence = fields.Integer(default=10)
@@ -2890,11 +3040,30 @@ class ScMaterialSettlementLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        settlement_ids = {
+            int(vals["settlement_id"])
+            for vals in vals_list
+            if vals.get("settlement_id")
+        }
+        if self.env["sc.material.settlement"].browse(settlement_ids).filtered(
+            lambda settlement: settlement.state in ("submitted", "confirmed")
+        ):
+            raise UserError(_("已提交或已确认的材料结算不能新增明细。"))
         for vals in vals_list:
             self._sc_apply_line_defaults(vals, require_unit_price=True)
         return super().create(vals_list)
 
+    def write(self, vals):
+        if self._FACT_IMMUTABLE_FIELDS & set(vals):
+            if self.filtered(
+                lambda line: line.settlement_id.state in ("submitted", "confirmed")
+            ):
+                raise UserError(_("已提交或已确认的材料结算明细不可修改。"))
+        return super().write(vals)
+
     def unlink(self):
+        if self.filtered(lambda line: line.settlement_id.state in ("submitted", "confirmed")):
+            raise UserError(_("已提交或已确认的材料结算明细不可删除。"))
         if self.purchase_scope_ids:
             raise UserError(_("已有正式采购范围的材料结算明细不能删除，请保留审计关系。"))
         return super().unlink()

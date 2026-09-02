@@ -10,6 +10,8 @@ from . import test_budget
 from . import test_boq_version_contract
 from . import test_contract_center
 from . import test_cost_compare
+from . import test_cost_fact_model_v2
+from . import test_cost_fact_concurrency_v2
 from . import test_profit_compare
 from . import test_stock_cost
 from . import test_p0_state_closure

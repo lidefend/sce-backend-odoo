@@ -19,6 +19,7 @@ class TestP0StateClosure(TransactionCase):
         project = self.env["project.project"].create(
             {
                 "name": name,
+                "company_id": self.company.id,
                 "owner_id": owner.id,
                 "manager_id": self.env.user.id,
                 "location": "Test Location",

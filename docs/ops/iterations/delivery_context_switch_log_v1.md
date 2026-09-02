@@ -7084,3 +7084,90 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   contract actual-paid aggregation, allocation security, module upgrade, and
   focused Odoo tests. Contract-position UI, settlement freezing, cost facts,
   public contracts, startup chain, and frontend are excluded.
+
+## 2026-09-02 — P1 authoritative cost fact model v2
+
+- Branch / entry HEAD: `refactor/p1-business-facts-professionalization-v1` /
+  `de473e258d6c52dbb0172898aab30ac03b107a95`.
+- Formal Product Layer / Layer Target / Module: P1 construction industry
+  standard / cost recognition and source lifecycle / `smart_construction_core`.
+- Reason: commitments, receipts, consumption, settlements and accounting
+  recognition were previously indistinguishable and therefore vulnerable to
+  double counting. The industry layer now owns explicit economic stage,
+  reporting treatment, source denomination, immutable lineage and withdrawal.
+- Why not elsewhere: no business meaning was moved to `smart_core`, frontend,
+  customer configuration or an ops replay script. Public intents and the
+  startup chain are unchanged.
+- Blast Radius: `project.cost.ledger`, its six registered source writers,
+  cost/profit/project projections, native cost views, focused tests and the
+  projection registry. The first frozen review exposed forgeable generated
+  authority, cross-company leakage, withdrawal/replay races, foreign-currency
+  loss and withdrawn-row analysis drift; the candidate was thawed and the
+  model was upgraded instead of weakening tests. A second exact-fingerprint
+  review then exposed hard withdrawn-history filtering, current-company writer
+  leakage, missing legacy-setting migration, mutable return valuation and
+  quantity authority, correction-path query growth, partial-index audit drift,
+  and incomplete source-aware role coverage. These were repaired at the owning
+  P1 models: returns now bind and lock their exact origins, accounting uses the
+  posted company balance, company settings migrate once, batch corrections use
+  one heterogeneous SQL update, and all fact mutations use one global lock
+  order. A third exact-fingerprint review exposed terminal-source drift,
+  cyclic return entry, same-document and concurrent over-return, legacy
+  company/currency ambiguity, a period-lock race, and withdrawal query growth.
+  The owning P1 models were upgraded again: terminal documents are immutable,
+  returns use an origin-authoritative cumulative quantity, fact writes and
+  period closure serialize and withdrawal is batched. A fourth review then
+  rejected the migration-stage ordering, silent foreign-currency relabeling,
+  direct source-state writes, the residual stock-origin lock inversion and an
+  unproved historical no-catalog native return. The model now has an explicit,
+  service-controlled normalization state; `17.0.0.141` runs after schema
+  creation, preserves ambiguous original-currency evidence and quarantines it
+  with zero company amount; source state uses an unforgeable action token;
+  stock uses the global lock order; and native return behavior is tested for
+  historical issue lines without a material catalog. Governed `local.dev`
+  upgrade, four real two-cursor concurrency probes, the 29-method owned suite
+  and the 287-method `sc_gate` passed; the missing P4 native replay script
+  remains external and still prevents `make pr.push`.
+
+### Fifth-review model and native-entry closure
+
+- The v5 fact-domain review found that `currency_id required/default` still
+  attempted to impose a guessed current-company currency on unresolved-owner
+  history. Version `17.0.0.142` restores a nullable evidence carrier, removes
+  the environment-company default, and adds a business constraint that keeps
+  every normalized new fact strictly bound to its project-company currency.
+  The 0.142 post-migration idempotently clears stale company projection for
+  unresolved-owner evidence; it never invents ownership or currency.
+- The v5 native review found that `cost_read` had model/action access without a
+  complete menu route. The canonical report-center cost-ledger menu now grants
+  that capability. Its acceptance uses a real follower-based read-only user to
+  resolve the visible menu, action, tree and form, read the permitted ledger,
+  and prove that source navigation still obeys the source model's native ACL.
+- Governed `local.dev` upgrade through 17.0.0.142 passed. After hardening the
+  migration against second-run source-currency inference and no-op tuple
+  rewrites, the focused suite passed 17 methods / 19 statistics, the six-tag
+  owned suite passed 31 methods / 45 statistics, and `sc_gate` passed 289
+  methods with 370 core plus 11 demo statistics, all with zero failures/errors.
+  The migration regression proves unchanged PostgreSQL `ctid` across replay and
+  keeps unknown historical source denomination unknown. Model/projection audits, minimum
+  ACL, personal-data and secret scans passed. The unchanged P4 replay-entry
+  defect still prohibits full release/browser acceptance and `make pr.push`.
+
+### Sixth-review final native-menu ownership closure
+
+- The v7 fact-domain and ORM reviewers approved the hardened model and
+  difference-write migration. The native reviewer found that a later-loaded
+  taxonomy XML reassigned the cost-ledger leaf beneath a menu that the product
+  wave then deactivated. The prior leaf-ID visibility assertion therefore did
+  not prove a usable Odoo `/web` route.
+- The final taxonomy owner now keeps the canonical cost-ledger menu under the
+  active report center. The follower acceptance asserts final parent identity,
+  every ancestor's active and visible state, the real Odoo `load_menus` result,
+  action/tree/form loading, record-rule visibility and source-model ACL denial.
+- The governed 17.0.0.142 incremental upgrade passed after the repair. Focused
+  `cost_fact_v2` passed 17 methods / 19 statistics, the six-tag owned suite
+  passed 31 / 45, and `sc_gate` passed 289 methods with 370 core plus 11 demo
+  statistics, all with zero failures/errors. The v8 fact-domain, native and ORM
+  reviewers then independently approved the same 7146-path candidate with zero
+  S0-S3 findings: digest `7201b1ae2f6a7d8e88f937cedd54440a94f7da33793191d00785ca5985e359cb`,
+  scope `9f6415a689d869b18a24ce0a9ac370e9b0b205874cf573ba3b512f301e75057f`.

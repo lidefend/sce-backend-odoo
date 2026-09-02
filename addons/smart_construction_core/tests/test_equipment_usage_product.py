@@ -40,6 +40,7 @@ class TestEquipmentUsageProduct(TransactionCase):
         project = self.env["project.project"].create(
             {
                 "name": "机械台班测试项目",
+                "company_id": self.env.company.id,
                 "user_id": project_user.id,
                 "operation_strategy": "direct",
             }
@@ -78,7 +79,6 @@ class TestEquipmentUsageProduct(TransactionCase):
         self.assertEqual(usage.state, "confirmed")
         self.assertEqual(usage.amount, 600)
 
-        usage.with_user(project_manager)._sync_project_cost_ledger()
         ledgers = self.env["project.cost.ledger"].search(
             [
                 ("source_model", "=", "sc.equipment.usage"),
@@ -90,6 +90,16 @@ class TestEquipmentUsageProduct(TransactionCase):
         self.assertEqual(ledgers.qty, 6)
         self.assertEqual(ledgers.amount, 600)
         self.assertEqual(ledgers.cost_code_id.type, "machine")
+        self.assertEqual(ledgers.recognition_stage, "consumption")
+        self.assertEqual(ledgers.reporting_treatment, "operational_actual")
+
+        usage.with_user(project_manager)._sync_project_cost_ledger()
+        self.assertEqual(
+            self.env["project.cost.ledger"].search_count(
+                [("source_model", "=", "sc.equipment.usage"), ("source_id", "=", usage.id)]
+            ),
+            1,
+        )
 
         action = self.env.ref("smart_construction_core.action_sc_equipment_usage")
         menu = self.env.ref("smart_construction_core.menu_sc_product_equipment_shift_v1")

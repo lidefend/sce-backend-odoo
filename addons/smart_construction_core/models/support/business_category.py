@@ -176,9 +176,9 @@ BUSINESS_CATEGORY_LEDGER_POLICY_DEFAULTS = {
         "cost_triggers": {"issue_project_cost_ledger": True},
     },
     "material.return": {
-        "facts": ["sc.material.outbound", "sc.material.stock.summary"],
+        "facts": ["sc.material.outbound", "sc.material.stock.summary", "project.cost.ledger"],
         "terminal_action": "action_issue",
-        "cost_triggers": {"issue_project_cost_ledger": False},
+        "cost_triggers": {"issue_project_cost_ledger": True},
     },
     "material.supplier_return": {
         "facts": ["sc.material.supplier.return", "sc.material.inbound", "sc.material.stock.summary"],
@@ -201,6 +201,12 @@ BUSINESS_CATEGORY_LEDGER_POLICY_DEFAULTS = {
         "terminal_action": "action_confirm",
         "cost_triggers": {"confirm_project_cost_ledger": True, "confirm_payment_request": True},
     },
+}
+
+# These triggers describe non-optional fact semantics, not administrator
+# preferences.  Template sync must upgrade an older contrary value.
+BUSINESS_CATEGORY_MANDATORY_COST_TRIGGERS = {
+    "material.return": {"issue_project_cost_ledger": True},
 }
 BUSINESS_CATEGORY_REQUIRED_FIELD_DEFAULTS = {
     "settlement.income": ["project_id", "partner_id", "contract_id", "line_ids"],
@@ -581,6 +587,15 @@ class ScBusinessCategory(models.Model):
                 category.ledger_policy_json,
                 BUSINESS_CATEGORY_LEDGER_POLICY_DEFAULTS.get(code),
             )
+            if code in BUSINESS_CATEGORY_MANDATORY_COST_TRIGGERS:
+                if ledger_policy is None:
+                    try:
+                        ledger_policy = json.loads(category.ledger_policy_json or "{}")
+                    except (TypeError, ValueError):
+                        ledger_policy = {}
+                ledger_policy.setdefault("cost_triggers", {}).update(
+                    BUSINESS_CATEGORY_MANDATORY_COST_TRIGGERS[code]
+                )
             if ledger_policy is not None:
                 vals["ledger_policy_json"] = json.dumps(ledger_policy, ensure_ascii=False, sort_keys=True, default=str)
             effective_ledger_policy = ledger_policy

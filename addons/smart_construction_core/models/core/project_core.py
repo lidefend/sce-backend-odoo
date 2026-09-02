@@ -1141,6 +1141,8 @@ class ProjectProject(models.Model):
         'budget_ids.amount_cost_target',
         'budget_ids.amount_revenue_target',
         'cost_ledger_ids.amount',
+        'cost_ledger_ids.recognition_state',
+        'cost_ledger_ids.reporting_treatment',
         'progress_entry_ids.progress_rate'
     )
     def _compute_cost_control_stats(self):
@@ -1155,7 +1157,11 @@ class ProjectProject(models.Model):
 
         if self.ids and can_ledger:
             ledger_read = self.env['project.cost.ledger'].read_group(
-                [('project_id', 'in', self.ids)],
+                [
+                    ('project_id', 'in', self.ids),
+                    ('recognition_state', '=', 'active'),
+                    ('reporting_treatment', 'in', ['financial_actual', 'manual_actual']),
+                ],
                 ['amount:sum'],
                 ['project_id']
             )

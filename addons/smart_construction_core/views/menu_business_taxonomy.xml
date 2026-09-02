@@ -831,8 +831,8 @@
         <field name="sequence">30</field>
     </record>
     <record id="menu_sc_project_cost_ledger" model="ir.ui.menu">
-        <field name="parent_id" ref="smart_construction_core.menu_sc_cost_dynamic_group" />
-        <field name="sequence">40</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_data_center" />
+        <field name="sequence">20</field>
     </record>
     <record id="menu_sc_cost_reports" model="ir.ui.menu">
         <field name="name">成本汇总</field>

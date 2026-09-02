@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
 
 
 class ResConfigSettings(models.TransientModel):
@@ -25,43 +26,33 @@ class ResConfigSettings(models.TransientModel):
 
     sc_cost_from_account_move = fields.Boolean(
         string="成本台账来源：凭证",
-        default=True,
-        config_parameter="smart_construction_core.sc_cost_from_account_move",
+        related="company_id.sc_cost_from_account_move",
+        readonly=False,
         help="勾选后凭证过账会写入项目成本台账。",
     )
     sc_cost_from_purchase = fields.Boolean(
         string="成本台账来源：采购",
-        default=False,
-        config_parameter="smart_construction_core.sc_cost_from_purchase",
+        related="company_id.sc_cost_from_purchase",
+        readonly=False,
         help="勾选后采购订单确认写入项目成本台账。",
     )
     sc_cost_from_stock = fields.Boolean(
         string="成本台账来源：入库",
-        default=False,
-        config_parameter="smart_construction_core.sc_cost_from_stock",
+        related="company_id.sc_cost_from_stock",
+        readonly=False,
         help="勾选后入库完成写入项目成本台账。",
     )
 
     def set_values(self):
-        res = super().set_values()
-        # 软提醒：同一公司同时开启多个成本入口，可能导致重复计入
-        for company in self.company_id or self.env.companies:
-            params = self.env["ir.config_parameter"].sudo().with_company(company)
-            flags = [
-                params.get_param("smart_construction_core.sc_cost_from_account_move", default="False"),
-                params.get_param("smart_construction_core.sc_cost_from_purchase", default="False"),
-                params.get_param("smart_construction_core.sc_cost_from_stock", default="False"),
-            ]
-            enabled = sum(1 for v in flags if str(v).lower() in ("1", "true", "yes"))
+        for settings in self:
+            enabled = sum(
+                bool(value)
+                for value in (
+                    settings.sc_cost_from_account_move,
+                    settings.sc_cost_from_purchase,
+                    settings.sc_cost_from_stock,
+                )
+            )
             if enabled > 1:
-                self.env['ir.logging'].sudo().create({
-                    'name': 'CostLedgerConfigWarning',
-                    'type': 'server',
-                    'dbname': self._cr.dbname,
-                    'level': 'WARNING',
-                    'message': f"[{company.display_name}] 成本台账入口开启了多个来源，建议只保留一个以避免重复计入。",
-                    'path': __name__,
-                    'line': '0',
-                    'func': 'set_values',
-                })
-        return res
+                raise ValidationError(_("成本台账只能启用凭证、采购或入库中的一个自动来源。"))
+        return super().set_values()

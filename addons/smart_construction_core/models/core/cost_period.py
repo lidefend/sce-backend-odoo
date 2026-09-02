@@ -43,6 +43,9 @@ class ProjectCostPeriod(models.Model):
             )
 
     def action_lock_period(self, reason=None):
+        ledger = self.env["project.cost.ledger"]
+        ledger._lock_cost_projects(self.mapped("project_id").ids)
+        ledger._lock_cost_periods(self)
         for rec in self:
             before_locked = rec.locked
             rec.write(
@@ -63,6 +66,9 @@ class ProjectCostPeriod(models.Model):
         return True
 
     def action_unlock_period(self, reason=None):
+        ledger = self.env["project.cost.ledger"]
+        ledger._lock_cost_projects(self.mapped("project_id").ids)
+        ledger._lock_cost_periods(self)
         for rec in self:
             if not reason:
                 raise_guard(

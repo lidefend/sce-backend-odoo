@@ -42,11 +42,11 @@
     {
       "model": "project.cost.ledger",
       "implementation_mode": "controlled_generated_ledger",
-      "write_policy": "controlled writes with period lock and project operation guards",
-      "source_models": ["source_model/source_id/source_line_id"],
-      "refresh_owner": "cost document actions and cost replay/projection writers",
+      "write_policy": "source-free manual adjustments are role-maintained; generated facts are service-only, immutable by users, period-guarded, and withdrawn rather than deleted",
+      "source_models": ["purchase.order.line", "stock.move", "sc.material.outbound", "sc.equipment.usage", "sc.material.settlement", "account.move.line"],
+      "refresh_owner": "registered source document lifecycle actions through project.cost.ledger batch upsert/withdraw services",
       "idempotency_key": "source_model, source_id, source_line_id",
-      "acceptance_probe": "model family coverage and cost ledger tests"
+      "acceptance_probe": "cost_fact_v2, cost_fact_stock_writer, equipment_usage_product focused Odoo tests"
     },
     {
       "model": "payment.ledger",

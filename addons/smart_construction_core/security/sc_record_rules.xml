@@ -2677,7 +2677,7 @@
         <record id="rule_sc_project_cost_ledger_company" model="ir.rule">
             <field name="name">SC Project Cost Ledger - allowed company</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -2688,7 +2688,7 @@
         <record id="rule_sc_cost_read_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost Read - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -2699,7 +2699,7 @@
         <record id="rule_sc_cost_user_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost User - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -2710,7 +2710,7 @@
         <record id="rule_sc_cost_manager_project_cost_ledger" model="ir.rule">
             <field name="name">SC Cost Manager - project cost ledger by project member</field>
             <field name="model_id" ref="model_project_cost_ledger"/>
-            <field name="domain_force">['&amp;', '|', ('company_id', '=', False), ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
+            <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), '|', ('project_id.user_id', '=', user.id), ('project_id.message_follower_ids.partner_id', '=', user.partner_id.id)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>

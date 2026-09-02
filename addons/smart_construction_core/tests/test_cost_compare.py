@@ -3,15 +3,17 @@ from odoo.tests import TransactionCase
 from odoo.tests.common import tagged
 
 
-@tagged("post_install", "-at_install", "sc_regression", "cost")
+@tagged("post_install", "-at_install", "sc_regression", "cost", "cost_fact_projection_v2")
 class TestProjectCostCompare(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.project = self.env["project.project"].create({"name": "Compare Project"})
+        self.project = self.env["project.project"].create(
+            {"name": "Compare Project", "company_id": self.env.company.id}
+        )
         self.cost_code = self.env["project.cost.code"].create({
             "name": "材料费",
-            "code": "MAT",
+            "code": "CF-COMPARE-MAT",
             "type": "material",
         })
         self.wbs = self.env["construction.work.breakdown"].create({
@@ -37,7 +39,7 @@ class TestProjectCostCompare(TransactionCase):
             "currency_id": budget.currency_id.id,
             "amount_budget": 1000,
         })
-        self.env["project.cost.ledger"].create({
+        ledger = self.env["project.cost.ledger"].create({
             "project_id": self.project.id,
             "cost_code_id": self.cost_code.id,
             "wbs_id": self.wbs.id,
@@ -45,6 +47,9 @@ class TestProjectCostCompare(TransactionCase):
             "date": "2025-01-15",
             "amount": 800,
         })
+        self.assertEqual(ledger.recognition_state, "active")
+        self.assertEqual(ledger.reporting_treatment, "manual_actual")
+        self.env.flush_all()
 
     @tagged("post_install", "-at_install", "sc_regression", "cost")
     def test_compare_view_records(self):
@@ -61,13 +66,16 @@ class TestProjectCostCompare(TransactionCase):
 
     @tagged("post_install", "-at_install", "sc_regression", "cost")
     def test_cost_ledger_flow_label_readable(self):
-        ledger = self.env["project.cost.ledger"].create({
+        ledger = self.env["project.cost.ledger"]._upsert_generated_cost_rows([{
             "project_id": self.project.id,
             "cost_code_id": self.cost_code.id,
             "wbs_id": self.wbs.id,
             "date": "2025-01-20",
-            "amount": 10,
+            "source_amount": 10,
+            "source_currency_id": self.project.company_id.currency_id.id,
             "source_model": "stock.move",
-        })
+            "source_id": 1001,
+            "source_line_id": 1001,
+        }])
 
         self.assertEqual(ledger.read(["cost_flow_label"])[0]["cost_flow_label"], "入库成本")

@@ -1,7 +1,7 @@
 goal:
   id: P1-BUSINESS-FACT-PROFESSIONALIZATION
   title: p1_business_fact_professionalization
-  status: active
+  status: verification_pending
   objective: establish_authoritative_auditable_and_efficient_construction_business_facts
 
   baseline:
@@ -68,58 +68,95 @@ goal:
     shared_database_mutation: serialized
 
   current_batch:
-    id: Batch-B2
-    title: contract_execution_position_v1
-    status: independent_review_pending
-    objective: establish_one_authoritative_signed_and_query_efficient_contract_execution_position
+    id: Batch-C
+    title: authoritative_cost_fact_model_v2
+    status: completed
+    objective: establish_stage_explicit_currency_normalized_immutable_and_idempotent_project_cost_facts
     scope:
-      - construction_contract_execution_position
-      - authoritative_settlement_invoice_receipt_and_payment_aggregation
-      - signed_balances_and_explicit_ratio_state
-      - native_odoo_readonly_tree_search_pivot_and_form_trace
-      - allowed_company_contract_containment
-      - fixed_query_budget
+      - project_cost_ledger_model_upgrade
+      - explicit_recognition_stage_and_reporting_treatment
+      - project_company_currency_normalization_with_source_amount_trace
+      - generated_fact_immutability_and_source_identity_uniqueness
+      - centralized_batch_upsert_and_period_resolution
+      - six_cost_fact_writer_migrations
+      - cost_actual_projection_authority
+      - native_odoo_cost_fact_trace
       - non_zero_targeted_odoo_tests
     exclude:
-      - general_contract_and_historical_sql_ledger_family_rebuild
-      - cost_attribution_without_contract_anchor
-      - settlement_payment_invoice_or_change_workflow_rebuild
-      - historical_manual_anchor_guessing
-      - cost_ledger_idempotency_or_batching
+      - contract_execution_position_changes
+      - frontend_or_public_contract_changes
+      - customer_specific_cost_policy
+      - historical_source_relationship_guessing
+      - new_fx_revaluation_or_general_ledger_engine
       - frontend_or_smart_core_contract_changes
       - startup_chain_or_runtime_profile_changes
       - new_database_port_volume_fixture_or_credentials
     semantic_freeze:
-      contract_base: final_contract_amount_after_effective_changes
-      settlement_authority: approved_or_done_settlement_lines_plus_confirmed_adjustments
-      invoice_authority: registered_or_legacy_confirmed_invoice_signed_net
-      income_cash_authority: received_or_legacy_confirmed_receipt
-      expense_cash_authority: posted_payment_ledger_allocation
-      balance_policy: signed_without_zero_clamp
-      ratio_policy: explicit_undefined_for_zero_contract_amount
+      fact_identity: source_model_source_id_source_line_id
+      generated_fact_policy: source_identity_complete_immutable_and_service_controlled
+      manual_fact_policy: source_identity_empty_and_role_maintained
+      recognition_policy: economic_stage_is_explicit_and_not_inferred_by_frontend
+      actual_cost_policy: only_reporting_treatment_actual_enters_existing_actual_cost_projections
+      currency_policy: amount_is_project_company_currency_and_source_amount_preserves_original_currency
       compatibility: existing_public_intents_and_frontend_contracts_unchanged
     entry_fingerprint:
-      git_head: d9ee00c8ebfa0584ade6a84b5d75836d0f212a31
-      digest: 570922576a0359b7a57eab3afc8a081a00babbb2dd2e96dedde55d7a6ccc98ef
-      entry_count: 7135
+      git_head: de473e258d6c52dbb0172898aab30ac03b107a95
+      digest: 11f1d92a125bf506cfbb8ed7e2092f90f92bba6d1d4356424db07db349090194
+      entry_count: 7139
     result:
-      - authoritative_readonly_contract_execution_position_added
-      - legacy_contract_recon_summary_converged_to_same_fact_authority
-      - signed_balances_and_zero_base_ratio_state_proven
-      - allowed_company_and_capability_read_boundaries_proven
-      - one_ten_fifty_contract_query_budget_proven
-      - governed_incremental_upgrade_passed
-      - focused_odoo_tests_11_of_11_passed
-      - payment_allocation_regression_14_of_14_passed
-      - sc_gate_266_of_266_passed
-      - contract_execution_component_profile_5_of_5_passed
-      - ratio_scale_50_100_120_negative_and_zero_proven
-      - canonical_income_expense_and_projection_company_isolation_proven
-      - finance_only_projection_half_open_access_removed
+      - batch_b2_completed_at_de473e258d6c52dbb0172898aab30ac03b107a95
+      - batch_b2_independent_reviews_approved_with_zero_s0_s1_s2
+      - batch_c_model_semantics_frozen_before_implementation
+      - recognition_stage_reporting_treatment_and_source_currency_are_explicit
+      - generated_facts_are_service_only_immutable_idempotent_and_withdrawable
+      - six_source_writers_use_one_batch_fact_service
+      - purchase_cancel_and_account_draft_withdraw_without_deleting_evidence
+      - supplier_return_reverses_original_receipt_valuation_in_original_currency
+      - generated_fact_service_authority_is_not_rpc_context_forgeable
+      - withdrawal_and_replay_share_header_locks_and_detect_stale_snapshots
+      - purchase_account_and_stock_sources_enforce_project_company_compatibility
+      - accounting_facts_preserve_foreign_source_amount_and_currency
+      - company_cost_source_authorities_are_independent
+      - project_material_returns_reverse_operational_consumption
+      - native_analysis_excludes_withdrawn_rows_and_opens_acl_checked_sources
+      - cost_code_identity_is_unique_and_standard_code_creation_is_serialized
+      - actual_cost_projections_exclude_commitment_receipt_settlement_and_operational_memo_facts
+      - document_company_owns_purchase_account_and_stock_source_authority
+      - posted_account_balance_is_the_company_currency_fact_authority
+      - legacy_global_cost_source_parameters_migrate_once_to_each_company
+      - project_material_returns_bind_lock_and_conserve_the_original_issue
+      - supplier_returns_require_and_lock_the_original_receipt_fact
+      - generated_fact_insert_correction_withdraw_and_reactivate_query_growth_is_bounded
+      - source_header_project_period_and_fact_row_lock_order_is_globally_consistent
+      - governed_upgrade_17_0_0_142_and_289_method_sc_gate_passed
+      - first_independent_review_requested_changes_and_all_s1_findings_were_repaired
+      - second_independent_review_requested_changes_and_all_s1_s2_findings_were_repaired
+      - third_independent_review_requested_changes_and_all_findings_were_repaired
+      - terminal_cost_sources_are_immutable_at_header_and_line_level
+      - project_return_quantity_is_origin_authoritative_grouped_and_concurrency_safe
+      - period_lock_and_fact_mutation_are_serialized_in_one_global_order
+      - historical_resolvable_facts_are_normalized_and_unresolved_evidence_is_quarantined_without_guessing
+      - generated_fact_withdrawal_query_growth_is_bounded
+      - fourth_independent_review_requested_changes_and_all_findings_were_repaired
+      - normalization_state_is_explicit_and_service_controlled
+      - historical_foreign_currency_evidence_is_preserved_and_quarantined_without_silent_relabeling
+      - migration_is_post_schema_idempotent_and_difference_write_only
+      - cost_source_state_transitions_require_unforgeable_internal_action_authority
+      - stock_origin_fact_lock_follows_header_project_period_order
+      - native_return_supports_historical_issue_lines_without_material_catalog
+      - fifth_independent_review_requested_changes_and_all_s1_s2_findings_were_repaired
+      - normalized_new_facts_require_project_company_currency_while_unresolved_history_remains_nullable
+      - unresolved_owner_history_is_company_isolated_without_currency_or_owner_guessing
+      - cost_read_has_a_native_menu_action_tree_form_and_follower_record_rule_journey
+      - migration_replay_preserves_physical_tuple_identity_and_never_relabels_reporting_currency_as_unknown_source_currency
+      - sixth_independent_review_found_and_repaired_final_manifest_menu_parent_override
+      - native_follower_journey_asserts_active_visible_parent_chain_and_odoo_load_menus
+      - v8_exact_fingerprint_fact_native_and_orm_reviews_approved_zero_s0_s1_s2_s3
+      - p4_missing_business_fact_upgrade_replay_flow_still_blocks_pr_push
 
   next_batches:
-    - id: Batch-C
-      title: cost_fact_idempotency_and_batch_write
+    - id: Batch-D
+      title: remaining_p1_fact_authority_inventory
       status: planned
 
   acceptance:
@@ -134,7 +171,7 @@ goal:
 
   known_external_gate:
     owner_layer: P4
-    gap: no_registered_native_odoo_web_write_journey_make_target
+    gap: missing_scripts_migration_business_fact_upgrade_replay_flow_sh
     policy: do_not_build_an_in_topic_workaround
 
   rollback:

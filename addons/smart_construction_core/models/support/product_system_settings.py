@@ -29,13 +29,13 @@ class ScProductSystemSettings(models.TransientModel):
     @api.model
     def default_get(self, field_names):
         values = super().default_get(field_names)
-        params = self.env["ir.config_parameter"].sudo().with_company(self.env.company)
+        company = self.env.company
         enabled = {
-            "account_move": params.get_param("smart_construction_core.sc_cost_from_account_move", "True"),
-            "purchase_order": params.get_param("smart_construction_core.sc_cost_from_purchase", "False"),
-            "stock_move": params.get_param("smart_construction_core.sc_cost_from_stock", "False"),
+            "account_move": company.sc_cost_from_account_move,
+            "purchase_order": company.sc_cost_from_purchase,
+            "stock_move": company.sc_cost_from_stock,
         }
-        selected = [key for key, value in enabled.items() if str(value).lower() in ("1", "true", "yes")]
+        selected = [key for key, value in enabled.items() if value]
         values["cost_ledger_source"] = selected[0] if len(selected) == 1 else "disabled"
         return values
 
@@ -47,12 +47,13 @@ class ScProductSystemSettings(models.TransientModel):
             or self.env.user.has_group("smart_construction_core.group_sc_super_admin")
         ):
             raise AccessError(_("只有行业配置管理员可以修改产品系统参数。"))
-        params = self.env["ir.config_parameter"].sudo().with_company(self.env.company)
         mapping = {
-            "account_move": "smart_construction_core.sc_cost_from_account_move",
-            "purchase_order": "smart_construction_core.sc_cost_from_purchase",
-            "stock_move": "smart_construction_core.sc_cost_from_stock",
+            "account_move": "sc_cost_from_account_move",
+            "purchase_order": "sc_cost_from_purchase",
+            "stock_move": "sc_cost_from_stock",
         }
-        for source, key in mapping.items():
-            params.set_param(key, "True" if self.cost_ledger_source == source else "False")
+        self.env.company.sudo().write({
+            field_name: self.cost_ledger_source == source
+            for source, field_name in mapping.items()
+        })
         return {"type": "ir.actions.client", "tag": "display_notification", "params": {"title": _("系统参数"), "message": _("产品参数已生效。"), "type": "success", "sticky": False}}

@@ -3,12 +3,14 @@ from odoo.tests import TransactionCase
 from odoo.tests.common import tagged
 
 
-@tagged("post_install", "-at_install", "sc_regression", "cost")
+@tagged("post_install", "-at_install", "sc_regression", "cost", "cost_fact_projection_v2")
 class TestProjectProfitCompare(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.project = self.env["project.project"].create({"name": "Profit Project"})
+        self.project = self.env["project.project"].create(
+            {"name": "Profit Project", "company_id": self.env.company.id}
+        )
         self.wbs = self.env["construction.work.breakdown"].create({
             "name": "主体结构",
             "code": "WBS-100",
@@ -16,7 +18,7 @@ class TestProjectProfitCompare(TransactionCase):
         })
         self.cost_code = self.env["project.cost.code"].create({
             "name": "材料费",
-            "code": "MAT",
+            "code": "PF-COMPARE-MAT",
             "type": "material",
         })
         budget = self.env["project.budget"].create({
@@ -37,7 +39,7 @@ class TestProjectProfitCompare(TransactionCase):
             "currency_id": budget.currency_id.id,
             "amount_budget": 1200,
         })
-        self.env["project.cost.ledger"].create({
+        ledger = self.env["project.cost.ledger"].create({
             "project_id": self.project.id,
             "wbs_id": self.wbs.id,
             "cost_code_id": self.cost_code.id,
@@ -45,6 +47,8 @@ class TestProjectProfitCompare(TransactionCase):
             "date": "2025-01-05",
             "amount": 800,
         })
+        self.assertEqual(ledger.recognition_state, "active")
+        self.assertEqual(ledger.reporting_treatment, "manual_actual")
         income_account = self.env["account.account"].create({
             "name": "Income",
             "code": "INCOME",
@@ -87,6 +91,7 @@ class TestProjectProfitCompare(TransactionCase):
             ]
         })
         move.action_post()
+        self.env.flush_all()
 
     @tagged("post_install", "-at_install", "sc_regression", "cost")
     def test_profit_view_records(self):
