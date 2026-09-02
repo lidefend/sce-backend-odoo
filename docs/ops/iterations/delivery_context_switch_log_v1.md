@@ -8105,3 +8105,22 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   `smart_construction_core` module upgrade followed by the standard local-dev
   restart refreshed the database view and resident registry; no database reset
   or rebuild was performed. The identical journey then passed.
+
+## 2026-09-02 — Collaboration attachment-download subject settlement
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `330f12e3`.
+- Product defect and repair: the collaboration timeline marked every readable
+  attachment downloadable even when `file.download` would authorize a different
+  business subject or reject the subject model. Download allowed-model and
+  authorization-subject resolution are now shared backend authority. Timeline
+  rows project the exact download intent only when that resolved subject is the
+  current business record; relation-only, cross-record, invalid-override, and
+  disallowed-model attachments fail closed before reaching the UI.
+- Real-page evidence: after the normal module upgrade refreshed pre-existing
+  stale payment view metadata, the governed project/payment journey again
+  opened each authorized fixture through one exact download request, then
+  completed the cancel-and-confirm delete sequence. Both follower states were
+  restored, three activity pages and the unsaved draft were retained, and the
+  run reported zero intent failures, browser errors, unrelated mutations,
+  execute requests, or desktop/390px overflow.

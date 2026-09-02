@@ -122,6 +122,21 @@ class TestChatterTimelineBoundaries(unittest.TestCase):
             {"code": "pending", "label": "待处理"},
         )
 
+    def test_attachment_download_projection_requires_exact_authorized_subject(self):
+        project = self.module._attachment_download_projection(
+            "project.project", 7, "project.project", 7, {"project.project"},
+        )
+        wrong_record = self.module._attachment_download_projection(
+            "project.project", 7, "project.project", 8, {"project.project"},
+        )
+        disallowed = self.module._attachment_download_projection(
+            "project.project", 7, "project.project", 7, set(),
+        )
+
+        self.assertEqual(project, {"can_download": True, "download_intent": "file.download"})
+        self.assertEqual(wrong_record, {"can_download": False, "download_intent": ""})
+        self.assertEqual(disallowed, {"can_download": False, "download_intent": ""})
+
     def test_missing_target_returns_structured_error(self):
         handler = self.module.ChatterTimelineHandler(env={}, params={}, context={"trace_id": "trace"})
 

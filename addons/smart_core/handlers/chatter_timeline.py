@@ -2,6 +2,7 @@
 from datetime import date, datetime
 from email.header import decode_header, make_header
 from email.utils import parseaddr
+import logging
 from typing import Any, Dict, List, Optional
 
 from odoo.exceptions import AccessError, UserError
@@ -23,6 +24,7 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
     def record_in_business_scope(env_model, record_id, params=None, context=None):
         return record_in_project_scope(env_model, record_id, selected_record_context_id_from_context(params, context))
 from ..core.request_params import parse_bool, parse_positive_int
+from .file_download import allowed_file_download_models, resolve_file_download_auth_subject
 from ..utils.reason_codes import (
     REASON_MISSING_PARAMS,
     REASON_NOT_FOUND,
@@ -32,12 +34,26 @@ from ..utils.reason_codes import (
     failure_meta_for_reason,
 )
 
+_logger = logging.getLogger(__name__)
+
 
 def _activity_status_projection(deadline: Optional[date], today: Optional[date] = None) -> Dict[str, str]:
     reference_date = today or datetime.now().date()
     if deadline and deadline < reference_date:
         return {"code": "overdue", "label": "已逾期"}
     return {"code": "pending", "label": "待处理"}
+
+
+def _attachment_download_projection(model, res_id, auth_model, auth_res_id, allowed_models):
+    enabled = bool(
+        auth_model == model
+        and int(auth_res_id or 0) == int(res_id)
+        and auth_model in allowed_models
+    )
+    return {
+        "can_download": enabled,
+        "download_intent": "file.download" if enabled else "",
+    }
 
 
 class ChatterTimelineHandler(BaseIntentHandler):
@@ -125,7 +141,8 @@ class ChatterTimelineHandler(BaseIntentHandler):
             return self._failure(REASON_PERMISSION_DENIED, "无权限读取协作时间线", 403, trace_id)
         except UserError as exc:
             return self._failure(REASON_USER_ERROR, str(exc) or "业务规则不允许", 400, trace_id)
-        except Exception:
+        except Exception as exc:
+            _logger.exception("chatter.timeline projection failed for %s/%s", model, res_id)
             return self._failure(REASON_SYSTEM_ERROR, "读取协作时间线失败", 500, trace_id)
 
         items = messages + attachments + activity_items + audit_items
@@ -231,12 +248,21 @@ class ChatterTimelineHandler(BaseIntentHandler):
         AttachmentModel = Attachment
         rows = AttachmentModel.search(domain, order="id desc", limit=limit)
         is_admin = self.env.user._is_admin()
+        download_allowed_models = allowed_file_download_models(self.env)
         items: List[Dict[str, Any]] = []
         for row in rows:
             date_value = _to_iso(row.create_date) or _to_iso(row.write_date)
             is_owner = bool(row.create_uid and row.create_uid.id == self.env.user.id)
             is_direct_attachment = row.res_model == model and int(row.res_id or 0) == int(res_id)
             can_delete = False
+            download_model, download_res_id = resolve_file_download_auth_subject(self.env, row)
+            download_projection = _attachment_download_projection(
+                model,
+                res_id,
+                download_model,
+                download_res_id,
+                download_allowed_models,
+            )
             if is_direct_attachment and (is_admin or is_owner):
                 try:
                     can_delete = bool(AttachmentModel.check_access_rights("unlink", raise_exception=False))
@@ -258,8 +284,7 @@ class ChatterTimelineHandler(BaseIntentHandler):
                         "id": row.id,
                         "name": row.name or "",
                         "mimetype": row.mimetype or "",
-                        "can_download": True,
-                        "download_intent": "file.download",
+                        **download_projection,
                         "can_delete": can_delete,
                         "delete_intent": "chatter.attachment.delete" if can_delete else "",
                     },
