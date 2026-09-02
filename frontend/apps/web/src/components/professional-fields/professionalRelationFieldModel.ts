@@ -9,6 +9,8 @@ export const PROFESSIONAL_RELATION_COMPONENT_KEYS = Object.freeze([
 export function isProfessionalRelationField(field: FormSectionFieldSchema): boolean {
   const key = String(field.componentKey || '');
   const type = String(field.type || '').trim().toLowerCase();
+  // 如果字段类型是many2one，直接返回true，不依赖componentKey
+  if (type === 'many2one') return true;
   if (!PROFESSIONAL_RELATION_COMPONENT_KEYS.includes(key as never)) return false;
   if (key === 'sc.relation.many2one') return type === 'many2one';
   return type === 'many2many';
