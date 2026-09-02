@@ -92,6 +92,8 @@ def validate(root: Path = ROOT) -> list[str]:
     ):
         if marker not in (shell_style + "\n" + side_navigation):
             errors.append(f"navigation shell lost bounded scroll ownership: {marker}")
+    if not re.search(r"\.topbar\s*\{[^}]*flex-shrink:\s*0", shell_style, re.DOTALL):
+        errors.append("responsive topbar must not shrink over the activity page tabs")
     if ".t-button__text" in shell_style:
         errors.append("published app layout must use owned content markup instead of vendor internals")
     if re.search(r"(?m)^\.sidebar\s*\{", shell_style):

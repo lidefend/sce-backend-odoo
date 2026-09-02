@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "c2331275547162ffb7ec0f13a3a885c967c79e3f213a57ddf8740766ec7d1963",
+  "inputDigest": "7ab60a2371c6626a1d534346ab7c96c4272452ab18c6b33e919e2936c1991292",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.css",

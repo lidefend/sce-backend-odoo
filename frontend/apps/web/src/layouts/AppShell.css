@@ -447,6 +447,7 @@
 
 .topbar {
   box-sizing: border-box;
+  flex-shrink: 0;
   min-height: var(--sc-shell-topbar-height);
   position: sticky;
   top: 0;

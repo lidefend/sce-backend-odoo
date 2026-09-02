@@ -3,6 +3,27 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — RESPONSIVE-ACTIVITY-TAB-ACTIVATION-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `feb8bbc1`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel / responsive
+  Product App Shell and professional activity-page tabs / `frontend/apps/web`
+  plus the governed project/payment browser journey.
+- Root cause and product result: below 961px the shell header was allowed to
+  flex-shrink while its second toolbar row overflowed, physically covering the
+  activity tabs. The header now retains its intrinsic height, so TDesign owns
+  tab activation again and independent pages remain simultaneously available.
+- Real-page evidence: a logged-in browser switched payment request `167` to
+  customer and project pages and back while retaining five pages. The governed
+  probe independently switched project `2` and payment request `167`, retained
+  all three seeded pages, and kept desktop plus 390px page headers within the
+  one-primary-action and zero-horizontal-overflow boundaries.
+- Standard vs User-Specific: the repair is a generic responsive shell invariant;
+  it adds no model, label, role, state, route, or customer-specific inference.
+- Boundary: no backend fact change, database mutation, environment rebuild, new
+  contract, hand-built tab event path, push, PR, or merge.
+
 ## 2026-09-02 — READONLY-RELATION-EMPTY-ROW-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

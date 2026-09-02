@@ -283,6 +283,39 @@ try {
     || paymentResult.relationIdentities.some((item) => !item.field || !item.label || !item.empty.includes('暂无可展示记录'))) {
     throw new Error(`payment relation identity is incomplete: ${JSON.stringify(paymentResult.relationIdentities)}`);
   }
+  const activityTabLabels = page.locator('.activity-page-tab-label');
+  const activityTabKeys = await activityTabLabels.evaluateAll((nodes) => nodes.map((node) => ({
+    key: String(node.getAttribute('data-activity-page-key') || ''),
+    title: String(node.textContent || '').trim(),
+  })));
+  const projectActivityIndex = activityTabKeys.findIndex((item) => (
+    item.key.includes(`record:project.project:${target.project_record_id}`)
+  ));
+  const paymentActivityIndex = activityTabKeys.findIndex((item) => (
+    item.key.includes(`record:payment.request:${target.payment_record_id}`)
+  ));
+  if (activityTabKeys.length < 2 || projectActivityIndex < 0 || paymentActivityIndex < 0) {
+    throw new Error(`cross-model activity pages are incomplete: ${JSON.stringify(activityTabKeys)}`);
+  }
+  const projectActivityKey = activityTabKeys[projectActivityIndex].key;
+  const paymentActivityKey = activityTabKeys[paymentActivityIndex].key;
+  await page.locator(`[data-activity-page-key="${projectActivityKey}"]`).click();
+  await page.waitForURL((url) => url.pathname === `/r/project.project/${target.project_record_id}`, { timeout: 15000 });
+  const retainedAfterProjectActivation = await activityTabLabels.count();
+  await page.locator(`[data-activity-page-key="${paymentActivityKey}"]`).click();
+  await page.waitForURL((url) => url.pathname === new URL(paymentRoute).pathname, { timeout: 15000 });
+  const retainedAfterPaymentActivation = await activityTabLabels.count();
+  const activityTabJourney = {
+    pages: activityTabKeys,
+    projectUrl: `${frontendUrl}/r/project.project/${target.project_record_id}`,
+    paymentUrl: paymentRoute,
+    retainedAfterProjectActivation,
+    retainedAfterPaymentActivation,
+  };
+  if (retainedAfterProjectActivation !== activityTabKeys.length
+    || retainedAfterPaymentActivation !== activityTabKeys.length) {
+    throw new Error(`activity page activation collapsed independent pages: ${JSON.stringify(activityTabJourney)}`);
+  }
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileResults = {};
   for (const [key, currentRoute, selector] of [
@@ -310,6 +343,7 @@ try {
     project: projectResult,
     workspace: workspaceResult,
     payment: paymentResult,
+    activityTabJourney,
     mobile: mobileResults,
     contractPresentations,
     mutations,
