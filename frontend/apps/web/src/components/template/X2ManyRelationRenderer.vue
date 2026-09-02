@@ -142,14 +142,14 @@
             <ScCheckbox
               v-if="column.ttype === 'boolean'"
               class="input-checkbox"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
               :checked="Boolean(row._row.values[column.name])"
               :label="column.label"
               @change="adapter.setOne2manyRowField(field.name, row._key, column, $event)"
             />
             <ScSelect
               v-else-if="column.ttype === 'selection'"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
               :model-value="String(row._row.values[column.name] ?? '')"
               :placeholder="adapter.selectPlaceholder(column.label)"
               :options="(column.selection || []).map((option) => ({ value: String(option[0]), label: String(option[1]) }))"
@@ -160,7 +160,7 @@
               :appearance="isO2mAmountColumn(column) ? 'numeric-entry' : 'default'"
               :align="isO2mAmountColumn(column) ? 'right' : 'left'"
               :type="adapter.one2manyColumnInputType(column)"
-              :disabled="column.readonly || adapter.busy"
+              :disabled="column.readonly || !adapter.one2manyCanInlineEdit(field.name) || adapter.busy"
               :model-value="adapter.one2manyColumnDisplayValue(column, row._row.values[column.name])"
               :placeholder="column.label"
               @update:model-value="adapter.setOne2manyRowField(field.name, row._key, column, $event)"

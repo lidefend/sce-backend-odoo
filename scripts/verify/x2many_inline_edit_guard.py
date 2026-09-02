@@ -76,6 +76,7 @@ def main() -> int:
     renderer_markers = [
         "v-else-if=\"field.type === 'one2many'\"",
         "adapter.one2manyCanCreate(field.name)",
+        "adapter.one2manyCanInlineEdit(field.name)",
         "adapter.addOne2manyRow(field.name)",
         "adapter.one2manyCreateLabel(field.name, field.label)",
         "adapter.one2manyColumns(field.name)",
@@ -90,6 +91,7 @@ def main() -> int:
 
     adapter_markers = [
         "one2manyCanCreate: (name: string) => boolean;",
+        "one2manyCanInlineEdit: (name: string) => boolean;",
         "one2manyCreateLabel: (name: string, fieldLabel?: string) => string;",
         "addOne2manyRow: (name: string) => void;",
         "setOne2manyRowField: (name: string, rowKey: string, column: RelationFieldColumn, value: unknown) => void;",

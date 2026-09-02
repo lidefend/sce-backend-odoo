@@ -253,6 +253,10 @@ export function one2manyCanUnlinkFromPolicies(policies: Record<string, unknown>)
   return policies.can_unlink === true;
 }
 
+export function one2manyCanInlineEditFromPolicies(policies: Record<string, unknown>) {
+  return policies.inline_edit === true;
+}
+
 export function one2manyCreateLabelFromPolicies(
   policies: Record<string, unknown>,
   fallbackLabel: string,

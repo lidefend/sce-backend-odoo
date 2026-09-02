@@ -31,7 +31,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("nested form relation example does not document formal sc.relation.table authority")
     for marker in (
         'data-professional-field-family="detail-collection"', ':data-row-count', ':data-column-count',
-        ':data-can-create', ':data-removed-row-count', ':data-validation-visible', ':data-summary-present',
+        ':data-can-create', ':data-can-inline-edit', ':data-removed-row-count', ':data-validation-visible', ':data-summary-present',
     ):
         if marker not in component:
             failures.append(f"professional detail collection missing marker {marker}")
@@ -63,6 +63,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection exposes row removal without unlink authority")
     if "if (!one2manyCanUnlink(fieldName)) return;" not in action_presentation:
         failures.append("detail collection row removal handler does not fail closed")
+    if "one2manyCanInlineEdit: (name: string) => boolean;" not in relation_types:
+        failures.append("detail collection adapter omits backend inline-edit authority")
+    if "return policies.inline_edit === true;" not in relation_utils:
+        failures.append("detail collection inline-edit authority does not fail closed")
+    if renderer.count("!adapter.one2manyCanInlineEdit(field.name)") != 3:
+        failures.append("detail collection inputs do not consistently consume inline-edit authority")
+    if "if (!one2manyCanInlineEdit(fieldName)) return;" not in action_presentation:
+        failures.append("detail collection field update handler does not fail closed")
     if "<ScInput" not in renderer or "<ScSelect" not in renderer:
         failures.append("editable detail rows bypass the governed input/select primitives")
     if "--sc-component-relation-dropdown-z-index" not in renderer or "--sc-component-relation-dropdown-shadow" not in renderer:

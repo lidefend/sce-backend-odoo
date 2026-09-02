@@ -17,6 +17,7 @@ for (const presentationMode of modes) {
       visibleOne2manyRows: () => [{ key: '1', values: {} }],
       one2manyColumns: () => [{ name: 'name', label: 'Name', ttype: 'char', required: true }],
       one2manyCanCreate: () => renderProfile !== 'readonly',
+      one2manyCanInlineEdit: () => renderProfile === 'edit',
       removedOne2manyRows: () => [],
       showOne2manyErrors: renderProfile !== 'readonly',
       one2manySummary: () => '1 line',
@@ -27,6 +28,7 @@ for (const presentationMode of modes) {
     assert.equal(authority.rowCount, 1);
     assert.equal(authority.columnCount, 1);
     assert.equal(authority.canCreate, renderProfile !== 'readonly');
+    assert.equal(authority.canInlineEdit, renderProfile === 'edit');
     matrix += 1;
   }
 }

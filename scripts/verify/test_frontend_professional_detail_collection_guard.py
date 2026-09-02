@@ -101,6 +101,36 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         failures = validate(read_text)
         self.assertTrue(any("handler does not fail closed" in item for item in failures))
 
+    def test_inline_edit_policy_default_allow_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("one2manyUtils.ts"):
+                return value.replace("return policies.inline_edit === true;", "return policies.inline_edit !== false;")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("inline-edit authority does not fail closed" in item for item in failures))
+
+    def test_input_without_inline_edit_authority_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                return value.replace(" || !adapter.one2manyCanInlineEdit(field.name)", "", 1)
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("inputs do not consistently" in item for item in failures))
+
+    def test_unguarded_inline_update_handler_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace("if (!one2manyCanInlineEdit(fieldName)) return;", "")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("field update handler" in item for item in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

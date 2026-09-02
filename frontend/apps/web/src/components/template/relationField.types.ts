@@ -49,6 +49,7 @@ export type RelationFieldAdapter = {
   /** 级联维护：按当前关键词创建目标字典记录并勾选关联（many2many）。 */
   quickCreateRelationMany: (name: string) => Promise<void>;
   one2manyCanCreate: (name: string) => boolean;
+  one2manyCanInlineEdit: (name: string) => boolean;
   one2manyCanUnlink: (name: string) => boolean;
   one2manyCreateLabel: (name: string, fieldLabel?: string) => string;
   addOne2manyRow: (name: string) => void;

@@ -7648,3 +7648,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   and governed-button counterexamples. Strict Vue typecheck, development
   build, refreshed productization inventories with zero gaps, and the complete
   `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — One2many inline-edit authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `21f5ff4e`.
+- Product defect and repair: row inputs previously consumed only column
+  readonly state and ignored the backend subview `policies.inline_edit`
+  capability. The capability now flows through the canonical relationship
+  field model and professional detail adapter. Boolean, selection, and scalar
+  inputs are disabled unless inline editing is explicitly granted, and the
+  update handler independently fails closed. No frontend role, model, label,
+  or workflow inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding the frontend, retaining three independent
+  activity pages, unsaved draft and dirty-close behavior, two readable project
+  tender rows, one editable payment attachment entry, zero browser errors,
+  zero mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: 13 professional detail collection counterexample tests, the
+  x2many inline-edit wiring guard, strict Vue typecheck, development build,
+  refreshed productization inventories with zero gaps, and the complete
+  `make verify.frontend.quick.gate` passed.
