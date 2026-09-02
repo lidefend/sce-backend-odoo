@@ -108,17 +108,41 @@ def scan(root: Path) -> list[Finding]:
             )
             if any(item not in text for item in required):
                 findings.add(Finding("GA012", relative, "PROFESSIONAL_TRUST_BOUNDARY_INCOMPLETE"))
-            shard_calls = (
+            prepare_marker = "- name: Prepare host-owned artifact root before container checks"
+            orm_marker = "- name: Prove candidate chatter authorization with real ORM"
+            full_marker = "- name: Run full professional quality gate (serialized artifact writers)"
+            mainline_marker = "- name: Run mainline integrity gate"
+            prepare_position = text.find(prepare_marker)
+            orm_position = text.find(orm_marker)
+            full_position = text.find(full_marker)
+            mainline_position = text.find(mainline_marker)
+            serialized_calls = (
+                "python3 scripts/verify/ci_artifact_host_write_guard.py",
                 "make ci.professional.backend.shard-verify",
                 "python3 scripts/verify/ci_artifact_host_write_guard.py",
                 "make ci.professional.backend.shard-reports",
+                "python3 scripts/verify/ci_artifact_host_write_guard.py",
                 "make ci.professional.backend.shard-tests",
             )
-            positions = [text.find(item) for item in shard_calls]
-            if (
-                any(position < 0 for position in positions)
-                or positions != sorted(positions)
-                or re.search(r"make ci\.professional\.backend\.shard-(?:verify|reports|tests)\s*&", text)
+            full_section = (
+                text[full_position:mainline_position]
+                if 0 <= full_position < mainline_position
+                else ""
+            )
+            cursor = -1
+            serialized = True
+            for call in serialized_calls:
+                cursor = full_section.find(call, cursor + 1)
+                if cursor < 0:
+                    serialized = False
+                    break
+            ownership_boundary_complete = (
+                0 <= prepare_position < orm_position < full_position
+                and "if: env.PROFESSIONAL_MODE == 'full'" in text[prepare_position:orm_position]
+                and "python3 scripts/verify/ci_artifact_host_write_guard.py" in text[prepare_position:orm_position]
+            )
+            if not serialized or not ownership_boundary_complete or re.search(
+                r"make ci\.professional\.backend\.shard-(?:verify|reports|tests)\s*&", text
             ):
                 findings.add(Finding("GA018", relative, "PROFESSIONAL_ARTIFACT_WRITERS_NOT_SERIALIZED"))
         if path.name == "backend_test_suite.yml":

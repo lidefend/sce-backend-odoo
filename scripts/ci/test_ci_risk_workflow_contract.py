@@ -159,6 +159,26 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("test.chatter-timeline.authorization.orm", authorization_section)
         self.assertIn("Prove candidate chatter authorization with real ORM", text)
         self.assertIn("env.CANDIDATE_REQUESTED == 'true'", text)
+        preparation = text.split(
+            "- name: Prepare host-owned artifact root before container checks", 1
+        )[1].split("- name: Prove candidate chatter authorization with real ORM", 1)[0]
+        self.assertIn("if: env.PROFESSIONAL_MODE == 'full'", preparation)
+        self.assertIn("python3 scripts/verify/ci_artifact_host_write_guard.py", preparation)
+        full_section = text.split(
+            "- name: Run full professional quality gate (serialized artifact writers)", 1
+        )[1].split("- name: Run mainline integrity gate", 1)[0]
+        expected_order = (
+            "python3 scripts/verify/ci_artifact_host_write_guard.py",
+            "make ci.professional.backend.shard-verify",
+            "python3 scripts/verify/ci_artifact_host_write_guard.py",
+            "make ci.professional.backend.shard-reports",
+            "python3 scripts/verify/ci_artifact_host_write_guard.py",
+            "make ci.professional.backend.shard-tests",
+        )
+        cursor = -1
+        for command in expected_order:
+            cursor = full_section.find(command, cursor + 1)
+            self.assertGreaterEqual(cursor, 0, command)
         self.assertNotIn("pnpm -C frontend install", text)
         self.assertIn("make test.unit test.contract test.e2e.preflight", text)
         self.assertIn("make verify.product.release.version", text)

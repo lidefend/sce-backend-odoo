@@ -197,6 +197,10 @@ jobs:
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
           git cat-file -e "${BASE_SHA}^{commit}"
 
+      - name: Prepare host-owned artifact root before container checks
+        if: env.PROFESSIONAL_MODE == 'full'
+        run: python3 scripts/verify/ci_artifact_host_write_guard.py
+
       - name: Prove candidate chatter authorization with real ORM
         if: >-
           env.CANDIDATE_REQUESTED == 'true' &&
@@ -226,6 +230,9 @@ jobs:
           # Host-side verification and report generators share ./artifacts with
           # container-backed tests. Keep every writer serialized and run the
           # container-capable test shard last so it cannot race a host writer.
+          # Re-prove host access immediately after the optional ORM container;
+          # this fails at the ownership boundary instead of inside a report.
+          python3 scripts/verify/ci_artifact_host_write_guard.py
           make ci.professional.backend.shard-verify
           python3 scripts/verify/ci_artifact_host_write_guard.py
           make ci.professional.backend.shard-reports

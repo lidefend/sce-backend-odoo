@@ -223,6 +223,22 @@ jobs:
             classes = {item.classification for item in guard.scan(root)}
             self.assertIn("PROFESSIONAL_ARTIFACT_WRITERS_NOT_SERIALIZED", classes)
 
+    def test_professional_artifact_root_must_be_host_owned_before_orm(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow = root / ".github/workflows/professional_quality_gate.yml"
+            workflow.parent.mkdir(parents=True)
+            source = (ROOT / workflow.relative_to(root)).read_text(encoding="utf-8")
+            preparation = """      - name: Prepare host-owned artifact root before container checks
+        if: env.PROFESSIONAL_MODE == 'full'
+        run: python3 scripts/verify/ci_artifact_host_write_guard.py
+
+"""
+            self.assertIn(preparation, source)
+            workflow.write_text(source.replace(preparation, "", 1), encoding="utf-8")
+            classes = {item.classification for item in guard.scan(root)}
+            self.assertIn("PROFESSIONAL_ARTIFACT_WRITERS_NOT_SERIALIZED", classes)
+
     def test_backend_suite_dynamic_secrets_must_remain_masked(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
