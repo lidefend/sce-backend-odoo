@@ -171,7 +171,7 @@
               v-if="adapter.one2manyCanOpenRow(field.name, row._row)"
               class="o2m-row-open"
               type="button"
-              variant="text"
+              variant="ghost"
               size="small"
               :aria-label="`打开${adapter.one2manyRowLabel(field.name, row._row)}`"
               :disabled="adapter.busy"

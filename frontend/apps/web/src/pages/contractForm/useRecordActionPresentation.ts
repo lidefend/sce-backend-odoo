@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import { routeAuthorityEntries } from '../../app/routeAuthority';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
-import type { RelationFieldAdapter, RelationFieldColumn } from '../../components/template/relationField.types';
+import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from '../../components/template/relationField.types';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
 import { resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';

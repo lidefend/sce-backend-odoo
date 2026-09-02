@@ -316,6 +316,7 @@ import { isHudEnabled, isSceneBlocksDebugEnabled } from '../config/debug';
 import { config } from '../config';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
+import type { ChatterTimelineEntry } from '../api/chatter';
 import { executeButton } from '../api/executeButton';
 import { triggerOnchange } from '../api/onchange';
 import type { OnchangeLinePatch } from '../api/onchange';
