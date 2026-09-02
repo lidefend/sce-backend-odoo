@@ -120,6 +120,46 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "lacks exact authority"):
             menu_service.MenuService.project_canonical_navigation(nav, {})
 
+    def test_menu_container_requires_exact_authorized_route(self):
+        authority = {
+            "menu_containers": [{
+                "route_kind": "PRIMARY_NAV",
+                "menu_id": 8,
+                "menu_xmlid": "test.menu_container",
+                "route": "/m/8",
+                "source": "role_surface.menu_xmlids",
+            }],
+        }
+        nav = [{"key": "menu_8", "menu_id": 8, "label": "项目中心", "route": "/m/8"}]
+
+        filtered = menu_service.MenuService.filter_nav_by_route_authority(nav, authority)
+        projected = menu_service.MenuService.project_canonical_navigation(filtered, authority)
+
+        self.assertEqual(len(projected), 1)
+        canonical = projected[0]["canonical_navigation"]
+        self.assertEqual(canonical["state"], "enabled")
+        self.assertEqual(canonical["route"], "/m/8")
+        self.assertEqual(canonical["authority"]["state"], "allowed")
+        self.assertEqual(
+            canonical["authority"]["key"],
+            "PRIMARY_NAV:test.menu_container:container",
+        )
+
+        self.assertEqual(
+            menu_service.MenuService.filter_nav_by_route_authority(
+                [{**nav[0], "route": "/m/9"}],
+                authority,
+            ),
+            [],
+        )
+
+    def test_unowned_route_only_node_is_removed(self):
+        nav = [{"key": "menu_8", "menu_id": 8, "label": "项目中心", "route": "/m/8"}]
+        self.assertEqual(
+            menu_service.MenuService.filter_nav_by_route_authority(nav, {}),
+            [],
+        )
+
     def test_canonical_navigation_projection_rejects_disabled_without_reason(self):
         nav = [{
             "key": "root",
