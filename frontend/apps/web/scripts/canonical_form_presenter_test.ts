@@ -484,6 +484,7 @@ function snapshot(): ContractV2Snapshot {
         sourceAuthority: { projection_only: true, no_business_fact_authority: true },
         children: [{
           containerId: 'field.line_ids', containerType: 'field', type: 'field', name: 'line_ids', title: '', span: 24,
+          nolabel: true,
           children: [], widgetList: [{
             widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
             componentKey: 'sc.relation.table', capabilities: [], componentConfig: { fieldType: 'one2many' },
@@ -1190,6 +1191,7 @@ assert.equal(fields.find((field) => field.fieldCode === 'name')?.componentResolu
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.presentationMode, 'workspace');
 assert.equal(fields.find((field) => field.fieldCode === 'name')?.renderProfile, 'edit');
 assert.equal(fields.find((field) => field.fieldCode === 'line_ids')?.componentResolution.renderer, 'ProfessionalDetailCollectionControl');
+assert.equal(fields.find((field) => field.fieldCode === 'line_ids')?.hideLabel, true);
 assert.equal(fields.find((field) => field.fieldCode === 'state')?.hideLabel, false);
 assert.equal(canonicalFieldToFormSection(fields.find((field) => field.fieldCode === 'name')!).hideLabel, true);
 assert.equal(fields.find((field) => field.fieldCode === 'state')?.visible, false);
@@ -1646,6 +1648,11 @@ assert.deepEqual(
   collectFields(semanticContextFloorplan.relationNodes).map((field) => field.fieldCode),
   ['context_26', 'line_ids'],
   'relation-capable canonical facts must form an independent relation region',
+);
+assert.equal(
+  collectFields(semanticContextFloorplan.relationNodes).find((field) => field.fieldCode === 'line_ids')?.hideLabel,
+  false,
+  'the floorplan relation region must restore the authoritative field label after removing its native notebook title',
 );
 assert.deepEqual(
   collectFields(semanticContextFloorplan.auditNodes).map((field) => field.fieldCode),

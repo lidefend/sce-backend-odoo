@@ -7186,3 +7186,30 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   one enabled primary action (`创建项目`); its project-manager relation displayed
   `Demo-全能力` rather than raw value `50`. The activity-page component retained
   both the payment request and project-initiation pages simultaneously.
+## 2026-09-02 — FLOORPLAN-RELATION-IDENTITY-CLOSURE-01
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `9f4466d111bad82f77c13e2b51892bf6ded3ddc2`.
+- Formal Product Layer / Layer Target / Module: P0 platform kernel product /
+  Product Floorplan relation identity projection / `frontend/apps/web` and the
+  existing local.dev read-only browser probe.
+- Product defect and repair: native notebook pages may legitimately declare
+  `nolabel` because their page title owns the relation identity. The Product
+  Floorplan moves those relation fields into one consolidated relation region
+  and intentionally suppresses the native notebook/page headings, leaving
+  multiple empty collections as indistinguishable `暂无可展示记录` controls. The
+  generic relation projection now restores each backend-supplied field label
+  after extraction; it does not infer labels from model names, field codes, or
+  Chinese text.
+- Why here / why not elsewhere: this is generic Floorplan composition after a
+  structural title has been removed. Changing Odoo views would damage native
+  rendering, while a payment-only component fix would preserve the same defect
+  for every other relation page.
+- Blast radius and evidence: only business one2many/many2many fields projected
+  into the existing relation region receive visible labels. The canonical
+  presenter retains original `nolabel` identity before Floorplan composition.
+  The 142-case presenter suite passed. Logged-in browser acceptance proved
+  `付款申请明细 / 付款记录` on payment request 167, preserved the customer
+  `联系人 / 银行` relation controls, kept one primary action on both pages, and
+  showed zero horizontal overflow at 390px. No mutation or execute request was
+  performed.

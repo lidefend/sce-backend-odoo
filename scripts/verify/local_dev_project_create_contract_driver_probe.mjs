@@ -259,6 +259,13 @@ try {
     visibleFieldNames: await paymentSurface
       .locator('[data-field-name]')
       .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-field-name')).filter(Boolean)),
+    relationIdentities: await paymentSurface
+      .locator('[data-field-name][data-field-type="one2many"], [data-field-name][data-field-type="many2many"]')
+      .evaluateAll((nodes) => nodes.map((node) => ({
+        field: node.getAttribute('data-field-name') || '',
+        label: (node.querySelector('.field-label-row .label')?.textContent || '').trim(),
+        empty: (node.querySelector('[data-readonly-relation-empty]')?.textContent || '').trim(),
+      })).filter((item) => item.empty)),
     header: await captureHeaderPresentation(paymentSurface),
   };
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
@@ -271,6 +278,10 @@ try {
   if (paymentResult.visibleFieldNames.length === 0
     || new Set(paymentResult.visibleFieldNames).size !== paymentResult.visibleFieldNames.length) {
     throw new Error(`payment page repeated canonical facts: ${JSON.stringify(paymentResult.visibleFieldNames)}`);
+  }
+  if (paymentResult.relationIdentities.length === 0
+    || paymentResult.relationIdentities.some((item) => !item.field || !item.label || !item.empty.includes('暂无可展示记录'))) {
+    throw new Error(`payment relation identity is incomplete: ${JSON.stringify(paymentResult.relationIdentities)}`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileResults = {};
