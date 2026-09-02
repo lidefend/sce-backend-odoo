@@ -185,6 +185,8 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     const relation = String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();
     if (!relation) return;
     const entry = relationEntry(descriptor);
+    const inline = relationInlineCreate(descriptor);
+    if (entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch) return;
     try {
       const existing = await fetchRelationOptions(fieldName, label, 20);
       const exact = existing.find((item) => item.label.trim().toLowerCase() === label.trim().toLowerCase());
@@ -192,7 +194,6 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
         setMany2oneOption(fieldName, exact);
         return;
       }
-      const inline = relationInlineCreate(descriptor);
       const nameField = inline.nameField || 'name';
       const vals: Record<string, unknown> = { ...(entry?.defaultVals || {}), [nameField]: label };
       const created = await createContractFormRecord({ model: relation, vals });

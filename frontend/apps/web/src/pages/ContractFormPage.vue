@@ -1587,6 +1587,7 @@ const {
   parseMaybeJsonRecord, pendingNativeAttachments, policyContext,
   queryMany2oneInline: (...args: Parameters<typeof queryMany2oneInline>) => queryMany2oneInline(...args), recordId, relationCreateMode,
   relationIds, relationInlineCreate, relationKeyword,
+  relationEntry,
   relationOptionsForField, relationUiLabel, reload: (...args: Parameters<typeof reload>) => reload(...args),
   rememberFormConfigFieldLabel, removeMentionUser, removeOne2manyRow,
   removePendingNativeAttachment, removedOne2manyRows, renderProfile,

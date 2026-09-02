@@ -7755,3 +7755,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   guard, strict Vue typecheck, development build, refreshed productization
   inventories with zero gaps, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Relation quick-create write-bypass closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `23639c5a`.
+- Product defect and repair: the many2one quick-create helper and the
+  professional many2many adapter could be called directly without repeating
+  the backend create grant. The many2many path additionally guessed a target
+  model from frontend field names. Both handlers now require explicit
+  `relation_entry.can_create=true`, enabled inline-create semantics, and the
+  authoritative relation model from the field descriptor before issuing any
+  create request. The hardcoded field/model mapping was removed, and backend
+  default values are preserved in both write paths.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, retaining three independent activity pages,
+  unsaved draft and dirty-close behavior, two readable project tender rows,
+  one editable payment attachment entry, zero browser errors, zero mutations,
+  zero execute requests, and no 390px horizontal overflow.
+- Verification: 14 professional relation counterexample tests including
+  missing grants, unguarded handlers, and frontend model-inference rejection;
+  strict Vue typecheck, development build, refreshed productization inventories
+  with zero gaps, and the complete `make verify.frontend.quick.gate` passed.

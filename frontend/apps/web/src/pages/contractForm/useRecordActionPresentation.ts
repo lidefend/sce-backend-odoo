@@ -301,26 +301,21 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       if (!descriptor) return;
       const keyword = relationKeyword(fieldName).trim();
       if (!keyword) return;
-      // 优先从契约字段描述符获取关联模型；缺失时通过常见字段映射回退
-      let relation = String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();
-      if (!relation) {
-        const fallbackMap: Record<string, string> = {
-          category_id: 'res.partner.category',
-          category_ids: 'res.partner.category',
-          tag_ids: 'res.partner.category',
-        };
-        relation = fallbackMap[fieldName] || '';
-      }
-      if (!relation) return;
+      const entry = dependencies.relationEntry(descriptor);
+      const inline = relationInlineCreate(descriptor);
+      const relation = String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();
+      if (entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch || !relation) return;
       try {
         const existing = relationOptionsForField(fieldName);
         if (existing.some((item) => String(item.label).trim().toLowerCase() === keyword.toLowerCase())) {
           setRelationKeyword(fieldName, '');
           return;
         }
-        const inline = relationInlineCreate(descriptor) || {};
         const nameField = inline.nameField || 'name';
-        const created = await createContractFormRecord({ model: relation, vals: { [nameField]: keyword } });
+        const created = await createContractFormRecord({
+          model: relation,
+          vals: { ...(entry.defaultVals || {}), [nameField]: keyword },
+        });
         const id = Number(created?.id || 0);
         if (Number.isFinite(id) && id > 0) {
           const current = relationIds(fieldName) || [];

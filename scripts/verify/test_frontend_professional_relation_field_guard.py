@@ -87,6 +87,39 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
 
         self.assertTrue(any("handler does not independently" in item for item in validate(read_text)))
 
+    def test_frontend_relation_model_inference_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value + "\nconst fallbackMap: Record<string, string> = { tag_ids: 'res.partner.category' };\n"
+            return value
+
+        self.assertTrue(any("field/model inference" in item for item in validate(read_text)))
+
+    def test_unguarded_professional_many2many_create_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordActionPresentation.ts"):
+                return value.replace(
+                    "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch || !relation",
+                    "!relation",
+                )
+            return value
+
+        self.assertTrue(any("professional many2many" in item for item in validate(read_text)))
+
+    def test_unguarded_many2one_quick_create_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordRelationshipNavigation.ts"):
+                return value.replace(
+                    "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch",
+                    "false",
+                )
+            return value
+
+        self.assertTrue(any("many2one quick-create" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

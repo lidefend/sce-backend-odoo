@@ -16,6 +16,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     relationship_fields = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts")
     relation_descriptor = read_text("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts")
     form_state = read_text("frontend/apps/web/src/pages/contractForm/useRecordFormState.ts")
+    action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
+    relationship_navigation = read_text("frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts")
     for key in ("sc.relation.many2one", "sc.relation.many2many", "sc.select.tags"):
         if key not in model or key not in registry or key not in assembler:
             failures.append(f"relation authority is incomplete for {key}")
@@ -67,6 +69,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("many2many inline-create retains a frontend default-allow fallback")
     if "entry?.canCreate!==true||!relation" not in form_state:
         failures.append("many2many quick-create handler does not independently fail closed")
+    if "fallbackMap: Record<string, string>" in action_presentation or "res.partner.category" in action_presentation:
+        failures.append("many2many quick-create retains frontend field/model inference")
+    if "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch || !relation" not in action_presentation:
+        failures.append("professional many2many quick-create handler does not fail closed")
+    if "entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch" not in relationship_navigation:
+        failures.append("many2one quick-create handler does not fail closed")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in many2one or forbidden in model:
             failures.append(f"relation family contains forbidden product special case {forbidden}")
