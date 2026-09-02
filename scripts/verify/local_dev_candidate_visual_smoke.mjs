@@ -443,6 +443,17 @@ try {
         const activityCards = activityRoot ? [...activityRoot.querySelectorAll('[data-activity-card="record"]')] : [];
         const activityCardEvidence = activityCards.map((node) => {
           const rect = node.getBoundingClientRect();
+          const descendants = [...node.querySelectorAll('*')].map((child) => {
+            const childRect = child.getBoundingClientRect();
+            return {
+              tag: child.tagName,
+              className: typeof child.className === 'string' ? child.className : '',
+              rect: [Math.round(childRect.left), Math.round(childRect.top), Math.round(childRect.right), Math.round(childRect.bottom)],
+              overflowRight: Math.round(Math.max(0, childRect.right - rect.right)),
+            };
+          });
+          const widestDescendant = descendants.sort((left, right) => right.overflowRight - left.overflowRight)[0] || null;
+          const computed = getComputedStyle(node);
           return {
             ordinal: node.getAttribute('data-record-ordinal') || '',
             rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom)],
@@ -450,6 +461,8 @@ try {
             scrollSize: [node.scrollWidth, node.scrollHeight],
             horizontalClipped: node.scrollWidth > node.clientWidth + 1,
             verticalClipped: node.scrollHeight > node.clientHeight + 1,
+            computed: { padding: computed.padding, boxSizing: computed.boxSizing, overflowX: computed.overflowX },
+            widestDescendant,
             visibleText: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
           };
         });
