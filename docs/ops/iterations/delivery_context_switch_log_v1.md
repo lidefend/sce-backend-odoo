@@ -7938,3 +7938,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   baseline hash changed during cleanup, while also reporting both the temporary
   database and temporary resources removed. This cleanup-harness result is not
   recorded as a green gate.
+
+## 2026-09-02 — Collaboration create-action authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `c4652444`.
+- Product defect and repair: collaboration entry buttons reflected the current
+  contract, but the shared message/note/activity handlers did not independently
+  revalidate the active contract action before issuing a mutation. Activity
+  scheduling could additionally fall back to another activity row when the
+  selected row no longer matched. A shared semantic resolver now requires an
+  enabled, exact-mode active action; both create handlers repeat that decision,
+  and the presentation resolver no longer falls back to an unrelated action.
+  The backend message endpoint also rejects unknown modes instead of silently
+  treating them as comments. Missing, stale, disabled, and mismatched authority
+  therefore fail closed without model, role, label, or status inference.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved draft
+  and dirty-close warning, two readable project tender rows, one editable
+  payment attachment entry, zero browser errors, zero mutations, zero execute
+  requests, and no desktop or 390px horizontal overflow.
+- Verification: nineteen collaboration model cases, twelve structural and
+  counterexample tests, three backend chatter-post boundary tests, strict Vue
+  typecheck, production and development builds, refreshed zero-gap
+  productization inventories, and the complete `make
+  verify.frontend.quick.gate` passed.

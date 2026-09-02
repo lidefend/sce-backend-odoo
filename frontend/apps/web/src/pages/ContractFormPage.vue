@@ -912,7 +912,7 @@ const {
 } = useNativeChatterRuntime({
   model: () => model.value,
   recordId: () => recordId.value,
-  activeActivityAction: () => activeActivityAction.value,
+  activeChatterAction: () => activeChatterAction.value,
 });
 const attachmentViewerRef = ref<NativeAttachmentViewerLike | null>(null);
 const chatterTimelineLoading = chatterLoading;
@@ -1539,7 +1539,7 @@ function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
 }
 const {
   workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
-  contractFieldLabel, activeActivityAction, nativeAttachmentMaxBytes, nativeChatterActions, nativeAttachments,
+  contractFieldLabel, activeChatterAction, activeActivityAction, nativeAttachmentMaxBytes, nativeChatterActions, nativeAttachments,
   nativeCollaborationPanelProps, nativeCollaborationPanelListeners, resolveNativeAttachmentLabel, hasNativeChatterNode, nativeLayoutContainsType,
   contractActionFromNativeRow, resolveNativeActionState, isUnifiedSubmitMethod, isUnifiedSubmitAction,
   primarySubmitAction, primaryCreateFooterAction, runNativeLayoutAction, advancedFieldNames, contractVisibleFields,

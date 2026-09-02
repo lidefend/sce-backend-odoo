@@ -45,6 +45,20 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace("entry.activity?.can_complete === true", "entry.activity?.can_complete !== false")
             return value
         self.assertTrue(any("both actions" in item for item in validate(read_text)))
+    def test_collaboration_create_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("if (!canExecuteCollaborationCreateAction(action, activeMode.value)) return;", "")
+            return value
+        self.assertTrue(any("create handlers" in item for item in validate(read_text)))
+    def test_activity_action_cannot_fall_back_to_another_contract_row(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordCollaborationPresentation.ts"):
+                return value.replace(")) || null);", ")) || nativeChatterActions.value.find((item) => item.mode === 'activity') || null);", 1)
+            return value
+        self.assertTrue(any("must not fall back" in item for item in validate(read_text)))
     def test_activity_status_cannot_be_inferred_from_client_clock(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

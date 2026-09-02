@@ -47,6 +47,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("attachment open handler must independently reject missing or denied authority")
     if "canUpdateCollaborationActivity(entry, action)" not in chatter_runtime:
         failures.append("activity update handler must independently enforce explicit backend authority")
+    if chatter_runtime.count("canExecuteCollaborationCreateAction(") < 2:
+        failures.append("collaboration create handlers must independently enforce the active contract action")
+    if "nativeChatterActions.value.find((item) => item.mode === 'activity')" in read_text("frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts"):
+        failures.append("activity composer authority must not fall back to an unrelated contract action")
     if "entry.activity?.can_complete === true" not in model or "entry.activity?.can_cancel === true" not in model:
         failures.append("activity update authority resolver must fail closed for both actions")
     if "activity.status === 'pending' || activity.status === 'overdue'" not in model or "'unknown'" not in model:

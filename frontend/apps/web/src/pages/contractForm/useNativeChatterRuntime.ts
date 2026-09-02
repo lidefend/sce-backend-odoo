@@ -8,7 +8,7 @@ import {
   type ChatterTimelineEntry,
   type CollaborationUserOption,
 } from '../../api/chatter';
-import { canUpdateCollaborationActivity } from './professionalCollaborationModel';
+import { canExecuteCollaborationCreateAction, canUpdateCollaborationActivity } from './professionalCollaborationModel';
 import type { NativeChatterAction } from './types';
 
 function nextBusinessDateInputValue() {
@@ -27,7 +27,7 @@ function activityEntryId(entry: ChatterTimelineEntry) {
 export function useNativeChatterRuntime(params: {
   model: () => string;
   recordId: () => number;
-  activeActivityAction: () => NativeChatterAction | null;
+  activeChatterAction: () => NativeChatterAction | null;
 }) {
   const activeMode = ref('');
   const activeLabel = ref('');
@@ -170,6 +170,8 @@ export function useNativeChatterRuntime(params: {
   }
 
   async function scheduleActivity() {
+    const action = params.activeChatterAction();
+    if (!canExecuteCollaborationCreateAction(action, 'activity')) return;
     const summary = activitySummary.value.trim();
     if (!summary) {
       error.value = '请填写计划事项';
@@ -178,7 +180,6 @@ export function useNativeChatterRuntime(params: {
     const recordId = params.recordId();
     const model = params.model();
     if (!recordId || !model || posting.value) return;
-    const action = params.activeActivityAction();
     posting.value = true;
     error.value = '';
     try {
@@ -209,6 +210,8 @@ export function useNativeChatterRuntime(params: {
       await scheduleActivity();
       return;
     }
+    const action = params.activeChatterAction();
+    if (!canExecuteCollaborationCreateAction(action, activeMode.value)) return;
     const body = draft.value.trim();
     const recordId = params.recordId();
     const model = params.model();

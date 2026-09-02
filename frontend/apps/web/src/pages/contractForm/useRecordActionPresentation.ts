@@ -59,6 +59,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     return contractFieldLabels.value[String(name || '').trim()] || '';
   }
   const {
+    activeChatterAction,
     activeActivityAction,
     nativeAttachmentMaxBytes,
     nativeChatterActions,
@@ -396,6 +397,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     bodyActions,
     contractFieldLabels,
     contractFieldLabel,
+    activeChatterAction,
     activeActivityAction,
     nativeAttachmentMaxBytes,
     nativeChatterActions,

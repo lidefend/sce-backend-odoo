@@ -87,11 +87,13 @@ export function useRecordCollaborationPresentation(context: {
   const activeChatterPostingLabel = computed(() => activeChatterPostingLabelFromMode(context.activeChatterMode.value));
   const activeChatterPlaceholder = computed(() => activeChatterPlaceholderFromMode(context.activeChatterMode.value));
   const activeChatterIsActivity = computed(() => context.activeChatterMode.value === 'activity');
-  const activeActivityAction = computed(() => (
-    nativeChatterActions.value.find((item) => item.mode === 'activity' && item.label === context.activeChatterLabel.value)
-    || nativeChatterActions.value.find((item) => item.mode === 'activity')
-    || null
-  ));
+  const activeChatterAction = computed(() => nativeChatterActions.value.find((item) => (
+    item.mode === context.activeChatterMode.value
+    && item.label === context.activeChatterLabel.value
+  )) || null);
+  const activeActivityAction = computed(() => activeChatterAction.value?.mode === 'activity'
+    ? activeChatterAction.value
+    : null);
   const activityFieldLabel = (name: string, fallback: string) => nativeActivityFieldLabel(activeActivityAction.value, name, fallback);
   const activitySummaryLabel = computed(() => activityFieldLabel('summary', '摘要'));
   const activityDeadlineLabel = computed(() => activityFieldLabel('date_deadline', '截止日期'));
@@ -145,6 +147,7 @@ export function useRecordCollaborationPresentation(context: {
     'update:collaborationUserQuery': (value) => { context.collaborationUserQuery.value = value; },
   };
   return {
+    activeChatterAction,
     activeActivityAction,
     nativeAttachmentMaxBytes,
     nativeChatterActions,

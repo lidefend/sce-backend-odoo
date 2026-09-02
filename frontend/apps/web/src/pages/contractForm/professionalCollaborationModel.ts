@@ -1,4 +1,5 @@
 import type { ChatterTimelineEntry } from '../../api/chatter';
+import type { NativeChatterAction } from './types';
 
 export type ProfessionalCollaborationCapability = 'comment' | 'attachment' | 'activity' | 'follower';
 export type ProfessionalCollaborationReadiness = 'ready' | 'fail_closed';
@@ -32,6 +33,17 @@ export function canUpdateCollaborationActivity(
   return action === 'done'
     ? entry.activity?.can_complete === true
     : entry.activity?.can_cancel === true;
+}
+
+export function canExecuteCollaborationCreateAction(
+  action: NativeChatterAction | null | undefined,
+  mode: string,
+): boolean {
+  return Boolean(
+    action?.enabled === true
+    && (mode === 'message' || mode === 'note' || mode === 'activity')
+    && action.mode === mode,
+  );
 }
 
 export function formatCollaborationTimelineMeta(value: string): string {
