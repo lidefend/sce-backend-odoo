@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "aac9a02d376528d3e60bfb55a3a7a11ba551d9059e8eec115d74e1561767591c",
+  "inputDigest": "4f7bd1fe244979d89a5fbec5d55478dde92e155aea0ef8f06debf117c21e4de5",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.css",
@@ -80,30 +80,6 @@
       "file": "frontend/apps/web/src/styles/product-patterns.css",
       "line": 612,
       "selector": "/* TDesign Dialog 遮罩修复：确保父容器隐藏时遮罩也被隐藏 * 问题：t-dialog__ctx 设置 display:none 后，position:fixed 的遮罩仍然可见 */ .t-dialog__ctx[style*=\"display: none\"] .t-dialog__mask, .t-dialog__ctx[style*=\"display: none\"] .t-dialog__wrap",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
-      "line": 237,
-      "selector": ".professional-base-field-control[data-professional-field-type='date'] :deep(.t-date-picker), .professional-base-field-control[data-professional-field-type='datetime'] :deep(.t-date-picker)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
-      "line": 272,
-      "selector": "/* 穿透 TDesign Select 样式，与表单字段对齐 */ .m2m-select :deep(.t-select__wrap)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
-      "line": 277,
-      "selector": ".m2m-select :deep(.t-select__placeholder)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
-      "line": 281,
-      "selector": ".m2m-select :deep(.t-tag)",
       "status": "legacy_override_gap"
     },
     {
@@ -682,8 +658,8 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 199,
-    "internalVendorSelectorGapCount": 20,
+    "formalStyleSourceCount": 200,
+    "internalVendorSelectorGapCount": 16,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
     "productAppearanceVariantCount": 36,

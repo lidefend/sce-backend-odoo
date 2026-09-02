@@ -489,7 +489,7 @@
     },
     {
       "category": "other",
-      "digest": "2e691f77ad18bc8a2888d5f9fb86b557fbd632b0ecb7ba08c9d31f74b792ab14",
+      "digest": "4632fe6cbac88ea7a74201a069b3447817605f25d1a7c4437fc64c14af4ed7ee",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScDatePicker.vue",
       "referenceNativeStyleSelectors": [],
@@ -1544,7 +1544,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "3d2324b0221cf14c501a668022c74fe03e8965a94881c7c9aff1bc4c8a6b93c0",
+      "digest": "f5b8f33e71fc6fd3d3fa6125aa2c0416bda91d3ae52dd4009eae3e9d9fc0fc51",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalBaseFieldControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1599,7 +1599,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "af759d5dd169ab375031d20f6fc3bcc8c2487af63bf9d90a59458c24925db84d",
+      "digest": "e844d0418adf99bb043e9370800f36f1ee0f0db9a00a8842137ca2198a29f37b",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalManyToManySelect.vue",
       "referenceNativeStyleSelectors": [],
@@ -2596,7 +2596,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "80a678ab4c1f4ca14f111be6eb0eec41bc95ed1d377a643a742635a2fb356e63",
+  "currentInputDigest": "59b3d83de492a05e25fc7d79af26926ed5ad311d504656403491b8908858b62a",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

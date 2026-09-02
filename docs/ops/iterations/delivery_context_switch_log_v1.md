@@ -3,6 +3,24 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — PROFESSIONAL-FIELD-OFFICIAL-CONTROL-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `4084155b`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 semantic business components /
+  date/datetime and many2many field controls / the existing TDesign primitive
+  bridge and professional field components.
+- Product result: `ScDatePicker` now owns full-width layout on its public root,
+  while the professional many2many select inherits the official medium Select,
+  placeholder, and Tag presentation. Four private TDesign descendant overrides
+  were removed; relation behavior, backend option authority, and inline-create
+  rules were unchanged.
+- Acceptance evidence: detail-form and rendering-detail guards passed; the
+  official design inventory moved from 20 to 16 internal-selector gaps with
+  zero visual-literal gaps. The governed project/payment journey revalidated
+  the project date control, cross-model activity lifecycle, desktop/390px
+  headers, zero mutations, zero execute requests, and zero browser errors.
+
 ## 2026-09-02 — ACTIVITY-TABS-OFFICIAL-API-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

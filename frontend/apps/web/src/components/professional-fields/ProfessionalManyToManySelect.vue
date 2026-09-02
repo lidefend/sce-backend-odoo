@@ -271,16 +271,4 @@ watch(
   flex-shrink: 0;
 }
 
-/* 穿透 TDesign Select 样式，与表单字段对齐 */
-.m2m-select :deep(.t-select__wrap) {
-  min-height: 32px;
-}
-
-.m2m-select :deep(.t-select__placeholder) {
-  font-size: 14px;
-}
-
-.m2m-select :deep(.t-tag) {
-  margin: 2px 0;
-}
 </style>
