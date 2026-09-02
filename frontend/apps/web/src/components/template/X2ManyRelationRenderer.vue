@@ -313,7 +313,9 @@ const o2mTableFootData = computed(() => {
 const o2mAmountTotal = computed(() => {
   const amountCol = aggregateAmountColumn.value;
   if (!amountCol) return 0;
-  return paginatedOne2manyRows.value.reduce((sum, row) => {
+  // The footer is the collection total, so pagination must not narrow the
+  // authoritative business amount to the currently visible window.
+  return one2manyRows.value.reduce((sum, row) => {
     const value = Number(row.values[amountCol.name]);
     return sum + (Number.isFinite(value) ? value : 0);
   }, 0);

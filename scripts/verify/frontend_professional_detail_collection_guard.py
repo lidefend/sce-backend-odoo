@@ -38,6 +38,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection bypasses the governed x2many runtime")
     if "data-detail-collection-pagination" not in renderer or "one2manyPageSize = 20" not in renderer:
         failures.append("detail collection pagination is not bounded and explicit")
+    if "return one2manyRows.value.reduce" not in renderer:
+        failures.append("detail collection amount total is not authoritative across every visible row")
+    if "return paginatedOne2manyRows.value.reduce" in renderer:
+        failures.append("detail collection amount total is incorrectly narrowed to the current page")
     if "<ScInput" not in renderer or "<ScSelect" not in renderer:
         failures.append("editable detail rows bypass the governed input/select primitives")
     if "--sc-component-relation-dropdown-z-index" not in renderer or "--sc-component-relation-dropdown-shadow" not in renderer:

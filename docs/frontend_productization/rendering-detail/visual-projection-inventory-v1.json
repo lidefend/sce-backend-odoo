@@ -1741,7 +1741,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "6eb93ecc10efcc19f808601597eafd121e7c168a454739959f2ad32cb10c618a",
+      "digest": "505c3d0f9567c1f5932ee70d308e4f475227c0ad279628f901a51f008e13d3ad",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -2592,7 +2592,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "477a56a9fa0e12a1ffeb4549b02813327412e37d58d472c0b3e5a55f12841be2",
+  "currentInputDigest": "84858a46c175ad2db3752d979269d00092d0010ce6f00c85a7db0b3c5a8ea7cd",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

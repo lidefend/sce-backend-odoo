@@ -7548,3 +7548,23 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
 - Verification: collection semantics, 9 professional relation guard tests,
   strict typecheck, development build, refreshed rendering inventories, and
   the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Paginated detail amount authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `ea028038`.
+- Product defect and repair: the shared one2many detail table presented its
+  amount footer as a collection total while calculating only the current
+  20-row page. The professional detail collection now aggregates every
+  visible row, so pagination cannot silently understate the authoritative
+  business amount. No model, label, role, status, or contract special case was
+  added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed with three independent activity pages, two readable project
+  tender rows, retained unsaved project draft and dirty-close confirmation,
+  one editable payment attachment upload entry, zero browser errors, zero
+  mutations, zero execute requests, and no horizontal overflow at 390px.
+- Verification: 4 professional detail collection guard tests including a
+  page-scoped-total counterexample, strict Vue typecheck, development build,
+  refreshed repository-owned productization inventories with zero gaps, and
+  the complete `make verify.frontend.quick.gate` passed.
