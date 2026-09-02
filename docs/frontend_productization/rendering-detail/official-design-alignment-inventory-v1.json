@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "7ab60a2371c6626a1d534346ab7c96c4272452ab18c6b33e919e2936c1991292",
+  "inputDigest": "b367dba30e29be9a9db8782a72ab634fd0157dc9ffdfb0993e2de7475f29668a",
   "internalVendorSelectorGaps": [
     {
       "file": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.css",
@@ -731,7 +731,7 @@
     "productAppearanceVariantCount": 36,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
-    "visualLiteralGapCount": 2
+    "visualLiteralGapCount": 0
   },
   "themeTokens": {
     "inheritedOfficialTokenCount": 202,
@@ -1019,23 +1019,5 @@
     ],
     "unknownProjectTokenOverrides": []
   },
-  "visualLiteralGaps": [
-    {
-      "line": 341,
-      "literals": [
-        "22px"
-      ],
-      "selector": ".sc-icon-button[data-appearance='activity-tab-close']",
-      "status": "legacy_override_gap"
-    },
-    {
-      "line": 343,
-      "literals": [
-        "1px",
-        "2px"
-      ],
-      "selector": ".sc-icon-button[data-appearance='activity-tab-close']:focus-visible",
-      "status": "legacy_override_gap"
-    }
-  ]
+  "visualLiteralGaps": []
 }

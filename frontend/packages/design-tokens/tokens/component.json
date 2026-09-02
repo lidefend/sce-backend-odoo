@@ -39,6 +39,8 @@
     "account_font_size": "13px",
     "account_line_height": "20px",
     "account_compact_gap": "7px",
+    "activity_tab_close_size": "22px",
+    "activity_tab_close_focus_offset": "1px",
     "dashboard_icon_size": "32px",
     "dashboard_icon_padding": "7px",
     "dashboard_icon_radius": "8px",

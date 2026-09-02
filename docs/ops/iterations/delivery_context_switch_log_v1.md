@@ -3,6 +3,23 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — ACTIVITY-TAB-DESIGN-TOKEN-AUTHORITY-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `f8b6f38d`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 professional component
+  authority / TDesign activity-page close control / `frontend/packages/ui` and
+  the existing cross-platform design-token package.
+- Product result: the activity-tab close control keeps its verified interaction
+  size and keyboard focus presentation, but those values now come from the
+  existing component-token authority rather than local CSS literals. No new
+  component system, page-specific styling path, vendor switch, or business
+  inference was introduced.
+- Acceptance evidence: design-token generation, verification, and tests passed;
+  the official design-alignment inventory regenerated with
+  `visualLiteralGapCount=0` and no unknown token override or orphaned product
+  appearance.
+
 ## 2026-09-02 — ACTIVITY-DRAFT-INSTANCE-OWNERSHIP-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

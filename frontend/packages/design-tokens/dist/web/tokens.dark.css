@@ -110,6 +110,8 @@
   --sc-component-button-account-height: 32px;
   --sc-component-button-account-line-height: 20px;
   --sc-component-button-account-padding-x: 10px;
+  --sc-component-button-activity-tab-close-focus-offset: 1px;
+  --sc-component-button-activity-tab-close-size: 22px;
   --sc-component-button-dashboard-grid-gap: 10px;
   --sc-component-button-dashboard-grid-icon: 32px;
   --sc-component-button-dashboard-grid-tail: 18px;
