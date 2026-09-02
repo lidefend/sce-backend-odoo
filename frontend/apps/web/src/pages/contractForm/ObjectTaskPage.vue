@@ -47,6 +47,7 @@
           :node="node"
           :relation-adapter="relationAdapter"
           prefer-readonly-facts
+          density="compact-task"
           @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
         />
@@ -57,6 +58,7 @@
             :node="node"
             :relation-adapter="relationAdapter"
             prefer-readonly-facts
+            density="compact-task"
             @field-change="emit('field-change', $event)"
           @field-action="emit('field-action', $event)"
           />
@@ -382,19 +384,6 @@ const emit = defineEmits<{ 'field-change': [payload: FormSectionFieldChange]; 'f
   gap: 6px;
 }
 .object-task-page__current-task-copy :deep(.canonical-form-node + .canonical-form-node) { margin-top: 8px; }
-/* Current-task card density: keep the handling guide compact so the
- * user's input fields surface sooner. Tighter section titles, field
- * spacing and fact padding cut the read-only guidance block's footprint
- * without removing any content. */
-.object-task-page__current-task :deep(.canonical-form-node-title) {
-  margin: 0 0 2px;
-  font-size: 13px;
-  line-height: 18px;
-}
-.object-task-page__current-task-facts :deep(.canonical-form-node--field.readonly-fact),
-.object-task-page__current-task-facts :deep(.canonical-form-node--readonly-fact) {
-  padding: 4px 0;
-}
 .object-task-page__current-task-facts {
   color: var(--sc-app-text-secondary);
 }

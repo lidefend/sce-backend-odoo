@@ -6,6 +6,7 @@
     data-semantic-component="CanonicalFormNodeRenderer"
     :data-state="readonlyFactLayout ? 'readonly-fact' : 'structured'"
     :data-canonical-node-kind="node.kind"
+    :data-density="density"
     :data-native-class="nativeClass || undefined"
     :data-contract-span="node.span"
     :data-contract-style-token="node.styleToken || undefined"
@@ -49,6 +50,7 @@
       :class="fieldChildOrphanClass(child)"
       :relation-adapter="relationAdapter"
       :prefer-readonly-facts="preferReadonlyFacts"
+      :density="density"
       @field-change="emit('field-change', $event)"
       @field-action="emit('field-action', $event)"
       @action-ref="emit('action-ref', $event)"
@@ -75,6 +77,7 @@ const props = defineProps<{
   node: CanonicalFormNode;
   relationAdapter?: RelationFieldAdapter;
   preferReadonlyFacts?: boolean;
+  density?: 'default' | 'compact-task';
 }>();
 const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
@@ -247,6 +250,12 @@ function fieldChildOrphanClass(child: CanonicalFormNode): string {
   font-size: 16px;
   font-weight: 600;
 }
+.canonical-form-node[data-density='compact-task'] > .canonical-form-node-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.canonical-form-node[data-density='compact-task'].canonical-form-node--readonly-fact { padding: 4px 0; }
 .canonical-form-native-action:disabled { cursor: not-allowed; opacity: 0.55; }
 .canonical-form-native-widget { color: var(--sc-app-text-secondary); }
 .canonical-form-native-text { white-space: pre-wrap; }

@@ -1918,7 +1918,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "1181cb870e04b5980626eb7b49cc94f30d50964bd6fe410530b6d9e5dc34f7b2",
+      "digest": "b2ff52f510b9925ea48e071ff8c083115232d87688f08a7d8a90c65f98054959",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/CanonicalFormNodeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2070,10 +2070,8 @@
     },
     {
       "category": "form-fields",
-      "digest": "56f754d4ac584fb8588470d184ff651e401efd627770a0b493c080784eaaba12",
-      "nativeStyleSelectors": [
-        "/* Current-task card density: keep the handling guide compact so the * user's input fields surface sooner. Tighter section titles, field * spacing and fact padding cut the read-only guidance block's footprint * without removing any content. */ .object-task-page__current-task :deep(.canonical-form-node-title)"
-      ],
+      "digest": "8c2bb4a70367e9b808c0d62d4e84866972d76db9a67f500745ec88647935d6b2",
+      "nativeStyleSelectors": [],
       "path": "pages/contractForm/ObjectTaskPage.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": true,
@@ -2594,7 +2592,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "4e2ccc8c137e986e089a135adb9c31e1762f07f8820ca89dcfc4f8930fe65840",
+  "currentInputDigest": "1a82fd3397dc756936df50fe8817970ab6645ab3c67f26b0f9cc99a068cfd37f",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2791,18 +2789,6 @@
   "referenceInputDigest": "9065801740ce27219e7d0bb92998350fdd3b16e2948288c186d8798a353c74aa",
   "scAdapterWithNativeSelectorCandidates": [
     {
-      "category": "form-fields",
-      "digest": "56f754d4ac584fb8588470d184ff651e401efd627770a0b493c080784eaaba12",
-      "nativeStyleSelectors": [
-        "/* Current-task card density: keep the handling guide compact so the * user's input fields surface sooner. Tighter section titles, field * spacing and fact padding cut the read-only guidance block's footprint * without removing any content. */ .object-task-page__current-task :deep(.canonical-form-node-title)"
-      ],
-      "path": "pages/contractForm/ObjectTaskPage.vue",
-      "scComponents": [
-        "ScCard",
-        "ScDisclosure"
-      ]
-    },
-    {
       "category": "other",
       "digest": "38ea1dad0ede59cf3132c69b1df4d64e136c952720621eea412cbc60e37ffb75",
       "nativeStyleSelectors": [
@@ -2844,7 +2830,7 @@
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,
-    "scAdapterWithNativeSelectorCandidateCount": 3,
+    "scAdapterWithNativeSelectorCandidateCount": 2,
     "unassessedAdapterCount": 0
   }
 }

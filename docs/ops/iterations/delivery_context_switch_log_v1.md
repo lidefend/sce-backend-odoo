@@ -3,6 +3,22 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — CANONICAL-TASK-DENSITY-PUBLIC-CONTRACT-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `3bdfc4e6`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 Product Floorplan Composer /
+  current-task density / `CanonicalFormNodeRenderer` and `ObjectTaskPage`.
+- Product result: the current-task floorplan requests the renderer's public
+  `compact-task` density instead of reaching through component scope to restyle
+  canonical headings and readonly facts. Density propagates recursively while
+  summary, business context, risk, relation, and audit semantics remain intact.
+- Acceptance evidence: canonical presenter, page-pattern parity, rendering
+  inventory, and governed project/payment page checks pass. The visual inventory
+  removes the last formal-business-page native-selector candidate; remaining
+  candidates belong to P3 Scene administration surfaces and are kept separate
+  from this product-page batch.
+
 ## 2026-09-02 — X2MANY-NUMERIC-INPUT-PUBLIC-ALIGNMENT-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
