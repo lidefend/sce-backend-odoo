@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { canDeleteCollaborationAttachment, canDeleteCollaborationMessage, canDownloadCollaborationAttachment, canExecuteCollaborationCreateAction, canReplyCollaborationMessage, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, parseActivityEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
-import { nativeAttachmentUploadEnabled } from '../src/pages/contractForm/collaborationContract';
+import { nativeAttachmentUploadEnabled, nativeChatterActionsFromContract } from '../src/pages/contractForm/collaborationContract';
 
 assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: true, hasAttachmentAuthority: true, hasActivityAction: true, hasFollowerAuthority: true }), {
   comment: 'ready', attachment: 'ready', activity: 'ready', follower: 'ready',
@@ -29,8 +29,16 @@ assert.equal(canUpdateCollaborationActivity({ key: 'cancel', type: 'activity', a
 assert.equal(canExecuteCollaborationCreateAction(null, 'message'), false);
 assert.equal(canExecuteCollaborationCreateAction({ enabled: false, mode: 'message' } as never, 'message'), false);
 assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'note' } as never, 'message'), false);
-assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'message' } as never, 'message'), true);
-assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'activity' } as never, 'activity'), true);
+assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'message', payload: {} } as never, 'message'), false);
+assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'message', payload: { execute_intent: 'mail.message.create' } } as never, 'message'), false);
+assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'message', payload: { execute_intent: 'chatter.post' } } as never, 'message'), true);
+assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'note', payload: { execute_intent: 'chatter.post' } } as never, 'note'), true);
+assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'activity', payload: { execute_intent: 'chatter.post' } } as never, 'activity'), false);
+assert.equal(canExecuteCollaborationCreateAction({ enabled: true, mode: 'activity', payload: { execute_intent: 'chatter.activity.schedule' } } as never, 'activity'), true);
+assert.equal(nativeChatterActionsFromContract({ enabled: true, actions: [{ key: 'message', intent: 'message', payload: { mode: 'message' } }] }, { model: 'x.model', recordId: 1 })[0]?.enabled, false);
+assert.equal(nativeChatterActionsFromContract({ enabled: true, actions: [{ key: 'message', intent: 'message', payload: { mode: 'message', execute_intent: 'chatter.post' } }] }, { model: 'x.model', recordId: 1 })[0]?.enabled, true);
+assert.equal(nativeChatterActionsFromContract({ enabled: true, actions: [{ key: 'activity', intent: 'activity', payload: { mode: 'activity', execute_intent: 'chatter.post' } }] }, { model: 'x.model', recordId: 1 })[0]?.enabled, false);
+assert.equal(nativeChatterActionsFromContract({ enabled: true, actions: [{ key: 'activity', intent: 'activity', payload: { mode: 'activity', execute_intent: 'chatter.activity.schedule' } }] }, { model: 'x.model', recordId: 1 })[0]?.enabled, true);
 assert.equal(nativeAttachmentUploadEnabled({ enabled: true }), false);
 assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: false } }), false);
 assert.equal(nativeAttachmentUploadEnabled({ enabled: true, upload: { enabled: true } }), false);
@@ -46,4 +54,4 @@ assert.equal(canDeleteCollaborationMessage({ key: 'wrong-delete', type: 'message
 assert.equal(canDeleteCollaborationMessage({ key: 'delete', type: 'message', message: { id: 1, can_delete: true, delete_intent: 'chatter.message.delete' } } as never), true);
 assert.deepEqual(parseActivityEntry({ key: 'missing-status', type: 'activity', title: '计划', activity: { id: 1, deadline: '2020-01-01' } } as never).status, 'unknown');
 assert.deepEqual(parseActivityEntry({ key: 'overdue', type: 'activity', title: '计划', activity: { id: 1, status: 'overdue', status_label: '已逾期' } } as never).statusLabel, '已逾期');
-console.log('[professional_collaboration_model_test] PASS cases=37');
+console.log('[professional_collaboration_model_test] PASS cases=45');

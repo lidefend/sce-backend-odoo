@@ -227,10 +227,9 @@ export function useNativeChatterRuntime(params: {
   }
 
   async function openAction(action: NativeChatterAction) {
-    if (!action.enabled) return;
     error.value = '';
     const mode = action.mode || action.intent;
-    if (mode === 'message' || mode === 'note' || mode === 'activity') {
+    if (canExecuteCollaborationCreateAction(action, mode)) {
       activeMode.value = mode;
       activeLabel.value = action.label;
       if (mode === 'activity' && !activityDeadline.value) activityDeadline.value = nextBusinessDateInputValue();

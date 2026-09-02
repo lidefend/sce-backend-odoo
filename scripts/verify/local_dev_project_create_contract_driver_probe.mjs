@@ -175,6 +175,47 @@ async function verifyMessageReplyJourney(surface, model) {
   await replyEntry.waitFor({ state: 'visible', timeout: 30000 });
   return { messageId: expected.message_id, body: expected.body, replyBody: expected.reply_body, parentId: expected.message_id };
 }
+async function verifyCreateActionJourney(surface, model) {
+  const token = `${model.replaceAll('.', '-')}-${Date.now()}`;
+  const results = {};
+  for (const mode of ['message', 'note']) {
+    const body = `codex-create-action-journey-${mode}-${token}`;
+    const action = surface.locator('.chips').getByTitle(mode, { exact: true });
+    await action.waitFor({ state: 'visible', timeout: 15000 });
+    if (await action.isDisabled()) throw new Error(`${model} ${mode} create action is not backend-authorized`);
+    await action.click();
+    const composer = surface.locator('[data-professional-collaboration-component="composer"]');
+    await composer.waitFor({ state: 'visible', timeout: 15000 });
+    await composer.locator('textarea').fill(body);
+    await composer.locator('.native-chatter-compose-actions button').first().click();
+    const entry = surface.locator('.native-chatter-entry:visible').filter({ hasText: body });
+    await entry.waitFor({ state: 'visible', timeout: 30000 });
+    await entry.getByRole('button', { name: '删除', exact: true }).click();
+    const confirmation = page.locator('[data-professional-workflow-component="confirm-dialog"][data-state="open"]');
+    await confirmation.waitFor({ state: 'visible', timeout: 15000 });
+    await confirmation.getByRole('button', { name: '确认删除消息', exact: true }).click();
+    await entry.waitFor({ state: 'detached', timeout: 30000 });
+    results[mode] = { body, posted: true, deleted: true };
+  }
+  const summary = `codex-create-action-journey-activity-${token}`;
+  const activityAction = surface.locator('.chips').getByTitle('activity', { exact: true });
+  await activityAction.waitFor({ state: 'visible', timeout: 15000 });
+  if (await activityAction.isDisabled()) throw new Error(`${model} activity create action is not backend-authorized`);
+  await activityAction.click();
+  const activityComposer = surface.locator('[data-professional-collaboration-component="composer"]');
+  await activityComposer.waitFor({ state: 'visible', timeout: 15000 });
+  await activityComposer.locator('label').filter({ hasText: '摘要' }).locator('input').fill(summary);
+  await activityComposer.locator('.native-chatter-compose-actions button').first().click();
+  const activityEntry = surface.locator('.native-chatter-entry:visible').filter({ hasText: summary });
+  await activityEntry.waitFor({ state: 'visible', timeout: 30000 });
+  await activityEntry.getByRole('button', { name: '取消', exact: true }).click();
+  const confirmation = page.locator('[data-professional-workflow-component="confirm-dialog"][data-state="open"]');
+  await confirmation.waitFor({ state: 'visible', timeout: 15000 });
+  await confirmation.getByRole('button', { name: '确认取消计划', exact: true }).click();
+  await activityEntry.waitFor({ state: 'detached', timeout: 30000 });
+  results.activity = { summary, scheduled: true, cancelled: true };
+  return results;
+}
 async function verifyActivityCancelJourney(surface, model) {
   const expected = (target.activity_cancel_journeys || []).find((row) => row.model === model);
   if (!expected?.summary || !expected?.activity_id) throw new Error(`missing activity cancel fixture authority for ${model}`);
@@ -240,12 +281,13 @@ page.on('request', (request) => {
     parentId: payload?.params?.parent_id,
     body: payload?.params?.body,
   });
-  if (intent === 'chatter.activity.update') activityMutations.push({
+  if (intent === 'chatter.activity.update' || intent === 'chatter.activity.schedule') activityMutations.push({
     intent,
     model: payload?.params?.model,
     recordId: payload?.params?.res_id,
     activityId: payload?.params?.activity_id,
     action: payload?.params?.action,
+    summary: payload?.params?.summary,
   });
   if (['create', 'write', 'unlink'].includes(op)) mutations.push({ intent, op });
 });
@@ -405,6 +447,7 @@ try {
   const workspaceAttachmentUploadJourney = await verifyAttachmentUploadJourney(workspaceSurface, 'project.project');
   const workspaceAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(workspaceSurface, 'project.project');
   const workspaceMessageReplyJourney = await verifyMessageReplyJourney(workspaceSurface, 'project.project');
+  const workspaceCreateActionJourney = await verifyCreateActionJourney(workspaceSurface, 'project.project');
   const workspaceMessageDeleteJourney = await verifyMessageDeleteJourney(workspaceSurface, 'project.project');
   const workspaceActivityCancelJourney = await verifyActivityCancelJourney(workspaceSurface, 'project.project');
   const workspaceResult = {
@@ -429,6 +472,7 @@ try {
     attachmentUploadJourney: workspaceAttachmentUploadJourney,
     attachmentDeleteJourney: workspaceAttachmentDeleteJourney,
     messageReplyJourney: workspaceMessageReplyJourney,
+    createActionJourney: workspaceCreateActionJourney,
     messageDeleteJourney: workspaceMessageDeleteJourney,
   };
   const workspacePresentation = contractPresentations
@@ -492,6 +536,7 @@ try {
   const paymentAttachmentUploadJourney = await verifyAttachmentUploadJourney(paymentSurface, 'payment.request');
   const paymentAttachmentDeleteJourney = await verifyAttachmentDeleteJourney(paymentSurface, 'payment.request');
   const paymentMessageReplyJourney = await verifyMessageReplyJourney(paymentSurface, 'payment.request');
+  const paymentCreateActionJourney = await verifyCreateActionJourney(paymentSurface, 'payment.request');
   const paymentMessageDeleteJourney = await verifyMessageDeleteJourney(paymentSurface, 'payment.request');
   const paymentActivityCancelJourney = await verifyActivityCancelJourney(paymentSurface, 'payment.request');
   const paymentDrivers = await paymentSurface.locator('[data-contract-form-driver]').count();
@@ -523,6 +568,7 @@ try {
     attachmentUploadJourney: paymentAttachmentUploadJourney,
     attachmentDeleteJourney: paymentAttachmentDeleteJourney,
     messageReplyJourney: paymentMessageReplyJourney,
+    createActionJourney: paymentCreateActionJourney,
     messageDeleteJourney: paymentMessageDeleteJourney,
   };
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
@@ -696,14 +742,17 @@ try {
     || attachmentMutations.filter((row) => row.intent === 'chatter.attachment.delete').length !== 4) {
     throw new Error(`attachment lifecycle journey did not preserve dual-model mutation symmetry: ${JSON.stringify(attachmentMutations)}`);
   }
-  if (messageMutations.filter((row) => row.intent === 'chatter.message.delete').length !== 2) {
+  if (messageMutations.filter((row) => row.intent === 'chatter.message.delete').length !== 6) {
     throw new Error(`message delete journey did not preserve dual-model mutation symmetry: ${JSON.stringify(messageMutations)}`);
   }
   const replyMutations = messageMutations.filter((row) => row.intent === 'chatter.post');
-  if (replyMutations.length !== 2 || replyMutations.some((row) => !Number(row.parentId))) {
+  if (replyMutations.length !== 6
+    || replyMutations.filter((row) => Number(row.parentId)).length !== 2
+    || replyMutations.filter((row) => !Number(row.parentId)).length !== 4) {
     throw new Error(`message reply journey did not preserve dual-model parent authority: ${JSON.stringify(messageMutations)}`);
   }
-  if (activityMutations.filter((row) => row.intent === 'chatter.activity.update' && row.action === 'cancel').length !== 2) {
+  if (activityMutations.filter((row) => row.intent === 'chatter.activity.schedule').length !== 2
+    || activityMutations.filter((row) => row.intent === 'chatter.activity.update' && row.action === 'cancel').length !== 4) {
     throw new Error(`activity cancel journey did not preserve dual-model mutation symmetry: ${JSON.stringify(activityMutations)}`);
   }
   if (browserErrors.length) throw new Error(`browser errors observed: ${JSON.stringify(browserErrors)}`);

@@ -13,6 +13,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts")
     attachment_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts")
     chatter_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts")
+    collaboration_contract = read_text("frontend/apps/web/src/pages/contractForm/collaborationContract.ts")
+    backend_chatter_sources = [
+        read_text("addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"),
+        read_text("addons/smart_core/handlers/load_contract.py"),
+        read_text("addons/smart_core/handlers/ui_contract_v2_adapters.py"),
+    ]
     contract_page = read_text("frontend/apps/web/src/pages/ContractFormPage.vue")
     driver_host = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
@@ -92,8 +98,17 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("message delete handler must independently reject missing or denied authority")
     if "confirmAndDeleteNativeMessage" not in contract_page or "deleteNativeMessage(entry)" not in contract_page:
         failures.append("message deletion must settle through the professional confirmation component")
-    if "canExecuteCollaborationCreateAction(action, 'activity')" not in chatter_runtime or "if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;" not in chatter_runtime:
-        failures.append("collaboration create handlers must independently enforce the active contract action")
+    if "canExecuteCollaborationCreateAction(action, 'activity')" not in chatter_runtime or "if (!exactReplyAuthorized && !canExecuteCollaborationCreateAction(action, activeMode.value)) return;" not in chatter_runtime or "canExecuteCollaborationCreateAction(action, mode)" not in chatter_runtime:
+        failures.append("collaboration create handlers must independently enforce the active contract action when opening and executing")
+    if "action.payload?.execute_intent === expectedIntent" not in model or "'chatter.activity.schedule'" not in model or "'chatter.post'" not in model:
+        failures.append("collaboration create authority must require the exact backend execute intent")
+    if "payload.execute_intent === expectedExecuteIntent" not in collaboration_contract:
+        failures.append("collaboration create presentation must fail closed without the exact backend execute intent")
+    for source in backend_chatter_sources:
+        if source.count("'execute_intent': 'chatter.post'") + source.count('"execute_intent": "chatter.post"') < 2:
+            failures.append("backend collaboration projections must supply exact chatter.post authority for message and note")
+        if "chatter.activity.schedule" not in source:
+            failures.append("backend collaboration projections must supply exact activity schedule authority")
     if "nativeChatterActions.value.find((item) => item.mode === 'activity')" in read_text("frontend/apps/web/src/pages/contractForm/useRecordCollaborationPresentation.ts"):
         failures.append("activity composer authority must not fall back to an unrelated contract action")
     if "entry.activity?.can_complete === true" not in model or "entry.activity?.can_cancel === true" not in model:

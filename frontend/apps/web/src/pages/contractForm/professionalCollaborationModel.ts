@@ -65,10 +65,16 @@ export function canExecuteCollaborationCreateAction(
   action: NativeChatterAction | null | undefined,
   mode: string,
 ): boolean {
+  const expectedIntent = mode === 'activity'
+    ? 'chatter.activity.schedule'
+    : mode === 'message' || mode === 'note'
+      ? 'chatter.post'
+      : '';
   return Boolean(
     action?.enabled === true
-    && (mode === 'message' || mode === 'note' || mode === 'activity')
-    && action.mode === mode,
+    && expectedIntent
+    && action.mode === mode
+    && action.payload?.execute_intent === expectedIntent
   );
 }
 

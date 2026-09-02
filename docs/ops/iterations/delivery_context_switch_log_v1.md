@@ -8191,3 +8191,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   three-page activity-tab, unsaved-draft, follower restoration, and desktop /
   390px checks. It reported zero intent failures, browser errors, unrelated
   record mutations, or execute requests.
+
+## 2026-09-02 — Collaboration create-action intent closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `6782b88c`.
+- Product defect and repair: new-message and note descriptors had no executable
+  intent, while the frontend could open all three collaboration composers from
+  a locally recognized mode. The three backend projection paths now carry
+  exact `chatter.post` or `chatter.activity.schedule` authority. Presentation,
+  composer opening, and mutation handlers independently fail closed unless the
+  mode and exact backend execute intent agree.
+- Real-page evidence: governed `project.project` and `payment.request` journeys
+  each created and removed one ordinary message, one note, and one scheduled
+  activity through the professional component. The same run retained exact
+  parent authority for two replies, completed the existing attachment,
+  follower, activity-page, unsaved-draft, and desktop / 390px checks, and
+  reported zero intent failures, browser errors, unrelated record mutations,
+  or generic execute requests.
+- Runtime note: the first payment-page attempt exposed the already-known stale
+  `funding_baseline_id` view descriptor. A scoped `smart_construction_core`
+  module upgrade and normal local-dev restart refreshed the view without a demo
+  reset or rebuild; the identical dual-model journey then passed.

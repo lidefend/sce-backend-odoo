@@ -74,13 +74,21 @@ export function nativeChatterActionsFromContract(
         ? row.payload as Record<string, unknown>
         : {};
       const mode = String(payload.mode || intent || key).trim().toLowerCase();
+      const expectedExecuteIntent = mode === 'activity'
+        ? 'chatter.activity.schedule'
+        : mode === 'message' || mode === 'note'
+          ? 'chatter.post'
+          : '';
       return {
         key,
         label: nativeChatterActionLabel(mode, row),
         intent,
         mode,
         payload,
-        enabled: Boolean(context.recordId) && Boolean(context.model),
+        enabled: Boolean(context.recordId)
+          && Boolean(context.model)
+          && Boolean(expectedExecuteIntent)
+          && payload.execute_intent === expectedExecuteIntent,
         hint: intent,
       };
     })
