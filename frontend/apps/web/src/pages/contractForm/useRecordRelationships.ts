@@ -299,7 +299,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
       fieldName: name,
       keyword,
       relation,
-      canRead: entry?.canRead !== false,
+      canRead: entry?.canRead === true,
       hasDynamicFallback: Boolean(
         dynamicDomainDependencyFields(descriptor).length || runtimeRelationDomain(name).length,
       ),
@@ -334,7 +334,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     const domain = mergedRelationDomain(name, descriptor);
     return fetchRelationOptionsFromRuntime({
       relation,
-      canRead: entry?.canRead !== false,
+      canRead: entry?.canRead === true,
       keyword,
       limit,
       fetchOptions: async (search, limitValue) => {

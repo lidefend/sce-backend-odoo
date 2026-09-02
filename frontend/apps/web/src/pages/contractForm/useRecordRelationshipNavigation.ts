@@ -125,7 +125,7 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
   function canOpenRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
     const relation = relationModel(fieldName);
     const entry = relationEntry(descriptor);
-    return Boolean(relation && currentRelationRecordId(fieldName) > 0 && entry?.canRead !== false && entry?.canOpen !== false);
+    return Boolean(relation && currentRelationRecordId(fieldName) > 0 && entry?.canRead === true && entry?.canOpen === true);
   }
 
   async function openRelationRecordForm(fieldName: string, descriptor?: FieldDescriptor) {
@@ -133,7 +133,7 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     const recordId = currentRelationRecordId(fieldName);
     const entry = relationEntry(descriptor);
     if (!relation || recordId <= 0) return;
-    if (entry?.canRead === false) {
+    if (entry?.canRead !== true || entry?.canOpen !== true) {
       validationErrors.value = [relationUiLabel(descriptor, 'missing_read_entry')];
       return;
     }

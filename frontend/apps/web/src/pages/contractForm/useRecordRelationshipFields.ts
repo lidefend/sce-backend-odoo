@@ -40,6 +40,8 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
       const type = fieldType(descriptor);
       if (!['many2one', 'many2many'].includes(type)) return;
       const relation = relationModel(name);
+      const entry = relationEntry(descriptor);
+      if (entry?.canRead !== true) return;
       if (!relation || deniedRelationModels.has(relation)) return;
       const ids = relationIds(name);
       if (!ids.length) return;
@@ -143,7 +145,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
     const entry = relationEntry(formFields()[name]);
-    if (entry?.canRead === false) {
+    if (entry?.canRead !== true) {
       deniedRelationModels.add(relation);
       return;
     }

@@ -7689,3 +7689,24 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   strict Vue typecheck, development build, refreshed productization
   inventories with zero gaps, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Relation read/open authority default-deny closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `7fc5e6b8`.
+- Product defect and repair: the backend already injects explicit
+  `relation_entry.can_read` and `relation_entry.can_open` values for every
+  relational field, but the shared frontend decoder, candidate queries,
+  selected-value hydration, one2many hydration, and record navigation treated
+  missing authority as allowed. All consumers now require an explicit `true`
+  grant, and record-open handlers independently fail closed. No model, role,
+  label, state, or navigation-target inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed after rebuilding, preserving three independent activity
+  pages, unsaved draft and dirty-close behavior, two readable project tender
+  rows, one editable payment attachment entry, zero browser errors, zero
+  mutations, zero execute requests, and no 390px horizontal overflow.
+- Verification: the relation authority guard now rejects the previous
+  fail-open expressions; 30 relation guard tests, strict Vue typecheck,
+  development build, refreshed productization inventories with zero gaps, and
+  the complete `make verify.frontend.quick.gate` passed.

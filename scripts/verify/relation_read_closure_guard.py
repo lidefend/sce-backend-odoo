@@ -11,6 +11,7 @@ BACKEND_PATH = ROOT / "addons/smart_core/app_config_engine/services/assemblers/p
 FRONTEND_PATHS = [
     ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
     ROOT / "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts",
     ROOT / "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
@@ -57,8 +58,9 @@ def main() -> int:
             errors.append(f"backend missing marker: {marker}")
 
     frontend_required = [
-        "canRead: row.can_read !== false,",
-        "if (entry && entry.canRead === false)",
+        "canRead: row.can_read === true,",
+        "canOpen: row.can_open === true,",
+        "if (entry?.canRead !== true)",
         "if (!params.canRead) {",
         "if (!relation || !params.canRead || deniedRelationModels.has(relation)) return [];",
         "const contractAccessPolicy = computed<ContractAccessPolicy>(() => {",
@@ -71,14 +73,23 @@ def main() -> int:
 
     # Both candidate-query callsites must pass the backend projection into the
     # shared runtime, whose query and fetch paths each fail closed before I/O.
-    if frontend.count("canRead: entry?.canRead !== false,") < 2:
+    if frontend.count("canRead: entry?.canRead === true,") < 2:
         errors.append("frontend missing canRead propagation in one of relation query paths")
 
-    # Frontend must not re-introduce hardcoded model-level ACL inference.
     frontend_forbidden = [
-        "function canReadRelationModel(",
+        "canRead: row.can_read !== false,",
+        "canOpen: row.can_open !== false,",
+        "canRead: entry?.canRead !== false,",
     ]
     for marker in frontend_forbidden:
+        if marker in frontend:
+            errors.append(f"frontend contains fail-open relation authority: {marker}")
+
+    # Frontend must not re-introduce hardcoded model-level ACL inference.
+    frontend_acl_forbidden = [
+        "function canReadRelationModel(",
+    ]
+    for marker in frontend_acl_forbidden:
         if marker in frontend:
             errors.append(f"frontend contains forbidden hardcoded ACL inference: {marker}")
 
