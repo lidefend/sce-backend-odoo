@@ -37,6 +37,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"professional detail collection missing marker {marker}")
     if "usesProfessionalOne2many(field) && relationAdapter" not in section:
         failures.append("FormSection does not route one2many through the detail collection adapter")
+    if '!detailCollectionOwnsVisibleTitle(field)' not in section:
+        failures.append("FormSection does not defer editable detail title ownership to the detail collection")
+    if "if (field.readonly || !props.relationAdapter) return false;" not in section:
+        failures.append("readonly detail collections do not retain their external field label")
+    if "return usesProfessionalOne2many(field) || usesPaymentSettlementDetailCollection(field);" not in section:
+        failures.append("detail collection title ownership is not shared across formal detail renderers")
     if "<X2ManyRelationRenderer" not in section:
         failures.append("detail collection bypasses the governed x2many runtime")
     if "data-detail-collection-pagination" not in renderer or "one2manyPageSize = 20" not in renderer:
