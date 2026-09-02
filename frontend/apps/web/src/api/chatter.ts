@@ -72,6 +72,21 @@ export interface CollaborationUserOption {
   partner_name?: string;
 }
 
+export interface CollaborationFollower {
+  partner_id: number;
+  name: string;
+  email?: string;
+  is_current_user?: boolean;
+}
+
+export interface CollaborationFollowerState {
+  items: CollaborationFollower[];
+  count: number;
+  is_following: boolean;
+  can_follow: boolean;
+  can_unfollow: boolean;
+}
+
 export async function postChatterMessage(params: {
   model: string;
   res_id: number;
@@ -166,5 +181,23 @@ export async function searchCollaborationUsers(params: {
       query: params.query || '',
       limit: params.limit ?? 20,
     },
+  });
+}
+
+export async function fetchCollaborationFollowers(params: { model: string; res_id: number }) {
+  return intentRequest<CollaborationFollowerState>({
+    intent: 'chatter.followers.list',
+    params,
+  });
+}
+
+export async function updateCollaborationFollower(params: {
+  model: string;
+  res_id: number;
+  action: 'follow' | 'unfollow';
+}) {
+  return intentRequest<{ result: { action: string; partner_id: number; is_following: boolean } }>({
+    intent: 'chatter.followers.update',
+    params,
   });
 }

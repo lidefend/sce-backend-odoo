@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "c156f0d13b6cfea92c01f750a20e0f62e4380ca6262b9d92fb7a825c6a0dd9cf",
-  "generatorDigest": "5882c8710b858e2e468011187a4c3fb32a01f3197d6340649a7294c81d805103",
-  "ownershipDigest": "e7281319693c0ffabac44c3447e21e391b4a001c95b287557388515e9511cabb",
-  "inputDigest": "53413dc0191dbdcd6a7993ff25b069943b407be5b72ada78bde687e8ca49296f",
+  "sourceIdentity": "6521b5a1d9daa1b3e871e44a187776bdc85dbeb8d80ecc623a39652c3077d4cc",
+  "generatorDigest": "b6d9ae350740a6721fe0aec7b6f89eacba12c6489334dd084700d23363637a22",
+  "ownershipDigest": "52e0d9764b40ce8c499255abd36bbee03a816ce9d02e7f9ffdda9bf0ba230406",
+  "inputDigest": "f9567f4240f8746272ebf866d767ee8fbe9069dcaef8a73dba93ec3abf3cb0a3",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,12 +20,12 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 156,
+    "surfaceCount": 157,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 98,
+    "governed_composite": 99,
     "governed_primitive": 40,
     "p3_out_of_scope": 18
   },
@@ -1704,6 +1704,21 @@
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-inline-full-state-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",

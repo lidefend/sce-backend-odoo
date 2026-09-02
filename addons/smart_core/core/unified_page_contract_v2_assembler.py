@@ -1328,7 +1328,7 @@ def _inject_collaboration_runtime_contract(contract: dict[str, Any], collaborati
         runtime = {}
         contract["runtimeContract"] = runtime
     normalized: dict[str, Any] = {}
-    for key in ("chatter", "attachments", "timeline", "sourceAuthority"):
+    for key in ("chatter", "attachments", "followers", "timeline", "sourceAuthority"):
         value = collaboration.get(key)
         if isinstance(value, dict):
             normalized[key] = deepcopy(value)

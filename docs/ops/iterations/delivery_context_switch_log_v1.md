@@ -8010,3 +8010,28 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   counterexample tests, eleven backend timeline boundary tests, strict Vue
   typecheck, development build, refreshed zero-gap productization inventories,
   and the complete `make verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration follower authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `c416bb32`.
+- Product defect and repair: the professional collaboration panel had no
+  follower workflow, and the normalized-contract assembler silently discarded
+  an already generated `followers` carrier. The backend now owns follower list,
+  current-user follow/unfollow authority, ACL, record-rule, and business-scope
+  checks; the normalized contract preserves that carrier; and a dedicated
+  professional follower manager renders only the exact backend decisions.
+  Missing, disabled, stale, unauthorized, and cross-record requests fail closed
+  without frontend model, role, label, or status inference.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey exercised authentic follower mutations on both `project.project` and
+  `payment.request`: each record changed from not-following to following and
+  returned to its original not-following state. The same journey retained three
+  independent activity pages, the unsaved project draft and dirty-close warning,
+  zero unrelated mutations or execute requests, zero browser errors, and no
+  desktop or 390px horizontal overflow.
+- Verification: five backend follower boundary tests, twenty-five collaboration
+  model cases, eighteen structural and counterexample tests, strict Vue
+  typecheck, development build, refreshed zero-gap productization inventories,
+  and the complete `make verify.frontend.quick.gate` passed. These results prove
+  this generic follower workflow; they do not claim broader page completion.

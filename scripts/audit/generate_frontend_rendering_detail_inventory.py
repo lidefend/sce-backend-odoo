@@ -137,6 +137,7 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue": {"scbutton": {"import": "ScButton", "minimum": 2}},
         "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.vue": {"form": {"attrs": {"data-semantic-component": "ContractPromptActionForm"}}},
         "frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalAttachmentManager"}}},
+        "frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalFollowerManager", ":data-state": "loading ? 'loading' : error ? 'error' : 'ready'"}}},
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue": {"section": {"attrs": {"data-semantic-component": "ProfessionalCollaborationComposer"}}},
     },
     "p0-shared-utility-scene-completion-v1": {

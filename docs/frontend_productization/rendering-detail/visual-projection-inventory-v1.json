@@ -1845,7 +1845,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "7b148b462e09f3cb4a498050abd0e8907958b5f214c913f42d6087b5c3e7e8ee",
+      "digest": "cefb6a046fb41611e878145a8da37dfdd24eb3947b4c98815db6d20ff89f77fe",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2057,7 +2057,7 @@
     },
     {
       "category": "collaboration",
-      "digest": "cfbf94e0132699283d8fc8946cbc513aabd370a7a1d313afa73604a7b91a7f8e",
+      "digest": "a7c4668780b1539d3216755612c150f97febf57d6d3237b90eda1242d605e9a2",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/NativeCollaborationPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2139,6 +2139,20 @@
       "digest": "15bfc1b96d358993caf56c00a7793e0324581723325b871032f9ad11f1d5bace",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ProfessionalCollaborationTimeline.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScInlineState",
+        "ScList"
+      ]
+    },
+    {
+      "category": "form-fields",
+      "digest": "7c79f7479daed82bf6f8394381f7ac9d23cd7ce780630aae5852f93988b2d8d0",
+      "nativeStyleSelectors": [],
+      "path": "pages/contractForm/ProfessionalFollowerManager.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
       "referenceScComponents": [],
@@ -2592,7 +2606,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "fdf8714b9127d1d4fcc42a63827a83bf73fd1f3d026b564d8eccea176f22704d",
+  "currentInputDigest": "ee6dbc092b8e533688826f188fbc5c29df1bae21ddc3a624faeddf59262fe3ba",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -2824,9 +2838,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 181,
+    "changedSourceCount": 182,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 208,
+    "currentSourceCount": 209,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,

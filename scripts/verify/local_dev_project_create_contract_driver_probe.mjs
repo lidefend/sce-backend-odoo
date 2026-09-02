@@ -16,6 +16,7 @@ const executeRequests = [];
 const contractActions = [];
 const contractPresentations = [];
 const browserErrors = [];
+const followerUpdates = [];
 async function captureHeaderPresentation(surface) {
   const header = surface.locator('.contract-form-command-bar');
   await header.waitFor({ state: 'visible', timeout: 45000 });
@@ -33,6 +34,27 @@ async function captureHeaderPresentation(surface) {
     horizontalOverflow: await header.evaluate((node) => node.scrollWidth > node.clientWidth + 1),
   };
 }
+async function verifyFollowerMutation(surface, model) {
+  const expected = (target.follower_journeys || []).find((row) => row.model === model);
+  if (!expected) throw new Error(`missing follower journey authority for ${model}`);
+  const manager = surface.locator('[data-professional-collaboration-component="followers"]');
+  const initialFollowing = expected.before?.is_following === true;
+  const firstLabel = initialFollowing ? '取消关注' : '关注';
+  const restoreLabel = initialFollowing ? '关注' : '取消关注';
+  await manager.getByRole('button', { name: firstLabel, exact: true }).click();
+  await manager.getByRole('button', { name: restoreLabel, exact: true })
+    .waitFor({ state: 'visible', timeout: 15000 });
+  const changedText = String(await manager.textContent() || '').replace(/\s+/g, ' ').trim();
+  await manager.getByRole('button', { name: restoreLabel, exact: true }).click();
+  await manager.getByRole('button', { name: firstLabel, exact: true })
+    .waitFor({ state: 'visible', timeout: 15000 });
+  return {
+    initialFollowing,
+    firstAction: initialFollowing ? 'unfollow' : 'follow',
+    changedText,
+    restoredText: String(await manager.textContent() || '').replace(/\s+/g, ' ').trim(),
+  };
+}
 page.on('console', (message) => {
   if (message.type() === 'error') browserErrors.push(`console:${message.text()}`);
 });
@@ -47,6 +69,11 @@ page.on('request', (request) => {
     model: payload?.params?.model,
     recordId: payload?.params?.res_id,
     button: payload?.params?.button,
+  });
+  if (intent === 'chatter.followers.update') followerUpdates.push({
+    model: payload?.params?.model,
+    recordId: payload?.params?.res_id,
+    action: payload?.params?.action,
   });
   if (['create', 'write', 'unlink'].includes(op)) mutations.push({ intent, op });
 });
@@ -195,6 +222,9 @@ try {
     document.querySelectorAll('[data-readonly-relation-loading]').length === 0
     && document.querySelectorAll('.o2m-readonly-row, .relation-readonly-empty').length > 0
   ), undefined, { timeout: 45000 });
+  await workspaceSurface.locator('[data-professional-collaboration-component="followers"][data-state="ready"]')
+    .waitFor({ state: 'visible', timeout: 45000 });
+  const workspaceFollowerJourney = await verifyFollowerMutation(workspaceSurface, 'project.project');
   const workspaceResult = {
     url: page.url(),
     drivers: await workspaceSurface.locator('[data-contract-form-driver]').count(),
@@ -208,6 +238,12 @@ try {
     ))),
     readonlyRelationEmptyLabels: await workspaceSurface.locator('.relation-readonly-empty').allTextContents(),
     header: await captureHeaderPresentation(workspaceSurface),
+    followers: await workspaceSurface.locator('[data-professional-collaboration-component="followers"]').evaluateAll((nodes) => nodes.map((node) => ({
+      state: node.getAttribute('data-state'),
+      text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+    }))),
+    followerReadiness: await workspaceSurface.locator('[data-professional-collaboration-component="panel"]').getAttribute('data-follower-readiness'),
+    followerJourney: workspaceFollowerJourney,
   };
   const workspacePresentation = contractPresentations
     .filter((row) => row.actionId === String(target.workspace_action_id))
@@ -227,6 +263,10 @@ try {
   if (workspaceResult.header.commandBars !== 1 || workspaceResult.header.scButtons < 1
     || workspaceResult.header.primaryActions > 1 || workspaceResult.header.rawButtonsOutsideWorkflow !== 0) {
     throw new Error(`project workspace header primitive boundary failed: ${JSON.stringify(workspaceResult.header)}`);
+  }
+  if (workspaceResult.followers.length !== 1 || workspaceResult.followerReadiness !== 'ready'
+    || workspaceResult.followers[0].state !== 'ready') {
+    throw new Error(`project follower component is not backend-authoritative: ${JSON.stringify(workspaceResult)}`);
   }
   if (workspaceResult.readonlyRelationFacts.some((value) => /^\s*\d+\s*,\s+\D/.test(value) || /^#\d+$/.test(value))) {
     throw new Error(`project workspace leaked raw relation ids: ${JSON.stringify(workspaceResult.readonlyRelationFacts)}`);
@@ -260,6 +300,9 @@ try {
     document.querySelectorAll('[data-contract-form-driver]').length
     + document.querySelectorAll('[data-contract-form-driver-error]').length === 1
   ), undefined, { timeout: 45000 });
+  await paymentSurface.locator('[data-professional-collaboration-component="followers"][data-state="ready"]')
+    .waitFor({ state: 'visible', timeout: 45000 });
+  const paymentFollowerJourney = await verifyFollowerMutation(paymentSurface, 'payment.request');
   const paymentDrivers = await paymentSurface.locator('[data-contract-form-driver]').count();
   const paymentErrors = await paymentSurface.locator('[data-contract-form-driver-error]').allTextContents();
   const paymentResult = {
@@ -280,6 +323,12 @@ try {
       removes: [...node.querySelectorAll('button')].filter((button) => (button.textContent || '').trim() === '移除').length,
     }))),
     header: await captureHeaderPresentation(paymentSurface),
+    followers: await paymentSurface.locator('[data-professional-collaboration-component="followers"]').evaluateAll((nodes) => nodes.map((node) => ({
+      state: node.getAttribute('data-state'),
+      text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),
+    }))),
+    followerReadiness: await paymentSurface.locator('[data-professional-collaboration-component="panel"]').getAttribute('data-follower-readiness'),
+    followerJourney: paymentFollowerJourney,
   };
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
     throw new Error(`payment record canonical driver did not load: ${JSON.stringify(paymentResult)}`);
@@ -287,6 +336,10 @@ try {
   if (paymentResult.header.commandBars !== 1 || paymentResult.header.scButtons < 1
     || paymentResult.header.primaryActions !== 1 || paymentResult.header.rawButtonsOutsideWorkflow !== 0) {
     throw new Error(`payment task header primitive boundary failed: ${JSON.stringify(paymentResult.header)}`);
+  }
+  if (paymentResult.followers.length !== 1 || paymentResult.followerReadiness !== 'ready'
+    || paymentResult.followers[0].state !== 'ready') {
+    throw new Error(`payment follower component is not backend-authoritative: ${JSON.stringify(paymentResult)}`);
   }
   if (paymentResult.visibleFieldNames.length === 0
     || new Set(paymentResult.visibleFieldNames).size !== paymentResult.visibleFieldNames.length) {
@@ -433,6 +486,7 @@ try {
     contractPresentations,
     mutations,
     executeRequests,
+    followerUpdates,
     browserErrors,
   }));
   if (mutations.length) throw new Error('read-only project create driver probe observed mutation');

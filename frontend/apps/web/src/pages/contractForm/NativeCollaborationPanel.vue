@@ -59,6 +59,19 @@
       @cancel="$emit('close-composer')"
     />
     <ScInlineState v-if="chatterError" class="validation-error native-chatter-message" state="error" :label="chatterError" />
+    <ProfessionalFollowerManager
+      :enabled="followerEnabled"
+      :label="followerLabel"
+      :items="followers"
+      :count="followerCount"
+      :loading="followersLoading"
+      :error="followerError"
+      :can-follow="canFollow"
+      :can-unfollow="canUnfollow"
+      :follow-label="followLabel"
+      :unfollow-label="unfollowLabel"
+      @update="$emit('update-follower', $event)"
+    />
     <ProfessionalAttachmentManager
       :editable="!readonly"
       :enabled="attachmentUploadEnabled"
@@ -93,7 +106,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
+import type { ChatterTimelineEntry, CollaborationFollower, CollaborationUserOption } from '../../api/chatter';
 import type { NativeChatterAction } from './types';
 import ProfessionalAuditTimeline from './ProfessionalAuditTimeline.vue';
 import { resolveProfessionalAuditEvents } from './professionalAuditModel';
@@ -101,6 +114,7 @@ import ProfessionalCollaborationTimeline from './ProfessionalCollaborationTimeli
 import ProfessionalCollaborationComposer from './ProfessionalCollaborationComposer.vue';
 import { collaborationCapabilityReadiness, visibleCollaborationTimeline } from './professionalCollaborationModel';
 import ProfessionalAttachmentManager, { type PendingProfessionalAttachment } from './ProfessionalAttachmentManager.vue';
+import ProfessionalFollowerManager from './ProfessionalFollowerManager.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInlineState from '../../components/design-system/ScInlineState.vue';
 
@@ -144,6 +158,16 @@ export type NativeCollaborationPanelProps = {
   attachmentViewLabel: string;
   attachmentError: string;
   pendingAttachments: PendingProfessionalAttachment[];
+  followerEnabled: boolean;
+  followerLabel: string;
+  followers: CollaborationFollower[];
+  followerCount: number;
+  followersLoading: boolean;
+  followerError: string;
+  canFollow: boolean;
+  canUnfollow: boolean;
+  followLabel: string;
+  unfollowLabel: string;
   timeline: ChatterTimelineEntry[];
   timelineHasMore: boolean;
   timelineLoading: boolean;
@@ -169,6 +193,7 @@ export type NativeCollaborationPanelListeners = {
   'open-attachment': (attachment: NonNullable<ChatterTimelineEntry['attachment']>) => void;
   'load-more-timeline': () => void;
   reply: (entry: ChatterTimelineEntry) => void;
+  'update-follower': (action: 'follow' | 'unfollow') => void;
 };
 
 const props = defineProps<NativeCollaborationPanelProps>();
@@ -178,6 +203,7 @@ const capabilityReadiness = computed(() => collaborationCapabilityReadiness({
   hasCommentAction: props.actions.some((action) => action.mode !== 'activity' && action.enabled),
   hasAttachmentAuthority: props.hasAttachments,
   hasActivityAction: props.actions.some((action) => action.mode === 'activity' && action.enabled),
+  hasFollowerAuthority: props.followerEnabled,
 }));
 
 
@@ -200,6 +226,7 @@ const emit = defineEmits<{
   'open-attachment': [attachment: NonNullable<ChatterTimelineEntry['attachment']>];
   'load-more-timeline': [];
   reply: [entry: ChatterTimelineEntry];
+  'update-follower': [action: 'follow' | 'unfollow'];
 }>();
 
 function forwardActivityUpdate(entry: ChatterTimelineEntry, action: 'done' | 'cancel') {

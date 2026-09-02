@@ -16,6 +16,14 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   const chatterTimelineHasMore = dependencies.chatterTimelineHasMore;
   const chatterTimelineLoading = dependencies.chatterTimelineLoading;
   const loadMoreNativeChatterTimeline = dependencies.loadMoreNativeChatterTimeline;
+  const followers = dependencies.followers;
+  const followerCount = dependencies.followerCount;
+  const isFollowing = dependencies.isFollowing;
+  const canFollow = dependencies.canFollow;
+  const canUnfollow = dependencies.canUnfollow;
+  const followersLoading = dependencies.followersLoading;
+  const followerError = dependencies.followerError;
+  const updateNativeFollower = dependencies.updateNativeFollower;
   const isFieldWritable = dependencies.isFieldWritable;
   const setTechnicalCompanionTextField = dependencies.setTechnicalCompanionTextField;
   const formFields = computed(() => resolveContractV2FormFieldMap(v2ContractStore.value));
@@ -64,6 +72,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     activeActivityAction,
     nativeAttachmentMaxBytes,
     nativeAttachmentUploadEnabled,
+    nativeFollowerContract,
     nativeChatterActions,
     nativeAttachments,
     nativeCollaborationPanelProps,
@@ -75,10 +84,11 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     collaborationUserQuery, collaborationUserOptions, collaborationUserChoices, collaborationUsersLoading,
     selectedMentionUsers, activityAssigneeId, chatterPosting, chatterError, chatterTimeline,
     chatterTimelineHasMore, chatterTimelineLoading, activityUpdatingIds,
+    followers, followerCount, isFollowing, canFollow, canUnfollow, followersLoading, followerError,
     attachmentError, attachmentUploading, pendingNativeAttachments, onNativeAttachmentSelected,
     closeNativeChatterComposer, loadCollaborationUsers, openNativeChatterAction, openNativeAttachment,
     removeMentionUser, removePendingNativeAttachment, selectMentionUser, sendNativeChatter, replyNativeChatter, updateNativeActivity,
-    loadMoreNativeChatterTimeline,
+    loadMoreNativeChatterTimeline, updateNativeFollower,
   });
 
   const hasNativeChatterNode = computed(() => nativeLayoutContainsType(nativeFormLayoutNodes.value, 'chatter'));
@@ -404,6 +414,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     activeActivityAction,
     nativeAttachmentMaxBytes,
     nativeAttachmentUploadEnabled,
+    nativeFollowerContract,
     nativeChatterActions,
     nativeAttachments,
     nativeCollaborationPanelProps,

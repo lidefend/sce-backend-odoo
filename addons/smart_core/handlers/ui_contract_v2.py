@@ -3470,6 +3470,7 @@ class UiContractV2Handler(BaseIntentHandler):
         collaboration = source_contract.get("collaboration") if isinstance(source_contract.get("collaboration"), dict) else {}
         chatter = collaboration.get("chatter") if isinstance(collaboration.get("chatter"), dict) else {}
         attachments = collaboration.get("attachments") if isinstance(collaboration.get("attachments"), dict) else {}
+        followers = collaboration.get("followers") if isinstance(collaboration.get("followers"), dict) else {}
         upload_allowed = model in _allowed_models_from_hook(self.env, "smart_core_file_upload_allowed_models")
         download_allowed = model in _allowed_models_from_hook(self.env, "smart_core_file_download_allowed_models")
         chatter_fields = [
@@ -3479,6 +3480,7 @@ class UiContractV2Handler(BaseIntentHandler):
         ]
         message_capable = "message_ids" in model_fields or hasattr(model_obj, "message_post")
         activity_capable = "activity_ids" in model_fields
+        follower_capable = "message_follower_ids" in model_fields
         chatter_enabled = bool(chatter.get("enabled") or message_capable or activity_capable)
         attachment_enabled = bool(attachments.get("enabled") or upload_allowed or download_allowed)
         if not chatter_enabled and not attachment_enabled:
@@ -3494,6 +3496,7 @@ class UiContractV2Handler(BaseIntentHandler):
                     "message": bool(message_capable),
                     "note": bool(message_capable),
                     "activity": bool(activity_capable),
+                    "follower": bool(follower_capable),
                 },
                 "actions": chatter.get("actions") if isinstance(chatter.get("actions"), list) else _standard_chatter_actions(
                     message_capable=bool(message_capable),
@@ -3501,6 +3504,18 @@ class UiContractV2Handler(BaseIntentHandler):
                 ),
             }
             collaboration["chatter"] = deepcopy(chatter)
+        if follower_capable:
+            collaboration["followers"] = {
+                **followers,
+                "enabled": True,
+                "label": followers.get("label") or "关注者",
+                "list_intent": "chatter.followers.list",
+                "update_intent": "chatter.followers.update",
+                "actions": {
+                    "follow": {"label": "关注", "enabled": True},
+                    "unfollow": {"label": "取消关注", "enabled": True},
+                },
+            }
         if attachment_enabled:
             upload_contract = attachments.get("upload") if isinstance(attachments.get("upload"), dict) else {}
             download_contract = attachments.get("download") if isinstance(attachments.get("download"), dict) else {}
@@ -3541,7 +3556,7 @@ class UiContractV2Handler(BaseIntentHandler):
         }
         collaboration["sourceAuthority"] = {
             "kind": "ui_contract_v2_collaboration_projection",
-            "authorities": ["mail.thread", "mail.activity", "ir.attachment", "ir.rule", "extension_hook"],
+            "authorities": ["mail.thread", "mail.followers", "mail.activity", "ir.attachment", "ir.rule", "extension_hook"],
             "projection_only": True,
             "rebuildable": True,
             "no_business_fact_authority": True,

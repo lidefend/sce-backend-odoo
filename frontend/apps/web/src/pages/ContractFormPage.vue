@@ -911,11 +911,20 @@ const {
   openReply: replyNativeChatter,
   send: sendNativeChatter,
   updateActivity: updateNativeActivity,
+  followers,
+  followerCount,
+  isFollowing,
+  canFollow,
+  canUnfollow,
+  followersLoading,
+  followerError,
+  updateFollower: updateNativeFollower,
 } = useNativeChatterRuntime({
   model: () => model.value,
   recordId: () => recordId.value,
   activeChatterAction: () => activeChatterAction.value,
   messageAction: () => messageAction.value,
+  followerContract: () => nativeFollowerContract.value,
 });
 const attachmentViewerRef = ref<NativeAttachmentViewerLike | null>(null);
 const chatterTimelineLoading = chatterLoading;
@@ -1543,7 +1552,7 @@ function completeRelationCreateDialog(result: RelationCreatedDialogResult) {
 }
 const {
   workflowEvidenceGateRows, contractActions, headerActions, bodyActions, contractFieldLabels,
-  contractFieldLabel, activeChatterAction, messageAction, activeActivityAction, nativeAttachmentMaxBytes, nativeAttachmentUploadEnabled, nativeChatterActions, nativeAttachments,
+  contractFieldLabel, activeChatterAction, messageAction, activeActivityAction, nativeAttachmentMaxBytes, nativeAttachmentUploadEnabled, nativeChatterActions, nativeAttachments, nativeFollowerContract,
   nativeCollaborationPanelProps, nativeCollaborationPanelListeners, resolveNativeAttachmentLabel, hasNativeChatterNode, nativeLayoutContainsType,
   contractActionFromNativeRow, resolveNativeActionState, isUnifiedSubmitMethod, isUnifiedSubmitAction,
   primarySubmitAction, primaryCreateFooterAction, runNativeLayoutAction, advancedFieldNames, contractVisibleFields,
@@ -1566,6 +1575,7 @@ const {
   buildContractFormActions, busy, busyKind,
   canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, replyTarget,
   chatterError, chatterPosting, chatterTimeline, chatterTimelineHasMore, chatterTimelineLoading,
+  followers, followerCount, isFollowing, canFollow, canUnfollow, followersLoading, followerError, updateNativeFollower,
   closeNativeChatterComposer, collaborationUserChoices, collaborationUserOptions,
   collaborationUserQuery, collaborationUsersLoading, collectContractV2ButtonStatusById,
   collectSceneValidationPrecheckErrorsFromRules, commitMany2oneInline: (...args: Parameters<typeof commitMany2oneInline>) => commitMany2oneInline(...args),

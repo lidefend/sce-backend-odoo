@@ -4,6 +4,10 @@ import json
 
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 from odoo.addons.smart_core.handlers.execute_button import ExecuteButtonHandler
+from odoo.addons.smart_core.handlers.chatter_followers import (
+    ChatterFollowersListHandler,
+    ChatterFollowersUpdateHandler,
+)
 
 
 def _layout_occurrence_integrity(contract):
@@ -304,6 +308,56 @@ for rule in rules:
     ):
         rows.append(row)
 
+
+def _handler_data(handler_class, params):
+    result = handler_class(user_env, payload={"params": params}).run(payload={"params": params})
+    if isinstance(result, tuple):
+        data = result[0] if result and isinstance(result[0], dict) else {}
+    else:
+        data = result.data if hasattr(result, "data") and isinstance(result.data, dict) else result
+    if not isinstance(data, dict) or data.get("ok") is False:
+        raise AssertionError("follower handler failed: %r" % (result,))
+    return data
+
+
+follower_journeys = []
+for target_record in (project_record, payment_record):
+    target_params = {"model": target_record._name, "res_id": int(target_record.id)}
+    before = _handler_data(ChatterFollowersListHandler, target_params)
+    mutation = "unfollow" if before.get("is_following") else "follow"
+    expected_after = mutation == "follow"
+    try:
+        changed = _handler_data(ChatterFollowersUpdateHandler, {**target_params, "action": mutation})
+        after = _handler_data(ChatterFollowersListHandler, target_params)
+        if after.get("is_following") is not expected_after:
+            raise AssertionError("follower state did not change: %s" % {
+                "model": target_record._name, "before": before, "after": after,
+            })
+    finally:
+        restore = "follow" if before.get("is_following") else "unfollow"
+        _handler_data(ChatterFollowersUpdateHandler, {**target_params, "action": restore})
+    restored = _handler_data(ChatterFollowersListHandler, target_params)
+    if restored.get("is_following") is not bool(before.get("is_following")):
+        raise AssertionError("follower fixture was not restored: %s" % {
+            "model": target_record._name, "before": before, "restored": restored,
+        })
+    follower_journeys.append({
+        "model": target_record._name,
+        "record_id": int(target_record.id),
+        "mutation": mutation,
+        "before": {
+            "count": before.get("count"), "is_following": before.get("is_following"),
+            "can_follow": before.get("can_follow"), "can_unfollow": before.get("can_unfollow"),
+        },
+        "after": {
+            "count": after.get("count"), "is_following": after.get("is_following"),
+        },
+        "restored": {
+            "count": restored.get("count"), "is_following": restored.get("is_following"),
+        },
+        "write_result": changed.get("result"),
+    })
+
 print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "database": env.cr.dbname,
     "login": user.login,
@@ -316,6 +370,11 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
     "workspace_menu_id": int(workspace_menu.id),
     "create_occurrence_integrity": create_integrity,
     "readonly_occurrence_integrity": record_integrity,
+    "record_collaboration_contract": (
+        (record_data.get("runtimeContract") or {}).get("collaboration")
+        if isinstance(record_data.get("runtimeContract"), dict)
+        else record_data.get("collaboration")
+    ),
     "share_action_execute": {
         "actionId": share_rule.get("actionId"),
         "backendIdentity": share_rule.get("backendIdentity"),
@@ -340,4 +399,5 @@ print("LOCAL_DEV_PROJECT_CREATE_ACTION_SCOPE_JSON=" + json.dumps({
         "presentation": save_action.get("presentation"),
     },
     "intake_semantic_roles": actual_roles,
+    "follower_journeys": follower_journeys,
 }, ensure_ascii=False, sort_keys=True))

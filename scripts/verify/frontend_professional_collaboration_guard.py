@@ -9,6 +9,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     timeline = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue")
     composer = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue")
     attachments = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue")
+    followers = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts")
     attachment_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts")
     chatter_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts")
@@ -35,8 +36,18 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("collaboration timeline does not expose governed loading actions")
     for marker in ('data-professional-collaboration-component="panel"', ":data-follower-readiness"):
         if marker not in panel: failures.append(f"collaboration panel missing {marker}")
-    if "follower: 'fail_closed'" not in model:
-        failures.append("undeclared follower runtime must fail closed")
+    if "<ProfessionalFollowerManager" not in panel or 'data-professional-collaboration-component="followers"' not in followers:
+        failures.append("native collaboration panel bypasses shared follower manager")
+    if "<ScButton" not in followers or "<ScList" not in followers or "<ScInlineState" not in followers:
+        failures.append("follower settlement bypasses governed primitives")
+    if "follower: input.hasFollowerAuthority ? 'ready' : 'fail_closed'" not in model:
+        failures.append("follower readiness must consume explicit authority and fail closed")
+    if "contract.actions.follow.enabled === true && response.can_follow === true" not in chatter_runtime or "contract.actions.unfollow.enabled === true && response.can_unfollow === true" not in chatter_runtime:
+        failures.append("follower presentation must intersect contract and record authority")
+    if "contract?.actions.follow.enabled === true && canFollow.value === true" not in chatter_runtime or "contract?.actions.unfollow.enabled === true && canUnfollow.value === true" not in chatter_runtime:
+        failures.append("follower update handler must independently enforce contract and record authority")
+    if "@update=\"$emit('update-follower', $event)\"" not in panel:
+        failures.append("professional collaboration panel must settle follower updates")
     if "canDownloadCollaborationAttachment(entry)" not in timeline:
         failures.append("collaboration attachment download bypasses the shared authority resolver")
     if "entry.attachment?.can_download !== false" in timeline:
@@ -77,7 +88,7 @@ def main() -> int:
         print("[frontend_professional_collaboration_guard] FAIL")
         for failure in failures: print(f" - {failure}")
         return 1
-    print("[frontend_professional_collaboration_guard] PASS components=1 follower=fail_closed")
+    print("[frontend_professional_collaboration_guard] PASS components=1 follower=backend_authoritative")
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())

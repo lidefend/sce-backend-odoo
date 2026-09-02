@@ -8,12 +8,13 @@ export function collaborationCapabilityReadiness(input: {
   hasCommentAction: boolean;
   hasAttachmentAuthority: boolean;
   hasActivityAction: boolean;
+  hasFollowerAuthority: boolean;
 }): Readonly<Record<ProfessionalCollaborationCapability, ProfessionalCollaborationReadiness>> {
   return Object.freeze({
     comment: input.hasCommentAction ? 'ready' : 'fail_closed',
     attachment: input.hasAttachmentAuthority ? 'ready' : 'fail_closed',
     activity: input.hasActivityAction ? 'ready' : 'fail_closed',
-    follower: 'fail_closed',
+    follower: input.hasFollowerAuthority ? 'ready' : 'fail_closed',
   });
 }
 

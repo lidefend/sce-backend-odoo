@@ -8,9 +8,23 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
     def test_missing_timeline_identity_fails(self):
         def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace('data-professional-collaboration-component="timeline"', 'data-marker-removed')
         self.assertTrue(any("timeline missing" in item for item in validate(read_text)))
-    def test_follower_cannot_be_claimed_ready(self):
-        def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace("follower: 'fail_closed'", "follower: 'ready'")
-        self.assertTrue(any("follower runtime" in item for item in validate(read_text)))
+    def test_follower_readiness_cannot_fail_open(self):
+        def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace("follower: input.hasFollowerAuthority ? 'ready' : 'fail_closed'", "follower: 'ready'")
+        self.assertTrue(any("follower readiness" in item for item in validate(read_text)))
+    def test_follower_update_cannot_bypass_record_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace(" && canFollow.value === true", "", 1)
+            return value
+        self.assertTrue(any("follower update handler" in item for item in validate(read_text)))
+    def test_follower_projection_cannot_bypass_contract_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace("contract.actions.follow.enabled === true && ", "", 1)
+            return value
+        self.assertTrue(any("follower presentation" in item for item in validate(read_text)))
     def test_raw_composer_textarea_fails(self):
         def read_text(path): return (ROOT / path).read_text(encoding="utf-8").replace("<ScTextarea", "<textarea")
         self.assertTrue(any("raw textarea" in item for item in validate(read_text)))

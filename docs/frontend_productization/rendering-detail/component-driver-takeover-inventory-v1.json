@@ -39,7 +39,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 42,
+      "productionConsumerCount": 44,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -158,7 +158,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 377,
+      "productionConsumerCount": 379,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -650,7 +650,7 @@
         "TDesignListItem"
       ],
       "officialComponent": "list",
-      "productionConsumerCount": 1,
+      "productionConsumerCount": 2,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -678,7 +678,7 @@
         "TDesignLoading"
       ],
       "officialComponent": "loading",
-      "productionConsumerCount": 38,
+      "productionConsumerCount": 40,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1279,7 +1279,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 364,
+      "productionConsumerCount": 366,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1296,7 +1296,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "e1563cd04ea551492815e3d83a34ec0ef555f09cf9ee4443838d5afd41a4ffd2",
+  "inputDigest": "df9d5db3adb752bdb1337de240fbaf630ef463147c223aa0cacf6aa98012d059",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

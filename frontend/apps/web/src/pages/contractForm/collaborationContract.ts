@@ -28,6 +28,38 @@ export function resolveNativeAttachmentContract(formView: unknown, runtimeCollab
   return dictOrEmpty(dictOrEmpty(runtimeCollaborationContract).attachments);
 }
 
+export type NativeFollowerContract = {
+  enabled: true;
+  label: string;
+  listIntent: string;
+  updateIntent: string;
+  actions: {
+    follow: { label: string; enabled: boolean };
+    unfollow: { label: string; enabled: boolean };
+  };
+};
+
+export function resolveNativeFollowerContract(runtimeCollaborationContract: unknown): NativeFollowerContract | null {
+  const raw = dictOrEmpty(dictOrEmpty(runtimeCollaborationContract).followers);
+  if (raw.enabled !== true) return null;
+  const actions = dictOrEmpty(raw.actions);
+  const follow = dictOrEmpty(actions.follow);
+  const unfollow = dictOrEmpty(actions.unfollow);
+  const listIntent = String(raw.list_intent || '').trim();
+  const updateIntent = String(raw.update_intent || '').trim();
+  if (listIntent !== 'chatter.followers.list' || updateIntent !== 'chatter.followers.update') return null;
+  return {
+    enabled: true,
+    label: String(raw.label || '关注者').trim() || '关注者',
+    listIntent,
+    updateIntent,
+    actions: {
+      follow: { label: String(follow.label || '关注').trim() || '关注', enabled: follow.enabled === true },
+      unfollow: { label: String(unfollow.label || '取消关注').trim() || '取消关注', enabled: unfollow.enabled === true },
+    },
+  };
+}
+
 export function nativeChatterActionsFromContract(
   chatter: Record<string, unknown>,
   context: { recordId: number; model: string },

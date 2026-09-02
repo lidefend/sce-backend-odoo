@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { canDownloadCollaborationAttachment, canExecuteCollaborationCreateAction, canReplyCollaborationMessage, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, parseActivityEntry, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
 import { nativeAttachmentUploadEnabled } from '../src/pages/contractForm/collaborationContract';
 
-assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: true, hasAttachmentAuthority: true, hasActivityAction: true }), {
-  comment: 'ready', attachment: 'ready', activity: 'ready', follower: 'fail_closed',
+assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: true, hasAttachmentAuthority: true, hasActivityAction: true, hasFollowerAuthority: true }), {
+  comment: 'ready', attachment: 'ready', activity: 'ready', follower: 'ready',
 });
-assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: false, hasAttachmentAuthority: false, hasActivityAction: false }), {
+assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: false, hasAttachmentAuthority: false, hasActivityAction: false, hasFollowerAuthority: false }), {
   comment: 'fail_closed', attachment: 'fail_closed', activity: 'fail_closed', follower: 'fail_closed',
 });
 const entries = [{ key: 'm', type: 'message' }, { key: 'a', type: 'audit' }, { key: 't', type: 'activity' }] as never;

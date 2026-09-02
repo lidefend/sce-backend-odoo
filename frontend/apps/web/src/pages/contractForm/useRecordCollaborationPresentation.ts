@@ -2,7 +2,7 @@
 import { computed, type ComputedRef, type Ref } from 'vue';
 import { resolveContractV2Collaboration, type ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeChatterAction } from './types';
-import type { ChatterTimelineEntry, CollaborationUserOption } from '../../api/chatter';
+import type { ChatterTimelineEntry, CollaborationFollower, CollaborationUserOption } from '../../api/chatter';
 import type { PendingNativeAttachment } from './useNativeAttachmentRuntime';
 import type { NativeCollaborationPanelListeners, NativeCollaborationPanelProps } from './NativeCollaborationPanel.vue';
 import {
@@ -18,6 +18,7 @@ import {
   nativeChatterActionsFromContract,
   nativeCollaborationUnavailableMessage as nativeCollaborationUnavailableMessageFromState,
   resolveNativeAttachmentContract,
+  resolveNativeFollowerContract,
   resolveNativeChatterContract,
 } from './collaborationContract';
 
@@ -48,6 +49,13 @@ export function useRecordCollaborationPresentation(context: {
   chatterTimelineHasMore: MutableRef<boolean>;
   chatterTimelineLoading: MutableRef<boolean>;
   activityUpdatingIds: MutableRef<number[]>;
+  followers: MutableRef<CollaborationFollower[]>;
+  followerCount: MutableRef<number>;
+  isFollowing: MutableRef<boolean>;
+  canFollow: MutableRef<boolean>;
+  canUnfollow: MutableRef<boolean>;
+  followersLoading: MutableRef<boolean>;
+  followerError: MutableRef<string>;
   attachmentError: MutableRef<string>;
   attachmentUploading: MutableRef<boolean>;
   pendingNativeAttachments: MutableRef<PendingNativeAttachment[]>;
@@ -63,6 +71,7 @@ export function useRecordCollaborationPresentation(context: {
   replyNativeChatter: (...args: any[]) => unknown;
   updateNativeActivity: (...args: any[]) => unknown;
   loadMoreNativeChatterTimeline: (...args: any[]) => unknown;
+  updateNativeFollower: (...args: any[]) => unknown;
 }) {
   const runtimeCollaborationContract = computed(() => resolveContractV2Collaboration(context.v2ContractStore.value));
   const nativeChatterContract = computed(() => resolveNativeChatterContract(
@@ -73,6 +82,7 @@ export function useRecordCollaborationPresentation(context: {
     undefined,
     runtimeCollaborationContract.value,
   ));
+  const nativeFollowerContract = computed(() => resolveNativeFollowerContract(runtimeCollaborationContract.value));
   const nativeChatterActions = computed<NativeChatterAction[]>(() => nativeChatterActionsFromContract(nativeChatterContract.value, {
     recordId: context.recordId.value,
     model: context.model.value,
@@ -129,6 +139,11 @@ export function useRecordCollaborationPresentation(context: {
     attachmentUploading: context.attachmentUploading.value, attachmentUploadingLabel: nativeAttachmentUploadingLabel.value,
     attachmentUploadEnabled: nativeAttachmentUploadEnabled.value,
     attachmentViewLabel: nativeAttachmentViewLabel.value, busy: context.busy.value, chatterDraft: context.chatterDraft.value,
+    followerEnabled: Boolean(nativeFollowerContract.value), followerLabel: nativeFollowerContract.value?.label || '关注者',
+    followers: context.followers.value, followerCount: context.followerCount.value, isFollowing: context.isFollowing.value,
+    canFollow: context.canFollow.value, canUnfollow: context.canUnfollow.value, followersLoading: context.followersLoading.value,
+    followerError: context.followerError.value, followLabel: nativeFollowerContract.value?.actions.follow.label || '关注',
+    unfollowLabel: nativeFollowerContract.value?.actions.unfollow.label || '取消关注',
     chatterError: context.chatterError.value, replyTarget: context.replyTarget.value, collaborationUserChoices: context.collaborationUserChoices.value,
     collaborationUserQuery: context.collaborationUserQuery.value, hasAttachments: Boolean(nativeAttachments.value),
     pendingAttachments: context.pendingNativeAttachments.value, posting: context.chatterPosting.value,
@@ -147,6 +162,7 @@ export function useRecordCollaborationPresentation(context: {
     'select-activity-assignee': (id) => { context.activityAssigneeId.value = id; },
     'select-mention-user': context.selectMentionUser, 'send-chatter': context.sendNativeChatter,
     reply: context.replyNativeChatter,
+    'update-follower': context.updateNativeFollower,
     'update-activity': context.updateNativeActivity, 'update:activityDeadline': (value) => { context.activityDeadline.value = value; },
     'update:activityNote': (value) => { context.activityNote.value = value; },
     'update:activitySummary': (value) => { context.activitySummary.value = value; },
@@ -159,6 +175,7 @@ export function useRecordCollaborationPresentation(context: {
     activeActivityAction,
     nativeAttachmentMaxBytes,
     nativeAttachmentUploadEnabled,
+    nativeFollowerContract,
     nativeChatterActions,
     nativeAttachments,
     nativeCollaborationPanelProps,

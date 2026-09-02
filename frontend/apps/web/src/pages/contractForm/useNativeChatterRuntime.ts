@@ -1,14 +1,18 @@
 import { computed, ref } from 'vue';
 import {
   fetchChatterTimeline,
+  fetchCollaborationFollowers,
   postChatterMessage,
   scheduleChatterActivity,
   searchCollaborationUsers,
   updateChatterActivity,
+  updateCollaborationFollower,
   type ChatterTimelineEntry,
   type CollaborationUserOption,
+  type CollaborationFollower,
 } from '../../api/chatter';
 import { canExecuteCollaborationCreateAction, canUpdateCollaborationActivity } from './professionalCollaborationModel';
+import type { NativeFollowerContract } from './collaborationContract';
 import type { NativeChatterAction } from './types';
 
 function nextBusinessDateInputValue() {
@@ -29,6 +33,7 @@ export function useNativeChatterRuntime(params: {
   recordId: () => number;
   activeChatterAction: () => NativeChatterAction | null;
   messageAction: () => NativeChatterAction | null;
+  followerContract: () => NativeFollowerContract | null;
 }) {
   const activeMode = ref('');
   const activeLabel = ref('');
@@ -49,6 +54,13 @@ export function useNativeChatterRuntime(params: {
   const timelineNextOffset = ref(0);
   const activityUpdatingIds = ref<number[]>([]);
   const replyTarget = ref<{ id: number; author: string; body: string } | null>(null);
+  const followers = ref<CollaborationFollower[]>([]);
+  const followerCount = ref(0);
+  const isFollowing = ref(false);
+  const canFollow = ref(false);
+  const canUnfollow = ref(false);
+  const followersLoading = ref(false);
+  const followerError = ref('');
   let timelineRequestToken = 0;
 
   const selectedMentionUsers = computed(() => {
@@ -67,6 +79,13 @@ export function useNativeChatterRuntime(params: {
     timeline.value = [];
     timelineHasMore.value = false;
     timelineNextOffset.value = 0;
+    followers.value = [];
+    followerCount.value = 0;
+    isFollowing.value = false;
+    canFollow.value = false;
+    canUnfollow.value = false;
+    followersLoading.value = false;
+    followerError.value = '';
   }
 
   function closeComposer() {
@@ -109,11 +128,62 @@ export function useNativeChatterRuntime(params: {
       }
       timelineHasMore.value = Boolean(response.paging?.has_more);
       timelineNextOffset.value = Number(response.paging?.next_offset || 0);
+      if (!append) await loadFollowers(targetResId, targetModel);
     } catch (err) {
       if (!isCurrentRequest()) return;
       error.value = err instanceof Error ? err.message : '协作记录加载失败';
     } finally {
       if (requestToken === timelineRequestToken) loading.value = false;
+    }
+  }
+
+  async function loadFollowers(targetResId = params.recordId(), targetModel = params.model()) {
+    const contract = params.followerContract();
+    if (!contract || !targetResId || !targetModel) {
+      followers.value = [];
+      followerCount.value = 0;
+      isFollowing.value = false;
+      canFollow.value = false;
+      canUnfollow.value = false;
+      followerError.value = '';
+      return;
+    }
+    followersLoading.value = true;
+    followerError.value = '';
+    try {
+      const response = await fetchCollaborationFollowers({ model: targetModel, res_id: targetResId });
+      if (Number(params.recordId() || 0) !== Number(targetResId) || String(params.model() || '') !== String(targetModel)) return;
+      followers.value = Array.isArray(response.items) ? response.items : [];
+      followerCount.value = Number(response.count || followers.value.length || 0);
+      isFollowing.value = response.is_following === true;
+      canFollow.value = contract.actions.follow.enabled === true && response.can_follow === true;
+      canUnfollow.value = contract.actions.unfollow.enabled === true && response.can_unfollow === true;
+    } catch (err) {
+      followerError.value = err instanceof Error ? err.message : '关注者加载失败';
+      canFollow.value = false;
+      canUnfollow.value = false;
+    } finally {
+      followersLoading.value = false;
+    }
+  }
+
+  async function updateFollower(action: 'follow' | 'unfollow') {
+    const contract = params.followerContract();
+    const allowed = action === 'follow'
+      ? contract?.actions.follow.enabled === true && canFollow.value === true
+      : contract?.actions.unfollow.enabled === true && canUnfollow.value === true;
+    const recordId = params.recordId();
+    const model = params.model();
+    if (!allowed || !recordId || !model || followersLoading.value) return;
+    followersLoading.value = true;
+    followerError.value = '';
+    try {
+      await updateCollaborationFollower({ model, res_id: recordId, action });
+      await loadFollowers(recordId, model);
+    } catch (err) {
+      followerError.value = err instanceof Error ? err.message : '关注状态更新失败';
+    } finally {
+      followersLoading.value = false;
     }
   }
 
@@ -308,10 +378,19 @@ export function useNativeChatterRuntime(params: {
     timelineHasMore,
     activityUpdatingIds,
     replyTarget,
+    followers,
+    followerCount,
+    isFollowing,
+    canFollow,
+    canUnfollow,
+    followersLoading,
+    followerError,
     clearForRecordLoad,
     closeComposer,
     loadTimeline,
     loadMoreTimeline,
+    loadFollowers,
+    updateFollower,
     loadUsers,
     selectMentionUser,
     removeMentionUser,

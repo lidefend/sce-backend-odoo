@@ -80,7 +80,8 @@
         "frontend/apps/web/src/pages/contractForm/ContractModeSupportPanel.vue",
         "frontend/apps/web/src/pages/contractForm/ContractPromptActionForm.vue",
         "frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue",
-        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue"
+        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue",
+        "frontend/apps/web/src/pages/contractForm/ProfessionalFollowerManager.vue"
       ]
     },
     "p0-shared-utility-scene-completion-v1": {
