@@ -7509,6 +7509,26 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   development build, refreshed repository-owned rendering inventories, and
   the complete `make verify.frontend.quick.gate` passed.
 
+## 2026-09-02 — Readonly attachment command closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `974ebf9e`.
+- Product defect and repair: the shared attachment relation editor exposed
+  upload and remove commands without consuming the backend-supplied readonly
+  field state. Readonly attachment fields now expose only existing attachment
+  identity and download, show a governed empty state when appropriate, and
+  fail closed inside the upload handler. Editable fields retain the existing
+  upload workflow. No role, model, status, or label inference was added.
+- Real-page evidence: the governed project-create/project-workspace/payment
+  journey passed with three independent activity pages, retained unsaved
+  project draft and close confirmation, zero browser errors, zero mutations,
+  zero execute requests, and zero 390px overflow. The payment attachment
+  editor reported `editable` with exactly one file input; the shared guard
+  covers readonly upload, remove, and handler counterexamples.
+- Verification: 13 relational-action primitive tests, strict Vue typecheck,
+  development build, refreshed repository-owned rendering inventories, and
+  the complete `make verify.frontend.quick.gate` passed.
+
 ## 2026-09-02 — Readonly relation business-value formatting closure
 
 - Branch / baseline: `feature/native-view-action-semantics-closure-v1` /

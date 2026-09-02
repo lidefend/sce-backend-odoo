@@ -50,6 +50,18 @@ class RelationalActionPrimitivesGuardTest(unittest.TestCase):
             validate(altered, self.view_relation),
         )
 
+    def test_readonly_attachment_cannot_restore_upload_control(self):
+        altered = self.x2many.replace('v-if="!field.readonly"\n        :key="uploadTick"', ':key="uploadTick"', 1)
+        self.assertTrue(any("readonly attachment authority" in error for error in validate(altered, self.view_relation)))
+
+    def test_readonly_attachment_cannot_restore_remove_control(self):
+        altered = self.x2many.replace('v-if="!field.readonly"\n            variant="ghost"', 'variant="ghost"', 1)
+        self.assertTrue(any("readonly attachment authority" in error for error in validate(altered, self.view_relation)))
+
+    def test_readonly_attachment_upload_handler_fails_closed(self):
+        altered = self.x2many.replace('if (field.readonly) return;', '', 1)
+        self.assertTrue(any("readonly attachment authority" in error for error in validate(altered, self.view_relation)))
+
     def test_parallel_command_is_rejected(self):
         altered = self.view_relation.replace('</template>', '<ScButton>parallel</ScButton>\n</template>', 1)
         self.assertTrue(any("expected 6" in error for error in validate(self.x2many, altered)))

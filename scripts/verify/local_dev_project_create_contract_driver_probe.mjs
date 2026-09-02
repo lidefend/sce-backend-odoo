@@ -274,6 +274,11 @@ try {
     relationInteractionCount: await paymentSurface.locator(
       '[data-floorplan-region="relation"] input[type="file"], [data-floorplan-region="relation"] button:visible',
     ).count(),
+    attachmentEditors: await paymentSurface.locator('[data-semantic-component="RelationAttachmentEditor"]').evaluateAll((nodes) => nodes.map((node) => ({
+      state: String(node.getAttribute('data-control-state') || ''),
+      uploads: node.querySelectorAll('input[type="file"]').length,
+      removes: [...node.querySelectorAll('button')].filter((button) => (button.textContent || '').trim() === '移除').length,
+    }))),
     header: await captureHeaderPresentation(paymentSurface),
   };
   if (paymentDrivers !== 1 || paymentErrors.length !== 0) {
@@ -289,6 +294,12 @@ try {
   }
   if (paymentResult.emptyReadonlyRelations !== 0 || paymentResult.relationInteractionCount < 1) {
     throw new Error(`payment relation information efficiency is incomplete: ${JSON.stringify(paymentResult)}`);
+  }
+  if (paymentResult.attachmentEditors.some((editor) => (
+    (editor.state === 'readonly' && (editor.uploads > 0 || editor.removes > 0))
+    || (editor.state === 'editable' && editor.uploads !== 1)
+  ))) {
+    throw new Error(`payment attachment authority projection failed: ${JSON.stringify(paymentResult.attachmentEditors)}`);
   }
   const activityTabLabels = page.locator('.activity-page-tab-label');
   const activityTabKeys = await activityTabLabels.evaluateAll((nodes) => nodes.map((node) => ({

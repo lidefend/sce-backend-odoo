@@ -1,6 +1,11 @@
 <template>
   <div v-if="field.type === 'many2many'" class="relation-editor">
-    <div v-if="isAttachmentField(field)" class="relation-attachment-editor" data-semantic-component="RelationAttachmentEditor">
+    <div
+      v-if="isAttachmentField(field)"
+      class="relation-attachment-editor"
+      data-semantic-component="RelationAttachmentEditor"
+      :data-control-state="field.readonly ? 'readonly' : 'editable'"
+    >
       <div v-if="adapter.selectedRelationOptions(field.name).length" class="attachment-list">
         <div
           v-for="att in adapter.selectedRelationOptions(field.name)"
@@ -11,6 +16,7 @@
           <span class="attachment-name" :title="attachmentDisplayName(att)">{{ attachmentDisplayName(att) }}</span>
           <ScButton variant="ghost" size="small" @click="downloadAttachment(att)">下载</ScButton>
           <ScButton
+            v-if="!field.readonly"
             variant="ghost"
             size="small"
             :disabled="adapter.busy"
@@ -19,7 +25,14 @@
           >移除</ScButton>
         </div>
       </div>
+      <ScInlineState
+        v-else-if="field.readonly"
+        class="attachment-empty"
+        state="empty"
+        label="暂无附件"
+      />
       <ScFileField
+        v-if="!field.readonly"
         :key="uploadTick"
         class="attachment-upload"
         :disabled="adapter.busy"
@@ -369,6 +382,7 @@ function isAttachmentField(field: FormSectionFieldSchema) {
 
 async function handleAttachmentUpload(field: FormSectionFieldSchema, files: File[]) {
   attachmentError.value = '';
+  if (field.readonly) return;
   if (!files || files.length === 0) return;
   const model = props.adapter.currentModel;
   const resId = props.adapter.currentRecordId;
