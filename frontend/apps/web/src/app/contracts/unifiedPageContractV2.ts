@@ -107,6 +107,8 @@ export type UnifiedPageContractV2 = {
     containerTree: UnifiedPageContractV2Container[];
     listProfile?: Record<string, unknown>;
     activityProfile?: Record<string, unknown>;
+    pivotProfile?: Record<string, unknown>;
+    graphProfile?: Record<string, unknown>;
     componentRegistry: Record<string, unknown>;
   };
   statusContract: Record<string, unknown>;

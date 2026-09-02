@@ -254,7 +254,81 @@
         },
         "activityProfile": {
           "$ref": "#/$defs/activityProfile"
+        },
+        "pivotProfile": {
+          "$ref": "#/$defs/pivotProfile"
+        },
+        "graphProfile": {
+          "$ref": "#/$defs/graphProfile"
         }
+      }
+    },
+    "pivotProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["measures", "dimensions", "defaults", "sourceAuthority"],
+      "properties": {
+        "measures": { "type": "array", "items": { "$ref": "#/$defs/analysisField" } },
+        "dimensions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/analysisField" } },
+        "defaults": { "type": "object" },
+        "sourceAuthority": { "$ref": "#/$defs/pivotSourceAuthority" }
+      }
+    },
+    "graphProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["measures", "dimensions", "typeDefault", "sourceAuthority"],
+      "properties": {
+        "measures": { "type": "array", "items": { "$ref": "#/$defs/analysisField" } },
+        "dimensions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/analysisField" } },
+        "typeDefault": { "type": "string", "minLength": 1 },
+        "sourceAuthority": { "$ref": "#/$defs/graphSourceAuthority" }
+      }
+    },
+    "analysisField": {
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1 } }
+    },
+    "pivotSourceAuthority": {
+      "allOf": [
+        { "$ref": "#/$defs/analysisSourceAuthority" },
+        { "properties": {
+          "kind": { "const": "native_pivot_view_projection" },
+          "runtime_carrier": { "const": "ui.contract.v2.layoutContract.pivotProfile" }
+        } }
+      ]
+    },
+    "graphSourceAuthority": {
+      "allOf": [
+        { "$ref": "#/$defs/analysisSourceAuthority" },
+        { "properties": {
+          "kind": { "const": "native_graph_view_projection" },
+          "runtime_carrier": { "const": "ui.contract.v2.layoutContract.graphProfile" }
+        } }
+      ]
+    },
+    "analysisSourceAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "authorities", "projection_only", "no_business_fact_authority", "runtime_carrier"],
+      "properties": {
+        "kind": { "type": "string" },
+        "authorities": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "ir.ui.view" },
+            { "const": "ir.model.fields" },
+            { "const": "ir.actions.act_window" }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "projection_only": { "const": true },
+        "no_business_fact_authority": { "const": true },
+        "runtime_carrier": { "type": "string" }
       }
     },
     "activityProfile": {

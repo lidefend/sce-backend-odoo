@@ -46,6 +46,25 @@ def _list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
 
 
+def _validated_analysis_projection(collection_view: Any, view_type: str) -> dict[str, Any]:
+    if view_type not in {"pivot", "graph"}:
+        raise ValueError(f"unsupported analysis view type {view_type}")
+    if not isinstance(collection_view, dict):
+        raise ValueError(f"native {view_type} view carrier must be an object")
+    native_analysis = collection_view.get(view_type)
+    if not isinstance(native_analysis, dict) or not native_analysis:
+        raise ValueError(f"native {view_type} projection is required")
+    for key in ("measures", "dimensions"):
+        rows = native_analysis.get(key)
+        if not isinstance(rows, list) or any(
+            not isinstance(row, dict) or not _text(row.get("name")) for row in rows
+        ):
+            raise ValueError(f"native {view_type} {key} must be a named object array")
+    if not native_analysis["dimensions"]:
+        raise ValueError(f"native {view_type} dimensions are required")
+    return native_analysis
+
+
 def _validated_activity_projection(collection_view: Any) -> dict[str, Any]:
     if not isinstance(collection_view, dict):
         raise ValueError("native Activity view carrier must be an object")
@@ -1003,6 +1022,25 @@ def _assemble_ui_contract(
                     "runtime_carrier": "ui.contract.v2.layoutContract.activityProfile",
                 },
         }
+    if view_type in {"pivot", "graph"} and collection_view.get(view_type):
+        native_analysis = _validated_analysis_projection(collection_view, view_type)
+        profile_key = f"{view_type}Profile"
+        profile = {
+            "measures": deepcopy(native_analysis["measures"]),
+            "dimensions": deepcopy(native_analysis["dimensions"]),
+            "sourceAuthority": {
+                "kind": f"native_{view_type}_view_projection",
+                "authorities": ["ir.ui.view", "ir.model.fields", "ir.actions.act_window"],
+                "projection_only": True,
+                "no_business_fact_authority": True,
+                "runtime_carrier": f"ui.contract.v2.layoutContract.{profile_key}",
+            },
+        }
+        if view_type == "pivot":
+            profile["defaults"] = deepcopy(_dict(native_analysis.get("defaults")))
+        else:
+            profile["typeDefault"] = _text(native_analysis.get("type_default"), "bar")
+        contract["layoutContract"][profile_key] = profile
     interaction_mode = _text(_dict(ui.get("head")).get("interaction_mode"))
     if interaction_mode:
         contract["runtimeContract"]["interactionMode"] = interaction_mode

@@ -107,6 +107,36 @@ const { activityProfile: omittedProfile, ...layoutWithoutProfile } = activityPay
 void omittedProfile;
 const missingStore = createContractV2Store(decodeContractV2Snapshot({ ...activityPayload, layoutContract: layoutWithoutProfile }));
 const missingActivityModel = resolveActivitySurfaceModel(missingStore, []);
+const analysisAuthority = (viewType: 'pivot' | 'graph') => ({
+  kind: `native_${viewType}_view_projection`,
+  authorities: ['ir.ui.view', 'ir.model.fields', 'ir.actions.act_window'],
+  projection_only: true, no_business_fact_authority: true,
+  runtime_carrier: `ui.contract.v2.layoutContract.${viewType}Profile`,
+});
+const pivotProfile = {
+  measures: [{ name: 'amount', label: 'Amount' }],
+  dimensions: [{ name: 'date', label: 'Date', axis: 'col' }],
+  defaults: {}, sourceAuthority: analysisAuthority('pivot'),
+};
+const graphProfile = {
+  measures: [{ name: 'amount', label: 'Amount' }],
+  dimensions: [{ name: 'project_id', label: 'Project' }],
+  typeDefault: 'bar', sourceAuthority: analysisAuthority('graph'),
+};
+const decodedPivot = decodeContractV2Snapshot({
+  ...activityPayload,
+  pageInfo: { ...activityPayload.pageInfo, viewType: 'pivot', layoutType: 'pivot' },
+  layoutContract: {
+    ...layoutWithoutProfile, layoutType: 'pivot', pivotProfile,
+  },
+});
+const decodedGraph = decodeContractV2Snapshot({
+  ...activityPayload,
+  pageInfo: { ...activityPayload.pageInfo, viewType: 'graph', layoutType: 'graph' },
+  layoutContract: {
+    ...layoutWithoutProfile, layoutType: 'graph', graphProfile,
+  },
+});
 
 const evidence = {
   scope: 'view_type_render_coverage',
@@ -130,6 +160,10 @@ const evidence = {
       recordCount: activityModel.records.length,
     },
     missingReasonCode: missingActivityModel.reasonCode,
+  },
+  analysisProfiles: {
+    pivot: decodedPivot.layoutContract.pivotProfile,
+    graph: decodedGraph.layoutContract.graphProfile,
   },
 };
 
