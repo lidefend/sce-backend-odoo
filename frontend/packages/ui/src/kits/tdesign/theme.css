@@ -386,6 +386,14 @@
 [data-semantic-component='ScTable'][data-appearance='collection'] .column-layout-identity { box-shadow: var(--sc-component-table-sticky-shadow-x) 0 var(--sc-component-table-sticky-shadow-blur) var(--sc-component-table-sticky-shadow-spread) var(--sc-app-shadow); }
 [data-semantic-component='ScTable'][data-appearance='collection'] tfoot tr:nth-child(2) :is(.cell-select,.cell-row-number) { background: var(--sc-app-info-bg); }
 [data-semantic-component='ScTable'][data-appearance='collection'] tbody tr.row-tone-danger td { background: var(--sc-app-danger-bg); color: var(--sc-app-danger-text); }
+[data-semantic-component='ScTable'][data-appearance='collection'] thead th { height: var(--sc-product-table-header-height); padding-top: 0; padding-bottom: 0; line-height: var(--sc-component-table-row-line-height); vertical-align: middle; }
+[data-semantic-component='ScTable'][data-appearance='collection'] tbody tr { height: var(--sc-product-table-row-height); }
+[data-semantic-component='ScTable'][data-appearance='collection'] tbody td { height: var(--sc-product-table-row-height); padding-top: 0; padding-bottom: 0; line-height: var(--sc-component-table-row-line-height); vertical-align: middle; }
+[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text { max-width: var(--sc-component-table-long-text-max-width); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text > *,
+[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text :is(.collection-row-cell,.cell-primary) { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+[data-semantic-component='ScTable'][data-appearance='collection'] td:is(.column-numeric,.column-layout-money) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+[data-semantic-component='ScTable'][data-appearance='collection'] td.column-layout-date { color: var(--sc-app-text-secondary); white-space: nowrap; }
 [data-semantic-component='ScTable'][data-appearance='worksheet'] { width: 100%; font-size: var(--sc-product-text-body); }
 [data-semantic-component='ScTable'][data-appearance='worksheet'] th { position: sticky; top: 0; white-space: nowrap; }
 [data-semantic-component='ScTable'][data-appearance='worksheet'] td { overflow: hidden; text-overflow: ellipsis; }
@@ -408,13 +416,16 @@
 [data-semantic-component='ScDateField'][data-appearance='form-field'] {
   width: 100%;
   min-width: 0;
+  height: var(--sc-component-input-form-height);
   min-height: var(--sc-component-input-form-height);
+  box-sizing: border-box;
   border-color: var(--sc-app-border);
   border-radius: var(--sc-component-input-radius);
   background: var(--sc-app-input-bg);
   color: var(--sc-app-text-primary);
 }
 .sc-textarea[data-appearance='form-field'] { width: 100%; border-color: var(--sc-app-border); border-radius: var(--sc-component-input-radius); background: var(--sc-app-input-bg); color: var(--sc-app-text-primary); }
+.sc-input[data-appearance='collection-search'] { height: var(--sc-component-input-form-height); min-height: var(--sc-component-input-form-height); box-sizing: border-box; }
 .sc-input[data-appearance='record-title'] {
   flex: 1 1 auto;
   min-width: 0;

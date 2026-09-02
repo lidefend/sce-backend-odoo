@@ -14,63 +14,8 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "661c98ccc5fe9060f3586006f7ab0bec39c359f6d18be2a3e1061bd3db19ed00",
-  "internalVendorSelectorGaps": [
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 452,
-      "selector": "/* TDesign table density alignment (list surface). * ScTable bridges to tdesign-vue-next TTable; the product density tokens are * declared on the list surface but were previously only consumed by the legacy * native-table rules (.table / .sc-product-table). The t-table header/rows were * falling back to TDesign defaults, so rendered heights drifted from the token * contract (header 42px, row 46px, toolbar 46px). Align them here, scoped to * the list surface so shared component tokens keep authority elsewhere. */ .page[data-product-page-mode='list'] .t-table thead th, .page[data-product-page-mode='list'] .t-table thead th.t-table__th",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 469,
-      "selector": ".page[data-product-page-mode='list'] .t-table tbody tr",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 473,
-      "selector": ".page[data-product-page-mode='list'] .t-table tbody td, .page[data-product-page-mode='list'] .t-table tbody td.t-table__td",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 482,
-      "selector": "/* TDesign form control density alignment (form surface) * Canonical form fields render through TDesign primitives (t-input / t-select / * t-date-picker / t-textarea). TDesign defaults these to ~32px, but the form token * --sc-component-input-form-height is 36px, so rendered controls drifted from the * token contract. Pin controls to the form token so token changes propagate to * rendering. Scoped to the form surface; shared component tokens keep authority * elsewhere. */ [data-product-page-mode='form'] :is(.t-input, .t-select, .t-date-picker, .t-textarea__inner)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 496,
-      "selector": "/* List query-bar search input height (list surface) * The toolbar search input renders through ScInput -> TDesign t-input at its * default medium (32px) next to a 36px search button, so the input looked * shorter than the button it sits beside. Pin the list search input to the * same 36px form-height token so query-bar controls read as one height. */ [data-product-page-mode='list'] .collection-search-control :is(.t-input, .t-input__inner)",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 548,
-      "selector": "/* Long-text cell truncation (list surface, TDesign table) * ListPage.css declares .column-long-text ellipsis rules, but that file is a * scoped stylesheet and the t-table cells carrying these classes are rendered * by the TDesign table primitive (the td is not inside ListPage's scoped * data-v scope), so the scoped rules never match. Long identity/description * values overflow their column instead of truncating (verified: 164px content * in a 157px cell rendered with overflow visible). Re-declare the truncation * contract globally, scoped to the list surface so it reaches the TDesign td. * The 180px cap mirrors the legacy .column-long-text contract; cell width is * driven by the column budget, and truncation kicks in when content exceeds it. */ .page[data-product-page-mode='list'] .t-table td.column-long-text",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 567,
-      "selector": ".page[data-product-page-mode='list'] .t-table td.column-long-text > *, .page[data-product-page-mode='list'] .t-table td.column-long-text .collection-row-cell, .page[data-product-page-mode='list'] .t-table td.column-long-text .cell-primary",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 577,
-      "selector": "/* Numeric / monetary / date cell presentation (list surface, TDesign table) * ListPage.css also declares these presentation rules scoped, so they never * reach the TDesign-rendered td: money/numeric cells render left-aligned * instead of right, and date cells render at primary color instead of the * secondary text token (verified: textAlign=left / color=primary on the live * payment.request list). Re-declare the alignment/color/nowrap contract * globally. Column widths stay owned by the column-width budget; only * presentation is normalized here. */ .page[data-product-page-mode='list'] .t-table td.column-numeric, .page[data-product-page-mode='list'] .t-table td.column-layout-money",
-      "status": "legacy_override_gap"
-    },
-    {
-      "file": "frontend/apps/web/src/styles/product-patterns.css",
-      "line": 592,
-      "selector": ".page[data-product-page-mode='list'] .t-table td.column-layout-date",
-      "status": "legacy_override_gap"
-    }
-  ],
+  "inputDigest": "b43f78f9f5e129d3d3127c98b800008fc7c05763ccf1c1b30b6619dd77ae08d0",
+  "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
       "appearance": "account-context",
@@ -165,9 +110,27 @@
       "selectors": [
         "[data-semantic-component='ScTable'][data-appearance='collection'] .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] .cell-row-number, [data-semantic-component='ScTable'][data-appearance='collection'] tbody .column-layout-identity",
         "[data-semantic-component='ScTable'][data-appearance='collection'] .column-layout-identity",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] tbody td",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] tbody tr",
         "[data-semantic-component='ScTable'][data-appearance='collection'] tbody tr.row-tone-danger td",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] td.column-layout-date",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text > *, [data-semantic-component='ScTable'][data-appearance='collection'] td.column-long-text :is(.collection-row-cell,.cell-primary)",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] td:is(.column-numeric,.column-layout-money)",
         "[data-semantic-component='ScTable'][data-appearance='collection'] tfoot tr:nth-child(2) :is(.cell-select,.cell-row-number)",
-        "[data-semantic-component='ScTable'][data-appearance='collection'] thead .column-layout-identity, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-row-number"
+        "[data-semantic-component='ScTable'][data-appearance='collection'] thead .column-layout-identity, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-select, [data-semantic-component='ScTable'][data-appearance='collection'] tfoot .cell-row-number",
+        "[data-semantic-component='ScTable'][data-appearance='collection'] thead th"
+      ],
+      "status": "registered_product_variance"
+    },
+    {
+      "appearance": "collection-search",
+      "consumers": [
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/src/components/design-system/ScInput.vue"
+      ],
+      "selectors": [
+        ".sc-input[data-appearance='collection-search']"
       ],
       "status": "registered_product_variance"
     },
@@ -632,10 +595,10 @@
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
     "formalStyleSourceCount": 200,
-    "internalVendorSelectorGapCount": 9,
+    "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,
-    "productAppearanceVariantCount": 37,
+    "productAppearanceVariantCount": 38,
     "projectPublicTokenOverrideCount": 38,
     "unknownProjectTokenOverrideCount": 0,
     "visualLiteralGapCount": 0

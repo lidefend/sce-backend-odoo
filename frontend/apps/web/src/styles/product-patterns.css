@@ -452,60 +452,6 @@
 }
 
 
-/* TDesign table density alignment (list surface).
- * ScTable bridges to tdesign-vue-next TTable; the product density tokens are
- * declared on the list surface but were previously only consumed by the legacy
- * native-table rules (.table / .sc-product-table). The t-table header/rows were
- * falling back to TDesign defaults, so rendered heights drifted from the token
- * contract (header 42px, row 46px, toolbar 46px). Align them here, scoped to
- * the list surface so shared component tokens keep authority elsewhere. */
-.page[data-product-page-mode='list'] .t-table thead th,
-.page[data-product-page-mode='list'] .t-table thead th.t-table__th {
-  height: var(--sc-product-table-header-height, 42px);
-  padding-top: 0;
-  padding-bottom: 0;
-  line-height: 22px;
-  vertical-align: middle;
-}
-
-.page[data-product-page-mode='list'] .t-table tbody tr {
-  height: var(--sc-product-table-row-height, 46px);
-}
-
-.page[data-product-page-mode='list'] .t-table tbody td,
-.page[data-product-page-mode='list'] .t-table tbody td.t-table__td {
-  height: var(--sc-product-table-row-height, 46px);
-  padding-top: 0;
-  padding-bottom: 0;
-  line-height: 22px;
-  vertical-align: middle;
-}
-
-
-/* TDesign form control density alignment (form surface)
- * Canonical form fields render through TDesign primitives (t-input / t-select /
- * t-date-picker / t-textarea). TDesign defaults these to ~32px, but the form token
- * --sc-component-input-form-height is 36px, so rendered controls drifted from the
- * token contract. Pin controls to the form token so token changes propagate to
- * rendering. Scoped to the form surface; shared component tokens keep authority
- * elsewhere. */
-[data-product-page-mode='form'] :is(.t-input, .t-select, .t-date-picker, .t-textarea__inner) {
-  height: var(--sc-component-input-form-height, 36px);
-  min-height: var(--sc-component-input-form-height, 36px);
-  box-sizing: border-box;
-}
-
-/* List query-bar search input height (list surface)
- * The toolbar search input renders through ScInput -> TDesign t-input at its
- * default medium (32px) next to a 36px search button, so the input looked
- * shorter than the button it sits beside. Pin the list search input to the
- * same 36px form-height token so query-bar controls read as one height. */
-[data-product-page-mode='list'] .collection-search-control :is(.t-input, .t-input__inner) {
-  height: var(--sc-component-input-form-height, 36px);
-  min-height: var(--sc-component-input-form-height, 36px);
-  box-sizing: border-box;
-}
-
 /* List query-bar search control renders as one seamless unit (TDesign
  * InputAdornment shape). The outline search button previously kept its own
  * full 8px radius and left border, so it read as a separate box next to the
@@ -545,54 +491,6 @@
   color: var(--sc-app-text-primary);
   line-height: calc(var(--sc-component-input-height-md) * 1px);
   min-height: calc(var(--sc-component-input-height-md) * 1px);
-}
-
-
-/* Long-text cell truncation (list surface, TDesign table)
- * ListPage.css declares .column-long-text ellipsis rules, but that file is a
- * scoped stylesheet and the t-table cells carrying these classes are rendered
- * by the TDesign table primitive (the td is not inside ListPage's scoped
- * data-v scope), so the scoped rules never match. Long identity/description
- * values overflow their column instead of truncating (verified: 164px content
- * in a 157px cell rendered with overflow visible). Re-declare the truncation
- * contract globally, scoped to the list surface so it reaches the TDesign td.
- * The 180px cap mirrors the legacy .column-long-text contract; cell width is
- * driven by the column budget, and truncation kicks in when content exceeds it. */
-.page[data-product-page-mode='list'] .t-table td.column-long-text {
-  max-width: 180px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  overflow-wrap: normal;
-}
-.page[data-product-page-mode='list'] .t-table td.column-long-text > *,
-.page[data-product-page-mode='list'] .t-table td.column-long-text .collection-row-cell,
-.page[data-product-page-mode='list'] .t-table td.column-long-text .cell-primary {
-  min-width: 0;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  overflow-wrap: normal;
-}
-
-/* Numeric / monetary / date cell presentation (list surface, TDesign table)
- * ListPage.css also declares these presentation rules scoped, so they never
- * reach the TDesign-rendered td: money/numeric cells render left-aligned
- * instead of right, and date cells render at primary color instead of the
- * secondary text token (verified: textAlign=left / color=primary on the live
- * payment.request list). Re-declare the alignment/color/nowrap contract
- * globally. Column widths stay owned by the column-width budget; only
- * presentation is normalized here. */
-.page[data-product-page-mode='list'] .t-table td.column-numeric,
-.page[data-product-page-mode='list'] .t-table td.column-layout-money {
-  text-align: right;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.page[data-product-page-mode='list'] .t-table td.column-layout-date {
-  color: var(--sc-app-text-secondary);
-  white-space: nowrap;
 }
 
 

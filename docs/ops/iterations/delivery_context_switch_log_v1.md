@@ -3,6 +3,27 @@
 This log records current product-repository implementation context only. Historical
 customer delivery evidence belongs in private customer or payload repositories.
 
+## 2026-09-02 — OFFICIAL-CONTROL-BOUNDARY-ZERO-GAP-CLOSURE-01
+
+- Branch / anchor: `feature/native-view-action-semantics-closure-v1` after
+  `dd99f25c`; this batch remains local until its verification commit is created.
+- Formal Product Layer / Layer Target / Module: P0 professional component
+  authority / collection tables and form/query controls / `ScTable`, `ScInput`,
+  the existing form-field appearances, and shared design tokens.
+- Product result: collection density, long-text truncation, numeric/money
+  alignment, and date presentation now belong to `ScTable collection` rather
+  than page-level TDesign selectors. Form controls retain their product height
+  through semantic `form-field` roots, while the query bar declares the public
+  `ScInput collection-search` appearance. No frontend model/label/state
+  inference or parallel component system was introduced.
+- Acceptance evidence: design-token build/verify/tests and collection,
+  professional-field, rendering-detail guards pass. The inventory now reports
+  zero internal-vendor selector gaps, zero visual-literal gaps, zero orphaned
+  appearances, and zero unknown token overrides. The governed project/payment
+  journey is the current real-page evidence for form controls and 390px layout;
+  editable collection-row appearance remains guard-backed in this batch and is
+  not overstated as a new live-list browser acceptance.
+
 ## 2026-09-02 — DIALOG-OFFICIAL-CLOSE-LIFECYCLE-CLOSURE-01
 
 - Branch / anchor: `feature/native-view-action-semantics-closure-v1` after

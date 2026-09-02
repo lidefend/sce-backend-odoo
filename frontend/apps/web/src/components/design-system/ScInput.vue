@@ -103,7 +103,7 @@ const props = withDefaults(defineProps<{
   minLength?: number;
   maxLength?: number;
   clearable?: boolean;
-  appearance?: 'default' | 'navigation-search' | 'form-field' | 'record-title' | 'relation-tag-entry';
+  appearance?: 'default' | 'navigation-search' | 'form-field' | 'record-title' | 'relation-tag-entry' | 'collection-search';
 }>(), {
   modelValue: '',
   size: 'medium',

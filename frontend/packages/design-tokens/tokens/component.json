@@ -110,6 +110,8 @@
     "header_z_index": 1,
     "row_height": 44,
     "row_height_compact": 36,
+    "row_line_height": "22px",
+    "long_text_max_width": "180px",
     "border_width": "1px",
     "focus_ring_width": "2px",
     "focus_offset": "-2px",
