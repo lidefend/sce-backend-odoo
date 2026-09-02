@@ -24,6 +24,16 @@ export function canDownloadCollaborationAttachment(entry: ChatterTimelineEntry):
   return entry.type === 'attachment' && entry.attachment?.can_download === true;
 }
 
+export function canUpdateCollaborationActivity(
+  entry: ChatterTimelineEntry,
+  action: 'done' | 'cancel',
+): boolean {
+  if (entry.type !== 'activity') return false;
+  return action === 'done'
+    ? entry.activity?.can_complete === true
+    : entry.activity?.can_cancel === true;
+}
+
 export function formatCollaborationTimelineMeta(value: string): string {
   return String(value || '').replace(
     /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?/g,

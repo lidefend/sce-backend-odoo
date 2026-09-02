@@ -7890,3 +7890,25 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   counterexample tests, strict Vue typecheck, development build, refreshed
   zero-gap productization inventories, and the complete `make
   verify.frontend.quick.gate` passed.
+
+## 2026-09-02 — Collaboration activity action-authority closure
+
+- Branch / baseline: `feature/native-view-action-semantics-closure-v1` /
+  `a33087fc`.
+- Product defect and repair: collaboration activity cards hid their complete
+  and cancel actions when the backend denied them, but the shared activity
+  update handler did not repeat those authority decisions before issuing the
+  mutation. A shared semantic resolver now requires explicit
+  `can_complete=true` or `can_cancel=true`, and the mutation handler applies it
+  independently of the button projection. Missing and denied authority fail
+  closed without frontend model, role, label, or status inference.
+- Real-page evidence: the rebuilt project-create/project-workspace/payment
+  journey passed on its first fixed-Node-24 run. It retained three independent
+  activity pages, the unsaved project draft and dirty-close warning, two
+  readable tender rows, one editable payment attachment entry, zero browser
+  errors, zero mutations, zero execute requests, and no desktop or 390px
+  horizontal overflow.
+- Verification: twelve collaboration model cases, nine structural and
+  counterexample tests, strict Vue typecheck, development build, refreshed
+  zero-gap productization inventories, and the complete `make
+  verify.frontend.quick.gate` passed.

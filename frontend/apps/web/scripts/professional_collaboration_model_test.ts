@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { canDownloadCollaborationAttachment, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
+import { canDownloadCollaborationAttachment, canUpdateCollaborationActivity, collaborationCapabilityReadiness, formatCollaborationTimelineMeta, visibleCollaborationTimeline } from '../src/pages/contractForm/professionalCollaborationModel';
 
 assert.deepEqual(collaborationCapabilityReadiness({ hasCommentAction: true, hasAttachmentAuthority: true, hasActivityAction: true }), {
   comment: 'ready', attachment: 'ready', activity: 'ready', follower: 'fail_closed',
@@ -14,4 +14,8 @@ assert.match(formatCollaborationTimelineMeta('at 2026-08-25T08:30:00Z'), /2026/)
 assert.equal(canDownloadCollaborationAttachment({ key: 'missing', type: 'attachment', attachment: { id: 1, name: 'a' } } as never), false);
 assert.equal(canDownloadCollaborationAttachment({ key: 'denied', type: 'attachment', attachment: { id: 1, name: 'a', can_download: false } } as never), false);
 assert.equal(canDownloadCollaborationAttachment({ key: 'allowed', type: 'attachment', attachment: { id: 1, name: 'a', can_download: true } } as never), true);
-console.log('[professional_collaboration_model_test] PASS cases=8');
+assert.equal(canUpdateCollaborationActivity({ key: 'missing', type: 'activity', activity: { id: 1 } } as never, 'done'), false);
+assert.equal(canUpdateCollaborationActivity({ key: 'denied', type: 'activity', activity: { id: 1, can_cancel: false } } as never, 'cancel'), false);
+assert.equal(canUpdateCollaborationActivity({ key: 'complete', type: 'activity', activity: { id: 1, can_complete: true } } as never, 'done'), true);
+assert.equal(canUpdateCollaborationActivity({ key: 'cancel', type: 'activity', activity: { id: 1, can_cancel: true } } as never, 'cancel'), true);
+console.log('[professional_collaboration_model_test] PASS cases=12');

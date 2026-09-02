@@ -8,6 +8,7 @@ import {
   type ChatterTimelineEntry,
   type CollaborationUserOption,
 } from '../../api/chatter';
+import { canUpdateCollaborationActivity } from './professionalCollaborationModel';
 import type { NativeChatterAction } from './types';
 
 function nextBusinessDateInputValue() {
@@ -243,7 +244,7 @@ export function useNativeChatterRuntime(params: {
     const activityId = activityEntryId(entry);
     const recordId = params.recordId();
     const model = params.model();
-    if (!activityId || !recordId || !model || isActivityUpdating(entry)) return;
+    if (!activityId || !recordId || !model || isActivityUpdating(entry) || !canUpdateCollaborationActivity(entry, action)) return;
     activityUpdatingIds.value = [...activityUpdatingIds.value, activityId];
     error.value = '';
     try {

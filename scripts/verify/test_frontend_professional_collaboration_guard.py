@@ -31,4 +31,18 @@ class ProfessionalCollaborationGuardTests(unittest.TestCase):
                 return value.replace(" || att.can_download !== true", "")
             return value
         self.assertTrue(any("independently reject" in item for item in validate(read_text)))
+    def test_activity_update_handler_cannot_bypass_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useNativeChatterRuntime.ts"):
+                return value.replace(" || !canUpdateCollaborationActivity(entry, action)", "")
+            return value
+        self.assertTrue(any("activity update handler" in item for item in validate(read_text)))
+    def test_activity_update_missing_authority_cannot_fail_open(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("professionalCollaborationModel.ts"):
+                return value.replace("entry.activity?.can_complete === true", "entry.activity?.can_complete !== false")
+            return value
+        self.assertTrue(any("both actions" in item for item in validate(read_text)))
 if __name__ == "__main__": unittest.main()

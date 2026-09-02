@@ -11,6 +11,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     attachments = read_text("frontend/apps/web/src/pages/contractForm/ProfessionalAttachmentManager.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts")
     attachment_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts")
+    chatter_runtime = read_text("frontend/apps/web/src/pages/contractForm/useNativeChatterRuntime.ts")
     for marker in ('data-professional-collaboration-component="timeline"', "data-collaboration-entry-type", "update-activity", "open-attachment"):
         if marker not in timeline: failures.append(f"collaboration timeline missing {marker}")
     if "<ProfessionalCollaborationTimeline" not in panel or "visibleCollaborationTimeline" not in panel:
@@ -44,6 +45,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("collaboration attachment download authority does not fail closed")
     if "att.can_download !== true" not in attachment_runtime:
         failures.append("attachment open handler must independently reject missing or denied authority")
+    if "canUpdateCollaborationActivity(entry, action)" not in chatter_runtime:
+        failures.append("activity update handler must independently enforce explicit backend authority")
+    if "entry.activity?.can_complete === true" not in model or "entry.activity?.can_cancel === true" not in model:
+        failures.append("activity update authority resolver must fail closed for both actions")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in model or forbidden in timeline: failures.append(f"collaboration components contain forbidden product special case {forbidden}")
     return failures
